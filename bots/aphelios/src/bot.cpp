@@ -1,6 +1,4 @@
-// Placeholder behaviour, roughly the starter bot's, that exercises the scaffold end to end:
-// shop on spawn, recall when hurt, hit enemies in range, bank gems, farm camps the world believes
-// are up. Replace freely.
+// Placeholder behaviour, roughly the starter bot's. Replace freely.
 #include "bot.h"
 #include <algorithm>
 #include <array>
@@ -38,7 +36,7 @@ bool attack_enemy(const World& world) {
     }
 }
 
-// Basic-attack a visible monster in range.
+// Basic-attack a visible monster in range, never the Monolith's group.
 bool attack_camp(const World& world) {
     auto& me = cambc::self();
     if (!me.can_attack()) return false;
@@ -46,7 +44,7 @@ bool attack_camp(const World& world) {
     const auto& map = world.map();
     for (auto p : (cambc::vision::camp_tiles() & square(me.position(), range)).positions()) {
         const int g = map.group_at(p);
-        if (g < 0) continue;
+        if (g < 0 || map.groups[g].has_monolith) continue;
         const auto& members = map.groups[g].members;
         for (int i = 0; i < static_cast<int>(members.size()); ++i) {
             if (members[i].pos != p) continue;
@@ -64,17 +62,24 @@ void bank_gems(const World& world, Pathing& pathing) {
     auto& me = cambc::self();
     const vec2 here = me.position();
     const auto& altars = world.map().altars;
+    bool any_locked = false;
+    for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
+        any_locked |= world.altars[a].enemy_lock;
+        if (world.altars[a].enemy_lock || dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
+        try {
+            me.submit_gems(altars[a].pos);
+            return;
+        } catch (const cambc::error&) {
+        }
+    }
+    // One cached field covers every altar; per-altar fields are needed only to skip locked ones.
+    if (!any_locked) {
+        pathing.step_towards(pathing.to_any_altar());
+        return;
+    }
     int best = -1, best_steps = unreachable;
     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
         if (world.altars[a].enemy_lock) continue;
-        if (dist(here, altars[a].pos) <= cambc::constants::submit_gems_range) {
-            try {
-                me.submit_gems(altars[a].pos);
-                return;
-            } catch (const cambc::error&) {
-                continue;
-            }
-        }
         const int steps = pathing.to_altar(a).at(here);
         if (steps < best_steps) best = a, best_steps = steps;
     }
@@ -93,8 +98,7 @@ void farm(const World& world, Pathing& pathing) {
     const int on_group = world.map().group_at(here);
     if (on_group >= 0 && world.camps[on_group].state == CampState::cleared) return; // capturing
 
-    // Shortlist the 3 nearest by straight-line distance (no sorting: WASM compute is costly),
-    // then compare walking steps on the static fields.
+    // Shortlist the 3 nearest by straight-line distance, then compare walking steps.
     std::array<std::pair<int, int>, 3> shortlist;
     shortlist.fill({unreachable, -1});
     for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
@@ -119,7 +123,7 @@ void farm(const World& world, Pathing& pathing) {
     if (best && pathing.step_towards(*best)) attack_camp(world);
 }
 
-// Every 20 rounds, ward the legal tile farthest from our spawn (a free action).
+// Ward the legal tile farthest from our spawn.
 void place_ward(const World& world, Pathing& pathing) {
     if (world.round % 20 != 0 || cambc::self().ward_cooldown() > 0) return;
     const auto& spawn_field = world.map().from_ally_spawn();
@@ -156,12 +160,13 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
         return;
     }
 
-    attack_enemy(world);
+    const bool attacked = attack_enemy(world);
     place_ward(world, pathing);
     if (me.gem_count() > 0) {
-        bank_gems(world, pathing);
+        bank_gems(world, pathing); // a tribute can still start after a ranged attack
         return;
     }
+    if (attacked && !world.me().facts().walk_and_attack_independent()) return;
     farm(world, pathing);
 }
 

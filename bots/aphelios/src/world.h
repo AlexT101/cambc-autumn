@@ -1,13 +1,7 @@
-// World: everything this bot instance believes, and nothing it decides.
-//
-// Two parts:
-//  - StaticMap: built from the fully known static map on the first play turn (derived parts on
-//    first use), never changed after.
-//  - Dynamic beliefs: refreshed by update() at the start of every turn from vision, the few
-//    things readable through fog (is_alive, team scores) and the game rules; comms adds teammates'
-//    sightings through the note_* methods.
-//
-// Decision code reads the public members through a const reference.
+// World: everything this bot instance believes, and nothing it decides. StaticMap never changes
+// once built; the dynamic beliefs are refreshed by update() every turn from vision, the few things
+// readable through fog (is_alive, team scores) and the game rules, plus teammates' sightings
+// through the note_* methods.
 #pragma once
 #include <cambc.h>
 #include <array>
@@ -27,7 +21,6 @@ namespace aph {
 // The core is built eagerly on the first play turn. Derived parts (distance fields, masks, step
 // counts, bush clusters) cost too much fuel to build all at once on large maps, so each is
 // computed on first use and memoised; StaticMap::warm_up() pre-fills them with spare fuel.
-// Either way a value never changes once computed.
 //
 // Fuel note: WASM-side compute costs roughly 10 fuel per simple loop iteration (sorting 120 pairs
 // costs ~45k, an unordered_map ~70k), while host-side bitboard and distance-field operations cost
@@ -274,7 +267,8 @@ private:
     void update_camps();
     void update_altars();
     void update_wards();
-    void update_scores();
+    std::uint32_t tributing_enemies() const; // bit i: enemies[i] is believed to be tributing
+    void update_scores(std::uint32_t tributing);
 
     std::unique_ptr<StaticMap> static_;
 };

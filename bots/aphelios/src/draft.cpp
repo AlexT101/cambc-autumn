@@ -1,5 +1,6 @@
 #include "draft.h"
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <span>
 #include <vector>
@@ -9,7 +10,7 @@ namespace aph {
 
 namespace {
 
-// Placeholder preference order; real draft selection comes with strategy.
+// Placeholder preference order.
 constexpr cambc::champion_draft preference[] = {
     cambc::champion_draft::vesper_vale, cambc::champion_draft::varg, cambc::champion_draft::tavi,
     cambc::champion_draft::ryth, cambc::champion_draft::stellar, cambc::champion_draft::ren,
@@ -19,8 +20,7 @@ constexpr cambc::champion_draft preference[] = {
 
 int draft_round() { return static_cast<int>(cambc::round_number()); }
 
-// Try each pick in order until the engine accepts one. Repeating our own pick is an error that
-// does not spend the turn, so trying the next candidate is always safe.
+// A rejected pick does not spend the turn, so trying the next candidate is always safe.
 bool pick_first_available(DraftState& state, std::span<const cambc::champion_draft> order) {
     const auto ours = cambc::draft::current_draft(team::ally);
     for (const auto pick : order) {
@@ -60,12 +60,12 @@ void play_draft(DraftState& state) {
 
 void ensure_picked(DraftState& state) {
     if (state.picked_round == draft_round()) return;
-    static constexpr cambc::champion_draft everything[] = {
-        cambc::champion_draft::ryth, cambc::champion_draft::vesper_vale, cambc::champion_draft::vendetta,
-        cambc::champion_draft::cassi_and_issac, cambc::champion_draft::stellar, cambc::champion_draft::prism,
-        cambc::champion_draft::marcella, cambc::champion_draft::willow, cambc::champion_draft::ren,
-        cambc::champion_draft::varg, cambc::champion_draft::tavi,
-    };
+    // Every pick, whatever the preference.
+    static constexpr auto everything = [] {
+        std::array<cambc::champion_draft, static_cast<std::size_t>(cambc::champion_draft::tavi) + 1> all{};
+        for (std::size_t i = 0; i < all.size(); ++i) all[i] = static_cast<cambc::champion_draft>(i);
+        return all;
+    }();
     pick_first_available(state, everything);
 }
 

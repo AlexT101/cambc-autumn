@@ -1,15 +1,10 @@
-// Pathing: thin wrappers over the SDK's host-side distance fields and reachability.
-//  - Static fields to fixed goals (spawn, altars, camps), computed on first use and cached.
-//  - Per-turn routing around live blockers, under the walking rules.
-//  - Movement that tolerates hidden blockers.
-//  - Legal destinations for dashes, teleport crystals and wards.
-// Danger, preferences and targets belong to decision code: it passes extra tiles to avoid.
+// Pathing: thin wrappers over the SDK's host-side distance fields and reachability. Danger and
+// preferences belong to decision code, which passes extra tiles to avoid.
 #pragma once
 #include <cambc.h>
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <unordered_map>
 #include <vector>
 #include "util.h"
 
@@ -62,11 +57,17 @@ public:
     bitboard ward_targets();     // within 2, not wall, hole, altar, enemy spawn or one of our wards
 
 private:
-    const Field& cached(std::uint32_t key, const bitboard& goals);
+    using Slot = std::unique_ptr<Field>; // empty until computed
+    const Field& cached(Slot& slot, const bitboard& goals);
+    Slot& altar_slot(int altar);
+    Slot& group_slot(int group);
+    Slot& attack_slot(int group, int range);
     const StaticMap& map() const;
 
     const World& world_;
-    std::unordered_map<std::uint32_t, std::unique_ptr<Field>> fields_;
+    Slot any_altar_;
+    std::vector<Slot> altar_fields_, group_fields_;
+    std::vector<std::vector<Slot>> attack_fields_; // by attack range, then group
     std::optional<bitboard> blocked_;
     bitboard bumped_;
     int bumped_round_ = -1;

@@ -135,12 +135,10 @@ int min_steps(const Field& field, const bitboard& tiles) {
     return best;
 }
 
-Field make_field(const bitboard& walls, const bitboard& goals) {
-    Field f;
-    f.goals = goals & ~walls;
-    bitboard visited;
-    f.steps.compute(walls, f.goals, visited);
-    return f;
+int min_steps(const Field& field, const std::vector<CampMember>& members) {
+    int best = unreachable;
+    for (const auto& m : members) best = std::min(best, field.at(m.pos));
+    return best;
 }
 
 // Map draft picks to champion types in handle (= pick) order.
@@ -344,24 +342,16 @@ const bitboard& CampGroup::threat() const {
 }
 
 int CampGroup::ally_steps() const {
-    if (!ally_steps_) {
-        int best = unreachable;
-        for (const auto& m : members) best = std::min(best, map_->from_ally_spawn().at(m.pos));
-        ally_steps_ = best;
-    }
+    if (!ally_steps_) ally_steps_ = min_steps(map_->from_ally_spawn(), members);
     return *ally_steps_;
 }
 
 int CampGroup::enemy_steps() const {
-    if (!enemy_steps_) {
-        int best = unreachable;
-        for (const auto& m : members) best = std::min(best, map_->from_enemy_spawn().at(m.pos));
-        enemy_steps_ = best;
-    }
+    if (!enemy_steps_) enemy_steps_ = min_steps(map_->from_enemy_spawn(), members);
     return *enemy_steps_;
 }
 
-// The eager core: what the first turn needs. Everything derived is computed on first use.
+// The eager core: what the first turn needs.
 void World::build_static() {
     FuelMeter meter{"build_static"};
     auto s = std::make_unique<StaticMap>();
@@ -411,7 +401,8 @@ void World::build_static() {
         raw::check(raw::sdk_bc_camp_group_max_respawn(g.handle, &g.respawn));
         const auto ids = engine::camp_ids(g.handle);
         g.members.reserve(ids.size());
-        long sx = 0, sy = 0;
+        std::vector<vec2> positions;
+        positions.reserve(ids.size());
         for (auto id : ids) {
             raw::camp_info info{};
             raw::check(raw::sdk_map_camp_info(id, &info));
@@ -426,16 +417,11 @@ void World::build_static() {
             g.members.push_back({id, pos, type, stats->base_health, stats->base_strength});
             g.strength += stats->base_strength;
             g.has_monolith |= type == cambc::camp_type::monolith;
-            sx += pos.x, sy += pos.y;
+            positions.push_back(pos);
             s->camp_tiles.set(pos);
             s->group_lookup_[tile_index(pos)] = static_cast<std::uint8_t>(gi + 1);
         }
-        // The member nearest the mean position.
-        const long n = static_cast<long>(g.members.size());
-        const vec2 mean{static_cast<int>(sx / n), static_cast<int>(sy / n)};
-        g.centre = g.members[0].pos;
-        for (const auto& m : g.members)
-            if ((m.pos - mean).length_squared() < (g.centre - mean).length_squared()) g.centre = m.pos;
+        g.centre = central_tile(positions);
     }
     for (auto& g : s->groups) g.mirror = s->group_at(s->mirror(g.centre));
 
@@ -493,22 +479,23 @@ void World::update() {
     }
     FuelMeter meter{"update"};
     visible = cambc::vision::visible_tiles();
-    guard("champions", [&] { update_champions(true); });
+    const auto tributing = tributing_enemies(); // before update_champions ends their channels
+    update_champions(true);
     guard("camps", [&] { update_camps(); });
     guard("altars", [&] { update_altars(); });
     guard("wards", [&] { update_wards(); });
-    guard("scores", [&] { update_scores(); });
+    guard("scores", [&] { update_scores(tributing); });
 }
 
 void World::observe() {
     FuelMeter meter{"observe"};
     visible = cambc::vision::visible_tiles();
-    guard("champions", [&] { update_champions(false); });
+    update_champions(false);
 }
 
 void World::update_champions(bool full) {
-    for (auto& b : allies) update_champion(b, full);
-    for (auto& b : enemies) update_champion(b, full);
+    for (auto& b : allies) guard("champion", [&] { update_champion(b, full); });
+    for (auto& b : enemies) guard("champion", [&] { update_champion(b, full); });
 }
 
 // `full` reads liveness, cooldowns and bags too; observe() refreshes positions and health only.
@@ -627,89 +614,92 @@ void World::update_camps() {
     const auto hidden = ~visible;
 
     for (std::size_t g = 0; g < s.groups.size(); ++g) {
-        const auto& G = s.groups[g];
-        auto& c = camps[g];
+        guard("camp", [&] {
+            const auto& G = s.groups[g];
+            auto& c = camps[g];
 
-        if (!group_visible[g]) {
-            // Project through fog with the capture and respawn rules.
-            if (c.state == CampState::cleared && c.holder && round >= c.held_since + cambc::constants::capture_time + 1) {
-                c.state = CampState::respawning;
-                c.respawn_round = c.held_since + cambc::constants::capture_time + 1 + G.respawn;
-                c.holder.reset();
+            if (!group_visible[g]) {
+                // Project through fog with the capture and respawn rules.
+                if (c.state == CampState::cleared && c.holder && round >= c.held_since + cambc::constants::capture_time + 1) {
+                    c.state = CampState::respawning;
+                    c.respawn_round = c.held_since + cambc::constants::capture_time + 1 + G.respawn;
+                    c.holder.reset();
+                }
+                if (c.state == CampState::respawning && round >= c.respawn_round) {
+                    c.state = CampState::alive;
+                    for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
+                    c.awake = Awake::asleep;
+                }
+                if (c.awake == Awake::awake && round - c.state_round > 2) c.awake = Awake::unknown;
+                return; // next group
             }
-            if (c.state == CampState::respawning && round >= c.respawn_round) {
-                c.state = CampState::alive;
+
+            const auto [code, timer] = engine::group_state(G.handle);
+            const auto previous = c.state;
+            if (code == 1) c.state = CampState::alive;
+            else if (code == 2) c.state = CampState::cleared;
+            else if (code == 3) {
+                c.state = CampState::respawning;
+                c.respawn_round = round + timer;
+            }
+            c.state_round = round;
+            if (debug_log && c.state != previous)
+                std::cout << "world r" << round << " g" << g << str(G.centre) << ' ' << name(previous) << " -> " << name(c.state)
+                          << (c.state == CampState::respawning ? " until r" + std::to_string(c.respawn_round) : "") << '\n';
+            if (c.state == CampState::alive && previous != CampState::alive) {
                 for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
                 c.awake = Awake::asleep;
             }
-            if (c.awake == Awake::awake && round - c.state_round > 2) c.awake = Awake::unknown;
-            continue;
-        }
 
-        const auto [code, timer] = engine::group_state(G.handle);
-        const auto previous = c.state;
-        if (code == 1) c.state = CampState::alive;
-        else if (code == 2) c.state = CampState::cleared;
-        else if (code == 3) {
-            c.state = CampState::respawning;
-            c.respawn_round = round + timer;
-        }
-        c.state_round = round;
-        if (debug_log && c.state != previous)
-            std::cout << "world r" << round << " g" << g << str(G.centre) << ' ' << name(previous) << " -> " << name(c.state)
-                      << (c.state == CampState::respawning ? " until r" + std::to_string(c.respawn_round) : "") << '\n';
-        if (c.state == CampState::alive && previous != CampState::alive) {
-            for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
-            c.awake = Awake::asleep;
-        }
-
-        // Member health; a visible camp tile with no live camp on it is a dead member.
-        for (std::size_t i = 0; i < G.members.size(); ++i) {
-            const auto& m = G.members[i];
-            if (!visible.is_set(m.pos)) continue;
-            const float hp = engine::camp_health(m.handle).value_or(0.0f);
-            if (hp < c.health[i] - 1e-3f && hp > 0) {
-                c.last_damaged_round = round;
-                c.awake = Awake::awake;
-                c.quiet_rounds = 0;
+            // Member health; a visible camp tile with no live camp on it is a dead member. Any drop,
+            // a kill included, is damage, which wakes the group.
+            for (std::size_t i = 0; i < G.members.size(); ++i) {
+                const auto& m = G.members[i];
+                if (!visible.is_set(m.pos)) continue;
+                const float hp = engine::camp_health(m.handle).value_or(0.0f);
+                if (hp < c.health[i] - 1e-3f) {
+                    c.last_damaged_round = round;
+                    c.awake = Awake::awake;
+                    c.quiet_rounds = 0;
+                }
+                c.health[i] = hp;
             }
-            c.health[i] = hp;
-        }
-        c.health_round = round;
+            c.health_round = round;
 
-        if (c.state != CampState::alive) {
-            c.awake = Awake::asleep;
-        } else if (c.awake != Awake::asleep) {
-            // Asleep after 2 camp phases with no champion within 3: count rounds where the whole
-            // threat area is visible and empty. Anything unseen there could be a champion.
-            const bool fully_seen = (G.threat() & hidden).is_empty();
-            if (fully_seen && (G.threat() & champs).is_empty()) {
-                if (++c.quiet_rounds >= 2) c.awake = Awake::asleep;
-            } else {
-                c.quiet_rounds = 0;
-            }
-        }
-
-        // Capture progress on a cleared group: whoever stands on its tiles unopposed.
-        if (c.state == CampState::cleared) {
-            if ((G.tiles() & hidden).is_empty()) {
-                const bool a = !(G.tiles() & ally_champs).is_empty();
-                const bool e = !(G.tiles() & enemy_champs).is_empty();
-                const std::optional<team> holder = a && !e ? std::optional{team::ally}
-                                                   : e && !a ? std::optional{team::enemy}
-                                                             : std::nullopt;
-                if (holder != c.holder) {
-                    if (debug_log)
-                        std::cout << "world r" << round << " g" << g << str(G.centre) << " held by "
-                                  << (holder ? cambc::to_string(*holder) : std::string("nobody")) << '\n';
-                    c.holder = holder;
-                    c.held_since = holder ? round : -1;
+            if (c.state != CampState::alive) {
+                c.awake = Awake::asleep;
+            } else if (c.awake != Awake::asleep) {
+                // Asleep after 2 camp phases with no champion within 3: count rounds where the whole
+                // threat area is visible and empty. Anything unseen there could be a champion.
+                const bool fully_seen = (G.threat() & hidden).is_empty();
+                if (fully_seen && (G.threat() & champs).is_empty()) {
+                    if (++c.quiet_rounds >= 2) c.awake = Awake::asleep;
+                } else {
+                    c.quiet_rounds = 0;
                 }
             }
-        } else {
-            c.holder.reset();
-            c.held_since = -1;
-        }
+
+            // Capture progress on a cleared group: whoever stands on its tiles unopposed.
+            if (c.state == CampState::cleared) {
+                if ((G.tiles() & hidden).is_empty()) {
+                    const bool a = !(G.tiles() & ally_champs).is_empty();
+                    const bool e = !(G.tiles() & enemy_champs).is_empty();
+                    const std::optional<team> holder = a && !e ? std::optional{team::ally}
+                                                       : e && !a ? std::optional{team::enemy}
+                                                                 : std::nullopt;
+                    if (holder != c.holder) {
+                        if (debug_log)
+                            std::cout << "world r" << round << " g" << g << str(G.centre) << " held by "
+                                      << (holder ? cambc::to_string(*holder) : std::string("nobody")) << '\n';
+                        c.holder = holder;
+                        c.held_since = holder ? round : -1;
+                    }
+                }
+            } else {
+                c.holder.reset();
+                c.held_since = -1;
+            }
+        });
     }
 }
 
@@ -747,7 +737,14 @@ void World::update_wards() {
     if (enemy_wards.size() > enemies.size()) enemy_wards.resize(enemies.size());
 }
 
-void World::update_scores() {
+std::uint32_t World::tributing_enemies() const {
+    std::uint32_t mask = 0;
+    for (std::size_t i = 0; i < enemies.size(); ++i)
+        if (enemies[i].alive && enemies[i].channel == Channel::tribute) mask |= 1u << i;
+    return mask;
+}
+
+void World::update_scores(std::uint32_t tributing) {
     const int ally = static_cast<int>(cambc::global_submitted_gems(team::ally));
     const int enemy = static_cast<int>(cambc::global_submitted_gems(team::enemy));
     const bool first = round == first_round;
@@ -757,13 +754,17 @@ void World::update_scores() {
     score.enemy = enemy;
     if (score.enemy_delta <= 0) return;
 
-    // An enemy tribute just landed: empty the bag of whoever most plausibly made it.
+    // An enemy tribute just landed: empty the bag of whoever most plausibly made it. First choice:
+    // an enemy that was tributing before this update and no longer is. A visible enemy's bag was
+    // just read, so only an unseen one's needs emptying.
     score.enemy_tribute_round = round;
     score.enemy_tribute_amount = score.enemy_delta;
     ChampionBelief* tributer = nullptr;
     int candidates = 0;
-    for (auto& b : enemies)
-        if (b.alive && b.channel == Channel::tribute && b.channel_end_round <= round) tributer = &b, ++candidates;
+    for (std::size_t i = 0; i < enemies.size(); ++i) {
+        auto& b = enemies[i];
+        if ((tributing >> i & 1) && b.alive && b.channel != Channel::tribute) tributer = &b, ++candidates;
+    }
     if (candidates != 1) {
         tributer = nullptr;
         candidates = 0;
@@ -771,7 +772,7 @@ void World::update_scores() {
             if (b.alive && b.gems == score.enemy_delta) tributer = &b, ++candidates;
     }
     if (candidates == 1) {
-        tributer->gems = 0;
+        if (!tributer->visible) tributer->gems = 0;
         tributer->channel = Channel::none;
     }
 }

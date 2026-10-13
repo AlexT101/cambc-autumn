@@ -45,8 +45,6 @@ std::uint64_t encode(const Message& m) {
     return bits;
 }
 
-static_assert(sizeof(std::uint64_t) == 8);
-
 Message read() {
     std::uint64_t bits = 0;
     cambc::shared_memory.read(0, std::span{&bits, 1});

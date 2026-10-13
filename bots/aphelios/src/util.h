@@ -11,8 +11,8 @@ using cambc::bitboard;
 using cambc::team;
 using cambc::vec2;
 
-// Debug output is off by default. A stdout line costs about 1.3k fuel and each
-// team's output is capped at 1 MiB; indicator dots and lines are cheaper.
+// A stdout line costs about 1.3k fuel and each team's output is capped at 1 MiB; indicator dots
+// and lines are cheaper.
 inline constexpr bool debug_log = false;    // periodic world-belief summary on stdout
 inline constexpr bool debug_draw = false;   // world beliefs as indicator dots and lines
 inline constexpr bool debug_fuel = false;   // fuel used by each phase of the turn
@@ -53,6 +53,15 @@ struct Field {
     int at(vec2 p) const { return steps.get(p); } // `unreachable` if cut off
 };
 
+// Steps around `walls` to the goals not under them.
+inline Field make_field(const bitboard& walls, const bitboard& goals) {
+    Field f;
+    f.goals = goals & ~walls;
+    bitboard visited;
+    f.steps.compute(walls, f.goals, visited);
+    return f;
+}
+
 inline std::uint64_t fuel() { return cambc::fuel_remaining(); }
 
 // Generous fuel estimate for computing one distance field, setup included (2-13k measured on the
@@ -62,8 +71,8 @@ inline std::uint64_t field_cost_estimate() {
 }
 inline constexpr std::uint64_t small_cost_estimate = 5000; // a few masks or step counts
 
-// True if at least `needed` fuel is left this turn. Check before optional expensive work:
-// running out suspends the bot and the rest of the turn spills into the next round.
+// Check before optional expensive work: running out suspends the bot and the rest of the turn
+// spills into the next round.
 inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }
 
 // WASI randomness is always zero in matches, so seed from our spawn and this instance's start.

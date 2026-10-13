@@ -1,5 +1,4 @@
-// Comms: the team's 8 bytes of shared memory as a typed message. Every bit of the layout lives in
-// comms.cpp, so changing the schema touches only these two files.
+// Comms: the team's 8 bytes of shared memory as a typed message; the bit layout is in comms.cpp.
 //
 // Shared memory is read/write all match, and a write is visible at once to teammates who act
 // later; a teammate who acted earlier sees it next round.
@@ -24,7 +23,7 @@ struct Message {
     std::optional<Sighting> sighting;
 };
 
-// Placeholder schema; the encoding fits in 64 bits.
+// Placeholder schema.
 Message decode(std::uint64_t bits);
 std::uint64_t encode(const Message& message);
 

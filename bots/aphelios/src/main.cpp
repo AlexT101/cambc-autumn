@@ -1,6 +1,5 @@
 // The turn loop. Each instance is either the draft bot or one champion (Cassi and Issac are two).
-// A play turn: update world -> read comms -> decide -> re-observe -> write comms -> spare-fuel
-// precompute. Every phase is isolated so a failure still yields the turn.
+// Every phase is isolated so a failure still yields the turn.
 #include <cambc.h>
 #include <iostream>
 #include <memory>

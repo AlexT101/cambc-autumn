@@ -1,6 +1,6 @@
 // Champion fact table: what every champion type can do, ours and theirs, as data.
 // Transcribed from the roster in cambc-rules.yaml; check_facts_against_engine() compares it with
-// the engine's own design data. Decision code branches on these facts; nothing here decides.
+// the engine's own design data.
 #pragma once
 #include <cambc.h>
 #include <algorithm>
@@ -74,7 +74,7 @@ struct ChampionFacts {
     bool ranged;
     Stat health, strength, focus;
     Passive passive;
-    std::array<AbilityFacts, 2> abilities; // slots 0 and 1
+    std::array<AbilityFacts, 2> abilities;
 
     constexpr int attack_range() const { return ranged ? 3 : 1; }
     // Melee champions walk and attack independently; for ranged ones either spends both.
