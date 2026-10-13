@@ -6,3 +6,4 @@ bots/*/build/
 bots/*/target/
 .vscode/
 tools/docs-sync/node_modules/
+__pycache__/

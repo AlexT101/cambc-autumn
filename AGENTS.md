@@ -14,6 +14,17 @@ The bot is **C++ only**. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C+
 - [docs/handbook/](docs/handbook/) and [docs/champions/](docs/champions/): game rules, superseded by the YAML
 - [docs/guides/cpp/](docs/guides/cpp/): C++ guides
 
+## Testing bots
+
+[run_batched.py](run_batched.py) plays two bots on every map in `maps/`, once from each side, through `cambc run-batch`:
+
+```
+py run_batched.py <bot1> <bot2>      # names under bots/, or paths
+py run_batched.py --watch            # live progress of the newest batch, from another terminal
+```
+
+Options: `--threads N` (default 16), `--one-side` (one game per map, sides drawn by `--side-seed`), `--maps-dir`, `--fuel`, `--timeout SECONDS`, `--no-replays`. Results go to `replays/batch-TIMESTAMP/`: `results.json` (wins from bot 1's view, then per match), `<n>-<map>-<12|21>.repl26a` (`12` means bot 1 is team A), `run.log`, and `*.error.log` for failed matches. The exit code is non-zero if any match failed.
+
 ## Docs
 
 [docs/](docs/README.md) mirrors the online handbook, champion pages, guides and API reference (all four languages), with images. Regenerate with `cd tools/docs-sync && npm install && node sync.mjs`; never edit by hand.
