@@ -1,0 +1,157 @@
+board:
+  dimensions: "Width W and height H are map-defined integers, with a supported minimum of 7 and a competition maximum of 64 per axis."
+  symmetry: "Competition maps are symmetric under horizontal reflection, vertical reflection, or 180-degree rotation."
+  coordinates: "Tiles use zero-based (x, y), with x increasing east and y increasing south."
+  directions: {N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0]}
+  wrapping: "Both axes wrap: normalize coordinates modulo W and H. There is no implicit outer wall."
+  edges:
+    placement: "Each tile has four boundary edges, shared with adjacent tiles. Edges are empty, kelp, or portals."
+    empty: "Crossing reaches the adjacent tile in the requested direction."
+    kelp: "Crossing is blocked."
+    portals:
+      pairing: "Each nonnegative portal ID identifies two distinct edges of the same orientation; an edge belongs to only one pair."
+      symmetry: "On competition maps with a reflection axis, paired endpoints either both lie on the symmetry line or both lie off it."
+      crossing: "Crossing an entrance reaches the tile beyond its partner edge in the same direction, without rotating. This is one step; only the computed exit tile is visited."
+      exit_tile: "For a horizontal partner at the north edge of (x,y), S exits at (x,y), N at (x,y-1). For a vertical partner at the west edge of (x,y), E exits at (x,y), W at (x-1,y). Normalize the result."
+      body_connectivity: "Consecutive body segments can be connected across wrapping boundaries or portal pairs."
+    lifetime: "Edges do not change during play."
+
+dragons:
+  teams: [A, B]
+  body: "An ordered sequence of tile positions, head first and tail last; length is the number of segments."
+  minimum_length: 2
+  identity: "IDs are globally unique across both teams, allocated consecutively from 0 in initial map order and then creation order; IDs are never reused."
+  initial_state: "The map specifies each starting dragon's team and head-to-tail body. Starting dragons alternate teams in map order. Segments are in bounds, consecutive segments are connected by a legal step, and distinct starting dragons cannot overlap."
+  queens: "Dragons 0 and 1 are on opposite teams; each is its team's queen. Either team may own dragon 0. A dead queen has length 0."
+  inferred_direction: "Whenever a direction is inferred between connected tiles, use the first direction reaching the destination in N, E, S, W order."
+  initial_facing: "Infer the direction from the second segment to the head."
+  unit_limit: "Competition play permits at most 64 living dragons per team."
+  control: "Each dragon runs its own persistent copy of the team's program. Program memory is private, survives turns, and is not inherited by split children."
+
+rounds:
+  numbering: "Rounds are numbered 0 through 499."
+  sequence:
+    - "Update pearl-bed countdowns and resolve due spawns."
+    - "Give each living dragon one turn in ascending ID order, skipping dragons already dead. Append newly created dragons to this same round's turn order, including descendants created by those dragons."
+    - "Evaluate termination and the result after all turns finish."
+  turn_sequence:
+    - "Deliver the current observation, accumulated sonar inbox, and echo counts, then empty the inbox and reset the counts."
+    - "Read the reply and select its action and up to one sonar payload per direction."
+    - "Resolve the complete action against the current board."
+    - "If the actor survives, cast its selected sonars in N, E, S, W order. If it dies, its sonars are discarded."
+  state_visibility: "Turns and movement substeps are sequential, not simultaneous. Every change is immediately available to subsequent substeps and observations; there is no observation between substeps."
+
+pearls:
+  occupancy: "A tile contains at most one pearl. Pearls persist until consumed; they do not stack."
+  initial_state: "All tiles initially have no pearl."
+  beds:
+    configuration: "A tile's map-defined minimum and maximum gaps are nonnegative. A positive maximum makes it a spawning bed and requires minimum <= maximum; maximum 0 disables spawning. Unspecified tiles are not beds."
+    symmetry:
+      default: "Without declared symmetry, each bed has its own countdown."
+      transforms:
+        x: "(x, H-1-y)"
+        y: "(W-1-x, y)"
+        xy: "(W-1-x, H-1-y)"
+      sharing: "A bed and its transformed partner must have matching spawning status and gap bounds; they share countdown draws. A bed mapped to itself is processed once."
+    random_gaps:
+      generator: "One shared MT19937 generator starts each game with seed 0x5eed5eed."
+      draw: "gap = minimum + (next unsigned 32-bit generator output modulo (maximum - minimum + 1))."
+      order: "Process beds in increasing y, then x; for a symmetric pair, only its member with smaller y*W+x draws."
+    initialization: "Before round 0, draw each independent bed or pair's first countdown."
+    tick: "At the start of each round, decrement each countdown once. If it is <= 0, attempt a spawn independently on each associated tile, then draw and assign a new countdown regardless of success. A zero gap still produces at most one attempt per round."
+    spawn_condition: "A spawn succeeds only if the tile has neither a pearl nor any living dragon segment. Blocked attempts are lost, not deferred."
+    independence: "Consumption and death drops neither reset nor otherwise change countdowns."
+
+movement:
+  action: "Supply a nonempty sequence of absolute directions. Resolve them in order; there is no separate wait action or reverse-direction prohibition."
+  free_steps: "The first ceil(L / 4) steps are free, where L is the actor's length when the action starts. Every later step is paid."
+  step_sequence:
+    - "Before each paid step, require current length > 2. Failure kills the actor immediately, even if its intended destination contains a pearl."
+    - "Set facing to the requested direction and resolve the destination through the crossed edge. A blocked crossing kills the actor."
+    - "Check the destination against every current own segment, including the tail. Any match kills the actor before any segment moves."
+    - "Check living other dragons at the destination. A head collision kills the other dragon first, then the actor. A non-head collision kills only the actor. Team affiliation makes no difference."
+    - "Prepend the destination as the new head. If it contains a pearl, consume it and retain the tail; otherwise remove one tail segment."
+    - "For each paid step, remove one additional tail segment as payment."
+  death_during_action: "Stop at the first fatal step. Earlier completed steps remain in effect; the fatal step does not move the head, consume a pearl, or remove tail segments."
+
+splitting:
+  action: "Supply the number n of rear segments to give to the child; splitting replaces movement for this turn."
+  validity: "Require 2 <= n <= current length - 2 and current living team count < unit limit. Failure kills the parent."
+  parent: "Keep the first length-n segments, preserving head and facing; no segment moves or is consumed."
+  child: "The removed rear n segments become a same-team dragon in reverse order, with the old tail as head. Infer facing from its second segment to its head. Its sonar inbox starts empty, and it inherits the parent's protocol version."
+
+death:
+  removal: "A dead dragon immediately ceases to occupy or block tiles, receive sonar, take turns, or contribute to standings."
+  drops: "Set a pearl on body indices 0, 2, 4, ... of the body at death, counting from the head. Existing pearls remain single pearls; drops may occur on non-bed tiles."
+
+sonar:
+  payload: "One unsigned 64-bit integer per ray, from 0 through 18446744073709551615; there is no segment cost."
+  rays: "A turn may cast up to four rays, at most one in each of N, E, S, W. A later SONAR for the same direction replaces the earlier one."
+  casting: "After the action, if the actor survives, cast selected rays in N, E, S, W order. Each ray resolves fully, including delivery, before the next."
+  origin:
+    default: "Start at the actor's head after its action and repeatedly step in the ray's direction, using the board's edge traversal rules. The origin is not checked before the first step."
+    total_internal_refraction: "A ray whose direction is opposite the actor's facing (into its own neck) instead starts at the actor's tail and steps in the direction pointing away from the body: the reverse of the tail segment's inferred direction toward the preceding segment."
+  stopping: "Stop at kelp, the first tile occupied by any living dragon segment, or after W+H successful steps. The actor itself and both teams are eligible recipients."
+  delivery: "Append the payload to the hit dragon's inbox immediately; a ray without a hit delivers nothing. Only the first hit receives it. A recipient on protocol 2 silently drops payloads above 4294967295."
+  inbox: "Messages are delivered in arrival order at the recipient's next turn, with no sender ID, team, direction, or position. A recipient still awaiting its turn can read the message this round; otherwise it waits until the next round."
+  echoes:
+    counts: "At its next turn, the actor receives five counts of what its rays from the previous turn stopped on: kelp, ally, ally_head, enemy, enemy_head. Each ray adds at most one count; a ray that hit nothing adds none."
+    classes: "kelp: stopped by kelp. ally: a non-head segment of a same-team dragon, including the actor itself. ally_head: a same-team head. enemy: a non-head segment of an opposing dragon. enemy_head: an opposing head."
+
+protocol:
+  versions: "Each dragon starts on protocol 2. Replying PROTOCOL 3 switches it to protocol 3 from its next turn onward. Split children inherit their parent's version."
+  version_2_input: "No ECHOES line, and sonar payloads above 4294967295 are never delivered."
+  version_3_input: "ECHOES line present every turn and all 64-bit payloads delivered."
+  output: "Both SONAR forms are accepted at every version."
+
+observation:
+  scope: "A 7-by-7 square centered on the head, with offsets -3 through +3 on each axis and wrapped coordinates. It is fixed to compass directions, not rotated with facing."
+  occlusion: "Kelp, dragons, and portals do not obstruct or redirect vision. A portal's remote surroundings are not revealed by seeing its entrance."
+  tile_order: "Rows run north to south and columns west to east, relative to the head; the central tile is row 3, column 3."
+  initialization_lines:
+    - "ID <own_id>"
+    - "TEAM <A|B>"
+    - "MAP <width> <height>"
+    - "UNIT_LIMIT <team_limit>"
+  turn_block:
+    - "ROUND <round_number>"
+    - "DIR <own_facing>"
+    - "LENGTH <own_total_length>"
+    - "UNIT_COUNT <own_team_living_count>"
+    - "NUM_MSGS <message_count>"
+    - "Exactly message_count lines, each containing one unsigned 64-bit sonar payload."
+    - "Protocol 3 only: ECHOES <kelp> <ally> <ally_head> <enemy> <enemy_head>."
+    - "Exactly 49 tile lines in tile order: <x> <y> <has_pearl> <pearl_in>. has_pearl is 0 or 1; pearl_in is the bed's current countdown or -1 for a non-bed, independent of whether a pearl is present."
+    - "DRAGON_BODIES <visible_segment_count>"
+    - "Exactly visible_segment_count lines: <team> <dragon_id> <x> <y> <direction> <is_head>. Include all visible living segments, including own segments, in dragon ID order and then head-to-tail order. is_head is 0 or 1."
+    - "Eight rows of seven space-separated horizontal-edge tokens, from the vision square's north border to its south border."
+    - "Seven rows of eight space-separated vertical-edge tokens, from the vision square's west border to its east border."
+  segment_direction: "For a head, direction is that dragon's facing; for another segment, infer the step from it toward the preceding segment nearer the head."
+  edge_tokens: {empty: ".", kelp: "w", portal: "decimal portal ID"}
+  hidden_information: "No full map, remote portal endpoint, bed gap bounds, symmetry declaration, unseen body positions, other dragon's total length, or enemy living count is supplied."
+
+reply:
+  encoding: "Commands are case-sensitive text lines. Use newline-terminated lines; CRLF is accepted. Action and sonar lines accept leading and trailing whitespace."
+  size_limit: "At most 10 KiB (10240 bytes) of reply text is retained per turn, including diagnostic lines. Excess text is discarded, so truncation can remove later action commands."
+  commands:
+    move: "MOVE <directions>: one contiguous token containing only N, E, S, W."
+    split: "SPLIT <n>: one decimal integer."
+    sonar: "SONAR <N|E|S|W> <value>: one decimal unsigned 64-bit integer cast in that direction."
+    sonar_legacy: "SONAR <value>: one decimal unsigned 32-bit integer cast in the actor's post-action facing direction."
+    protocol: "PROTOCOL 3: use protocol 3 input from the next turn."
+    end: "ENDTURN: emit this exact line and flush to complete the turn. Blocking to read the next turn also completes the current reply."
+  selection: "The last syntactically valid MOVE or SPLIT selects the single action; for each direction, the last syntactically valid SONAR in that direction selects its payload independently. Commands are not executed as they are read."
+  malformed_lines: "Unknown commands, malformed arguments, and extra non-whitespace arguments are ignored without replacing prior selections. Incomplete trailing lines are discarded."
+  invalid_action: "If no action was selected, the dragon dies. A syntactically accepted but impossible action is resolved by its own validity rules, not ignored or replaced by an earlier action."
+  diagnostics: "LOG, INDICATOR, DOT, and LINE provide optional debugging output with no gameplay effect and do not select an action."
+
+computation:
+  points_per_dragon_per_turn: 100000000
+  memory_per_dragon_mib: 48
+  output_cost: "Each write to stdout or stderr costs 2500000 points plus 4000 per byte; reading stdin costs 6 points per byte. Stdout is line-buffered unless the bot sets a full buffer, making each unbuffered line a separate write."
+  budget_scope: "The first turn includes program setup. Work between finishing a turn and reading the next is charged to the following turn."
+  failure: "Exhausting the turn budget, exiting, or failing before completing the turn delivers no reply; previously printed commands for that unfinished turn are discarded."
+
+result:
+  elimination: "At the end of a round, if exactly one team has living dragons, it wins; if neither does, the result is a draw. Elimination does not interrupt the remaining turns of the round."
+  round_limit: "If both teams remain after the final round, compare their queen lengths, then their longest living dragon lengths, then their total living lengths. The larger value at the first difference wins; equality on both is a draw. Dragon count is not a further tiebreaker."

@@ -1,0 +1,112 @@
+# Rules verification findings
+
+Probe bots live in `rules-verification/probes/`; each source header gives its run command. Those commands use bare bot names; since the bots no longer sit in `bots/`, pass paths instead (`cambc build rules-verification/probes/<bot>`, `cambc run rules-verification/probes/<A> rules-verification/probes/<B> --map <map> --rounds <N> -o <dir>`). The `run.sh` scripts already use paths. Logs are the `PROBE` lines in `team-*.stdout` inside the `.repl26a` zip. The engine is deterministic, so reruns reproduce the logs. The original plan is `cambc-rules-yaml.md`; `unswbc-rules.yaml` was its style reference.
+
+## Fuel (`probe-fuel`, `probe-fuel-b..e`, map corners)
+
+- **Budget.** Q: per-turn fuel. Method: log `fuel_remaining()` at `main()` entry and after each `end_turn()`; repeat with `--fuel 50000/250000`. Evidence: draft turn 1 `979354`, later draft turns `99999`; play turn 1 `178942`, later `99999`; scaled exactly with `--fuel`. Conclusion: base N = 100000; first draft turn 10N, first play turn 2N, all other turns N. SDK static init (~21k) is charged to the first turn. No carry-over.
+- **Exhaustion in play.** Q: what happens to the suspended turn? Method: ryth moves, then burns fuel and logs `round_number()`. Evidence: `PROBE 5 pre_burn_move ok=1`; `PROBE 6 burn fuel=81157` (resumed with fresh budget); `PROBE 6 post_resume_move ok=1`, second move `Movement already used`; next `turn_start` is round 7. Conclusion: actions before exhaustion stand; the rest of round R's turn is lost; execution resumes mid-code as round R+1's turn with fresh allowances and a fresh budget. Not a crash.
+- **Exhaustion in draft.** Q: is the draft bot resumed? Method: opponents that burn/yield before or after picking. Evidence: bot that never picks is never run again (all its picks random); bot that picks then burns resumes next draft turn (`picked_varg_after_resume=1`); a second pick in one draft turn is `engine error 18`. Conclusion: a draft turn ending without a pick makes that and all later picks random; resumption only happens after a pick was made. Random picks are seeded/deterministic.
+- **Side findings.** `map::camp_groups()` ≈ 28k fuel; most queries 25–900. A formatted stdout line ≈ 1.3k fuel. Each team's stdout is capped at 1 MiB. An all-tied game at the round limit went to team B.
+
+## Introspection (`probe-introspect`, all 9 maps, `--rounds 2 --fuel 20000000`)
+
+Q: engine values for settings, items, champions, camps, maps, coordinates, draft. Method: raw `detail::` SDK imports printed during the draft and first turn.
+
+- **Settings.** capture 5, camp_sleep 2, respawn 60, recall 5, tribute = max(1, ceil(0.1·gems)), submit range 1, max_rounds 2000, winning_gems 1000, kill_gold 50, assist_gold 0, passive_gold 0, spawn_healing 1.0 (fraction of max health), ward: 1 active, 1 charge, cooldown 1, lifetime -1 (none), vision 6, placement 2; tile_reveal 1; altar_lock_hits 3; tp_crystal_time 3; shared memory 8 B, draft memory 1024 B. All match the docs.
+- **Items.** 7 families (monster, power, durability, treasure, jungle, home, bruiser) × 3 stats. Each family×stat has its own shard (30 g, +1 stat point = champion growth) and emblem (formed from 5 matching shards; not purchasable). Emblem points: 5 in its stat; power 6; bruiser 5 + 1 in each other stat. Passives: monster +10% to camps, durability -10% incoming, treasure +20% gold, jungle -30% from camps, home recall ×0.5 rounded up. Consumables: tp_crystal and altar_lock, 10 g, carry 1.
+- **Champions.** Base stats, growths, ranges, cooldown 8, modifiers and excludes-walking flags match the champion pages exactly. Vision 8, move 1 for all. Engine amounts = modifier × Focus.
+- **Camps.** HP/strength/gold/gems/respawn match the table. Design range is 3 for every kind, including Monolith (docs table: 5) and clusters (docs table: 0); clusters have strength 0. Group reward = sum of members; group respawn = max of members.
+- **Maps.** Picks per team: collision 3, corners 5, elkring 5, expanse 3, interlock 4, lanes 5, monolith 5, packs 3, rows 4. Spawn regions 3×3 (4×4 on expanse, rows). Team A is absolute team 0.
+- **Coordinates.** (0,0) is the bottom-left corner; north = +y, east = +x (moving `north` from (0,0) reached (0,1)). Symmetry: horizontal (x,y)→(W-1-x,y); vertical (x,y)→(x,H-1-y); rotational (x,y)→(W-1-x,H-1-y). The reported symmetry maps team A's spawn and all terrain/camps onto team B's.
+- **Draft.** One draft turn per pick, `round_number()` 0..picks-1; first play round is 1. Each draft turn both teams pick; a pick becomes visible to both only after both have picked. The draft bot sees terrain, spawns, altars and camp groups but not live vision state.
+- **Out-of-vision enemies.** Enemy champion handles are listed, but reading their details while out of vision raises error 97.
+
+## Turn order, memory, draft (`probe-order`, `probe-order-b`, map elkring)
+
+Method: `cambc run probe-order probe-order-b --map elkring --rounds 90 --fuel 100000000`. All bodies walk to the map centre; each logs `has_completed_turn()` of every visible champion at its turn start, so each round's full order can be rebuilt. A: Cassi&Issac, ryth, vendetta, stellar, prism (6 bodies); B: ryth, vendetta, stellar, prism, willow (5).
+
+- **Round numbering.** Draft rounds are 0..picks-1; play starts at round 1, +1 per round; `--rounds N` plays through round N. The smoke test's irregular values were caused by fuel exhaustion spilling turns into the next round.
+- **Team alternation.** Evidence: `15: A.cassi B.ryth A.issac …`, `16: B.ryth A.cassi …`, strictly alternating to round 90, and the same with bots swapped. Conclusion: team A starts odd rounds, B starts even rounds (round 1 inferred from parity).
+- **Priority.** Default 0; higher acts first; `set_priority` applies from the next round and persists; the full int32 range is accepted. Ties: draft-pick order (= champion id order; A ids 0–5, B ids 6–10). Visible enemies' priority is readable.
+- **Interleaving.** One champion per team alternately while both have turns left; leftover turns of the larger team go last. Cassi and Issac are separate turns with their own priority.
+- **Dead champions.** Evidence: Issac killed round 51 (Cassi died with him); round 52 order `B.willow A.prism B.ryth [A.cassi†] B.vendetta [A.issac†] …`. Conclusion: dead champions keep their slot and run their bot; they see nothing but themselves.
+- **Shared memory.** Initially zero; per team; a write is visible to teammates acting later in the same round and persists.
+- **Draft memory.** Initially zero; each draft write overwrites from byte 0 the bytes it covers; champions read the final contents; writes during play fail (error 18).
+- **Draft.** A pick is hidden until both teams have picked that draft round. Duplicate own pick: error 14, the turn is not used up; second pick in one turn: error 18. Picking the opponent's champion is allowed. Yielding without a pick: that bot is never run again, all its remaining picks are random (deterministic per map); its draft-memory writes are kept.
+
+## Capture, gold, tribute (`probe-capture`, `probe-capture-b` passive; `bash rules-verification/probes/probe-capture/run.sh <scenario> <map> <rounds>`, fuel 5e7)
+
+- **Capture timing.** Method: scenario 1, collision: Vendetta kills gold cluster (12,7), steps on during round 25. Evidence: `PROBE 26..30 watch=8:reward_available gold=0`; `PROBE 31 reward dgold=35`. Same R+6 when the tile is already held as the last monster dies (scenario 8, elkring: held at round 16's phase, paid 22). Conclusion: stepping on during round R pays at the capture phase of round R+6 (six consecutive held capture phases). No capture progress is exposed; group state stays `reward_available`.
+- **Region and reset.** Standing 8 rounds on an adjacent tile (diagonal or orthogonal) pays nothing: only the group's spawn tiles count. Off for one round (20), back on 21 → paid 27: leaving resets fully. Enemy contest not tested.
+- **Split.** Packs group (70 gold, 48 gems), 3 allies: `dgold=24/23/23`, `dgems=16/16/16`; elkring 195 gold, 2 allies: 98/97. Conclusion: floor share each, remainder to the lowest champion id present (ids: draft-pick order, team A first). Late arrivals present at completion share.
+- **Gold modifiers.** Vesper share 23 → `dgold=27`, share 24 → `28`; second identical capture brings 27 → 55, 28 → 57. Conclusion: bonus applies to each champion's share; gold is stored fractionally and `gold_count()` shows it floored. Treasure emblem (5 `treasure_shard_of_strength`, auto-combined): Vendetta wolf 108 (×1.2); Vesper + Treasure wolf 126 (×1.4, additive). Gems never get a bonus. Killing camps gives no gold; only capture does.
+- **Passive gold.** 2000 idle rounds on packs: gold 0 throughout, `earnedGold` 0. Starting gold 0; no passive income.
+- **Group respawn.** Gold cluster: `respawning:50` at reward round 31, alive at 81; wolf 44 → 84; elk+gold cluster 60. Timer = max member respawn, set at the reward round, alive at reward + N. Any occupied spawn tile of the group holds the timer at 0 indefinitely (`respawning:0` rounds 77–97, alive 98 after leaving).
+- **Accessors.** `global_submitted_gems(team)` gives live team tribute totals for both teams. Lifetime gold earned is not exposed to bots (only `--statistics`).
+- **Tribute.** 16 gems: started round 42 (`channel=2`), `channel=1` at 43, `gems=0 subA=16` at 44. 44 gems: start 128 (`channel=5`), scored 133. Conclusion: ceil(G/10) (min 1) owner turn-ends including the start turn; scored at the owner's next turn start. Mid-channel gem gain untested (no map allows it).
+
+## Action allowances (`probe-allowances`, `probe-allowances-b` passive; interlock, `--rounds 330 --fuel 50000000`; `PROBE_RUN` 1 = Vesper, Stellar, Cassi&Issac, Willow; 2 = Tavi, Vendetta, Ryth, Varg)
+
+Targets: gold/gem clusters. Each action is attempted and the engine result or error is logged with `can_move/can_attack/can_cast` and slot cooldowns.
+
+- **Cooldown.** Evidence: dash round 46 `cd1=8`; 47 `cd1=7`, `spell_cast_on_cooldown`; 53 `cd1=1` still on cooldown; 54 cast OK. Conclusion: cast in round t → next cast in round t+8. Second cast in a turn: `spell_cast_already_cast`. Failed (thrown) casts spend nothing.
+- **Ranged walk/attack.** Vesper: attack → walk `move_already_moved`; walk → attack `attack_already_attacked`. Same for Tavi, Willow, Stellar, Cassi. Either action consumes both.
+- **Attack reset.** Restores the attack only, never the walk (all 7 reset champions). Fails with "An available attack cannot be reset" unless the attack is already spent (`is_ready()` still reports 1). Ranged: walk → reset → attack works; attack → reset → attack works, then walk fails. Melee: attack → reset → attack → walk works.
+- **Excludes-walking spells.** Walk then cast: `spell_cast_already_moved`; cast then walk: `move_exclusive_spell_cast`. Contradiction with docs prose: ranged damage spells do not consume the basic attack (Stellar 0/1, Cassi 0, Tavi 1, Ryth 0: spell ↔ attack both orders OK). Compatible spells (Cassi stun, Willow heal) consume nothing.
+- **Dash.** Uses neither walk nor attack (Vesper dash → attack → walk-fails-only-because-attacked; walk → dash OK; dash → walk OK). Range Chebyshev 2 (knight offsets OK, 3 fails). Path: up to 2 king steps over holes, altars and champions (incl. unseen); blocked by walls and camps (camps not in docs). Landing must be free and not wall/hole/camp/champion.
+- **Melee.** Walk and attack in either order.
+- **Attack targets.** Chebyshev range (melee 1, ranged 3). Target must be visible: an enemy in an adjacent bush can't be attacked ("Target must be a visible enemy or neutral camp"). Allies can't be attacked.
+- **Spell targets.** Unit spells need a visible target. Ground spells: any tile within Chebyshev 4 including walls, holes and unseen tiles; radius 1 = 3×3; they hit unseen enemies; no effect on allies or the caster. Willow cannot heal herself; healing a full-HP ally is allowed.
+- **Open lead.** After a Ryth area cast, a cluster lost 50 extra HP before Ryth's next turn (followed up in the lingering-effects probe below).
+
+## Vision, wards, teleport crystal (`probe-vision` with `#define SCEN 0-4`, `probe-vision-b` with `BSCEN 0-2`; corners, `--fuel 20000000`)
+
+- **Ward placement.** Evidence: offsets (3,0),(3,3) `place_ward_out_of_range`, (2,2) OK; wall/altar/hole/enemy spawn `bad_destination`; behind a wall or into an unseen bush OK; own tile, ally tile, camp tile, enemy-ward tile OK; tile with an ally's ward `ally_ward_present`. Conclusion: Chebyshev 2; any tile except wall, hole, altar, enemy spawn or allied-ward tile; no vision needed.
+- **Ward timing.** Place every round succeeds (cd 1 → 0 at next turn start); second in a round `no_charges`; new ward replaces old; failed attempts keep the charge; `remaining_time=inf` through round 250; survives owner death (dead owner still sees through it), dead champions can't place.
+- **Ward vision.** Ward at (19,41) open ground: 169 tiles = 13×13 square (disc would be 113). Shadowcast from the ward tile; walls/bushes block; a ward in a bush sees across its cluster.
+- **Champion vision.** Open ground 288/289 (one wall) = 17×17 Chebyshev square, not a disc. Walls are never visible and shadow; bushes hidden from outside; inside a bush the whole connected cluster and outward visible; holes transparent. Contradiction: docs describe ray-cast range 8 without saying the shape is square.
+- **Sharing / unseen units.** Own vision = champion + own ward only. Out-of-vision champions (ally or enemy) and camps: everything but `is_alive` throws `api_not_in_vision`; no last-known data. Visible enemies expose position, health, gems, state, item count; gold is self-only.
+- **tile_reveal_rounds = 1.** Bumping a hidden occupant reveals that tile to the bumping champion only, for the rest of that round (`tile_vis=false` next round). Attacking from a bush does not reveal the attacker.
+- **Teleport crystal.** Buy on spawn (10 g, second purchase `consumable_inventory_full`). Range Chebyshev 3, ignores terrain in between. Wall, hole, altar, camp tile, enemy spawn, ally-occupied: rejected; open or bush tiles incl. unseen: OK. Contradiction: docs table says "TP Crystal can reach walls"; it cannot land on one. Unseen enemy at destination: returns false, crystal kept, retry allowed. Crystal consumed at start; channel 3 owner turn-ends incl. start; arrives at next turn start (used round 77, at destination round 80 start). While channelling: no move/attack/cast/ward/cancel. The destination is reserved and blocked for every unit that sees it.
+
+## Stun, kills, death, recall (`probe-stun`, `probe-stun-b`; `#define SCENARIO N` in both; packs, `--fuel 2000000`)
+
+- **Stun length.** Tavi stun on Varg after Varg acted in round 30 → Varg stunned on its round-31 turn, free in 32. Cassi stun on Tavi before it acted in round 31 → stunned that turn, free in 32. Same for Prism and Ren. Conclusion: a stun removes exactly the target's next turn, whichever order; buff duration 1, ticks to 0 at that turn's end, removed at the following turn start.
+- **What stun blocks.** Move, attack, cast, shop, consumables, ward and recall start all fail (`restrictions()`=63); `set_priority` works. A stun cancels recall, tribute (gems kept) and teleport (crystal already spent). Marcella: stun cast succeeds but applies nothing.
+- **Kills.** Vesper last hit on Tavi carrying 48 gems: `mygold=60 mygems=48` (50 × 1.2 + all gems). Tavi kill: +50. Assisters' gold unchanged (assist_gold 0); stats count assists. Victim keeps its gold. Vendetta kill: `cd0=0 cd1=0`. Kills only visible in `--statistics`. Issac's death killed Cassi too (order probe).
+- **Death/respawn.** Dead: `is_alive=0`, position (-1,-1), keeps gold and items, shops anywhere. Exactly 60 dead turns; respawns at the start of the 61st (killed after own turn in round D → D+61; before it, incl. camp kills at round start → D+60), on any free own spawn tile, full health, cooldowns 0, no gems, items kept. Undocumented: on the respawn turn it cannot move, attack or cast (ward, shop, priority OK).
+- **Recall.** Start round R → arrive at turn start of R+5 (R+3 with Home); arrival turn fully actionable. Any damage (champion or camp) or stun cancels. Cancel then restart in the same turn: `recall_already_used`.
+- **Spawn.** On own spawn, health is set to full at the end of each of the champion's turns (spawn_healing 1.0). Buying Health on spawn heals by the gain. Enemies cannot enter your spawn; there is no damage protection on spawn.
+
+## Camps (`probe-camps` with `#define SCENARIO`/`K_OUT`, `probe-camps-b` passive; packs/elkring/lanes/monolith, `--fuel 5000000`)
+
+- **Wake.** Standing in range 4 rounds: no attacks; one hit on wolf A (packs) → both wolves of the group attack from the next round (-40/round). Hitting the gold cluster of an elk+cluster group wakes the elk. Spell damage wakes too. Only damage wakes; the whole group wakes. Awake/asleep is not exposed by the SDK.
+- **Sleep.** One hit, then stay in range without attacking: attacked for 16+ rounds. Step out for K camp phases: K=1 still awake; K=2 asleep (returning does not re-wake). Spell hits from outside range during those 2 phases don't prevent sleep. Conclusion: an awake group sleeps after 2 consecutive camp phases with no champion (either team) within its range; damage does not reset this. Contradiction: docs prose "does not take damage for 2 turns". No regeneration (asleep wolf 1305/1350 for 144 rounds).
+- **Attack.** One attack per monster per round in the camp phase, damage = strength (20/60/200, integer). Wolf woken in round r first hits in round r+1. Range Chebyshev 3 for every kind; Monolith hits at C3, not C4–C6. Contradiction: docs table says Monolith range 5. Camps never move. Clusters (strength 0) never damage.
+- **Targeting.** Each monster independently attacks the nearest champion in range by Chebyshev distance (either team, attacker or not); ties → lowest champion id (not health, priority, team or Euclidean distance); re-evaluated every round.
+- **Bushes.** A champion in a bush is attacked. Walls between camp and target: untestable (no wall within 2 of any camp on the shipped maps).
+- **Ren.** Retaliation triggers on camp attacks (each attacking wolf loses 20 = 0.2 × Focus per hit).
+
+## Lingering effects and passives (`probe-effects` with `#define RUN 1|2|3`, `probe-effects-b`; interlock, `--fuel 50000000`)
+
+- **No lingering areas.** Ryth (r41), Stellar (r61), Prism (r81) cast on (11,19): each cluster of the row loses exactly modifier × Focus once (100, 140, 80) and nothing later; an enemy stepping into the area the same round is untouched. Ryth's `duration=1` is its stun. The earlier unexplained 50 was Ryth's own basic attack after the cast.
+- **Stuns on camps.** Ryth area, Cassi, Prism, Ren and Marcella's enhanced attack on an awake wolf: the wolf skips exactly its next camp-phase attack (e.g. Ryth hp 1140 at 33 → 1140 at 34 → 1120 at 35).
+- **Varg shield.** Cast round 33: `shield:d=5,v=250`, then d=4..1 with 20 absorbed per wolf hit; round-38 hit absorbed; removed at Varg's round-38 turn start; leftover (~150) lost. Conclusion: absorbs before health; lasts 5 owner turn-ends incl. the cast turn.
+- **Buff timing (unifying rule).** Buffs lose 1 at each owner turn end and are removed at the owner's next turn start after reaching 0 — consistent with the stun, shield and enhanced-attack logs.
+- **Marcella.** Enhanced attack: normal damage plus a one-turn stun (wolf skipped its attack). Unused, the buff is gone at her next turn start.
+- **Varg splash.** Attack on (28,21): (27,21),(28,21),(29,21) all 500→450; attack on (27,21): (29,21), 2 tiles away, unhit. Primary not hit twice. Diagonal splash untested.
+- **Ren / Prism / Vendetta.** Ren retaliation 20 per camp hit taken. Prism Focus 80 → 94.4 with 72 gems (+0.2/gem). Vendetta: cluster kill sets both cooldowns to 0 within the turn.
+
+## Monolith, contest, modifiers, altar locks (`probe-misc`, `probe-misc-b`; `bash rules-verification/probes/probe-misc/run.sh <scenario> <map> <rounds>`, fuel 5e7)
+
+- **Monolith range.** Scenario 1, monolith map: Vesper hit at C3 (rounds 71, 73, 75), never at C4 (72, 74); Tavi at diagonal C3 hit 3 rounds running; Ryth at C4/C5 untouched. Conclusion: Chebyshev 3, 200 per hit. Contradiction: docs table says 5. Its 8 surrounding gem clusters block melee access but not ranged attacks.
+- **Capture contest.** Scenario 2, packs: enemies adjacent to (not on) the spawn tiles don't contest (paid at normal time). Enemy on another spawn tile of the group from round 82 to 92: no payout; paid at round 98 = 6 uncontested phases (93–98) after it left; the enemy got nothing. Conclusion: an enemy on any spawn tile of the group blocks and resets progress.
+- **Damage modifiers.** Scenario 3: wolf hit on Ryth 20 → Jungle 14.000 → Jungle + Durability 12.600 (multiplicative, unrounded; health is float). Vendetta Strength 95 with Monster emblem deals 104.5 to wolves. Ryth Strength 50 → 55 with +500 health (1%).
+- **Altar lock.** Scenario 4/5, packs, altar (2,15): place from (5,15) `altar_lock_out_of_range`, from offset (2,2) OK (Chebyshev 2). Placing cancels every tribute channel at the altar, both teams' (Vendetta's and Varg's 16-gem tributes both cancelled, gems kept). The owner team can still tribute there. An enemy tribute attempt instead removes 1 hit and spends its basic attack (follow-up attack error 41); basic attacks remove it in 3 hits (ranged works); spells don't affect it. One lock per team per altar (second own lock error 120; the other team may add its own). No expiry over 454 rounds. Contradiction: docs item table says placing cancels "enemy channels"; GameRules "cancels existing tribute channels at that altar" is accurate.
+- **Health purchase.** On spawn: current and max +growth. Tavi in the field: max only. Dead: max only, respawning at the new full health.
+- **Inventory.** 18 items / 17 distinct types bought without `inventory_full`; any cap is above that (untested further).
+
+## Still untested (YAML follows the docs or omits)
+
+Walls between a camp and its target (no shipped map allows it); diagonal Varg splash; Durability alone and Monster on spells; gem remainder in uneven splits; gems gained mid-tribute; Treasure on kill gold; Tavi selling; whether shield-absorbed damage cancels recall; bush cluster connectivity (4- vs 8-neighbour); any inventory cap above 18 items; whether wards block walking.

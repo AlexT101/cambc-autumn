@@ -1,0 +1,207 @@
+result:
+  win: "A team reaching 1000 tributed gems wins immediately."
+  round_limit: "After round 2000, more tributed gems wins, then more lifetime gold earned, then more champion kills. A full tie goes to team B."
+  hidden_scores: "Bots can read both teams' tributed gems, but not gold earned or kills."
+
+map:
+  size: "From 30x30 up to 100x100 tiles."
+  coordinates: "(x, y), origin (0, 0) at the bottom-left; x increases east, y increases north."
+  distance: "Ranges, radii, areas and \"nearest\" use Chebyshev distance, so areas are squares."
+  symmetry: {horizontal: "(x, y) -> (W-1-x, y)", vertical: "(x, y) -> (x, H-1-y)", rotational: "(x, y) -> (W-1-x, H-1-y)"}
+  symmetry_rule: "The map's symmetry maps team A's spawn, terrain, altars and camps onto team B's."
+  tiles:
+    wall: "Blocks walking, landing and dash paths. Opaque, and never visible itself."
+    hole: "Blocks walking and landing; dash paths may cross it; transparent."
+    bush: "Walkable."
+    altar: "Blocks walking and landing; dash paths may cross it."
+  occupancy: "One unit per tile. Champions, camps and pending teleport destinations block walking and landing."
+  spawn: "Each team has a spawn region (3x3 or 4x4 on the competition maps). Enemies can never enter or land on it, but they can attack into it."
+
+draft:
+  picks: "The map sets 3-5 picks per team. There is one draft round per pick, numbered from 0, and both teams pick each round."
+  visibility: "A pick stays hidden from both teams until both have picked that round."
+  rules: "One pick per draft turn. Repeating your own pick is an error and does not spend the turn. Both teams may pick the same champion."
+  missed: "A draft turn that ends without a pick, by yield, fuel exhaustion or crash, makes that pick and every later pick random. The team's draft bot is not run again."
+  information: "The draft bot sees terrain, spawns, altars and camp groups, but no live unit state."
+  ids: "Champion ids run in pick order: all of team A's champions, then team B's. Cassi comes before Issac. Id ties go to the lowest id."
+  start: "Champions start on their own spawn tiles at full health with 0 gold."
+
+rounds:
+  numbering: "Play rounds are numbered 1-2000."
+  sequence:
+    - "Camp respawns."
+    - "Spell and ward updates."
+    - "Captures."
+    - "Camp turns: each awake monster attacks."
+    - "Champion turns."
+  champion_order: "Team A starts odd rounds and team B even rounds. Teams alternate one champion at a time; once one team has no turns left, the other's remaining champions act in a row."
+  team_order: "Within a team, higher priority acts first and ties go by id. Priority is any int32 and starts at 0. A new priority applies from the next round and persists."
+  turn_start: "Resolve timers that reached 0, in order: respawn, ward recharge, buff and shield expiry, channel completion."
+  turn_end: "On own spawn, heal to full. Then tick ability cooldowns, buffs, shields, channels and the respawn timer."
+
+timers:
+  channels: "Recall, tribute (SDK: submit gems) and teleport tick at the owner's turn ends, counting the start turn, and complete at the owner's next turn start after reaching 0."
+  buffs: "Buffs (stun, shield, enhanced attack) lose 1 duration at each owner turn end and are removed at the owner's next turn start after reaching 0."
+
+turn:
+  walk: "One step to any of the 8 neighbours."
+  attack: "One basic attack: Strength damage to a visible enemy champion, camp or enemy altar lock in range. Melee range is 1, ranged range is 3."
+  melee: "Walking and attacking are independent."
+  ranged: "A walk or a basic attack spends both."
+  cast: "One successful ability cast per turn across both slots."
+  free: "Wards, shopping, consumables and priority spend no walk, attack or cast."
+  errors: "A rejected action raises an error and spends nothing."
+  hidden_blocker: "An action whose destination holds an unseen unit returns false and spends nothing. That tile is revealed to the acting champion for the rest of the round; targeting it again that round is an error."
+  channelling: "While channelling, the only possible action is cancelling a recall or tribute. Actions taken before starting a channel stand. A teleport cannot be cancelled."
+  channel_limits: "Recall and tribute can each be started once per turn; cancelling does not refund the start."
+
+abilities:
+  cooldown: "A slot cast in round t can be cast again in round t+8."
+  scaling: "Amounts are a multiplier x current Focus."
+  range: "Targeted abilities have range 4; dashes have range 2."
+  unit_target: "Needs a visible target of an allowed kind."
+  ground_target: "Any tile in range, including walls and unseen tiles. The 3x3 area around it hits enemy champions (even unseen ones) and camps, never allies or the caster, once on cast."
+  exclusive: "An excludes-walking spell cannot be cast after walking this turn, and walking is forbidden after it. No spell spends the walk or the basic attack."
+  attack_reset: "Self-cast. Restores a spent basic attack, never the walk, and fails while the attack is unspent. A ranged champion can walk, reset, then attack."
+  dash: "Move to a free tile in range by a path of at most 2 king steps. The path may cross holes, altars and champions, but not walls or camps. A dash spends neither the walk nor the attack."
+  stun: "Lasts 1: it removes the target's next turn (no walking, attacking, casting, shopping, consumables, wards or recall start; priority can still be set) and cancels its recall, tribute or teleport. A stunned camp skips its next attack."
+
+combat:
+  modifiers: "Damage modifiers multiply and are never rounded. Health, damage and Strength are fractional."
+  kill: "The champion landing the killing blow gets 50 gold and all of the victim's carried gems. Assists give nothing. The victim keeps its gold and items."
+  camp_kill: "A champion killed by a camp loses its carried gems."
+
+camps:
+  types:
+    wolf: {health: 1350, strength: 20, gold: 90, gems: 22, respawn: 40}
+    elk: {health: 2400, strength: 60, gold: 160, gems: 36, respawn: 60}
+    gem_cluster: {health: 500, strength: 0, gold: 0, gems: 24, respawn: 50}
+    gold_cluster: {health: 500, strength: 0, gold: 35, gems: 0, respawn: 50}
+    monolith: {health: 20000, strength: 200, gold: 300, gems: 200, respawn: 150}
+  groups: "Cardinally connected monsters form a group. A group wakes together and shares one reward, the sum of its members'. Its camp tiles are where its monsters stand."
+  wake: "A sleeping group wakes when any member takes damage."
+  sleep: "An awake group sleeps after 2 consecutive camp phases with no champion within range 3. Damage does not keep it awake. Camps never regenerate."
+  attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within range 3; ties go to the lowest id. Bushes do not hide champions from camps. Clusters never deal damage. Monsters never move."
+  state: "Bots cannot read whether a camp is awake or how far a capture has progressed."
+
+capture:
+  condition: "After every monster in a group dies, the group stays empty until captured. A team captures it by standing on any of its camp tiles while no enemy stands on any. Adjacent tiles do not count."
+  timing: "If first held during round R, the reward is paid at the capture phase of round R+6. A capture phase where the tiles are empty or contested resets progress."
+  reward: "Allies on the camp tiles at payout split the gems and gold. Each gets the floor share, and the lowest id also gets the remainder."
+  respawn: "At payout the group's timer is set to its longest member respawn. The group returns at the start of round payout + timer, or later while any of its camp tiles is occupied."
+
+gems:
+  carried: "Carried gems score nothing until tributed."
+  tribute: "Start a tribute within 1 of an altar while carrying at least 1 gem. The channel lasts max(1, ceil(starting gems / 10)) turn ends. On completion the whole current bag is scored. Damage does not interrupt it. Stun or a lock placed on that altar cancels it, and the gems stay carried."
+
+altar_locks:
+  place: "Place a carried lock on an altar within 2. Each team can have at most one lock per altar."
+  effect: "Placing a lock cancels every tribute channel at that altar, both teams'. A lock blocks only the other team's tributes."
+  removal: "Three basic attacks by the other team remove a lock; spells do not affect it. An enemy tribute attempt at a locked altar counts as one of those attacks and spends the basic attack. Locks never expire."
+
+economy:
+  gold: "Gold is earned only from capture shares and kill gold; there is no passive income. Gold is fractional; gold_count shows the floor."
+  bonuses: "Gold bonuses (Vesper Vale +20%, Treasure +20%) add and apply to each capture share and to kill gold, not to gems."
+  shop: "Buy any number of items on your own spawn or while dead. Only Tavi sells."
+  shards: "30 gold each; a shard adds the champion's growth in its stat. Each emblem family has a Strength, Health and Focus shard. Five identical shards combine automatically into that emblem. Emblems cannot be bought directly."
+  emblems: {monster: "+10% damage to camps", power: "stats of 6 shards, no passive", durability: "-10% damage taken", treasure: "+20% gold", jungle: "-30% damage from camps", home: "recall takes 3 turn ends", bruiser: "stats of 5 shards plus one shard of each other stat, no passive"}
+  stacking: "Shard stats stack across duplicate emblems; a family's passive applies once."
+  health_purchase: "Health bought on your own spawn also heals by the amount gained. Bought anywhere else, it raises max health only."
+  consumables: {teleport_crystal: {cost: 10, carry: 1}, altar_lock: {cost: 10, carry: 1}}
+
+vision:
+  champion: "A 17x17 square (radius 8), using symmetric shadowcasting from the champion's tile."
+  occlusion: "Walls and bushes block sight; holes do not. A bush tile cannot be seen from outside. From inside a bush you see your whole connected bush cluster and beyond it. Attacking from a bush does not reveal the attacker."
+  personal: "Each champion sees only from its own position and its own ward, never with teammates' vision."
+  unseen_units: "For a champion (ally or enemy) or camp out of your vision, only whether it is alive can be read."
+
+wards:
+  placement: "Place on any tile within 2, unseen tiles included. Walls, holes, altars, enemy spawn and tiles with an allied ward are not allowed."
+  rate: "Each champion has one ward. It can be placed once per round, recharging at the owner's next turn start. A new ward replaces the old one."
+  vision: "A 13x13 square (radius 6), shadowcast from the ward's tile."
+  lifetime: "Wards never expire, take no damage and outlive their owner's death."
+
+recall:
+  channel: "Recall lasts 5 turn ends and then moves the champion to its own spawn with its gems. Any damage or stun cancels it. The arrival turn is a full turn."
+
+teleport_crystal:
+  target: "Any open or bush tile within 3, unseen tiles included, ignoring terrain in between. Walls, holes, altars, camps, enemy spawn and occupied tiles are not allowed."
+  channel: "The crystal is consumed at the start. The channel lasts 3 turn ends. Units that can see the destination cannot enter it until arrival. Death cancels it; damage does not."
+
+death:
+  dead_turns: "A dead champion's bot still runs each turn, sees only through its ward, and can only shop."
+  respawn: "A champion that died in round D respawns at its turn start in round D+61, or D+60 if it died before its own turn that round. It needs a free own spawn tile and returns with full health, both abilities ready, no gems and its items."
+  respawn_turn: "It cannot walk, attack or cast on its respawn turn."
+
+memory:
+  shared: "Each team has 8 zero-initialised bytes that all its champions can read and write all match. A write is visible immediately to teammates who act later."
+  draft: "1024 zero-initialised bytes, written in the draft and read-only in play. A write overwrites only the bytes it covers, starting at byte 0."
+
+fuel:
+  budget: "Each turn has 100000 fuel. Each bot's first turn gets more: 10x for the draft bot, 2x for a champion. About 21000 of that first turn goes on start-up. Unused fuel is lost."
+  exhaustion: "Running out suspends the bot; the rest of that turn is lost. Next round it resumes where it stopped, as that round's turn, with a fresh budget and allowances."
+  draft_exhaustion: "A draft bot that runs out after picking resumes in the next draft round."
+  stdout: "Each team's output is capped at 1 MiB."
+
+champions:
+  defaults: "Vision 8, walk 1. Abilities are slots 0 and 1 in list order. Stats are [base, growth per shard]."
+  ability_keys: {target: "unit (a visible enemy champion or camp), ground, self, or ally (another allied champion)", exclusive: "excludes walking"}
+  ryth:
+    attack: melee
+    stats: {health: [1200, 100], strength: [50, 5], focus: [100, 10]}
+    passive: "Gains Strength equal to 1% of health above base."
+    abilities: [{damage: 1, stun: true, target: ground, exclusive: true}, attack_reset]
+  vesper_vale:
+    attack: ranged
+    stats: {health: [900, 100], strength: [45, 5], focus: [100, 10]}
+    passive: "+20% gold."
+    abilities: [attack_reset, dash]
+  prism:
+    attack: ranged
+    stats: {health: [700, 75], strength: [35, 3.5], focus: [80, 10]}
+    passive: "+0.2 Focus per carried gem."
+    abilities: [{damage: 1.5, stun: true, target: unit, exclusive: true}, {damage: 1, target: ground, exclusive: true}]
+  stellar:
+    attack: ranged
+    stats: {health: [750, 75], strength: [35, 3.5], focus: [100, 10]}
+    abilities: [{damage: 2, target: unit, exclusive: true}, {damage: 1.4, target: ground, exclusive: true}]
+  vendetta:
+    attack: melee
+    stats: {health: [800, 100], strength: [70, 5], focus: [100, 10]}
+    passive: "Killing a champion or monster readies both abilities."
+    abilities: [attack_reset, dash]
+  marcella:
+    attack: melee
+    stats: {health: [1200, 100], strength: [45, 5], focus: [50, 10]}
+    passive: "Immune to stuns."
+    abilities: ["attack_reset; her next basic attack this turn also stuns", {damage: 2, target: unit, exclusive: true}]
+  tavi:
+    attack: ranged
+    stats: {health: [750, 75], strength: [35, 5], focus: [100, 10]}
+    passive: "Buys shards anywhere; consumables still need spawn or death. On spawn, sells items for their full price; refunds are not earned gold."
+    abilities: [attack_reset, {damage: 2.2, stun: true, target: unit, exclusive: true}]
+  willow:
+    attack: ranged
+    stats: {health: [700, 50], strength: [45, 3], focus: [105, 5]}
+    abilities: [{heal: 3, target: ally}, attack_reset]
+  ren:
+    attack: melee
+    stats: {health: [900, 100], strength: [40, 5], focus: [100, 10]}
+    passive: "When damaged, deals 0.2x Focus to the attacker (monsters included), even while dying."
+    abilities: [{damage: 1.25, stun: true, target: unit, exclusive: true}, dash]
+  varg:
+    attack: melee
+    stats: {health: [1000, 100], strength: [50, 5], focus: [100, 10]}
+    passive: "Basic attacks also deal Strength to other enemy champions and camps within 1 of the target."
+    abilities: [attack_reset, {shield: 2.5, target: self, duration: 5}]
+    shield: "Absorbs damage before health; leftover is lost on expiry."
+  cassi_and_issac:
+    passive: "One pick, two bodies with separate turns, positions, bags and abilities. If either dies, both die, giving one kill reward and both bags."
+    cassi:
+      attack: ranged
+      stats: {health: [700, 71.25], strength: [30, 3.5], focus: [70, 15]}
+      abilities: [{damage: 2, target: unit, exclusive: true}, {stun: true, target: unit}]
+    issac:
+      attack: melee
+      stats: {health: [900, 95], strength: [40, 4.75], focus: [100, 10]}
+      abilities: [attack_reset, dash]
