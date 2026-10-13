@@ -9,7 +9,7 @@ Work from these two. Read `docs/` or `rules-verification/` only if they can't an
 
 ## Language
 
-The bot is **C++ only**. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:
+The bot is **C++ only**, in [bots/aphelios/](bots/aphelios/); `bots/starter-cpp` is reference only. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:
 
 - [docs/handbook/](docs/handbook/) and [docs/champions/](docs/champions/): game rules, superseded by the YAML
 - [docs/guides/cpp/](docs/guides/cpp/): C++ guides
@@ -27,10 +27,12 @@ Options: `--threads N` (default 16), `--one-side` (one game per map, sides drawn
 
 ## Docs
 
-[docs/](docs/README.md) mirrors the online handbook, champion pages, guides and API reference (all four languages), with images. Regenerate with `cd tools/docs-sync && npm install && node sync.mjs`; never edit by hand.
+[docs/](docs/README.md) mirrors the online handbook, champion pages, guides and API reference (all four languages), with images. Regenerate with `cd tools/docs-sync && npm install && node sync.mjs`; never edit by hand. WebFetch can't read the site; use `docs/`.
 
 ## Rules verification
 
-[rules-verification/](rules-verification/) holds the engine tests behind the YAML: [summary.md](rules-verification/summary.md) (doc conflicts, open questions), [findings.md](rules-verification/findings.md) (evidence) and probe bots in `probes/`. Run probes by path with a large `--fuel`, e.g. `cambc run rules-verification/probes/<A> rules-verification/probes/<B> --map <map> --fuel 50000000`.
+Avoid `rules-verification/` unless necessary: its conclusions are already in the YAML. The engine is closed source, so behaviour is settled by probes. [rules-verification/](rules-verification/) holds the engine tests behind the YAML (keep investigation material there): [summary.md](rules-verification/summary.md) (doc conflicts, open questions), [findings.md](rules-verification/findings.md) (evidence) and probe bots in `probes/`. Run probes by path with a large `--fuel`, e.g. `cambc run rules-verification/probes/<A> rules-verification/probes/<B> --map <map> --fuel 50000000`.
+
+Fuel: WASM-side loops, sorting and hashing are costly; host bitboard and distance-field calls are cheap (costs in `findings.md`).
 
 If engine behaviour contradicts the YAML, tell the user immediately. Then confirm it with a probe and update both the YAML and `findings.md`.
