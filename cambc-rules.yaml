@@ -23,6 +23,7 @@ draft:
   rules: "One pick per draft turn. Repeating your own pick is an error and does not spend the turn. Both teams may pick the same champion."
   missed: "A draft turn that ends without a pick, by yield, fuel exhaustion or crash, makes that pick and every later pick random. The team's draft bot is not run again."
   information: "The draft bot sees terrain, spawns, altars and camp groups, but no live unit state."
+  in_play: "Champions can read both teams' complete picks all match, so every enemy champion's type is known from round 1."
   ids: "Champion ids run in pick order: all of team A's champions, then team B's. Cassi comes before Issac."
   start: "Champions start on their own spawn tiles at full health with 0 gold."
 
@@ -109,6 +110,7 @@ vision:
   occlusion: "Walls and bushes block sight; holes do not. A bush tile cannot be seen from outside. From inside a bush you see your whole connected bush cluster and beyond it. Attacking from a bush does not reveal the attacker."
   personal: "Each champion sees only from its own position and its own ward, never with teammates' vision."
   unseen_units: "For a champion (ally or enemy) or camp out of your vision, only whether it is alive can be read."
+  visible_champions: "A visible champion, enemy or ally, exposes its type, position, health, Strength, Focus, state, gems, items, buffs, restrictions, ability cooldowns, channel time and priority. Gold is readable only for yourself."
 
 wards:
   placement: "Place on any tile within 2, unseen tiles included. Walls, holes, altars, enemy spawn and tiles with an allied ward are not allowed."
