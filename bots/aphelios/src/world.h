@@ -6,6 +6,7 @@
 #include <cambc.h>
 #include <array>
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -20,7 +21,7 @@ namespace aph {
 //
 // The core is built eagerly on the first play turn. Derived parts (distance fields, masks, step
 // counts, bush clusters) cost too much fuel to build all at once on large maps, so each is
-// computed on first use and memoised; StaticMap::warm_up() pre-fills them with spare fuel.
+// computed on first use and memoised; StaticMap::warm_up() pre-fills most with spare fuel.
 //
 // Fuel note: WASM-side compute costs roughly 10 fuel per simple loop iteration (sorting 120 pairs
 // costs ~45k, an unordered_map ~70k), while host-side bitboard and distance-field operations cost
@@ -80,12 +81,11 @@ private:
     mutable std::optional<int> ally_steps_, enemy_steps_;
 };
 
-// A connected set of bush tiles (8-connected; the engine's connectivity is untested).
-// From inside a cluster you see the whole cluster; from outside you see none of it.
+// An edge-connected set of bush tiles (diagonal bushes are separate clusters). From inside a
+// cluster it is see-through, within the usual vision square; from outside you see none of it.
 struct BushCluster {
     bitboard tiles;
     int size = 0;
-    vec2 centre;
 };
 
 struct StaticMap {
@@ -115,8 +115,11 @@ struct StaticMap {
     // Walking steps over static terrain (camps and units ignored).
     const Field& from_ally_spawn() const;  // ours, from our spawn
     const Field& from_enemy_spawn() const; // theirs, from their spawn
-    const std::vector<BushCluster>& bush_clusters() const;
-    int bush_cluster_at(vec2 p) const; // -1 if not a bush
+    // The cluster holding bush tile p, found on first use.
+    const BushCluster& bush_cluster(vec2 p) const;
+    // Tiles from which p is in sight within Chebyshev `radius`: the engine's shadowcast, with
+    // walls and every bush cluster but the viewer's own opaque.
+    bitboard viewers(vec2 p, int radius) const;
 
     // Compute derived parts while more than `fuel_floor` fuel remains; true once all are done.
     bool warm_up(std::uint64_t fuel_floor) const;
@@ -125,7 +128,9 @@ private:
     friend class World;
     std::vector<std::uint8_t> group_lookup_; // per tile, row-major: group index + 1, or 0
     mutable std::optional<Field> ally_field_, enemy_field_;
-    mutable std::optional<std::vector<BushCluster>> bush_clusters_;
+    mutable std::deque<BushCluster> bush_clusters_; // found so far; references stay valid
+    mutable std::optional<bitboard> diagonal_links_;
+    const bitboard& diagonal_links() const; // bushes with a bush diagonal neighbour joined only diagonally
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -229,8 +234,9 @@ class World {
 public:
     // Start of each play turn. The first call also builds the static map.
     void update();
-    // Re-read vision after acting, so comms and the next turn see what moving revealed.
+    // Re-read vision and the champions in it after moving.
     void observe();
+    static constexpr std::uint64_t observe_cost_estimate = 3000; // 0.8-1.6k measured
 
     // Merge a teammate's sighting (from comms); ignored if not fresher than ours.
     void note_sighting(int enemy_index, vec2 pos, int round);

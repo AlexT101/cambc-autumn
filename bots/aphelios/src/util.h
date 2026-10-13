@@ -71,6 +71,13 @@ inline std::uint64_t field_cost_estimate() {
 }
 inline constexpr std::uint64_t small_cost_estimate = 5000; // a few masks or step counts
 
+// Generous fuel estimate for a search capped at `layers` steps. Measured: about one fuel per four
+// map tiles to set up, then one per 64 tiles (a bitboard word) per layer, whatever the area reached.
+inline std::uint64_t search_cost_estimate(int layers) {
+    const auto area = static_cast<std::uint64_t>(cambc::map::width() * cambc::map::height());
+    return area / 2 + 1000 + static_cast<std::uint64_t>(layers) * (area / 32 + 40);
+}
+
 // Check before optional expensive work: running out suspends the bot and the rest of the turn
 // spills into the next round.
 inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }

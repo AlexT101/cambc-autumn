@@ -32,8 +32,9 @@ void write(const Message& message);
 
 // Merge teammates' information into the world (start of turn).
 void receive(World& world);
-// Publish what this instance learned this turn (end of turn).
-void send(const World& world);
+// Publish what this instance learned this turn (end of turn). With `refresh`, vision is re-read
+// first, but only once there is something to post.
+void send(World& world, bool refresh);
 
 } // namespace comms
 } // namespace aph

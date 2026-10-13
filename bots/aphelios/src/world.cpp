@@ -220,34 +220,58 @@ const Field& StaticMap::from_enemy_spawn() const {
     return *enemy_field_;
 }
 
-const std::vector<BushCluster>& StaticMap::bush_clusters() const {
-    if (!bush_clusters_) {
-        // Flood from each bush tile not yet covered, through bushes only.
-        FuelMeter meter{"bush_clusters"};
-        std::vector<BushCluster> clusters;
-        const auto not_bush = ~bushes;
-        bitboard covered;
-        for (auto start : bushes.positions()) {
-            if (covered.is_set(start)) continue;
-            BushCluster c;
-            c.tiles = not_bush.reachable_tiles(start, static_cast<std::uint16_t>(width * height));
-            const auto tiles = c.tiles.positions();
-            c.size = static_cast<int>(tiles.size());
-            c.centre = central_tile(tiles);
-            covered |= c.tiles;
-            clusters.push_back(std::move(c));
+const BushCluster& StaticMap::bush_cluster(vec2 p) const {
+    for (const auto& c : bush_clusters_)
+        if (c.tiles.is_set(p)) return c;
+    FuelMeter meter{"bush_cluster"};
+    // The host floods 8-connected. That cluster is edge-connected too unless it holds a pair of
+    // bushes joined only diagonally; then grow from p by edge steps within it.
+    auto tiles = (~bushes).reachable_tiles(p, static_cast<std::uint16_t>(width * height));
+    if (!(tiles & diagonal_links()).is_empty()) {
+        auto grown = single(p);
+        for (;;) {
+            auto next = (grown | grown.shift_right(1) | grown.shift_right(-1) | grown.shift_up(1) | grown.shift_up(-1)) & tiles;
+            if (next == grown) break;
+            grown = std::move(next);
         }
-        bush_clusters_ = std::move(clusters);
+        tiles = std::move(grown);
     }
-    return *bush_clusters_;
+    BushCluster c;
+    c.size = static_cast<int>(tiles.count());
+    c.tiles = std::move(tiles);
+    bush_clusters_.push_back(std::move(c));
+    return bush_clusters_.back();
 }
 
-int StaticMap::bush_cluster_at(vec2 p) const {
-    if (!bushes.is_set(p)) return -1;
-    const auto& clusters = bush_clusters();
-    for (int i = 0; i < static_cast<int>(clusters.size()); ++i)
-        if (clusters[i].tiles.is_set(p)) return i;
-    return -1;
+const bitboard& StaticMap::diagonal_links() const {
+    if (!diagonal_links_) {
+        // Bit a: bushes at a and a+(dx,dy) with neither tile between them a bush.
+        const auto at = [&](int dx, int dy) { return bushes.shift_right(-dx).shift_up(-dy); };
+        const auto rise = bushes & at(1, 1) & ~at(1, 0) & ~at(0, 1);
+        const auto fall = bushes & at(-1, 1) & ~at(-1, 0) & ~at(0, 1);
+        diagonal_links_ = rise | fall;
+    }
+    return *diagonal_links_;
+}
+
+bitboard StaticMap::viewers(vec2 p, int radius) const {
+    // Sight is symmetric for a fixed opaque set, so the tiles that see p are those p would see
+    // with each kind of viewer's opaque set. A viewer outside bushes sees through none, and never
+    // into one; a viewer in a cluster sees through that cluster only.
+    const auto r = static_cast<std::uint16_t>(radius);
+    const auto cast_from_inside = [&](const bitboard& cluster) {
+        return (walls | (bushes & ~cluster)).shadow_cast(p, r) & cluster;
+    };
+    if (bushes.is_set(p)) return cast_from_inside(bush_cluster(p).tiles);
+    auto out = (walls | bushes).shadow_cast(p, r);
+    // Each cluster in reach, once: take its tiles off the remaining bushes as it is cast.
+    auto left = bushes & square(p, radius);
+    while (!left.is_empty()) {
+        const auto& cluster = bush_cluster(left.positions().front()).tiles;
+        out |= cast_from_inside(cluster);
+        left &= ~cluster;
+    }
+    return out;
 }
 
 bool StaticMap::warm_up(std::uint64_t fuel_floor) const {
@@ -279,9 +303,6 @@ bool StaticMap::warm_up(std::uint64_t fuel_floor) const {
         a.enemy_steps();
         a.lock_tiles();
     }
-    // About 100 fuel per bush tile plus a few thousand per cluster.
-    if (!bush_clusters_ && !afford(150 * static_cast<std::uint64_t>(bushes.count()) + 10000)) return false;
-    bush_clusters();
     return true;
 }
 
@@ -433,6 +454,7 @@ void World::build_static() {
 // ---------------------------------------------------------------------------------------------
 
 void World::init_beliefs() {
+    FuelMeter meter{"init_beliefs"};
     const auto& s = map();
     plan = read_draft_plan();
     const auto self_handle = static_cast<cambc::handle_champion_t>(cambc::self());

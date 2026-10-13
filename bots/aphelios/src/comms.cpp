@@ -61,11 +61,12 @@ void receive(World& world) {
     if (m.sighting) world.note_sighting(m.sighting->enemy_index, m.sighting->pos, m.sighting->round);
 }
 
-void send(const World& world) {
+void send(World& world, bool refresh) {
     // Placeholder policy: post an enemy we see now, unless the slot already holds a sighting from
     // this round. Rotate from the posted index so several visible enemies take turns.
     auto m = read();
     if (m.sighting && m.sighting->round >= world.round) return;
+    if (refresh) world.observe();
     const int n = static_cast<int>(world.enemies.size());
     const int start = m.sighting ? m.sighting->enemy_index + 1 : 0;
     for (int k = 0; k < n; ++k) {

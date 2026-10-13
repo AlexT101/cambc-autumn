@@ -1,6 +1,5 @@
 // Placeholder behaviour, roughly the starter bot's. Replace freely.
 #include "bot.h"
-#include <algorithm>
 #include <array>
 #include "pathing.h"
 #include "world.h"
@@ -8,6 +7,9 @@
 namespace aph {
 
 namespace {
+
+// Steps a live route may add to the static walking distance before we give up on it.
+constexpr int max_detour = 16;
 
 void buy_shards(Memory& memory) {
     auto& me = cambc::self();
@@ -87,40 +89,44 @@ void bank_gems(const World& world, Pathing& pathing) {
 }
 
 // Head for the nearest group worth visiting: stand on a cleared one to capture it, otherwise get
-// in attack range of a live one. The Monolith is left alone.
+// in attack range and sight of a live member. The Monolith is left alone.
 void farm(const World& world, Pathing& pathing) {
     auto& me = cambc::self();
-    const auto& groups = world.map().groups;
+    const auto& map = world.map();
+    const auto& groups = map.groups;
     const int range = world.me().facts().attack_range();
     if (attack_camp(world) && !world.me().facts().walk_and_attack_independent()) return;
 
-    vec2 here = me.position();
-    const int on_group = world.map().group_at(here);
+    const vec2 here = me.position();
+    const int on_group = map.group_at(here);
     if (on_group >= 0 && world.camps[on_group].state == CampState::cleared) return; // capturing
 
-    // Shortlist the 3 nearest by straight-line distance, then compare walking steps.
-    std::array<std::pair<int, int>, 3> shortlist;
-    shortlist.fill({unreachable, -1});
+    // The nearest group by walking steps, skipping any that will still be respawning when we
+    // arrive (judged by straight-line distance).
+    auto candidates = map.camp_tiles;
     for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
         const auto& belief = world.camps[g];
-        if (groups[g].has_monolith) continue;
-        const int d = dist(here, groups[g].centre);
-        if (belief.state == CampState::respawning && belief.respawn_round - world.round > d) continue;
-        if (d >= shortlist[2].first) continue;
-        shortlist[2] = {d, g};
-        if (shortlist[2].first < shortlist[1].first) std::swap(shortlist[2], shortlist[1]);
-        if (shortlist[1].first < shortlist[0].first) std::swap(shortlist[1], shortlist[0]);
+        if (groups[g].has_monolith
+            || (belief.state == CampState::respawning && belief.respawn_round - world.round > dist(here, groups[g].centre)))
+            candidates &= ~groups[g].tiles();
     }
-    const Field* best = nullptr;
-    int best_steps = unreachable;
-    for (auto [d, g] : shortlist) {
-        if (g < 0) continue;
-        const Field& field = world.camps[g].state == CampState::cleared ? pathing.to_group(g)
-                                                                         : pathing.to_group_attack(g, range);
-        const int steps = field.at(here);
-        if (steps < best_steps) best = &field, best_steps = steps;
+    const auto nearest = pathing.nearest(candidates);
+    if (nearest.tiles.empty()) return;
+    const int best = map.group_at(nearest.tiles.front());
+    const int cap = nearest.steps + max_detour;
+    if (world.camps[best].state == CampState::cleared) {
+        pathing.step_towards(groups[best].tiles(), nullptr, cap);
+        return;
     }
-    if (best && pathing.step_towards(*best)) attack_camp(world);
+    auto goals = pathing.attack_tiles(best, range);
+    // Standing in range and sight with the attack unspent means the attack failed here (a belief
+    // was stale, say), so look for another tile rather than waiting.
+    if (goals.is_set(here) && me.can_attack()) goals.set(here, false);
+    if (goals.is_set(here)) return; // attacked from here; stay
+    if (!fuel_ok(search_cost_estimate(cap))) return;
+    // Failing a route to an attack tile, get next to the camp.
+    if (pathing.step_towards(goals, nullptr, cap) || pathing.step_towards(groups[best].adjacent(), nullptr, cap))
+        attack_camp(world);
 }
 
 // Ward the legal tile farthest from our spawn.

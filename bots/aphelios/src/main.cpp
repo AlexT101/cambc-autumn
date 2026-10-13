@@ -13,10 +13,9 @@
 
 namespace {
 
-// Fuel reserved for the end-of-turn phases, and the floor for spare-fuel precompute.
-constexpr std::uint64_t observe_reserve = 20000;
-// Printing the debug fuel log at the end of the turn costs a few thousand more.
-constexpr std::uint64_t warm_up_floor = aph::debug_fuel ? 25000 : 10000;
+// Fuel that optional work (refreshing vision, precompute) leaves for the rest of the turn, with
+// margin. Printing the debug fuel log at the end of a busy turn costs up to ~30k more.
+constexpr std::uint64_t end_reserve = aph::debug_fuel ? 40000 : 10000;
 
 template <class F> bool run(const char* phase, F&& f) {
     try {
@@ -68,15 +67,17 @@ struct Instance {
 
         // If fuel ran out mid-turn we resumed in a later round: skip the extras, start afresh next turn.
         if (world->is_stale()) return;
-        if (aph::fuel_ok(observe_reserve)) run("observe", [&] { world->observe(); });
-        run("comms send", [&] { aph::comms::send(*world); });
+        // Vision changes only if we moved, and only comms would read it again this turn.
+        const bool refresh = cambc::self().position() != world->me().pos
+                             && aph::fuel_ok(aph::World::observe_cost_estimate + end_reserve);
+        run("comms send", [&] { aph::comms::send(*world, refresh); });
         run("debug", [&] { world->debug_output(); });
         // Spend spare fuel on precompute until everything is cached.
         if (!warmed_up)
             run("warm up", [&] {
                 aph::FuelMeter meter{"warm_up"};
-                warmed_up = world->map().warm_up(warm_up_floor)
-                            && pathing->warm_up(world->me().facts().attack_range(), warm_up_floor);
+                warmed_up = world->map().warm_up(end_reserve)
+                            && pathing->warm_up(world->me().facts().attack_range(), end_reserve);
             });
         aph::print_fuel_log();
     }
@@ -87,10 +88,14 @@ struct Instance {
 int main() {
     Instance instance;
     while (true) {
+        const auto round = cambc::round_number();
         if (cambc::is_draft())
             instance.draft_turn();
         else
             instance.play_turn();
+        // Running out of fuel suspends the turn and resumes it in a later round; say so, rarely.
+        if (const auto now = cambc::round_number(); now != round)
+            std::cout << "r" << round << " turn ran out of fuel, finished in r" << now << std::endl;
         cambc::end_turn();
     }
 }
