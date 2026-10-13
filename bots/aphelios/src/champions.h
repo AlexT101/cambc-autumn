@@ -1,6 +1,4 @@
-// Champion fact table: what every champion type can do, ours and theirs, as data.
-// Transcribed from the roster in cambc-rules.yaml; check_facts_against_engine() compares it with
-// the engine's own design data.
+// Transcribed from cambc-rules.yaml; check_facts_against_engine() compares it with the engine.
 #pragma once
 #include <cambc.h>
 #include <algorithm>
@@ -94,7 +92,6 @@ struct ChampionFacts {
             if (a.target == Targeting::ground && a.hits_enemies()) return true;
         return false;
     }
-    // Slot of the first ability of a kind, or -1.
     constexpr int slot_of(AbilityKind kind) const {
         for (int s = 0; s < 2; ++s)
             if (abilities[s].kind == kind) return s;

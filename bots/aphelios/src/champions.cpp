@@ -10,7 +10,6 @@ namespace {
 
 bool close(float a, float b) { return std::fabs(a - b) < 1e-3f; }
 
-// Compare one slot; returns an empty string when it agrees with the table.
 std::string compare_ability(const AbilityFacts& want, const cambc::ability& slot) {
     const auto& info = slot.info();
     if (!info) return want.kind == AbilityKind::none ? "" : "engine slot empty";

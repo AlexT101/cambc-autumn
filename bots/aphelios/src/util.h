@@ -1,4 +1,3 @@
-// Small helpers shared by every file: geometry, fuel, randomness and debug output.
 #pragma once
 #include <cambc.h>
 #include <cstdint>
@@ -18,7 +17,6 @@ inline constexpr bool debug_draw = false;   // world beliefs as indicator dots a
 inline constexpr bool debug_fuel = false;   // fuel used by each phase of the turn
 inline constexpr int debug_log_period = 10; // rounds between summaries
 
-// Chebyshev distance, the game's distance for ranges and areas.
 inline int dist(vec2 a, vec2 b) { return static_cast<int>(a.chebyshev_distance(b)); }
 
 inline bool in_bounds(vec2 p) { return cambc::map::is_in_bounds(p); }
@@ -37,7 +35,6 @@ inline bitboard single(vec2 p) {
     return b;
 }
 
-// Tiles within Chebyshev radius r of p, clipped to the map.
 inline bitboard square(vec2 p, int r) {
     bitboard b;
     b.draw_chebyshev(p, static_cast<float>(r));
@@ -46,14 +43,12 @@ inline bitboard square(vec2 p, int r) {
 
 inline constexpr std::uint16_t unreachable = cambc::distance_field::unreachable;
 
-// Walking steps to the nearest goal tile, as a host-side distance field.
 struct Field {
     cambc::distance_field steps;
     bitboard goals;
     int at(vec2 p) const { return steps.get(p); } // `unreachable` if cut off
 };
 
-// Steps around `walls` to the goals not under them.
 inline Field make_field(const bitboard& walls, const bitboard& goals) {
     Field f;
     f.goals = goals & ~walls;
@@ -64,22 +59,18 @@ inline Field make_field(const bitboard& walls, const bitboard& goals) {
 
 inline std::uint64_t fuel() { return cambc::fuel_remaining(); }
 
-// Generous fuel estimate for computing one distance field, setup included (2-13k measured on the
-// competition maps). Optional precompute checks it can afford the next item before starting it.
+// Generous: a full field measured 2-13k on the competition maps.
 inline std::uint64_t field_cost_estimate() {
     return 4ull * static_cast<std::uint64_t>(cambc::map::width() * cambc::map::height()) + 4000;
 }
-inline constexpr std::uint64_t small_cost_estimate = 5000; // a few masks or step counts
+inline constexpr std::uint64_t small_cost_estimate = 5000;
 
-// Generous fuel estimate for a search capped at `layers` steps. Measured: about one fuel per four
-// map tiles to set up, then one per 64 tiles (a bitboard word) per layer, whatever the area reached.
+// Generous. Measured: ~1 fuel per 4 map tiles to set up, then ~1 per 64 tiles per layer.
 inline std::uint64_t search_cost_estimate(int layers) {
     const auto area = static_cast<std::uint64_t>(cambc::map::width() * cambc::map::height());
     return area / 2 + 1000 + static_cast<std::uint64_t>(layers) * (area / 32 + 40);
 }
 
-// Check before optional expensive work: running out suspends the bot and the rest of the turn
-// spills into the next round.
 inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }
 
 // WASI randomness is always zero in matches, so seed from our spawn and this instance's start.
@@ -114,7 +105,6 @@ inline Rng& rng() {
     return generator;
 }
 
-// Uniform integer in [0, limit).
 inline unsigned random_below(unsigned limit) {
     return static_cast<unsigned>((static_cast<std::uint64_t>(rng().next()) * limit) >> 32);
 }
@@ -127,13 +117,12 @@ inline void draw_line(vec2 a, vec2 b, std::uint32_t rgb) {
     if constexpr (debug_draw) cambc::debug::draw_line(a, b, rgb);
 }
 
-// Fuel used by a stretch of code, recorded when debug_fuel is on. Samples are kept in memory and
-// printed together by print_fuel_log() at the end of the turn, so printing doesn't skew them.
+// Samples print together at the end of the turn, so printing does not skew them.
 struct FuelSample {
     const char* label;
     std::uint32_t round;
     std::uint64_t used;
-    bool spilled; // ran out of fuel inside and finished in a later round
+    bool spilled;
 };
 
 inline std::vector<FuelSample>& fuel_log() {
@@ -165,13 +154,11 @@ private:
     std::uint32_t round_ = 0;
 };
 
-// One line per turn: "fuel r<round> <label>=<used> ... left=<fuel>"; a sample that ran out of fuel
-// shows as <label>=SPILLED. A meter still open when this runs is reported on the next line.
+// A meter still open when this runs is reported on the next line.
 inline void print_fuel_log() {
     if constexpr (debug_fuel) {
         std::cout << "fuel r" << cambc::round_number() << " c"
                   << (cambc::is_draft() ? -1 : static_cast<int>(static_cast<cambc::handle_champion_t>(cambc::self())));
-        // Repeated labels (e.g. many fields) print once as total/count.
         auto& log = fuel_log();
         for (std::size_t i = 0; i < log.size(); ++i) {
             if (!log[i].label) continue;

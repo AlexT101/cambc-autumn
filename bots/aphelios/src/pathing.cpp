@@ -9,7 +9,6 @@ namespace {
 
 vec2 my_pos() { return cambc::self().position(); }
 
-// Entry `i` of a table with one entry per static object, sized on first use.
 template <class T> T& entry(std::vector<T>& table, std::size_t count, int i) {
     if (table.size() != count) table.resize(count);
     return table[static_cast<std::size_t>(i)];
@@ -29,8 +28,6 @@ void Pathing::begin_turn() {
     }
 }
 
-// ----- Static fields -------------------------------------------------------------------------
-
 const Field& Pathing::cached(Slot& slot, const bitboard& goals) {
     if (!slot) {
         FuelMeter meter{"field"};
@@ -44,7 +41,6 @@ Pathing::Slot& Pathing::altar_slot(int altar) { return entry(altar_fields_, map(
 
 Pathing::Slot& Pathing::group_slot(int group) { return entry(group_fields_, map().groups.size(), group); }
 
-// Walking to our spawn is walking back along the field from it.
 const Field& Pathing::to_ally_spawn() { return map().from_ally_spawn(); }
 
 const Field& Pathing::to_altar(int altar) { return cached(altar_slot(altar), map().altars[altar].tribute_tiles()); }
@@ -80,7 +76,6 @@ bitboard Pathing::attack_tiles(int group, int range) {
 }
 
 bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
-    // Start an item only if its estimated cost still leaves `fuel_floor`; cached ones are free.
     const auto cost = field_cost_estimate();
     const auto afford = [&](const Slot& slot) { return slot || fuel_ok(fuel_floor + cost); };
     if (!afford(any_altar_)) return false;
@@ -119,8 +114,6 @@ Pathing::Nearest Pathing::nearest(const bitboard& goals, int max_steps) {
     return n;
 }
 
-// ----- Per-turn routing ----------------------------------------------------------------------
-
 const bitboard& Pathing::blocked() {
     if (!blocked_) {
         auto b = map().blocked_for_us | cambc::vision::champion_tiles() | cambc::vision::camp_tiles()
@@ -137,7 +130,6 @@ std::vector<vec2> Pathing::closer_neighbours(const Field& field, const bitboard*
     const vec2 me = my_pos();
     const int here = field.at(me);
     const auto& walls = blocked();
-    // Insertion into a sorted list (at most 8 entries), keeping direction order among ties.
     std::vector<vec2> out;
     out.reserve(8);
     std::array<int, 8> steps_of{};
@@ -195,8 +187,7 @@ bool Pathing::try_move(vec2 tile) {
 
 bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps) {
     if (!cambc::self().can_move()) return false;
-    // A replan costs a search, so give up after a few. A failure other than a hidden blocker
-    // would repeat on the same route.
+    // Each retry costs a search, and only a hidden blocker makes one worth it.
     for (int attempt = 0; attempt < 3; ++attempt) {
         const auto r = route(goals, avoid, max_steps);
         bool bumped = false;
@@ -222,8 +213,6 @@ bool Pathing::step_towards(const Field& field, const bitboard* avoid, int max_de
 }
 
 bool Pathing::step_towards(vec2 target, const bitboard* avoid) { return step_towards(single(target), avoid); }
-
-// ----- Legal destinations ----------------------------------------------------------------------
 
 bitboard Pathing::dash_landings() {
     const vec2 me = my_pos();

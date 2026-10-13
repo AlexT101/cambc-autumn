@@ -4,19 +4,12 @@
 #include <cstring>
 #include <span>
 #include <vector>
+#include "params.h"
 #include "util.h"
 
 namespace aph {
 
 namespace {
-
-// Placeholder preference order.
-constexpr cambc::champion_draft preference[] = {
-    cambc::champion_draft::vesper_vale, cambc::champion_draft::varg, cambc::champion_draft::tavi,
-    cambc::champion_draft::ryth, cambc::champion_draft::stellar, cambc::champion_draft::ren,
-    cambc::champion_draft::vendetta, cambc::champion_draft::willow, cambc::champion_draft::prism,
-    cambc::champion_draft::marcella, cambc::champion_draft::cassi_and_issac,
-};
 
 int draft_round() { return static_cast<int>(cambc::round_number()); }
 
@@ -55,12 +48,11 @@ void play_draft(DraftState& state) {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
     // and the draft bot may not run again after its last pick.
     write_plan(state);
-    pick_first_available(state, preference);
+    pick_first_available(state, params::draft_preference);
 }
 
 void ensure_picked(DraftState& state) {
     if (state.picked_round == draft_round()) return;
-    // Every pick, whatever the preference.
     static constexpr auto everything = [] {
         std::array<cambc::champion_draft, static_cast<std::size_t>(cambc::champion_draft::tavi) + 1> all{};
         for (std::size_t i = 0; i < all.size(); ++i) all[i] = static_cast<cambc::champion_draft>(i);

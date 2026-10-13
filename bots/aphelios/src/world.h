@@ -1,7 +1,3 @@
-// World: everything this bot instance believes, and nothing it decides. StaticMap never changes
-// once built; the dynamic beliefs are refreshed by update() every turn from vision, the few things
-// readable through fog (is_alive, team scores) and the game rules, plus teammates' sightings
-// through the note_* methods.
 #pragma once
 #include <cambc.h>
 #include <array>
@@ -12,21 +8,14 @@
 #include <vector>
 #include "champions.h"
 #include "draft.h"
+#include "params.h"
 #include "util.h"
 
 namespace aph {
 
-// ---------------------------------------------------------------------------------------------
-// Static analysis
-//
-// The core is built eagerly on the first play turn. Derived parts (distance fields, masks, step
-// counts, bush clusters) cost too much fuel to build all at once on large maps, so each is
-// computed on first use and memoised; StaticMap::warm_up() pre-fills most with spare fuel.
-//
-// Fuel note: WASM-side compute costs roughly 10 fuel per simple loop iteration (sorting 120 pairs
-// costs ~45k, an unordered_map ~70k), while host-side bitboard and distance-field operations cost
-// ~30-350 each. Prefer host operations, avoid sorting and hashing, and reserve vectors.
-// ---------------------------------------------------------------------------------------------
+// Derived static parts are built on first use: all at once costs too much fuel on large maps.
+// WASM loops cost ~10 fuel per iteration (sorting 120 pairs ~45k, an unordered_map ~70k); host
+// bitboard and field calls ~30-350 each. Prefer host operations; avoid sorting and hashing.
 
 struct StaticMap;
 
@@ -49,7 +38,7 @@ private:
 
 struct CampMember {
     std::uint32_t handle; // engine camp id
-    vec2 pos;             // camps never move
+    vec2 pos;
     cambc::camp_type type;
     float max_health;
     float strength;
@@ -65,7 +54,6 @@ struct CampGroup {
     int mirror = -1;
     bool has_monolith = false;
 
-    // SDK view of a member, to attack or cast at it.
     cambc::camp camp(int member) const;
     const bitboard& tiles() const;    // camp tiles: stand on one, with no enemy on any, to capture
     const bitboard& adjacent() const; // walkable tiles within 1 of a camp tile, camp tiles excluded
@@ -109,13 +97,11 @@ struct StaticMap {
     bitboard mirror(const bitboard& b) const;
     int group_at(vec2 p) const; // group whose camp tile this is, or -1
     int altar_at(vec2 p) const; // altar on this tile, or -1
-    // Walkable for us, ignoring units.
     bool walkable(vec2 p) const { return in_bounds(p) && !blocked_for_us.is_set(p); }
 
     // Walking steps over static terrain (camps and units ignored).
-    const Field& from_ally_spawn() const;  // ours, from our spawn
-    const Field& from_enemy_spawn() const; // theirs, from their spawn
-    // The cluster holding bush tile p, found on first use.
+    const Field& from_ally_spawn() const;
+    const Field& from_enemy_spawn() const;
     const BushCluster& bush_cluster(vec2 p) const;
     // Tiles from which p is in sight within Chebyshev `radius`: the engine's shadowcast, with
     // walls and every bush cluster but the viewer's own opaque.
@@ -133,19 +119,21 @@ private:
     const bitboard& diagonal_links() const; // bushes with a bush diagonal neighbour joined only diagonally
 };
 
-// ---------------------------------------------------------------------------------------------
-// Dynamic beliefs
-// ---------------------------------------------------------------------------------------------
-
-// Where a belief came from.
 enum class Source : std::uint8_t {
-    none,     // never known
-    seen,     // our own vision
-    comms,    // a teammate, through shared memory
+    none,
+    seen,
+    comms,
     inferred, // the rules (respawn on spawn, recall arrival, ...)
 };
 
 enum class Channel : std::uint8_t { none, recall, tribute, teleport };
+
+// A point in the turn order: after the turn in `slot` of `round` (-1: the round's start).
+struct Moment {
+    int round = 0;
+    int slot = -1;
+    auto operator<=>(const Moment&) const = default;
+};
 
 struct ChampionBelief {
     cambc::handle_champion_t handle{};
@@ -154,7 +142,6 @@ struct ChampionBelief {
     int index = 0; // position among its team's champions (handle order = pick order)
     bool is_self = false;
 
-    // Liveness, readable through fog every turn.
     bool alive = true;
     int died_round = -1;       // round we first saw it dead
     int respawn_earliest = -1; // window for its respawn round while dead
@@ -171,6 +158,9 @@ struct ChampionBelief {
     int gems_round = -1;
     int items = 0;
     bool acted = false; // had completed its turn when last read this round
+    // Turn-order priority for priority_round, and from the round after it.
+    int priority = 0, next_priority = 0, priority_round = -1;
+    int rank = 0; // place in its team's turn order, from the priorities last read
 
     // Abilities: the earliest round each slot could be cast. Exact while visible (read from the
     // engine); through fog, projected with the cooldown rule assuming no unseen cast, so the real
@@ -178,9 +168,15 @@ struct ChampionBelief {
     std::array<int, 2> ready_round{0, 0};
     std::array<int, 2> last_cast_round{-1, -1}; // inferred from the cooldown jumping up
 
-    // Channel seen while visible, and the round it completes.
     Channel channel = Channel::none;
     int channel_end_round = -1;
+
+    // Enemies only: every tile it could be on, from what we have seen and how champions move.
+    // Teleport crystals are not modelled. Empty while dead; anywhere while !tracked.
+    bitboard possible;
+    bool tracked = false;
+    Moment fixed, at; // when `possible` was last known exactly, and when it describes
+    int turns_since_fixed = 0;
 
     const ChampionFacts& facts() const { return aph::facts(type); }
     bool ability_ready(int slot, int round) const { return alive && round >= ready_round[slot]; }
@@ -214,13 +210,13 @@ struct CampBelief {
 
 struct AltarBelief {
     bool ally_lock = false, enemy_lock = false;
-    int ally_lock_hits = 0, enemy_lock_hits = 0; // hits left to remove
+    int ally_lock_hits = 0, enemy_lock_hits = 0;
     int seen_round = -1;
 };
 
 struct WardSighting {
     vec2 pos;
-    int round; // last round we saw it
+    int round;
 };
 
 struct Scores {
@@ -234,23 +230,25 @@ class World {
 public:
     // Start of each play turn. The first call also builds the static map.
     void update();
-    // Re-read vision and the champions in it after moving.
     void observe();
     static constexpr std::uint64_t observe_cost_estimate = 3000; // 0.8-1.6k measured
 
     // Merge a teammate's sighting (from comms); ignored if not fresher than ours.
     void note_sighting(int enemy_index, vec2 pos, int round);
 
-    // Emit the debug summary and indicators selected in util.h.
     void debug_output() const;
 
-    // The static map and initial beliefs exist (from the first successful update on).
     bool ready() const { return static_ != nullptr && self_index < static_cast<int>(allies.size()) && allies[self_index].is_self; }
     const StaticMap& map() const { return *static_; }
     // True if the bot ran out of fuel and resumed in a later round: beliefs are a round old.
     bool is_stale() const { return cambc::round_number() != static_cast<std::uint32_t>(round); }
 
     const ChampionBelief& me() const { return allies[self_index]; }
+    // Index of the champion's turn in `round`, by its current rank.
+    int slot(const ChampionBelief& c, int round) const;
+    Moment now() const { return {round, slot(me(), round)}; }
+    // Turns the champion takes strictly between two moments.
+    int turns_between(const ChampionBelief& c, Moment from, Moment to) const;
     int round = 0;
     int first_round = 0; // this instance's first play round
     std::optional<DraftPlan> plan;
@@ -268,8 +266,11 @@ public:
 private:
     void build_static();
     void init_beliefs();
+    void rank_turns();
     void update_champions(bool full);
     void update_champion(ChampionBelief& b, bool full);
+    static void fix(ChampionBelief& b, bitboard tiles, Moment when);
+    void advance(ChampionBelief& b);
     void update_camps();
     void update_altars();
     void update_wards();
@@ -277,6 +278,7 @@ private:
     void update_scores(std::uint32_t tributing);
 
     std::unique_ptr<StaticMap> static_;
+    bool ranks_stale_ = true;
 };
 
 } // namespace aph

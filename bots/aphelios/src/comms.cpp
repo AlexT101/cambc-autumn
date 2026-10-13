@@ -62,8 +62,7 @@ void receive(World& world) {
 }
 
 void send(World& world, bool refresh) {
-    // Placeholder policy: post an enemy we see now, unless the slot already holds a sighting from
-    // this round. Rotate from the posted index so several visible enemies take turns.
+    // Placeholder: post a visible enemy unless this round has one, rotating through them.
     auto m = read();
     if (m.sighting && m.sighting->round >= world.round) return;
     if (refresh) world.observe();

@@ -14,6 +14,10 @@ The bot is **C++ only**, in [bots/aphelios/](bots/aphelios/); `bots/starter-cpp`
 - [docs/handbook/](docs/handbook/) and [docs/champions/](docs/champions/): game rules, superseded by the YAML
 - [docs/guides/cpp/](docs/guides/cpp/): C++ guides
 
+## Comments
+
+Don't comment unless absolutely necessary. Self-evident code should stand for itself; counterintuitive behaviour or reasoning can get a concise comment.
+
 ## Testing bots
 
 [run_batched.py](run_batched.py) builds two bots with `cambc build`, then plays them on every map in `maps/`, once from each side, through `cambc run-batch` (whose own builds fail on Windows):

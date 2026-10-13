@@ -1,6 +1,7 @@
 // Placeholder behaviour, roughly the starter bot's. Replace freely.
 #include "bot.h"
 #include <array>
+#include "params.h"
 #include "pathing.h"
 #include "world.h"
 
@@ -8,8 +9,7 @@ namespace aph {
 
 namespace {
 
-// Steps a live route may add to the static walking distance before we give up on it.
-constexpr int max_detour = 16;
+using params::max_detour;
 
 void buy_shards(Memory& memory) {
     auto& me = cambc::self();
@@ -21,7 +21,6 @@ void buy_shards(Memory& memory) {
     if (count && me.can_buy(item, count)) me.buy(item, count);
 }
 
-// Basic-attack the weakest enemy champion in range that we saw this turn.
 bool attack_enemy(const World& world) {
     auto& me = cambc::self();
     const vec2 here = me.position();
@@ -38,7 +37,6 @@ bool attack_enemy(const World& world) {
     }
 }
 
-// Basic-attack a visible monster in range, never the Monolith's group.
 bool attack_camp(const World& world) {
     auto& me = cambc::self();
     if (!me.can_attack()) return false;
@@ -88,8 +86,6 @@ void bank_gems(const World& world, Pathing& pathing) {
     if (best >= 0) pathing.step_towards(pathing.to_altar(best));
 }
 
-// Head for the nearest group worth visiting: stand on a cleared one to capture it, otherwise get
-// in attack range and sight of a live member. The Monolith is left alone.
 void farm(const World& world, Pathing& pathing) {
     auto& me = cambc::self();
     const auto& map = world.map();
@@ -101,8 +97,7 @@ void farm(const World& world, Pathing& pathing) {
     const int on_group = map.group_at(here);
     if (on_group >= 0 && world.camps[on_group].state == CampState::cleared) return; // capturing
 
-    // The nearest group by walking steps, skipping any that will still be respawning when we
-    // arrive (judged by straight-line distance).
+    // Skip groups still respawning when we would arrive, judged by straight-line distance.
     auto candidates = map.camp_tiles;
     for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
         const auto& belief = world.camps[g];
@@ -119,19 +114,16 @@ void farm(const World& world, Pathing& pathing) {
         return;
     }
     auto goals = pathing.attack_tiles(best, range);
-    // Standing in range and sight with the attack unspent means the attack failed here (a belief
-    // was stale, say), so look for another tile rather than waiting.
+    // In range and sight with the attack unspent, so the attack failed here: try another tile.
     if (goals.is_set(here) && me.can_attack()) goals.set(here, false);
     if (goals.is_set(here)) return; // attacked from here; stay
     if (!fuel_ok(search_cost_estimate(cap))) return;
-    // Failing a route to an attack tile, get next to the camp.
     if (pathing.step_towards(goals, nullptr, cap) || pathing.step_towards(groups[best].adjacent(), nullptr, cap))
         attack_camp(world);
 }
 
-// Ward the legal tile farthest from our spawn.
 void place_ward(const World& world, Pathing& pathing) {
-    if (world.round % 20 != 0 || cambc::self().ward_cooldown() > 0) return;
+    if (world.round % params::ward_period != 0 || cambc::self().ward_cooldown() > 0) return;
     const auto& spawn_field = world.map().from_ally_spawn();
     std::optional<vec2> best;
     int best_steps = -1;
@@ -158,7 +150,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
 
     const bool at_spawn = world.map().ally_spawn.is_set(me.position());
     if (at_spawn) buy_shards(memory);
-    if (!at_spawn && me.health() < 0.35f * me.max_health()) {
+    if (!at_spawn && me.health() < params::recall_health_fraction * me.max_health()) {
         try {
             me.recall();
         } catch (const cambc::error&) {

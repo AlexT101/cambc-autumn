@@ -1,5 +1,4 @@
-// The turn loop. Each instance is either the draft bot or one champion (Cassi and Issac are two).
-// Every phase is isolated so a failure still yields the turn.
+// Each instance is the draft bot or one champion; Cassi and Issac are two.
 #include <cambc.h>
 #include <iostream>
 #include <memory>
@@ -7,15 +6,14 @@
 #include "champions.h"
 #include "comms.h"
 #include "draft.h"
+#include "params.h"
 #include "pathing.h"
 #include "util.h"
 #include "world.h"
 
 namespace {
 
-// Fuel that optional work (refreshing vision, precompute) leaves for the rest of the turn, with
-// margin. Printing the debug fuel log at the end of a busy turn costs up to ~30k more.
-constexpr std::uint64_t end_reserve = aph::debug_fuel ? 40000 : 10000;
+using aph::params::end_reserve;
 
 template <class F> bool run(const char* phase, F&& f) {
     try {
@@ -65,14 +63,12 @@ struct Instance {
             aph::play_turn(*world, *pathing, memory);
         });
 
-        // If fuel ran out mid-turn we resumed in a later round: skip the extras, start afresh next turn.
         if (world->is_stale()) return;
-        // Vision changes only if we moved, and only comms would read it again this turn.
+        // Only comms reads vision again, and it changes only if we moved.
         const bool refresh = cambc::self().position() != world->me().pos
                              && aph::fuel_ok(aph::World::observe_cost_estimate + end_reserve);
         run("comms send", [&] { aph::comms::send(*world, refresh); });
         run("debug", [&] { world->debug_output(); });
-        // Spend spare fuel on precompute until everything is cached.
         if (!warmed_up)
             run("warm up", [&] {
                 aph::FuelMeter meter{"warm_up"};
@@ -93,7 +89,6 @@ int main() {
             instance.draft_turn();
         else
             instance.play_turn();
-        // Running out of fuel suspends the turn and resumes it in a later round; say so, rarely.
         if (const auto now = cambc::round_number(); now != round)
             std::cout << "r" << round << " turn ran out of fuel, finished in r" << now << std::endl;
         cambc::end_turn();
