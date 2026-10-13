@@ -1,0 +1,12 @@
+{
+  "name": "cambc-docs-sync",
+  "private": true,
+  "type": "module",
+  "description": "Mirror the Cambridge Battlecode online handbook and API reference into docs/ as Markdown.",
+  "scripts": {
+    "sync": "node sync.mjs"
+  },
+  "dependencies": {
+    "acorn": "8.14.0"
+  }
+}
