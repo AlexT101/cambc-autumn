@@ -67,6 +67,8 @@ All champion stats, item costs, camp HP/gold/gems and game settings match the do
   - Wards can be placed without seeing the tile, never expire, and survive the owner's death.
   - Units out of your vision, allies included, reveal only whether they are alive.
   - Bumping into a hidden unit reveals its tile only to you, only for that round. Attacking from a bush doesn't reveal you.
+  - Bush clusters are edge-connected: diagonal bushes are separate clusters. Inside a bush your own cluster is see-through, but only within the normal 17×17 square.
+  - `bitboard::shadow_cast` with walls and the other clusters' bushes as opaque reproduces engine vision exactly, and sight is symmetric.
 - **Death and respawn:** a champion respawns in round D+61, or D+60 if it died before its own turn that round. Recall can't be restarted in the same turn after cancelling. Standing on spawn heals to full at every turn end, but enemies can still attack into it.
 - **Altar locks:**
   - The team that placed a lock can still tribute at that altar.
@@ -78,7 +80,8 @@ All champion stats, item costs, camp HP/gold/gems and game settings match the do
   - A bot that runs out resumes mid-code as the next round's turn, with fresh actions.
   - Reading the full camp-group list costs about 28k fuel (over a quarter of a turn).
   - Each team's printed output is capped at 1 MiB.
-- **SDK quirks:** `is_ready()` reports an attack reset as castable when it would fail. The header says the linear bitboard buffer uses one byte per tile; it is actually one bit per tile.
+  - A host distance-field search costs a fixed part (about 0.25 fuel per map tile) plus about 100 per layer on an 80×80 map. It follows the number of layers, not tiles, so a route d steps long costs about 1.6k + 100d there.
+- **SDK quirks:** `is_ready()` reports an attack reset as castable when it would fail. The header says the linear bitboard buffer uses one byte per tile; it is actually one bit per tile. `shadow_cast` from an opaque tile throws engine error 5.
 
 ## Still untested
 
@@ -92,7 +95,6 @@ The YAML follows the docs on these or leaves them out:
 - Treasure on kill gold
 - Tavi selling
 - whether shield-absorbed damage cancels a recall
-- whether bush clusters connect diagonally
 - any inventory cap above 18 items
 - whether wards block walking
 
