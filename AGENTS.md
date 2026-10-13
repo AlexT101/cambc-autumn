@@ -16,7 +16,7 @@ The bot is **C++ only**, in [bots/aphelios/](bots/aphelios/); `bots/starter-cpp`
 
 ## Testing bots
 
-[run_batched.py](run_batched.py) plays two bots on every map in `maps/`, once from each side, through `cambc run-batch`:
+[run_batched.py](run_batched.py) builds two bots with `cambc build`, then plays them on every map in `maps/`, once from each side, through `cambc run-batch` (whose own builds fail on Windows):
 
 ```
 py run_batched.py <bot1> <bot2>      # names under bots/, or paths

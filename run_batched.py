@@ -1,7 +1,7 @@
 """Run every map twice, swapping teams (or once, with --one-side). Requires Python 3.10+ and cambc.
 
-Matches run through `cambc run-batch`, which builds each bot once and then plays in parallel;
-separate concurrent `cambc run` calls race on the bots' build caches on Windows."""
+Each bot is built with `cambc build`, then matches run through `cambc run-batch`, which plays
+them in parallel; separate concurrent `cambc run` calls race on the bots' build caches on Windows."""
 
 import argparse
 from datetime import datetime
@@ -149,6 +149,21 @@ def watch(target):
         return 0
 
 
+def build_bots(cli, bots, env, log):
+    """Build each bot with `cambc build`, writing the output to `log`; return the first bot that
+    fails, or None. run-batch's own compiles fail on Windows ("unable to open output file"), so
+    it must find nothing left to build."""
+    with log.open("w", encoding="utf-8") as stream:
+        for bot in bots:
+            print(f"Building {bot.name}...", flush=True)
+            built = subprocess.run([cli, "build", str(bot)], cwd=ROOT, env=env, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
+            stream.write(built.stdout)
+            if built.returncode:
+                return bot
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("bot1", nargs="?", help="Bot name under bots/, or a path")
@@ -250,57 +265,61 @@ def main():
     match_started = {}
     finished = set()
     status = None
-    print("Building both bots...", flush=True)
-    if live:
-        redraw(progress(0, len(jobs), wins, errors))
-    with log.open("w", encoding="utf-8") as stream, subprocess.Popen(
-        command, cwd=output, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        text=True, encoding="utf-8", errors="replace", bufsize=1,
-    ) as proc:
-        for raw in proc.stdout:
-            stream.write(raw)
-            stream.flush()
-            line = ANSI.sub("", raw.rstrip("\r\n"))
-            if found := STATUS.match(line):
-                status = found
-                continue
-            found = REPLAY.match(line)
-            if not found or status is None:
-                continue
-            stem = re.split(r"[\\/]", found.group(1))[-1].removesuffix(".repl26a")
-            kind, team, failure, rounds = status.groups()
-            status = None
-            if stem not in stems:
-                continue
-            if kind == "STARTING":
-                match_started[stem] = perf_counter()
-                continue
-            index, path, order = stems[stem]
-            replay = output / f"{stem}.repl26a"
-            result = {"index": index, "map": str(path), "order": list(order),
-                      "replay": str(replay) if replay.is_file() and not args.no_replays else None}
-            if failure is not None:
-                error_log = ERROR_LOG.search(failure)
-                result["error"] = ERROR_LOG.sub("", failure).strip() + (
-                    f". See {Path(error_log.group(1)).name}" if error_log else "")
-            else:
-                result.update(winner=order[team == "B"], rounds=int(rounds))
-            if args.no_replays:
-                replay.unlink(missing_ok=True)
-            result["seconds"] = round(perf_counter() - match_started.get(stem, started), 3)
-            finished.add(stem)
-            record(result)
+    failed_build = build_bots(cli, bots, env, log)
+    if failed_build is None:
+        if live:
+            redraw(progress(0, len(jobs), wins, errors))
+        with log.open("a", encoding="utf-8") as stream, subprocess.Popen(
+            command, cwd=output, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="replace", bufsize=1,
+        ) as proc:
+            for raw in proc.stdout:
+                stream.write(raw)
+                stream.flush()
+                line = ANSI.sub("", raw.rstrip("\r\n"))
+                if found := STATUS.match(line):
+                    status = found
+                    continue
+                found = REPLAY.match(line)
+                if not found or status is None:
+                    continue
+                stem = re.split(r"[\\/]", found.group(1))[-1].removesuffix(".repl26a")
+                kind, team, failure, rounds = status.groups()
+                status = None
+                if stem not in stems:
+                    continue
+                if kind == "STARTING":
+                    match_started[stem] = perf_counter()
+                    continue
+                index, path, order = stems[stem]
+                replay = output / f"{stem}.repl26a"
+                result = {"index": index, "map": str(path), "order": list(order),
+                          "replay": str(replay) if replay.is_file() and not args.no_replays else None}
+                if failure is not None:
+                    error_log = ERROR_LOG.search(failure)
+                    result["error"] = ERROR_LOG.sub("", failure).strip() + (
+                        f". See {Path(error_log.group(1)).name}" if error_log else "")
+                else:
+                    result.update(winner=order[team == "B"], rounds=int(rounds))
+                if args.no_replays:
+                    replay.unlink(missing_ok=True)
+                result["seconds"] = round(perf_counter() - match_started.get(stem, started), 3)
+                finished.add(stem)
+                record(result)
+        no_result = f"run-batch exit {proc.returncode}; no result"
+    else:
+        no_result = f"{failed_build.name} failed to build"
     # Matches run-batch never reported, e.g. after a build failure.
     for stem, (index, path, order) in stems.items():
         if stem not in finished:
             record({"index": index, "map": str(path), "order": list(order), "replay": None,
-                    "error": f"run-batch exit {proc.returncode}; no result. See run.log", "seconds": 0.0})
+                    "error": f"{no_result}. See run.log", "seconds": 0.0})
     save_durations(records)
     if live:
         print()
     if not finished:
         tail = log.read_text(encoding="utf-8", errors="replace").splitlines()[-15:]
-        print("run-batch reported no matches; end of run.log:\n" + "\n".join(f"  {t}" for t in tail))
+        print("No matches ran; end of run.log:\n" + "\n".join(f"  {t}" for t in tail))
 
     completed = len(records) - errors
     print(f"\nSummary: {completed}/{len(jobs)} successful matches in {perf_counter() - started:.1f}s")
