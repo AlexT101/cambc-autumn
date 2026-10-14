@@ -11,6 +11,7 @@
 #include "pathing.h"
 #include "safety.h"
 #include "self_abilities.h"
+#include "turn_order.h"
 #include "world.h"
 
 namespace aph {
@@ -817,23 +818,6 @@ void start_recall(const World& world) {
     }
 }
 
-// From next round, the ally nearest a visible enemy acts first: fights go to the first hit, and a
-// stun before the enemy's turn removes it.
-void set_turn_order(const World& world) {
-    auto& me = cambc::self();
-    int priority = 0;
-    if (world.me().alive) {
-        int nearest = params::chase_radius + 1;
-        for (const auto& e : world.enemies)
-            if (e.alive && e.visible) nearest = std::min(nearest, dist(me.position(), e.pos));
-        priority = params::chase_radius + 1 - nearest;
-    }
-    try {
-        if (priority != me.priority()) me.set_priority(priority);
-    } catch (const cambc::error&) {
-    }
-}
-
 } // namespace
 
 void play_turn(const World& world, Pathing& pathing, Memory& memory) {
@@ -850,7 +834,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     shield_if_needed(world);
     place_ward(world, pathing, memory); // where we end the turn
     start_recall(world);
-    set_turn_order(world);
+    set_turn_order(world, safety);
     memory.round = world.round;
     memory.health = world.me().alive ? cambc::self().health() : 0;
 }

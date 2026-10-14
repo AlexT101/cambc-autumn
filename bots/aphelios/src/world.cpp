@@ -789,6 +789,9 @@ void World::update_champion(ChampionBelief& b, bool full) {
     if (!full) return;
 
     const auto [priority, next_priority] = engine::priorities(h);
+    if (b.side == team::enemy
+        && (next_priority != priority || (b.priority_round >= 0 && b.priority_round < round && priority != b.next_priority)))
+        enemy_priorities_change = true;
     ranks_stale_ |= priority != b.priority || next_priority != b.next_priority;
     b.priority = priority;
     b.next_priority = next_priority;

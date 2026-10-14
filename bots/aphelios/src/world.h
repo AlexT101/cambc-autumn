@@ -299,6 +299,9 @@ public:
     std::vector<WardSighting> enemy_wards;
     Scores score;
     bitboard visible; // this turn's vision (ours and our ward's)
+    // An enemy was seen changing priority: its team's order for next round can change until each
+    // has acted, and unseen ones' ranks are guesses.
+    bool enemy_priorities_change = false;
 
 private:
     void build_static();
