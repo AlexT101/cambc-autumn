@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include "abilities.h"
+#include "comms.h"
 #include "params.h"
 #include "pathing.h"
 #include "safety.h"
@@ -306,12 +307,23 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     const auto* target = prey(world, safety);
     if (!target) return false;
     auto& me = cambc::self();
+    comms::post_rally(world.round, target->pos);
     const int range = world.me().facts().attack_range();
     if (dist(me.position(), target->pos) > range && me.can_move())
         pathing.step_towards(square(target->pos, range) & ~world.map().blocked_for_us);
     if (attack_enemy(world)) reset_and_attack_enemy(world);
     cast_at_enemies(world);
     return true;
+}
+
+// Towards a fight an ally posted this round or last; on arrival, chase decides whether to join.
+bool join_rally(const World& world, Pathing& pathing) {
+    const auto rally = comms::read().rally;
+    if (!rally || rally->round < world.round - 1) return false;
+    const vec2 here = cambc::self().position();
+    const int d = dist(here, rally->pos);
+    if (d <= params::chase_radius / 2 || d > params::rally_radius) return false;
+    return pathing.step_towards(square(rally->pos, 1) & ~world.map().blocked_for_us, nullptr, 2 * params::rally_radius);
 }
 
 // A tribute channel cannot act, and a kill takes the whole bag: start or keep one only if the
@@ -387,6 +399,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety) {
     }
     if (attacked && !world.me().facts().walk_and_attack_independent()) return;
     if (chase(world, pathing, safety)) return;
+    if (join_rally(world, pathing)) return;
     farm(world, pathing);
 }
 

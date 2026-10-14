@@ -16,8 +16,15 @@ struct Sighting {
     vec2 pos;
 };
 
+// An ally fighting at `pos`, for teammates near enough to join.
+struct Rally {
+    int round;
+    vec2 pos;
+};
+
 struct Message {
     std::optional<Sighting> sighting;
+    std::optional<Rally> rally;
 };
 
 // Placeholder schema.
@@ -30,6 +37,7 @@ void write(const Message& message);
 void receive(World& world);
 // With `refresh`, re-read vision first, but only if there is a slot to fill.
 void send(World& world, bool refresh);
+void post_rally(int round, vec2 pos);
 
 } // namespace comms
 } // namespace aph

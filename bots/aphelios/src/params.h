@@ -30,5 +30,8 @@ inline constexpr float finish_camp_health_fraction = 0.6f;
 inline constexpr int ward_period = 20;
 // Champion vision: enemies farther off are seen only through wards and are rarely caught.
 inline constexpr int chase_radius = 8;
+// Fights last about 5 rounds (local engagements: median 4-6), so allies more than a few steps
+// outside vision of one arrive after it.
+inline constexpr int rally_radius = 12;
 
 } // namespace aph::params
