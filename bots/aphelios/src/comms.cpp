@@ -18,7 +18,9 @@ namespace {
 //   [35, 36)  round parity
 //   [36, 42)  captured group + 1, 0 = none
 //   [42, 50)  its respawn round mod 256
-//   [50, 64)  unused
+//   [50, 56)  help group + 1, 0 = none
+//   [56, 57)  round parity
+//   [57, 64)  unused
 struct Field {
     int shift, width;
     constexpr std::uint64_t mask() const { return ((std::uint64_t{1} << width) - 1) << shift; }
@@ -31,15 +33,18 @@ struct Field {
 constexpr Field sight_x{0, 7}, sight_y{7, 7}, sight_index{14, 3}, sight_health{17, 3}, sight_parity{20, 1};
 constexpr Field rally_x{21, 7}, rally_y{28, 7}, rally_parity{35, 1};
 constexpr Field camp_group{36, 6}, camp_respawn{42, 8};
+constexpr Field help_group{50, 6}, help_parity{56, 1};
 constexpr std::uint64_t sighting_bits = sight_x.mask() | sight_y.mask() | sight_index.mask() | sight_health.mask() | sight_parity.mask();
 constexpr std::uint64_t rally_bits = rally_x.mask() | rally_y.mask() | rally_parity.mask();
 constexpr std::uint64_t camp_bits = camp_group.mask() | camp_respawn.mask();
+constexpr std::uint64_t help_bits = help_group.mask() | help_parity.mask();
 
 struct State {
     std::uint64_t last = 0; // the bits as we left them at the end of our previous turn
     int last_round = -1;
     std::uint64_t fresh = 0; // records written since then
     std::optional<Rally> rally;
+    std::optional<Help> help;
 };
 State state;
 
@@ -57,7 +62,7 @@ void write_bits(std::uint64_t bits, int round) {
 
 std::uint64_t changes(std::uint64_t bits) {
     std::uint64_t fresh = 0;
-    for (const auto mask : {sighting_bits, rally_bits, camp_bits})
+    for (const auto mask : {sighting_bits, rally_bits, camp_bits, help_bits})
         if ((bits ^ state.last) & mask) fresh |= mask;
     return fresh;
 }
@@ -82,6 +87,8 @@ void receive(World& world) {
     }
     if ((state.fresh & rally_bits) && rally_x.get(bits) != 0)
         state.rally = Rally{dated(rally_parity.get(bits)), {rally_x.get(bits) - 1, rally_y.get(bits)}};
+    if ((state.fresh & help_bits) && help_group.get(bits) != 0)
+        state.help = Help{dated(help_parity.get(bits)), help_group.get(bits) - 1};
     if ((state.fresh & camp_bits) && camp_group.get(bits) != 0) {
         const int after = std::max(state.last_round, 0);
         const int respawn = after + ((camp_respawn.get(bits) - after) & 255);
@@ -142,5 +149,15 @@ void post_rally(int round, vec2 pos) {
 }
 
 std::optional<Rally> rally() { return state.rally; }
+
+void post_help(int round, int group) {
+    auto bits = read_bits();
+    help_group.set(bits, group + 1);
+    help_parity.set(bits, round & 1);
+    write_bits(bits, round);
+    state.help = Help{round, group};
+}
+
+std::optional<Help> help() { return state.help; }
 
 } // namespace aph::comms

@@ -33,6 +33,8 @@ inline constexpr int chase_radius = 8;
 // Fights last about 5 rounds (local engagements: median 4-6), so allies more than a few steps
 // outside vision of one arrive after it.
 inline constexpr int rally_radius = 12;
+// Allies within this many steps of a damaging group a teammate attacks join it: wider pulls lost.
+inline constexpr int help_radius = 8;
 
 // Chain another capture onto a bag only below this: about one capture's worth (wolf 22, gem pair
 // 48), so a chain at most roughly doubles what a death would lose.
