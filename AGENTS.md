@@ -72,7 +72,7 @@ node tools/replay/extract.mjs replays/ladder replays/batch-TIMESTAMP   # skips g
 node tools/replay/extract.mjs --update-engine                          # refresh engine/ from `cambc view` after a cambc update
 ```
 
-[tools/replay/analyze.py](tools/replay/analyze.py) turns them into Markdown reports and CSVs under `replays/.analysis/reports/<timestamp>/` (tempo, fights, audits, draft, and a gap report for `--team` against `--vs`): `py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team aphelios`.
+[tools/replay/analyze.py](tools/replay/analyze.py) turns them into Markdown reports and CSVs under `replays/.analysis/reports/<timestamp>/` (tempo, fights, audits, draft, economy (camp DPS, camp damage, time budget, captures, bags), a camp table, and a gap report for `--team` against `--vs`; `--reports economy,camps` for a quick subset): `py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team aphelios`.
 
 Schema and units: [tools/replay/README.md](tools/replay/README.md).
 
