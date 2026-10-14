@@ -193,7 +193,8 @@ void decide(const World& world, Pathing& pathing, Memory& memory) {
         }
     }
 
-    if (world.map().ally_spawn.is_set(me.position())) buy_shards(memory);
+    if (world.map().ally_spawn.is_set(me.position()) || world.me().facts().passive == Passive::remote_shop)
+        buy_shards(memory);
     if (want_home(world)) {
         // A tribute survives damage; a recall does not.
         if (can_tribute_here(world)) bank_gems(world, pathing);
