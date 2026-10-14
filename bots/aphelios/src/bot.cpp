@@ -195,6 +195,11 @@ void decide(const World& world, Pathing& pathing, Memory& memory) {
 
     if (world.map().ally_spawn.is_set(me.position()) || world.me().facts().passive == Passive::remote_shop)
         buy_shards(memory);
+    // Healing needs a turn end on spawn; a recall arrives at turn start.
+    if (world.map().ally_spawn.is_set(me.position()) && me.health() < me.max_health()) {
+        attack_enemy(world);
+        return;
+    }
     if (want_home(world)) {
         // A tribute survives damage; a recall does not.
         if (can_tribute_here(world)) bank_gems(world, pathing);
