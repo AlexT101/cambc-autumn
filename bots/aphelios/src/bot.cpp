@@ -318,7 +318,8 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     return true;
 }
 
-// Towards a fight an ally posted this round or last; on arrival, chase decides whether to join.
+// Towards a fight an ally posted this round or last. Within half our vision of it, chase decides
+// whether to join.
 bool join_rally(const World& world, Pathing& pathing) {
     const auto rally = comms::read().rally;
     if (!rally || rally->round < world.round - 1) return false;
@@ -397,8 +398,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, const Memory& 
     if (attacked) reset_and_attack_enemy(world);
     place_ward(world, pathing);
     if (me.gem_count() > 0) {
-        if (!can_tribute_safely(world, safety, memory) && chase(world, pathing, safety)) return;
-        if (can_tribute_here(world) && !can_tribute_safely(world, safety, memory)) return; // until they leave or come
+        const bool safe = can_tribute_safely(world, safety, memory);
+        if (!safe && chase(world, pathing, safety)) return;
+        if (!safe && can_tribute_here(world)) return; // until they leave or come
         bank_gems(world, pathing, safety); // a tribute can still start after a ranged attack
         return;
     }
