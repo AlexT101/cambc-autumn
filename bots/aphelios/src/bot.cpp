@@ -314,15 +314,36 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     return true;
 }
 
+// A tribute channel cannot act, and a kill takes the whole bag: start or keep one only if the
+// visible enemies could not kill us before it ends.
+bool tribute_safe(Safety& safety, int turns) {
+    const int kill = safety.turns_to_kill_idle(cambc::self().position(), turns + 1);
+    return kill == 0 || kill > turns;
+}
+
+int tribute_turns(int gems) { return std::max(1, (gems + 9) / 10); }
+
+bool can_tribute_safely(const World& world, Safety& safety) {
+    return can_tribute_here(world) && tribute_safe(safety, tribute_turns(cambc::self().gem_count()));
+}
+
 void decide(const World& world, Pathing& pathing, Safety& safety) {
     auto& me = cambc::self();
     if (!world.me().alive) {
         buy_shards(); // the dead can only shop
         return;
     }
-    if (me.is_submitting_gems() || me.is_teleporting()) return;
+    if (me.is_teleporting()) return;
+    if (me.is_submitting_gems()) {
+        if (tribute_safe(safety, me.remaining_channel_time())) return;
+        try {
+            me.cancel_submit_gems();
+        } catch (const cambc::error&) {
+            return;
+        }
+    }
     if (me.is_recalling()) {
-        if (want_home(world, safety) && !safety.threatened(me.position()) && !can_tribute_here(world)) return;
+        if (want_home(world, safety) && !safety.threatened(me.position()) && !can_tribute_safely(world, safety)) return;
         try {
             me.cancel_recall();
         } catch (const cambc::error&) {
@@ -343,7 +364,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety) {
         if (world.me().facts().walk_and_attack_independent()) attack_enemy(world);
         cast_at_enemies(world, true);
         // A tribute survives damage; a recall does not.
-        if (can_tribute_here(world)) {
+        if (can_tribute_safely(world, safety)) {
             bank_gems(world, pathing, safety);
             return;
         }
@@ -359,7 +380,8 @@ void decide(const World& world, Pathing& pathing, Safety& safety) {
     if (attacked) reset_and_attack_enemy(world);
     place_ward(world, pathing);
     if (me.gem_count() > 0) {
-        if (!can_tribute_here(world) && chase(world, pathing, safety)) return;
+        if (!can_tribute_safely(world, safety) && chase(world, pathing, safety)) return;
+        if (can_tribute_here(world) && !can_tribute_safely(world, safety)) return; // until they leave or come
         bank_gems(world, pathing, safety); // a tribute can still start after a ranged attack
         return;
     }
