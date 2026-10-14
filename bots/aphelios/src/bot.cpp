@@ -274,6 +274,40 @@ bool can_tribute_here(const World& world) {
     return false;
 }
 
+// The visible enemy quickest to reach and kill among those whose local fight we win even when
+// they strike first; never one on or next to its spawn, where it heals.
+const ChampionBelief* prey(const World& world, Safety& safety) {
+    const auto& me = cambc::self();
+    const vec2 here = me.position();
+    const int range = world.me().facts().attack_range();
+    const float strength = std::max(1.0f, me.strength());
+    const auto& enemy_spawn = world.map().enemy_spawn;
+    const ChampionBelief* best = nullptr;
+    float best_turns = 0;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible || dist(here, e.pos) > params::chase_radius
+            || !(enemy_spawn & square(e.pos, 1)).is_empty())
+            continue;
+        const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + e.health / strength;
+        if (best && turns >= best_turns) continue;
+        if (safety.fight(e.pos).lost) continue;
+        best = &e, best_turns = turns;
+    }
+    return best;
+}
+
+bool chase(const World& world, Pathing& pathing, Safety& safety) {
+    const auto* target = prey(world, safety);
+    if (!target) return false;
+    auto& me = cambc::self();
+    const int range = world.me().facts().attack_range();
+    if (dist(me.position(), target->pos) > range && me.can_move())
+        pathing.step_towards(square(target->pos, range) & ~world.map().blocked_for_us);
+    if (attack_enemy(world)) reset_and_attack_enemy(world);
+    cast_at_enemies(world);
+    return true;
+}
+
 void decide(const World& world, Pathing& pathing, Safety& safety) {
     auto& me = cambc::self();
     if (!world.me().alive) {
@@ -323,6 +357,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety) {
         return;
     }
     if (attacked && !world.me().facts().walk_and_attack_independent()) return;
+    if (chase(world, pathing, safety)) return;
     farm(world, pathing);
 }
 

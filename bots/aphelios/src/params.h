@@ -28,5 +28,7 @@ inline constexpr float recall_health_fraction = 0.35f;
 // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
 inline constexpr float finish_camp_health_fraction = 0.6f;
 inline constexpr int ward_period = 20;
+// Champion vision: enemies farther off are seen only through wards and are rarely caught.
+inline constexpr int chase_radius = 8;
 
 } // namespace aph::params
