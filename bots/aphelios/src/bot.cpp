@@ -14,14 +14,31 @@ using params::max_detour;
 
 constexpr int camp_attack_range = 3;
 
-void buy_shards(Memory& memory) {
+// Strength throughout; Jungle first for -30% camp damage, then Monster, then Power (6 shards' stats).
+void buy_shards() {
+    using I = cambc::item_type;
+    struct Family {
+        I shard, emblem;
+        int cap;
+    };
+    static constexpr Family plan[] = {
+        {I::jungle_shard_of_strength, I::jungle_emblem_of_strength, 5},
+        {I::monster_shard_of_strength, I::monster_emblem_of_strength, 5},
+        {I::power_shard_of_strength, I::power_emblem_of_strength, 1 << 20},
+    };
     auto& me = cambc::self();
-    if (memory.shard_stat < 0) memory.shard_stat = static_cast<int>(random_below(3));
-    const std::array items{cambc::item_type::power_shard_of_strength, cambc::item_type::power_shard_of_focus,
-                           cambc::item_type::power_shard_of_health};
-    const auto item = items[memory.shard_stat];
-    const unsigned count = me.gold_count() / item.cost();
-    if (count && me.can_buy(item, count)) me.buy(item, count);
+    const auto owned = me.item_count();
+    for (const auto& f : plan) {
+        const int have = static_cast<int>(owned[f.shard] + 5 * owned[f.emblem]);
+        const unsigned count = std::min<unsigned>(f.cap - std::min(have, f.cap), me.gold_count() / I{f.shard}.cost());
+        if (!count) continue;
+        if (!me.can_buy(f.shard, count)) return;
+        try {
+            me.buy(f.shard, count);
+        } catch (const cambc::error&) {
+            return;
+        }
+    }
 }
 
 bool attack_enemy(const World& world) {
@@ -177,10 +194,10 @@ bool can_tribute_here(const World& world) {
     return false;
 }
 
-void decide(const World& world, Pathing& pathing, Memory& memory) {
+void decide(const World& world, Pathing& pathing) {
     auto& me = cambc::self();
     if (!world.me().alive) {
-        buy_shards(memory); // the dead can only shop
+        buy_shards(); // the dead can only shop
         return;
     }
     if (me.is_submitting_gems() || me.is_teleporting()) return;
@@ -194,7 +211,7 @@ void decide(const World& world, Pathing& pathing, Memory& memory) {
     }
 
     if (world.map().ally_spawn.is_set(me.position()) || world.me().facts().passive == Passive::remote_shop)
-        buy_shards(memory);
+        buy_shards();
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     if (world.map().ally_spawn.is_set(me.position()) && me.health() < me.max_health()) {
         attack_enemy(world);
@@ -232,8 +249,8 @@ void start_recall(const World& world) {
 
 } // namespace
 
-void play_turn(const World& world, Pathing& pathing, Memory& memory) {
-    decide(world, pathing, memory);
+void play_turn(const World& world, Pathing& pathing, Memory&) {
+    decide(world, pathing);
     start_recall(world);
 }
 
