@@ -4,7 +4,7 @@ Tested 2026-10-14 on aphelios `0b6af4c` (main after the audit fixes).
 
 **Result: Cassi & Issac + Stellar + Ryth.** It averaged 71.9% against the 10 teams from round 1 and won at least 59% against every team tested; the head-to-head with the runner-up, Cassi & Issac + Stellar + Ren, was 49-51. On 4- and 5-pick maps, picks 4 and 5 come from the order below, but these tests did not cover them.
 
-Draft order now set in `draft_preference` of `bots/aphelios`, `bots/baselines/v8` and `bots/baselines/v4-aggro` (it only applies with `random_draft = false`):
+Draft order now set in `draft_preference` of `bots/aphelios`, `bots/baselines/v8` and `bots/baselines/v8-aggro` (it only applies with `random_draft = false`):
 
 | order | champion | evidence |
 |---|---|---|

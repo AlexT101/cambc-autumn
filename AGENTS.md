@@ -9,7 +9,7 @@ Work from these two. Read `docs/` or `rules-verification/` only if they can't an
 
 ## Language
 
-The bot is **C++ only**, in [bots/aphelios/](bots/aphelios/); `bots/starter-cpp` is reference only. Frozen snapshots of earlier aphelios versions, used as sparring partners, go in `bots/baselines/<name>/` (e.g. `bots/baselines/v8`); never edit them. `v4-aggro` and `v8-aggro` are those versions plus chasing the weakest visible enemy within 8 when above half health: sparring partners that fight, since our baselines rarely do. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:
+The bot is **C++ only**, in [bots/aphelios/](bots/aphelios/); `bots/starter-cpp` is reference only. Frozen snapshots of earlier aphelios versions, used as sparring partners, go in `bots/baselines/<name>/` (e.g. `bots/baselines/v8`); never edit them. `v8-aggro` is v8 plus chasing the weakest visible enemy within 8 when above half health: a sparring partner that fights, since our baselines rarely do. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:
 
 - [docs/handbook/](docs/handbook/) and [docs/champions/](docs/champions/): game rules, superseded by the YAML
 - [docs/guides/cpp/](docs/guides/cpp/): C++ guides
