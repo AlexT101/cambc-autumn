@@ -235,7 +235,8 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
     // A goal within a dash is a walk or two away: not worth the cooldown or the search.
     if (!(goals & square(here, dash_steps)).is_empty()) return false;
     const auto dash = travel_dash_ready(world);
-    if (!dash || !fuel_ok(search_cost_estimate(world.map().width + world.map().height) + params::end_reserve)) return false;
+    const int layers = std::max(world.map().width + world.map().height, max_field_layers()); // a maze runs deeper
+    if (!dash || !fuel_ok(search_cost_estimate(layers) + params::end_reserve)) return false;
     auto walls = pathing.blocked();
     const auto open_goals = goals & ~walls;
     if (open_goals.is_empty()) return false;

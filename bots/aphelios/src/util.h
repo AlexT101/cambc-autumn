@@ -1,5 +1,6 @@
 #pragma once
 #include <cambc.h>
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <vector>
@@ -55,26 +56,36 @@ struct Field {
     int at(vec2 p) const { return steps.get(p); } // `unreachable` if cut off
 };
 
+// A host search costs about 1.5k + (20 + layers) per 8x8 chunk of the map.
+inline std::uint64_t search_chunks() {
+    return static_cast<std::uint64_t>((cambc::map::width() + 7) / 8 * ((cambc::map::height() + 7) / 8));
+}
+
+inline int& max_field_layers() {
+    static int layers = 0;
+    return layers;
+}
+
 inline Field make_field(const bitboard& walls, const bitboard& goals) {
     Field f;
     f.goals = goals & ~walls;
     bitboard visited;
-    f.steps.compute(walls, f.goals, visited);
+    max_field_layers() = std::max<int>(max_field_layers(), f.steps.compute_with_expansion_count(walls, f.goals, visited));
     return f;
 }
 
 inline std::uint64_t fuel() { return cambc::fuel_remaining(); }
 
-// Generous: a full field measured 2-13k on the competition maps.
+// Layers: a quarter over the deepest full field so far, or width + height before the first.
 inline std::uint64_t field_cost_estimate() {
-    return 4ull * static_cast<std::uint64_t>(cambc::map::width() * cambc::map::height()) + 4000;
+    const int seen = max_field_layers();
+    const auto layers = static_cast<std::uint64_t>(seen ? seen + seen / 4 : cambc::map::width() + cambc::map::height());
+    return 3000 + search_chunks() * (20 + layers);
 }
 inline constexpr std::uint64_t small_cost_estimate = 5000;
 
-// Generous. Measured: ~1 fuel per 4 map tiles to set up, then ~1 per 64 tiles per layer.
 inline std::uint64_t search_cost_estimate(int layers) {
-    const auto area = static_cast<std::uint64_t>(cambc::map::width() * cambc::map::height());
-    return area / 2 + 1000 + static_cast<std::uint64_t>(layers) * (area / 32 + 40);
+    return 4000 + search_chunks() * (20 + static_cast<std::uint64_t>(layers));
 }
 
 inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }

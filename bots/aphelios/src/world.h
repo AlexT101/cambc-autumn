@@ -89,6 +89,9 @@ struct StaticMap {
     bitboard impassable;       // walls | holes | altars: nobody walks or lands there
     bitboard blocked_for_us;   // impassable | enemy spawn: static walls for our walking
     bitboard blocked_for_them; // impassable | our spawn
+    bitboard open_for_them; // ~blocked_for_them
+    bitboard walls_and_bushes;
+    bitboard standable; // ~(camp_tiles | blocked_for_us)
 
     std::vector<Altar> altars;
     std::vector<CampGroup> groups;
@@ -116,11 +119,14 @@ struct StaticMap {
 
 private:
     friend class World;
-    std::vector<std::uint8_t> group_lookup_; // per tile, row-major: group index + 1, or 0
+    // Per tile, row-major, in static storage, which starts zeroed for free: filling a vector costs
+    // ~1 fuel a byte. One map per process.
+    static constexpr int max_tiles = 100 * 100;
+    inline static std::array<std::uint8_t, max_tiles> group_lookup_{}; // group index + 1, or 0
     mutable std::optional<Field> ally_field_, enemy_field_;
     mutable std::deque<BushCluster> bush_clusters_; // found so far; references stay valid
     mutable bitboard clustered_;                     // their tiles
-    mutable std::vector<std::uint16_t> cluster_of_;  // per tile, row-major: cluster index + 1, or 0
+    inline static std::array<std::uint16_t, max_tiles> cluster_of_{}; // cluster index + 1, or 0
     struct Growth {
         bitboard tiles, grown; // the 8-connected flood, and the edge-connected part reached so far
         bool diagonal = false; // the flood joins bushes only diagonally somewhere: grow by edges
@@ -306,6 +312,7 @@ private:
     void update_scores(std::uint32_t tributing);
 
     std::unique_ptr<StaticMap> static_;
+    bitboard unseen_; // ~visible
     bool ranks_stale_ = true;
 };
 

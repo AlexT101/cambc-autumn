@@ -189,11 +189,14 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety) {
         step_safely(pathing, pathing.to_any_altar(), safety);
         return;
     }
-    // Breaking a lock takes a turn per hit left, about a step each.
+    // Breaking a lock takes a turn per hit left, about a step each. Fields not yet affordable
+    // wait for a later turn.
     int best = -1, best_steps = unreachable;
     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
         const auto& belief = world.altars[a];
-        int steps = pathing.to_altar(a).at(here);
+        const auto* field = pathing.to_altar(a, params::end_reserve);
+        if (!field) continue;
+        int steps = field->at(here);
         if (steps == unreachable) continue;
         if (belief.enemy_lock) steps += belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
         if (steps < best_steps) best = a, best_steps = steps;
@@ -435,7 +438,7 @@ bool ward_bushes(const World& world, Memory& memory) {
     const auto& map = world.map();
     const vec2 here = cambc::self().position();
     const auto floor = small_cost_estimate + params::end_reserve;
-    if (here == memory.bushes_watched || !map.near_bushes().is_set(here) || !fuel_ok(floor)
+    if (here == memory.bushes_watched || !fuel_ok(floor) || !map.near_bushes().is_set(here)
         || !map.find_bush_clusters(here, 2, floor))
         return false;
     auto candidates = map.bushes & square(here, 2);
@@ -487,9 +490,10 @@ bool finishing_camp(const World& world) {
     return false;
 }
 
-bool visible_threat(Safety& safety, vec2 p) {
-    for (const auto& t : safety.threats())
-        if (t.visible && t.strike.hits(t.distance(p))) return true;
+// The threats' visible part, without building the unseen ones' fields.
+bool visible_threat(const World& world, vec2 p) {
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && strike(e, next_turn_round(world, e)).hits(dist(p, e.pos))) return true;
     return false;
 }
 
@@ -499,7 +503,7 @@ bool want_home(const World& world, Safety& safety) {
     if (world.map().ally_spawn.is_set(me.position())) return false;
     return (me.health() < params::recall_health_fraction * me.max_health() && !finishing_camp(world) && !holding_capture(world))
            || (safety.lethal(me.position()) && safety.fight(me.position()).self_falls)
-           || (visible_threat(safety, me.position()) && safety.fight(me.position()).lost);
+           || (visible_threat(world, me.position()) && safety.fight(me.position()).lost);
 }
 
 bool can_tribute_here(const World& world) {

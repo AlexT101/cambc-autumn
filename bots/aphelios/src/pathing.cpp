@@ -45,6 +45,11 @@ const Field& Pathing::to_ally_spawn() { return map().from_ally_spawn(); }
 
 const Field& Pathing::to_altar(int altar) { return cached(altar_slot(altar), map().altars[altar].tribute_tiles()); }
 
+const Field* Pathing::to_altar(int altar, std::uint64_t fuel_floor) {
+    if (!altar_slot(altar) && !fuel_ok(fuel_floor + field_cost_estimate())) return nullptr;
+    return &to_altar(altar);
+}
+
 const Field& Pathing::to_any_altar() {
     if (any_altar_) return *any_altar_;
     bitboard goals;
@@ -71,7 +76,9 @@ const bitboard& Pathing::member_attack_tiles(int group, int member, int range) {
     if (!slot) {
         FuelMeter meter{"attack_tiles"};
         const auto& s = map();
-        slot = s.viewers(s.groups[group].members[member].pos, range) & ~(s.camp_tiles | s.blocked_for_us);
+        auto tiles = s.viewers(s.groups[group].members[member].pos, range);
+        tiles &= s.standable;
+        slot = std::move(tiles);
     }
     return *slot;
 }
@@ -87,8 +94,9 @@ bitboard Pathing::attack_tiles(int group, int range) {
 bool Pathing::prepare_member(int group, int member, int range, std::uint64_t fuel_floor) {
     if (attack_slot(group, member, range)) return true;
     // Bush clusters in reach are the costly part; without them a shadowcast or two remain.
-    if (!fuel_ok(fuel_floor + small_cost_estimate)
-        || !map().find_bush_clusters(map().groups[group].members[member].pos, range, fuel_floor + small_cost_estimate))
+    constexpr std::uint64_t viewers_cost = 10000;
+    if (!fuel_ok(fuel_floor + viewers_cost)
+        || !map().find_bush_clusters(map().groups[group].members[member].pos, range, fuel_floor + viewers_cost))
         return false;
     member_attack_tiles(group, member, range);
     return true;
@@ -106,22 +114,23 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
     const auto afford = [&](const Slot& slot) { return slot || fuel_ok(fuel_floor + cost); };
     if (!afford(any_altar_)) return false;
     to_any_altar();
+    // Farm reads only groups with gems and no monolith.
+    const auto farmed = [&](int g) { return !map().groups[g].has_monolith && map().groups[g].gems > 0; };
+    for (int g = 0; g < static_cast<int>(map().groups.size()); ++g) {
+        if (!farmed(g)) continue;
+        auto& slot = entry(centre_fields_, map().groups.size(), g);
+        if (slot) continue;
+        if (!afford(slot)) return false;
+        cached(slot, single(map().groups[g].centre));
+    }
+    centres_ready_ = true;
+    for (int g = 0; g < static_cast<int>(map().groups.size()); ++g)
+        for (int i = 0; farmed(g) && i < static_cast<int>(map().groups[g].members.size()); ++i)
+            if (!prepare_member(g, i, attack_range, fuel_floor)) return false;
     for (int a = 0; a < static_cast<int>(map().altars.size()); ++a) {
         if (!afford(altar_slot(a))) return false;
         to_altar(a);
     }
-    for (int g = 0; g < static_cast<int>(map().groups.size()); ++g)
-        for (int i = 0; i < static_cast<int>(map().groups[g].members.size()); ++i)
-            if (!prepare_member(g, i, attack_range, fuel_floor)) return false;
-    for (int g = 0; g < static_cast<int>(map().groups.size()); ++g) {
-        const auto& group = map().groups[g];
-        if (group.has_monolith || group.gems == 0) continue;
-        auto& slot = entry(centre_fields_, map().groups.size(), g);
-        if (slot) continue;
-        if (!afford(slot)) return false;
-        cached(slot, single(group.centre));
-    }
-    centres_ready_ = true;
     return true;
 }
 
@@ -218,7 +227,9 @@ bool Pathing::try_move(vec2 tile) {
 bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps) {
     if (!cambc::self().can_move()) return false;
     // Each retry costs a search, and only a hidden blocker makes one worth it.
+    const auto retry_cost = search_cost_estimate(std::min(max_steps, map().width + map().height)) + params::end_reserve;
     for (int attempt = 0; attempt < 3; ++attempt) {
+        if (attempt > 0 && !fuel_ok(retry_cost)) return false;
         const auto r = route(goals, avoid, max_steps);
         bool bumped = false;
         for (auto p : r.first_steps) {
@@ -235,7 +246,7 @@ bool Pathing::step_towards(const Field& field, const bitboard* avoid, int max_de
     if (here == 0 || !cambc::self().can_move()) return false;
     if (here != unreachable) {
         const int cap = here + max_detour;
-        if (fuel_ok(search_cost_estimate(cap)) && step_towards(field.goals, avoid, cap)) return true;
+        if (fuel_ok(search_cost_estimate(cap) + params::end_reserve) && step_towards(field.goals, avoid, cap)) return true;
     }
     return descend(field, avoid);
 }

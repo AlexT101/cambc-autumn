@@ -19,7 +19,7 @@ constexpr float min_camp_value = 50;
 constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
 constexpr int hold_range = 6;       // camp casts wait while a visible enemy is this close
 constexpr int camp_attack_range = 3;
-constexpr std::uint64_t fuel_needed = 25000;
+constexpr std::uint64_t fuel_needed = 18000; // measured: mean ~1k, max 16k
 
 cambc::champion live(const ChampionBelief& b) { return cambc::detail::handle_access::make_champion(b.handle); }
 

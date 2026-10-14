@@ -22,6 +22,8 @@ public:
 
     const Field& to_ally_spawn();
     const Field& to_altar(int altar); // goals: the altar's tribute tiles
+    // Null if not cached and computing it could take the fuel below `fuel_floor`.
+    const Field* to_altar(int altar, std::uint64_t fuel_floor);
     const Field& to_any_altar();
     const Field& to_group(int group); // goals: the group's camp tiles, to stand on and capture
     // Walking steps from the centre of a group worth farming (gems, no monolith): by symmetry,
