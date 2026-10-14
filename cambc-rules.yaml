@@ -82,7 +82,7 @@ camps:
 
 capture:
   condition: "After every monster in a group dies, the group stays empty until captured. A team captures it by standing on any of its camp tiles while no enemy stands on any. Adjacent tiles do not count."
-  timing: "If first held during round R, the reward is paid at the capture phase of round R+6. A capture phase where the tiles are empty or contested resets progress."
+  timing: "If held from round R, the reward is paid at the capture phase of round R+6. Progress resets the moment the tiles become empty or contested, mid-turn included; re-holding restarts the count."
   reward: "Allies on the camp tiles at payout split the gems and gold. Each gets the floor share, and the lowest id also gets the remainder."
   respawn: "At payout the group's timer is set to its longest member respawn. The group returns at the start of round payout + timer, or later while any of its camp tiles is occupied."
 
