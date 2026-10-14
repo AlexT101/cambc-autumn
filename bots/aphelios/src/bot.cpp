@@ -6,6 +6,7 @@
 #include "abilities.h"
 #include "params.h"
 #include "pathing.h"
+#include "safety.h"
 #include "self_abilities.h"
 #include "world.h"
 
@@ -14,8 +15,6 @@ namespace aph {
 namespace {
 
 using params::max_detour;
-
-constexpr int camp_attack_range = 3;
 
 // Strength throughout; Jungle first for -30% camp damage, then Monster, then Power (6 shards' stats).
 void buy_shards() {
@@ -81,7 +80,15 @@ bool attack_camp(const World& world) {
     return false;
 }
 
-void bank_gems(const World& world, Pathing& pathing) {
+// Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
+// every turn, so only danger near us is worth the extra search.
+void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
+    const auto avoid = safety.avoid();
+    const bool near = !(avoid & square(cambc::self().position(), safety_params::avoid_radius)).is_empty();
+    if (!near || !pathing.step_towards(field, &avoid)) pathing.step_towards(field);
+}
+
+void bank_gems(const World& world, Pathing& pathing, Safety& safety) {
     auto& me = cambc::self();
     dash_towards(world, pathing, pathing.to_any_altar());
     const vec2 here = me.position();
@@ -98,7 +105,7 @@ void bank_gems(const World& world, Pathing& pathing) {
     }
     // One cached field covers every altar; per-altar fields are needed only to skip locked ones.
     if (!any_locked) {
-        pathing.step_towards(pathing.to_any_altar());
+        step_safely(pathing, pathing.to_any_altar(), safety);
         return;
     }
     int best = -1, best_steps = unreachable;
@@ -107,7 +114,7 @@ void bank_gems(const World& world, Pathing& pathing) {
         const int steps = pathing.to_altar(a).at(here);
         if (steps < best_steps) best = a, best_steps = steps;
     }
-    if (best >= 0) pathing.step_towards(pathing.to_altar(best));
+    if (best >= 0) step_safely(pathing, pathing.to_altar(best), safety);
 }
 
 constexpr int capture_rounds = 6;
@@ -236,28 +243,6 @@ void place_ward(const World& world, Pathing& pathing) {
     }
 }
 
-int threat_reach(const ChampionFacts& f) {
-    int r = f.attack_range();
-    for (const auto& a : f.abilities)
-        if (a.hits_enemies()) r = std::max(r, a.reach());
-    return r + (f.has_dash() ? 2 : 1);
-}
-
-// Anything that could damage us before our next turn, and so cancel a recall.
-bool threatened(const World& world) {
-    const vec2 here = cambc::self().position();
-    const auto& groups = world.map().groups;
-    for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
-        const auto& c = world.camps[g];
-        if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
-        for (std::size_t i = 0; i < groups[g].members.size(); ++i)
-            if (c.health[i] > 0 && dist(here, groups[g].members[i].pos) <= camp_attack_range) return true;
-    }
-    for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(here, e.pos) <= threat_reach(e.facts())) return true;
-    return false;
-}
-
 // Retreating from an awake camp takes its hits anyway, and the clear is lost.
 bool finishing_camp(const World& world) {
     const vec2 here = cambc::self().position();
@@ -272,10 +257,12 @@ bool finishing_camp(const World& world) {
     return false;
 }
 
-bool want_home(const World& world) {
+// An enemy that could kill us before our next turn overrides finishing a camp.
+bool want_home(const World& world, Safety& safety) {
     const auto& me = cambc::self();
-    return !world.map().ally_spawn.is_set(me.position()) && me.health() < params::recall_health_fraction * me.max_health()
-        && !finishing_camp(world);
+    if (world.map().ally_spawn.is_set(me.position())) return false;
+    return (me.health() < params::recall_health_fraction * me.max_health() && !finishing_camp(world))
+           || (safety.lethal(me.position()) && safety.fight(me.position()).lost);
 }
 
 bool can_tribute_here(const World& world) {
@@ -287,7 +274,7 @@ bool can_tribute_here(const World& world) {
     return false;
 }
 
-void decide(const World& world, Pathing& pathing) {
+void decide(const World& world, Pathing& pathing, Safety& safety) {
     auto& me = cambc::self();
     if (!world.me().alive) {
         buy_shards(); // the dead can only shop
@@ -295,7 +282,7 @@ void decide(const World& world, Pathing& pathing) {
     }
     if (me.is_submitting_gems() || me.is_teleporting()) return;
     if (me.is_recalling()) {
-        if (want_home(world) && !threatened(world) && !can_tribute_here(world)) return;
+        if (want_home(world, safety) && !safety.threatened(me.position()) && !can_tribute_here(world)) return;
         try {
             me.cancel_recall();
         } catch (const cambc::error&) {
@@ -312,15 +299,16 @@ void decide(const World& world, Pathing& pathing) {
         attack_enemy(world);
         return;
     }
-    if (want_home(world)) {
+    if (want_home(world, safety)) {
+        if (world.me().facts().walk_and_attack_independent()) attack_enemy(world);
         cast_at_enemies(world, true);
         // A tribute survives damage; a recall does not.
         if (can_tribute_here(world)) {
-            bank_gems(world, pathing);
+            bank_gems(world, pathing, safety);
             return;
         }
         dash_away(world, pathing, pathing.to_ally_spawn());
-        pathing.step_towards(pathing.to_ally_spawn());
+        step_safely(pathing, pathing.to_ally_spawn(), safety);
         return;
     }
 
@@ -331,7 +319,7 @@ void decide(const World& world, Pathing& pathing) {
     if (attacked) reset_and_attack_enemy(world);
     place_ward(world, pathing);
     if (me.gem_count() > 0) {
-        bank_gems(world, pathing); // a tribute can still start after a ranged attack
+        bank_gems(world, pathing, safety); // a tribute can still start after a ranged attack
         return;
     }
     if (attacked && !world.me().facts().walk_and_attack_independent()) return;
@@ -354,7 +342,8 @@ void start_recall(const World& world) {
 } // namespace
 
 void play_turn(const World& world, Pathing& pathing, Memory&) {
-    decide(world, pathing);
+    Safety safety{world};
+    decide(world, pathing, safety);
     shield_if_needed(world);
     start_recall(world);
 }
