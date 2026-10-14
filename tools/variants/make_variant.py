@@ -106,7 +106,8 @@ def replace_draft(files, draft):
     path, match = hits[0]
     body = "".join(f"\n    cambc::champion_draft::{name}," for name in draft) + "\n"
     text = files[path]
-    files[path] = text[:match.start(2)] + body + text[match.end(2):]
+    files[path] = re.sub(r"\brandom_draft = true\b", "random_draft = false",
+                         text[:match.start(2)] + body + text[match.end(2):])
     return path
 
 

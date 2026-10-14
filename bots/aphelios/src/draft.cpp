@@ -13,6 +13,12 @@ namespace {
 
 int draft_round() { return static_cast<int>(cambc::round_number()); }
 
+constexpr auto all_champions() {
+    std::array<cambc::champion_draft, static_cast<std::size_t>(cambc::champion_draft::tavi) + 1> all{};
+    for (std::size_t i = 0; i < all.size(); ++i) all[i] = static_cast<cambc::champion_draft>(i);
+    return all;
+}
+
 // A rejected pick does not spend the turn, so trying the next candidate is always safe.
 bool pick_first_available(DraftState& state, std::span<const cambc::champion_draft> order) {
     const auto ours = cambc::draft::current_draft(team::ally);
@@ -48,17 +54,18 @@ void play_draft(DraftState& state) {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
     // and the draft bot may not run again after its last pick.
     write_plan(state);
-    pick_first_available(state, params::draft_preference);
+    if constexpr (params::random_draft) {
+        auto order = all_champions();
+        for (std::size_t i = order.size() - 1; i > 0; --i) std::swap(order[i], order[random_below(i + 1)]);
+        pick_first_available(state, order);
+    } else {
+        pick_first_available(state, params::draft_preference);
+    }
 }
 
 void ensure_picked(DraftState& state) {
     if (state.picked_round == draft_round()) return;
-    static constexpr auto everything = [] {
-        std::array<cambc::champion_draft, static_cast<std::size_t>(cambc::champion_draft::tavi) + 1> all{};
-        for (std::size_t i = 0; i < all.size(); ++i) all[i] = static_cast<cambc::champion_draft>(i);
-        return all;
-    }();
-    pick_first_available(state, everything);
+    pick_first_available(state, all_champions());
 }
 
 } // namespace aph
