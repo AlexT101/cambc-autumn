@@ -129,7 +129,7 @@ public:
     // Could the credible threats and camps kill us at p before our next turn?
     bool lethal(vec2 p);
     // Off spawn, and below the recall line, or somewhere lethal in a fight we lose. Retreating
-    // from every lost fight cost tempo in testing (6-7 of 18 against v0) for few deaths saved.
+    // from every lost fight cost tempo in testing (6-7 of 18 against an early baseline) for few deaths saved.
     bool should_retreat();
 
     // Drop everything cached, after something this turn changed the fight: a kill, a stun or a

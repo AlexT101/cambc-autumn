@@ -9,7 +9,7 @@ Work from these two. Read `docs/` or `rules-verification/` only if they can't an
 
 ## Language
 
-The bot is **C++ only**, in [bots/aphelios/](bots/aphelios/); `bots/starter-cpp` is reference only. Frozen snapshots of earlier aphelios versions, used as sparring partners, go in `bots/baselines/<name>/` (e.g. `bots/baselines/v0`); never edit them. `v2-aggro`, `v3-aggro` and `v4-aggro` are those versions plus chasing the weakest visible enemy within 8 when above half health: sparring partners that fight, since our baselines rarely do. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:
+The bot is **C++ only**, in [bots/aphelios/](bots/aphelios/); `bots/starter-cpp` is reference only. Frozen snapshots of earlier aphelios versions, used as sparring partners, go in `bots/baselines/<name>/` (e.g. `bots/baselines/v8`); never edit them. `v4-aggro` and `v8-aggro` are those versions plus chasing the weakest visible enemy within 8 when above half health: sparring partners that fight, since our baselines rarely do. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:
 
 - [docs/handbook/](docs/handbook/) and [docs/champions/](docs/champions/): game rules, superseded by the YAML
 - [docs/guides/cpp/](docs/guides/cpp/): C++ guides
@@ -44,9 +44,9 @@ node tools/mapgen/mapgen.mjs suite                                 # rebuild map
 The draft is compiled in (`params::draft_preference`), so forced drafts are separate bot copies. [tools/variants/make_variant.py](tools/variants/make_variant.py) copies a bot (any snapshot with that array) to `bots/variants/<name>/` (gitignored) with a given pick order; drafts under 5 are padded in enum order (name ends `-pad`) and `manifest.json` records source, git state and draft. [tools/variants/matrix.py](tools/variants/matrix.py) plays variants against each other through run_batched.py, one batch per distinct pair, and writes a win-rate matrix with per-map tables to `replays/matrix-TIMESTAMP/` (`matrix.md`, `matrix.csv`, `cells.csv`, `pairs/`):
 
 ```
-py tools/variants/make_variant.py varg,willow,ryth --source baselines/v0
-py tools/variants/matrix.py varg,tavi,ryth,stellar,ren baselines/v0@willow,ren --one-side   # specs [BOT@]DRAFT, or BOT@ for its own draft
-py tools/variants/matrix.py --focus --cols baselines/v0@      # each champion first pick + --filler, vs v0's own draft
+py tools/variants/make_variant.py varg,willow,ryth --source baselines/v8
+py tools/variants/matrix.py varg,tavi,ryth,stellar,ren baselines/v8@willow,ren --one-side   # specs [BOT@]DRAFT, or BOT@ for its own draft
+py tools/variants/matrix.py --focus --cols baselines/v8@      # each champion first pick + --filler, vs v8's own draft
 py tools/variants/matrix.py --resume replays/matrix-TIMESTAMP # finish unfinished pairs (--report: rewrite reports only)
 ```
 

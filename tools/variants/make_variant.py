@@ -1,7 +1,7 @@
 """Copy a bot to bots/variants/<name>/ with a forced draft compiled into its draft_preference array.
 
     py tools/variants/make_variant.py varg,willow,ryth,stellar,tavi
-    py tools/variants/make_variant.py tavi --source baselines/v0 --name v0-tavi
+    py tools/variants/make_variant.py tavi --source baselines/v8 --name v8-tavi
 
 Names are enum names from sdk/cpp/cambc.h or unique prefixes (vesper, cassi). Drafts shorter
 than 5 are padded with the unused champions in enum order (the bots' own fallback order), since
