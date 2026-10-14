@@ -329,19 +329,22 @@ bool join_rally(const World& world, Pathing& pathing) {
 }
 
 // A tribute channel cannot act, and a kill takes the whole bag: start or keep one only if the
-// visible enemies could not kill us before it ends.
-bool tribute_safe(Safety& safety, int turns) {
+// visible enemies could not kill us before it ends, nor damage at the rate of the last round
+// (attackers in bushes stay unseen).
+bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
+    const float health = cambc::self().health();
+    if (memory.damage * static_cast<float>(turns) >= health) return false;
     const int kill = safety.turns_to_kill_idle(cambc::self().position(), turns + 1);
     return kill == 0 || kill > turns;
 }
 
 int tribute_turns(int gems) { return std::max(1, (gems + 9) / 10); }
 
-bool can_tribute_safely(const World& world, Safety& safety) {
-    return can_tribute_here(world) && tribute_safe(safety, tribute_turns(cambc::self().gem_count()));
+bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory) {
+    return can_tribute_here(world) && tribute_safe(safety, memory, tribute_turns(cambc::self().gem_count()));
 }
 
-void decide(const World& world, Pathing& pathing, Safety& safety) {
+void decide(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     auto& me = cambc::self();
     if (!world.me().alive) {
         buy_shards(); // the dead can only shop
@@ -349,7 +352,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety) {
     }
     if (me.is_teleporting()) return;
     if (me.is_submitting_gems()) {
-        if (tribute_safe(safety, me.remaining_channel_time())) return;
+        if (tribute_safe(safety, memory, me.remaining_channel_time())) return;
         try {
             me.cancel_submit_gems();
         } catch (const cambc::error&) {
@@ -357,7 +360,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety) {
         }
     }
     if (me.is_recalling()) {
-        if (want_home(world, safety) && !safety.threatened(me.position()) && !can_tribute_safely(world, safety)) return;
+        if (want_home(world, safety) && !safety.threatened(me.position()) && !can_tribute_safely(world, safety, memory)) return;
         try {
             me.cancel_recall();
         } catch (const cambc::error&) {
@@ -378,7 +381,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety) {
         if (world.me().facts().walk_and_attack_independent()) attack_enemy(world);
         cast_at_enemies(world, true);
         // A tribute survives damage; a recall does not.
-        if (can_tribute_safely(world, safety)) {
+        if (can_tribute_safely(world, safety, memory)) {
             bank_gems(world, pathing, safety);
             return;
         }
@@ -394,8 +397,8 @@ void decide(const World& world, Pathing& pathing, Safety& safety) {
     if (attacked) reset_and_attack_enemy(world);
     place_ward(world, pathing);
     if (me.gem_count() > 0) {
-        if (!can_tribute_safely(world, safety) && chase(world, pathing, safety)) return;
-        if (can_tribute_here(world) && !can_tribute_safely(world, safety)) return; // until they leave or come
+        if (!can_tribute_safely(world, safety, memory) && chase(world, pathing, safety)) return;
+        if (can_tribute_here(world) && !can_tribute_safely(world, safety, memory)) return; // until they leave or come
         bank_gems(world, pathing, safety); // a tribute can still start after a ranged attack
         return;
     }
@@ -420,11 +423,15 @@ void start_recall(const World& world) {
 
 } // namespace
 
-void play_turn(const World& world, Pathing& pathing, Memory&) {
+void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     Safety safety{world};
-    decide(world, pathing, safety);
+    const float health = world.me().alive ? cambc::self().health() : 0;
+    memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
+    decide(world, pathing, safety, memory);
     shield_if_needed(world);
     start_recall(world);
+    memory.round = world.round;
+    memory.health = world.me().alive ? cambc::self().health() : 0;
 }
 
 } // namespace aph
