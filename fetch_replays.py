@@ -1,4 +1,4 @@
-"""Download replays of other teams' matches from the 2026a ladder. Requires Python 3.10+.
+"""Download replays of ladder matches from the 2026a ladder, ours or other teams'. Requires Python 3.10+.
 
 All endpoints used here are public: /ladder lists the teams, /match-groups lists a team's
 five-game groups (newest first, paged with a `<createdAt>_<id>` cursor), /match-groups/<id>
@@ -22,6 +22,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parent
 SITE = "https://2026a.battlecode.co.uk"
 API = SITE + "/api/v1"
+MY_TEAM = "547efb5b-57e5-4355-8501-3b331f506d62"
 
 
 def fetch(url, retries=4):
@@ -114,13 +115,20 @@ def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--top", type=int, default=0, help="include the top N rated teams on the ladder")
     p.add_argument("--team", action="append", default=[], help="team name, name fragment or id (repeatable)")
-    p.add_argument("--kind", choices=["ranked", "unranked", "all"], default="ranked")
+    p.add_argument("--mine", action="store_true",
+                   help="our team, every group of either kind, into replays/mine/ (unless overridden)")
+    p.add_argument("--kind", choices=["ranked", "unranked", "all"])
     p.add_argument("--since", help="only groups created at or after this ISO time, e.g. 2026-10-13")
-    p.add_argument("--max-groups", type=int, default=20, help="newest N groups per team, 0 for all (default 20)")
-    p.add_argument("--out", type=Path, default=ROOT / "replays" / "ladder")
+    p.add_argument("--max-groups", type=int, help="newest N groups per team, 0 for all (default 20)")
+    p.add_argument("--out", type=Path)
     p.add_argument("--threads", type=int, default=4)
     p.add_argument("--list", action="store_true", help="print the ladder and exit")
     args = p.parse_args()
+    if args.mine:
+        args.team.append(MY_TEAM)
+    args.kind = args.kind or ("all" if args.mine else "ranked")
+    args.max_groups = args.max_groups if args.max_groups is not None else 0 if args.mine else 20
+    args.out = args.out or ROOT / "replays" / ("mine" if args.mine else "ladder")
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")
 
@@ -131,7 +139,7 @@ def main():
         return
     teams = resolve_teams(ladder, args.team, args.top)
     if not teams:
-        sys.exit("choose teams with --top N and/or --team NAME, or see them with --list")
+        sys.exit("choose teams with --mine, --top N and/or --team NAME, or see them with --list")
 
     kind = None if args.kind == "all" else args.kind
     groups = {}
