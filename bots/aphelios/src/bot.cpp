@@ -242,9 +242,24 @@ bool threatened(const World& world) {
     return false;
 }
 
+// Retreating from an awake camp takes its hits anyway, and the clear is lost.
+bool finishing_camp(const World& world) {
+    const vec2 here = cambc::self().position();
+    const auto& groups = world.map().groups;
+    for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
+        const auto& c = world.camps[g];
+        if (c.state != CampState::alive || c.awake == Awake::asleep || !groups[g].threat().is_set(here)) continue;
+        float rounds = 0;
+        const float damage = min_camp_damage(groups[g], c, std::max(1.0f, world.me().strength), &rounds);
+        return damage < params::finish_camp_health_fraction * cambc::self().health();
+    }
+    return false;
+}
+
 bool want_home(const World& world) {
     const auto& me = cambc::self();
-    return !world.map().ally_spawn.is_set(me.position()) && me.health() < params::recall_health_fraction * me.max_health();
+    return !world.map().ally_spawn.is_set(me.position()) && me.health() < params::recall_health_fraction * me.max_health()
+        && !finishing_camp(world);
 }
 
 bool can_tribute_here(const World& world) {

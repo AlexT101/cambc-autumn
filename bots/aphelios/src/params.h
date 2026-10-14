@@ -22,6 +22,8 @@ inline constexpr int track_horizon = 20;
 inline constexpr int max_detour = 16;
 
 inline constexpr float recall_health_fraction = 0.35f;
+// Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
+inline constexpr float finish_camp_health_fraction = 0.6f;
 inline constexpr int ward_period = 20;
 
 } // namespace aph::params
