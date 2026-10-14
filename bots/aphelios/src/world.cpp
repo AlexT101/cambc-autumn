@@ -548,7 +548,7 @@ void World::build_static() {
             g.strength += stats->base_strength;
             g.has_monolith |= type == cambc::camp_type::monolith;
             s->camp_tiles.set(pos);
-            s->group_lookup_[tile_index(pos)] = static_cast<std::uint8_t>(gi + 1);
+            s->group_lookup_[tile_index(pos)] = static_cast<std::uint16_t>(gi + 1);
         }
         g.centre = central_tile(g.members);
     }
@@ -612,7 +612,9 @@ void World::init_beliefs() {
         for (auto& b : enemies) {
             b.at = now();
             b.turns_since_fixed = turns_between(b, b.fixed, b.at);
-            if (b.turns_since_fixed > 0) b.possible = grown(b.facts().has_dash());
+            if (b.turns_since_fixed == 0) continue;
+            b.possible = grown(b.facts().has_dash());
+            if (b.facts().has_dash()) b.undashed = grown(false);
         }
     }
     camps.assign(s.groups.size(), CampBelief{});
@@ -620,6 +622,7 @@ void World::init_beliefs() {
         auto& health = camps[g].health;
         health.reserve(s.groups[g].members.size());
         for (const auto& m : s.groups[g].members) health.push_back(m.max_health);
+        camps[g].health_round.assign(health.size(), 0);
     }
     altars.assign(s.altars.size(), AltarBelief{});
 }
@@ -639,6 +642,10 @@ void World::update() {
     unseen_ = ~visible;
     const auto tributing = tributing_enemies(); // before update_champions ends their channels
     update_champions(true);
+    // A priority read in round r applies from r + 1: ranks change when a round passes one unread.
+    for (const auto* team : {&allies, &enemies})
+        for (const auto& c : *team)
+            ranks_stale_ |= c.next_priority != c.priority && ranked_round_ <= c.priority_round && c.priority_round < round;
     if (ranks_stale_) rank_turns();
     guard("camps", [&] { update_camps(); });
     guard("altars", [&] { update_altars(); });
@@ -684,15 +691,18 @@ void World::update_champion(ChampionBelief& b, bool full) {
         }
         if (!b.alive) {
             // Respawned on its spawn, at its turn start this round or (after our turn) last round.
-            // The respawn turn allows no casting, so abilities are ready this round or next.
+            // The respawn turn allows no casting, so abilities are ready this round or next. Only
+            // ours, or one whose turn came before ours in both rounds, is surely this round's.
             b.alive = true;
             b.died_round = b.respawn_earliest = b.respawn_latest = -1;
+            const bool before_us = slot(b, round) < slot(me(), round) && slot(b, round - 1) < slot(me(), round - 1);
+            b.respawned_round = b.is_self || before_us ? round : round - 1;
             b.pos = spawn;
             b.pos_round = round;
             b.pos_source = Source::inferred;
             b.health = b.max_health;
             b.gems = 0;
-            b.ready_round = {round, round};
+            b.ready_round = {b.respawned_round + 1, b.respawned_round + 1};
             if (b.side == team::enemy) fix(b, s.enemy_spawn, {round - 1, -1});
         }
     }
@@ -700,22 +710,25 @@ void World::update_champion(ChampionBelief& b, bool full) {
     const auto info = engine::champion(h);
     b.visible = info.has_value();
     if (!info) {
-        if (b.channel != Channel::none && round >= b.channel_end_round) {
+        // A channel completes at its owner's turn start.
+        const bool ended = round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < slot(me(), round));
+        if (b.channel != Channel::none && ended) {
             if (b.channel == Channel::recall) {
                 b.pos = spawn;
                 b.pos_round = b.channel_end_round;
                 b.pos_source = Source::inferred;
                 b.health = b.max_health;
                 // Damage or a stun could have cancelled it, so add the spawn, not replace.
-                if (b.side == team::enemy) b.possible |= s.enemy_spawn;
+                if (b.side == team::enemy) {
+                    b.possible |= s.enemy_spawn;
+                    if (b.facts().has_dash()) b.undashed |= s.enemy_spawn;
+                }
             }
             b.channel = Channel::none;
         }
         if (b.side == team::enemy) {
             advance(b);
-            b.possible &= unseen_;
-            // Emptied by something unmodelled (a teleport crystal, say): it could be anywhere.
-            if (b.tracked && b.possible.is_empty()) b.tracked = false;
+            prune(b);
         }
         return;
     }
@@ -758,8 +771,11 @@ void World::update_champion(ChampionBelief& b, bool full) {
         b.channel_end_round = fire_round(round, left.value_or(0), b.acted);
     }
     // The crystal's destination: a free tile within 3, terrain in between ignored.
-    if (b.side == team::enemy && b.channel == Channel::teleport)
-        b.possible |= square(b.pos, teleport_crystal_range) & ~s.blocked_for_them;
+    if (b.side == team::enemy && b.channel == Channel::teleport) {
+        const auto landing = square(b.pos, teleport_crystal_range) & ~s.blocked_for_them;
+        b.possible |= landing;
+        if (b.facts().has_dash()) b.undashed |= landing;
+    }
     for (int slot = 0; slot < 2; ++slot) {
         const int cd = engine::cooldown(h, static_cast<std::uint32_t>(slot));
         const int ready = fire_round(round, cd, b.acted);
@@ -771,9 +787,13 @@ void World::update_champion(ChampionBelief& b, bool full) {
                       << " last seen r" << last_seen << " projected r" << b.ready_round[slot] << " read r" << ready
                       << (ready < b.ready_round[slot] ? " EARLIER" : " (cast while unseen)") << '\n';
         // A cooldown that restarted means a cast: the slot is ready again 8 rounds after it.
-        if (cd > 0 && b.ready_round[slot] <= round) b.last_cast_round[slot] = ready - 8;
-        b.ready_round[slot] = ready;
+        if (cd > 0 && b.ready_round[slot] <= round) b.last_cast_round[slot] = ready - ability_cooldown;
+        b.ready_round[slot] = std::max(ready, b.respawned_round + 1);
     }
+    // In observe() too, for a champion first seen after our move.
+    b.gems = engine::gems(h);
+    b.gems_round = round;
+    std::tie(b.items, b.fast_recall) = engine::items(h);
     if (!full) return;
 
     const auto [priority, next_priority] = engine::priorities(h);
@@ -781,9 +801,6 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.priority = priority;
     b.next_priority = next_priority;
     b.priority_round = round;
-    b.gems = engine::gems(h);
-    b.gems_round = round;
-    std::tie(b.items, b.fast_recall) = engine::items(h);
 }
 
 void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float health) {
@@ -797,8 +814,7 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float healt
     // The poster's turn in that round is unknown, and so is whether it saw a recall about to land.
     fix(b, single(pos) | map().enemy_spawn, {seen_round, -1});
     advance(b);
-    b.possible &= unseen_;
-    if (b.tracked && b.possible.is_empty()) b.tracked = false;
+    prune(b);
 }
 
 void World::note_capture(int group, int respawn_round) {
@@ -815,6 +831,7 @@ void World::note_capture(int group, int respawn_round) {
 
 void World::fix(ChampionBelief& b, bitboard tiles, Moment when) {
     b.possible = std::move(tiles);
+    if (b.facts().has_dash()) b.undashed = b.possible;
     b.tracked = true;
     b.fixed = b.at = when;
     b.turns_since_fixed = 0;
@@ -822,6 +839,7 @@ void World::fix(ChampionBelief& b, bitboard tiles, Moment when) {
 
 void World::rank_turns() {
     ranks_stale_ = false;
+    ranked_round_ = round;
     for (auto* team : {&allies, &enemies}) {
         const auto priority = [&](const ChampionBelief& x) { return round > x.priority_round ? x.next_priority : x.priority; };
         for (auto& c : *team) {
@@ -857,30 +875,66 @@ void World::advance(ChampionBelief& b) {
         b.possible.clear();
         return;
     }
-    const auto to = now();
-    const int turns = turns_between(b, b.at, to);
+    const auto from = b.at, to = now();
+    const int turns = turns_between(b, from, to);
     b.at = to;
     if (turns == 0) return;
     b.turns_since_fixed += turns;
+    const bool dasher = b.facts().has_dash();
     // A recall started on any turn after the fix lands at the start of the turn recall turn ends
     // later, which is a full turn: from turn recall + 1 on, add the spawn before growing.
-    if (b.turns_since_fixed > (b.fast_recall ? home_recall_time : cambc::constants::recall_time)) b.possible |= s.enemy_spawn;
+    if (b.turns_since_fixed > (b.fast_recall ? home_recall_time : cambc::constants::recall_time)) {
+        b.possible |= s.enemy_spawn;
+        if (dasher) b.undashed |= s.enemy_spawn;
+    }
     FuelMeter meter{"track"};
+    // `possible` never holds a tile closed to them, so a walk dilates it.
+    const auto walk = [&](bitboard& tiles, int steps) {
+        if (steps <= 2) return dilate(tiles, s.open_for_them, steps);
+        cambc::distance_field field;
+        bitboard grown;
+        field.compute(s.blocked_for_them, tiles, grown, static_cast<std::uint16_t>(steps));
+        tiles = std::move(grown);
+    };
+    if (!dasher) return walk(b.possible, turns);
+
     // A dash (2 steps, with a walk) crosses holes, altars and champions, so only walls bound it
     // and landings are filtered after.
-    bool dash = false;
-    for (int slot = 0; slot < 2; ++slot)
-        dash |= b.facts().abilities[slot].kind == AbilityKind::dash && (b.ability_ready(slot, round) || b.cooldowns_uncertain());
-    // `possible` never holds a tile closed to them, so a walk dilates it.
-    const int steps = turns * (dash ? 3 : 1);
-    if (steps <= 2) {
-        dilate(b.possible, s.open_for_them, steps);
-        return;
+    const auto dash = [&](const bitboard& tiles) {
+        cambc::distance_field field;
+        bitboard grown;
+        field.compute(s.walls, tiles, grown, 3);
+        return grown & s.open_for_them;
+    };
+    int dash_slot = 0;
+    while (b.facts().abilities[dash_slot].kind != AbilityKind::dash) ++dash_slot;
+    const int ready = b.ready_round[dash_slot];
+    // `undashed` can dash from `ready` on. Any history can dash again a cooldown after the first
+    // chance since the fix (a bound, not tracking which dashed when).
+    const int first_turn = Moment{b.fixed.round, slot(b, b.fixed.round)} > b.fixed ? b.fixed.round : b.fixed.round + 1;
+    const int again = std::max(ready, first_turn) + ability_cooldown;
+    for (int r = std::max(from.round, 1); r <= to.round; ++r) {
+        const Moment turn{r, slot(b, r)};
+        if (!(from < turn && turn < to)) continue;
+        if (b.cooldowns_uncertain() || r >= again) {
+            b.possible = dash(b.possible);
+        } else if (r >= ready) {
+            auto dashed = dash(b.undashed);
+            walk(b.possible, 1);
+            b.possible |= dashed;
+            walk(b.undashed, 1);
+        } else {
+            walk(b.possible, 1);
+            b.undashed = b.possible;
+        }
     }
-    cambc::distance_field field;
-    bitboard grown;
-    field.compute(dash ? s.walls : s.blocked_for_them, b.possible, grown, static_cast<std::uint16_t>(steps));
-    b.possible = dash ? grown & s.open_for_them : std::move(grown);
+}
+
+void World::prune(ChampionBelief& b) const {
+    b.possible &= unseen_;
+    if (b.facts().has_dash()) b.undashed &= unseen_;
+    // Emptied by something unmodelled (a teleport crystal, say): it could be anywhere.
+    if (b.tracked && b.possible.is_empty()) b.tracked = false;
 }
 
 void World::update_camps() {
@@ -911,6 +965,7 @@ void World::update_camps() {
                 }
                 if (c.state == CampState::respawning && round >= c.respawn_round) {
                     c.state = CampState::alive;
+                    c.health_round.assign(G.members.size(), c.respawn_round - 1);
                     for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
                     c.awake = Awake::asleep;
                 }
@@ -920,6 +975,9 @@ void World::update_camps() {
 
             const auto [code, timer] = engine::group_state(G.handle);
             const auto previous = c.state;
+            const int previous_round = c.state_round;
+            const int previous_respawn = c.respawn_round;
+            if (previous_round != round - 1) c.quiet_rounds = 0;
             if (code == 1) c.state = CampState::alive;
             else if (code == 2) c.state = CampState::cleared;
             else if (code == 3) {
@@ -930,25 +988,32 @@ void World::update_camps() {
             if (debug_log && c.state != previous)
                 std::cout << "world r" << round << " g" << g << str(G.centre) << ' ' << name(previous) << " -> " << name(c.state)
                           << (c.state == CampState::respawning ? " until r" + std::to_string(c.respawn_round) : "") << '\n';
+            // Not alive when last seen: it returned at full health after that, and after its timer.
             if (c.state == CampState::alive && previous != CampState::alive) {
+                c.health_round.assign(G.members.size(), std::max(previous_round, previous_respawn - 1));
                 for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
                 c.awake = Awake::asleep;
             }
 
             // Member health; a visible camp tile with no live camp on it is a dead member. Any drop,
-            // a kill included, is damage, which wakes the group.
+            // a kill included, is damage, which wakes the group, but if the health is older than a
+            // sleep it may have fallen asleep again since.
             for (std::size_t i = 0; i < G.members.size(); ++i) {
                 const auto& m = G.members[i];
                 if (!visible.is_set(m.pos)) continue;
                 const float hp = engine::camp_health(m.handle).value_or(0.0f);
                 if (hp < c.health[i] - 1e-3f) {
-                    c.last_damaged_round = round;
-                    c.awake = Awake::awake;
                     c.quiet_rounds = 0;
+                    if (round - c.health_round[i] < cambc::constants::camp_sleep_time) {
+                        c.last_damaged_round = round;
+                        c.awake = Awake::awake;
+                    } else if (c.awake == Awake::asleep) {
+                        c.awake = Awake::unknown;
+                    }
                 }
                 c.health[i] = hp;
+                c.health_round[i] = round;
             }
-            c.health_round = round;
 
             if (c.state != CampState::alive) {
                 c.awake = Awake::asleep;
@@ -975,7 +1040,13 @@ void World::update_camps() {
                             std::cout << "world r" << round << " g" << g << str(G.centre) << " held by "
                                       << (holder ? cambc::to_string(*holder) : std::string("nobody")) << '\n';
                         c.holder = holder;
-                        c.held_since = holder ? hold_start(G, *holder) : -1;
+                        // A group not seen cleared was cleared no earlier than when last seen, or than
+                        // it returned.
+                        const int earliest = previous == CampState::cleared ? -1
+                                             : previous == CampState::respawning
+                                                 ? std::max(previous_round + 1, previous_respawn)
+                                                 : std::max(previous_round, previous_respawn);
+                        c.held_since = holder ? hold_start(G, *holder, earliest) : -1;
                     }
                 }
             } else {
@@ -989,7 +1060,8 @@ void World::update_camps() {
 // A hold first seen at our turn began after our previous one: last round if a holder on the tiles
 // is us or acts after us this round, so cannot have arrived since; else, taking the later
 // possibility, this round.
-int World::hold_start(const CampGroup& G, team holder) const {
+int World::hold_start(const CampGroup& G, team holder, int earliest) const {
+    if (earliest >= round) return round;
     const auto& list = holder == team::ally ? allies : enemies;
     for (const auto& c : list)
         if (c.alive && c.pos_round == round && G.tiles().is_set(c.pos) && (c.is_self || slot(c, round) > slot(me(), round)))
@@ -1063,7 +1135,7 @@ void World::update_scores(std::uint32_t tributing) {
         tributer = nullptr;
         candidates = 0;
         for (auto& b : enemies)
-            if (b.alive && b.gems == score.enemy_delta) tributer = &b, ++candidates;
+            if (b.alive && !b.visible && b.gems == score.enemy_delta) tributer = &b, ++candidates;
     }
     if (candidates == 1) {
         if (!tributer->visible) tributer->gems = 0;

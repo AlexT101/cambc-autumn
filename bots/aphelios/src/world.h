@@ -122,7 +122,7 @@ private:
     // Per tile, row-major, in static storage, which starts zeroed for free: filling a vector costs
     // ~1 fuel a byte. One map per process.
     static constexpr int max_tiles = 100 * 100;
-    inline static std::array<std::uint8_t, max_tiles> group_lookup_{}; // group index + 1, or 0
+    inline static std::array<std::uint16_t, max_tiles> group_lookup_{}; // group index + 1, or 0
     mutable std::optional<Field> ally_field_, enemy_field_;
     mutable std::deque<BushCluster> bush_clusters_; // found so far; references stay valid
     mutable bitboard clustered_;                     // their tiles
@@ -157,6 +157,7 @@ struct Moment {
 
 inline constexpr int home_recall_time = 3;       // turn ends, with a Home emblem
 inline constexpr int teleport_crystal_range = 3; // Chebyshev, terrain ignored
+inline constexpr int ability_cooldown = 8;        // rounds from a cast to the slot's next
 
 struct ChampionBelief {
     cambc::handle_champion_t handle{};
@@ -169,6 +170,7 @@ struct ChampionBelief {
     int died_round = -1;       // round we first saw it dead
     int respawn_earliest = -1; // window for its respawn round while dead
     int respawn_latest = -1;
+    int respawned_round = -1; // its respawn turn's round, when known to be this round's
 
     // Last observation. `visible` means in our vision now; the rest may be stale.
     bool visible = false;
@@ -198,12 +200,15 @@ struct ChampionBelief {
     // Enemies only: every tile it could be on, from what we have seen and how champions move.
     // Teleport crystals are not modelled. Empty while dead; anywhere while !tracked.
     bitboard possible;
+    bitboard undashed; // dashers: the part of `possible` reachable without dashing since `fixed`
     bool tracked = false;
     Moment fixed, at; // when `possible` was last known exactly, and when it describes
     int turns_since_fixed = 0;
 
     const ChampionFacts& facts() const { return aph::facts(type); }
     bool ability_ready(int slot, int round) const { return alive && round >= ready_round[slot]; }
+    // No walking, attacking or casting on the respawn turn.
+    bool can_act(int round) const { return alive && round != respawned_round; }
     // Damage back to whoever hits it (Ren), even as it dies.
     float retaliation() const { return facts().passive == Passive::retaliation ? retaliation_share * focus : 0.0f; }
     // True if an unseen reset could make the abilities ready earlier than ready_round says.
@@ -223,8 +228,8 @@ struct CampBelief {
     CampState state = CampState::alive;
     int state_round = 0;     // last round the state was seen; 0 = the start-of-game assumption
     int respawn_round = -1;  // while respawning
-    std::vector<float> health; // per member, last seen; 0 = dead
-    int health_round = 0;
+    std::vector<float> health;     // per member, last seen; 0 = dead
+    std::vector<int> health_round; // per member: the last round its health was known
     // Groups sleep until damaged and fall asleep after 2 camp phases with no champion within 3.
     Awake awake = Awake::asleep;
     int last_damaged_round = -1; // a health drop we saw
@@ -300,12 +305,13 @@ private:
     void build_static();
     void init_beliefs();
     void rank_turns();
+    void prune(ChampionBelief& b) const;
     void update_champions(bool full);
     void update_champion(ChampionBelief& b, bool full);
     static void fix(ChampionBelief& b, bitboard tiles, Moment when);
     void advance(ChampionBelief& b);
     void update_camps();
-    int hold_start(const CampGroup& G, team holder) const;
+    int hold_start(const CampGroup& G, team holder, int earliest) const;
     void update_altars();
     void update_wards();
     std::uint32_t tributing_enemies() const; // bit i: enemies[i] is believed to be tributing
@@ -314,6 +320,7 @@ private:
     std::unique_ptr<StaticMap> static_;
     bitboard unseen_; // ~visible
     bool ranks_stale_ = true;
+    int ranked_round_ = -1;
 };
 
 } // namespace aph

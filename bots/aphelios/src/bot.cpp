@@ -663,6 +663,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
 
     if (world.map().ally_spawn.is_set(me.position()) || world.me().facts().passive == Passive::remote_shop)
         buy_shards(world.me().facts());
+    if (!world.me().can_act(world.round)) return;
     heal_ally(world);
     shield_if_needed(world);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
