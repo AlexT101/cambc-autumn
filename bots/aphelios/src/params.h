@@ -28,6 +28,8 @@ inline constexpr float recall_health_fraction = 0.35f;
 // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
 inline constexpr float finish_camp_health_fraction = 0.6f;
 inline constexpr int ward_period = 20;
+// Gold for which a champion with no gems recalls to shop: one emblem.
+inline constexpr unsigned shop_trip_gold = 150;
 // Champion vision: enemies farther off are seen only through wards and are rarely caught.
 inline constexpr int chase_radius = 8;
 // Fights last about 5 rounds (local engagements: median 4-6), so allies more than a few steps

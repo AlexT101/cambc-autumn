@@ -19,30 +19,70 @@ namespace {
 
 using params::max_detour;
 
-// Strength throughout; Jungle first for -30% camp damage, then Monster, then Power (6 shards' stats).
-void buy_shards() {
-    using I = cambc::item_type;
-    struct Family {
-        I shard, emblem;
-        int cap;
-    };
-    static constexpr Family plan[] = {
-        {I::jungle_shard_of_strength, I::jungle_emblem_of_strength, 5},
-        {I::monster_shard_of_strength, I::monster_emblem_of_strength, 5},
-        {I::power_shard_of_strength, I::power_emblem_of_strength, 1 << 20},
-    };
+enum Family { monster, power, durability, treasure, jungle, home, bruiser };
+enum StatKind { strength_stat, focus_stat, health_stat };
+
+cambc::item_type shard_of(int family, int stat) {
+    return cambc::item_type{static_cast<std::uint32_t>(family * 6 + stat * 2)};
+}
+cambc::item_type emblem_of(int family, int stat) {
+    return cambc::item_type{static_cast<std::uint32_t>(family * 6 + stat * 2 + 1)};
+}
+
+// Casters whose spells out-damage their basic attacks per shard: Focus grows 10-15 a shard
+// against 3.5 Strength, and spell multipliers sum to 2-3.4 per 8 rounds, front-loaded in a fight.
+int main_stat(const ChampionFacts& f) {
+    using C = cambc::champion_type;
+    return f.type == C::stellar || f.type == C::prism || f.type == C::cassi ? focus_stat : strength_stat;
+}
+
+bool buy(cambc::item_type shard, unsigned count) {
+    auto& me = cambc::self();
+    if (!count || !me.can_buy(shard, count)) return false;
+    try {
+        me.buy(shard, count);
+        return true;
+    } catch (const cambc::error&) {
+        return false;
+    }
+}
+
+// Jungle (-30% camp damage), then Monster (+10% camp damage) in the main stat; then Bruiser
+// emblems (7 shards' stats for 5), each in whichever of health and the main stat raises their
+// product more, since fights go to the side with more health and damage.
+void buy_shards(const ChampionFacts& f) {
     auto& me = cambc::self();
     const auto owned = me.item_count();
-    for (const auto& f : plan) {
-        const int have = static_cast<int>(owned[f.shard] + 5 * owned[f.emblem]);
-        const unsigned count = std::min<unsigned>(f.cap - std::min(have, f.cap), me.gold_count() / I{f.shard}.cost());
+    const int main = main_stat(f);
+    unsigned gold = me.gold_count();
+    for (int family : {jungle, monster}) {
+        const int have = static_cast<int>(owned[shard_of(family, main)] + 5 * owned[emblem_of(family, main)]);
+        const unsigned count = std::min<unsigned>(5 - std::min(have, 5), gold / 30);
         if (!count) continue;
-        if (!me.can_buy(f.shard, count)) return;
-        try {
-            me.buy(f.shard, count);
-        } catch (const cambc::error&) {
-            return;
+        if (!buy(shard_of(family, main), count)) return;
+        gold -= 30 * count;
+        if (have + static_cast<int>(count) < 5) return;
+    }
+    float health = me.max_health(), value = main == focus_stat ? me.focus() : me.strength();
+    const float main_growth = main == focus_stat ? f.focus.growth : f.strength.growth;
+    int partial_hp = static_cast<int>(owned[shard_of(bruiser, health_stat)]);
+    int partial_main = static_cast<int>(owned[shard_of(bruiser, main)]);
+    while (gold >= 30) {
+        bool hp;
+        if (partial_hp) hp = true;
+        else if (partial_main) hp = false;
+        else {
+            float hp_gain = f.health.growth / health;
+            if (f.passive == Passive::health_strength && main == strength_stat) hp_gain += 1 / value;
+            hp = hp_gain > main_growth / value;
         }
+        int& partial = hp ? partial_hp : partial_main;
+        const unsigned count = std::min<unsigned>(5 - partial, gold / 30);
+        if (!buy(shard_of(bruiser, hp ? health_stat : main), count)) return;
+        gold -= 30 * count;
+        (hp ? health : value) += (hp ? f.health.growth : main_growth) * static_cast<float>(count);
+        partial = (partial + static_cast<int>(count)) % 5;
+        if (partial == 0) (hp ? value : health) += hp ? main_growth : f.health.growth; // the emblem's extra shard
     }
 }
 
@@ -464,11 +504,26 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
     return me.remaining_channel_time() + heal + from_spawn < walk;
 }
 
+// With an empty bag, a full emblem's gold rides a recall home: the bot otherwise carries 150+
+// gold for long stretches between forced visits, and the stop also heals.
+bool shop_trip(const World& world, Safety& safety, const Memory& memory) {
+    auto& me = cambc::self();
+    if (me.gem_count() > 0 || me.gold_count() < params::shop_trip_gold || memory.damage > 0
+        || world.me().facts().passive == Passive::remote_shop || safety.threatened(me.position()))
+        return false;
+    const auto& groups = world.map().groups;
+    for (int g = 0; g < static_cast<int>(groups.size()); ++g)
+        if (world.camps[g].state == CampState::alive && world.camps[g].awake != Awake::asleep
+            && groups[g].threat().is_set(me.position()))
+            return false;
+    return true;
+}
+
 void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     if (me.gem_count() == 0 || !world.me().alive) memory.banking = false;
     if (!world.me().alive) {
-        buy_shards(); // the dead can only shop
+        buy_shards(world.me().facts()); // the dead can only shop
         return;
     }
     if (me.is_teleporting()) return;
@@ -482,7 +537,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     }
     if (me.is_recalling()) {
         if (want_home(world, safety) && !safety.threatened(me.position()) && !can_tribute_safely(world, safety, memory)) return;
-        if (recall_to_bank(world, pathing, safety, memory)) return;
+        if (recall_to_bank(world, pathing, safety, memory) || shop_trip(world, safety, memory)) return;
         try {
             me.cancel_recall();
         } catch (const cambc::error&) {
@@ -491,7 +546,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     }
 
     if (world.map().ally_spawn.is_set(me.position()) || world.me().facts().passive == Passive::remote_shop)
-        buy_shards();
+        buy_shards(world.me().facts());
     heal_ally(world);
     shield_if_needed(world);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
