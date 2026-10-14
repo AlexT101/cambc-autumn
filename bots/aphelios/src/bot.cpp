@@ -359,6 +359,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety) {
     if (attacked) reset_and_attack_enemy(world);
     place_ward(world, pathing);
     if (me.gem_count() > 0) {
+        if (!can_tribute_here(world) && chase(world, pathing, safety)) return;
         bank_gems(world, pathing, safety); // a tribute can still start after a ranged attack
         return;
     }
