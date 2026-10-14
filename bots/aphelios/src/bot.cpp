@@ -436,11 +436,11 @@ bool visible_threat(Safety& safety, vec2 p) {
     return false;
 }
 
-// An enemy that could kill us before our next turn overrides finishing a camp.
+// An enemy that could kill us before our next turn overrides finishing a camp or a capture.
 bool want_home(const World& world, Safety& safety) {
     const auto& me = cambc::self();
     if (world.map().ally_spawn.is_set(me.position())) return false;
-    return (me.health() < params::recall_health_fraction * me.max_health() && !finishing_camp(world))
+    return (me.health() < params::recall_health_fraction * me.max_health() && !finishing_camp(world) && !holding_capture(world))
            || ((safety.lethal(me.position()) || visible_threat(safety, me.position())) && safety.fight(me.position()).lost);
 }
 
