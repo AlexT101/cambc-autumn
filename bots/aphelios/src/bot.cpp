@@ -282,7 +282,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         else walk_on(best);
         return true;
     }
-    if (!fuel_ok(pathing.attack_tiles_cost(best, range) + params::end_reserve)) {
+    if (!pathing.prepare_attack_tiles(best, range, params::end_reserve)) {
         walk_on(best);
         return true;
     }

@@ -103,6 +103,9 @@ struct StaticMap {
     const Field& from_ally_spawn() const;
     const Field& from_enemy_spawn() const;
     const BushCluster& bush_cluster(vec2 p) const;
+    // Find every cluster viewers(p, radius) needs while more than `fuel_floor` fuel remains; true
+    // once all are. A large cluster can take ~100k, so the work carries over between calls.
+    bool find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const;
     // Tiles from which p is in sight within Chebyshev `radius`: the engine's shadowcast, with
     // walls and every bush cluster but the viewer's own opaque.
     bitboard viewers(vec2 p, int radius) const;
@@ -115,6 +118,16 @@ private:
     std::vector<std::uint8_t> group_lookup_; // per tile, row-major: group index + 1, or 0
     mutable std::optional<Field> ally_field_, enemy_field_;
     mutable std::deque<BushCluster> bush_clusters_; // found so far; references stay valid
+    mutable bitboard clustered_;                     // their tiles
+    mutable std::vector<std::uint16_t> cluster_of_;  // per tile, row-major: cluster index + 1, or 0
+    struct Growth {
+        bitboard tiles, grown; // the 8-connected flood, and the edge-connected part reached so far
+        bool diagonal = false; // the flood joins bushes only diagonally somewhere: grow by edges
+    };
+    mutable std::optional<Growth> growth_; // a cluster being found, unfinished for lack of fuel
+    // The cluster grown from p, or from the unfinished growth if p is in its flood; null if the
+    // fuel fell to the floor first.
+    const BushCluster* grow_cluster(vec2 p, std::uint64_t fuel_floor) const;
     mutable std::optional<bitboard> diagonal_links_;
     const bitboard& diagonal_links() const; // bushes with a bush diagonal neighbour joined only diagonally
 };

@@ -273,26 +273,49 @@ const Field& StaticMap::from_enemy_spawn() const {
 }
 
 const BushCluster& StaticMap::bush_cluster(vec2 p) const {
-    for (const auto& c : bush_clusters_)
-        if (c.tiles.is_set(p)) return c;
+    for (;;) {
+        if (const int i = cluster_of_.empty() ? 0 : cluster_of_[tile_index(p)]; i > 0) return bush_clusters_[i - 1];
+        grow_cluster(p, 0);
+    }
+}
+
+const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) const {
     FuelMeter meter{"bush_cluster"};
-    // The host floods 8-connected. That cluster is edge-connected too unless it holds a pair of
-    // bushes joined only diagonally; then grow from p by edge steps within it.
-    auto tiles = (~bushes).reachable_tiles(p, static_cast<std::uint16_t>(width * height));
-    if (!(tiles & diagonal_links()).is_empty()) {
-        auto grown = single(p);
-        for (;;) {
-            auto next = (grown | grown.shift_right(1) | grown.shift_right(-1) | grown.shift_up(1) | grown.shift_up(-1)) & tiles;
-            if (next == grown) break;
-            grown = std::move(next);
-        }
-        tiles = std::move(grown);
+    if (!growth_ || !growth_->tiles.is_set(p)) {
+        // The host floods 8-connected. That cluster is edge-connected too unless it holds a pair
+        // of bushes joined only diagonally; then grow from p by edge steps within it.
+        auto tiles = (~bushes).reachable_tiles(p, static_cast<std::uint16_t>(width * height));
+        const bool diagonal = !(tiles & diagonal_links()).is_empty();
+        growth_ = Growth{std::move(tiles), single(p), diagonal};
+    }
+    auto& g = *growth_;
+    if (!g.diagonal) g.grown = g.tiles;
+    while (g.diagonal) {
+        auto next = (g.grown | g.grown.shift_right(1) | g.grown.shift_right(-1) | g.grown.shift_up(1) | g.grown.shift_up(-1)) & g.tiles;
+        if (next == g.grown) break;
+        g.grown = std::move(next);
+        if (!fuel_ok(fuel_floor)) return nullptr;
     }
     BushCluster c;
-    c.size = static_cast<int>(tiles.count());
-    c.tiles = std::move(tiles);
+    c.size = static_cast<int>(g.grown.count());
+    c.tiles = std::move(g.grown);
+    clustered_ |= c.tiles;
+    growth_.reset();
+    if (cluster_of_.empty()) cluster_of_.assign(static_cast<std::size_t>(width * height), 0);
+    for (auto t : c.tiles.positions()) cluster_of_[tile_index(t)] = static_cast<std::uint16_t>(bush_clusters_.size() + 1);
     bush_clusters_.push_back(std::move(c));
-    return bush_clusters_.back();
+    return &bush_clusters_.back();
+}
+
+bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const {
+    auto left = bushes & square(p, radius) & ~clustered_;
+    while (!left.is_empty()) {
+        if (!fuel_ok(fuel_floor)) return false;
+        const auto* c = grow_cluster(left.positions().front(), fuel_floor);
+        if (!c) return false;
+        left &= ~c->tiles;
+    }
+    return true;
 }
 
 const bitboard& StaticMap::diagonal_links() const {

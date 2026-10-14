@@ -84,18 +84,21 @@ bitboard Pathing::attack_tiles(int group, int range) {
     return tiles;
 }
 
-std::uint64_t Pathing::attack_tiles_cost(int group, int range) {
-    const auto& health = world_.camps[group].health;
-    std::uint64_t cost = 0;
-    for (int i = 0; i < static_cast<int>(health.size()); ++i)
-        if (health[i] > 0 && !attack_slot(group, i, range)) cost += member_cost(group, i, range);
-    return cost;
+bool Pathing::prepare_member(int group, int member, int range, std::uint64_t fuel_floor) {
+    if (attack_slot(group, member, range)) return true;
+    // Bush clusters in reach are the costly part; without them a shadowcast or two remain.
+    if (!fuel_ok(fuel_floor + small_cost_estimate)
+        || !map().find_bush_clusters(map().groups[group].members[member].pos, range, fuel_floor + small_cost_estimate))
+        return false;
+    member_attack_tiles(group, member, range);
+    return true;
 }
 
-std::uint64_t Pathing::member_cost(int group, int member, int range) const {
-    // Bushes in reach mean finding their clusters first: up to ~25k measured.
-    const bool bushy = !(map().bushes & square(map().groups[group].members[member].pos, range)).is_empty();
-    return bushy ? field_cost_estimate() : small_cost_estimate;
+bool Pathing::prepare_attack_tiles(int group, int range, std::uint64_t fuel_floor) {
+    const auto& health = world_.camps[group].health;
+    for (int i = 0; i < static_cast<int>(health.size()); ++i)
+        if (health[i] > 0 && !prepare_member(group, i, range, fuel_floor)) return false;
+    return true;
 }
 
 bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
@@ -107,28 +110,19 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
         if (!afford(altar_slot(a))) return false;
         to_altar(a);
     }
-    // Members too costly for the fuel left are skipped, so the cheap ones and the centre fields
-    // after them still progress.
-    bool complete = true;
-    for (int g = 0; g < static_cast<int>(map().groups.size()); ++g) {
-        for (int i = 0; i < static_cast<int>(map().groups[g].members.size()); ++i) {
-            if (attack_slot(g, i, attack_range)) continue;
-            if (!fuel_ok(fuel_floor + 2 * member_cost(g, i, attack_range))) {
-                complete = false;
-                continue;
-            }
-            member_attack_tiles(g, i, attack_range);
-        }
-    }
+    for (int g = 0; g < static_cast<int>(map().groups.size()); ++g)
+        for (int i = 0; i < static_cast<int>(map().groups[g].members.size()); ++i)
+            if (!prepare_member(g, i, attack_range, fuel_floor)) return false;
     for (int g = 0; g < static_cast<int>(map().groups.size()); ++g) {
         const auto& group = map().groups[g];
         if (group.has_monolith || group.gems == 0) continue;
         auto& slot = entry(centre_fields_, map().groups.size(), g);
+        if (slot) continue;
         if (!afford(slot)) return false;
         cached(slot, single(group.centre));
     }
     centres_ready_ = true;
-    return complete;
+    return true;
 }
 
 Pathing::Nearest Pathing::nearest(const bitboard& goals, int max_steps) {

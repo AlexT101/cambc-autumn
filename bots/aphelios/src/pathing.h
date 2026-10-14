@@ -32,7 +32,8 @@ public:
     const bitboard& member_attack_tiles(int group, int member, int range);
     // Over the members believed alive.
     bitboard attack_tiles(int group, int range);
-    std::uint64_t attack_tiles_cost(int group, int range); // estimate; 0 once cached
+    // Compute attack_tiles' missing parts while more than `fuel_floor` remains; true once cached.
+    bool prepare_attack_tiles(int group, int range, std::uint64_t fuel_floor);
     // Precompute while more than `fuel_floor` remains; true once everything is cached.
     bool warm_up(int attack_range, std::uint64_t fuel_floor);
 
@@ -79,7 +80,7 @@ private:
     Slot& altar_slot(int altar);
     Slot& group_slot(int group);
     std::optional<bitboard>& attack_slot(int group, int member, int range);
-    std::uint64_t member_cost(int group, int member, int range) const;
+    bool prepare_member(int group, int member, int range, std::uint64_t fuel_floor);
     const StaticMap& map() const;
 
     const World& world_;
