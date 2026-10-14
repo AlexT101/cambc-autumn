@@ -103,6 +103,7 @@ struct StaticMap {
     const Field& from_ally_spawn() const;
     const Field& from_enemy_spawn() const;
     const BushCluster& bush_cluster(vec2 p) const;
+    const bitboard& near_bushes() const; // tiles with a bush within ward placement range (2)
     // Find every cluster viewers(p, radius) needs while more than `fuel_floor` fuel remains; true
     // once all are. A large cluster can take ~100k, so the work carries over between calls.
     bool find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const;
@@ -128,7 +129,7 @@ private:
     // The cluster grown from p, or from the unfinished growth if p is in its flood; null if the
     // fuel fell to the floor first.
     const BushCluster* grow_cluster(vec2 p, std::uint64_t fuel_floor) const;
-    mutable std::optional<bitboard> diagonal_links_;
+    mutable std::optional<bitboard> diagonal_links_, near_bushes_;
     const bitboard& diagonal_links() const; // bushes with a bush diagonal neighbour joined only diagonally
 };
 

@@ -28,6 +28,8 @@ inline constexpr float recall_health_fraction = 0.35f;
 // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
 inline constexpr float finish_camp_health_fraction = 0.6f;
 inline constexpr int ward_period = 20;
+// Bush tiles this near can hide an attacker that reaches us: ranged attacks 3, abilities 4.
+inline constexpr int bush_watch_radius = 4;
 // Gold for which a champion with no gems recalls to shop: one emblem.
 inline constexpr unsigned shop_trip_gold = 150;
 // Champion vision: enemies farther off are seen only through wards and are rarely caught.
