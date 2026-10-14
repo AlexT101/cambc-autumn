@@ -675,6 +675,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         decision = 'R';
         if (world.me().facts().walk_and_attack_independent()) attack_enemy(world);
         cast_at_enemies(world, true);
+        if (!me.can_attack() || !me.can_cast()) safety.refresh();
         // A tribute survives damage; a recall does not.
         if (can_tribute_safely(world, safety, memory)) {
             bank_gems(world, pathing, safety);
@@ -692,6 +693,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (!attacked && !holding && dash_to_attack(world, pathing)) attacked = attack_enemy(world);
     if (attacked) reset_and_attack_enemy(world);
     decision = holding ? 'P' : attacked ? 'A' : decision;
+    if (!me.can_attack() || !me.can_cast()) safety.refresh();
     if (holding) return;
     if (me.gem_count() > 0) {
         const bool safe = can_tribute_safely(world, safety, memory);

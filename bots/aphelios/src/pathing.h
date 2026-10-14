@@ -30,9 +30,9 @@ public:
     // from anywhere to it. Null until warmed up; centres_ready() once all are.
     const Field* from_centre(int group);
     bool centres_ready() const { return centres_ready_; }
-    // Walkable tiles off the camp tiles from which a basic attack reaches and sees the member.
+    // Walkable tiles from which a basic attack reaches and sees the member, camp tiles included.
     const bitboard& member_attack_tiles(int group, int member, int range);
-    // Over the members believed alive.
+    // Over the members believed alive; off camp tiles, but for those of its dead members.
     bitboard attack_tiles(int group, int range);
     // Compute attack_tiles' missing parts while more than `fuel_floor` remains; true once cached.
     bool prepare_attack_tiles(int group, int range, std::uint64_t fuel_floor);

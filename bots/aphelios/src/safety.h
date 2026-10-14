@@ -77,8 +77,9 @@ struct Threat {
 // A fight with sides alternating turns, each side's damage focused on the other's weakest member
 // and spilling over, so the fallen stop dealing damage (Cassi and Issac fall together). Pooled
 // health hid this: we died in 17% of won fights where we were the weakest, 4-7% otherwise.
-// Stuns skip the strongest opponent's turn; a heal goes to the weakest ally, a shield to its
-// caster. Ignores items, positioning and the order within a side.
+// Stuns skip the strongest opponent's turn; a heal goes to the weakest hurt ally other than the
+// caster, a shield to its caster until it expires; Ren hits back while she is the one hit.
+// Ignores items, positioning and the order within a side.
 struct Trade {
     bool lost = false;          // they win when they strike first
     int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
@@ -106,10 +107,13 @@ public:
     float hit_chance(vec2 p);
     bool threatened(vec2 p) { return hit_chance(p) >= safety_params::recall_risk; }
 
-    const bitboard& camp_area();      // within 3 of a live member of an awake (or maybe awake) group
+    // Where a live member of an awake (or maybe awake) group would attack us: within 3, and no
+    // visible champion nearer it (or as near with a lower id).
+    const bitboard& camp_area();
     const bitboard& enemy_area();     // within a credible threat's reach
     const bitboard& contested_area(); // within reach of two or more credible threats
-    // Tiles to keep off while routing: camps and credible enemies, never our own tile.
+    // Tiles to keep off while routing: camps and credible enemies. Our own tile is included when
+    // in danger, so routing can free the region we stand in.
     bitboard avoid();
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
@@ -119,8 +123,8 @@ public:
     std::uint64_t fight_cost_estimate() const;
     // Us alone against one enemy.
     Trade duel(int enemy);
-    // Their turns for the visible enemies to kill us at p if we never act (channelling), each
-    // walking a step a turn until in reach; 0 if not within `horizon` turns.
+    // Their turns for the visible enemies and camps to kill us at p if we never act (channelling),
+    // each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
     int turns_to_kill_idle(vec2 p, int horizon);
     // Could the credible threats and camps kill us at p before our next turn?
     bool lethal(vec2 p);
@@ -128,17 +132,28 @@ public:
     // from every lost fight cost tempo in testing (6-7 of 18 against v0) for few deaths saved.
     bool should_retreat();
 
+    // Drop everything cached, after something this turn changed the fight: a kill, a stun or a
+    // camp kill. Later queries recheck the engine for champions and monsters that died.
+    void invalidate();
+    // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
+    void refresh();
+
 private:
     struct CampHit {
         vec2 pos;
         float strength;
         float weight;
+        int reach; // farthest distance at which it would pick us
     };
     const std::vector<CampHit>& awake_members();
     void build();
+    // Seen alive at turn start but dead now, once refreshed.
+    bool gone(const ChampionBelief& c);
 
     const World& world_;
     bool built_ = false;
+    bool refresh_ = false;
+    std::array<std::int8_t, 16> gone_{}; // by enemy index: 0 unknown, 1 alive, 2 dead
     std::vector<Threat> threats_;
     std::optional<std::vector<CampHit>> members_;
     std::optional<bitboard> camp_area_, enemy_area_, contested_area_;

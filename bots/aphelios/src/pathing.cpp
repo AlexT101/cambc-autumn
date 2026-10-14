@@ -77,7 +77,7 @@ const bitboard& Pathing::member_attack_tiles(int group, int member, int range) {
         FuelMeter meter{"attack_tiles"};
         const auto& s = map();
         auto tiles = s.viewers(s.groups[group].members[member].pos, range);
-        tiles &= s.standable;
+        tiles &= ~s.blocked_for_us;
         slot = std::move(tiles);
     }
     return *slot;
@@ -85,9 +85,12 @@ const bitboard& Pathing::member_attack_tiles(int group, int member, int range) {
 
 bitboard Pathing::attack_tiles(int group, int range) {
     const auto& health = world_.camps[group].health;
-    bitboard tiles;
-    for (int i = 0; i < static_cast<int>(health.size()); ++i)
+    bitboard tiles, freed;
+    for (int i = 0; i < static_cast<int>(health.size()); ++i) {
         if (health[i] > 0) tiles |= member_attack_tiles(group, i, range);
+        else freed.set(map().groups[group].members[i].pos);
+    }
+    tiles &= map().standable | freed;
     return tiles;
 }
 
@@ -193,7 +196,13 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
         r.steps = 0;
         return r;
     }
-    auto walls = avoid ? blocked() | *avoid : blocked();
+    auto walls = blocked();
+    if (avoid) {
+        auto danger = *avoid;
+        // Inside danger every neighbour is in it too: free the connected region we stand in.
+        if (danger.is_set(me)) danger &= ~(~danger).reachable_tiles(me, static_cast<std::uint16_t>(map().width + map().height));
+        walls |= danger;
+    }
     walls.set(me, false);
     const auto open_goals = goals & ~walls;
     if (open_goals.is_empty()) return r;
