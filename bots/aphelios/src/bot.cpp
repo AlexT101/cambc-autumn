@@ -63,14 +63,14 @@ bool attack_enemy(const World& world) {
 }
 
 // The group of the camp attacked, or -1.
-template <class Keep> int attack_camp(const World& world, Keep keep) {
+int attack_camp(const World& world) {
     auto& me = cambc::self();
     if (!me.can_attack()) return -1;
     const int range = world.me().facts().attack_range();
     const auto& map = world.map();
     for (auto p : (cambc::vision::camp_tiles() & square(me.position(), range)).positions()) {
         const int g = map.group_at(p);
-        if (g < 0 || map.groups[g].has_monolith || !keep(g)) continue;
+        if (g < 0 || map.groups[g].has_monolith) continue;
         const auto& members = map.groups[g].members;
         for (int i = 0; i < static_cast<int>(members.size()); ++i) {
             if (members[i].pos != p) continue;
@@ -160,12 +160,7 @@ void farm(const World& world, Pathing& pathing) {
     const int range = world.me().facts().attack_range();
     const float strength = std::max(1.0f, world.me().strength);
     const float spare_health = me.health() - params::recall_health_fraction * me.max_health();
-    const auto risky_group = [&](int g) {
-        float rounds = 0;
-        return min_camp_damage(groups[g], world.camps[g], strength, &rounds) > spare_health && !ally_engaged(world, g);
-    };
-    // Whatever is in reach, unless clearing it is unaffordable: waking it is left to the choice below.
-    const int hit = attack_camp(world, [&](int g) { return !risky_group(g); });
+    const int hit = attack_camp(world);
     if (hit >= 0 && !world.me().facts().walk_and_attack_independent()) {
         cast_at_camp(world, hit);
         reset_and_attack_camp(world, hit);
@@ -223,19 +218,18 @@ void farm(const World& world, Pathing& pathing) {
         pathing.step_towards(groups[best].tiles(), nullptr, cap);
         return;
     }
-    const auto is_best = [&](int g) { return g == best; };
     auto goals = pathing.attack_tiles(best, range);
     // In range and sight with the attack unspent, so the attack failed here: try another tile.
-    if (goals.is_set(here) && me.can_attack() && attack_camp(world, is_best) < 0) goals.set(here, false);
+    if (goals.is_set(here) && me.can_attack()) goals.set(here, false);
     if (goals.is_set(here)) { // attacked from here; stay
         cast_at_camp(world, best);
         reset_and_attack_camp(world, best);
         return;
     }
-    if (dash_towards(world, pathing, goals) && attack_camp(world, is_best) >= 0) return;
+    if (dash_towards(world, pathing, goals) && attack_camp(world) >= 0) return;
     if (!fuel_ok(search_cost_estimate(cap))) return;
     if (pathing.step_towards(goals, nullptr, cap) || pathing.step_towards(groups[best].adjacent(), nullptr, cap)) {
-        attack_camp(world, is_best);
+        attack_camp(world);
         cast_at_camp(world, best); // only casts that allow walking remain
         reset_and_attack_camp(world, best);
     }
