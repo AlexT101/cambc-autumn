@@ -213,6 +213,7 @@ struct CampBelief {
     // (payout at held_since + capture_time + 1).
     std::optional<team> holder;
     int held_since = -1;
+    int told_respawn = -1; // the respawn round the team was told through comms
 };
 
 struct AltarBelief {
@@ -240,8 +241,11 @@ public:
     void observe();
     static constexpr std::uint64_t observe_cost_estimate = 3000; // 0.8-1.6k measured
 
-    // Merge a teammate's sighting (from comms); ignored if not fresher than ours.
-    void note_sighting(int enemy_index, vec2 pos, int round);
+    // Merge a teammate's sighting (from comms), with health as a share of max; ignored if not
+    // fresher than ours.
+    void note_sighting(int enemy_index, vec2 pos, int round, float health);
+    // A teammate saw the group captured, returning at `respawn_round`.
+    void note_capture(int group, int respawn_round);
 
     void debug_output() const;
     void dump_beliefs() const;

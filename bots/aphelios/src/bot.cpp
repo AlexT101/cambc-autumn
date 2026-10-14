@@ -350,7 +350,7 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
 // Towards a fight an ally posted this round or last. Within half our vision of it, chase decides
 // whether to join.
 bool join_rally(const World& world, Pathing& pathing) {
-    const auto rally = comms::read().rally;
+    const auto rally = comms::rally();
     if (!rally || rally->round < world.round - 1) return false;
     const vec2 here = cambc::self().position();
     const int d = dist(here, rally->pos);
