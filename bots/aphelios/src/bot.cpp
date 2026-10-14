@@ -184,6 +184,14 @@ int tribute_turns(int gems) { return std::max(1, (gems + 9) / 10); }
 // Carried gems score nothing after the round limit.
 int rounds_left(const World& world) { return static_cast<int>(cambc::constants::max_rounds) - world.round; }
 
+// Gems still to capture, beyond the bag, before our tributes reach the win.
+int gems_short(const World& world) {
+    return static_cast<int>(cambc::constants::winning_gems) - world.score.ally - static_cast<int>(cambc::self().gem_count());
+}
+
+// Tributing the bag wins: more gems are worth nothing, only the tribute is.
+bool winning_bag(const World& world) { return gems_short(world) <= 0; }
+
 // A tribute started or kept now is the bag's last chance to score: take it at any risk.
 bool last_chance(const World& world, int channel_turns) { return rounds_left(world) <= channel_turns + endgame_slack; }
 
@@ -302,6 +310,7 @@ float min_camp_damage(int g, const CampGroup& group, const CampBelief& belief, f
 // On a cleared group's tile that no lower-id ally also holds, with no enemy on any of its tiles:
 // stepping off loses the capture's progress, and it pays within six rounds.
 bool holding_capture(const World& world) {
+    if (winning_bag(world)) return false;
     const vec2 here = cambc::self().position();
     const int g = world.map().group_at(here);
     if (g < 0 || world.camps[g].state != CampState::cleared) return false;
@@ -330,6 +339,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     const float strength = std::max(1.0f, world.me().strength);
     const float spare_health = me.health() - params::recall_health_fraction * me.max_health();
     const int bag = me.gem_count();
+    const int short_by = gems_short(world);
     // Groups in passing pay too (gold clusters are never chosen below), but not one whose clear
     // costs more health than we can spare.
     const auto affordable = [&](int g) {
@@ -409,11 +419,14 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         if (belief.state == CampState::respawning && belief.respawn_round - world.round > steps) continue;
         if (g == help_group && belief.state == CampState::alive && steps <= params::help_radius) help_steps = steps;
         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
-        // tribute. Counting those without a bag favours camps near altars, which lost games.
-        const int back = to_altar ? to_altar->at(group.centre) : unreachable;
-        const int bank = bag == 0 || back == unreachable ? 0 : back + (group.gems + 9) / 10;
+        // tribute. Counting those without a bag favours camps near altars, which lost games; but a
+        // capture that wins shares that walk with no later one. Gems past the win are worth nothing.
+        const bool wins = group.gems >= short_by;
+        const Field* to_bank = to_altar ? to_altar : wins ? &pathing.to_any_altar() : nullptr;
+        const int back = to_bank ? to_bank->at(group.centre) : unreachable;
+        const int bank = back == unreachable ? 0 : back + (group.gems + 9) / 10;
         const int trip = steps - bank_now + bank;
-        const float gems = static_cast<float>(group.gems);
+        const float gems = static_cast<float>(std::min(group.gems, short_by));
         // Risky groups matter only while no affordable one is found; skip the costly clearing
         // estimate for groups that cannot beat it even with no clearing.
         if (best >= 0 && gems / static_cast<float>(trip + capture_rounds) <= best_value
@@ -534,6 +547,7 @@ void place_ward(const World& world, Pathing& pathing, Memory& memory) {
 
 // Retreating from an awake camp takes its hits anyway, and the clear is lost.
 bool finishing_camp(const World& world) {
+    if (winning_bag(world)) return false;
     const vec2 here = cambc::self().position();
     const auto& groups = world.map().groups;
     for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
@@ -642,8 +656,7 @@ bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory
 // Only a small bag, out of every credible enemy's reach, and never the gems that would win.
 bool may_chain(const World& world, Safety& safety) {
     const int bag = cambc::self().gem_count();
-    if (bag >= params::chain_bag_limit || world.score.ally + bag >= static_cast<int>(cambc::constants::winning_gems)
-        || can_tribute_here(world))
+    if (bag >= params::chain_bag_limit || winning_bag(world) || can_tribute_here(world))
         return false;
     for (const auto& t : safety.threats())
         if (t.credible()) return false;
@@ -692,7 +705,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         const int turns = me.remaining_channel_time();
         if (last_chance(world, turns) || tribute_safe(safety, memory, turns)) return;
         // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
-        if (memory.damage <= 0 && !want_home(world, safety) && !attack_target(world) && !prey(world, safety)) return;
+        if (memory.damage <= 0 && !want_home(world, safety) && !attack_target(world)
+            && (winning_bag(world) || !prey(world, safety)))
+            return;
         decision = 't';
         try {
             me.cancel_submit_gems();
@@ -758,7 +773,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (me.gem_count() > 0) {
         const bool safe = can_tribute_safely(world, safety, memory);
         const bool late = endgame(world, pathing);
-        if (!safe && !late && chase(world, pathing, safety)) return;
+        if (!safe && !late && !winning_bag(world) && chase(world, pathing, safety)) return;
         if (!safe && can_tribute_here(world)) {
             // Hit with nothing to hit back: waiting here only takes more.
             if (memory.damage > 0 && !attack_target(world)) {
