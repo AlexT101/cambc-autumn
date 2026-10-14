@@ -646,6 +646,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     const float health = world.me().alive ? cambc::self().health() : 0;
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
     decide(world, pathing, safety, memory);
+    heal_ally(world); // allies in reach after walking
     shield_if_needed(world);
     start_recall(world);
     set_turn_order(world);

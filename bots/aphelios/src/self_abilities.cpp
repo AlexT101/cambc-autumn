@@ -17,6 +17,7 @@ constexpr int reset_hold_margin = 2;      // an enemy this far beyond attack ran
 constexpr int travel_dash_clearance = 10; // no visible enemy this close for a travel dash
 constexpr float heal_min_share = 0.6f;    // of the heal amount restored
 constexpr float heal_low_health = 0.5f;
+constexpr int kept_recall_turns = 3; // channel left on a recall an ally has kept for a turn
 constexpr float dash_min_health = 0.5f;
 constexpr float chase_health = 0.4f;
 constexpr int failed_search_pause = 4; // rounds without a travel-dash search after one finds no gain
@@ -303,12 +304,14 @@ bool heal_ally(const World& world) {
     std::optional<cambc::champion> best;
     float best_gain = 0;
     for (const auto& b : world.allies) {
-        if (b.is_self || !b.alive || !b.visible || dist(here, b.pos) > range || b.channel == Channel::recall
-            || world.map().ally_spawn.is_set(b.pos))
+        if (b.is_self || !b.alive || !b.visible || dist(here, b.pos) > range || world.map().ally_spawn.is_set(b.pos))
             continue;
         try {
             auto c = cambc::vision::champion_at(b.pos);
             if (!c.is_ally()) continue;
+            // Allies start a recall at every turn end and cancel it unless wanted, so only one
+            // they kept going will reach spawn and heal there.
+            if (c.is_recalling() && c.remaining_channel_time() <= kept_recall_turns) continue;
             const float gain = std::min(amount, c.max_health() - c.health());
             if (gain <= 0 || (gain < heal_min_share * amount && health_fraction(c) >= heal_low_health)) continue;
             if (!best || gain > best_gain) best = c, best_gain = gain;
