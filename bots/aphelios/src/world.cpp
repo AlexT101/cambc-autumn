@@ -318,6 +318,17 @@ bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor)
     return true;
 }
 
+const bitboard& StaticMap::near_bushes() const {
+    if (!near_bushes_) {
+        auto rows = bushes;
+        for (int d = 1; d <= 2; ++d) rows |= bushes.shift_right(d) | bushes.shift_right(-d);
+        auto b = rows;
+        for (int d = 1; d <= 2; ++d) b |= rows.shift_up(d) | rows.shift_up(-d);
+        near_bushes_ = std::move(b);
+    }
+    return *near_bushes_;
+}
+
 const bitboard& StaticMap::diagonal_links() const {
     if (!diagonal_links_) {
         // Bit a: bushes at a and a+(dx,dy) with neither tile between them a bush.

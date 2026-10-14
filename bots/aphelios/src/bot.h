@@ -14,6 +14,7 @@ struct Memory {
     bool banking = false; // our bag headed for an altar rather than another capture last turn
     int farm_group = -1;  // farm's latest choice, kept to walk on when fuel is short
     vec2 ward{-1, -1};    // our latest ward
+    vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
 };
 
 // `world` is as of the turn's start; ask cambc for anything that changes after acting.

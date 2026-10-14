@@ -381,41 +381,51 @@ bool try_ward(vec2 p, Memory& memory) {
         return false;
     }
     memory.ward = p;
+    memory.bushes_watched = {-1, -1};
     return true;
 }
 
 // Attackers in a bush stay unseen from outside it, and a ward inside sees across its cluster.
 // Ward the cluster in reach with the most tiles near us, unless our own ward already watches it.
-bool ward_bushes(const World& world, Pathing& pathing, Memory& memory) {
+bool ward_bushes(const World& world, Memory& memory) {
     const auto& map = world.map();
     const vec2 here = cambc::self().position();
-    const auto candidates = pathing.ward_targets() & map.bushes;
-    if (candidates.is_empty() || !fuel_ok(small_cost_estimate + params::end_reserve)) return false;
-    const BushCluster* own = map.bushes.is_set(here) ? &map.bush_cluster(here) : nullptr;
-    const BushCluster* watched = in_bounds(memory.ward) && map.bushes.is_set(memory.ward) ? &map.bush_cluster(memory.ward) : nullptr;
+    const auto floor = small_cost_estimate + params::end_reserve;
+    if (here == memory.bushes_watched || !map.near_bushes().is_set(here) || !fuel_ok(floor)
+        || !map.find_bush_clusters(here, 2, floor))
+        return false;
+    auto candidates = map.bushes & square(here, 2);
+    if (map.bushes.is_set(here)) candidates &= ~map.bush_cluster(here).tiles;
+    if (in_bounds(memory.ward) && map.bushes.is_set(memory.ward)) candidates &= ~map.bush_cluster(memory.ward).tiles;
+    if (candidates.is_empty()) {
+        memory.bushes_watched = here;
+        return false;
+    }
+    candidates &= ~(map.enemy_spawn | cambc::vision::ward_tiles(team::ally));
     const auto near = square(here, params::bush_watch_radius);
+    const auto deep = ~square(here, 1);
     std::optional<vec2> best;
-    int best_tiles = 0, best_dist = -1;
-    for (auto p : candidates.positions()) {
-        const auto& c = map.bush_cluster(p);
-        if (&c == own || &c == watched) continue;
+    int best_tiles = 0;
+    while (!candidates.is_empty()) {
+        const auto& c = map.bush_cluster(candidates.positions().front());
         const int tiles = static_cast<int>((c.tiles & near).count());
-        const int d = dist(here, p);
-        if (tiles > best_tiles || (tiles == best_tiles && d > best_dist)) best = p, best_tiles = tiles, best_dist = d;
+        if (tiles > best_tiles) {
+            const auto mine = c.tiles & candidates;
+            const auto far = mine & deep;
+            best = (far.is_empty() ? mine : far).positions().front(), best_tiles = tiles;
+        }
+        candidates &= ~c.tiles;
     }
     return best && try_ward(*best, memory);
 }
 
 void place_ward(const World& world, Pathing& pathing, Memory& memory) {
     if (!world.me().alive || cambc::self().ward_cooldown() > 0) return;
-    if (ward_bushes(world, pathing, memory) || world.round % params::ward_period != 0) return;
-    const auto& spawn_field = world.map().from_ally_spawn();
+    if (ward_bushes(world, memory) || world.round % params::ward_period != 0) return;
+    const vec2 spawn = world.map().ally_spawn_centre;
     std::optional<vec2> best;
-    int best_steps = -1;
-    for (auto p : pathing.ward_targets().positions()) {
-        const int steps = spawn_field.at(p);
-        if (steps != unreachable && steps > best_steps) best = p, best_steps = steps;
-    }
+    for (auto p : (pathing.ward_targets() & ~world.map().bushes).positions())
+        if (!best || dist(spawn, p) > dist(spawn, *best)) best = p;
     if (best) try_ward(*best, memory);
 }
 
