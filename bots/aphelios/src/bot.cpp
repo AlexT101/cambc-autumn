@@ -135,6 +135,22 @@ void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
     if (!near || !pathing.step_towards(field, &avoid)) pathing.step_towards(field);
 }
 
+bool break_lock(const World& world, int altar) {
+    auto& me = cambc::self();
+    const vec2 p = world.map().altars[altar].pos;
+    if (!me.can_attack() || dist(me.position(), p) > world.me().facts().attack_range()) return false;
+    for (const auto& lock : cambc::vision::altar_locks())
+        if (lock.is_enemy() && lock.position() == p) {
+            try {
+                me.attack(lock);
+                return true;
+            } catch (const cambc::error&) {
+                return false;
+            }
+        }
+    return false;
+}
+
 void bank_gems(const World& world, Pathing& pathing, Safety& safety) {
     auto& me = cambc::self();
     dash_towards(world, pathing, pathing.to_any_altar());
@@ -155,13 +171,18 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety) {
         step_safely(pathing, pathing.to_any_altar(), safety);
         return;
     }
+    // Breaking a lock takes a turn per hit left, about a step each.
     int best = -1, best_steps = unreachable;
     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
-        if (world.altars[a].enemy_lock) continue;
-        const int steps = pathing.to_altar(a).at(here);
+        const auto& belief = world.altars[a];
+        int steps = pathing.to_altar(a).at(here);
+        if (steps == unreachable) continue;
+        if (belief.enemy_lock) steps += belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
         if (steps < best_steps) best = a, best_steps = steps;
     }
-    if (best >= 0) step_safely(pathing, pathing.to_altar(best), safety);
+    if (best < 0) return;
+    if (world.altars[best].enemy_lock && break_lock(world, best) && !world.me().facts().walk_and_attack_independent()) return;
+    step_safely(pathing, pathing.to_altar(best), safety);
 }
 
 constexpr int capture_rounds = 6;
