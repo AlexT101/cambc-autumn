@@ -19,6 +19,24 @@ namespace {
 
 using params::max_detour;
 
+// The turn's branch, for debug_fights: Chase, Attack, Retreat, Farm, Bank, Wait at an altar,
+// Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, rally (J), holding (P).
+char decision = '-';
+
+// Read by tools/replay/fight_calibration.py.
+void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1) {
+    if (!debug_fights || !fuel_ok(params::end_reserve + 15000)) return;
+    std::cout << tag << ' ' << world.round << ' ' << static_cast<std::uint32_t>(world.me().handle) << ' ' << p.x << ' ' << p.y
+              << ' ' << static_cast<int>(world.me().health) << ' ' << decision << ' ' << t.lost << ' '
+              << t.turns_to_kill_us << ' ' << t.turns_to_kill_them << ' ' << t.allies << ' ' << t.enemies << ' '
+              << static_cast<int>(t.our_health) << ' ' << static_cast<int>(t.their_health) << ' ' << target << ' '
+              << static_cast<int>(safety.camp_damage(p)) << ' ' << safety.lethal(p);
+    for (const auto& th : safety.threats())
+        if (th.credible() && th.strike.hits(th.distance(p)))
+            std::cout << ' ' << static_cast<std::uint32_t>(world.enemies[th.enemy].handle) << (th.visible ? 'v' : 'u');
+    std::cout << std::endl;
+}
+
 enum Family { monster, power, durability, treasure, jungle, home, bruiser };
 enum StatKind { strength_stat, focus_stat, health_stat };
 
@@ -427,7 +445,8 @@ bool want_home(const World& world, Safety& safety) {
     const auto& me = cambc::self();
     if (world.map().ally_spawn.is_set(me.position())) return false;
     return (me.health() < params::recall_health_fraction * me.max_health() && !finishing_camp(world))
-           || ((safety.lethal(me.position()) || visible_threat(safety, me.position())) && safety.fight(me.position()).lost);
+           || (safety.lethal(me.position()) && safety.fight(me.position()).self_falls)
+           || (visible_threat(safety, me.position()) && safety.fight(me.position()).lost);
 }
 
 bool can_tribute_here(const World& world) {
@@ -469,6 +488,8 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
 bool chase(const World& world, Pathing& pathing, Safety& safety) {
     const auto* target = prey(world, safety);
     if (!target) return false;
+    decision = 'C';
+    if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
     auto& me = cambc::self();
     comms::post_rally(world.round, target->pos);
     const int range = world.me().facts().attack_range();
@@ -561,7 +582,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     }
     if (me.is_teleporting()) return;
     if (me.is_submitting_gems()) {
+        decision = 'T';
         if (tribute_safe(safety, memory, me.remaining_channel_time())) return;
+        decision = 't';
         try {
             me.cancel_submit_gems();
         } catch (const cambc::error&) {
@@ -569,7 +592,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         }
     }
     if (me.is_recalling()) {
+        decision = 'K';
         if (want_home(world, safety) && !safety.threatened(me.position()) && !can_tribute_safely(world, safety, memory)) return;
+        decision = 'k';
         if (!holding_capture(world) && (recall_to_bank(world, pathing, safety, memory) || shop_trip(world, safety, memory))) return;
         try {
             me.cancel_recall();
@@ -584,10 +609,12 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     shield_if_needed(world);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     if (world.map().ally_spawn.is_set(me.position()) && me.health() < me.max_health()) {
+        decision = 'H';
         attack_enemy(world);
         return;
     }
     if (want_home(world, safety)) {
+        decision = 'R';
         if (world.me().facts().walk_and_attack_independent()) attack_enemy(world);
         cast_at_enemies(world, true);
         // A tribute survives damage; a recall does not.
@@ -607,11 +634,16 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (!attacked && !holding && dash_to_attack(world, pathing)) attacked = attack_enemy(world);
     if (attacked) reset_and_attack_enemy(world);
     place_ward(world, pathing);
+    decision = holding ? 'P' : attacked ? 'A' : decision;
     if (holding) return;
     if (me.gem_count() > 0) {
         const bool safe = can_tribute_safely(world, safety, memory);
         if (!safe && chase(world, pathing, safety)) return;
-        if (!safe && can_tribute_here(world)) return; // until they leave or come
+        if (!safe && can_tribute_here(world)) {
+            decision = 'W';
+            return; // until they leave or come
+        }
+        decision = 'B';
         const bool walked = attacked && !world.me().facts().walk_and_attack_independent();
         memory.banking = walked || !may_chain(world, safety) || !farm(world, pathing, memory);
         if (memory.banking) bank_gems(world, pathing, safety); // a tribute can still start after a ranged attack
@@ -619,7 +651,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     }
     if (attacked && !world.me().facts().walk_and_attack_independent()) return;
     if (chase(world, pathing, safety)) return;
+    decision = 'J';
     if (join_rally(world, pathing)) return;
+    decision = 'F';
     farm(world, pathing, memory);
 }
 
@@ -659,7 +693,12 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     Safety safety{world};
     const float health = world.me().alive ? cambc::self().health() : 0;
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
+    decision = '-';
+    const vec2 start = world.me().pos;
     decide(world, pathing, safety, memory);
+    if constexpr (debug_fights)
+        if (world.me().alive && !world.map().ally_spawn.is_set(start) && fuel_ok(params::end_reserve + 15000))
+            if (const auto t = safety.fight(start); t.enemies > 0) log_fight("FF", world, safety, start, t);
     heal_ally(world); // allies in reach after walking
     shield_if_needed(world);
     start_recall(world);

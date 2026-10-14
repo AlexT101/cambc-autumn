@@ -17,6 +17,7 @@ constexpr int max_fighters = 6; // one team's bodies
 struct CastEffect {
     float value = 0; // the choice between ready slots: the most valuable, if any above 0
     float damage = 0, heal = 0;
+    bool heals_self = false; // a shield; a heal goes to the most hurt ally
     bool stuns = false;
     int hits = 1;
 };
@@ -28,6 +29,8 @@ struct Fighter {
     float strength, focus;
     std::array<int, 2> ready_at; // own turn from which the slot can be cast
     int arrives_at = 0;          // own turns spent walking into reach first
+    float health = 0;
+    int link = -1; // Cassi or Issac: the other body, which dies with this one
     std::array<CastEffect, 2> cast{};
     std::array<int, 2> preference{0, 1}; // slots by value, ties to slot 0
 };
@@ -37,7 +40,7 @@ struct Side {
     std::array<Fighter, max_fighters> fighters;
     int count = 0;
     int turn = 0; // own turns taken
-    float health = 0;
+    int self = -1; // our own fighter
     int stunned = 0;       // members that lose their next turn
     float retaliation = 0; // Ren: damage back per hit taken, spread over the side
 
@@ -47,6 +50,28 @@ struct Side {
     void join(const ChampionBelief& c, int turn_round);
     void close() {
         if (count > 0) retaliation /= static_cast<float>(count);
+    }
+    float health() const {
+        float total = 0;
+        for (int i = 0; i < count; ++i) total += std::max(0.0f, fighters[i].health);
+        return total;
+    }
+    // The living member with the least health, or -1.
+    int weakest() const {
+        int best = -1;
+        for (int i = 0; i < count; ++i)
+            if (fighters[i].health > 0 && (best < 0 || fighters[i].health < fighters[best].health)) best = i;
+        return best;
+    }
+    // Focused on the weakest, the excess spilling over to the next.
+    void hurt(float damage) {
+        for (int i = weakest(); i >= 0 && damage > 0; i = weakest()) {
+            auto& f = fighters[i];
+            const float taken = std::min(damage, f.health);
+            f.health -= taken;
+            damage -= taken;
+            if (f.health <= 0 && f.link >= 0) fighters[f.link].health = 0;
+        }
     }
 };
 
@@ -58,8 +83,12 @@ Fighter fighter(const ChampionBelief& c, int turn_round) {
 }
 
 void Side::join(const ChampionBelief& c, int turn_round) {
-    add(fighter(c, turn_round));
-    health += c.health;
+    auto f = fighter(c, turn_round);
+    f.health = c.health;
+    if (f.facts->passive == Passive::linked_pair)
+        for (int i = 0; i < count; ++i)
+            if (fighters[i].facts->passive == Passive::linked_pair) f.link = i, fighters[i].link = count;
+    add(f);
     retaliation += c.retaliation();
 }
 
@@ -81,6 +110,7 @@ void prepare(Side& side) {
             }
             c.stuns = a.stuns;
             if (a.kind == AbilityKind::shield || a.kind == AbilityKind::heal) c.heal = a.multiplier * f.focus;
+            c.heals_self = a.kind == AbilityKind::shield;
             if (a.kind == AbilityKind::attack_reset) c.damage = f.strength;
             if (a.kind == AbilityKind::damage) c.damage = a.multiplier * f.focus;
             c.hits = a.kind == AbilityKind::attack_reset || a.kind == AbilityKind::damage ? 2 : 1;
@@ -97,7 +127,10 @@ int attack(Fighter& f, int turn, Side& self, Side& other, float& damage) {
         if (f.ready_at[s] > turn || c.value <= 0) continue;
         f.ready_at[s] = turn + ability_cooldown;
         if (c.stuns) ++other.stunned;
-        if (c.heal != 0) self.health += c.heal;
+        if (c.heal != 0) {
+            const int target = c.heals_self ? static_cast<int>(&f - self.fighters.data()) : self.weakest();
+            self.fighters[target].health += c.heal;
+        }
         if (c.damage != 0) damage += c.damage;
         return c.hits;
     }
@@ -110,7 +143,7 @@ void act(Side& self, Side& other) {
     for (int k = 0; k < self.stunned; ++k) {
         int best = -1;
         for (int i = 0; i < self.count; ++i)
-            if (!skip[i] && self.fighters[i].facts->passive != Passive::stun_immune
+            if (!skip[i] && self.fighters[i].health > 0 && self.fighters[i].facts->passive != Passive::stun_immune
                 && (best < 0 || self.fighters[i].strength > self.fighters[best].strength))
                 best = i;
         if (best >= 0) skip[best] = true;
@@ -121,14 +154,15 @@ void act(Side& self, Side& other) {
     const int turn = self.turn++;
     for (int i = 0; i < self.count; ++i) {
         auto& f = self.fighters[i];
-        if (f.arrives_at <= turn && !skip[i]) hits += attack(f, turn, self, other, damage);
+        if (f.health > 0 && f.arrives_at <= turn && !skip[i]) hits += attack(f, turn, self, other, damage);
     }
-    other.health -= damage;
-    self.health -= static_cast<float>(hits) * other.retaliation;
+    other.hurt(damage);
+    self.hurt(static_cast<float>(hits) * other.retaliation);
 }
 
 // Turns each side needs to empty the other's pool, within `horizon` turns each.
-std::pair<int, int> simulate(Side us, Side them, bool they_first) {
+// `self_falls`: whether our own fighter dies before their side does.
+std::pair<int, int> simulate(Side us, Side them, bool they_first, bool* self_falls = nullptr) {
     constexpr int horizon = 24;
     prepare(us);
     prepare(them);
@@ -138,11 +172,12 @@ std::pair<int, int> simulate(Side us, Side them, bool they_first) {
         if (their_turn) {
             act(them, us);
             ++theirs;
-            if (us.health <= 0) return {0, theirs};
+            if (self_falls && us.self >= 0 && us.fighters[us.self].health <= 0) *self_falls = true;
+            if (us.weakest() < 0) return {0, theirs};
         } else {
             act(us, them);
             ++ours;
-            if (them.health <= 0) return {ours, 0};
+            if (them.weakest() < 0) return {ours, 0};
         }
     }
     return {0, 0};
@@ -153,10 +188,10 @@ Trade trade(const Side& us, const Side& them) {
     Trade t;
     t.allies = us.count;
     t.enemies = them.count;
-    t.our_health = us.health;
-    t.their_health = them.health;
+    t.our_health = us.health();
+    t.their_health = them.health();
     if (them.count == 0) return t;
-    const auto [we_kill, they_kill] = simulate(us, them, true);
+    const auto [we_kill, they_kill] = simulate(us, them, true, &t.self_falls);
     t.turns_to_kill_them = we_kill;
     t.turns_to_kill_us = they_kill;
     t.lost = they_kill > 0;
@@ -365,7 +400,9 @@ Trade Safety::fight(vec2 p) {
     Side us, them;
     for (std::size_t i = 0; i < world_.allies.size(); ++i) {
         const auto& a = world_.allies[i];
-        if (key >> i & 1) us.join(a, a.is_self ? world_.round : next_turn_round(world_, a));
+        if (!(key >> i & 1)) continue;
+        if (a.is_self) us.self = us.count;
+        us.join(a, a.is_self ? world_.round : next_turn_round(world_, a));
     }
     for (const auto& t : threats()) {
         const auto& e = world_.enemies[t.enemy];
@@ -393,7 +430,8 @@ Trade Safety::duel(int enemy) {
 
 int Safety::turns_to_kill_idle(vec2 p, int horizon) {
     Side us, them;
-    us.health = world_.me().health;
+    us.join(world_.me(), world_.round);
+    us.fighters[0].arrives_at = 2 * horizon;
     for (const auto& e : world_.enemies) {
         if (!e.alive || !e.visible) continue;
         const auto s = strike(e, next_turn_round(world_, e));
@@ -402,6 +440,7 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
         if (walk >= horizon) continue;
         auto f = fighter(e, next_turn_round(world_, e));
         f.arrives_at = walk;
+        f.health = e.health;
         them.add(f);
     }
     if (them.count == 0) return 0;

@@ -74,13 +74,16 @@ struct Threat {
     bool credible() const { return visible || weight >= safety_params::credible_weight; }
 };
 
-// A pooled fight: each side's health summed, damage focused, sides alternating turns. Stuns
-// skip the strongest opponent's turn; heals and shields add to the pool once when ready.
-// Ignores items, positioning, overkill and the order within a side.
+// A fight with sides alternating turns, each side's damage focused on the other's weakest member
+// and spilling over, so the fallen stop dealing damage (Cassi and Issac fall together). Pooled
+// health hid this: we died in 17% of won fights where we were the weakest, 4-7% otherwise.
+// Stuns skip the strongest opponent's turn; a heal goes to the weakest ally, a shield to its
+// caster. Ignores items, positioning and the order within a side.
 struct Trade {
     bool lost = false;          // they win when they strike first
     int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
     int turns_to_kill_them = 0; // ours
+    bool self_falls = false;    // we die before their side does, when they strike first
     float our_health = 0, their_health = 0;
     int allies = 0, enemies = 0;
 };
