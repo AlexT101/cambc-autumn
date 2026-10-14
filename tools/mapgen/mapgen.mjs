@@ -18,6 +18,15 @@ const PLAN = [
   [{ mutate: 'lanes', ops: ['camps+4', 'bushes*0.3'] }, 1], [{ mutate: 'corners', ops: ['holes*0', 'camps*0.8', 'picks=4'] }, 1],
   [{ mutate: 'collision', ops: ['camps*1.3', 'altars+2', 'picks=5'] }, 1], [{ mutate: 'elkring', ops: ['walls+0.06', 'picks=3'] }, 1],
   ['classic', 12],
+  // Second half: appended, since seeds follow plan position and the first half must not change.
+  ['small-brawl', 3], ['large-open', 2], ['maze', 3], ['caves', 3], ['many-camps', 2], ['lanes', 3], ['islands', 2],
+  ['jungle', 2], ['monolith', 2], ['fortress', 2], ['rows', 2], ['altar-rich', 2], ['altar-poor', 2], ['contested-centre', 2],
+  ['vaults', 2], ['tiny', 1], ['huge', 1], ['random', 4],
+  [{ mutate: 'packs', ops: ['walls*1.5', 'camps*1.2', 'picks=4'] }, 1], [{ mutate: 'expanse', ops: ['bushes*2', 'altars-1', 'picks=5'] }, 1],
+  [{ mutate: 'monolith', ops: ['walls*0.5', 'camps+3'] }, 1], [{ mutate: 'interlock', ops: ['camps*0.7', 'picks=3'] }, 1],
+  [{ mutate: 'lanes', ops: ['walls*0.5', 'altars+2', 'picks=3'] }, 1], [{ mutate: 'corners', ops: ['bushes*2', 'camps*1.3'] }, 1],
+  [{ mutate: 'collision', ops: ['walls*0.6', 'camps*0.8', 'picks=4'] }, 1], [{ mutate: 'elkring', ops: ['camps*1.3', 'bushes*0.5', 'picks=4'] }, 1],
+  ['classic', 12],
 ];
 const FEATURES = ['area', 'reach_frac', 'walls', 'holes', 'bushes', 'spawn_dist', 'detour', 'choke', 'openness', 'altars', 'groups_side', 'gems_side', 'camp_ratio', 'picks'];
 

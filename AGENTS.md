@@ -29,7 +29,7 @@ py run_batched.py --watch            # live progress of the newest batch, from a
 
 Options: `--threads N` (default 16), `--one-side` (one game per map, sides drawn by `--side-seed`), `--maps-dir` (default `maps/`, skipping `maps/gen/`), `--gen [N]` (play the generated maps in `maps/gen/` instead: all, or N drawn by `--gen-seed`), `--fuel`, `--timeout SECONDS`, `--no-replays`. Results go to `replays/batch-TIMESTAMP/`: `results.json` (wins from bot 1's view, then per match), `<n>-<map>-<12|21>.repl26a` (`12` means bot 1 is team A), `run.log`, and `*.error.log` for failed matches. The exit code is non-zero if any match failed.
 
-The 9 maps in `maps/` are too few to avoid overfitting, and tournament maps differ, so also test on `maps/gen/` (committed, ~60 symmetric maps that load and play to completion). For routine checks use `--gen 16 --gen-seed 0` (32 games, under a minute at `--threads 4`); use `--gen` for all. [tools/mapgen/mapgen.mjs](tools/mapgen/mapgen.mjs) builds them through the engine WASM's map builder (seeded, reproducible):
+The 9 maps in `maps/` are too few to avoid overfitting, and tournament maps differ, so also test on `maps/gen/` (committed, 120 symmetric maps that load and play to completion). Normally play all of them with `--gen` (240 games): single maps and small samples are too noisy to judge a change. `--gen N --gen-seed S` samples N for quick smoke tests. [tools/mapgen/mapgen.mjs](tools/mapgen/mapgen.mjs) builds them through the engine WASM's map builder (seeded, reproducible):
 
 ```
 node tools/mapgen/mapgen.mjs list                                  # presets (small-brawl, maze, classic, vaults, ...)
