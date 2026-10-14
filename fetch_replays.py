@@ -121,6 +121,8 @@ def main():
     p.add_argument("--threads", type=int, default=4)
     p.add_argument("--list", action="store_true", help="print the ladder and exit")
     args = p.parse_args()
+    for stream in (sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8", errors="replace")
 
     ladder = get_json("/ladder")
     if args.list:
