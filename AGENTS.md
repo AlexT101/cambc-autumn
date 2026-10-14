@@ -40,6 +40,17 @@ py fetch_replays.py --top 10 --team "Mite"          # newest 20 ranked groups pe
 
 Options: `--kind ranked|unranked|all`, `--since 2026-10-13`, `--max-groups N` (0 for all), `--out` (default `replays/ladder/`), `--threads`. Each five-game group gets a folder `<time>-<teamA>-vs-<teamB>-<id>/` with `<n>-<map>.repl26a` and `group.json` (per-game outcome, sides, draft, gem and champion stats). Groups already downloaded are skipped.
 
+## Replay analysis
+
+[tools/replay/extract.mjs](tools/replay/extract.mjs) decodes replays (ladder and local) with the engine WASM into cached tables under `replays/.analysis/`: per game `meta.json` (teams, draft, result, engine statistics, validation), `events.jsonl.gz` (actions, damage, deaths, captures, tributes, recalls, shopping) and `rounds.json.gz` (per-round champion state and vision), plus shared map files:
+
+```
+node tools/replay/extract.mjs replays/ladder replays/batch-TIMESTAMP   # skips games already extracted
+node tools/replay/extract.mjs --update-engine                          # refresh engine/ from `cambc view` after a cambc update
+```
+
+Schema and units: [tools/replay/README.md](tools/replay/README.md).
+
 ## Docs
 
 [docs/](docs/README.md) mirrors the online handbook, champion pages, guides and API reference (all four languages), with images. Regenerate with `cd tools/docs-sync && npm install && node sync.mjs`; never edit by hand. WebFetch can't read the site; use `docs/`.
