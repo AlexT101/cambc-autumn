@@ -1,6 +1,6 @@
 # Rules verification summary
 
-We tested the cambc2026a engine against the docs with 22 probe bots (`probes/`) across ten topics:
+We tested the cambc2026a engine against the docs with 25 probe bots (`probes/`) across ten topics, and dumped the visualiser engine's own constants (`engine-constants.mjs` → `engine-constants.json`):
 
 - settings and item/champion/camp data
 - turn order and memory
@@ -15,7 +15,7 @@ We tested the cambc2026a engine against the docs with 22 probe bots (`probes/`) 
 
 The evidence for each result is in `findings.md`, and `../cambc-rules.yaml` records the tested behaviour.
 
-All champion stats, item costs, camp HP/gold/gems and game settings match the docs exactly.
+All champion stats, abilities, passives, item costs, camp HP/gold/gems and game settings match the docs exactly, both through the bot API and in the engine dump.
 
 ## Outright conflicts (the docs say one thing, the engine does another)
 
@@ -45,7 +45,7 @@ All champion stats, item costs, camp HP/gold/gems and game settings match the do
   - A shared-memory write is visible straight away to teammates who act later.
 - **Capture:**
   - Only the camp's own tiles count, not adjacent ones.
-  - An enemy standing on any of them blocks the capture and resets progress.
+  - Progress resets the instant the tiles are empty or contested, even within one turn (a holder stepping off and dashing back, a teammate taking over after the holder left, an enemy stepping on and off), and the full count restarts. Moving between the group's tiles, or a teammate stepping on before the holder leaves, keeps it.
   - Split shares are floored, and the lowest champion id gets the remainder.
   - Any occupied tile holds the camp's respawn indefinitely.
 - **Gold:**
@@ -97,6 +97,14 @@ The YAML follows the docs on these or leaves them out:
 - whether shield-absorbed damage cancels a recall
 - any inventory cap above 18 items
 - whether wards block walking
+
+## Unreleased or unverified in play
+
+The engine knows content that is not in the docs, the draft list or any of 532 ladder and local replays. None of it is in `../cambc-rules.yaml`.
+
+- **Heart of Ruin** (champion type 12, draft id 11; the viewer's tooltips say "Not yet released"). Drafting id 11 fails with engine error 110 (`api_value_out_of_range`; `probe-heart`), so it cannot be picked. Engine design: melee, attack range 1, vision 8, move 1; health 1000 (+100), Strength 45 (+5), Focus 100 (+10). Passive type 9 (unnamed in the SDK), magnitude 0.05. Slot 0: ground area damage 0.9 x Focus, range 4, radius 1, no stun, excludes walking, cooldown 8. Slot 1: unit stun with 1 x Focus damage, range 4, enemies or camps, 1 turn, excludes walking, cooldown 8.
+- **Control ward** (consumable 1): 10 gold, carry limit 0, not purchasable. Settings: vision radius 6, placement range 2. Viewer tooltip: reveals the area and suppresses enemy wards (ward records carry a `disabled` flag). Never bought in any replay.
+- **TP scroll** (consumable 3): 10 gold, carry limit 0, not purchasable; `tp_scroll_time` 3 (the SDK calls it retired). Viewer tooltip: a 3-round channel to an allied ward or control ward.
 
 ## Probing tip
 

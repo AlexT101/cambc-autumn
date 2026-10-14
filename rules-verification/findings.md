@@ -116,6 +116,28 @@ Targets: gold/gem clusters. Each action is attempted and the engine result or er
 - **Health purchase.** On spawn: current and max +growth. Tavi in the field: max only. Dead: max only, respawning at the new full health.
 - **Inventory.** 18 items / 17 distinct types bought without `inventory_full`; any cap is above that (untested further).
 
+## Capture reset (`probe-reset`, `probe-reset-b`; `bash rules-verification/probes/probe-reset/run.sh <scenario> 80`, packs, fuel 5e7)
+
+Method: team A (Vendetta id 0 = X, Varg id 1 = Y, Ryth) kills packs group (11..12,17..18); X steps onto (11,17) in round H (= 30 in every run) and acts in round H+4. Payout from gold/gem changes; `timeline.mjs` reads the engine's own capture team/timer after every replay step. Old rule (only a capture phase finding the tiles empty or contested resets) predicts H+6 everywhere.
+
+- **Control.** X stays: `PROBE 36 vendetta reward dgold=70 dgems=48 H=30 since_H=6`. Timeline: X's step-on at round 30 leaves the group unheld; `r=31 Camp captures g2 empty team=A timer=5`, timer 4..1 at 32..35, paid at 36. The hold starts at the next capture phase.
+- **Handoff, tiles empty between turns.** `PROBE 34 vendetta x_step_off ... on_group_ally=-`, then `PROBE 34 varg y_step_on to=(12,18) res=ok`; `PROBE 40 varg reward ... since_H=10`. Timeline: `r=34 t=1 Move actor=0 g2 empty team=- timer=0` at X's step, hold restarts at round 35's phase (timer 5), paid 40.
+- **Same champion, same turn.** X walks off, then dashes back onto (11,17): `x_step_off res=ok`, `x_dash_back res=ok`; reset at the walk (`r=34 t=1 Move ... team=-`), paid 40.
+- **Enemy for part of one turn.** B's Vendetta walks onto (12,18) and dashes off in round 32 while X stays: `PROBE 32 vendetta e_step_on ... on_group_enemy=(11,17)`, `e_dash_off res=ok`; timeline `r=32 t=0 Move actor=3 g2 empty team=- timer=0 on=[0A@11,17 3B@12,18]`; paid at 38 = 32+6.
+- **Never empty.** X walks (11,17) → (12,17): paid 36. Y (priority 1, acting first) steps onto (12,18), then X walks off the same round: paid 36.
+- **Conclusion.** Confirms the YAML: progress resets the instant the tiles are empty or contested, including within a single turn, and re-holding restarts the full count (paid at the reset round + 6). Moving between tiles of the group, or a teammate stepping on before the holder leaves, does not reset.
+
+## Engine constants (`engine-constants.mjs`; `node rules-verification/engine-constants.mjs`)
+
+Method: `engine-constants.json` is dumped from the visualiser engine (`tools/replay/engine/v0_0_1.wasm`) through `Game_API_GetSettings`, `Game_API_GetItemInfo`, `Game_API_GetConsumableInfo`, `Game_API_GetChampionPassiveInfo`, `Game_API_Champion_Design`, `Game_API_Camp_Design`, `Game_Visualiser_GetConstants` and `Game_Visualiser_GetShopEntry` (record layouts from `sdk/cpp/imports.h` and `cambc.h`), plus `Game_API_Champion_GetAbilityProps`, `Game_API_Camp_GetAbilityProps` and the `Game_API_Map_CampGroup_*` calls on ladder replays. Designs are identical across all 9 maps; live ability props equal the designs for the 11 champion types seen in replays (no Prism replay).
+
+- **Settings and visualiser constants.** Same values as the introspection probe above; also `control_ward_vision_radius 6`, `control_ward_placement_radius 2`, `tp_scroll_time 3`.
+- **Champions.** Base stats, growths, attack type and range, vision 8, move 1 and `camp_damage_multiplier 1` for all; every ability's kind, modifier, range 4 (dash 2, radius 1), cooldown 8, stun duration 1, shield duration 5, target mask and excludes-walking flag match the YAML and the champion pages. Passive magnitudes: Ryth 0.01, Vesper 0.2, Prism 0.2, Ren 0.2, Varg splash 1.
+- **Camps.** Health/strength match; attack range 3 for every kind (docs table: Monolith 5, clusters 0, already listed); vision 8; no abilities. Rewards and respawns per kind (from single-kind groups): wolf 90/22/40, elk 160/36/60, gem cluster 0/24/50, gold cluster 35/0/50, Monolith 300/200/150. Every group is the sum of its members with the longest respawn; rows' central group is self-mirrored (2 Monoliths + 2 gem clusters, 600 gold, 448 gems).
+- **Items.** Shards 30 gold, +1 point (= growth) of their stat, 5 combine into the emblem; emblems cost 150, unpurchasable; Power 6 points, Bruiser 5 + 1 + 1; passives Monster 0.1, Durability 0.1, Treasure 0.2, Jungle 0.3, Home 0.5. `cost` is also Tavi's refund (SDK), so an emblem sells for 150.
+- **Consumables.** Teleport crystal and altar lock: 10 gold, carry 1, purchasable. Two more exist but are unreleased (see `summary.md`).
+- **Conclusion.** No contradiction with the YAML. Added: Tavi's refund values.
+
 ## Shadowcast, bush clusters, search costs (`probe-pathcost`; all maps but elkring, `--rounds 60 --fuel 50000000`)
 
 Method: every champion compares `bitboard::shadow_cast(here, 8)` with `vision::visible_tiles()` each turn (no wards placed); the first pick walks to the map centre, the others into the nearest bush. On round 2 and 20, and every in-bush turn, every non-opaque tile p of the cast is checked to cast back to the viewer. The first pick also times host searches on its 2nd turn.

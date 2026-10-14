@@ -1,0 +1,5134 @@
+{
+ "engine": {
+  "cambc": "cambc 2.1.4",
+  "asset": "v0_0_1-ctH8uuEb.wasm",
+  "snapshotSize": 184696,
+  "sha256": "ce302dc6666ae43592f6936e572bc4baca92a345bff13ef7f986609ac666a0dc",
+  "bytes": 616952,
+  "updated": "2026-10-14T00:35:34.679Z"
+ },
+ "settings": {
+  "capture_time": 5,
+  "camp_sleep_time": 2,
+  "respawn_time": 60,
+  "recall_time": 5,
+  "submit_gem_duration_multiplier": 0.1,
+  "submit_gem_base_duration": 0,
+  "submit_gem_minimum_duration": 1,
+  "submit_gems_range": 1,
+  "max_rounds": 2000,
+  "winning_gems": 1000,
+  "kill_gold": 50,
+  "assist_gold": 0,
+  "passive_gold": 0,
+  "spawn_healing": 1,
+  "active_wards": 1,
+  "ward_charges": 1,
+  "shared_memory_bytes": 8,
+  "draft_memory_bytes": 1024,
+  "tile_reveal_rounds": 1,
+  "ward_cooldown": 1,
+  "ward_lifetime": -1,
+  "ward_vision_radius": 6,
+  "ward_placement_radius": 2,
+  "control_ward_vision_radius": 6,
+  "control_ward_placement_radius": 2,
+  "altar_lock_hits": 3,
+  "tp_scroll_time": 3,
+  "tp_crystal_time": 3,
+  "reserved": 0,
+  "bytes_written": 120
+ },
+ "visualiser_constants": {
+  "abi": 1,
+  "field_4": 1,
+  "snapshot_size": 184696,
+  "field_12": 64,
+  "recall_rounds": 5,
+  "teleport_rounds": 3,
+  "submit_base_rounds": 0,
+  "submit_minimum_rounds": 1,
+  "capture_rounds": 5,
+  "altar_lock_hits": 3,
+  "ward_placement_range": 2,
+  "control_ward_placement_range": 2,
+  "submit_gems_range": 1,
+  "flash_rounds": 3,
+  "submit_gem_multiplier": 0.1,
+  "bytes_written": 64,
+  "raw": [
+   "0x00000001",
+   "0x00000001",
+   "0x0002d178",
+   "0x00000040",
+   "0x00000005",
+   "0x00000003",
+   "0x00000000",
+   "0x00000001",
+   "0x00000005",
+   "0x00000003",
+   "0x40000000",
+   "0x40000000",
+   "0x3f800000",
+   "0x00000003",
+   "0x9999999a",
+   "0x3fb99999"
+  ]
+ },
+ "champions": [
+  {
+   "type": 0,
+   "name": "Ryth",
+   "vision_type": 0,
+   "passive_type": 5,
+   "abilities": [
+    {
+     "kind": "AoE damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies",
+      "ground"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "radius": 1,
+     "modifier": 1,
+     "duration": 1,
+     "payload_raw": [
+      "0x40800000",
+      "0x3f800000",
+      "0x3f800000",
+      "0x00000001"
+     ]
+    },
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "melee",
+   "passive": "health_strength",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 1,
+    "base_health": 1200,
+    "health_growth": 100,
+    "base_strength": 50,
+    "strength_growth": 5,
+    "base_focus": 100,
+    "focus_growth": 10,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "health_strength",
+    "magnitude": 0.01,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 1,
+   "name": "Vesper Vale",
+   "vision_type": 0,
+   "passive_type": 1,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Dash",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "ground"
+     ],
+     "attributes": [],
+     "dash_range": 2,
+     "payload_raw": [
+      "0x40000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "ranged",
+   "passive": "bonus_gold",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 3,
+    "base_health": 900,
+    "health_growth": 100,
+    "base_strength": 45,
+    "strength_growth": 5,
+    "base_focus": 100,
+    "focus_growth": 10,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "bonus_gold",
+    "magnitude": 0.2,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 2,
+   "name": "Vendetta",
+   "vision_type": 0,
+   "passive_type": 6,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Dash",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "ground"
+     ],
+     "attributes": [],
+     "dash_range": 2,
+     "payload_raw": [
+      "0x40000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "melee",
+   "passive": "reset_cooldowns_on_kill",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 1,
+    "base_health": 800,
+    "health_growth": 100,
+    "base_strength": 70,
+    "strength_growth": 5,
+    "base_focus": 100,
+    "focus_growth": 10,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "reset_cooldowns_on_kill",
+    "magnitude": 0,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 3,
+   "name": "Cassi",
+   "vision_type": 0,
+   "passive_type": 0,
+   "abilities": [
+    {
+     "kind": "Damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 2,
+     "payload_raw": [
+      "0x40800000",
+      "0x40000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "CC",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [],
+     "range": 4,
+     "modifier": 0,
+     "duration": 1,
+     "payload_raw": [
+      "0x40800000",
+      "0x00000000",
+      "0x00000001",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "ranged",
+   "passive": "none",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 3,
+    "base_health": 700,
+    "health_growth": 71.25,
+    "base_strength": 30,
+    "strength_growth": 3.5,
+    "base_focus": 70,
+    "focus_growth": 15,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "none",
+    "magnitude": 0,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 4,
+   "name": "Issac",
+   "vision_type": 0,
+   "passive_type": 0,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Dash",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "ground"
+     ],
+     "attributes": [],
+     "dash_range": 2,
+     "payload_raw": [
+      "0x40000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "melee",
+   "passive": "none",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 1,
+    "base_health": 900,
+    "health_growth": 95,
+    "base_strength": 40,
+    "strength_growth": 4.75,
+    "base_focus": 100,
+    "focus_growth": 10,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "none",
+    "magnitude": 0,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 5,
+   "name": "Stellar",
+   "vision_type": 0,
+   "passive_type": 0,
+   "abilities": [
+    {
+     "kind": "Damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 2,
+     "payload_raw": [
+      "0x40800000",
+      "0x40000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "AoE damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies",
+      "ground"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "radius": 1,
+     "modifier": 1.4,
+     "duration": 0,
+     "payload_raw": [
+      "0x40800000",
+      "0x3f800000",
+      "0x3fb33333",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "ranged",
+   "passive": "none",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 3,
+    "base_health": 750,
+    "health_growth": 75,
+    "base_strength": 35,
+    "strength_growth": 3.5,
+    "base_focus": 100,
+    "focus_growth": 10,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "none",
+    "magnitude": 0,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 6,
+   "name": "Prism",
+   "vision_type": 0,
+   "passive_type": 3,
+   "abilities": [
+    {
+     "kind": "CC",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 1.5,
+     "duration": 1,
+     "payload_raw": [
+      "0x40800000",
+      "0x3fc00000",
+      "0x00000001",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "AoE damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies",
+      "ground"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "radius": 1,
+     "modifier": 1,
+     "duration": 0,
+     "payload_raw": [
+      "0x40800000",
+      "0x3f800000",
+      "0x3f800000",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "ranged",
+   "passive": "gem_focus",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 3,
+    "base_health": 700,
+    "health_growth": 75,
+    "base_strength": 35,
+    "strength_growth": 3.5,
+    "base_focus": 80,
+    "focus_growth": 10,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "gem_focus",
+    "magnitude": 0.2,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 7,
+   "name": "Marcella",
+   "vision_type": 0,
+   "passive_type": 8,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 1,
+     "payload_raw": [
+      "0x00000001",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 2,
+     "payload_raw": [
+      "0x40800000",
+      "0x40000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "melee",
+   "passive": "stun_immunity",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 1,
+    "base_health": 1200,
+    "health_growth": 100,
+    "base_strength": 45,
+    "strength_growth": 5,
+    "base_focus": 50,
+    "focus_growth": 10,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "stun_immunity",
+    "magnitude": 0,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 8,
+   "name": "Willow",
+   "vision_type": 0,
+   "passive_type": 0,
+   "abilities": [
+    {
+     "kind": "Heal",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "allies"
+     ],
+     "attributes": [],
+     "range": 4,
+     "modifier": 3,
+     "payload_raw": [
+      "0x40800000",
+      "0x40400000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "ranged",
+   "passive": "none",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 3,
+    "base_health": 700,
+    "health_growth": 50,
+    "base_strength": 45,
+    "strength_growth": 3,
+    "base_focus": 105,
+    "focus_growth": 5,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "none",
+    "magnitude": 0,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 9,
+   "name": "Ren",
+   "vision_type": 0,
+   "passive_type": 7,
+   "abilities": [
+    {
+     "kind": "CC",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 1.25,
+     "duration": 1,
+     "payload_raw": [
+      "0x40800000",
+      "0x3fa00000",
+      "0x00000001",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Dash",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "ground"
+     ],
+     "attributes": [],
+     "dash_range": 2,
+     "payload_raw": [
+      "0x40000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "melee",
+   "passive": "retaliation",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 1,
+    "base_health": 900,
+    "health_growth": 100,
+    "base_strength": 40,
+    "strength_growth": 5,
+    "base_focus": 100,
+    "focus_growth": 10,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "retaliation",
+    "magnitude": 0.2,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 10,
+   "name": "Varg",
+   "vision_type": 0,
+   "passive_type": 4,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Shield",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "range": 4,
+     "modifier": 2.5,
+     "duration": 5,
+     "payload_raw": [
+      "0x40800000",
+      "0x40200000",
+      "0x00000005",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "melee",
+   "passive": "splash_attack",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 1,
+    "base_health": 1000,
+    "health_growth": 100,
+    "base_strength": 50,
+    "strength_growth": 5,
+    "base_focus": 100,
+    "focus_growth": 10,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "splash_attack",
+    "magnitude": 1,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 11,
+   "name": "Tavi",
+   "vision_type": 0,
+   "passive_type": 2,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "CC",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 2.2,
+     "duration": 1,
+     "payload_raw": [
+      "0x40800000",
+      "0x400ccccd",
+      "0x00000001",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "ranged",
+   "passive": "remote_shop",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 3,
+    "base_health": 750,
+    "health_growth": 75,
+    "base_strength": 35,
+    "strength_growth": 5,
+    "base_focus": 100,
+    "focus_growth": 10,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": "remote_shop",
+    "magnitude": 0,
+    "bytes_written": 8
+   }
+  },
+  {
+   "type": 12,
+   "name": "Heart of Ruin",
+   "vision_type": 0,
+   "passive_type": 9,
+   "abilities": [
+    {
+     "kind": "AoE damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies",
+      "ground"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "radius": 1,
+     "modifier": 0.9,
+     "duration": 0,
+     "payload_raw": [
+      "0x40800000",
+      "0x3f800000",
+      "0x3f666666",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "CC",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 1,
+     "duration": 1,
+     "payload_raw": [
+      "0x40800000",
+      "0x3f800000",
+      "0x00000001",
+      "0x00000000"
+     ]
+    }
+   ],
+   "attack_type": "melee",
+   "passive": 9,
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 1,
+    "base_health": 1000,
+    "health_growth": 100,
+    "base_strength": 45,
+    "strength_growth": 5,
+    "base_focus": 100,
+    "focus_growth": 10,
+    "camp_damage_multiplier": 1
+   },
+   "bytes_written": 128,
+   "passive_info": {
+    "type": 9,
+    "magnitude": 0.05,
+    "bytes_written": 8
+   }
+  }
+ ],
+ "champion_live_abilities": {
+  "0": {
+   "name": "Ryth",
+   "from": "replays\\ladder\\20261013-190002-WHIM-vs-Nyx-088adb9b\\1-lanes.repl26a",
+   "max_health": 1200,
+   "strength": 50,
+   "focus": 100,
+   "abilities": [
+    {
+     "kind": "AoE damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies",
+      "ground"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "radius": 1,
+     "modifier": 1,
+     "duration": 1,
+     "payload_raw": [
+      "0x40800000",
+      "0x3f800000",
+      "0x3f800000",
+      "0x00000001"
+     ]
+    },
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ]
+  },
+  "1": {
+   "name": "Vesper Vale",
+   "from": "replays\\ladder\\20261013-191002-BitShift-vs-SHINK-AI-6500-fbd30ffd\\2-monolith.repl26a",
+   "max_health": 900,
+   "strength": 45,
+   "focus": 100,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Dash",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "ground"
+     ],
+     "attributes": [],
+     "dash_range": 2,
+     "payload_raw": [
+      "0x40000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ]
+  },
+  "2": {
+   "name": "Vendetta",
+   "from": "replays\\ladder\\20261013-190002-WHIM-vs-Nyx-088adb9b\\1-lanes.repl26a",
+   "max_health": 800,
+   "strength": 70,
+   "focus": 100,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Dash",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "ground"
+     ],
+     "attributes": [],
+     "dash_range": 2,
+     "payload_raw": [
+      "0x40000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ]
+  },
+  "3": {
+   "name": "Cassi",
+   "from": "replays\\ladder\\20261013-190002-WHIM-vs-Nyx-088adb9b\\1-lanes.repl26a",
+   "max_health": 700,
+   "strength": 30,
+   "focus": 70,
+   "abilities": [
+    {
+     "kind": "Damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 2,
+     "payload_raw": [
+      "0x40800000",
+      "0x40000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "CC",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [],
+     "range": 4,
+     "modifier": 0,
+     "duration": 1,
+     "payload_raw": [
+      "0x40800000",
+      "0x00000000",
+      "0x00000001",
+      "0x00000000"
+     ]
+    }
+   ]
+  },
+  "4": {
+   "name": "Issac",
+   "from": "replays\\ladder\\20261013-190002-WHIM-vs-Nyx-088adb9b\\1-lanes.repl26a",
+   "max_health": 900,
+   "strength": 40,
+   "focus": 100,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Dash",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "ground"
+     ],
+     "attributes": [],
+     "dash_range": 2,
+     "payload_raw": [
+      "0x40000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ]
+  },
+  "5": {
+   "name": "Stellar",
+   "from": "replays\\ladder\\20261013-190002-WHIM-vs-Nyx-088adb9b\\1-lanes.repl26a",
+   "max_health": 750,
+   "strength": 35,
+   "focus": 100,
+   "abilities": [
+    {
+     "kind": "Damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 2,
+     "payload_raw": [
+      "0x40800000",
+      "0x40000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "AoE damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies",
+      "ground"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "radius": 1,
+     "modifier": 1.4,
+     "duration": 0,
+     "payload_raw": [
+      "0x40800000",
+      "0x3f800000",
+      "0x3fb33333",
+      "0x00000000"
+     ]
+    }
+   ]
+  },
+  "7": {
+   "name": "Marcella",
+   "from": "replays\\ladder\\20261013-190002-WHIM-vs-Nyx-088adb9b\\1-lanes.repl26a",
+   "max_health": 1200,
+   "strength": 45,
+   "focus": 50,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 1,
+     "payload_raw": [
+      "0x00000001",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Damage",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 2,
+     "payload_raw": [
+      "0x40800000",
+      "0x40000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ]
+  },
+  "8": {
+   "name": "Willow",
+   "from": "replays\\ladder\\20261013-191002-WHIM-vs-Mite-9623d3a3\\1-interlock.repl26a",
+   "max_health": 700,
+   "strength": 45,
+   "focus": 105,
+   "abilities": [
+    {
+     "kind": "Heal",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "allies"
+     ],
+     "attributes": [],
+     "range": 4,
+     "modifier": 3,
+     "payload_raw": [
+      "0x40800000",
+      "0x40400000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ]
+  },
+  "9": {
+   "name": "Ren",
+   "from": "replays\\ladder\\20261013-190002-WHIM-vs-Nyx-088adb9b\\1-lanes.repl26a",
+   "max_health": 900,
+   "strength": 40,
+   "focus": 100,
+   "abilities": [
+    {
+     "kind": "CC",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 1.25,
+     "duration": 1,
+     "payload_raw": [
+      "0x40800000",
+      "0x3fa00000",
+      "0x00000001",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Dash",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "ground"
+     ],
+     "attributes": [],
+     "dash_range": 2,
+     "payload_raw": [
+      "0x40000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    }
+   ]
+  },
+  "10": {
+   "name": "Varg",
+   "from": "replays\\ladder\\20261013-190002-WHIM-vs-Nyx-088adb9b\\1-lanes.repl26a",
+   "max_health": 1000,
+   "strength": 50,
+   "focus": 100,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "Shield",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "range": 4,
+     "modifier": 2.5,
+     "duration": 5,
+     "payload_raw": [
+      "0x40800000",
+      "0x40200000",
+      "0x00000005",
+      "0x00000000"
+     ]
+    }
+   ]
+  },
+  "11": {
+   "name": "Tavi",
+   "from": "replays\\ladder\\20261013-191002-BitShift-vs-SHINK-AI-6500-fbd30ffd\\1-packs.repl26a",
+   "max_health": 750,
+   "strength": 35,
+   "focus": 100,
+   "abilities": [
+    {
+     "kind": "Attack reset",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "self"
+     ],
+     "attributes": [],
+     "enhanced_attack": 0,
+     "payload_raw": [
+      "0x00000000",
+      "0x00000000",
+      "0x00000000",
+      "0x00000000"
+     ]
+    },
+    {
+     "kind": "CC",
+     "cooldown": 8,
+     "max_charges": 0,
+     "targets": [
+      "camps",
+      "enemies"
+     ],
+     "attributes": [
+      "exclusive_with_movement"
+     ],
+     "range": 4,
+     "modifier": 2.2,
+     "duration": 1,
+     "payload_raw": [
+      "0x40800000",
+      "0x400ccccd",
+      "0x00000001",
+      "0x00000000"
+     ]
+    }
+   ]
+  }
+ },
+ "camps": [
+  {
+   "type": 0,
+   "name": "Wolf",
+   "vision_type": 0,
+   "passive_type": 0,
+   "abilities": [
+    null,
+    null
+   ],
+   "attack_type": "ranged",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 3,
+    "base_health": 1350,
+    "health_growth": 0,
+    "base_strength": 20,
+    "strength_growth": 0,
+    "base_focus": 1,
+    "focus_growth": 0
+   },
+   "bytes_written": 124
+  },
+  {
+   "type": 1,
+   "name": "Elk",
+   "vision_type": 0,
+   "passive_type": 0,
+   "abilities": [
+    null,
+    null
+   ],
+   "attack_type": "ranged",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 3,
+    "base_health": 2400,
+    "health_growth": 0,
+    "base_strength": 60,
+    "strength_growth": 0,
+    "base_focus": 1,
+    "focus_growth": 0
+   },
+   "bytes_written": 124
+  },
+  {
+   "type": 2,
+   "name": "Gem cluster",
+   "vision_type": 0,
+   "passive_type": 0,
+   "abilities": [
+    null,
+    null
+   ],
+   "attack_type": "ranged",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 3,
+    "base_health": 500,
+    "health_growth": 0,
+    "base_strength": 0,
+    "strength_growth": 0,
+    "base_focus": 1,
+    "focus_growth": 0
+   },
+   "bytes_written": 124
+  },
+  {
+   "type": 3,
+   "name": "Gold cluster",
+   "vision_type": 0,
+   "passive_type": 0,
+   "abilities": [
+    null,
+    null
+   ],
+   "attack_type": "ranged",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 3,
+    "base_health": 500,
+    "health_growth": 0,
+    "base_strength": 0,
+    "strength_growth": 0,
+    "base_focus": 1,
+    "focus_growth": 0
+   },
+   "bytes_written": 124
+  },
+  {
+   "type": 4,
+   "name": "Monolith",
+   "vision_type": 0,
+   "passive_type": 0,
+   "abilities": [
+    null,
+    null
+   ],
+   "attack_type": "ranged",
+   "stats": {
+    "vision_radius": 8,
+    "base_move_speed": 1,
+    "base_attack_range": 3,
+    "base_health": 20000,
+    "health_growth": 0,
+    "base_strength": 200,
+    "strength_growth": 0,
+    "base_focus": 1,
+    "focus_growth": 0
+   },
+   "bytes_written": 124
+  }
+ ],
+ "camp_live_abilities": {
+  "Wolf": [
+   null,
+   null
+  ],
+  "Elk": [
+   null,
+   null
+  ],
+  "Gem cluster": [
+   null,
+   null
+  ],
+  "Gold cluster": [
+   null,
+   null
+  ]
+ },
+ "camp_rewards": {
+  "Wolf": {
+   "gold": 90,
+   "gems": 22,
+   "respawn": 40,
+   "from": "collision group of Wolf"
+  },
+  "Gold cluster": {
+   "gold": 35,
+   "gems": 0,
+   "respawn": 50,
+   "from": "collision group of Gold cluster"
+  },
+  "Elk": {
+   "gold": 160,
+   "gems": 36,
+   "respawn": 60,
+   "from": "collision group of Elk"
+  },
+  "Gem cluster": {
+   "gold": 0,
+   "gems": 24,
+   "respawn": 50,
+   "from": "corners group of Gem cluster+Gem cluster"
+  },
+  "Monolith": {
+   "gold": 300,
+   "gems": 200,
+   "respawn": 150,
+   "from": "monolith group of Monolith+Gem cluster+Gem cluster+Gem cluster+Gem cluster+Gem cluster+Gem cluster+Gem cluster+Gem cluster"
+  }
+ },
+ "camp_group_mismatches": [],
+ "items": [
+  {
+   "id": 0,
+   "name": "Monster Shard of Strength",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 1,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Monster Emblem of Strength",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Monster Emblem of Strength",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 1,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 1,
+   "name": "Monster Emblem of Strength",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 5,
+   "focus_points": 0,
+   "passive": "monster",
+   "passive_magnitude": 0.1,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 5,
+    "focus_points": 0,
+    "passive": "monster",
+    "passive_magnitude": 0.1,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 2,
+   "name": "Monster Shard of Focus",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 1,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Monster Emblem of Focus",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Monster Emblem of Focus",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 1,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 3,
+   "name": "Monster Emblem of Focus",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 5,
+   "passive": "monster",
+   "passive_magnitude": 0.1,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 5,
+    "passive": "monster",
+    "passive_magnitude": 0.1,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 4,
+   "name": "Monster Shard of Health",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 1,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Monster Emblem of Health",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Monster Emblem of Health",
+    "carry_limit": 0,
+    "health_points": 1,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 5,
+   "name": "Monster Emblem of Health",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 5,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "monster",
+   "passive_magnitude": 0.1,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 5,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "monster",
+    "passive_magnitude": 0.1,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 6,
+   "name": "Power Shard of Strength",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 1,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Power Emblem of Strength",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Power Emblem of Strength",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 1,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 7,
+   "name": "Power Emblem of Strength",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 6,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 6,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 8,
+   "name": "Power Shard of Focus",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 1,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Power Emblem of Focus",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Power Emblem of Focus",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 1,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 9,
+   "name": "Power Emblem of Focus",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 6,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 6,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 10,
+   "name": "Power Shard of Health",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 1,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Power Emblem of Health",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Power Emblem of Health",
+    "carry_limit": 0,
+    "health_points": 1,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 11,
+   "name": "Power Emblem of Health",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 6,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 6,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 12,
+   "name": "Durability Shard of Strength",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 1,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Durability Emblem of Strength",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Durability Emblem of Strength",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 1,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 13,
+   "name": "Durability Emblem of Strength",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 5,
+   "focus_points": 0,
+   "passive": "durability",
+   "passive_magnitude": 0.1,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 5,
+    "focus_points": 0,
+    "passive": "durability",
+    "passive_magnitude": 0.1,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 14,
+   "name": "Durability Shard of Focus",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 1,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Durability Emblem of Focus",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Durability Emblem of Focus",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 1,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 15,
+   "name": "Durability Emblem of Focus",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 5,
+   "passive": "durability",
+   "passive_magnitude": 0.1,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 5,
+    "passive": "durability",
+    "passive_magnitude": 0.1,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 16,
+   "name": "Durability Shard of Health",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 1,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Durability Emblem of Health",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Durability Emblem of Health",
+    "carry_limit": 0,
+    "health_points": 1,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 17,
+   "name": "Durability Emblem of Health",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 5,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "durability",
+   "passive_magnitude": 0.1,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 5,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "durability",
+    "passive_magnitude": 0.1,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 18,
+   "name": "Treasure Shard of Strength",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 1,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Treasure Emblem of Strength",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Treasure Emblem of Strength",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 1,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 19,
+   "name": "Treasure Emblem of Strength",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 5,
+   "focus_points": 0,
+   "passive": "treasure",
+   "passive_magnitude": 0.2,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 5,
+    "focus_points": 0,
+    "passive": "treasure",
+    "passive_magnitude": 0.2,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 20,
+   "name": "Treasure Shard of Focus",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 1,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Treasure Emblem of Focus",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Treasure Emblem of Focus",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 1,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 21,
+   "name": "Treasure Emblem of Focus",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 5,
+   "passive": "treasure",
+   "passive_magnitude": 0.2,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 5,
+    "passive": "treasure",
+    "passive_magnitude": 0.2,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 22,
+   "name": "Treasure Shard of Health",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 1,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Treasure Emblem of Health",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Treasure Emblem of Health",
+    "carry_limit": 0,
+    "health_points": 1,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 23,
+   "name": "Treasure Emblem of Health",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 5,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "treasure",
+   "passive_magnitude": 0.2,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 5,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "treasure",
+    "passive_magnitude": 0.2,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 24,
+   "name": "Jungle Shard of Strength",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 1,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Jungle Emblem of Strength",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Jungle Emblem of Strength",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 1,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 25,
+   "name": "Jungle Emblem of Strength",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 5,
+   "focus_points": 0,
+   "passive": "jungle",
+   "passive_magnitude": 0.3,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 5,
+    "focus_points": 0,
+    "passive": "jungle",
+    "passive_magnitude": 0.3,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 26,
+   "name": "Jungle Shard of Focus",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 1,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Jungle Emblem of Focus",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Jungle Emblem of Focus",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 1,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 27,
+   "name": "Jungle Emblem of Focus",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 5,
+   "passive": "jungle",
+   "passive_magnitude": 0.3,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 5,
+    "passive": "jungle",
+    "passive_magnitude": 0.3,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 28,
+   "name": "Jungle Shard of Health",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 1,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Jungle Emblem of Health",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Jungle Emblem of Health",
+    "carry_limit": 0,
+    "health_points": 1,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 29,
+   "name": "Jungle Emblem of Health",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 5,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "jungle",
+   "passive_magnitude": 0.3,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 5,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "jungle",
+    "passive_magnitude": 0.3,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 30,
+   "name": "Home Shard of Strength",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 1,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Home Emblem of Strength",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Home Emblem of Strength",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 1,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 31,
+   "name": "Home Emblem of Strength",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 5,
+   "focus_points": 0,
+   "passive": "home",
+   "passive_magnitude": 0.5,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 5,
+    "focus_points": 0,
+    "passive": "home",
+    "passive_magnitude": 0.5,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 32,
+   "name": "Home Shard of Focus",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 1,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Home Emblem of Focus",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Home Emblem of Focus",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 1,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 33,
+   "name": "Home Emblem of Focus",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 5,
+   "passive": "home",
+   "passive_magnitude": 0.5,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 5,
+    "passive": "home",
+    "passive_magnitude": 0.5,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 34,
+   "name": "Home Shard of Health",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 1,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Home Emblem of Health",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Home Emblem of Health",
+    "carry_limit": 0,
+    "health_points": 1,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 35,
+   "name": "Home Emblem of Health",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 5,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "home",
+   "passive_magnitude": 0.5,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 5,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "home",
+    "passive_magnitude": 0.5,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 36,
+   "name": "Bruiser Shard of Strength",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 1,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Bruiser Emblem of Strength",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Bruiser Emblem of Strength",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 1,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 37,
+   "name": "Bruiser Emblem of Strength",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 1,
+   "strength_points": 5,
+   "focus_points": 1,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 1,
+    "strength_points": 5,
+    "focus_points": 1,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 38,
+   "name": "Bruiser Shard of Focus",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 0,
+   "strength_points": 0,
+   "focus_points": 1,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Bruiser Emblem of Focus",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Bruiser Emblem of Focus",
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 1,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 39,
+   "name": "Bruiser Emblem of Focus",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 1,
+   "strength_points": 1,
+   "focus_points": 5,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 1,
+    "strength_points": 1,
+    "focus_points": 5,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 40,
+   "name": "Bruiser Shard of Health",
+   "cost": 30,
+   "purchasable": true,
+   "health_points": 1,
+   "strength_points": 0,
+   "focus_points": 0,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 5,
+   "result": "Bruiser Emblem of Health",
+   "combine_cost": 150,
+   "shop_entry": {
+    "cost": 30,
+    "combine_count": 5,
+    "result": "Bruiser Emblem of Health",
+    "carry_limit": 0,
+    "health_points": 1,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 41,
+   "name": "Bruiser Emblem of Health",
+   "cost": 150,
+   "purchasable": false,
+   "health_points": 5,
+   "strength_points": 1,
+   "focus_points": 1,
+   "passive": "none",
+   "passive_magnitude": 0,
+   "combine_count": 0,
+   "result": null,
+   "combine_cost": 0,
+   "shop_entry": {
+    "cost": 150,
+    "combine_count": 0,
+    "result": null,
+    "carry_limit": 0,
+    "health_points": 5,
+    "strength_points": 1,
+    "focus_points": 1,
+    "passive": "none",
+    "passive_magnitude": 0,
+    "purchasable": false
+   }
+  }
+ ],
+ "consumables": [
+  {
+   "id": 0,
+   "name": "Teleport crystal",
+   "cost": 10,
+   "carry_limit": 1,
+   "bytes_written": 8,
+   "shop_entry": {
+    "cost": 10,
+    "combine_count": 0,
+    "result": 0,
+    "carry_limit": 1,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": 0,
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 1,
+   "name": "Control ward",
+   "cost": 10,
+   "carry_limit": 0,
+   "bytes_written": 8,
+   "shop_entry": {
+    "cost": 10,
+    "combine_count": 0,
+    "result": 1,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": 0,
+    "passive_magnitude": 0,
+    "purchasable": false
+   }
+  },
+  {
+   "id": 2,
+   "name": "Altar lock",
+   "cost": 10,
+   "carry_limit": 1,
+   "bytes_written": 8,
+   "shop_entry": {
+    "cost": 10,
+    "combine_count": 0,
+    "result": 2,
+    "carry_limit": 1,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": 0,
+    "passive_magnitude": 0,
+    "purchasable": true
+   }
+  },
+  {
+   "id": 3,
+   "name": "TP scroll",
+   "cost": 10,
+   "carry_limit": 0,
+   "bytes_written": 8,
+   "shop_entry": {
+    "cost": 10,
+    "combine_count": 0,
+    "result": 3,
+    "carry_limit": 0,
+    "health_points": 0,
+    "strength_points": 0,
+    "focus_points": 0,
+    "passive": 0,
+    "passive_magnitude": 0,
+    "purchasable": false
+   }
+  }
+ ],
+ "maps": [
+  {
+   "name": "collision",
+   "width": 41,
+   "height": 41,
+   "symmetry": "vertical",
+   "picks": 3,
+   "spawnA": {
+    "minX": 3,
+    "minY": 1,
+    "maxX": 6,
+    "maxY": 4
+   },
+   "groups": [
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster"
+     ],
+     "gold": 35,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster"
+     ],
+     "gold": 35,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster"
+     ],
+     "gold": 35,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk",
+      "Gem cluster",
+      "Gem cluster",
+      "Gem cluster"
+     ],
+     "gold": 160,
+     "gems": 108,
+     "respawn": 60,
+     "check": "sum"
+    }
+   ],
+   "api_groups": [
+    {
+     "handle": 0,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 1,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 2,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 3,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 4,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 5,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 6,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 7,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 8,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 9,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 10,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 11,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 12,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 13,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 14,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 15,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 16,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 17,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 18,
+     "gems": 108,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 4
+    },
+    {
+     "handle": 19,
+     "gems": 108,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 4
+    }
+   ]
+  },
+  {
+   "name": "corners",
+   "width": 71,
+   "height": 71,
+   "symmetry": "horizontal",
+   "picks": 5,
+   "spawnA": {
+    "minX": 13,
+    "minY": 33,
+    "maxX": 16,
+    "maxY": 36
+   },
+   "groups": [
+    {
+     "members": [
+      "Gem cluster",
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 48,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster",
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 48,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster",
+      "Elk",
+      "Elk"
+     ],
+     "gold": 320,
+     "gems": 96,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster",
+      "Gold cluster"
+     ],
+     "gold": 70,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster",
+      "Gold cluster"
+     ],
+     "gold": 70,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk",
+      "Elk"
+     ],
+     "gold": 320,
+     "gems": 72,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster",
+      "Gold cluster"
+     ],
+     "gold": 70,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    }
+   ],
+   "api_groups": [
+    {
+     "handle": 0,
+     "gems": 48,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 1,
+     "gems": 48,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 2,
+     "gems": 48,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 3,
+     "gems": 48,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 4,
+     "gems": 96,
+     "gold": 320,
+     "respawn": 60,
+     "num_camps": 3
+    },
+    {
+     "handle": 5,
+     "gems": 96,
+     "gold": 320,
+     "respawn": 60,
+     "num_camps": 3
+    },
+    {
+     "handle": 6,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 7,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 8,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 9,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 10,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 11,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 12,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 13,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 14,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 15,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 16,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 17,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 18,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 19,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 20,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 21,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 22,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 23,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 24,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 25,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 26,
+     "gems": 72,
+     "gold": 320,
+     "respawn": 60,
+     "num_camps": 2
+    },
+    {
+     "handle": 27,
+     "gems": 72,
+     "gold": 320,
+     "respawn": 60,
+     "num_camps": 2
+    },
+    {
+     "handle": 28,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 29,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    }
+   ]
+  },
+  {
+   "name": "elkring",
+   "width": 30,
+   "height": 30,
+   "symmetry": "rotational",
+   "picks": 5,
+   "spawnA": {
+    "minX": 0,
+    "minY": 0,
+    "maxX": 3,
+    "maxY": 3
+   },
+   "groups": [
+    {
+     "members": [
+      "Elk",
+      "Gold cluster"
+     ],
+     "gold": 195,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk",
+      "Gold cluster"
+     ],
+     "gold": 195,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk",
+      "Gold cluster"
+     ],
+     "gold": 195,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk",
+      "Gold cluster"
+     ],
+     "gold": 195,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk",
+      "Gold cluster"
+     ],
+     "gold": 195,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    }
+   ],
+   "api_groups": [
+    {
+     "handle": 0,
+     "gems": 36,
+     "gold": 195,
+     "respawn": 60,
+     "num_camps": 2
+    },
+    {
+     "handle": 1,
+     "gems": 36,
+     "gold": 195,
+     "respawn": 60,
+     "num_camps": 2
+    },
+    {
+     "handle": 2,
+     "gems": 36,
+     "gold": 195,
+     "respawn": 60,
+     "num_camps": 2
+    },
+    {
+     "handle": 3,
+     "gems": 36,
+     "gold": 195,
+     "respawn": 60,
+     "num_camps": 2
+    },
+    {
+     "handle": 4,
+     "gems": 36,
+     "gold": 195,
+     "respawn": 60,
+     "num_camps": 2
+    },
+    {
+     "handle": 5,
+     "gems": 36,
+     "gold": 195,
+     "respawn": 60,
+     "num_camps": 2
+    },
+    {
+     "handle": 6,
+     "gems": 36,
+     "gold": 195,
+     "respawn": 60,
+     "num_camps": 2
+    },
+    {
+     "handle": 7,
+     "gems": 36,
+     "gold": 195,
+     "respawn": 60,
+     "num_camps": 2
+    },
+    {
+     "handle": 8,
+     "gems": 36,
+     "gold": 195,
+     "respawn": 60,
+     "num_camps": 2
+    },
+    {
+     "handle": 9,
+     "gems": 36,
+     "gold": 195,
+     "respawn": 60,
+     "num_camps": 2
+    }
+   ]
+  },
+  {
+   "name": "expanse",
+   "width": 80,
+   "height": 80,
+   "symmetry": "rotational",
+   "picks": 3,
+   "spawnA": {
+    "minX": 3,
+    "minY": 2,
+    "maxX": 7,
+    "maxY": 6
+   },
+   "groups": [
+    {
+     "members": [
+      "Gem cluster",
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 48,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster",
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 48,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster",
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 48,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster",
+      "Gem cluster",
+      "Gem cluster",
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 108,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster",
+      "Gem cluster",
+      "Elk",
+      "Gem cluster"
+     ],
+     "gold": 160,
+     "gems": 108,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster",
+      "Gold cluster"
+     ],
+     "gold": 70,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster",
+      "Gold cluster"
+     ],
+     "gold": 70,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster",
+      "Gold cluster"
+     ],
+     "gold": 70,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster",
+      "Gold cluster"
+     ],
+     "gold": 70,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk",
+      "Gem cluster",
+      "Gem cluster",
+      "Gem cluster"
+     ],
+     "gold": 160,
+     "gems": 108,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf",
+      "Wolf"
+     ],
+     "gold": 180,
+     "gems": 44,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    }
+   ],
+   "api_groups": [
+    {
+     "handle": 0,
+     "gems": 48,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 1,
+     "gems": 48,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 2,
+     "gems": 48,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 3,
+     "gems": 48,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 4,
+     "gems": 48,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 5,
+     "gems": 48,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 6,
+     "gems": 108,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 4
+    },
+    {
+     "handle": 7,
+     "gems": 108,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 4
+    },
+    {
+     "handle": 8,
+     "gems": 108,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 4
+    },
+    {
+     "handle": 9,
+     "gems": 108,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 4
+    },
+    {
+     "handle": 10,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 11,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 12,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 13,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 14,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 15,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 16,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 17,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 18,
+     "gems": 108,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 4
+    },
+    {
+     "handle": 19,
+     "gems": 108,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 4
+    },
+    {
+     "handle": 20,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 21,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 22,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 23,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 24,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 25,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 26,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 27,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 28,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 29,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    }
+   ]
+  },
+  {
+   "name": "interlock",
+   "width": 40,
+   "height": 40,
+   "symmetry": "rotational",
+   "picks": 4,
+   "spawnA": {
+    "minX": 0,
+    "minY": 0,
+    "maxX": 3,
+    "maxY": 3
+   },
+   "groups": [
+    {
+     "members": [
+      "Gem cluster",
+      "Gem cluster",
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 72,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster",
+      "Gold cluster"
+     ],
+     "gold": 70,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster",
+      "Gold cluster"
+     ],
+     "gold": 70,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    }
+   ],
+   "api_groups": [
+    {
+     "handle": 0,
+     "gems": 72,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 3
+    },
+    {
+     "handle": 1,
+     "gems": 72,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 3
+    },
+    {
+     "handle": 2,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 3,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 4,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 5,
+     "gems": 0,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 2
+    },
+    {
+     "handle": 6,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 7,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 8,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 9,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 10,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 11,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 12,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 13,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 14,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 15,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    }
+   ]
+  },
+  {
+   "name": "lanes",
+   "width": 90,
+   "height": 30,
+   "symmetry": "horizontal",
+   "picks": 5,
+   "spawnA": {
+    "minX": 2,
+    "minY": 12,
+    "maxX": 5,
+    "maxY": 15
+   },
+   "groups": [
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 24,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 24,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 24,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster"
+     ],
+     "gold": 35,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster"
+     ],
+     "gold": 35,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster"
+     ],
+     "gold": 35,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 24,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 24,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gem cluster"
+     ],
+     "gold": 0,
+     "gems": 24,
+     "respawn": 50,
+     "check": "sum"
+    }
+   ],
+   "api_groups": [
+    {
+     "handle": 0,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 1,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 2,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 3,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 4,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 5,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 6,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 7,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 8,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 9,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 10,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 11,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 12,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 13,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 14,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 15,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 16,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 17,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 18,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 19,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 20,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 21,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 22,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 23,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 24,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 25,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 26,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 27,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 28,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 29,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 30,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 31,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 32,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 33,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 34,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 35,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 36,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 37,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 38,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 39,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 40,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 41,
+     "gems": 24,
+     "gold": 0,
+     "respawn": 50,
+     "num_camps": 1
+    }
+   ]
+  },
+  {
+   "name": "monolith",
+   "width": 50,
+   "height": 50,
+   "symmetry": "rotational",
+   "picks": 5,
+   "spawnA": {
+    "minX": 2,
+    "minY": 45,
+    "maxX": 5,
+    "maxY": 48
+   },
+   "groups": [
+    {
+     "members": [
+      "Monolith",
+      "Gem cluster",
+      "Gem cluster",
+      "Gem cluster",
+      "Gem cluster",
+      "Gem cluster",
+      "Gem cluster",
+      "Gem cluster",
+      "Gem cluster"
+     ],
+     "gold": 300,
+     "gems": 392,
+     "respawn": 150,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf",
+      "Wolf"
+     ],
+     "gold": 180,
+     "gems": 44,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf"
+     ],
+     "gold": 90,
+     "gems": 22,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Elk"
+     ],
+     "gold": 160,
+     "gems": 36,
+     "respawn": 60,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster"
+     ],
+     "gold": 35,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster"
+     ],
+     "gold": 35,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster"
+     ],
+     "gold": 35,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf",
+      "Wolf"
+     ],
+     "gold": 180,
+     "gems": 44,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf",
+      "Wolf"
+     ],
+     "gold": 180,
+     "gems": 44,
+     "respawn": 40,
+     "check": "sum"
+    }
+   ],
+   "api_groups": [
+    {
+     "handle": 0,
+     "gems": 392,
+     "gold": 300,
+     "respawn": 150,
+     "num_camps": 9
+    },
+    {
+     "handle": 1,
+     "gems": 392,
+     "gold": 300,
+     "respawn": 150,
+     "num_camps": 9
+    },
+    {
+     "handle": 2,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 3,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 4,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 5,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 6,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 7,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 8,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 9,
+     "gems": 22,
+     "gold": 90,
+     "respawn": 40,
+     "num_camps": 1
+    },
+    {
+     "handle": 10,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 11,
+     "gems": 36,
+     "gold": 160,
+     "respawn": 60,
+     "num_camps": 1
+    },
+    {
+     "handle": 12,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 13,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 14,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 15,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 16,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 17,
+     "gems": 0,
+     "gold": 35,
+     "respawn": 50,
+     "num_camps": 1
+    },
+    {
+     "handle": 18,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 19,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 20,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 21,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    }
+   ]
+  },
+  {
+   "name": "packs",
+   "width": 31,
+   "height": 31,
+   "symmetry": "rotational",
+   "picks": 3,
+   "spawnA": {
+    "minX": 0,
+    "minY": 0,
+    "maxX": 3,
+    "maxY": 3
+   },
+   "groups": [
+    {
+     "members": [
+      "Wolf",
+      "Wolf"
+     ],
+     "gold": 180,
+     "gems": 44,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Gold cluster",
+      "Gem cluster",
+      "Gold cluster",
+      "Gem cluster"
+     ],
+     "gold": 70,
+     "gems": 48,
+     "respawn": 50,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf",
+      "Wolf"
+     ],
+     "gold": 180,
+     "gems": 44,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf",
+      "Wolf"
+     ],
+     "gold": 180,
+     "gems": 44,
+     "respawn": 40,
+     "check": "sum"
+    }
+   ],
+   "api_groups": [
+    {
+     "handle": 0,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 1,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 2,
+     "gems": 48,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 4
+    },
+    {
+     "handle": 3,
+     "gems": 48,
+     "gold": 70,
+     "respawn": 50,
+     "num_camps": 4
+    },
+    {
+     "handle": 4,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 5,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 6,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    },
+    {
+     "handle": 7,
+     "gems": 44,
+     "gold": 180,
+     "respawn": 40,
+     "num_camps": 2
+    }
+   ]
+  },
+  {
+   "name": "rows",
+   "width": 50,
+   "height": 50,
+   "symmetry": "rotational",
+   "picks": 4,
+   "spawnA": {
+    "minX": 2,
+    "minY": 2,
+    "maxX": 6,
+    "maxY": 6
+   },
+   "groups": [
+    {
+     "members": [
+      "Wolf",
+      "Wolf",
+      "Wolf"
+     ],
+     "gold": 270,
+     "gems": 66,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf",
+      "Wolf",
+      "Wolf"
+     ],
+     "gold": 270,
+     "gems": 66,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Wolf",
+      "Wolf",
+      "Wolf"
+     ],
+     "gold": 270,
+     "gems": 66,
+     "respawn": 40,
+     "check": "sum"
+    },
+    {
+     "members": [
+      "Monolith",
+      "Gem cluster"
+     ],
+     "gold": 600,
+     "gems": 448,
+     "respawn": 150,
+     "check": "sum, self-mirrored (members listed once, mirror camps join the group)"
+    },
+    {
+     "members": [
+      "Gold cluster",
+      "Gold cluster",
+      "Gold cluster"
+     ],
+     "gold": 105,
+     "gems": 0,
+     "respawn": 50,
+     "check": "sum"
+    }
+   ],
+   "api_groups": [
+    {
+     "handle": 0,
+     "gems": 66,
+     "gold": 270,
+     "respawn": 40,
+     "num_camps": 3
+    },
+    {
+     "handle": 1,
+     "gems": 66,
+     "gold": 270,
+     "respawn": 40,
+     "num_camps": 3
+    },
+    {
+     "handle": 2,
+     "gems": 66,
+     "gold": 270,
+     "respawn": 40,
+     "num_camps": 3
+    },
+    {
+     "handle": 3,
+     "gems": 66,
+     "gold": 270,
+     "respawn": 40,
+     "num_camps": 3
+    },
+    {
+     "handle": 4,
+     "gems": 66,
+     "gold": 270,
+     "respawn": 40,
+     "num_camps": 3
+    },
+    {
+     "handle": 5,
+     "gems": 66,
+     "gold": 270,
+     "respawn": 40,
+     "num_camps": 3
+    },
+    {
+     "handle": 6,
+     "gems": 448,
+     "gold": 600,
+     "respawn": 150,
+     "num_camps": 4
+    },
+    {
+     "handle": 7,
+     "gems": 0,
+     "gold": 105,
+     "respawn": 50,
+     "num_camps": 3
+    },
+    {
+     "handle": 8,
+     "gems": 0,
+     "gold": 105,
+     "respawn": 50,
+     "num_camps": 3
+    }
+   ]
+  }
+ ]
+}

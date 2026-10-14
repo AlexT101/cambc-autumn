@@ -176,7 +176,7 @@ champions:
   tavi:
     attack: ranged
     stats: {health: [750, 75], strength: [35, 5], focus: [100, 10]}
-    passive: "Buys shards anywhere; consumables still need spawn or death. On spawn, sells items for their full price; refunds are not earned gold."
+    passive: "Buys shards anywhere; consumables still need spawn or death. On spawn, sells items for their full price (shard 30, emblem 150); refunds are not earned gold."
     abilities: [attack_reset, {damage: 2.2, stun: true, target: unit, exclusive: true}]
   willow:
     attack: ranged
