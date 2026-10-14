@@ -29,6 +29,17 @@ py run_batched.py --watch            # live progress of the newest batch, from a
 
 Options: `--threads N` (default 16), `--one-side` (one game per map, sides drawn by `--side-seed`), `--maps-dir`, `--fuel`, `--timeout SECONDS`, `--no-replays`. Results go to `replays/batch-TIMESTAMP/`: `results.json` (wins from bot 1's view, then per match), `<n>-<map>-<12|21>.repl26a` (`12` means bot 1 is team A), `run.log`, and `*.error.log` for failed matches. The exit code is non-zero if any match failed.
 
+## Competitor replays
+
+[fetch_replays.py](fetch_replays.py) downloads ladder match replays through the site's public API (no sign-in):
+
+```
+py fetch_replays.py --list                          # ladder: rank, rating, record, team id, name
+py fetch_replays.py --top 10 --team "Mite"          # newest 20 ranked groups per team
+```
+
+Options: `--kind ranked|unranked|all`, `--since 2026-10-13`, `--max-groups N` (0 for all), `--out` (default `replays/ladder/`), `--threads`. Each five-game group gets a folder `<time>-<teamA>-vs-<teamB>-<id>/` with `<n>-<map>.repl26a` and `group.json` (per-game outcome, sides, draft, gem and champion stats). Groups already downloaded are skipped.
+
 ## Docs
 
 [docs/](docs/README.md) mirrors the online handbook, champion pages, guides and API reference (all four languages), with images. Regenerate with `cd tools/docs-sync && npm install && node sync.mjs`; never edit by hand. WebFetch can't read the site; use `docs/`.
