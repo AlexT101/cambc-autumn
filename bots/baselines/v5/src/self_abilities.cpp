@@ -1,0 +1,347 @@
+#include "self_abilities.h"
+#include <algorithm>
+#include <optional>
+#include <utility>
+#include <vector>
+#include "champions.h"
+#include "pathing.h"
+#include "world.h"
+
+namespace aph {
+
+namespace {
+
+constexpr int camp_attack_range = 3;
+constexpr int dash_steps = 2;
+constexpr int reset_hold_margin = 2;      // an enemy this far beyond attack range keeps the reset off camps
+constexpr int travel_dash_clearance = 10; // no visible enemy this close for a travel dash
+constexpr float heal_min_share = 0.6f;    // of the heal amount restored
+constexpr float heal_low_health = 0.5f;
+constexpr float dash_min_health = 0.5f;
+constexpr float chase_health = 0.4f;
+constexpr int failed_search_pause = 4; // rounds without a travel-dash search after one finds no gain
+
+std::optional<cambc::ability> ready(const World& world, AbilityKind kind) {
+    const auto& self = world.me();
+    const int slot = self.facts().slot_of(kind);
+    // The belief is exact for ourselves at turn start; only a Vendetta kill readies a slot mid-turn.
+    if (slot < 0 || !self.alive
+        || (!self.ability_ready(slot, world.round) && self.facts().passive != Passive::reset_on_kill))
+        return std::nullopt;
+    auto& me = cambc::self();
+    if (!me.can_cast()) return std::nullopt;
+    auto ability = me.abilities()[slot];
+    if (ability.cooldown() > 0) return std::nullopt;
+    return ability;
+}
+
+template <class... Target> bool cast(const cambc::ability& ability, const Target&... target) {
+    try {
+        return ability.use(target...);
+    } catch (const cambc::error&) {
+        return false;
+    }
+}
+
+float health_fraction(const cambc::champion& c) { return c.health() / c.max_health(); }
+
+int threat_reach(const ChampionFacts& f) {
+    int r = f.attack_range();
+    for (const auto& a : f.abilities)
+        if (a.hits_enemies()) r = std::max(r, a.reach());
+    return r + (f.has_dash() ? dash_steps + 1 : 1);
+}
+
+bool enemy_within(const World& world, vec2 p, int r) {
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && dist(p, e.pos) <= r) return true;
+    return false;
+}
+
+// Groups with a camp tile within `radius`, found by bitboard so large maps cost no more.
+std::vector<int> groups_near(const World& world, vec2 p, int radius) {
+    const auto& map = world.map();
+    std::vector<int> out;
+    for (auto tile : (map.camp_tiles & square(p, radius)).positions()) {
+        const int g = map.group_at(tile);
+        if (g >= 0 && std::find(out.begin(), out.end(), g) == out.end()) out.push_back(g);
+    }
+    return out;
+}
+
+struct Threat {
+    vec2 pos;
+    int reach;
+    bool camp;
+};
+
+// Enemies and awake monsters that could reach a tile within a dash of `here`.
+std::vector<Threat> threats_near(const World& world, vec2 here) {
+    std::vector<Threat> out;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible) continue;
+        const int reach = threat_reach(e.facts());
+        if (dist(here, e.pos) <= reach + dash_steps) out.push_back({e.pos, reach, false});
+    }
+    const auto& groups = world.map().groups;
+    for (int g : groups_near(world, here, camp_attack_range + dash_steps)) {
+        const auto& c = world.camps[g];
+        if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
+        for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
+            const auto& m = groups[g].members[i];
+            if (c.health[i] > 0 && m.strength > 0 && dist(here, m.pos) <= camp_attack_range + dash_steps)
+                out.push_back({m.pos, camp_attack_range, true});
+        }
+    }
+    return out;
+}
+
+// How deep a tile sits inside the threats' reach.
+int danger(const std::vector<Threat>& threats, vec2 p) {
+    int d = 0;
+    for (const auto& t : threats) {
+        const int depth = t.reach - dist(p, t.pos) + 1;
+        if (depth > 0) d += t.camp ? 2 : depth;
+    }
+    return d;
+}
+
+// Landings in increasing `score`, keeping only those `keep` accepts.
+template <class Score, class Keep> std::vector<vec2> ranked(const bitboard& landings, Score score, Keep keep) {
+    std::vector<std::pair<int, vec2>> scored;
+    for (auto p : landings.positions()) {
+        const int s = score(p);
+        if (!keep(p, s)) continue;
+        auto i = scored.size();
+        scored.emplace_back(s, p);
+        for (; i > 0 && scored[i - 1].first > s; --i) scored[i] = scored[i - 1];
+        scored[i] = {s, p};
+    }
+    std::vector<vec2> out;
+    for (const auto& [s, p] : scored) out.push_back(p);
+    return out;
+}
+
+// A hidden unit on a landing fails the cast without spending it; try the next few.
+bool dash_to_first(const cambc::ability& dash, Pathing& pathing, const std::vector<vec2>& landings) {
+    for (std::size_t i = 0; i < landings.size() && i < 3; ++i)
+        if (cast(dash, landings[i])) {
+            pathing.invalidate();
+            return true;
+        }
+    return false;
+}
+
+std::optional<cambc::ability> travel_dash_ready(const World& world) {
+    if (enemy_within(world, cambc::self().position(), travel_dash_clearance)) return std::nullopt;
+    return ready(world, AbilityKind::dash);
+}
+
+bool travel_dash(const World& world, Pathing& pathing, const cambc::ability& dash, int here_steps, auto steps_at) {
+    if (here_steps == 0 || here_steps == unreachable) return false;
+    const vec2 here = cambc::self().position();
+    const auto threats = threats_near(world, here);
+    const int here_danger = danger(threats, here);
+    const auto landings = ranked(
+        pathing.dash_landings(), [&](vec2 p) { return steps_at(p); },
+        [&](vec2 p, int steps) { return steps <= here_steps - dash_steps && danger(threats, p) <= here_danger; });
+    return dash_to_first(dash, pathing, landings);
+}
+
+std::optional<cambc::champion> weakest_enemy_in_range(vec2 here, int range, bool stunnable_only) {
+    std::optional<cambc::champion> best;
+    float best_health = 0;
+    for (auto p : (cambc::vision::champion_tiles(team::enemy) & square(here, range)).positions()) {
+        try {
+            auto c = cambc::vision::champion_at(p);
+            const auto passive = facts(c.champion_name()).passive;
+            if (stunnable_only && (passive == Passive::stun_immune || c.buffs().has_stun())) continue;
+            if (passive == Passive::retaliation && retaliation_share * c.focus() >= cambc::self().health()) continue;
+            const float h = c.health();
+            if (!best || h < best_health) best = c, best_health = h;
+        } catch (const cambc::error&) {
+        }
+    }
+    return best;
+}
+
+} // namespace
+
+bool reset_and_attack_enemy(const World& world, bool stunning_only) {
+    auto& me = cambc::self();
+    const auto& f = world.me().facts();
+    if (me.can_attack()) return false;
+    const int slot = f.slot_of(AbilityKind::attack_reset);
+    if (stunning_only && (slot < 0 || !f.abilities[slot].stuns)) return false;
+    const auto reset = ready(world, AbilityKind::attack_reset);
+    if (!reset) return false;
+    const auto target = weakest_enemy_in_range(me.position(), f.attack_range(), stunning_only);
+    if (!target || !cast(*reset)) return false;
+    try {
+        me.attack(*target);
+    } catch (const cambc::error&) {
+    }
+    return true;
+}
+
+bool reset_and_attack_camp(const World& world, int group) {
+    auto& me = cambc::self();
+    if (me.can_attack()) return false;
+    const vec2 here = me.position();
+    const auto& f = world.me().facts();
+    const int range = f.attack_range();
+    const auto reset = ready(world, AbilityKind::attack_reset);
+    if (!reset) return false;
+    const auto& map = world.map();
+    std::optional<cambc::camp> best;
+    float best_health = 0;
+    for (auto p : (cambc::vision::camp_tiles() & square(here, range)).positions()) {
+        const int g = map.group_at(p);
+        if (g < 0 || map.groups[g].has_monolith || (group >= 0 && g != group)) continue;
+        const auto& members = map.groups[g].members;
+        for (int i = 0; i < static_cast<int>(members.size()); ++i) {
+            if (members[i].pos != p) continue;
+            try {
+                auto camp = map.groups[g].camp(i);
+                const float h = camp.health();
+                if (!best || h < best_health) best = camp, best_health = h;
+            } catch (const cambc::error&) {
+            }
+        }
+    }
+    if (!best) return false;
+    // A Vendetta kill readies the reset again, so it need not be held.
+    const bool refunded = f.passive == Passive::reset_on_kill && best_health <= me.strength();
+    if (!refunded && enemy_within(world, here, range + reset_hold_margin)) return false;
+    if (!cast(*reset)) return false;
+    try {
+        me.attack(*best);
+    } catch (const cambc::error&) {
+    }
+    return true;
+}
+
+bool dash_towards(const World& world, Pathing& pathing, const Field& field) {
+    const auto dash = travel_dash_ready(world);
+    return dash
+           && travel_dash(world, pathing, *dash, field.at(cambc::self().position()), [&](vec2 p) { return field.at(p); });
+}
+
+bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
+    static int paused_until = -1;
+    if (world.round < paused_until) return false;
+    const vec2 here = cambc::self().position();
+    // A goal within a dash is a walk or two away: not worth the cooldown or the search.
+    if (!(goals & square(here, dash_steps)).is_empty()) return false;
+    const auto dash = travel_dash_ready(world);
+    if (!dash || !fuel_ok(search_cost_estimate(world.map().width + world.map().height))) return false;
+    auto walls = pathing.blocked();
+    const auto open_goals = goals & ~walls;
+    if (open_goals.is_empty()) return false;
+    // Searching out from the goals until it reaches us labels every tile nearer than ours.
+    cambc::distance_field field;
+    bitboard visited;
+    field.compute_to(walls, open_goals, single(here), visited);
+    if (visited.is_set(here)
+        && travel_dash(world, pathing, *dash, field.get(here),
+                       [&](vec2 p) { return visited.is_set(p) ? static_cast<int>(field.get(p)) : unreachable; }))
+        return true;
+    paused_until = world.round + failed_search_pause;
+    return false;
+}
+
+bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target) {
+    auto& me = cambc::self();
+    const bool target_given = target != nullptr;
+    if (!me.can_attack() || (!target_given && me.health() < dash_min_health * me.max_health())) return false;
+    const vec2 here = me.position();
+    const int range = world.me().facts().attack_range();
+    if (enemy_within(world, here, range)) return false;
+    const auto dash = ready(world, AbilityKind::dash);
+    if (!dash) return false;
+    const float strength = me.strength();
+    const float my_fraction = health_fraction(me);
+    for (const auto& e : world.enemies) {
+        if (target_given) break;
+        if (!e.alive || !e.visible || dist(here, e.pos) > range + dash_steps || world.map().enemy_spawn.is_set(e.pos))
+            continue;
+        const float fraction = e.health / e.max_health;
+        const bool finish = e.health <= strength || (fraction < chase_health && fraction < my_fraction);
+        if (finish && (!target || e.health < target->health)) target = &e;
+    }
+    if (!target || dist(here, target->pos) > range + dash_steps) return false;
+    const auto threats = threats_near(world, here);
+    const auto& spawn = world.map().from_ally_spawn();
+    const auto landings = ranked(
+        pathing.dash_landings() & square(target->pos, range),
+        [&](vec2 p) { return danger(threats, p) * 1000 + spawn.at(p); }, [](vec2, int) { return true; });
+    return dash_to_first(*dash, pathing, landings);
+}
+
+bool dash_away(const World& world, Pathing& pathing, const Field& home) {
+    if (!world.me().facts().has_dash()) return false;
+    const vec2 here = cambc::self().position();
+    const auto threats = threats_near(world, here);
+    const int here_danger = danger(threats, here);
+    if (here_danger == 0) return false;
+    const auto dash = ready(world, AbilityKind::dash);
+    if (!dash) return false;
+    const auto landings = ranked(
+        pathing.dash_landings(), [&](vec2 p) { return danger(threats, p) * 1000 + std::min<int>(home.at(p), 999); },
+        [&](vec2 p, int) { return danger(threats, p) < here_danger; });
+    return dash_to_first(*dash, pathing, landings);
+}
+
+bool heal_ally(const World& world) {
+    const int slot = world.me().facts().slot_of(AbilityKind::heal);
+    if (slot < 0) return false;
+    const auto heal = ready(world, AbilityKind::heal);
+    if (!heal) return false;
+    const float amount = heal->heal_amount();
+    const vec2 here = cambc::self().position();
+    const int range = world.me().facts().abilities[slot].range();
+    std::optional<cambc::champion> best;
+    float best_gain = 0;
+    for (const auto& b : world.allies) {
+        if (b.is_self || !b.alive || !b.visible || dist(here, b.pos) > range || b.channel == Channel::recall
+            || world.map().ally_spawn.is_set(b.pos))
+            continue;
+        try {
+            auto c = cambc::vision::champion_at(b.pos);
+            if (!c.is_ally()) continue;
+            const float gain = std::min(amount, c.max_health() - c.health());
+            if (gain <= 0 || (gain < heal_min_share * amount && health_fraction(c) >= heal_low_health)) continue;
+            if (!best || gain > best_gain) best = c, best_gain = gain;
+        } catch (const cambc::error&) {
+        }
+    }
+    return best && cast(*heal, *best);
+}
+
+bool shield_if_needed(const World& world) {
+    const auto& f = world.me().facts();
+    const auto shield = ready(world, AbilityKind::shield);
+    if (!shield) return false;
+    const vec2 here = cambc::self().position();
+    if (world.map().ally_spawn.is_set(here)) return false;
+    bool danger = false;
+    for (const auto& e : world.enemies)
+        danger |= e.alive && e.visible && dist(here, e.pos) <= threat_reach(e.facts());
+    const auto& groups = world.map().groups;
+    for (int g : groups_near(world, here, camp_attack_range)) {
+        if (danger) break;
+        const auto& c = world.camps[g];
+        if (c.state != CampState::alive || groups[g].strength <= 0) continue;
+        bool in_reach = false, hitting = false;
+        for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
+            if (c.health[i] <= 0) continue;
+            const int d = dist(here, groups[g].members[i].pos);
+            in_reach |= d <= camp_attack_range && groups[g].members[i].strength > 0;
+            hitting |= d <= f.attack_range();
+        }
+        danger = in_reach && (c.awake != Awake::asleep || hitting);
+    }
+    return danger && cast(*shield);
+}
+
+} // namespace aph
