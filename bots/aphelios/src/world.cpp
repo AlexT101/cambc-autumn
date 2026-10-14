@@ -612,9 +612,7 @@ void World::init_beliefs() {
         for (auto& b : enemies) {
             b.at = now();
             b.turns_since_fixed = turns_between(b, b.fixed, b.at);
-            if (b.turns_since_fixed == 0) continue;
-            b.possible = grown(b.facts().has_dash());
-            if (b.facts().has_dash()) b.undashed = grown(false);
+            if (b.turns_since_fixed > 0) b.possible = grown(b.facts().has_dash());
         }
     }
     camps.assign(s.groups.size(), CampBelief{});
@@ -719,10 +717,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
                 b.pos_source = Source::inferred;
                 b.health = b.max_health;
                 // Damage or a stun could have cancelled it, so add the spawn, not replace.
-                if (b.side == team::enemy) {
-                    b.possible |= s.enemy_spawn;
-                    if (b.facts().has_dash()) b.undashed |= s.enemy_spawn;
-                }
+                if (b.side == team::enemy) b.possible |= s.enemy_spawn;
             }
             b.channel = Channel::none;
         }
@@ -771,11 +766,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
         b.channel_end_round = fire_round(round, left.value_or(0), b.acted);
     }
     // The crystal's destination: a free tile within 3, terrain in between ignored.
-    if (b.side == team::enemy && b.channel == Channel::teleport) {
-        const auto landing = square(b.pos, teleport_crystal_range) & ~s.blocked_for_them;
-        b.possible |= landing;
-        if (b.facts().has_dash()) b.undashed |= landing;
-    }
+    if (b.side == team::enemy && b.channel == Channel::teleport)
+        b.possible |= square(b.pos, teleport_crystal_range) & ~s.blocked_for_them;
     for (int slot = 0; slot < 2; ++slot) {
         const int cd = engine::cooldown(h, static_cast<std::uint32_t>(slot));
         const int ready = fire_round(round, cd, b.acted);
@@ -831,7 +823,6 @@ void World::note_capture(int group, int respawn_round) {
 
 void World::fix(ChampionBelief& b, bitboard tiles, Moment when) {
     b.possible = std::move(tiles);
-    if (b.facts().has_dash()) b.undashed = b.possible;
     b.tracked = true;
     b.fixed = b.at = when;
     b.turns_since_fixed = 0;
@@ -875,64 +866,34 @@ void World::advance(ChampionBelief& b) {
         b.possible.clear();
         return;
     }
-    const auto from = b.at, to = now();
-    const int turns = turns_between(b, from, to);
+    const auto to = now();
+    const int turns = turns_between(b, b.at, to);
     b.at = to;
     if (turns == 0) return;
     b.turns_since_fixed += turns;
-    const bool dasher = b.facts().has_dash();
     // A recall started on any turn after the fix lands at the start of the turn recall turn ends
     // later, which is a full turn: from turn recall + 1 on, add the spawn before growing.
-    if (b.turns_since_fixed > (b.fast_recall ? home_recall_time : cambc::constants::recall_time)) {
-        b.possible |= s.enemy_spawn;
-        if (dasher) b.undashed |= s.enemy_spawn;
-    }
+    if (b.turns_since_fixed > (b.fast_recall ? home_recall_time : cambc::constants::recall_time)) b.possible |= s.enemy_spawn;
     FuelMeter meter{"track"};
-    // `possible` never holds a tile closed to them, so a walk dilates it.
-    const auto walk = [&](bitboard& tiles, int steps) {
-        if (steps <= 2) return dilate(tiles, s.open_for_them, steps);
-        cambc::distance_field field;
-        bitboard grown;
-        field.compute(s.blocked_for_them, tiles, grown, static_cast<std::uint16_t>(steps));
-        tiles = std::move(grown);
-    };
-    if (!dasher) return walk(b.possible, turns);
-
     // A dash (2 steps, with a walk) crosses holes, altars and champions, so only walls bound it
     // and landings are filtered after.
-    const auto dash = [&](const bitboard& tiles) {
-        cambc::distance_field field;
-        bitboard grown;
-        field.compute(s.walls, tiles, grown, 3);
-        return grown & s.open_for_them;
-    };
-    int dash_slot = 0;
-    while (b.facts().abilities[dash_slot].kind != AbilityKind::dash) ++dash_slot;
-    const int ready = b.ready_round[dash_slot];
-    // `undashed` can dash from `ready` on. Any history can dash again a cooldown after the first
-    // chance since the fix (a bound, not tracking which dashed when).
-    const int first_turn = Moment{b.fixed.round, slot(b, b.fixed.round)} > b.fixed ? b.fixed.round : b.fixed.round + 1;
-    const int again = std::max(ready, first_turn) + ability_cooldown;
-    for (int r = std::max(from.round, 1); r <= to.round; ++r) {
-        const Moment turn{r, slot(b, r)};
-        if (!(from < turn && turn < to)) continue;
-        if (b.cooldowns_uncertain() || r >= again) {
-            b.possible = dash(b.possible);
-        } else if (r >= ready) {
-            auto dashed = dash(b.undashed);
-            walk(b.possible, 1);
-            b.possible |= dashed;
-            walk(b.undashed, 1);
-        } else {
-            walk(b.possible, 1);
-            b.undashed = b.possible;
-        }
+    bool dash = false;
+    for (int slot = 0; slot < 2; ++slot)
+        dash |= b.facts().abilities[slot].kind == AbilityKind::dash && (b.ability_ready(slot, round) || b.cooldowns_uncertain());
+    // `possible` never holds a tile closed to them, so a walk dilates it.
+    const int steps = turns * (dash ? 3 : 1);
+    if (steps <= 2) {
+        dilate(b.possible, s.open_for_them, steps);
+        return;
     }
+    cambc::distance_field field;
+    bitboard grown;
+    field.compute(dash ? s.walls : s.blocked_for_them, b.possible, grown, static_cast<std::uint16_t>(steps));
+    b.possible = dash ? grown & s.open_for_them : std::move(grown);
 }
 
 void World::prune(ChampionBelief& b) const {
     b.possible &= unseen_;
-    if (b.facts().has_dash()) b.undashed &= unseen_;
     // Emptied by something unmodelled (a teleport crystal, say): it could be anywhere.
     if (b.tracked && b.possible.is_empty()) b.tracked = false;
 }

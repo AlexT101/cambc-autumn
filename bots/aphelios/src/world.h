@@ -200,7 +200,6 @@ struct ChampionBelief {
     // Enemies only: every tile it could be on, from what we have seen and how champions move.
     // Teleport crystals are not modelled. Empty while dead; anywhere while !tracked.
     bitboard possible;
-    bitboard undashed; // dashers: the part of `possible` reachable without dashing since `fixed`
     bool tracked = false;
     Moment fixed, at; // when `possible` was last known exactly, and when it describes
     int turns_since_fixed = 0;
