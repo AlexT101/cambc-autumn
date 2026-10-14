@@ -135,6 +135,9 @@ struct Moment {
     auto operator<=>(const Moment&) const = default;
 };
 
+inline constexpr int home_recall_time = 3;       // turn ends, with a Home emblem
+inline constexpr int teleport_crystal_range = 3; // Chebyshev, terrain ignored
+
 struct ChampionBelief {
     cambc::handle_champion_t handle{};
     cambc::champion_type type{};
@@ -157,6 +160,7 @@ struct ChampionBelief {
     int gems = 0;
     int gems_round = -1;
     int items = 0;
+    bool fast_recall = false; // a Home emblem, when last seen: recall takes home_recall_time turn ends
     bool acted = false; // had completed its turn when last read this round
     // Turn-order priority for priority_round, and from the round after it.
     int priority = 0, next_priority = 0, priority_round = -1;
@@ -203,7 +207,8 @@ struct CampBelief {
     Awake awake = Awake::asleep;
     int last_damaged_round = -1; // a health drop we saw
     int quiet_rounds = 0;        // consecutive fully observed rounds with no champion within 3
-    // Capture in progress: who holds the cleared group's tiles, since when (payout at since + 6).
+    // Capture in progress: who holds the cleared group's tiles, and the round the hold began
+    // (payout at held_since + capture_time + 1).
     std::optional<team> holder;
     int held_since = -1;
 };
@@ -237,6 +242,7 @@ public:
     void note_sighting(int enemy_index, vec2 pos, int round);
 
     void debug_output() const;
+    void dump_beliefs() const;
 
     bool ready() const { return static_ != nullptr && self_index < static_cast<int>(allies.size()) && allies[self_index].is_self; }
     const StaticMap& map() const { return *static_; }
@@ -272,6 +278,7 @@ private:
     static void fix(ChampionBelief& b, bitboard tiles, Moment when);
     void advance(ChampionBelief& b);
     void update_camps();
+    int hold_start(const CampGroup& G, team holder) const;
     void update_altars();
     void update_wards();
     std::uint32_t tributing_enemies() const; // bit i: enemies[i] is believed to be tributing

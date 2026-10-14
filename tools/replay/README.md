@@ -153,3 +153,15 @@ Statistics:
 Conventions: positions and camp groups are in each team's own frame (team B mirrored onto A); group labels are `<types>(x,y)<o|m|e>` (W wolf, E elk, G gem, $ gold, M monolith; own/middle/enemy half).
 
 For ad-hoc scripts, `tools/replay/analysis/data.py` has the loaders: `resolve(sources)` gives analysis dirs, `Game(dir)` exposes `meta`, `map` (`Map`: `own(team, p)`, `own_group(team, g)`, `group_label`, `cell_of`, altars, bushes), lazily loaded `events` and `rounds`, `ch(id)` (per-round arrays), `champ_damage`, `camp_damage`, `deaths` and `seen_recently`. Each report module's `extract(game, params)` returns its per-game features. Run with `sys.path.insert(0, 'tools/replay')` and `from analysis import Game, resolve`.
+
+## Belief audit (audit_beliefs.py)
+
+Checks aphelios' world beliefs against the replay's ground truth. Build the bot with `debug_beliefs = true` in `bots/aphelios/src/util.h`; each champion then prints a `BD` line (varint-encoded, with every unseen enemy's `possible` set as raw 8x8 chunks) in rounds 1-3 and every `debug_beliefs_period` rounds, kept in `team-a.stdout` / `team-b.stdout` inside local `.repl26a` zips. The dump costs about 5-20k fuel (it skips itself below 25k left) and limits itself to a share of the team's 1 MiB of output.
+
+```
+py run_batched.py aphelios <opponent>                  # with the flag on
+node tools/replay/extract.mjs replays/batch-X
+py tools/replay/audit_beliefs.py replays/batch-X [--examples 8] [--out report.md]
+```
+
+Beliefs (dumped at the end of the turn) are compared with the truth at the start of that turn. Reported: enemy tile outside `possible` (by cause: teleport, comms fix, recall/respawn/dash), visible-position, alive and respawn-window errors, enemy ability `ready_round` against the casts in the replay, camp state (seen this turn vs stale), awake/asleep, respawn rounds (occupancy delays separated), capture holder (from who stands on the tiles) and payout round, altar locks, own turn slot, and `possible` sizes by rounds since the last fix.
