@@ -1,8 +1,8 @@
-from . import audits, fights, tempo
+from . import audits, economy, fights, tempo
 from .util import fmt, mean, median, pct, quantile
 
-ALL_METRICS = {**tempo.METRICS, **fights.METRICS, **audits.METRICS}
-MEAN_KEYS = set(fights.METRICS) | set(audits.METRICS)
+ALL_METRICS = {**tempo.METRICS, **fights.METRICS, **audits.METRICS, **economy.METRICS}
+MEAN_KEYS = set(fights.METRICS) | set(audits.METRICS) | economy.MEAN_KEYS
 RATE_KEYS = {k for k in ALL_METRICS if k.endswith(('rate', 'share', '_win', 'won', 'ratio', 'time', 'dmg'))}
 
 

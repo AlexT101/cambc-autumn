@@ -7,7 +7,7 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 
-from . import audits, draft, fights, gap, params, sensitivity, tempo
+from . import audits, camps, draft, economy, fights, gap, params, sensitivity, tempo
 from .data import ANALYSIS, Game, load_index, load_map, resolve
 from .util import BOOT, CAVEAT, Report
 
@@ -16,11 +16,13 @@ REPORTS = {
     'fights': ('Fights and risk', fights),
     'audits': ('Decision audits', audits),
     'draft': ('Draft', draft),
+    'economy': ('Economy and camp handling', economy),
+    'camps': ('Camp values', camps),
     'gap': ('Gap report', gap),
     'sensitivity': ('Threshold sensitivity', sensitivity),
 }
-EXTRACTORS = ['tempo', 'fights', 'audits', 'draft']
-DEFAULT_REPORTS = 'tempo,fights,audits,draft,gap'
+EXTRACTORS = ['tempo', 'fights', 'audits', 'draft', 'economy']
+DEFAULT_REPORTS = 'tempo,fights,audits,draft,economy,camps,gap'
 
 
 def cluster_of(meta):
@@ -172,7 +174,9 @@ def main(argv=None):
     prim = resolve(args.sources or ['replays/ladder'], index)
     vs = resolve(args.vs, index) if args.vs else []
     dirs = list(dict.fromkeys(prim + vs))
-    data = extract_all(dirs, args.threads, P)
+    needs = {'economy': {'economy'}, 'camps': set(), 'gap': set(EXTRACTORS)}
+    only = [r for r in EXTRACTORS if any(r in needs.get(rep, set(EXTRACTORS) - {'economy'}) for rep in reports)]
+    data = extract_all(dirs, args.threads, P, only)
     t1 = time.time()
 
     def keep(gi):

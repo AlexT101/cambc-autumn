@@ -13,6 +13,10 @@ DEFAULTS = {
     'early': 150,
     'boot': 1000,
     'seed': 1,
+    'econ_window': 300,
+    'econ_top': 10,
+    'econ_top_games': 100,
+    'camp_strength': (130, 50, 45, 35),
 }
 
 SENSITIVITY = {

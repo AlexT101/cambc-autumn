@@ -124,7 +124,7 @@ Offline reports over the extracted tables: Markdown plus CSVs, no viewer. Python
 ```
 py tools/replay/analyze.py                                    # ladder (replays/ladder), default reports
 py tools/replay/analyze.py replays/batch-X --vs replays/ladder --team aphelios   # adds the gap report
-py tools/replay/analyze.py [SOURCES...] [--vs SOURCES...] [--team NAME] [--map NAME] [--since ISO] [--out DIR] [--reports tempo,fights,audits,draft,gap,sensitivity] [--threads N]
+py tools/replay/analyze.py [SOURCES...] [--vs SOURCES...] [--team NAME] [--map NAME] [--since ISO] [--out DIR] [--reports tempo,fights,audits,draft,economy,camps,gap,sensitivity] [--threads N]
 ```
 
 - SOURCES and `--vs` are replay dirs or files (or analysis dir names), resolved through `index.json`; run `extract.mjs` on them first. Copies count once.
@@ -145,7 +145,9 @@ Statistics:
 | `fights` | Engagements (champion damage instances sharing a champion within 3 rounds and 16 tiles, or within 1 round and 8 tiles; clusters over 25 rounds split at quiet rounds) with start state, kills, bags lost, net swing, location, initiator; predictors and the logistic model; death risk per 1000 champion-rounds by gem bucket and recent enemy sight, with ASCII heatmaps per map; time, unseen share, tribute and ward heatmaps; altar usage; bushes. |
 | `audits` | Suspicious decisions ranked by team, with mean opponent rating, opponents' win rate and the rate against top teams only: large-bag deaths (with recall/altar plausibility), camp deaths and lost gems, camp damage ratio, dead time, recall/tribute cancels by cause, capture resets (walked off, contested, died) and stolen groups, idle turns, unspent gold, casts that hit nothing, out-of-fuel turns; plus the early-window, lead-conditioned comparison. With `--vs`, rankings include the comparison teams. |
 | `draft` | Pick and non-mirror win rates (overall and per map), compositions, top teams' usage, per-champion engine statistics per 100 rounds. |
-| `gap` | Only with `--team` and `--vs`: every per-side metric for the focus team against the comparison set and its game winners, per map and pooled, ranked by a robust z score; opponent-dependent metrics are flagged. |
+| `economy` | Rounds 1-300 economy of the focus team against its opponents and the --vs sets (all, winners, top 10 by win rate, their wins, low camp-ratio winners): camp DPS per map/preset and champion, camp damage taken/dealt by group type, victim activity and attackers, against the basic-attack minimum; time budget; capture sharing, bags, altar-trip overhead, captured-gem mix; shard mix; recalls and the recall-loop check (must stay 0). Cached in `replays/.analysis/cache/economy/`. The ladder only plays its 9 maps, so judge generated maps against `opponents`. |
+| `camps` | Static camp-group values for each map in the sources (from the extracted map files): hp, Strength, gems, gold, respawn, walk from spawn and from the altar, clear time and minimum damage for the Strengths in `params.py` (`camp_strength`), gems per 1k hp, per effort and per farm-and-tribute cycle. |
+| `gap` | Only with `--team` and `--vs`: every per-side metric (tempo, fights, audits, economy) for the focus team against the comparison set and its game winners, per map and pooled, ranked by a robust z score; opponent-dependent metrics are flagged. |
 | `sensitivity` | Opt-in: headline numbers at a lower and higher value of each key constant. |
 
 Conventions: positions and camp groups are in each team's own frame (team B mirrored onto A); group labels are `<types>(x,y)<o|m|e>` (W wolf, E elk, G gem, $ gold, M monolith; own/middle/enemy half).
