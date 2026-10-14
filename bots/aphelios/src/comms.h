@@ -1,5 +1,7 @@
-// A shared-memory write is visible at once to teammates who act later; earlier ones see it next
-// round.
+// The team's 8 shared bytes. A write is visible at once to teammates who act later; earlier ones
+// see it next round. Records carry no full round: each instance processes a record only when its
+// bits change, which every teammate sees within a round of the write, so a round parity bit (or
+// none) dates it.
 #pragma once
 #include <optional>
 #include "util.h"
@@ -10,34 +12,19 @@ class World;
 
 namespace comms {
 
-struct Sighting {
-    int round;
-    int enemy_index;
-    vec2 pos;
-};
-
 // An ally fighting at `pos`, for teammates near enough to join.
 struct Rally {
     int round;
     vec2 pos;
 };
 
-struct Message {
-    std::optional<Sighting> sighting;
-    std::optional<Rally> rally;
-};
-
-// Placeholder schema.
-Message decode(std::uint64_t bits);
-std::uint64_t encode(const Message& message);
-
-Message read();
-void write(const Message& message);
-
+// Teammates' turns since their last read, read and merged into the world.
 void receive(World& world);
 // With `refresh`, re-read vision first, but only if there is a slot to fill.
 void send(World& world, bool refresh);
 void post_rally(int round, vec2 pos);
+// The latest rally read or posted.
+std::optional<Rally> rally();
 
 } // namespace comms
 } // namespace aph

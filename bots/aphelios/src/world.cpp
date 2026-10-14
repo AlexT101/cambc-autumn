@@ -716,10 +716,11 @@ void World::update_champion(ChampionBelief& b, bool full) {
     std::tie(b.items, b.fast_recall) = engine::items(h);
 }
 
-void World::note_sighting(int enemy_index, vec2 pos, int seen_round) {
+void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float health) {
     if (enemy_index < 0 || enemy_index >= static_cast<int>(enemies.size()) || !in_bounds(pos)) return;
     auto& b = enemies[enemy_index];
     if (!b.alive || b.visible || seen_round <= b.pos_round) return;
+    b.health = health * b.max_health;
     b.pos = pos;
     b.pos_round = seen_round;
     b.pos_source = Source::comms;
@@ -728,6 +729,18 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round) {
     advance(b);
     b.possible &= ~visible;
     if (b.tracked && b.possible.is_empty()) b.tracked = false;
+}
+
+void World::note_capture(int group, int respawn_round) {
+    if (group < 0 || group >= static_cast<int>(camps.size()) || respawn_round <= round) return;
+    auto& c = camps[group];
+    c.told_respawn = respawn_round;
+    if (c.state_round == round) return; // in view: our own reading stands
+    c.state = CampState::respawning;
+    c.respawn_round = respawn_round;
+    c.awake = Awake::asleep;
+    c.holder.reset();
+    c.held_since = -1;
 }
 
 void World::fix(ChampionBelief& b, bitboard tiles, Moment when) {
