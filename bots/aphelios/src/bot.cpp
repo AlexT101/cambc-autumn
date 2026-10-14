@@ -374,8 +374,41 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     return true;
 }
 
-void place_ward(const World& world, Pathing& pathing) {
-    if (world.round % params::ward_period != 0 || cambc::self().ward_cooldown() > 0) return;
+bool try_ward(vec2 p, Memory& memory) {
+    try {
+        if (!cambc::self().place_ward(p)) return false;
+    } catch (const cambc::error&) {
+        return false;
+    }
+    memory.ward = p;
+    return true;
+}
+
+// Attackers in a bush stay unseen from outside it, and a ward inside sees across its cluster.
+// Ward the cluster in reach with the most tiles near us, unless our own ward already watches it.
+bool ward_bushes(const World& world, Pathing& pathing, Memory& memory) {
+    const auto& map = world.map();
+    const vec2 here = cambc::self().position();
+    const auto candidates = pathing.ward_targets() & map.bushes;
+    if (candidates.is_empty() || !fuel_ok(small_cost_estimate + params::end_reserve)) return false;
+    const BushCluster* own = map.bushes.is_set(here) ? &map.bush_cluster(here) : nullptr;
+    const BushCluster* watched = in_bounds(memory.ward) && map.bushes.is_set(memory.ward) ? &map.bush_cluster(memory.ward) : nullptr;
+    const auto near = square(here, params::bush_watch_radius);
+    std::optional<vec2> best;
+    int best_tiles = 0, best_dist = -1;
+    for (auto p : candidates.positions()) {
+        const auto& c = map.bush_cluster(p);
+        if (&c == own || &c == watched) continue;
+        const int tiles = static_cast<int>((c.tiles & near).count());
+        const int d = dist(here, p);
+        if (tiles > best_tiles || (tiles == best_tiles && d > best_dist)) best = p, best_tiles = tiles, best_dist = d;
+    }
+    return best && try_ward(*best, memory);
+}
+
+void place_ward(const World& world, Pathing& pathing, Memory& memory) {
+    if (!world.me().alive || cambc::self().ward_cooldown() > 0) return;
+    if (ward_bushes(world, pathing, memory) || world.round % params::ward_period != 0) return;
     const auto& spawn_field = world.map().from_ally_spawn();
     std::optional<vec2> best;
     int best_steps = -1;
@@ -383,11 +416,7 @@ void place_ward(const World& world, Pathing& pathing) {
         const int steps = spawn_field.at(p);
         if (steps != unreachable && steps > best_steps) best = p, best_steps = steps;
     }
-    if (!best) return;
-    try {
-        cambc::self().place_ward(*best);
-    } catch (const cambc::error&) {
-    }
+    if (best) try_ward(*best, memory);
 }
 
 // Retreating from an awake camp takes its hits anyway, and the clear is lost.
@@ -593,7 +622,6 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     cast_at_enemies(world, me.gem_count() > 0);
     if (!attacked && dash_to_attack(world, pathing)) attacked = attack_enemy(world);
     if (attacked) reset_and_attack_enemy(world);
-    place_ward(world, pathing);
     if (me.gem_count() > 0) {
         const bool safe = can_tribute_safely(world, safety, memory);
         if (!safe && chase(world, pathing, safety)) return;
@@ -648,6 +676,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     decide(world, pathing, safety, memory);
     heal_ally(world); // allies in reach after walking
     shield_if_needed(world);
+    place_ward(world, pathing, memory); // where we end the turn
     start_recall(world);
     set_turn_order(world);
     memory.round = world.round;
