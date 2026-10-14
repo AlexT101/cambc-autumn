@@ -309,6 +309,8 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     auto& me = cambc::self();
     comms::post_rally(world.round, target->pos);
     const int range = world.me().facts().attack_range();
+    // A walk alone cannot reach range this turn.
+    if (dist(me.position(), target->pos) > range + 1 && me.can_move()) dash_to_attack(world, pathing, target);
     if (dist(me.position(), target->pos) > range && me.can_move())
         pathing.step_towards(square(target->pos, range) & ~world.map().blocked_for_us);
     if (attack_enemy(world)) reset_and_attack_enemy(world);

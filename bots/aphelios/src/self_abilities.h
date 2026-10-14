@@ -7,6 +7,7 @@ namespace aph {
 
 class World;
 class Pathing;
+struct ChampionBelief;
 
 // With the basic attack spent (by attacking, or by a ranged champion's walk), reset it and attack
 // again. Enemies: the weakest in range. Camps: the member nearest death (a Vendetta kill readies
@@ -20,8 +21,9 @@ bool reset_and_attack_camp(const World& world);
 // enough to want the dash for a fight or an escape.
 bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals);
 bool dash_towards(const World& world, Pathing& pathing, const Field& field);
-// Into attack range of a visible enemy we can finish or are beating; attack after it.
-bool dash_to_attack(const World& world, Pathing& pathing);
+// Into attack range of `target`, else of a visible enemy we can finish or are beating; attack
+// after it.
+bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target = nullptr);
 // Out of the reach of visible enemies and awake camps, tie-broken towards `home`.
 bool dash_away(const World& world, Pathing& pathing, const Field& home);
 
