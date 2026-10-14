@@ -131,9 +131,10 @@ Cast enemy_cast(const World& world, bool keep_walk) {
         const auto& a = f.abilities[s];
         const float threshold = a.excludes_walking && keep_walk ? keep_walk_value : min_value;
         const float raw = raw_damage(s);
+        const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= me.health(); };
         if (a.target == Targeting::unit) {
             for (const auto& e : world.enemies) {
-                if (!e.alive || !e.visible || dist(here, e.pos) > a.range()) continue;
+                if (!e.alive || !e.visible || dist(here, e.pos) > a.range() || suicidal(e)) continue;
                 const auto c = live(e);
                 if (!c.is_visible()) continue;
                 float v = hit_worth(e, damage_to(s, c, raw), c.health());
@@ -143,7 +144,7 @@ Cast enemy_cast(const World& world, bool keep_walk) {
         } else if (a.target == Targeting::ground) {
             std::vector<Target> targets;
             for (const auto& e : world.enemies) {
-                if (!e.alive) continue;
+                if (!e.alive || suicidal(e)) continue;
                 const float stun = a.stuns ? stun_worth(e) : 0;
                 if (e.visible) {
                     if (dist(here, e.pos) > a.reach()) continue;

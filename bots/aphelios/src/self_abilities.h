@@ -13,8 +13,9 @@ class Pathing;
 // both abilities), held back while an enemy is close enough to want the reset for a fight.
 // `stunning_only`: only a reset whose attack stuns (Marcella), on an enemy it would stun; call it
 // before abilities.cpp's casts, which share the one cast per turn, and the plain one after.
+// `group`: only that group's camps (-1: any).
 bool reset_and_attack_enemy(const World& world, bool stunning_only = false);
-bool reset_and_attack_camp(const World& world);
+bool reset_and_attack_camp(const World& world, int group = -1);
 
 // Travel: dash to the landing nearest the goals if it gains at least 2 steps and no enemy is near
 // enough to want the dash for a fight or an escape.

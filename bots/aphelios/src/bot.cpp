@@ -49,7 +49,9 @@ bool attack_enemy(const World& world) {
     const int range = world.me().facts().attack_range();
     const ChampionBelief* target = nullptr;
     for (const auto& e : world.enemies)
-        if (e.visible && dist(here, e.pos) <= range && (!target || e.health < target->health)) target = &e;
+        if (e.visible && dist(here, e.pos) <= range && e.retaliation() < me.health()
+            && (!target || e.health < target->health))
+            target = &e;
     if (!target || !me.can_attack()) return false;
     try {
         me.attack(cambc::vision::champion_at(target->pos));
@@ -59,25 +61,26 @@ bool attack_enemy(const World& world) {
     }
 }
 
-bool attack_camp(const World& world) {
+// The group of the camp attacked, or -1.
+template <class Keep> int attack_camp(const World& world, Keep keep) {
     auto& me = cambc::self();
-    if (!me.can_attack()) return false;
+    if (!me.can_attack()) return -1;
     const int range = world.me().facts().attack_range();
     const auto& map = world.map();
     for (auto p : (cambc::vision::camp_tiles() & square(me.position(), range)).positions()) {
         const int g = map.group_at(p);
-        if (g < 0 || map.groups[g].has_monolith) continue;
+        if (g < 0 || map.groups[g].has_monolith || !keep(g)) continue;
         const auto& members = map.groups[g].members;
         for (int i = 0; i < static_cast<int>(members.size()); ++i) {
             if (members[i].pos != p) continue;
             try {
                 me.attack(map.groups[g].camp(i));
-                return true;
+                return g;
             } catch (const cambc::error&) {
             }
         }
     }
-    return false;
+    return -1;
 }
 
 // Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
@@ -154,9 +157,17 @@ void farm(const World& world, Pathing& pathing) {
     const auto& map = world.map();
     const auto& groups = map.groups;
     const int range = world.me().facts().attack_range();
-    if (attack_camp(world) && !world.me().facts().walk_and_attack_independent()) {
-        cast_at_camp(world, -1);
-        reset_and_attack_camp(world);
+    const float strength = std::max(1.0f, world.me().strength);
+    const float spare_health = me.health() - params::recall_health_fraction * me.max_health();
+    const auto risky_group = [&](int g) {
+        float rounds = 0;
+        return min_camp_damage(groups[g], world.camps[g], strength, &rounds) > spare_health && !ally_engaged(world, g);
+    };
+    // Whatever is in reach, unless clearing it is unaffordable: waking it is left to the choice below.
+    const int hit = attack_camp(world, [&](int g) { return !risky_group(g); });
+    if (hit >= 0 && !world.me().facts().walk_and_attack_independent()) {
+        cast_at_camp(world, hit);
+        reset_and_attack_camp(world, hit);
         return;
     }
 
@@ -177,8 +188,6 @@ void farm(const World& world, Pathing& pathing) {
     bitboard origin;
     origin.set(here, true);
     const Field from_here = make_field(map.blocked_for_us, origin);
-    const float strength = std::max(1.0f, world.me().strength);
-    const float spare_health = me.health() - params::recall_health_fraction * me.max_health();
     // Unaffordable groups only when nothing else is left: idling is worse.
     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable;
     float best_value = 0, risky_value = 0;
@@ -191,6 +200,9 @@ void farm(const World& world, Pathing& pathing) {
         if (steps == unreachable) continue;
         // Skip groups still respawning when we would arrive.
         if (belief.state == CampState::respawning && belief.respawn_round - world.round > steps) continue;
+        // Risky groups matter only while no affordable one is found; skip the costly clearing
+        // estimate for groups that cannot beat it even with no clearing.
+        if (best >= 0 && static_cast<float>(group.gems) / static_cast<float>(steps + capture_rounds) <= best_value) continue;
         float clear_rounds = 0, damage = 0;
         if (belief.state != CampState::cleared) {
             damage = min_camp_damage(group, belief, strength, &clear_rounds);
@@ -210,20 +222,21 @@ void farm(const World& world, Pathing& pathing) {
         pathing.step_towards(groups[best].tiles(), nullptr, cap);
         return;
     }
+    const auto is_best = [&](int g) { return g == best; };
     auto goals = pathing.attack_tiles(best, range);
     // In range and sight with the attack unspent, so the attack failed here: try another tile.
-    if (goals.is_set(here) && me.can_attack()) goals.set(here, false);
+    if (goals.is_set(here) && me.can_attack() && attack_camp(world, is_best) < 0) goals.set(here, false);
     if (goals.is_set(here)) { // attacked from here; stay
         cast_at_camp(world, best);
-        reset_and_attack_camp(world);
+        reset_and_attack_camp(world, best);
         return;
     }
-    if (dash_towards(world, pathing, goals) && attack_camp(world)) return;
+    if (dash_towards(world, pathing, goals) && attack_camp(world, is_best) >= 0) return;
     if (!fuel_ok(search_cost_estimate(cap))) return;
     if (pathing.step_towards(goals, nullptr, cap) || pathing.step_towards(groups[best].adjacent(), nullptr, cap)) {
-        attack_camp(world);
+        attack_camp(world, is_best);
         cast_at_camp(world, best); // only casts that allow walking remain
-        reset_and_attack_camp(world);
+        reset_and_attack_camp(world, best);
     }
 }
 

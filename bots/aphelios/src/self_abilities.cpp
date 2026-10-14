@@ -154,9 +154,9 @@ std::optional<cambc::champion> weakest_enemy_in_range(vec2 here, int range, bool
     for (auto p : (cambc::vision::champion_tiles(team::enemy) & square(here, range)).positions()) {
         try {
             auto c = cambc::vision::champion_at(p);
-            if (stunnable_only
-                && (facts(c.champion_name()).passive == Passive::stun_immune || c.buffs().has_stun()))
-                continue;
+            const auto passive = facts(c.champion_name()).passive;
+            if (stunnable_only && (passive == Passive::stun_immune || c.buffs().has_stun())) continue;
+            if (passive == Passive::retaliation && retaliation_share * c.focus() >= cambc::self().health()) continue;
             const float h = c.health();
             if (!best || h < best_health) best = c, best_health = h;
         } catch (const cambc::error&) {
@@ -184,7 +184,7 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only) {
     return true;
 }
 
-bool reset_and_attack_camp(const World& world) {
+bool reset_and_attack_camp(const World& world, int group) {
     auto& me = cambc::self();
     if (me.can_attack()) return false;
     const vec2 here = me.position();
@@ -197,7 +197,7 @@ bool reset_and_attack_camp(const World& world) {
     float best_health = 0;
     for (auto p : (cambc::vision::camp_tiles() & square(here, range)).positions()) {
         const int g = map.group_at(p);
-        if (g < 0 || map.groups[g].has_monolith) continue;
+        if (g < 0 || map.groups[g].has_monolith || (group >= 0 && g != group)) continue;
         const auto& members = map.groups[g].members;
         for (int i = 0; i < static_cast<int>(members.size()); ++i) {
             if (members[i].pos != p) continue;

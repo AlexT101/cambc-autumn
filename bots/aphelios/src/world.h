@@ -184,6 +184,8 @@ struct ChampionBelief {
 
     const ChampionFacts& facts() const { return aph::facts(type); }
     bool ability_ready(int slot, int round) const { return alive && round >= ready_round[slot]; }
+    // Damage back to whoever hits it (Ren), even as it dies.
+    float retaliation() const { return facts().passive == Passive::retaliation ? retaliation_share * focus : 0.0f; }
     // True if an unseen reset could make the abilities ready earlier than ready_round says.
     bool cooldowns_uncertain() const { return !visible && facts().passive == Passive::reset_on_kill; }
     int age(int round) const { return pos_round < 0 ? 1 << 20 : round - pos_round; }

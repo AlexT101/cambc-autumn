@@ -38,6 +38,8 @@ enum class Passive : std::uint8_t {
     linked_pair,       // Cassi and Issac: if either dies, both die
 };
 
+inline constexpr float retaliation_share = 0.2f; // of Ren's Focus, per hit she takes
+
 struct Stat {
     float base, growth; // growth is per shard
     constexpr float at(int shards) const { return base + growth * static_cast<float>(shards); }

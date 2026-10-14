@@ -88,7 +88,7 @@ Side side(const std::vector<const ChampionBelief*>& members, const std::vector<i
     for (std::size_t i = 0; i < members.size(); ++i) {
         s.fighters.push_back(fighter(*members[i], turn_rounds[i]));
         s.health += members[i]->health;
-        if (members[i]->facts().passive == Passive::retaliation) s.retaliation += 0.2f * members[i]->focus;
+        s.retaliation += members[i]->retaliation();
     }
     if (!members.empty()) s.retaliation /= static_cast<float>(members.size());
     return s;
