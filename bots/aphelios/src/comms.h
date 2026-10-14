@@ -18,6 +18,12 @@ struct Rally {
     vec2 pos;
 };
 
+// An ally attacking a damaging camp group, for teammates near enough to help clear it.
+struct Help {
+    int round;
+    int group;
+};
+
 // Teammates' turns since their last read, read and merged into the world.
 void receive(World& world);
 // With `refresh`, re-read vision first, but only if there is a slot to fill.
@@ -25,6 +31,9 @@ void send(World& world, bool refresh);
 void post_rally(int round, vec2 pos);
 // The latest rally read or posted.
 std::optional<Rally> rally();
+void post_help(int round, int group);
+// The latest help request read or posted.
+std::optional<Help> help();
 
 } // namespace comms
 } // namespace aph

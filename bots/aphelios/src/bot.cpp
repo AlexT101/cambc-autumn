@@ -78,6 +78,7 @@ int attack_camp(const World& world) {
             if (members[i].pos != p) continue;
             try {
                 me.attack(map.groups[g].camp(i));
+                if (map.groups[g].strength > 0 && g < 63) comms::post_help(world.round, g);
                 return g;
             } catch (const cambc::error&) {
             }
@@ -236,6 +237,9 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     // Unaffordable groups only when nothing else is left: idling is worse.
     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable;
     float best_value = 0, risky_value = 0;
+    const auto help = comms::help();
+    const int help_group = bag == 0 && help && help->round >= world.round - 1 ? help->group : -1;
+    int help_steps = unreachable;
     for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
         const auto& group = groups[g];
         const auto& belief = world.camps[g];
@@ -245,6 +249,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         if (steps == unreachable) continue;
         // Skip groups still respawning when we would arrive.
         if (belief.state == CampState::respawning && belief.respawn_round - world.round > steps) continue;
+        if (g == help_group && belief.state == CampState::alive && steps <= params::help_radius) help_steps = steps;
         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
         // tribute. Counting those without a bag favours camps near altars, which lost games.
         const int back = to_altar ? to_altar->at(group.centre) : unreachable;
@@ -272,6 +277,8 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     if (bag > 0 && (best < 0 || best_value <= from_altar_value)) return false;
     if (bag > 0 && attack_in_range()) return true;
     if (best < 0) best = risky, best_steps = risky_steps;
+    // Monsters hit the nearest champion, so a second attacker shortens the clear and the damage taken.
+    if (help_steps != unreachable) best = help_group, best_steps = help_steps;
     if (best < 0) return true;
     memory.farm_group = best;
     const int cap = best_steps + max_detour;
@@ -539,6 +546,23 @@ void start_recall(const World& world) {
     }
 }
 
+// From next round, the ally nearest a visible enemy acts first: fights go to the first hit, and a
+// stun before the enemy's turn removes it.
+void set_turn_order(const World& world) {
+    auto& me = cambc::self();
+    int priority = 0;
+    if (world.me().alive) {
+        int nearest = params::chase_radius + 1;
+        for (const auto& e : world.enemies)
+            if (e.alive && e.visible) nearest = std::min(nearest, dist(me.position(), e.pos));
+        priority = params::chase_radius + 1 - nearest;
+    }
+    try {
+        if (priority != me.priority()) me.set_priority(priority);
+    } catch (const cambc::error&) {
+    }
+}
+
 } // namespace
 
 void play_turn(const World& world, Pathing& pathing, Memory& memory) {
@@ -548,6 +572,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     decide(world, pathing, safety, memory);
     shield_if_needed(world);
     start_recall(world);
+    set_turn_order(world);
     memory.round = world.round;
     memory.health = world.me().alive ? cambc::self().health() : 0;
 }
