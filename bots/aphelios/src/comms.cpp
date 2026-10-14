@@ -11,7 +11,7 @@ namespace {
 //   [0, 7)    sighting x + 1, 0 = none
 //   [7, 14)   sighting y
 //   [14, 17)  enemy index
-//   [17, 20)  its health in eighths of its max
+//   [17, 20)  its health in sevenths of its max, floored; 7 = full
 //   [20, 21)  round parity
 //   [21, 28)  rally x + 1, 0 = none
 //   [28, 35)  rally y
@@ -20,7 +20,10 @@ namespace {
 //   [42, 50)  its respawn round mod 256
 //   [50, 56)  help group + 1, 0 = none
 //   [56, 57)  round parity
-//   [57, 64)  unused
+//   [57, 60)  sighting write count
+//   [60, 62)  rally write count
+//   [62, 64)  help write count
+// The write counts make a record rewritten unchanged, with the same parity, still read as new.
 struct Field {
     int shift, width;
     constexpr std::uint64_t mask() const { return ((std::uint64_t{1} << width) - 1) << shift; }
@@ -34,10 +37,16 @@ constexpr Field sight_x{0, 7}, sight_y{7, 7}, sight_index{14, 3}, sight_health{1
 constexpr Field rally_x{21, 7}, rally_y{28, 7}, rally_parity{35, 1};
 constexpr Field camp_group{36, 6}, camp_respawn{42, 8};
 constexpr Field help_group{50, 6}, help_parity{56, 1};
-constexpr std::uint64_t sighting_bits = sight_x.mask() | sight_y.mask() | sight_index.mask() | sight_health.mask() | sight_parity.mask();
-constexpr std::uint64_t rally_bits = rally_x.mask() | rally_y.mask() | rally_parity.mask();
+constexpr Field sight_count{57, 3}, rally_count{60, 2}, help_count{62, 2};
+constexpr std::uint64_t sighting_bits = sight_x.mask() | sight_y.mask() | sight_index.mask() | sight_health.mask() | sight_parity.mask()
+                                        | sight_count.mask();
+constexpr std::uint64_t rally_bits = rally_x.mask() | rally_y.mask() | rally_parity.mask() | rally_count.mask();
 constexpr std::uint64_t camp_bits = camp_group.mask() | camp_respawn.mask();
-constexpr std::uint64_t help_bits = help_group.mask() | help_parity.mask();
+constexpr std::uint64_t help_bits = help_group.mask() | help_parity.mask() | help_count.mask();
+static_assert((sighting_bits & rally_bits) == 0 && ((sighting_bits | rally_bits) & camp_bits) == 0
+              && ((sighting_bits | rally_bits | camp_bits) & help_bits) == 0);
+
+void count_write(std::uint64_t& bits, Field count) { count.set(bits, count.get(bits) + 1); }
 
 struct State {
     std::uint64_t last = 0; // the bits as we left them at the end of our previous turn
@@ -82,7 +91,8 @@ void receive(World& world) {
     state.fresh = changes(bits);
     if ((state.fresh & sighting_bits) && sight_x.get(bits) != 0) {
         const vec2 pos{sight_x.get(bits) - 1, sight_y.get(bits)};
-        const float health = (static_cast<float>(sight_health.get(bits)) + 0.5f) / 8.0f;
+        const int code = sight_health.get(bits);
+        const float health = code == 7 ? 1.0f : (static_cast<float>(code) + 0.5f) / 7.0f;
         world.note_sighting(sight_index.get(bits), pos, dated(sight_parity.get(bits)), health);
     }
     if ((state.fresh & rally_bits) && rally_x.get(bits) != 0)
@@ -110,7 +120,9 @@ void send(World& world, bool refresh) {
         const auto& groups = world.map().groups;
         for (std::size_t g = 0; g < groups.size() && g < 63; ++g) {
             auto& c = world.camps[g];
-            if (c.state != CampState::respawning || c.state_round != round || c.told_respawn == c.respawn_round) continue;
+            if (c.state != CampState::respawning || c.respawn_round <= round || c.told_respawn == c.respawn_round) continue;
+            // Seen respawning, not inferred from a hold out of sight.
+            if (c.state_round + groups[g].respawn < c.respawn_round) continue;
             camp_group.set(bits, static_cast<int>(g) + 1);
             camp_respawn.set(bits, c.respawn_round & 255);
             c.told_respawn = c.respawn_round;
@@ -130,8 +142,9 @@ void send(World& world, bool refresh) {
             sight_y.set(bits, e.pos.y);
             sight_index.set(bits, e.index);
             const float fraction = e.max_health > 0 ? e.health / e.max_health : 1.0f;
-            sight_health.set(bits, std::clamp(static_cast<int>(fraction * 8.0f), 0, 7));
+            sight_health.set(bits, fraction >= 1.0f ? 7 : std::clamp(static_cast<int>(fraction * 7.0f), 0, 6));
             sight_parity.set(bits, round & 1);
+            count_write(bits, sight_count);
             dirty = true;
             break;
         }
@@ -144,6 +157,7 @@ void post_rally(int round, vec2 pos) {
     rally_x.set(bits, pos.x + 1);
     rally_y.set(bits, pos.y);
     rally_parity.set(bits, round & 1);
+    count_write(bits, rally_count);
     write_bits(bits, round);
 }
 
@@ -153,6 +167,7 @@ void post_help(int round, int group) {
     auto bits = read_bits();
     help_group.set(bits, group + 1);
     help_parity.set(bits, round & 1);
+    count_write(bits, help_count);
     write_bits(bits, round);
     state.help = Help{round, group};
 }
