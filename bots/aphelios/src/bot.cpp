@@ -1,5 +1,6 @@
 // Placeholder behaviour, roughly the starter bot's. Replace freely.
 #include "bot.h"
+#include <algorithm>
 #include <array>
 #include "params.h"
 #include "pathing.h"
@@ -10,6 +11,8 @@ namespace aph {
 namespace {
 
 using params::max_detour;
+
+constexpr int camp_attack_range = 3;
 
 void buy_shards(Memory& memory) {
     auto& me = cambc::self();
@@ -138,23 +141,63 @@ void place_ward(const World& world, Pathing& pathing) {
     }
 }
 
-} // namespace
+int threat_reach(const ChampionFacts& f) {
+    int r = f.attack_range();
+    for (const auto& a : f.abilities)
+        if (a.hits_enemies()) r = std::max(r, a.reach());
+    return r + (f.has_dash() ? 2 : 1);
+}
 
-void play_turn(const World& world, Pathing& pathing, Memory& memory) {
+// Anything that could damage us before our next turn, and so cancel a recall.
+bool threatened(const World& world) {
+    const vec2 here = cambc::self().position();
+    const auto& groups = world.map().groups;
+    for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
+        const auto& c = world.camps[g];
+        if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
+        for (std::size_t i = 0; i < groups[g].members.size(); ++i)
+            if (c.health[i] > 0 && dist(here, groups[g].members[i].pos) <= camp_attack_range) return true;
+    }
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && dist(here, e.pos) <= threat_reach(e.facts())) return true;
+    return false;
+}
+
+bool want_home(const World& world) {
+    const auto& me = cambc::self();
+    return !world.map().ally_spawn.is_set(me.position()) && me.health() < params::recall_health_fraction * me.max_health();
+}
+
+bool can_tribute_here(const World& world) {
+    const auto& me = cambc::self();
+    if (me.gem_count() == 0) return false;
+    const auto& altars = world.map().altars;
+    for (int a = 0; a < static_cast<int>(altars.size()); ++a)
+        if (!world.altars[a].enemy_lock && dist(me.position(), altars[a].pos) <= cambc::constants::submit_gems_range) return true;
+    return false;
+}
+
+void decide(const World& world, Pathing& pathing, Memory& memory) {
     auto& me = cambc::self();
     if (!world.me().alive) {
         buy_shards(memory); // the dead can only shop
         return;
     }
-    if (me.is_recalling() || me.is_submitting_gems() || me.is_teleporting()) return;
-
-    const bool at_spawn = world.map().ally_spawn.is_set(me.position());
-    if (at_spawn) buy_shards(memory);
-    if (!at_spawn && me.health() < params::recall_health_fraction * me.max_health()) {
+    if (me.is_submitting_gems() || me.is_teleporting()) return;
+    if (me.is_recalling()) {
+        if (want_home(world) && !threatened(world) && !can_tribute_here(world)) return;
         try {
-            me.recall();
+            me.cancel_recall();
         } catch (const cambc::error&) {
+            return;
         }
+    }
+
+    if (world.map().ally_spawn.is_set(me.position())) buy_shards(memory);
+    if (want_home(world)) {
+        // A tribute survives damage; a recall does not.
+        if (can_tribute_here(world)) bank_gems(world, pathing);
+        else pathing.step_towards(pathing.to_ally_spawn());
         return;
     }
 
@@ -166,6 +209,26 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     }
     if (attacked && !world.me().facts().walk_and_attack_independent()) return;
     farm(world, pathing);
+}
+
+// Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a
+// turn shorter. Damage before then cancels it at no cost.
+void start_recall(const World& world) {
+    auto& me = cambc::self();
+    if (!world.me().alive || me.is_recalling() || me.is_submitting_gems() || me.is_teleporting()
+        || world.map().ally_spawn.is_set(me.position()))
+        return;
+    try {
+        me.recall();
+    } catch (const cambc::error&) {
+    }
+}
+
+} // namespace
+
+void play_turn(const World& world, Pathing& pathing, Memory& memory) {
+    decide(world, pathing, memory);
+    start_recall(world);
 }
 
 } // namespace aph
