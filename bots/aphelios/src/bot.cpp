@@ -113,15 +113,24 @@ void farm(const World& world, Pathing& pathing) {
     const int range = world.me().facts().attack_range();
     if (attack_camp(world) && !world.me().facts().walk_and_attack_independent()) return;
 
+    // One holder keeps a capture going, and sharers split the reward: the lowest id stays.
+    const auto ally_holding = [&](int g, bool lower_only) {
+        for (const auto& a : world.allies)
+            if (!a.is_self && a.alive && a.visible && groups[g].tiles().is_set(a.pos)
+                && (!lower_only || a.index < world.me().index))
+                return true;
+        return false;
+    };
+
     const vec2 here = me.position();
     const int on_group = map.group_at(here);
-    if (on_group >= 0 && world.camps[on_group].state == CampState::cleared) return; // capturing
+    if (on_group >= 0 && world.camps[on_group].state == CampState::cleared && !ally_holding(on_group, true)) return;
 
     // Skip groups still respawning when we would arrive, judged by straight-line distance.
     auto candidates = map.camp_tiles;
     for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
         const auto& belief = world.camps[g];
-        if (groups[g].has_monolith
+        if (groups[g].has_monolith || (belief.state == CampState::cleared && ally_holding(g, false))
             || (belief.state == CampState::respawning && belief.respawn_round - world.round > dist(here, groups[g].centre)))
             candidates &= ~groups[g].tiles();
     }
