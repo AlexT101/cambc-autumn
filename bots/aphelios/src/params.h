@@ -16,7 +16,7 @@ inline constexpr cambc::champion_draft draft_preference[] = {
 inline constexpr std::uint64_t end_reserve = debug_fuel ? 40000 : 10000;
 
 // Rounds out of sight after which an enemy could be anywhere.
-inline constexpr int track_horizon = 20;
+inline constexpr int track_horizon = 10;
 
 // Extra steps a live route may take over the static walking distance.
 inline constexpr int max_detour = 16;
