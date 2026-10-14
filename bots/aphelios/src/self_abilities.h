@@ -1,6 +1,7 @@
 // Attack resets, dashes, heals and shields. Each casts at most once and returns true if it did;
 // only one cast succeeds per turn, so call the most valuable first.
 #pragma once
+#include <optional>
 #include "util.h"
 
 namespace aph {
@@ -8,6 +9,12 @@ namespace aph {
 class World;
 class Pathing;
 struct ChampionBelief;
+
+// The enemy a basic attack from here should hit, read live as vision changes when we move: the
+// weakest, or for Varg the most value counting splash. Never one whose retaliation would kill us,
+// nor one on its spawn (it heals at its turn end) unless the hit kills it or, with
+// `stunnable_only`, stuns it; with that flag, only enemies a stun affects.
+std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only = false);
 
 // With the basic attack spent (by attacking, or by a ranged champion's walk), reset it and attack
 // again. Enemies: the weakest in range. Camps: the member nearest death (a Vendetta kill readies

@@ -106,16 +106,11 @@ void buy_shards(const ChampionFacts& f) {
 
 bool attack_enemy(const World& world) {
     auto& me = cambc::self();
-    const vec2 here = me.position();
-    const int range = world.me().facts().attack_range();
-    const ChampionBelief* target = nullptr;
-    for (const auto& e : world.enemies)
-        if (e.visible && dist(here, e.pos) <= range && e.retaliation() < me.health()
-            && (!target || e.health < target->health))
-            target = &e;
-    if (!target || !me.can_attack()) return false;
+    if (!me.can_attack()) return false;
+    const auto target = attack_target(world);
+    if (!target) return false;
     try {
-        me.attack(cambc::vision::champion_at(target->pos));
+        me.attack(*target);
         return true;
     } catch (const cambc::error&) {
         return false;
@@ -169,23 +164,45 @@ bool break_lock(const World& world, int altar) {
     return false;
 }
 
-void bank_gems(const World& world, Pathing& pathing, Safety& safety) {
+// A tribute channel cannot act, and a kill takes the whole bag: start or keep one only if the
+// visible enemies could not kill us before it ends, nor damage at the rate of the last round
+// (attackers in bushes stay unseen).
+bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
+    const float health = cambc::self().health();
+    if (memory.damage * static_cast<float>(turns) >= health) return false;
+    const int kill = safety.turns_to_kill_idle(cambc::self().position(), turns + 1);
+    return kill == 0 || kill > turns;
+}
+
+int tribute_turns(int gems) { return std::max(1, (gems + 9) / 10); }
+
+// At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else is
+// judged again.
+bool submit_here(const World& world, Safety& safety, const Memory& memory) {
     auto& me = cambc::self();
-    dash_towards(world, pathing, pathing.to_any_altar());
     const vec2 here = me.position();
     const auto& altars = world.map().altars;
-    bool any_locked = false;
     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
-        any_locked |= world.altars[a].enemy_lock;
         if (world.altars[a].enemy_lock || dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
+        if (here != world.me().pos && !tribute_safe(safety, memory, tribute_turns(me.gem_count()))) return false;
         try {
             me.submit_gems(altars[a].pos);
-            return;
+            return true;
         } catch (const cambc::error&) {
         }
     }
+    return false;
+}
+
+void bank_gems(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+    if (submit_here(world, safety, memory)) return;
+    const vec2 here = cambc::self().position();
+    const auto& altars = world.map().altars;
+    bool any_locked = false;
+    for (const auto& a : world.altars) any_locked |= a.enemy_lock;
     // One cached field covers every altar; per-altar fields are needed only to skip locked ones.
     if (!any_locked) {
+        if (dash_towards(world, pathing, pathing.to_any_altar()) && submit_here(world, safety, memory)) return;
         step_safely(pathing, pathing.to_any_altar(), safety);
         return;
     }
@@ -202,6 +219,7 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety) {
         if (steps < best_steps) best = a, best_steps = steps;
     }
     if (best < 0) return;
+    if (dash_towards(world, pathing, pathing.to_altar(best)) && submit_here(world, safety, memory)) return;
     if (world.altars[best].enemy_lock && break_lock(world, best) && !world.me().facts().walk_and_attack_independent()) return;
     step_safely(pathing, pathing.to_altar(best), safety);
 }
@@ -214,10 +232,10 @@ float min_camp_damage(const CampGroup& group, const CampBelief& belief, float st
     struct Left {
         float health, strength;
     };
-    std::array<Left, 8> left{};
+    std::vector<Left> left(group.members.size());
     int n = 0;
     const bool fresh = belief.state == CampState::respawning;
-    for (std::size_t i = 0; i < group.members.size() && n < static_cast<int>(left.size()); ++i) {
+    for (std::size_t i = 0; i < group.members.size(); ++i) {
         const float hp = fresh ? group.members[i].max_health : belief.health[i];
         if (hp > 0) left[n++] = {hp, group.members[i].strength};
     }
@@ -259,15 +277,17 @@ float min_camp_damage(int g, const CampGroup& group, const CampBelief& belief, f
     return e.damage;
 }
 
-// On a cleared group's tile that no lower-id ally also holds: stepping off loses the capture's
-// progress, and it pays within six rounds.
+// On a cleared group's tile that no lower-id ally also holds, with no enemy on any of its tiles:
+// stepping off loses the capture's progress, and it pays within six rounds.
 bool holding_capture(const World& world) {
     const vec2 here = cambc::self().position();
     const int g = world.map().group_at(here);
     if (g < 0 || world.camps[g].state != CampState::cleared) return false;
+    const auto& tiles = world.map().groups[g].tiles();
     for (const auto& a : world.allies)
-        if (!a.is_self && a.alive && a.visible && a.index < world.me().index && world.map().groups[g].tiles().is_set(a.pos))
-            return false;
+        if (!a.is_self && a.alive && a.visible && a.index < world.me().index && tiles.is_set(a.pos)) return false;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && tiles.is_set(e.pos)) return false;
     return true;
 }
 
@@ -307,8 +327,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     };
 
     const vec2 here = me.position();
-    const int on_group = map.group_at(here);
-    if (on_group >= 0 && world.camps[on_group].state == CampState::cleared && !ally_holding(on_group, true)) return true;
+    if (holding_capture(world)) return true;
 
     // Short of fuel, walk on towards the last choice rather than run out mid-turn.
     const auto walk_on = [&](int g) {
@@ -577,18 +596,6 @@ bool join_rally(const World& world, Pathing& pathing) {
     return pathing.step_towards(square(rally->pos, 1) & ~world.map().blocked_for_us, nullptr, 2 * params::rally_radius);
 }
 
-// A tribute channel cannot act, and a kill takes the whole bag: start or keep one only if the
-// visible enemies could not kill us before it ends, nor damage at the rate of the last round
-// (attackers in bushes stay unseen).
-bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
-    const float health = cambc::self().health();
-    if (memory.damage * static_cast<float>(turns) >= health) return false;
-    const int kill = safety.turns_to_kill_idle(cambc::self().position(), turns + 1);
-    return kill == 0 || kill > turns;
-}
-
-int tribute_turns(int gems) { return std::max(1, (gems + 9) / 10); }
-
 bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory) {
     return can_tribute_here(world) && tribute_safe(safety, memory, tribute_turns(cambc::self().gem_count()));
 }
@@ -668,7 +675,10 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     if (world.map().ally_spawn.is_set(me.position()) && me.health() < me.max_health()) {
         decision = 'H';
-        attack_enemy(world);
+        const bool attacked = attack_enemy(world);
+        if (attacked) reset_and_attack_enemy(world, true);
+        cast_at_enemies(world);
+        if (attacked) reset_and_attack_enemy(world);
         return;
     }
     if (want_home(world, safety)) {
@@ -677,7 +687,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         cast_at_enemies(world, true);
         // A tribute survives damage; a recall does not.
         if (can_tribute_safely(world, safety, memory)) {
-            bank_gems(world, pathing, safety);
+            bank_gems(world, pathing, safety, memory);
             return;
         }
         dash_away(world, pathing, pathing.to_ally_spawn());
@@ -703,7 +713,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         decision = 'B';
         const bool walked = attacked && !world.me().facts().walk_and_attack_independent();
         memory.banking = walked || !may_chain(world, safety) || !farm(world, pathing, memory);
-        if (memory.banking) bank_gems(world, pathing, safety); // a tribute can still start after a ranged attack
+        if (memory.banking) bank_gems(world, pathing, safety, memory); // a tribute can still start after a ranged attack
         return;
     }
     if (attacked && !world.me().facts().walk_and_attack_independent()) return;

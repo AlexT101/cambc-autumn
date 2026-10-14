@@ -5,9 +5,6 @@ namespace aph {
 
 class World;
 
-// An excludes-walking damage or stun slot is ready and still castable this turn.
-bool exclusive_cast_ready(const World& world);
-
 // The best enemy-hitting cast this turn, if worth it. With `keep_walk`, an excludes-walking cast
 // must be worth the walk (a kill or a cancelled tribute).
 bool cast_at_enemies(const World& world, bool keep_walk = false);
