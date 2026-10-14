@@ -21,6 +21,7 @@ constexpr int kept_recall_turns = 3; // channel left on a recall an ally has kep
 constexpr float dash_min_health = 0.5f;
 constexpr float chase_health = 0.4f;
 constexpr int failed_search_pause = 4; // rounds without a travel-dash search after one finds no gain
+constexpr float kill_value = 300;      // in enemy health points, over the health taken
 
 std::optional<cambc::ability> ready(const World& world, AbilityKind kind) {
     const auto& self = world.me();
@@ -149,24 +150,51 @@ bool travel_dash(const World& world, Pathing& pathing, const cambc::ability& das
     return dash_to_first(dash, pathing, landings);
 }
 
-std::optional<cambc::champion> weakest_enemy_in_range(vec2 here, int range, bool stunnable_only) {
-    std::optional<cambc::champion> best;
-    float best_health = 0;
-    for (auto p : (cambc::vision::champion_tiles(team::enemy) & square(here, range)).positions()) {
+} // namespace
+
+std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only) {
+    auto& me = cambc::self();
+    const vec2 here = me.position();
+    const int range = world.me().facts().attack_range();
+    const bool splash = world.me().facts().passive == Passive::splash_attack;
+    const float strength = me.strength(), health = me.health();
+    const auto& enemy_spawn = world.map().enemy_spawn;
+    struct Seen {
+        cambc::champion c;
+        vec2 pos;
+        float health, retaliation;
+        bool stunnable;
+    };
+    std::vector<Seen> seen;
+    for (auto p : (cambc::vision::champion_tiles(team::enemy) & square(here, range + (splash ? 1 : 0))).positions()) {
         try {
             auto c = cambc::vision::champion_at(p);
             const auto passive = facts(c.champion_name()).passive;
-            if (stunnable_only && (passive == Passive::stun_immune || c.buffs().has_stun())) continue;
-            if (passive == Passive::retaliation && retaliation_share * c.focus() >= cambc::self().health()) continue;
-            const float h = c.health();
-            if (!best || h < best_health) best = c, best_health = h;
+            const float retaliation = passive == Passive::retaliation ? retaliation_share * c.focus() : 0.0f;
+            seen.push_back({c, p, c.health(), retaliation, passive != Passive::stun_immune && !c.buffs().has_stun()});
         } catch (const cambc::error&) {
         }
     }
+    // An enemy on its spawn heals to full at its turn end: only a kill or a stun is worth anything.
+    const auto worth = [&](const Seen& s) {
+        if (s.health <= strength) return s.health + kill_value;
+        return enemy_spawn.is_set(s.pos) ? 0.0f : strength;
+    };
+    std::optional<cambc::champion> best;
+    float best_value = 0, best_health = 0;
+    for (const auto& t : seen) {
+        if (dist(here, t.pos) > range || (stunnable_only && !t.stunnable)) continue;
+        float value = worth(t), retaliation = t.retaliation;
+        if (splash)
+            for (const auto& o : seen)
+                if (&o != &t && dist(o.pos, t.pos) <= 1) value += worth(o), retaliation += o.retaliation;
+        if ((value <= 0 && !stunnable_only) || retaliation >= health) continue;
+        if (!splash) value = 0; // the weakest
+        if (!best || value > best_value || (value == best_value && t.health < best_health))
+            best = t.c, best_value = value, best_health = t.health;
+    }
     return best;
 }
-
-} // namespace
 
 bool reset_and_attack_enemy(const World& world, bool stunning_only) {
     auto& me = cambc::self();
@@ -176,7 +204,7 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only) {
     if (stunning_only && (slot < 0 || !f.abilities[slot].stuns)) return false;
     const auto reset = ready(world, AbilityKind::attack_reset);
     if (!reset) return false;
-    const auto target = weakest_enemy_in_range(me.position(), f.attack_range(), stunning_only);
+    const auto target = attack_target(world, stunning_only);
     if (!target || !cast(*reset)) return false;
     try {
         me.attack(*target);
@@ -303,19 +331,22 @@ bool heal_ally(const World& world) {
     const vec2 here = cambc::self().position();
     const int range = world.me().facts().abilities[slot].range();
     std::optional<cambc::champion> best;
-    float best_gain = 0;
-    for (const auto& b : world.allies) {
-        if (b.is_self || !b.alive || !b.visible || dist(here, b.pos) > range || world.map().ally_spawn.is_set(b.pos))
-            continue;
+    float best_gain = 0, best_fraction = 0;
+    // Read live: allies come into sight as we move.
+    const auto near = cambc::vision::champion_tiles(team::ally) & square(here, range) & ~world.map().ally_spawn;
+    for (auto p : near.positions()) {
+        if (p == here) continue;
         try {
-            auto c = cambc::vision::champion_at(b.pos);
+            auto c = cambc::vision::champion_at(p);
             if (!c.is_ally()) continue;
             // Allies start a recall at every turn end and cancel it unless wanted, so only one
             // they kept going will reach spawn and heal there.
             if (c.is_recalling() && c.remaining_channel_time() <= kept_recall_turns) continue;
             const float gain = std::min(amount, c.max_health() - c.health());
-            if (gain <= 0 || (gain < heal_min_share * amount && health_fraction(c) >= heal_low_health)) continue;
-            if (!best || gain > best_gain) best = c, best_gain = gain;
+            const float fraction = health_fraction(c);
+            if (gain <= 0 || (gain < heal_min_share * amount && fraction >= heal_low_health)) continue;
+            if (!best || gain > best_gain || (gain == best_gain && fraction < best_fraction))
+                best = c, best_gain = gain, best_fraction = fraction;
         } catch (const cambc::error&) {
         }
     }
