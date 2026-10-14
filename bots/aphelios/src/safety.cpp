@@ -16,6 +16,7 @@ struct Fighter {
     const ChampionFacts* facts;
     float strength, focus;
     std::array<int, 2> ready_in; // own turns until the slot can be cast
+    int arrives_in = 0;          // own turns spent walking into reach first
 };
 
 struct Side {
@@ -76,7 +77,10 @@ void act(Side& self, Side& other) {
     int hits = 0;
     for (std::size_t i = 0; i < self.fighters.size(); ++i) {
         auto& f = self.fighters[i];
-        if (i >= skip.size() || !skip[i]) hits += attack(f, self, other, damage);
+        if (f.arrives_in > 0)
+            --f.arrives_in;
+        else if (i >= skip.size() || !skip[i])
+            hits += attack(f, self, other, damage);
         for (auto& r : f.ready_in) r = std::max(0, r - 1);
     }
     other.health -= damage;
@@ -338,6 +342,23 @@ Trade Safety::fight(vec2 p) {
 Trade Safety::duel(int enemy) {
     const auto& e = world_.enemies[enemy];
     return trade({&world_.me()}, {world_.round}, {&e}, {next_turn_round(world_, e)});
+}
+
+int Safety::turns_to_kill_idle(vec2 p, int horizon) {
+    Side us, them;
+    us.health = world_.me().health;
+    for (const auto& e : world_.enemies) {
+        if (!e.alive || !e.visible) continue;
+        const auto s = strike(e, next_turn_round(world_, e));
+        if (s.reach < 0) continue;
+        const int walk = std::max(0, dist(p, e.pos) - s.reach);
+        if (walk >= horizon) continue;
+        auto f = fighter(e, next_turn_round(world_, e));
+        f.arrives_in = walk;
+        them.fighters.push_back(f);
+    }
+    if (them.fighters.empty()) return 0;
+    return simulate(us, them, true).second;
 }
 
 bool Safety::lethal(vec2 p) {

@@ -114,6 +114,9 @@ public:
     Trade fight(vec2 p);
     // Us alone against one enemy.
     Trade duel(int enemy);
+    // Their turns for the visible enemies to kill us at p if we never act (channelling), each
+    // walking a step a turn until in reach; 0 if not within `horizon` turns.
+    int turns_to_kill_idle(vec2 p, int horizon);
     // Could the credible threats and camps kill us at p before our next turn?
     bool lethal(vec2 p);
     // Off spawn, and below the recall line, or somewhere lethal in a fight we lose. Retreating

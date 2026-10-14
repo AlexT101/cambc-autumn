@@ -250,9 +250,10 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
     return false;
 }
 
-bool dash_to_attack(const World& world, Pathing& pathing) {
+bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target) {
     auto& me = cambc::self();
-    if (!me.can_attack() || me.health() < dash_min_health * me.max_health()) return false;
+    const bool target_given = target != nullptr;
+    if (!me.can_attack() || (!target_given && me.health() < dash_min_health * me.max_health())) return false;
     const vec2 here = me.position();
     const int range = world.me().facts().attack_range();
     if (enemy_within(world, here, range)) return false;
@@ -260,15 +261,15 @@ bool dash_to_attack(const World& world, Pathing& pathing) {
     if (!dash) return false;
     const float strength = me.strength();
     const float my_fraction = health_fraction(me);
-    const ChampionBelief* target = nullptr;
     for (const auto& e : world.enemies) {
+        if (target_given) break;
         if (!e.alive || !e.visible || dist(here, e.pos) > range + dash_steps || world.map().enemy_spawn.is_set(e.pos))
             continue;
         const float fraction = e.health / e.max_health;
         const bool finish = e.health <= strength || (fraction < chase_health && fraction < my_fraction);
         if (finish && (!target || e.health < target->health)) target = &e;
     }
-    if (!target) return false;
+    if (!target || dist(here, target->pos) > range + dash_steps) return false;
     const auto threats = threats_near(world, here);
     const auto& spawn = world.map().from_ally_spawn();
     const auto landings = ranked(

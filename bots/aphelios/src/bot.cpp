@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include "abilities.h"
+#include "comms.h"
 #include "params.h"
 #include "pathing.h"
 #include "safety.h"
@@ -270,12 +271,18 @@ bool finishing_camp(const World& world) {
     return false;
 }
 
+bool visible_threat(Safety& safety, vec2 p) {
+    for (const auto& t : safety.threats())
+        if (t.visible && t.strike.hits(t.distance(p))) return true;
+    return false;
+}
+
 // An enemy that could kill us before our next turn overrides finishing a camp.
 bool want_home(const World& world, Safety& safety) {
     const auto& me = cambc::self();
     if (world.map().ally_spawn.is_set(me.position())) return false;
     return (me.health() < params::recall_health_fraction * me.max_health() && !finishing_camp(world))
-           || (safety.lethal(me.position()) && safety.fight(me.position()).lost);
+           || ((safety.lethal(me.position()) || visible_threat(safety, me.position())) && safety.fight(me.position()).lost);
 }
 
 bool can_tribute_here(const World& world) {
@@ -287,15 +294,87 @@ bool can_tribute_here(const World& world) {
     return false;
 }
 
-void decide(const World& world, Pathing& pathing, Safety& safety) {
+// The visible enemy quickest to reach and kill among those whose local fight we win even when
+// they strike first; never one on or next to its spawn, where it heals.
+const ChampionBelief* prey(const World& world, Safety& safety) {
+    const auto& me = cambc::self();
+    const vec2 here = me.position();
+    const int range = world.me().facts().attack_range();
+    const float strength = std::max(1.0f, me.strength());
+    const auto& enemy_spawn = world.map().enemy_spawn;
+    const ChampionBelief* best = nullptr;
+    float best_turns = 0;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible || dist(here, e.pos) > params::chase_radius
+            || !(enemy_spawn & square(e.pos, 1)).is_empty())
+            continue;
+        const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + e.health / strength;
+        if (best && turns >= best_turns) continue;
+        if (safety.fight(e.pos).lost) continue;
+        best = &e, best_turns = turns;
+    }
+    return best;
+}
+
+bool chase(const World& world, Pathing& pathing, Safety& safety) {
+    const auto* target = prey(world, safety);
+    if (!target) return false;
+    auto& me = cambc::self();
+    comms::post_rally(world.round, target->pos);
+    const int range = world.me().facts().attack_range();
+    // A walk alone cannot reach range this turn.
+    if (dist(me.position(), target->pos) > range + 1 && me.can_move()) dash_to_attack(world, pathing, target);
+    if (dist(me.position(), target->pos) > range && me.can_move())
+        pathing.step_towards(square(target->pos, range) & ~world.map().blocked_for_us);
+    if (attack_enemy(world)) reset_and_attack_enemy(world);
+    cast_at_enemies(world);
+    return true;
+}
+
+// Towards a fight an ally posted this round or last. Within half our vision of it, chase decides
+// whether to join.
+bool join_rally(const World& world, Pathing& pathing) {
+    const auto rally = comms::read().rally;
+    if (!rally || rally->round < world.round - 1) return false;
+    const vec2 here = cambc::self().position();
+    const int d = dist(here, rally->pos);
+    if (d <= params::chase_radius / 2 || d > params::rally_radius) return false;
+    return pathing.step_towards(square(rally->pos, 1) & ~world.map().blocked_for_us, nullptr, 2 * params::rally_radius);
+}
+
+// A tribute channel cannot act, and a kill takes the whole bag: start or keep one only if the
+// visible enemies could not kill us before it ends, nor damage at the rate of the last round
+// (attackers in bushes stay unseen).
+bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
+    const float health = cambc::self().health();
+    if (memory.damage * static_cast<float>(turns) >= health) return false;
+    const int kill = safety.turns_to_kill_idle(cambc::self().position(), turns + 1);
+    return kill == 0 || kill > turns;
+}
+
+int tribute_turns(int gems) { return std::max(1, (gems + 9) / 10); }
+
+bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory) {
+    return can_tribute_here(world) && tribute_safe(safety, memory, tribute_turns(cambc::self().gem_count()));
+}
+
+void decide(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     auto& me = cambc::self();
     if (!world.me().alive) {
         buy_shards(); // the dead can only shop
         return;
     }
-    if (me.is_submitting_gems() || me.is_teleporting()) return;
+    if (me.is_teleporting()) return;
+    if (me.is_submitting_gems()) {
+        if (tribute_safe(safety, memory, me.remaining_channel_time())) return;
+        try {
+            me.cancel_submit_gems();
+        } catch (const cambc::error&) {
+            return;
+        }
+    }
     if (me.is_recalling()) {
-        if (want_home(world, safety) && !safety.threatened(me.position()) && !can_tribute_here(world)) return;
+        if (want_home(world, safety) && !safety.threatened(me.position()) && !can_tribute_safely(world, safety, memory)) return;
         try {
             me.cancel_recall();
         } catch (const cambc::error&) {
@@ -316,7 +395,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety) {
         if (world.me().facts().walk_and_attack_independent()) attack_enemy(world);
         cast_at_enemies(world, true);
         // A tribute survives damage; a recall does not.
-        if (can_tribute_here(world)) {
+        if (can_tribute_safely(world, safety, memory)) {
             bank_gems(world, pathing, safety);
             return;
         }
@@ -332,10 +411,15 @@ void decide(const World& world, Pathing& pathing, Safety& safety) {
     if (attacked) reset_and_attack_enemy(world);
     place_ward(world, pathing);
     if (me.gem_count() > 0) {
+        const bool safe = can_tribute_safely(world, safety, memory);
+        if (!safe && chase(world, pathing, safety)) return;
+        if (!safe && can_tribute_here(world)) return; // until they leave or come
         bank_gems(world, pathing, safety); // a tribute can still start after a ranged attack
         return;
     }
     if (attacked && !world.me().facts().walk_and_attack_independent()) return;
+    if (chase(world, pathing, safety)) return;
+    if (join_rally(world, pathing)) return;
     farm(world, pathing);
 }
 
@@ -354,11 +438,15 @@ void start_recall(const World& world) {
 
 } // namespace
 
-void play_turn(const World& world, Pathing& pathing, Memory&) {
+void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     Safety safety{world};
-    decide(world, pathing, safety);
+    const float health = world.me().alive ? cambc::self().health() : 0;
+    memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
+    decide(world, pathing, safety, memory);
     shield_if_needed(world);
     start_recall(world);
+    memory.round = world.round;
+    memory.health = world.me().alive ? cambc::self().health() : 0;
 }
 
 } // namespace aph
