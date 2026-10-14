@@ -59,7 +59,7 @@ Python: `json.load(gzip.open(p))` for rounds, `[json.loads(l) for l in gzip.open
 
 ## maps/&lt;hash&gt;.json
 
-`{hash, width, height, symmetry, champsPerTeam, spawn: [A, B] ({minX, minY, maxX, maxY}), walls, holes, bushes, altars (tile lists), camps, groups}`
+`{hash, width, height, symmetry, champsPerTeam, spawn: [A, B] ({minX, minY, maxX, maxY}, inclusive), walls, holes, bushes, altars (tile lists), camps, groups}`
 
 - `camps[i]`: `{id, type (Wolf, Elk, Gem cluster, Gold cluster, Monolith), x, y, group, hp}`.
 - `groups[g]`: `{id, camps (camp ids), tiles (capture tiles), types, gems, gold, respawn (group reward and respawn rounds), mirror (symmetric group id), side (0/1: nearer team A/B spawn, -1 equidistant)}`.

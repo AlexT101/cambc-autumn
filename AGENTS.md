@@ -29,6 +29,17 @@ py run_batched.py --watch            # live progress of the newest batch, from a
 
 Options: `--threads N` (default 16), `--one-side` (one game per map, sides drawn by `--side-seed`), `--maps-dir`, `--fuel`, `--timeout SECONDS`, `--no-replays`. Results go to `replays/batch-TIMESTAMP/`: `results.json` (wins from bot 1's view, then per match), `<n>-<map>-<12|21>.repl26a` (`12` means bot 1 is team A), `run.log`, and `*.error.log` for failed matches. The exit code is non-zero if any match failed.
 
+The draft is compiled in (`params::draft_preference`), so forced drafts are separate bot copies. [tools/variants/make_variant.py](tools/variants/make_variant.py) copies a bot (any snapshot with that array) to `bots/variants/<name>/` (gitignored) with a given pick order; drafts under 5 are padded in enum order (name ends `-pad`) and `manifest.json` records source, git state and draft. [tools/variants/matrix.py](tools/variants/matrix.py) plays variants against each other through run_batched.py, one batch per distinct pair, and writes a win-rate matrix with per-map tables to `replays/matrix-TIMESTAMP/` (`matrix.md`, `matrix.csv`, `cells.csv`, `pairs/`):
+
+```
+py tools/variants/make_variant.py varg,willow,ryth --source baselines/v0
+py tools/variants/matrix.py varg,tavi,ryth,stellar,ren baselines/v0@willow,ren --one-side   # specs [BOT@]DRAFT, or BOT@ for its own draft
+py tools/variants/matrix.py --focus --cols baselines/v0@      # each champion first pick + --filler, vs v0's own draft
+py tools/variants/matrix.py --resume replays/matrix-TIMESTAMP # finish unfinished pairs (--report: rewrite reports only)
+```
+
+Rows use `--bot` (default aphelios), columns default to the row drafts on `--vs-bot`; run_batched options pass through. Identical row and column entries play mirror matches, reported as team A's win rate: with both sides played, each map should go to the same team twice.
+
 ## Competitor replays
 
 [fetch_replays.py](fetch_replays.py) downloads ladder match replays through the site's public API (no sign-in):

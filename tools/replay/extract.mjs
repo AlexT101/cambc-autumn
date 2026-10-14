@@ -57,8 +57,10 @@ function mapKey(map) {
 }
 
 function buildMap(map, camps0) {
-  const spawn = [map.spawnA];
-  const [bx0, by0] = mirror(map, map.spawnA.minX, map.spawnA.minY), [bx1, by1] = mirror(map, map.spawnA.maxX, map.spawnA.maxY);
+  // The engine's spawn max is exclusive.
+  const a = { minX: map.spawnA.minX, minY: map.spawnA.minY, maxX: map.spawnA.maxX - 1, maxY: map.spawnA.maxY - 1 };
+  const spawn = [a];
+  const [bx0, by0] = mirror(map, a.minX, a.minY), [bx1, by1] = mirror(map, a.maxX, a.maxY);
   spawn.push({ minX: Math.min(bx0, bx1), minY: Math.min(by0, by1), maxX: Math.max(bx0, bx1), maxY: Math.max(by0, by1) });
   const centre = s => [(s.minX + s.maxX) / 2, (s.minY + s.maxY) / 2];
   const cheb = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
