@@ -2,6 +2,7 @@
 #include "bot.h"
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include "params.h"
 #include "pathing.h"
 #include "world.h"
@@ -106,6 +107,38 @@ void bank_gems(const World& world, Pathing& pathing) {
     if (best >= 0) pathing.step_towards(pathing.to_altar(best));
 }
 
+constexpr int capture_rounds = 6;
+
+// Damage taken clearing a group alone with basic attacks, killing the deadliest first; also
+// the rounds it takes.
+float min_camp_damage(const CampGroup& group, const CampBelief& belief, float strength, float* rounds) {
+    struct Left {
+        float health, strength;
+    };
+    std::array<Left, 8> left{};
+    int n = 0;
+    const bool fresh = belief.state == CampState::respawning;
+    for (std::size_t i = 0; i < group.members.size() && n < static_cast<int>(left.size()); ++i) {
+        const float hp = fresh ? group.members[i].max_health : belief.health[i];
+        if (hp > 0) left[n++] = {hp, group.members[i].strength};
+    }
+    std::sort(left.begin(), left.begin() + n,
+              [](const Left& a, const Left& b) { return a.strength * b.health > b.strength * a.health; });
+    float damage = 0, elapsed = 0;
+    for (int i = 0; i < n; ++i) {
+        elapsed += std::ceil(left[i].health / strength);
+        damage += left[i].strength * (elapsed - 1);
+    }
+    *rounds = elapsed;
+    return damage;
+}
+
+bool ally_engaged(const World& world, int group) {
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && world.map().groups[group].threat().is_set(a.pos)) return true;
+    return false;
+}
+
 void farm(const World& world, Pathing& pathing) {
     auto& me = cambc::self();
     const auto& map = world.map();
@@ -126,18 +159,38 @@ void farm(const World& world, Pathing& pathing) {
     const int on_group = map.group_at(here);
     if (on_group >= 0 && world.camps[on_group].state == CampState::cleared && !ally_holding(on_group, true)) return;
 
-    // Skip groups still respawning when we would arrive, judged by straight-line distance.
-    auto candidates = map.camp_tiles;
+    if (!fuel_ok(field_cost_estimate())) return;
+    bitboard origin;
+    origin.set(here, true);
+    const Field from_here = make_field(map.blocked_for_us, origin);
+    const float strength = std::max(1.0f, world.me().strength);
+    const float spare_health = me.health() - params::recall_health_fraction * me.max_health();
+    // Unaffordable groups only when nothing else is left: idling is worse.
+    int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable;
+    float best_value = 0, risky_value = 0;
     for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
+        const auto& group = groups[g];
         const auto& belief = world.camps[g];
-        if (groups[g].has_monolith || (belief.state == CampState::cleared && ally_holding(g, false))
-            || (belief.state == CampState::respawning && belief.respawn_round - world.round > dist(here, groups[g].centre)))
-            candidates &= ~groups[g].tiles();
+        if (group.has_monolith || group.gems == 0 || (belief.state == CampState::cleared && ally_holding(g, false)))
+            continue;
+        const int steps = from_here.at(group.centre);
+        if (steps == unreachable) continue;
+        // Skip groups still respawning when we would arrive.
+        if (belief.state == CampState::respawning && belief.respawn_round - world.round > steps) continue;
+        float clear_rounds = 0, damage = 0;
+        if (belief.state != CampState::cleared) {
+            damage = min_camp_damage(group, belief, strength, &clear_rounds);
+        }
+        const float value = static_cast<float>(group.gems) / (static_cast<float>(steps) + clear_rounds + capture_rounds);
+        if (damage > spare_health && !ally_engaged(world, g)) {
+            if (value > risky_value) risky = g, risky_value = value, risky_steps = steps;
+        } else if (value > best_value) {
+            best = g, best_value = value, best_steps = steps;
+        }
     }
-    const auto nearest = pathing.nearest(candidates);
-    if (nearest.tiles.empty()) return;
-    const int best = map.group_at(nearest.tiles.front());
-    const int cap = nearest.steps + max_detour;
+    if (best < 0) best = risky, best_steps = risky_steps;
+    if (best < 0) return;
+    const int cap = best_steps + max_detour;
     if (world.camps[best].state == CampState::cleared) {
         pathing.step_towards(groups[best].tiles(), nullptr, cap);
         return;
