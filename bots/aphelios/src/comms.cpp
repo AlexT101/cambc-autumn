@@ -145,7 +145,6 @@ void post_rally(int round, vec2 pos) {
     rally_y.set(bits, pos.y);
     rally_parity.set(bits, round & 1);
     write_bits(bits, round);
-    state.rally = Rally{round, pos};
 }
 
 std::optional<Rally> rally() { return state.rally; }

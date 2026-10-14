@@ -298,6 +298,20 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     const auto evaluation = (pathing.centres_ready() ? 0 : field_cost_estimate()) + 300 * groups.size();
     if (!fuel_ok(evaluation + params::end_reserve)) {
         if (bag > 0) return false;
+        // On large maps this can last hundreds of rounds, past the last choice's capture: once
+        // that is gone, the nearest group as the crow flies.
+        const auto worth = [&](int g) {
+            const auto& c = world.camps[g];
+            return !groups[g].has_monolith && groups[g].gems > 0 && !(c.state == CampState::cleared && ally_holding(g, false))
+                   && !(c.state == CampState::respawning && c.respawn_round - world.round > dist(here, groups[g].centre));
+        };
+        if (memory.farm_group < 0 || !worth(memory.farm_group)) {
+            memory.farm_group = -1;
+            int nearest = 0;
+            for (int g = 0; g < static_cast<int>(groups.size()); ++g)
+                if (const int d = dist(here, groups[g].centre); (memory.farm_group < 0 || d < nearest) && worth(g))
+                    memory.farm_group = g, nearest = d;
+        }
         walk_on(memory.farm_group);
         return true;
     }
@@ -480,7 +494,8 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
         else
             pathing.step_closer(target->pos);
     }
-    if (attack_enemy(world)) reset_and_attack_enemy(world);
+    attack_enemy(world);
+    reset_and_attack_enemy(world); // after an attack, or a ranged walk
     cast_at_enemies(world);
     return true;
 }

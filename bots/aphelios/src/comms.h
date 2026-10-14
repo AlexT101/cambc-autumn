@@ -29,7 +29,7 @@ void receive(World& world);
 // With `refresh`, re-read vision first, but only if there is a slot to fill.
 void send(World& world, bool refresh);
 void post_rally(int round, vec2 pos);
-// The latest rally read or posted.
+// The latest rally a teammate posted: our own, from a chase we no longer take, leads nowhere.
 std::optional<Rally> rally();
 void post_help(int round, int group);
 // The latest help request read or posted.
