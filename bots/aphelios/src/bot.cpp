@@ -6,6 +6,7 @@
 #include "abilities.h"
 #include "params.h"
 #include "pathing.h"
+#include "self_abilities.h"
 #include "world.h"
 
 namespace aph {
@@ -82,6 +83,7 @@ bool attack_camp(const World& world) {
 
 void bank_gems(const World& world, Pathing& pathing) {
     auto& me = cambc::self();
+    dash_towards(world, pathing, pathing.to_any_altar());
     const vec2 here = me.position();
     const auto& altars = world.map().altars;
     bool any_locked = false;
@@ -147,6 +149,7 @@ void farm(const World& world, Pathing& pathing) {
     const int range = world.me().facts().attack_range();
     if (attack_camp(world) && !world.me().facts().walk_and_attack_independent()) {
         cast_at_camp(world, -1);
+        reset_and_attack_camp(world);
         return;
     }
 
@@ -196,6 +199,7 @@ void farm(const World& world, Pathing& pathing) {
     if (best < 0) return;
     const int cap = best_steps + max_detour;
     if (world.camps[best].state == CampState::cleared) {
+        dash_towards(world, pathing, groups[best].tiles());
         pathing.step_towards(groups[best].tiles(), nullptr, cap);
         return;
     }
@@ -204,12 +208,15 @@ void farm(const World& world, Pathing& pathing) {
     if (goals.is_set(here) && me.can_attack()) goals.set(here, false);
     if (goals.is_set(here)) { // attacked from here; stay
         cast_at_camp(world, best);
+        reset_and_attack_camp(world);
         return;
     }
+    if (dash_towards(world, pathing, goals) && attack_camp(world)) return;
     if (!fuel_ok(search_cost_estimate(cap))) return;
     if (pathing.step_towards(goals, nullptr, cap) || pathing.step_towards(groups[best].adjacent(), nullptr, cap)) {
         attack_camp(world);
         cast_at_camp(world, best); // only casts that allow walking remain
+        reset_and_attack_camp(world);
     }
 }
 
@@ -298,6 +305,8 @@ void decide(const World& world, Pathing& pathing) {
 
     if (world.map().ally_spawn.is_set(me.position()) || world.me().facts().passive == Passive::remote_shop)
         buy_shards();
+    heal_ally(world);
+    shield_if_needed(world);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     if (world.map().ally_spawn.is_set(me.position()) && me.health() < me.max_health()) {
         attack_enemy(world);
@@ -306,13 +315,20 @@ void decide(const World& world, Pathing& pathing) {
     if (want_home(world)) {
         cast_at_enemies(world, true);
         // A tribute survives damage; a recall does not.
-        if (can_tribute_here(world)) bank_gems(world, pathing);
-        else pathing.step_towards(pathing.to_ally_spawn());
+        if (can_tribute_here(world)) {
+            bank_gems(world, pathing);
+            return;
+        }
+        dash_away(world, pathing, pathing.to_ally_spawn());
+        pathing.step_towards(pathing.to_ally_spawn());
         return;
     }
 
-    const bool attacked = attack_enemy(world);
+    bool attacked = attack_enemy(world);
+    if (attacked) reset_and_attack_enemy(world, true);
     cast_at_enemies(world, me.gem_count() > 0);
+    if (!attacked && dash_to_attack(world, pathing)) attacked = attack_enemy(world);
+    if (attacked) reset_and_attack_enemy(world);
     place_ward(world, pathing);
     if (me.gem_count() > 0) {
         bank_gems(world, pathing); // a tribute can still start after a ranged attack
@@ -339,6 +355,7 @@ void start_recall(const World& world) {
 
 void play_turn(const World& world, Pathing& pathing, Memory&) {
     decide(world, pathing);
+    shield_if_needed(world);
     start_recall(world);
 }
 
