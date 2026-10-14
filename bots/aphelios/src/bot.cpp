@@ -238,6 +238,18 @@ float min_camp_damage(int g, const CampGroup& group, const CampBelief& belief, f
     return e.damage;
 }
 
+// On a cleared group's tile that no lower-id ally also holds: stepping off loses the capture's
+// progress, and it pays within six rounds.
+bool holding_capture(const World& world) {
+    const vec2 here = cambc::self().position();
+    const int g = world.map().group_at(here);
+    if (g < 0 || world.camps[g].state != CampState::cleared) return false;
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && a.index < world.me().index && world.map().groups[g].tiles().is_set(a.pos))
+            return false;
+    return true;
+}
+
 bool ally_engaged(const World& world, int group) {
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive && a.visible && world.map().groups[group].threat().is_set(a.pos)) return true;
@@ -558,7 +570,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     }
     if (me.is_recalling()) {
         if (want_home(world, safety) && !safety.threatened(me.position()) && !can_tribute_safely(world, safety, memory)) return;
-        if (recall_to_bank(world, pathing, safety, memory) || shop_trip(world, safety, memory)) return;
+        if (!holding_capture(world) && (recall_to_bank(world, pathing, safety, memory) || shop_trip(world, safety, memory))) return;
         try {
             me.cancel_recall();
         } catch (const cambc::error&) {
@@ -588,12 +600,14 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         return;
     }
 
+    const bool holding = holding_capture(world);
     bool attacked = attack_enemy(world);
     if (attacked) reset_and_attack_enemy(world, true);
-    cast_at_enemies(world, me.gem_count() > 0);
-    if (!attacked && dash_to_attack(world, pathing)) attacked = attack_enemy(world);
+    cast_at_enemies(world, me.gem_count() > 0 && !holding);
+    if (!attacked && !holding && dash_to_attack(world, pathing)) attacked = attack_enemy(world);
     if (attacked) reset_and_attack_enemy(world);
     place_ward(world, pathing);
+    if (holding) return;
     if (me.gem_count() > 0) {
         const bool safe = can_tribute_safely(world, safety, memory);
         if (!safe && chase(world, pathing, safety)) return;
