@@ -165,3 +165,7 @@ py tools/replay/audit_beliefs.py replays/batch-X [--examples 8] [--out report.md
 ```
 
 Beliefs (dumped at the end of the turn) are compared with the truth at the start of that turn. Reported: enemy tile outside `possible` (by cause: teleport, comms fix, recall/respawn/dash), visible-position, alive and respawn-window errors, enemy ability `ready_round` against the casts in the replay, camp state (seen this turn vs stale), awake/asleep, respawn rounds (occupancy delays separated), capture holder (from who stands on the tiles) and payout round, altar locks, own turn slot, and `possible` sizes by rounds since the last fix.
+
+## Fight calibration (fight_calibration.py)
+
+Checks aphelios' fight predictions (`Safety::fight`) against outcomes. Build the bot with `debug_fights = true` in `bots/aphelios/src/util.h`; each champion then prints an `FF` line for every turn that starts in reach of a credible enemy and an `FC` line per chase, with the turn's branch, the prediction and the enemies in reach. Play a batch with replays, extract it, then `py tools/replay/fight_calibration.py replays/batch-X`: death rates within 10 rounds by branch and prediction, by our share of the pooled health, and our deaths by the last prediction before them. Logging shifts fuel use, so games diverge from an unlogged build; compare logged builds with each other.

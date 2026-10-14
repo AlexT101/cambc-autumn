@@ -20,6 +20,8 @@ inline constexpr int debug_log_period = 10; // rounds between summaries
 // rounds (and in rounds 1-3), self-limited to a share of the team's 1 MiB output.
 inline constexpr bool debug_beliefs = false;
 inline constexpr int debug_beliefs_period = 10;
+// Fight-model calibration: an "FF" stdout line per turn in reach of an enemy, "FC" per chase.
+inline constexpr bool debug_fights = false;
 
 inline int dist(vec2 a, vec2 b) { return static_cast<int>(a.chebyshev_distance(b)); }
 
