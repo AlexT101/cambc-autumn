@@ -57,24 +57,19 @@ std::pair<int, bool> items(std::uint32_t h) {
     return {total, home};
 }
 
-// Static camp data, read through the raw imports: map::camp_groups() builds an SDK object graph
-// that costs more fuel than the data itself.
-std::vector<std::uint32_t> camp_group_ids() {
+// Static camp data in one batched raw call: map::camp_groups() builds an SDK object graph that
+// costs more fuel than the data itself. Per group: id, gold, gems, max respawn, member count, then
+// per member: id, type, x, y.
+std::vector<std::uint32_t> camp_layout() {
+    std::vector<std::uint32_t> words(256);
     std::uint32_t count{};
-    check(sdk_map_num_camp_groups(&count));
-    std::vector<std::uint32_t> ids(count);
-    check(sdk_map_camp_groups(ids.data(), count, &count));
-    ids.resize(count);
-    return ids;
-}
-
-std::vector<std::uint32_t> camp_ids(std::uint32_t group) {
-    std::uint32_t count{};
-    check(sdk_map_camp_group_num_camps(group, &count));
-    std::vector<std::uint32_t> ids(count);
-    check(sdk_map_camp_group_camps(group, ids.data(), count, &count));
-    ids.resize(count);
-    return ids;
+    check(sdk_map_camp_layout(words.data(), static_cast<std::uint32_t>(words.size()), &count));
+    if (count > words.size()) {
+        words.resize(count);
+        check(sdk_map_camp_layout(words.data(), count, &count));
+    }
+    words.resize(count);
+    return words;
 }
 
 // Every champion handle of a side, visible or not, in id (= pick) order.
@@ -493,32 +488,31 @@ void World::build_static() {
     namespace raw = cambc::detail;
     std::array<std::optional<cambc::camp_stats>, 5> design{};
     s->group_lookup_.assign(static_cast<std::size_t>(s->width * s->height), 0);
-    const auto group_ids = engine::camp_group_ids();
-    s->groups.resize(group_ids.size());
-    for (std::size_t gi = 0; gi < group_ids.size(); ++gi) {
-        auto& g = s->groups[gi];
-        g.handle = group_ids[gi];
+    const auto layout = engine::camp_layout();
+    for (std::size_t i = 0; i + 5 <= layout.size();) {
+        const auto gi = s->groups.size();
+        auto& g = s->groups.emplace_back();
+        g.handle = layout[i];
         g.map_ = s.get();
-        raw::camp_group_info reward{};
-        raw::check(raw::sdk_map_camp_group(g.handle, &reward));
-        g.gold = static_cast<int>(reward.gold);
-        g.gems = static_cast<int>(reward.gems);
-        raw::check(raw::sdk_bc_camp_group_max_respawn(g.handle, &g.respawn));
-        const auto ids = engine::camp_ids(g.handle);
-        g.members.reserve(ids.size());
+        g.gold = static_cast<int>(layout[i + 1]);
+        g.gems = static_cast<int>(layout[i + 2]);
+        g.respawn = static_cast<std::int32_t>(layout[i + 3]);
+        const auto size = layout[i + 4];
+        i += 5;
+        g.members.reserve(size);
         std::vector<vec2> positions;
-        positions.reserve(ids.size());
-        for (auto id : ids) {
-            raw::camp_info info{};
-            raw::check(raw::sdk_map_camp_info(id, &info));
-            const auto type = static_cast<cambc::camp_type>(info.type);
-            auto& stats = design[static_cast<std::size_t>(info.type)];
+        positions.reserve(size);
+        for (std::uint32_t m = 0; m < size && i + 4 <= layout.size(); ++m, i += 4) {
+            const auto id = layout[i];
+            const auto raw_type = layout[i + 1];
+            const auto type = static_cast<cambc::camp_type>(raw_type);
+            auto& stats = design[static_cast<std::size_t>(raw_type)];
             if (!stats) {
                 raw::camp_design d{};
-                raw::check(raw::sdk_camp_design(info.type, &d));
+                raw::check(raw::sdk_camp_design(raw_type, &d));
                 stats = d.base_stats;
             }
-            const vec2 pos{info.x, info.y};
+            const vec2 pos{static_cast<std::int32_t>(layout[i + 2]), static_cast<std::int32_t>(layout[i + 3])};
             g.members.push_back({id, pos, type, stats->base_health, stats->base_strength});
             g.strength += stats->base_strength;
             g.has_monolith |= type == cambc::camp_type::monolith;
