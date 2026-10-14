@@ -116,3 +116,38 @@ State at the end of each round (read at the first step of the next round; the la
 The walker reads the omniscient (observer) snapshot after every engine step and diffs consecutive snapshots: damage is hp (plus shield) lost by enemy units during the actor's attack or cast; kills are attributed from the engine's kill counters; captures from group state changes; tributes and recalls from the champion's channel. Vision reads the snapshot once per champion turn from that champion's perspective (`known & 1` on enemy entries), which is exactly the engine's fog of war.
 
 Derived damage agrees with the engine's statistics to within 2% for all but 5 champions in 532 games; those differ by about 100 when both Cassi and Issac take damage in the step that kills them, where the split between the two bodies is a guess. Engine statistics are only available at the end of a replay, so per-step damage comes from the diff.
+
+## Analysis (analyze.py)
+
+Offline reports over the extracted tables: Markdown plus CSVs, no viewer. Python 3.14, standard library only.
+
+```
+py tools/replay/analyze.py                                    # ladder (replays/ladder), default reports
+py tools/replay/analyze.py replays/batch-X --vs replays/ladder --team aphelios   # adds the gap report
+py tools/replay/analyze.py [SOURCES...] [--vs SOURCES...] [--team NAME] [--map NAME] [--since ISO] [--out DIR] [--reports tempo,fights,audits,draft,gap,sensitivity] [--threads N]
+```
+
+- SOURCES and `--vs` are replay dirs or files (or analysis dir names), resolved through `index.json`; run `extract.mjs` on them first. Copies count once.
+- `--team` keeps that team's side of each game (and only its games); `--map` filters games; `--since 2026-10-13T22:00` keeps ladder groups created from then on. Bots change version during the competition and replays carry no version (`group.json` `submissionId`/`version` are null), so use `--since` to look at current bots.
+- Output: `replays/.analysis/reports/<timestamp>/` with `<report>.md`, `<report>-<table>.csv` and `summary.md` (highlights from each report). Every flagged item cites `<game dir> r<round>`.
+- Runtime on 16 processes: about 12 s for the 514 ladder games (4 s extraction, the rest mostly the fight-model bootstrap); `sensitivity` adds about 30 s.
+- Constants (fight radius and gap, sight window, bag and bank thresholds, lead buckets, early window, bootstrap size) are in `analysis/params.py`; `sensitivity` reruns the headline numbers at the lower and upper values listed there.
+
+Statistics:
+
+- Games are not independent (a ladder group is five games of the same two bots, bots are deterministic, teams meet repeatedly). CIs are 95% cluster bootstraps (1000 resamples, fixed seed) over match groups: a ladder group is one cluster, a local batch map pair is one cluster. `c=` is the number of clusters.
+- Winner-vs-loser comparisons are pooled ("winners"/"losers" are the sides that won or lost their game) or paired within a game ("same game"). They partly reflect winning (reverse causality); the audits report also compares rounds 1-150 behaviour within the same gem-lead bucket at round 150.
+- Fights are judged by net swing: gems taken from kills - own bags lost (kills and camp deaths) + 0.25 x kill gold. Predictors use start-of-fight state only, univariately and in a ridge logistic regression on standardized differences with cluster-bootstrap CIs.
+
+| Report | Contents |
+| --- | --- |
+| `tempo` | Game length; opening routes (groups cleared in rounds 1-150, own frame); first clear/capture/tribute; gems per 100 rounds, tributed vs carried over time; win rate by tributed-gem lead at rounds 100/200/300/500; gold earned/spent/banked; shard build order by champion and opening family by team. |
+| `fights` | Engagements (champion damage instances sharing a champion within 3 rounds and 16 tiles, or within 1 round and 8 tiles; clusters over 25 rounds split at quiet rounds) with start state, kills, bags lost, net swing, location, initiator; predictors and the logistic model; death risk per 1000 champion-rounds by gem bucket and recent enemy sight, with ASCII heatmaps per map; time, unseen share, tribute and ward heatmaps; altar usage; bushes. |
+| `audits` | Suspicious decisions ranked by team, with mean opponent rating, opponents' win rate and the rate against top teams only: large-bag deaths (with recall/altar plausibility), camp deaths and lost gems, camp damage ratio, dead time, recall/tribute cancels by cause, capture resets (walked off, contested, died) and stolen groups, idle turns, unspent gold, casts that hit nothing, out-of-fuel turns; plus the early-window, lead-conditioned comparison. With `--vs`, rankings include the comparison teams. |
+| `draft` | Pick and non-mirror win rates (overall and per map), compositions, top teams' usage, per-champion engine statistics per 100 rounds. |
+| `gap` | Only with `--team` and `--vs`: every per-side metric for the focus team against the comparison set and its game winners, per map and pooled, ranked by a robust z score; opponent-dependent metrics are flagged. |
+| `sensitivity` | Opt-in: headline numbers at a lower and higher value of each key constant. |
+
+Conventions: positions and camp groups are in each team's own frame (team B mirrored onto A); group labels are `<types>(x,y)<o|m|e>` (W wolf, E elk, G gem, $ gold, M monolith; own/middle/enemy half).
+
+For ad-hoc scripts, `tools/replay/analysis/data.py` has the loaders: `resolve(sources)` gives analysis dirs, `Game(dir)` exposes `meta`, `map` (`Map`: `own(team, p)`, `own_group(team, g)`, `group_label`, `cell_of`, altars, bushes), lazily loaded `events` and `rounds`, `ch(id)` (per-round arrays), `champ_damage`, `camp_damage`, `deaths` and `seen_recently`. Each report module's `extract(game, params)` returns its per-game features. Run with `sys.path.insert(0, 'tools/replay')` and `from analysis import Game, resolve`.
