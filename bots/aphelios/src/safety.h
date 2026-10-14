@@ -13,6 +13,7 @@
 #pragma once
 #include <cambc.h>
 #include <array>
+#include <cstdint>
 #include <optional>
 #include <vector>
 #include "util.h"
@@ -78,7 +79,6 @@ struct Threat {
 // Ignores items, positioning, overkill and the order within a side.
 struct Trade {
     bool lost = false;          // they win when they strike first
-    bool lost_anyway = false;   // they win even when we strike first
     int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
     int turns_to_kill_them = 0; // ours
     float our_health = 0, their_health = 0;
@@ -112,6 +112,8 @@ public:
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p.
     Trade fight(vec2 p);
+    // Generous for one fight(): a simulation measured 1-10k, building the threats 2-16k.
+    std::uint64_t fight_cost_estimate() const;
     // Us alone against one enemy.
     Trade duel(int enemy);
     // Their turns for the visible enemies to kill us at p if we never act (channelling), each
@@ -137,6 +139,8 @@ private:
     std::vector<Threat> threats_;
     std::optional<std::vector<CampHit>> members_;
     std::optional<bitboard> camp_area_, enemy_area_, contested_area_;
+    // By who fights: bit i of the low half for allies[i], of the high half for enemies[i].
+    std::vector<std::pair<std::uint32_t, Trade>> fights_;
 };
 
 } // namespace aph

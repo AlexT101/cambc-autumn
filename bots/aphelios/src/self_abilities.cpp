@@ -234,7 +234,7 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
     // A goal within a dash is a walk or two away: not worth the cooldown or the search.
     if (!(goals & square(here, dash_steps)).is_empty()) return false;
     const auto dash = travel_dash_ready(world);
-    if (!dash || !fuel_ok(search_cost_estimate(world.map().width + world.map().height))) return false;
+    if (!dash || !fuel_ok(search_cost_estimate(world.map().width + world.map().height) + params::end_reserve)) return false;
     auto walls = pathing.blocked();
     const auto open_goals = goals & ~walls;
     if (open_goals.is_empty()) return false;
@@ -288,7 +288,7 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home) {
     if (!dash) return false;
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return danger(threats, p) * 1000 + std::min<int>(home.at(p), 999); },
-        [&](vec2 p, int) { return danger(threats, p) < here_danger; });
+        [&](vec2, int score) { return score / 1000 < here_danger; });
     return dash_to_first(*dash, pathing, landings);
 }
 

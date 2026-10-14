@@ -238,7 +238,8 @@ public:
     // Start of each play turn. The first call also builds the static map.
     void update();
     void observe();
-    static constexpr std::uint64_t observe_cost_estimate = 3000; // 0.8-1.6k measured
+    // Generous: 0.5-0.75k per champion measured.
+    std::uint64_t observe_cost_estimate() const { return 1000 * (allies.size() + enemies.size()); }
 
     // Merge a teammate's sighting (from comms); ignored if not fresher than ours.
     void note_sighting(int enemy_index, vec2 pos, int round);

@@ -24,10 +24,15 @@ public:
     const Field& to_altar(int altar); // goals: the altar's tribute tiles
     const Field& to_any_altar();
     const Field& to_group(int group); // goals: the group's camp tiles, to stand on and capture
+    // Walking steps from the centre of a group worth farming (gems, no monolith): by symmetry,
+    // from anywhere to it. Null until warmed up; centres_ready() once all are.
+    const Field* from_centre(int group);
+    bool centres_ready() const { return centres_ready_; }
     // Walkable tiles off the camp tiles from which a basic attack reaches and sees the member.
     const bitboard& member_attack_tiles(int group, int member, int range);
     // Over the members believed alive.
     bitboard attack_tiles(int group, int range);
+    std::uint64_t attack_tiles_cost(int group, int range); // estimate; 0 once cached
     // Precompute while more than `fuel_floor` remains; true once everything is cached.
     bool warm_up(int attack_range, std::uint64_t fuel_floor);
 
@@ -56,6 +61,10 @@ public:
     bool step_towards(vec2 target, const bitboard* avoid = nullptr);
     // A live route within `max_detour` of the static distance, else greedy descent of the field.
     bool step_towards(const Field& field, const bitboard* avoid = nullptr, int max_detour = params::max_detour);
+    // Cheap fallbacks without a search, when fuel is short: a step down the field, or one that
+    // gets closer to the target as the crow flies.
+    bool descend(const Field& field, const bitboard* avoid = nullptr);
+    bool step_closer(vec2 target);
     // False, spending nothing, if illegal or blocked by a hidden unit.
     bool try_move(vec2 tile);
 
@@ -69,11 +78,14 @@ private:
     const Field& cached(Slot& slot, const bitboard& goals);
     Slot& altar_slot(int altar);
     Slot& group_slot(int group);
+    std::optional<bitboard>& attack_slot(int group, int member, int range);
+    std::uint64_t member_cost(int group, int member, int range) const;
     const StaticMap& map() const;
 
     const World& world_;
     Slot any_altar_;
-    std::vector<Slot> altar_fields_, group_fields_;
+    std::vector<Slot> altar_fields_, group_fields_, centre_fields_;
+    bool centres_ready_ = false;
     // By attack range, then group, then member.
     std::vector<std::vector<std::vector<std::optional<bitboard>>>> attack_tiles_;
     std::optional<bitboard> blocked_;

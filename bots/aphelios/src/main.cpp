@@ -66,7 +66,7 @@ struct Instance {
         if (world->is_stale()) return;
         // Only comms reads vision again, and it changes only if we moved.
         const bool refresh = cambc::self().position() != world->me().pos
-                             && aph::fuel_ok(aph::World::observe_cost_estimate + end_reserve);
+                             && aph::fuel_ok(world->observe_cost_estimate() + end_reserve);
         run("comms send", [&] { aph::comms::send(*world, refresh); });
         run("debug", [&] { world->debug_output(); });
         if (!warmed_up)
