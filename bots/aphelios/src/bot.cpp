@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include "abilities.h"
 #include "params.h"
 #include "pathing.h"
 #include "world.h"
@@ -144,7 +145,10 @@ void farm(const World& world, Pathing& pathing) {
     const auto& map = world.map();
     const auto& groups = map.groups;
     const int range = world.me().facts().attack_range();
-    if (attack_camp(world) && !world.me().facts().walk_and_attack_independent()) return;
+    if (attack_camp(world) && !world.me().facts().walk_and_attack_independent()) {
+        cast_at_camp(world, -1);
+        return;
+    }
 
     // One holder keeps a capture going, and sharers split the reward: the lowest id stays.
     const auto ally_holding = [&](int g, bool lower_only) {
@@ -198,10 +202,15 @@ void farm(const World& world, Pathing& pathing) {
     auto goals = pathing.attack_tiles(best, range);
     // In range and sight with the attack unspent, so the attack failed here: try another tile.
     if (goals.is_set(here) && me.can_attack()) goals.set(here, false);
-    if (goals.is_set(here)) return; // attacked from here; stay
+    if (goals.is_set(here)) { // attacked from here; stay
+        cast_at_camp(world, best);
+        return;
+    }
     if (!fuel_ok(search_cost_estimate(cap))) return;
-    if (pathing.step_towards(goals, nullptr, cap) || pathing.step_towards(groups[best].adjacent(), nullptr, cap))
+    if (pathing.step_towards(goals, nullptr, cap) || pathing.step_towards(groups[best].adjacent(), nullptr, cap)) {
         attack_camp(world);
+        cast_at_camp(world, best); // only casts that allow walking remain
+    }
 }
 
 void place_ward(const World& world, Pathing& pathing) {
@@ -295,6 +304,7 @@ void decide(const World& world, Pathing& pathing) {
         return;
     }
     if (want_home(world)) {
+        cast_at_enemies(world, true);
         // A tribute survives damage; a recall does not.
         if (can_tribute_here(world)) bank_gems(world, pathing);
         else pathing.step_towards(pathing.to_ally_spawn());
@@ -302,6 +312,7 @@ void decide(const World& world, Pathing& pathing) {
     }
 
     const bool attacked = attack_enemy(world);
+    cast_at_enemies(world, me.gem_count() > 0);
     place_ward(world, pathing);
     if (me.gem_count() > 0) {
         bank_gems(world, pathing); // a tribute can still start after a ranged attack
