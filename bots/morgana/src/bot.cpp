@@ -510,12 +510,13 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     // Unaffordable groups, then allies' claims, only when nothing else is left: idling is worse.
     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable, shared = -1, shared_steps = unreachable;
     float best_value = 0, risky_value = 0, shared_value = 0;
-    // An ally in sight clearing its claimed damaging group gets help only if finishing it alone
-    // would take it below the recall line: one champion per camp otherwise.
+    // An ally in sight clearing its claimed damaging group gets help only in the opening or if
+    // finishing it alone would take it below the recall line: one champion per camp otherwise.
     const auto struggling = [&](int g) {
         for (const auto& a : world.allies) {
             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g || !groups[g].threat().is_set(a.pos))
                 continue;
+            if (world.round <= params::opening_rounds) return true;
             float rounds = 0;
             const float damage = min_camp_damage(groups[g], world.camps[g], std::max(1.0f, output(a)), &rounds);
             if (a.health - damage < params::recall_health_fraction * a.max_health) return true;
