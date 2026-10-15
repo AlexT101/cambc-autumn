@@ -210,8 +210,11 @@ int gems_short(const World& world) {
 // Tributing the bag wins: more gems are worth nothing, only the tribute is.
 bool winning_bag(const World& world) { return gems_short(world) <= 0; }
 
-// A tribute started or kept now is the bag's last chance to score: take it at any risk.
-bool last_chance(const World& world, int channel_turns) { return rounds_left(world) <= channel_turns + endgame_slack; }
+// A tribute started or kept now is the bag's last chance to score, or wins the game while fleeing
+// gives the enemy time to win first: take it at any risk.
+bool any_risk(const World& world, int channel_turns) {
+    return winning_bag(world) || rounds_left(world) <= channel_turns + endgame_slack;
+}
 
 // The bag needs the rest of the game to reach an altar and score.
 bool endgame(const World& world, Pathing& pathing) {
@@ -230,7 +233,7 @@ bool submit_here(const World& world, Safety& safety, const Memory& memory) {
     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
         if (world.altars[a].enemy_lock || dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
         const int turns = tribute_turns(me.gem_count());
-        if (here != world.me().pos && !last_chance(world, turns) && !tribute_safe(safety, memory, turns)) return false;
+        if (here != world.me().pos && !any_risk(world, turns) && !tribute_safe(safety, memory, turns)) return false;
         place_lock(world); // first: it cancels every tribute at its altar
         try {
             me.submit_gems(altars[a].pos);
@@ -819,7 +822,7 @@ bool join_rally(const World& world, Pathing& pathing) {
 bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory) {
     if (!can_tribute_here(world)) return false;
     const int turns = tribute_turns(cambc::self().gem_count());
-    return last_chance(world, turns) || tribute_safe(safety, memory, turns);
+    return any_risk(world, turns) || tribute_safe(safety, memory, turns);
 }
 
 // Only a small bag, out of every credible enemy's reach, and never the gems that would win.
@@ -936,7 +939,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (me.is_submitting_gems()) {
         decision = 'T';
         const int turns = me.remaining_channel_time();
-        if (last_chance(world, turns) || tribute_safe(safety, memory, turns)) return;
+        if (any_risk(world, turns) || tribute_safe(safety, memory, turns)) return;
         // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
         if (memory.damage <= 0 && !want_home(world, safety) && !attack_target(world)
             && (winning_bag(world) || !prey(world, safety)))
