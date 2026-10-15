@@ -136,22 +136,36 @@ bitboard wake_risk(const World& world, vec2 here, int reach) {
     return risk;
 }
 
-Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& targets, const bitboard& reach,
+// Centres within `range` of `here`, off `skip`. Each target adds to the 9 centres around it, in
+// target order, rather than every centre scanning every target.
+Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& targets, vec2 here, int range,
                  const bitboard& skip) {
+    constexpr int max_range = 5; // ability ranges are 4
     Cast best;
     if (targets.empty()) return best;
+    range = std::min(range, max_range);
+    const int side = 2 * range + 1;
+    std::array<float, (2 * max_range + 1) * (2 * max_range + 1)> value{};
     bitboard centres;
-    for (const auto& t : targets) centres.draw_chebyshev(t.pos, 1);
-    centres &= reach;
-    static bitboard skipped{cambc::uninitialized};
-    skipped.clear();
-    skipped |= centres;
-    skipped &= skip;
-    centres ^= skipped;
+    for (const auto& t : targets) {
+        centres.draw_chebyshev(t.pos, 1);
+        for (int dy = -1; dy <= 1; ++dy)
+            for (int dx = -1; dx <= 1; ++dx) {
+                const int x = t.pos.x + dx - here.x + range, y = t.pos.y + dy - here.y + range;
+                if (x >= 0 && x < side && y >= 0 && y < side) value[y * side + x] += t.weight * t.worth;
+            }
+    }
+    static bitboard box{cambc::uninitialized};
+    box.clear();
+    box.draw_chebyshev(here, static_cast<float>(range));
+    centres &= box;
+    box.clear();
+    box |= centres;
+    box &= skip;
+    centres ^= box;
+    // In board order, which breaks ties.
     for (auto c : centres.positions()) {
-        float v = 0;
-        for (const auto& t : targets)
-            if (dist(c, t.pos) <= 1) v += t.weight * t.worth;
+        const float v = value[(c.y - here.y + range) * side + (c.x - here.x + range)];
         if (v > best.value && v >= min_weight_value) best.slot = slot, best.value = v, best.tile = c;
     }
     return best;
@@ -216,7 +230,7 @@ Cast enemy_cast(const World& world, bool keep_walk) {
             }
             if (targets.empty()) continue;
             if (!risk) risk = wake_risk(world, here, a.reach());
-            best.offer(best_ground(s, threshold, targets, square(here, a.range()), *risk | ren));
+            best.offer(best_ground(s, threshold, targets, here, a.range(), *risk | ren));
         }
     }
     return best;
@@ -282,7 +296,7 @@ Cast camp_cast(const World& world, int group) {
             bitboard skip;
             for (int other : groups_near(world, here, a.reach()))
                 if (other != group && world.camps[other].state == CampState::alive) draw_alive_members(world, other, skip);
-            best.offer(best_ground(s, min_camp_value, targets, square(here, a.range()), skip));
+            best.offer(best_ground(s, min_camp_value, targets, here, a.range(), skip));
         }
     }
     return best;

@@ -39,19 +39,21 @@ struct Fighter {
     int link = -1; // Cassi or Issac: the other body, which dies with this one
     std::array<CastEffect, 2> cast{};
     std::array<int, 2> preference{0, 1}; // slots by value, ties to slot 0
+    bool casts = false; // a slot worth casting, once ready
 };
 
 // Fixed storage: the simulation copies sides, and WASM heap work is costly.
 struct Side {
     std::array<Fighter, max_fighters> fighters;
     int count = 0;
+    int alive = 0; // members with health above 0: none fall back above it
     int turn = 0; // own turns taken
     int self = -1; // our own fighter
     int stunned = 0; // members that lose their next turn
     float camp = 0;  // camp damage taken with each of the other side's turns
 
     void add(const Fighter& f) {
-        if (count < max_fighters) fighters[count++] = f;
+        if (count < max_fighters) fighters[count++] = f, alive += f.health > 0;
     }
     void join(const ChampionBelief& c, int turn_round);
     float health() const {
@@ -88,7 +90,12 @@ struct Side {
             const float taken = std::min(damage, f.health);
             f.health -= taken;
             damage -= taken;
-            if (f.health <= 0 && f.link >= 0) fighters[f.link].health = 0;
+            if (f.health > 0) continue;
+            --alive;
+            if (f.link >= 0) {
+                alive -= fighters[f.link].health > 0;
+                fighters[f.link].health = 0;
+            }
         }
     }
 };
@@ -136,12 +143,14 @@ void prepare(Side& side) {
             c.duration = a.duration;
         }
         f.preference = f.cast[1].value > f.cast[0].value ? std::array<int, 2>{1, 0} : std::array<int, 2>{0, 1};
+        f.casts = f.cast[0].value > 0 || f.cast[1].value > 0;
     }
 }
 
 // A fighter's basic attack and its most valuable ready cast (one a turn); returns hits landed.
 int attack(Fighter& f, int turn, Side& self, Side& other, float& damage) {
     damage += f.strength;
+    if (!f.casts) return 1;
     for (const int s : f.preference) {
         const auto& c = f.cast[s];
         if (f.ready_at[s] > turn || c.value <= 0) continue;
@@ -188,9 +197,9 @@ void act(Side& self, Side& other) {
     if (back > 0) self.hurt(static_cast<float>(hits) * back);
 }
 
-// Turns each side needs to empty the other's pool, within `horizon` turns each.
-// `self_falls`: whether our own fighter dies before their side does.
-std::pair<int, int> simulate(Side us, Side them, bool they_first, bool* self_falls = nullptr, int horizon = 24) {
+// Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
+// out on the sides given. `self_falls`: whether our own fighter dies before their side does.
+std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = 24) {
     prepare(us);
     prepare(them);
     int ours = 0, theirs = 0;
@@ -201,18 +210,19 @@ std::pair<int, int> simulate(Side us, Side them, bool they_first, bool* self_fal
             if (us.camp > 0) us.hurt(us.camp);
             ++theirs;
             if (self_falls && us.self >= 0 && us.fighters[us.self].health <= 0) *self_falls = true;
-            if (us.weakest() < 0) return {0, theirs};
+            if (us.alive == 0) return {0, theirs};
         } else {
             act(us, them);
             ++ours;
-            if (them.count > 0 && them.weakest() < 0) return {ours, 0};
+            if (them.count > 0 && them.alive == 0) return {ours, 0};
         }
     }
     return {0, 0};
 }
 
 // Only the order where they strike first: `lost` is all callers need.
-Trade trade(const Side& us, const Side& them) {
+// Plays the fight out on the sides given, which callers discard: copying them is costly.
+Trade trade(Side& us, Side& them) {
     Trade t;
     t.allies = us.count;
     t.enemies = them.count;
