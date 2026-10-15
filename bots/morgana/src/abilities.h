@@ -7,7 +7,8 @@ class World;
 struct ChampionBelief;
 
 // The best enemy-hitting cast this turn, if worth it. With `keep_walk`, an excludes-walking cast
-// must be worth the walk (a kill or a cancelled tribute). `hold`: a tributer hit only to kill it.
+// must be worth the walk (a kill or a cancelled tribute) or stun every visible enemy that could
+// reach us next turn. `hold`: a tributer hit only to kill it.
 bool cast_at_enemies(const World& world, bool keep_walk = false, const ChampionBelief* hold = nullptr);
 
 // A damage or stun cast on the group being farmed (-1: the group of a camp in attack range),

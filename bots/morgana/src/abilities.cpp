@@ -3,6 +3,7 @@
 #include <array>
 #include <optional>
 #include <vector>
+#include "safety.h"
 #include "world.h"
 
 namespace aph {
@@ -73,6 +74,15 @@ float damage_to(int slot, const cambc::champion& target, float raw) {
     }
 }
 
+// Many bots start a recall at every turn end and cancel it next turn unless wanted: only one kept
+// through a turn is likely to complete.
+bool kept_recall(const ChampionBelief& e) {
+    if (e.channel != Channel::recall || !e.visible) return false;
+    const auto c = live(e);
+    const int full = e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time);
+    return c.is_recalling() && c.remaining_channel_time() < full - 1;
+}
+
 // A kill takes the bag, both bags for Cassi and Issac, who die together. Other damage to an
 // enemy on its spawn heals at its turn end.
 float hit_worth(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
@@ -84,7 +94,7 @@ float hit_worth(const World& world, const ChampionBelief& e, float damage, float
         return health + kill_bonus + gem_value * static_cast<float>(gems);
     }
     if (on_spawn || damage <= 0) return 0;
-    return damage + (e.channel == Channel::recall ? recall_cancel_value : 0);
+    return damage + (kept_recall(e) ? recall_cancel_value : 0);
 }
 
 // `damaging`: the hit's worth already counts a cancelled recall.
@@ -92,7 +102,7 @@ float stun_worth(const ChampionBelief& e, bool damaging) {
     if (e.facts().passive == Passive::stun_immune) return 0;
     float v = stun_value;
     if (e.channel == Channel::tribute) v += tribute_stun_bonus + gem_value * static_cast<float>(e.gems);
-    if (e.channel == Channel::recall && !damaging) v += recall_cancel_value;
+    if (!damaging && kept_recall(e)) v += recall_cancel_value;
     return v;
 }
 
@@ -179,6 +189,24 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
     const auto& f = world.me().facts();
     const auto& enemy_spawn = world.map().enemy_spawn;
     keep_walk = keep_walk && me.can_move();
+    // A stun takes its target's walk as the cast takes ours: with every visible enemy that could
+    // reach us next turn stunned, keeping the walk gains nothing. `free_stun`: centres that do so.
+    std::vector<const ChampionBelief*> reaching;
+    bool unstoppable = false;
+    if (keep_walk)
+        for (const auto& e : world.enemies) {
+            if (!e.alive || !e.visible || !strike(e, next_turn_round(world, e)).hits(dist(here, e.pos))) continue;
+            const auto c = live(e);
+            if (!c.is_visible() || c.buffs().has_stun()) continue;
+            unstoppable |= e.facts().passive == Passive::stun_immune;
+            reaching.push_back(&e);
+        }
+    const bool walk_matters = reaching.empty() || unstoppable;
+    bitboard free_stun;
+    if (!walk_matters) {
+        free_stun.fill();
+        for (const auto* e : reaching) free_stun &= square(e->pos, 1);
+    }
     std::optional<bitboard> risk;
     for (int s = 0; s < 2; ++s) {
         if (!castable(world, s)) continue;
@@ -196,7 +224,8 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
                 if (spared(e, damage, c.health())) continue;
                 float v = hit_worth(world, e, damage, c.health(), enemy_spawn.is_set(e.pos));
                 if (a.stuns && !c.buffs().has_stun()) v += stun_worth(e, raw > 0);
-                if (v >= threshold && v > best.value) best = Cast{s, v, c, std::nullopt, {}};
+                const bool free = a.stuns && !walk_matters && reaching.size() == 1 && reaching[0] == &e;
+                if (v >= (free ? min_value : threshold) && v > best.value) best = Cast{s, v, c, std::nullopt, {}};
             }
         } else if (a.target == Targeting::ground) {
             std::vector<Target> targets;
@@ -241,6 +270,8 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
             if (targets.empty()) continue;
             if (!risk) risk = wake_risk(world, here, a.reach());
             best.offer(best_ground(s, threshold, targets, here, a.range(), *risk | off));
+            if (a.stuns && threshold > min_value && !walk_matters)
+                best.offer(best_ground(s, min_value, targets, here, a.range(), *risk | off | ~free_stun));
         }
     }
     return best;
