@@ -70,11 +70,14 @@ struct Instance {
                              && aph::fuel_ok(world->observe_cost_estimate() + end_reserve);
         run("comms send", [&] { aph::comms::send(*world, refresh); });
         run("debug", [&] { world->debug_output(); });
+        // Field costs are estimated from the deepest field so far; on the first turn none is
+        // measured yet, so an estimate can miss by a whole field.
         if (!warmed_up)
             run("warm up", [&] {
                 aph::FuelMeter meter{"warm_up"};
-                map_warmed_up = map_warmed_up || world->map().warm_up(end_reserve);
-                warmed_up = map_warmed_up && pathing->warm_up(world->me().facts().attack_range(), end_reserve);
+                const auto reserve = end_reserve + (world->round == world->first_round ? aph::field_cost_estimate() : 0);
+                map_warmed_up = map_warmed_up || world->map().warm_up(reserve);
+                warmed_up = map_warmed_up && pathing->warm_up(world->me().facts().attack_range(), reserve);
             });
         aph::print_fuel_log();
     }

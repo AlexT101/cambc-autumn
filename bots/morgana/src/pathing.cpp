@@ -118,6 +118,13 @@ bool Pathing::prepare_attack_tiles(int group, int range, std::uint64_t fuel_floo
     return true;
 }
 
+bool Pathing::prepare_member_tiles(int group, int range, std::uint32_t members, std::uint64_t fuel_floor) {
+    const int n = static_cast<int>(map().groups[group].members.size());
+    for (int i = 0; i < n && i < 32; ++i)
+        if ((members >> i & 1) && !prepare_member(group, i, range, fuel_floor)) return false;
+    return true;
+}
+
 bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
     const auto cost = field_cost_estimate();
     const auto afford = [&](const Slot& slot) { return slot || fuel_ok(fuel_floor + cost); };

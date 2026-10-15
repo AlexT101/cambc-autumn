@@ -134,9 +134,14 @@ void send(World& world, bool refresh) {
     }
 
     // A claim not yet read at our previous turn may not have reached every teammate: ours waits.
+    // Turn order changes every round, so a teammate can miss a claim overwritten before its next
+    // turn: each in turn re-posts its standing claim into a free slot.
     const int me = world.me().index;
     const bool claim_fresh = (state.fresh & claim_bits) && claim_body.get(bits) != me;
-    if (!claim_fresh && state.mine != state.posted) {
+    const int team = static_cast<int>(world.allies.size());
+    const bool reminder = round % team == me
+                          && (claim_body.get(bits) != me || claim_group.get(bits) != state.mine + 1);
+    if (!claim_fresh && (state.mine != state.posted || reminder)) {
         claim_group.set(bits, state.mine + 1);
         claim_body.set(bits, me);
         state.posted = state.mine;

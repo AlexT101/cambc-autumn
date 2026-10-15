@@ -277,7 +277,7 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
     return best;
 }
 
-Cast camp_cast(const World& world, int group) {
+Cast camp_cast(const World& world, int group, bool attackers_only) {
     auto& me = cambc::self();
     if (!me.can_cast() || !fuel_ok(fuel_needed)) return {};
     const auto& f = world.me().facts();
@@ -309,7 +309,9 @@ Cast camp_cast(const World& world, int group) {
     };
     std::vector<Member> members;
     for (int i = 0; i < static_cast<int>(g.members.size()); ++i) {
-        if (world.camps[group].health[i] <= 0 || !cambc::vision::has_camp(g.members[i].pos)) continue;
+        if (world.camps[group].health[i] <= 0 || (attackers_only && g.members[i].strength <= 0)
+            || !cambc::vision::has_camp(g.members[i].pos))
+            continue;
         auto c = g.camp(i);
         if (!c.is_visible()) continue;
         const float health = c.health();
@@ -353,9 +355,9 @@ bool cast_at_enemies(const World& world, bool keep_walk, const ChampionBelief* h
     }
 }
 
-bool cast_at_camp(const World& world, int group) {
+bool cast_at_camp(const World& world, int group, bool attackers_only) {
     try {
-        return camp_cast(world, group).execute();
+        return camp_cast(world, group, attackers_only).execute();
     } catch (const cambc::error&) {
         return false;
     }

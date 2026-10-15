@@ -584,7 +584,10 @@ void World::init_beliefs() {
         for (auto& b : enemies) {
             b.at = now();
             b.turns_since_fixed = turns_between(b, b.fixed, b.at);
-            if (b.turns_since_fixed > 0) b.possible = grown(b.facts().has_dash());
+            if (b.turns_since_fixed > 0) {
+                b.possible = grown(b.facts().has_dash());
+                if (b.facts().has_dash()) b.undashed = grown(false);
+            }
         }
     }
     camps.assign(s.groups.size(), CampBelief{});
@@ -690,13 +693,17 @@ void World::update_champion(ChampionBelief& b, bool full) {
         // A channel completes at its owner's turn start.
         const bool ended = round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < slot(me(), round));
         if (b.channel != Channel::none && ended) {
+            if (b.channel == Channel::tribute) b.gems = 0;
             if (b.channel == Channel::recall) {
                 b.pos = spawn;
                 b.pos_round = b.channel_end_round;
                 b.pos_source = Source::inferred;
                 b.health = b.max_health;
                 // Damage or a stun could have cancelled it, so add the spawn, not replace.
-                if (b.side == team::enemy) b.possible |= s.enemy_spawn;
+                if (b.side == team::enemy) {
+                    b.possible |= s.enemy_spawn;
+                    also_undashed(b, s.enemy_spawn);
+                }
             }
             b.channel = Channel::none;
         }
@@ -746,8 +753,10 @@ void World::update_champion(ChampionBelief& b, bool full) {
         b.channel_end_round = fire_round(round, left.value_or(0), b.acted);
     }
     // The crystal's destination: a free tile within 3, terrain in between ignored.
-    if (b.side == team::enemy && b.channel == Channel::teleport)
+    if (b.side == team::enemy && b.channel == Channel::teleport) {
         b.possible |= square(b.pos, teleport_crystal_range) & ~s.blocked_for_them;
+        also_undashed(b, b.possible);
+    }
     for (int slot = 0; slot < 2; ++slot) {
         const int cd = engine::cooldown(h, static_cast<std::uint32_t>(slot));
         const int ready = fire_round(round, cd, b.acted);
@@ -809,6 +818,7 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float healt
     // The poster's turn in that round is unknown, and so is whether it saw a recall about to land.
     fix(b, map().enemy_spawn, {seen_round, -1});
     b.possible.set(pos);
+    if (b.facts().has_dash()) b.undashed.set(pos);
     advance(b);
     prune(b);
 }
@@ -831,7 +841,15 @@ void World::read_vision() {
     unseen_ ^= visible;
 }
 
+void World::also_undashed(ChampionBelief& b, const bitboard& tiles) {
+    if (b.facts().has_dash()) b.undashed |= tiles;
+}
+
 void World::mark_fixed(ChampionBelief& b, Moment when) {
+    if (b.facts().has_dash()) {
+        b.undashed.clear();
+        b.undashed |= b.possible;
+    }
     b.tracked = true;
     b.fixed = b.at = when;
     b.turns_since_fixed = 0;
@@ -900,28 +918,58 @@ void World::advance(ChampionBelief& b) {
     b.turns_since_fixed += turns;
     // A recall started on any turn after the fix lands at the start of the turn recall turn ends
     // later, which is a full turn: from turn recall + 1 on, add the spawn before growing.
-    if (b.turns_since_fixed > (b.fast_recall ? home_recall_time : cambc::constants::recall_time)) b.possible |= s.enemy_spawn;
+    if (b.turns_since_fixed > (b.fast_recall ? home_recall_time : cambc::constants::recall_time)) {
+        b.possible |= s.enemy_spawn;
+        also_undashed(b, s.enemy_spawn);
+    }
     FuelMeter meter{"track"};
-    // A dash (2 steps, with a walk) crosses holes, altars and champions, so only walls bound it
-    // and landings are filtered after.
+    const bool dasher = b.facts().has_dash();
+    if (!dasher) {
+        walk(b.possible, s, turns);
+        return;
+    }
+    // A dash readies once per cooldown: from the undashed tiles it adds 2 steps once in these
+    // turns; tiles already reached with a dash grow only by walking until the next is ready.
     bool dash = false;
     for (int slot = 0; slot < 2; ++slot)
         dash |= b.facts().abilities[slot].kind == AbilityKind::dash && (b.ability_ready(slot, round) || b.cooldowns_uncertain());
-    // `possible` never holds a tile closed to them, so a walk dilates it.
-    const int steps = turns * (dash ? 3 : 1);
+    static bitboard dashed{cambc::uninitialized};
+    if (dash) {
+        widen_by_dash(b.undashed, dashed, s, turns);
+        if (b.turns_since_fixed > ability_cooldown) widen_by_dash(b.possible, b.possible, s, turns);
+        else walk(b.possible, s, turns);
+        b.possible |= dashed;
+    } else {
+        walk(b.possible, s, turns);
+    }
+    walk(b.undashed, s, turns);
+}
+
+// `possible` never holds a tile closed to them, so a walk dilates it.
+void World::walk(bitboard& tiles, const StaticMap& s, int steps) {
     if (steps <= 2) {
-        dilate(b.possible, s.open_for_them, steps);
+        dilate(tiles, s.open_for_them, steps);
         return;
     }
     static cambc::distance_field field;
     static bitboard grown{cambc::uninitialized};
-    field.compute(dash ? s.walls : s.blocked_for_them, b.possible, grown, static_cast<std::uint16_t>(steps));
-    if (dash) grown &= s.open_for_them;
-    b.possible.swap(grown);
+    field.compute(s.blocked_for_them, tiles, grown, static_cast<std::uint16_t>(steps));
+    tiles.swap(grown);
+}
+
+// `steps` turns with one dash (2 king steps, with that turn's walk): it crosses holes, altars and
+// champions, so only walls bound it and landings are filtered after.
+void World::widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps) {
+    static cambc::distance_field field;
+    static bitboard grown{cambc::uninitialized};
+    field.compute(s.walls, from, grown, static_cast<std::uint16_t>(steps + 2));
+    grown &= s.open_for_them;
+    out.swap(grown);
 }
 
 void World::prune(ChampionBelief& b) const {
     b.possible &= unseen_;
+    if (b.facts().has_dash()) b.undashed &= unseen_;
     // Emptied by something unmodelled (a teleport crystal, say): it could be anywhere.
     if (b.tracked && b.possible.is_empty()) b.tracked = false;
 }
@@ -940,11 +988,10 @@ void World::update_camps() {
         champs_read = true;
         cambc::vision::champion_tiles_into(team::ally, ally_champs_b);
         cambc::vision::champion_tiles_into(team::enemy, enemy_champs_b);
-        champs_b = ally_champs_b;
+        champs_b.clear();
+        champs_b |= ally_champs_b;
         champs_b |= enemy_champs_b;
     };
-    const auto ally_champs = [&]() -> const bitboard& { return read_champs(), ally_champs_b; };
-    const auto enemy_champs = [&]() -> const bitboard& { return read_champs(), enemy_champs_b; };
     const auto champs = [&]() -> const bitboard& { return read_champs(), champs_b; };
     // Where a champion could stand unseen: ~(visible | impassable).
     const auto hidden = [&]() -> const bitboard& {
@@ -1035,12 +1082,33 @@ void World::update_camps() {
 
             if (c.state == CampState::cleared) {
                 if ((G.tiles() & hidden()).is_empty()) {
-                    const bool a = !(G.tiles() & ally_champs()).is_empty();
-                    const bool e = !(G.tiles() & enemy_champs()).is_empty();
+                    std::uint32_t occupants = 0;
+                    if (!(G.tiles() & champs()).is_empty()) {
+                        for (const auto& b : allies)
+                            if (b.alive && (b.visible || b.is_self) && G.tiles().is_set(b.pos)) occupants |= 1u << b.index;
+                        for (const auto& b : enemies)
+                            if (b.alive && b.visible && G.tiles().is_set(b.pos)) occupants |= 1u << (16 + b.index);
+                    }
+                    const bool a = (occupants & 0xFFFF) != 0, e = (occupants >> 16) != 0;
                     const std::optional<team> holder = a && !e ? std::optional{team::ally}
                                                        : e && !a ? std::optional{team::enemy}
                                                                  : std::nullopt;
-                    if (holder != c.holder) {
+                    // Progress resets the moment the tiles empty or are contested, mid-turn included.
+                    // A hold seen last round by other occupants than now may have lapsed between
+                    // them; one that follows a contest or the other side's hold began once that
+                    // ended, which can be this round before our turn. Late costs a round, early
+                    // the capture.
+                    const std::uint32_t before = c.occupants;
+                    c.occupants = occupants;
+                    const std::uint32_t side_mask = holder == team::ally ? 0xFFFFu : 0xFFFF0000u;
+                    const bool watched = previous_round == round - 1 && previous == CampState::cleared;
+                    const bool handed_over = holder && holder == c.holder && watched && !(before & occupants & side_mask);
+                    if (handed_over) {
+                        c.held_since = std::max(c.held_since, hold_start(G, *holder, -1, false));
+                    } else if (holder && holder != c.holder && watched && (before & ~side_mask)) {
+                        c.holder = holder;
+                        c.held_since = round;
+                    } else if (holder != c.holder) {
                         if (debug_log)
                             std::cout << "world r" << round << " g" << g << str(G.centre) << " held by "
                                       << (holder ? cambc::to_string(*holder) : std::string("nobody")) << '\n';
@@ -1057,6 +1125,7 @@ void World::update_camps() {
             } else {
                 c.holder.reset();
                 c.held_since = -1;
+                c.occupants = 0;
             }
         });
     }

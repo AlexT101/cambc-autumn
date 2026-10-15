@@ -197,6 +197,9 @@ struct ChampionBelief {
     // Enemies only: every tile it could be on, from what we have seen and how champions move.
     // Teleport crystals are not modelled. Empty while dead; anywhere while !tracked.
     bitboard possible;
+    // Dashers only: the part of `possible` reached by walking alone since the fix. A dash moves
+    // 2 more only once per cooldown, so the rest of `possible` is this widened by one dash.
+    bitboard undashed;
     bool tracked = false;
     Moment fixed, at; // when `possible` was last known exactly, and when it describes
     int turns_since_fixed = 0;
@@ -234,6 +237,8 @@ struct CampBelief {
     // (payout at held_since + capture_time + 1).
     std::optional<team> holder;
     int held_since = -1;
+    // Who stood on its tiles when last fully seen: bit i for allies[i], 16 + i for enemies[i].
+    std::uint32_t occupants = 0;
     int told_respawn = -1; // the respawn round the team was told through comms
     int cleared_by_us = -1; // the round our own turn killed its last member while we stood on it
 };
@@ -319,6 +324,10 @@ private:
     static void fix_nowhere(ChampionBelief& b, Moment when);
     static void mark_fixed(ChampionBelief& b, Moment when);
     void advance(ChampionBelief& b);
+    static void walk(bitboard& tiles, const StaticMap& s, int steps);
+    static void widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps);
+    // Every change to `possible` but growth goes to `undashed` too.
+    static void also_undashed(ChampionBelief& b, const bitboard& tiles);
     void update_camps();
     int hold_start(const CampGroup& G, team holder, int earliest, bool cleared_by_us) const;
     void update_altars();

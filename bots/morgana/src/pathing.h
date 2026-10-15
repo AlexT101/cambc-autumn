@@ -37,6 +37,8 @@ public:
     bitboard attack_tiles(int group, int range);
     // Compute attack_tiles' missing parts while more than `fuel_floor` remains; true once cached.
     bool prepare_attack_tiles(int group, int range, std::uint64_t fuel_floor);
+    // The same for the members in `members` (bit i: member i), alive or not.
+    bool prepare_member_tiles(int group, int range, std::uint32_t members, std::uint64_t fuel_floor);
     // Precompute while more than `fuel_floor` remains; true once everything is cached.
     bool warm_up(int attack_range, std::uint64_t fuel_floor);
 
