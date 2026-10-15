@@ -657,7 +657,7 @@ bool ward_bushes(const World& world, Memory& memory) {
     candidates &= ~(map.enemy_spawn | cambc::vision::ward_tiles(team::ally));
     const auto near = square(here, params::bush_watch_radius);
     const auto deep = ~square(here, 1);
-    std::optional<vec2> best;
+    std::optional<bitboard> best;
     int best_tiles = 0;
     while (!candidates.is_empty()) {
         const auto& c = map.bush_cluster(candidates.positions().front());
@@ -665,11 +665,16 @@ bool ward_bushes(const World& world, Memory& memory) {
         if (tiles > best_tiles) {
             const auto mine = c.tiles & candidates;
             const auto far = mine & deep;
-            best = (far.is_empty() ? mine : far).positions().front(), best_tiles = tiles;
+            best = far.is_empty() ? mine : far, best_tiles = tiles;
         }
         candidates &= ~c.tiles;
     }
-    return best && try_ward(*best, memory);
+    if (!best) return false;
+    // A teammate's ward unseen in the bush blocks its tile, and allies pick the same tile first.
+    const auto tiles = best->positions();
+    for (std::size_t i = 0; i < std::min<std::size_t>(tiles.size(), 3); ++i)
+        if (try_ward(tiles[i], memory)) return true;
+    return false;
 }
 
 void place_ward(const World& world, Pathing& pathing, Memory& memory) {
