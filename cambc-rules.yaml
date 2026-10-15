@@ -114,7 +114,8 @@ vision:
   visible_champions: "A visible champion, enemy or ally, exposes its type, position, health, Strength, Focus, state, gems, items, buffs, restrictions, ability cooldowns, channel time and priority. Gold is readable only for yourself."
 
 wards:
-  placement: "Place on any tile within 2, unseen tiles included. Walls, holes, altars, enemy spawn and tiles with an allied ward are not allowed."
+  placement: "Place on any tile within 2, unseen tiles included. Walls, holes, altars, enemy spawn and tiles with a visible allied ward are errors; an unseen allied ward is a hidden blocker (turn.hidden_blocker)."
+  enemy_wards: "An enemy ward, seen or unseen, does not block: both wards share the tile."
   rate: "Each champion has one ward, placeable once per round; a new ward replaces the old one."
   vision: "A 13x13 square (radius 6), shadowcast from the ward's tile."
   lifetime: "Wards never expire, take no damage and outlive their owner's death."

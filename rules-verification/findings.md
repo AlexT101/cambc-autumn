@@ -157,6 +157,15 @@ Method: `makemap.mjs` builds a 30x30 rotational map through the engine's MapBuil
 - **SDK search.** At every station, both teams: `d(1,1)=1 d(2,2)=2 d(2,0)=2 d(2,1)=2`, `reach1_has(1,1)=1`, `next_from(1,1): (-1,-1)`, also with walls and camps only. `distance_field`, `reachable_tiles` and `next_moves_from` corner-cut exactly as the engine does.
 - **Vision.** From S at I and J, S+(k,k) is seen for every k up to the vision edge, as are (1,2), (2,1), (2,3), (3,2); behind the wall line 32 of 118 open tiles are seen, behind J 20 of 55. `walls.shadow_cast(S, 8)` equals `visible_tiles()` (xor 0). Conclusion: the diagonal gap does not block sight.
 
+## Ward on a ward's tile (`ward-hidden`, run against itself; corners, `--rounds 80 --fuel 50000000`)
+
+Method: each team's champions ward tiles of the central bush column (x=35, unseen from outside) and an open tile, then teammates or enemies standing outside the bush, within 2, place onto those tiles. Each attempt logs the result, `ward_cooldown`, `ward_positions`, the target's visibility and the visible wards. Header of `probes/ward-hidden/src/main.cpp` has the schedule.
+
+- **Visible allied ward.** `PROBE 2 ryth A_visible_ally place_ward(15,33)=throw:invalid_action_place_ward_ally_ward_present`, cd 0, no ward.
+- **Unseen allied ward (bush).** `PROBE 40 ryth B_unseen_ally#1 before ... vis(t)=0 has_ward(t)=0 ... place_ward(35,24)=false after cd=0 mine=[] vis(t)=1 ally=1 wards=[(35,24)a]`; the second attempt that round throws `ally_ward_present`; round 41 starts with `vis(t)=0` and returns `false` again (also round 42). Conclusion: a hidden blocker as for unseen units: returns false, spends nothing (cooldown 0, no ward placed, the charge stays usable), reveals the tile for the rest of the round; repeatable every round.
+- **Unseen enemy ward (bush).** `PROBE 45 right ren C_unseen_enemy#1 ... place_ward(35,45)=true after cd=1 mine=[(35,45)] ... wards=[(35,45)e(35,45)a]`; the enemy owner still has its ward there (`PROBE 46 left ren C_owner_check mine=[(35,45)] ... wards=[(35,45)a(35,45)e]`). Conclusion: allowed; both wards coexist on the tile.
+- **Visible enemy ward.** `PROBE 60 right ryth D_visible_enemy place_ward(35,20)=true after cd=1 ... wards=[(35,20)e(35,20)a]`. Allowed, both coexist (matches the earlier `probe-vision` result).
+
 ## Still untested (YAML follows the docs or omits)
 
 Walls between a camp and its target (no shipped map allows it); diagonal Varg splash; Durability alone and Monster on spells; gem remainder in uneven splits; gems gained mid-tribute; Treasure on kill gold; Tavi selling; whether shield-absorbed damage cancels recall; any inventory cap above 18 items; whether wards block walking.

@@ -65,6 +65,7 @@ All champion stats, abilities, passives, item costs, camp HP/gold/gems and game 
 - **Vision and wards:**
   - Champion vision is a 17×17 square and ward vision 13×13, not circles.
   - Wards can be placed without seeing the tile, never expire, and survive the owner's death.
+  - A ward placed on an unseen allied ward's tile fails quietly like a hidden unit (returns false, keeps the charge, reveals the tile for the round); a visible one throws. Enemy wards never block: both share the tile.
   - Units out of your vision, allies included, reveal only whether they are alive.
   - Bumping into a hidden unit reveals its tile only to you, only for that round. Attacking from a bush doesn't reveal you.
   - Bush clusters are edge-connected: diagonal bushes are separate clusters. Inside a bush your own cluster is see-through, but only within the normal 17×17 square.
