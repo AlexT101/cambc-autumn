@@ -1,0 +1,229 @@
+diff --git a/vault-head/src/bot.cpp b/morgana-vault/src/bot.cpp
+index cf368b8..3687e87 100644
+--- a/vault-head/src/bot.cpp
++++ b/morgana-vault/src/bot.cpp
+@@ -110,6 +110,21 @@ void buy_lock() {
+     }
+ }
+ 
++const cambc::consumable& crystal() { return cambc::self().consumables()[cambc::consumable_type::tp_crystal]; }
++
++// Kept for the next trip to a vault: bought on spawn or while dead, like everything.
++void buy_crystal(Pathing& pathing) {
++    auto& me = cambc::self();
++    const auto* legs = pathing.vault_legs();
++    if (!legs || legs->empty() || crystal().count() > 0) return;
++    try {
++        if (me.can_buy(cambc::consumable_type::tp_crystal)) me.buy(cambc::consumable_type::tp_crystal);
++    } catch (const cambc::error&) {
++    }
++}
++
++bool inside_vault(const World& world) { return world.map().from_ally_spawn().at(cambc::self().position()) == unreachable; }
++
+ void place_lock(const World& world) {
+     auto& me = cambc::self();
+     if (!world.me().alive || me.is_submitting_gems()) return;
+@@ -170,11 +185,11 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
+ 
+ // Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
+ // every turn, so only danger near us is worth the extra search.
+-void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
+-    if (!cambc::self().can_move()) return;
++bool step_safely(Pathing& pathing, const Field& field, Safety& safety) {
++    if (!cambc::self().can_move()) return false;
+     const auto avoid = safety.avoid();
+     const bool near = any_within(avoid, cambc::self().position(), safety_params::avoid_radius);
+-    if (!near || !pathing.step_towards(field, &avoid)) pathing.step_towards(field);
++    return (near && pathing.step_towards(field, &avoid)) || pathing.step_towards(field);
+ }
+ 
+ bool break_lock(const World& world, int altar) {
+@@ -253,8 +268,39 @@ bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& m
+     return false;
+ }
+ 
++// A vault altar: nobody walks in after us, and its walls hide us while we tribute. Worth a few
++// more turns than walking to an open altar.
++bool bank_in_vault(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
++    if (crystal().count() == 0 || inside_vault(world)) return false;
++    const auto& to_altar = pathing.to_any_altar();
++    const Pathing::VaultLeg* leg = nullptr;
++    const int vault = pathing.vault_steps(cambc::self().position(), &leg);
++    const int walk = to_altar.at(cambc::self().position());
++    if (vault == unreachable || (walk != unreachable && vault > walk + params::vault_margin)) return false;
++    const int turns = static_cast<int>(cambc::constants::tp_crystal_time);
++    // From a tile on the route; the channel stands still for its turns, and a death loses the bag.
++    const auto teleport = [&](int budget) {
++        std::optional<vec2> land;
++        int land_steps = unreachable;
++        for (auto t : (pathing.teleport_targets() & pathing.vault_landings()).positions())
++            if (const int steps = to_altar.at(t); steps < land_steps) land = t, land_steps = steps;
++        if (!land || turns + land_steps > budget || (!any_risk(world, turns) && !tribute_safe(safety, memory, turns)))
++            return false;
++        try {
++            return crystal().use(*land);
++        } catch (const cambc::error&) {
++            return false;
++        }
++    };
++    if (teleport(vault)) return true;
++    if (!step_safely(pathing, leg->field, safety)) return true;
++    teleport(vault - 1);
++    return true;
++}
++
+ void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     if (submit_here(world, pathing, safety, memory)) return;
++    if (bank_in_vault(world, pathing, safety, memory)) return;
+     const vec2 here = cambc::self().position();
+     const auto& altars = world.map().altars;
+     bool any_locked = false;
+@@ -940,6 +986,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
+     if (me.gem_count() == 0 || !world.me().alive) memory.banking = false;
+     if (!world.me().alive) {
+         memory.claim = -1;
++        buy_crystal(pathing);
+         buy_shards(world.me().facts()); // the dead can only shop
+         buy_lock();
+         return;
+@@ -964,6 +1011,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
+     std::optional<bool> home;
+     if (me.is_recalling()) {
+         decision = 'K';
++        if (me.gem_count() == 0 && inside_vault(world)) return;
+         home = want_home(world, safety);
+         if (*home && !safety.threatened(me.position()) && !can_tribute_safely(world, safety, memory)
+             && recall_outruns(world))
+@@ -984,6 +1032,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
+         }
+     }
+ 
++    if (world.map().ally_spawn.is_set(me.position())) buy_crystal(pathing);
+     if ((world.map().ally_spawn.is_set(me.position()) || world.me().facts().passive == Passive::remote_shop)
+         && buy_shards(world.me().facts()))
+         home.reset();
+diff --git a/vault-head/src/params.h b/morgana-vault/src/params.h
+index d524a00..4d66573 100644
+--- a/vault-head/src/params.h
++++ b/morgana-vault/src/params.h
+@@ -63,6 +63,8 @@ inline constexpr float retreat_ratio = 1.3f;
+ inline constexpr float hurt_retreat_ratio = 0.75f;
+ // A capture recall still pays when hurt if it costs at most this many more rounds to an altar.
+ inline constexpr int recall_heal_bonus = 6;
++// Extra turns a trip to a vault altar may take over walking to an open one.
++inline constexpr int vault_margin = 4;
+ // Ladder teams wait at a camp about to return (2-3% of their time), never for long.
+ inline constexpr int max_wait = 10;
+ // A claimed group's value to a second champion, against an unclaimed one's.
+diff --git a/vault-head/src/pathing.cpp b/morgana-vault/src/pathing.cpp
+index 00d6bff..7c934b0 100644
+--- a/vault-head/src/pathing.cpp
++++ b/morgana-vault/src/pathing.cpp
+@@ -143,6 +143,72 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
+     return true;
+ }
+ 
++namespace {
++
++bitboard grown(const bitboard& tiles, int r) {
++    auto rows = tiles;
++    for (int d = 1; d <= r; ++d) rows |= tiles.shift_right(d) | tiles.shift_right(-d);
++    auto b = rows;
++    for (int d = 1; d <= r; ++d) b |= rows.shift_up(d) | rows.shift_up(-d);
++    return b;
++}
++
++} // namespace
++
++const std::vector<Pathing::VaultLeg>* Pathing::vault_legs(std::uint64_t fuel_floor) {
++    if (vault_legs_) return &*vault_legs_;
++    const auto& s = map();
++    const int everywhere = std::min(s.width * s.height, static_cast<int>(unreachable) - 1);
++    if (!fuel_ok(fuel_floor + 2 * field_cost_estimate())) return nullptr;
++    FuelMeter meter{"vaults"};
++    const auto outside = s.blocked_for_us.reachable_tiles(s.ally_spawn_centre, static_cast<std::uint16_t>(everywhere));
++    bitboard sealed;
++    for (const auto& a : s.altars) sealed |= a.tribute_tiles();
++    sealed &= ~outside;
++    std::vector<VaultLeg> legs;
++    if (sealed.is_empty()) {
++        vault_legs_ = std::move(legs);
++        return &*vault_legs_;
++    }
++    bitboard inside;
++    for (auto t : sealed.positions())
++        if (!inside.is_set(t)) inside |= s.blocked_for_us.reachable_tiles(t, static_cast<std::uint16_t>(everywhere));
++    vault_landings_ = inside & ~s.camp_tiles;
++    // Landings within a crystal's reach of tiles we walk, by their steps to a tribute tile.
++    const auto& to_altar = to_any_altar();
++    std::vector<bitboard> by_steps;
++    for (auto t : (vault_landings_ & grown(outside, teleport_crystal_range)).positions()) {
++        const int steps = to_altar.at(t);
++        if (steps == unreachable) continue;
++        if (static_cast<int>(by_steps.size()) <= steps) by_steps.resize(steps + 1);
++        by_steps[steps].set(t);
++    }
++    const auto launchable = outside & s.standable;
++    bitboard covered;
++    for (int steps = 0; steps < static_cast<int>(by_steps.size()); ++steps) {
++        if (by_steps[steps].is_empty()) continue;
++        auto launch = grown(by_steps[steps], teleport_crystal_range) & launchable & ~covered;
++        if (launch.is_empty()) continue;
++        covered |= launch;
++        legs.push_back({static_cast<int>(cambc::constants::tp_crystal_time) + steps, make_field(s.blocked_for_us, launch)});
++    }
++    vault_legs_ = std::move(legs);
++    return &*vault_legs_;
++}
++
++int Pathing::vault_steps(vec2 p, const VaultLeg** leg) {
++    const auto* legs = vault_legs();
++    int best = unreachable;
++    if (!legs) return best;
++    for (const auto& l : *legs) {
++        const int walk = l.field.at(p);
++        if (walk == unreachable || walk + l.cost >= best) continue;
++        best = walk + l.cost;
++        if (leg) *leg = &l;
++    }
++    return best;
++}
++
+ Pathing::Nearest Pathing::nearest(const bitboard& goals, int max_steps) {
+     Nearest n;
+     const vec2 me = my_pos();
+diff --git a/vault-head/src/pathing.h b/morgana-vault/src/pathing.h
+index ba6a9ff..3adf09f 100644
+--- a/vault-head/src/pathing.h
++++ b/morgana-vault/src/pathing.h
+@@ -40,6 +40,20 @@ public:
+     // Precompute while more than `fuel_floor` remains; true once everything is cached.
+     bool warm_up(int attack_range, std::uint64_t fuel_floor);
+ 
++    // Vaults: altars walled off from our spawn that a teleport crystal reaches from tiles we walk.
++    // A leg is the launch tiles from which a landing is `cost` turns from tributing, channel
++    // included; `field` leads to them.
++    struct VaultLeg {
++        int cost = 0;
++        Field field;
++    };
++    // Null until computed, which waits for more than `fuel_floor` fuel; empty without vaults.
++    const std::vector<VaultLeg>* vault_legs(std::uint64_t fuel_floor = params::end_reserve);
++    // Turns from p to tributing at a vault by way of a crystal; unreachable if none (or not computed).
++    int vault_steps(vec2 p, const VaultLeg** leg = nullptr);
++    // Where a crystal can land inside a vault.
++    const bitboard& vault_landings() const { return vault_landings_; }
++
+     struct Nearest {
+         int steps = unreachable;
+         std::vector<vec2> tiles;
+@@ -92,6 +106,8 @@ private:
+     std::vector<std::optional<int>> centre_to_altar_;
+     std::vector<Slot> altar_fields_, group_fields_, centre_fields_;
+     bool centres_ready_ = false;
++    std::optional<std::vector<VaultLeg>> vault_legs_;
++    bitboard vault_landings_;
+     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
+     // By attack range, then group, then member.
+     std::vector<std::vector<std::vector<std::optional<bitboard>>>> attack_tiles_;
