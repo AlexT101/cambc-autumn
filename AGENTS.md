@@ -41,6 +41,8 @@ node tools/mapgen/mapgen.mjs check maps maps/gen                   # validity, r
 node tools/mapgen/mapgen.mjs suite [central]                       # rebuild maps/gen (or maps/gen-central) from its PLAN (only changed files are rewritten)
 ```
 
+A change picked because it won on `maps/gen` and `maps/gen-central` looks better there than it is, so confirm the size of a gain on suites with a fresh seed (`suite gen --out DIR --seed S`, then `--maps-dir DIR`). For example, crews won +15/240 and +7/80 on the committed suites but +4/240 and +4/80 on fresh ones.
+
 `cambc run --map NAME` resolves bare names only directly under `maps/`; pass `maps/gen/<file>.map26a` for generated maps.
 
 The draft is compiled in (`params::draft_preference`), so forced drafts are separate bot copies. [tools/variants/make_variant.py](tools/variants/make_variant.py) copies a bot (any snapshot with that array) to `bots/variants/<name>/` (gitignored) with a given pick order; drafts under 5 are padded in enum order (name ends `-pad`) and `manifest.json` records source, git state and draft. [tools/variants/matrix.py](tools/variants/matrix.py) plays variants against each other through run_batched.py, one batch per distinct pair, and writes a win-rate matrix with per-map tables to `replays/matrix-TIMESTAMP/` (`matrix.md`, `matrix.csv`, `cells.csv`, `pairs/`):
