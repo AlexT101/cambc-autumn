@@ -1,5 +1,6 @@
 #include "self_abilities.h"
 #include <algorithm>
+#include <array>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -64,7 +65,7 @@ bool enemy_within(const World& world, vec2 p, int r) {
 std::vector<int> groups_near(const World& world, vec2 p, int radius) {
     const auto& map = world.map();
     std::vector<int> out;
-    for (auto tile : (map.camp_tiles & square(p, radius)).positions()) {
+    for (auto tile : positions_within(map.camp_tiles, p, radius)) {
         const int g = map.group_at(tile);
         if (g >= 0 && std::find(out.begin(), out.end(), g) == out.end()) out.push_back(g);
     }
@@ -108,26 +109,31 @@ int danger(const std::vector<Threat>& threats, vec2 p) {
     return d;
 }
 
-// Landings in increasing `score`, keeping only those `keep` accepts.
-template <class Score, class Keep> std::vector<vec2> ranked(const bitboard& landings, Score score, Keep keep) {
-    std::vector<std::pair<int, vec2>> scored;
+// A hidden unit on a landing fails the cast without spending it, so a few are tried.
+struct Landings {
+    static constexpr int tries = 3;
+    std::array<vec2, tries> tiles;
+    int count = 0;
+};
+
+// The first landings in increasing `score`, ties in board order, keeping only those `keep` accepts.
+template <class Score, class Keep> Landings ranked(const bitboard& landings, Score score, Keep keep) {
+    Landings out;
+    std::array<int, Landings::tries> scores{};
     for (auto p : landings.positions()) {
         const int s = score(p);
         if (!keep(p, s)) continue;
-        auto i = scored.size();
-        scored.emplace_back(s, p);
-        for (; i > 0 && scored[i - 1].first > s; --i) scored[i] = scored[i - 1];
-        scored[i] = {s, p};
+        int i = out.count < Landings::tries ? out.count++ : Landings::tries;
+        for (; i > 0 && scores[i - 1] > s; --i)
+            if (i < Landings::tries) out.tiles[i] = out.tiles[i - 1], scores[i] = scores[i - 1];
+        if (i < Landings::tries) out.tiles[i] = p, scores[i] = s;
     }
-    std::vector<vec2> out;
-    for (const auto& [s, p] : scored) out.push_back(p);
     return out;
 }
 
-// A hidden unit on a landing fails the cast without spending it; try the next few.
-bool dash_to_first(const cambc::ability& dash, Pathing& pathing, const std::vector<vec2>& landings) {
-    for (std::size_t i = 0; i < landings.size() && i < 3; ++i)
-        if (cast(dash, landings[i])) {
+bool dash_to_first(const cambc::ability& dash, Pathing& pathing, const Landings& landings) {
+    for (int i = 0; i < landings.count; ++i)
+        if (cast(dash, landings.tiles[i])) {
             pathing.invalidate();
             return true;
         }
@@ -166,12 +172,14 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
         bool stunnable;
     };
     std::vector<Seen> seen;
-    for (auto p : (cambc::vision::champion_tiles(team::enemy) & square(here, range + (splash ? 1 : 0))).positions()) {
+    for (auto p : positions_within(live_champion_tiles(team::enemy), here, range + (splash ? 1 : 0))) {
         try {
             auto c = cambc::vision::champion_at(p);
             const auto passive = facts(c.champion_name()).passive;
             const float retaliation = passive == Passive::retaliation ? retaliation_share * c.focus() : 0.0f;
-            seen.push_back({c, p, c.health(), retaliation, passive != Passive::stun_immune && !c.buffs().has_stun()});
+            // Buffs are read only when asked for: building them allocates.
+            const bool stunnable = stunnable_only && passive != Passive::stun_immune && !c.buffs().has_stun();
+            seen.push_back({c, p, c.health(), retaliation, stunnable});
         } catch (const cambc::error&) {
         }
     }
@@ -224,7 +232,7 @@ bool reset_and_attack_camp(const World& world, int group) {
     const auto& map = world.map();
     std::optional<cambc::camp> best;
     float best_health = 0;
-    for (auto p : (cambc::vision::camp_tiles() & square(here, range)).positions()) {
+    for (auto p : positions_within(live_camp_tiles(), here, range)) {
         const int g = map.group_at(p);
         if (g < 0 || map.groups[g].has_monolith || (group >= 0 && g != group)) continue;
         const auto& members = map.groups[g].members;
@@ -259,19 +267,27 @@ bool dash_towards(const World& world, Pathing& pathing, const Field& field) {
 bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
     static int paused_until = -1;
     if (world.round < paused_until) return false;
+    // Most champions have no dash: check before anything costly.
+    const auto dash = travel_dash_ready(world);
+    if (!dash) return false;
     const vec2 here = cambc::self().position();
     // A goal within a dash is a walk or two away: not worth the cooldown or the search.
-    if (!(goals & square(here, dash_steps)).is_empty()) return false;
-    const auto dash = travel_dash_ready(world);
+    if (any_within(goals, here, dash_steps)) return false;
     const int layers = std::max(world.map().width + world.map().height, max_field_layers()); // a maze runs deeper
-    if (!dash || !fuel_ok(search_cost_estimate(layers) + params::end_reserve)) return false;
-    auto walls = pathing.blocked();
-    const auto open_goals = goals & ~walls;
+    if (!fuel_ok(search_cost_estimate(layers) + params::end_reserve)) return false;
+    static bitboard open_goals{cambc::uninitialized}, origin, visited{cambc::uninitialized};
+    static cambc::distance_field field;
+    const auto& walls = pathing.blocked();
+    // goals & ~walls
+    open_goals.clear();
+    open_goals |= goals;
+    open_goals &= walls;
+    open_goals ^= goals;
     if (open_goals.is_empty()) return false;
     // Searching out from the goals until it reaches us labels every tile nearer than ours.
-    cambc::distance_field field;
-    bitboard visited;
-    field.compute_to(walls, open_goals, single(here), visited);
+    origin.clear();
+    origin.set(here);
+    field.compute_to(walls, open_goals, origin, visited);
     if (visited.is_set(here)
         && travel_dash(world, pathing, *dash, field.get(here),
                        [&](vec2 p) { return visited.is_set(p) ? static_cast<int>(field.get(p)) : unreachable; }))
@@ -303,19 +319,19 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     const auto threats = threats_near(world, here);
     const auto& spawn = world.map().from_ally_spawn();
     const auto landings = ranked(
-        pathing.dash_landings() & square(target->pos, range),
+        within(pathing.dash_landings(), target->pos, range),
         [&](vec2 p) { return danger(threats, p) * 1000 + spawn.at(p); }, [](vec2, int) { return true; });
     return dash_to_first(*dash, pathing, landings);
 }
 
 bool dash_away(const World& world, Pathing& pathing, const Field& home) {
     if (!world.me().facts().has_dash()) return false;
+    const auto dash = ready(world, AbilityKind::dash);
+    if (!dash) return false;
     const vec2 here = cambc::self().position();
     const auto threats = threats_near(world, here);
     const int here_danger = danger(threats, here);
     if (here_danger == 0) return false;
-    const auto dash = ready(world, AbilityKind::dash);
-    if (!dash) return false;
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return danger(threats, p) * 1000 + std::min<int>(home.at(p), 999); },
         [&](vec2, int score) { return score / 1000 < here_danger; });
@@ -333,9 +349,8 @@ bool heal_ally(const World& world) {
     std::optional<cambc::champion> best;
     float best_gain = 0, best_fraction = 0;
     // Read live: allies come into sight as we move.
-    const auto near = cambc::vision::champion_tiles(team::ally) & square(here, range) & ~world.map().ally_spawn;
-    for (auto p : near.positions()) {
-        if (p == here) continue;
+    for (auto p : positions_within(live_champion_tiles(team::ally), here, range)) {
+        if (p == here || world.map().ally_spawn.is_set(p)) continue;
         try {
             auto c = cambc::vision::champion_at(p);
             if (!c.is_ally()) continue;
@@ -362,6 +377,7 @@ bool shield_if_needed(const World& world) {
     bool danger = false;
     for (const auto& e : world.enemies)
         danger |= e.alive && e.visible && dist(here, e.pos) <= threat_reach(e.facts());
+    if (danger) return cast(*shield);
     const auto& groups = world.map().groups;
     for (int g : groups_near(world, here, camp_attack_range)) {
         if (danger) break;

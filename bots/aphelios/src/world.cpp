@@ -46,15 +46,13 @@ int gems(std::uint32_t h) {
     return static_cast<int>(value);
 }
 
-// Item count, and whether a Home emblem is among them.
-std::pair<int, bool> items(std::uint32_t h) {
+// Summing every item count costs ~350 fuel; only a Home emblem matters.
+bool home_emblem(std::uint32_t h) {
     cambc::enum_map<cambc::item_type> counts;
     check(sdk_champion_items(h, counts.ptr()));
-    int total = 0;
-    for (auto n : counts) total += static_cast<int>(n);
-    const bool home = counts[cambc::item_type::home_emblem_of_strength] + counts[cambc::item_type::home_emblem_of_focus]
-                      + counts[cambc::item_type::home_emblem_of_health] > 0;
-    return {total, home};
+    return counts[cambc::item_type::home_emblem_of_strength] + counts[cambc::item_type::home_emblem_of_focus]
+               + counts[cambc::item_type::home_emblem_of_health]
+           > 0;
 }
 
 // Static camp data in one batched raw call: map::camp_groups() builds an SDK object graph that
@@ -159,18 +157,6 @@ void dilate(bitboard& tiles, const bitboard& open, int steps) {
         tiles |= t2;
         tiles &= open;
     }
-}
-
-int min_steps(const Field& field, const bitboard& tiles) {
-    int best = unreachable;
-    for (auto p : tiles.positions()) best = std::min(best, field.at(p));
-    return best;
-}
-
-int min_steps(const Field& field, const std::vector<CampMember>& members) {
-    int best = unreachable;
-    for (const auto& m : members) best = std::min(best, field.at(m.pos));
-    return best;
 }
 
 std::vector<cambc::champion_type> types_from_draft(team side) {
@@ -312,10 +298,19 @@ const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) con
     }
     auto& g = *growth_;
     if (!g.diagonal) g.grown = g.tiles;
+    static bitboard next{cambc::uninitialized}, shifted{cambc::uninitialized};
     while (g.diagonal) {
-        auto next = (g.grown | g.grown.shift_right(1) | g.grown.shift_right(-1) | g.grown.shift_up(1) | g.grown.shift_up(-1)) & g.tiles;
+        next.clear();
+        next |= g.grown;
+        for (int d : {1, -1}) {
+            g.grown.shift_right_into(d, shifted);
+            next |= shifted;
+            g.grown.shift_up_into(d, shifted);
+            next |= shifted;
+        }
+        next &= g.tiles;
         if (next == g.grown) break;
-        g.grown = std::move(next);
+        g.grown.swap(next);
         if (!fuel_ok(fuel_floor)) return nullptr;
     }
     // Indexing costs ~20 fuel a tile. bush_cluster() passes no floor and must finish.
@@ -392,49 +387,39 @@ bool StaticMap::warm_up(std::uint64_t fuel_floor) const {
     for (const auto& g : groups) {
         if (!afford(small_cost_estimate)) return false;
         g.tiles();
-        g.ally_steps();
     }
     for (const auto& a : altars) {
         if (!afford(small_cost_estimate)) return false;
         a.tribute_tiles();
-        a.ally_steps();
     }
     if (!enemy_field_ && !afford(field)) return false;
     from_enemy_spawn();
     for (const auto& g : groups) {
         if (!afford(small_cost_estimate)) return false;
-        g.enemy_steps();
         g.adjacent();
         g.threat();
     }
     for (const auto& a : altars) {
         if (!afford(small_cost_estimate)) return false;
-        a.enemy_steps();
         a.lock_tiles();
     }
     return true;
 }
 
 const bitboard& Altar::tribute_tiles() const {
-    if (!tribute_) tribute_ = square(pos, cambc::constants::submit_gems_range) & ~map_->blocked_for_us;
+    if (!tribute_) {
+        tribute_ = square(pos, cambc::constants::submit_gems_range);
+        *tribute_ &= map_->open_for_us;
+    }
     return *tribute_;
 }
 
 const bitboard& Altar::lock_tiles() const {
-    if (!lock_) lock_ = square(pos, 2) & ~map_->blocked_for_us;
+    if (!lock_) {
+        lock_ = square(pos, 2);
+        *lock_ &= map_->open_for_us;
+    }
     return *lock_;
-}
-
-int Altar::ally_steps() const {
-    if (!ally_steps_) ally_steps_ = min_steps(map_->from_ally_spawn(), tribute_tiles());
-    return *ally_steps_;
-}
-
-int Altar::enemy_steps() const {
-    if (!enemy_steps_)
-        enemy_steps_ = min_steps(map_->from_enemy_spawn(),
-                                 square(pos, cambc::constants::submit_gems_range) & ~map_->blocked_for_them);
-    return *enemy_steps_;
 }
 
 cambc::camp CampGroup::camp(int member) const {
@@ -471,15 +456,6 @@ const bitboard& CampGroup::threat() const {
     return *threat_;
 }
 
-int CampGroup::ally_steps() const {
-    if (!ally_steps_) ally_steps_ = min_steps(map_->from_ally_spawn(), members);
-    return *ally_steps_;
-}
-
-int CampGroup::enemy_steps() const {
-    if (!enemy_steps_) enemy_steps_ = min_steps(map_->from_enemy_spawn(), members);
-    return *enemy_steps_;
-}
 
 void World::build_static() {
     FuelMeter meter{"build_static"};
@@ -501,9 +477,12 @@ void World::build_static() {
     s->enemy_spawn_centre = central_tile(s->enemy_spawn_tiles);
 
     s->impassable = s->walls | s->holes | s->altar_tiles;
+    s->passable = ~s->impassable;
     s->blocked_for_us = s->impassable | s->enemy_spawn;
     s->blocked_for_them = s->impassable | s->ally_spawn;
+    s->open_for_us = ~s->blocked_for_us;
     s->open_for_them = ~s->blocked_for_them;
+    for (auto t : s->enemy_spawn_tiles) s->near_enemy_spawn.draw_chebyshev(t, 1);
     s->walls_and_bushes = s->walls | s->bushes;
 
     const auto altar_positions = s->altar_tiles.positions();
@@ -636,8 +615,7 @@ void World::update() {
         init_beliefs();
     }
     FuelMeter meter{"update"};
-    visible = cambc::vision::visible_tiles();
-    unseen_ = ~visible;
+    read_vision();
     const auto tributing = tributing_enemies(); // before update_champions ends their channels
     update_champions(true);
     // A priority read in round r applies from r + 1: ranks change when a round passes one unread.
@@ -653,8 +631,7 @@ void World::update() {
 
 void World::observe() {
     FuelMeter meter{"observe"};
-    visible = cambc::vision::visible_tiles();
-    unseen_ = ~visible;
+    read_vision();
     update_champions(false);
 }
 
@@ -684,7 +661,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
             b.visible = false;
             b.gems = 0;
             b.channel = Channel::none;
-            fix(b, bitboard{}, now());
+            fix_nowhere(b, now());
             return;
         }
         if (!b.alive) {
@@ -744,7 +721,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
                 std::cout << "trackcheck r" << round << " E" << b.index << ' ' << b.facts().name << " at " << str(seen)
                           << " outside its " << b.possible.count() << " possible tiles; fixed r" << b.fixed.round << '\n';
         }
-        fix(b, single(seen), now());
+        fix(b, seen, now());
     }
     b.pos = {info->x, info->y};
     b.pos_round = round;
@@ -785,7 +762,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     // In observe() too, for a champion first seen after our move.
     b.gems = engine::gems(h);
     b.gems_round = round;
-    std::tie(b.items, b.fast_recall) = engine::items(h);
+    if (b.side == team::enemy || b.is_self) b.fast_recall = engine::home_emblem(h);
     if (!full) return;
 
     const auto [priority, next_priority] = engine::priorities(h);
@@ -807,7 +784,8 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float healt
     b.pos_round = seen_round;
     b.pos_source = Source::comms;
     // The poster's turn in that round is unknown, and so is whether it saw a recall about to land.
-    fix(b, single(pos) | map().enemy_spawn, {seen_round, -1});
+    fix(b, map().enemy_spawn, {seen_round, -1});
+    b.possible.set(pos);
     advance(b);
     prune(b);
 }
@@ -824,11 +802,33 @@ void World::note_capture(int group, int respawn_round) {
     c.held_since = -1;
 }
 
-void World::fix(ChampionBelief& b, bitboard tiles, Moment when) {
-    b.possible = std::move(tiles);
+void World::read_vision() {
+    cambc::vision::visible_tiles_into(visible);
+    unseen_.fill();
+    unseen_ ^= visible;
+}
+
+void World::mark_fixed(ChampionBelief& b, Moment when) {
     b.tracked = true;
     b.fixed = b.at = when;
     b.turns_since_fixed = 0;
+}
+
+void World::fix(ChampionBelief& b, const bitboard& tiles, Moment when) {
+    b.possible.clear();
+    b.possible |= tiles;
+    mark_fixed(b, when);
+}
+
+void World::fix(ChampionBelief& b, vec2 tile, Moment when) {
+    b.possible.clear();
+    b.possible.set(tile);
+    mark_fixed(b, when);
+}
+
+void World::fix_nowhere(ChampionBelief& b, Moment when) {
+    b.possible.clear();
+    mark_fixed(b, when);
 }
 
 void World::rank_turns() {
@@ -889,10 +889,11 @@ void World::advance(ChampionBelief& b) {
         dilate(b.possible, s.open_for_them, steps);
         return;
     }
-    cambc::distance_field field;
-    bitboard grown;
+    static cambc::distance_field field;
+    static bitboard grown{cambc::uninitialized};
     field.compute(dash ? s.walls : s.blocked_for_them, b.possible, grown, static_cast<std::uint16_t>(steps));
-    b.possible = dash ? grown & s.open_for_them : std::move(grown);
+    if (dash) grown &= s.open_for_them;
+    b.possible.swap(grown);
 }
 
 void World::prune(ChampionBelief& b) const {
@@ -906,15 +907,31 @@ void World::update_camps() {
     std::vector<char> group_visible(s.groups.size(), 0);
     const auto seen = visible & s.camp_tiles;
     for (auto p : seen.positions()) group_visible[s.group_at(p)] = 1;
-    // Only groups in view read these.
-    const bool any_seen = !seen.is_empty();
-    std::optional<bitboard> ally_champs, enemy_champs, champs, hidden;
-    if (any_seen) {
-        ally_champs = cambc::vision::champion_tiles(team::ally);
-        enemy_champs = cambc::vision::champion_tiles(team::enemy);
-        champs = *ally_champs | *enemy_champs;
-        hidden = ~(visible | s.impassable); // where a champion could stand unseen
-    }
+    // Read only for a visible group that is awake or cleared: most turns none is.
+    static bitboard ally_champs_b{cambc::uninitialized}, enemy_champs_b{cambc::uninitialized},
+        champs_b{cambc::uninitialized}, hidden_b{cambc::uninitialized};
+    bool champs_read = false, hidden_made = false;
+    const auto read_champs = [&] {
+        if (champs_read) return;
+        champs_read = true;
+        cambc::vision::champion_tiles_into(team::ally, ally_champs_b);
+        cambc::vision::champion_tiles_into(team::enemy, enemy_champs_b);
+        cambc::vision::champion_tiles_into(team::ally, champs_b);
+        champs_b |= enemy_champs_b;
+    };
+    const auto ally_champs = [&]() -> const bitboard& { return read_champs(), ally_champs_b; };
+    const auto enemy_champs = [&]() -> const bitboard& { return read_champs(), enemy_champs_b; };
+    const auto champs = [&]() -> const bitboard& { return read_champs(), champs_b; };
+    // Where a champion could stand unseen: ~(visible | impassable).
+    const auto hidden = [&]() -> const bitboard& {
+        if (!hidden_made) {
+            hidden_made = true;
+            hidden_b.clear();
+            hidden_b |= unseen_;
+            hidden_b &= s.passable;
+        }
+        return hidden_b;
+    };
 
     for (std::size_t g = 0; g < s.groups.size(); ++g) {
         guard("camp", [&] {
@@ -984,8 +1001,8 @@ void World::update_camps() {
             } else if (c.awake != Awake::asleep) {
                 // Asleep after 2 camp phases with no champion within 3: count rounds where the whole
                 // threat area is visible and empty. Anything unseen there could be a champion.
-                const bool fully_seen = (G.threat() & *hidden).is_empty();
-                if (fully_seen && (G.threat() & *champs).is_empty()) {
+                const bool fully_seen = (G.threat() & hidden()).is_empty();
+                if (fully_seen && (G.threat() & champs()).is_empty()) {
                     if (++c.quiet_rounds >= 2) c.awake = Awake::asleep;
                 } else {
                     c.quiet_rounds = 0;
@@ -993,9 +1010,9 @@ void World::update_camps() {
             }
 
             if (c.state == CampState::cleared) {
-                if ((G.tiles() & *hidden).is_empty()) {
-                    const bool a = !(G.tiles() & *ally_champs).is_empty();
-                    const bool e = !(G.tiles() & *enemy_champs).is_empty();
+                if ((G.tiles() & hidden()).is_empty()) {
+                    const bool a = !(G.tiles() & ally_champs()).is_empty();
+                    const bool e = !(G.tiles() & enemy_champs()).is_empty();
                     const std::optional<team> holder = a && !e ? std::optional{team::ally}
                                                        : e && !a ? std::optional{team::enemy}
                                                                  : std::nullopt;
@@ -1035,8 +1052,8 @@ int World::hold_start(const CampGroup& G, team holder, int earliest) const {
 
 void World::update_altars() {
     const auto& s = map();
-    for (auto p : (visible & s.altar_tiles).positions()) {
-        const int a = s.altar_at(p);
+    for (std::size_t a = 0; a < s.altars.size(); ++a) {
+        if (!visible.is_set(s.altars[a].pos)) continue;
         altars[a] = AltarBelief{};
         altars[a].seen_round = round;
     }
@@ -1127,7 +1144,7 @@ void World::debug_output() const {
             std::cout << (b.visible ? " SEEN " : " last ") << str(b.pos) << " r" << b.pos_round
                       << (b.pos_source == Source::comms ? " (comms)" : b.pos_source == Source::inferred ? " (inferred)" : "")
                       << " hp " << static_cast<int>(b.health) << '/' << static_cast<int>(b.max_health) << " gems " << b.gems
-                      << " items " << b.items << " ready r" << b.ready_round[0] << ",r" << b.ready_round[1]
+                      << " ready r" << b.ready_round[0] << ",r" << b.ready_round[1]
                       << (b.cooldowns_uncertain() ? "?" : "") << name(b.channel);
             if (b.channel != Channel::none) std::cout << " until r" << b.channel_end_round;
             std::cout << '\n';

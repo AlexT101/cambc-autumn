@@ -1,6 +1,8 @@
 #include "safety.h"
 #include <algorithm>
 #include <cmath>
+#include <memory>
+#include <vector>
 #include "params.h"
 #include "world.h"
 
@@ -75,9 +77,10 @@ struct Side {
                 best = i;
         return best;
     }
-    // Focused on the weakest, shields first, the excess spilling over to the next.
-    void hurt(float damage) {
-        for (int i = weakest(); i >= 0 && damage > 0; i = weakest()) {
+    // Focused on the weakest, shields first, the excess spilling over to the next. `first`:
+    // weakest(), when the caller has it.
+    void hurt(float damage, int first = -2) {
+        for (int i = damage <= 0 ? -1 : first >= -1 ? first : weakest(); i >= 0; i = damage > 0 ? weakest() : -1) {
             auto& f = fighters[i];
             const float absorbed = std::min(damage, f.shield);
             f.shield -= absorbed;
@@ -167,7 +170,8 @@ void act(Side& self, Side& other) {
             if (!skip[i] && self.fighters[i].health > 0 && self.fighters[i].facts->passive != Passive::stun_immune
                 && (best < 0 || self.fighters[i].strength > self.fighters[best].strength))
                 best = i;
-        if (best >= 0) skip[best] = true;
+        if (best < 0) break;
+        skip[best] = true;
     }
     self.stunned = 0;
     float damage = 0;
@@ -180,7 +184,7 @@ void act(Side& self, Side& other) {
     }
     const int target = other.weakest();
     const float back = target >= 0 ? other.fighters[target].retaliation : 0.0f;
-    other.hurt(damage);
+    other.hurt(damage, target);
     if (back > 0) self.hurt(static_cast<float>(hits) * back);
 }
 
@@ -280,7 +284,8 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
         std::array<std::pair<vec2, std::uint32_t>, 2 * max_fighters> others;
         int n = -1;
         const auto self_id = static_cast<std::uint32_t>(world_.me().handle);
-        std::optional<bitboard> seen, camps;
+        static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
+        bool reread = false;
         const auto& groups = world_.map().groups;
         for (std::size_t g = 0; g < groups.size(); ++g) {
             const auto& c = world_.camps[g];
@@ -291,12 +296,16 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
                     for (const auto& o : *side)
                         if (n < static_cast<int>(others.size()) && o.alive && o.visible && !o.is_self && !gone(o))
                             others[n++] = {o.pos, static_cast<std::uint32_t>(o.handle)};
-                if (refresh_) seen = cambc::vision::visible_tiles(), camps = cambc::vision::camp_tiles();
+                if (refresh_) {
+                    reread = true;
+                    cambc::vision::visible_tiles_into(seen);
+                    cambc::vision::camp_tiles_into(camps);
+                }
             }
             const float w = c.awake == Awake::awake ? 1.0f : unknown_camp_weight;
             for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
                 const auto& m = groups[g].members[i];
-                if (c.health[i] <= 0 || m.strength <= 0 || (seen && seen->is_set(m.pos) && !camps->is_set(m.pos))) continue;
+                if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen.is_set(m.pos) && !camps.is_set(m.pos))) continue;
                 int reach = camp_attack_range;
                 for (int k = 0; k < n; ++k)
                     reach = std::min(reach, dist(others[k].first, m.pos) - (others[k].second < self_id ? 1 : 0));
@@ -325,7 +334,6 @@ void Safety::invalidate() {
     members_.reset();
     camp_area_.reset();
     enemy_area_.reset();
-    contested_area_.reset();
     fights_.clear();
     gone_.fill(0);
 }
@@ -337,7 +345,9 @@ void Safety::refresh() {
     bool changed = false;
     for (const auto& e : world_.enemies) changed |= e.alive && gone(e);
     if (!changed && members_ && !members_->empty()) {
-        const auto seen = cambc::vision::visible_tiles(), camps = cambc::vision::camp_tiles();
+        static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
+        cambc::vision::visible_tiles_into(seen);
+        cambc::vision::camp_tiles_into(camps);
         for (const auto& m : *members_) changed |= seen.is_set(m.pos) && !camps.is_set(m.pos);
     }
     if (changed) invalidate();
@@ -347,7 +357,9 @@ void Safety::build() {
     if (built_) return;
     built_ = true;
     FuelMeter meter{"safety"};
-    std::optional<bitboard> no_walls;
+    static const bitboard no_walls;
+    // One per enemy, reused between builds: a new field allocates and clears ~13k bytes.
+    static std::vector<std::unique_ptr<cambc::distance_field>> fields;
     threats_.reserve(world_.enemies.size());
     for (const auto& e : world_.enemies) {
         if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
@@ -360,7 +372,7 @@ void Safety::build() {
             t.strike = s;
             t.visible = true;
             t.pos = e.pos;
-            t.area = square(e.pos, reach);
+            t.area.draw_chebyshev(e.pos, static_cast<float>(reach));
             continue;
         }
         const int tiles = static_cast<int>(e.possible.count());
@@ -375,9 +387,11 @@ void Safety::build() {
         // falls by about 1 / sqrt(tiles) per step out; keep the tiles still near the cutoff.
         const int radius = std::clamp(
             static_cast<int>(static_cast<float>(reach) + 1.5f - credible_weight * std::sqrt(static_cast<float>(tiles))), 0, reach);
-        if (!no_walls) no_walls.emplace();
-        t.steps.emplace();
-        t.steps->compute(*no_walls, e.possible, t.area, static_cast<std::uint16_t>(radius));
+        if (fields.size() <= static_cast<std::size_t>(e.index)) fields.resize(e.index + 1);
+        auto& field = fields[e.index];
+        if (!field) field = std::make_unique<cambc::distance_field>();
+        field->compute(no_walls, e.possible, t.area, static_cast<std::uint16_t>(radius));
+        t.steps = field.get();
     }
 }
 
@@ -396,7 +410,7 @@ float Safety::chance_in_reach(const Threat& t, vec2 p) {
     if (t.visible) return t.strike.hits(dist(p, t.pos)) ? 1.0f : 0.0f;
     if (!t.area.is_set(p)) return 0.0f;
     const auto& possible = world_.enemies[t.enemy].possible;
-    const auto near = (square(p, t.strike.reach) & possible).count();
+    const auto near = count_within(possible, p, t.strike.reach);
     return std::min(1.0f, static_cast<float>(near) / static_cast<float>(t.tiles));
 }
 
@@ -423,13 +437,16 @@ float Safety::expected_damage(vec2 p) {
     return total;
 }
 
-float Safety::hit_chance(vec2 p) {
+// The chance of being hit only grows with each factor, so the answer is settled as soon as it
+// reaches the line: often by a camp, before the threats are built.
+bool Safety::threatened(vec2 p) {
     float safe = 1;
     for (const auto& m : awake_members())
-        if (dist(p, m.pos) <= m.reach) safe *= 1 - m.weight;
+        if (dist(p, m.pos) <= m.reach && 1 - (safe *= 1 - m.weight) >= recall_risk) return true;
     for (const auto& t : threats())
-        if (t.strike.hits(t.distance(p))) safe *= 1 - chance_in_reach(t, p) * hit_given_reach;
-    return 1 - safe;
+        if (t.strike.hits(t.distance(p)) && 1 - (safe *= 1 - chance_in_reach(t, p) * hit_given_reach) >= recall_risk)
+            return true;
+    return false;
 }
 
 const bitboard& Safety::camp_area() {
@@ -444,21 +461,12 @@ const bitboard& Safety::camp_area() {
 
 const bitboard& Safety::enemy_area() {
     if (!enemy_area_) {
-        bitboard any, several;
-        for (const auto& t : threats()) {
-            if (!t.credible()) continue;
-            several |= any & t.area;
-            any |= t.area;
-        }
+        bitboard any;
+        for (const auto& t : threats())
+            if (t.credible()) any |= t.area;
         enemy_area_ = std::move(any);
-        contested_area_ = std::move(several);
     }
     return *enemy_area_;
-}
-
-const bitboard& Safety::contested_area() {
-    enemy_area();
-    return *contested_area_;
 }
 
 bitboard Safety::avoid() { return camp_area() | enemy_area(); }

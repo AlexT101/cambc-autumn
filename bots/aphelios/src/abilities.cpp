@@ -1,5 +1,6 @@
 #include "abilities.h"
 #include <algorithm>
+#include <array>
 #include <optional>
 #include <vector>
 #include "world.h"
@@ -105,7 +106,7 @@ struct Target {
 std::vector<int> groups_near(const World& world, vec2 p, int radius) {
     const auto& map = world.map();
     std::vector<int> out;
-    for (auto tile : (map.camp_tiles & square(p, radius)).positions()) {
+    for (auto tile : positions_within(map.camp_tiles, p, radius)) {
         const int g = map.group_at(tile);
         if (g >= 0 && std::find(out.begin(), out.end(), g) == out.end()) out.push_back(g);
     }
@@ -142,7 +143,11 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
     bitboard centres;
     for (const auto& t : targets) centres.draw_chebyshev(t.pos, 1);
     centres &= reach;
-    centres &= ~skip;
+    static bitboard skipped{cambc::uninitialized};
+    skipped.clear();
+    skipped |= centres;
+    skipped &= skip;
+    centres ^= skipped;
     for (auto c : centres.positions()) {
         float v = 0;
         for (const auto& t : targets)
@@ -194,17 +199,17 @@ Cast enemy_cast(const World& world, bool keep_walk) {
                     const float hit = hit_worth(world, e, damage_to(s, c, raw), c.health(), enemy_spawn.is_set(e.pos));
                     targets.push_back({e.pos, 1, hit + stun - stunned});
                 } else if (e.tracked && !e.possible.is_empty()) {
-                    const auto near = e.possible & square(here, a.reach());
-                    if (near.is_empty()) continue;
                     const int n = static_cast<int>(e.possible.count());
                     if (n > max_unseen_tiles) continue;
+                    const auto near = positions_within(e.possible, here, a.reach());
+                    if (near.empty()) continue;
                     if (suicidal(e)) {
-                        for (auto p : near.positions()) ren.draw_chebyshev(p, 1);
+                        for (auto p : near) ren.draw_chebyshev(p, 1);
                         continue;
                     }
                     const float health = e.health > 0 ? e.health : e.max_health;
                     const float hit = std::min(raw, health);
-                    for (auto p : near.positions())
+                    for (auto p : near)
                         targets.push_back({p, 1.0f / static_cast<float>(n),
                                            hit_worth(world, e, hit, health, enemy_spawn.is_set(p)) + stun});
                 }
@@ -220,11 +225,15 @@ Cast enemy_cast(const World& world, bool keep_walk) {
 Cast camp_cast(const World& world, int group) {
     auto& me = cambc::self();
     if (!me.can_cast() || !fuel_ok(fuel_needed)) return {};
+    const auto& f = world.me().facts();
+    // Varg, Willow, Vesper, Vendetta and Issac have nothing to cast here, and others often nothing ready.
+    const std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};
+    if (!ready[0] && !ready[1]) return {};
+    const bool stuns = (ready[0] && f.abilities[0].stuns) || (ready[1] && f.abilities[1].stuns);
     const vec2 here = me.position();
     const auto& map = world.map();
-    const auto& f = world.me().facts();
     if (group < 0) {
-        for (auto p : (cambc::vision::camp_tiles() & square(here, f.attack_range())).positions()) {
+        for (auto p : positions_within(live_camp_tiles(), here, f.attack_range())) {
             const int g = map.group_at(p);
             if (g >= 0 && !map.groups[g].has_monolith) {
                 group = g;
@@ -251,14 +260,14 @@ Cast camp_cast(const World& world, int group) {
         const float health = c.health();
         if (health <= 0) continue;
         // A stunned monster skips its next attack, which goes to the nearest champion: likely us.
-        const float stun = dist(here, g.members[i].pos) <= camp_attack_range && !c.buffs().has_stun() ? g.members[i].strength : 0;
+        const float stun = stuns && dist(here, g.members[i].pos) <= camp_attack_range && !c.buffs().has_stun() ? g.members[i].strength : 0;
         members.push_back({c, g.members[i].pos, health, stun});
     }
     if (members.empty()) return {};
 
     Cast best;
     for (int s = 0; s < 2; ++s) {
-        if (!castable(world, s)) continue;
+        if (!ready[s]) continue;
         const auto& a = f.abilities[s];
         const float raw = raw_damage(s);
         if (a.target == Targeting::unit) {

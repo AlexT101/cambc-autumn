@@ -1,5 +1,7 @@
 #include "turn_order.h"
 #include <algorithm>
+#include <array>
+#include <optional>
 #include <vector>
 #include "params.h"
 #include "safety.h"
@@ -38,16 +40,19 @@ struct Enemy {
     float health;
 };
 
-// Visible enemies still alive after our turn, with their health now.
+// Visible enemies still alive after our turn, with their health now. One raw read each: every
+// SDK accessor reads the whole record again.
 std::vector<Enemy> live_enemies(const World& world) {
     std::vector<Enemy> out;
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible) continue;
-        try {
-            const auto c = cambc::detail::handle_access::make_champion(e.handle);
-            if (c.is_alive() && c.is_visible()) out.push_back({&e, c.health()});
-        } catch (const cambc::error&) {
-        }
+        const auto h = static_cast<std::uint32_t>(e.handle);
+        std::int32_t alive{};
+        cambc::detail::champion_info info{};
+        if (cambc::detail::sdk_champion_is_alive(h, &alive) != 0 || !alive || cambc::detail::sdk_champion(h, &info) != 0
+            || info.x < 0 || info.y < 0)
+            continue;
+        out.push_back({&e, info.health});
     }
     return out;
 }
@@ -56,10 +61,12 @@ std::vector<Enemy> live_enemies(const World& world) {
 ChampionBelief live_self(const World& world) {
     auto b = world.me();
     auto& me = cambc::self();
-    b.pos = me.position();
-    b.health = me.health();
-    b.strength = me.strength();
-    b.focus = me.focus();
+    cambc::detail::champion_info info{};
+    cambc::detail::check(cambc::detail::sdk_champion(static_cast<std::uint32_t>(world.me().handle), &info));
+    b.pos = {info.x, info.y};
+    b.health = info.health;
+    b.strength = info.strength;
+    b.focus = info.focus;
     b.gems = static_cast<int>(me.gem_count());
     const auto abilities = me.abilities();
     for (int s = 0; s < 2; ++s) b.ready_round[s] = world.round + std::max(0, static_cast<int>(abilities[s].cooldown()));
@@ -86,11 +93,20 @@ int gems_lost(const World& world, const ChampionBelief& e) {
     return gems;
 }
 
+// Strikes for next round, by index, each worked out on first use.
+using Strikes = std::array<std::optional<Strike>, 8>;
+
+const Strike& next_strike(const World& world, const ChampionBelief& c, Strikes& cache) {
+    auto& s = cache[static_cast<std::size_t>(c.index)];
+    if (!s) s = strike(c, world.round + 1);
+    return *s;
+}
+
 // Damage our next turn and those of the allies we see could deal to a tile, each walking first.
-float side_damage(const World& world, const ChampionBelief& self, const Strike& ours, vec2 p) {
+float side_damage(const World& world, const ChampionBelief& self, const Strike& ours, vec2 p, Strikes& allies) {
     float total = ours.at(dist(self.pos, p));
     for (const auto& a : world.allies)
-        if (!a.is_self && a.alive && a.visible) total += strike(a, world.round + 1).at(dist(a.pos, p));
+        if (!a.is_self && a.alive && a.visible) total += next_strike(world, a, allies).at(dist(a.pos, p));
     return total;
 }
 
@@ -98,10 +114,11 @@ float side_damage(const World& world, const ChampionBelief& self, const Strike& 
 void offer_kills(const World& world, const ChampionBelief& self, const Strike& ours, const std::vector<Enemy>& enemies,
                  Wish& wish) {
     const auto& enemy_spawn = world.map().enemy_spawn;
+    Strikes allies;
     for (const auto& [e, health] : enemies) {
         const int d = dist(self.pos, e->pos);
         if (!ours.hits(d) || enemy_spawn.is_set(e->pos) || !can_act_before(world, *e)) continue;
-        if (side_damage(world, self, ours, e->pos) >= health) {
+        if (side_damage(world, self, ours, e->pos, allies) >= health) {
             const float value = life_value + gem_value * static_cast<float>(gems_lost(world, *e));
             wish.offer(kill, e->acted ? value : unacted_share * value);
         }
@@ -150,11 +167,12 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
     const auto& a = self.facts().abilities[slot];
     const float heal = a.multiplier * self.focus;
     const auto& spawn = world.map().ally_spawn;
+    Strikes strikes;
     for (const auto& ally : world.allies) {
         if (ally.is_self || !ally.alive || !ally.visible || spawn.is_set(ally.pos) || dist(self.pos, ally.pos) > a.range() + 1)
             continue;
         float damage = 0;
-        for (const auto& [e, health] : enemies) damage += strike(*e, world.round + 1).at(dist(e->pos, ally.pos));
+        for (const auto& [e, health] : enemies) damage += next_strike(world, *e, strikes).at(dist(e->pos, ally.pos));
         if (damage >= ally.health && damage < ally.health + heal)
             wish.offer(protect, life_value + gem_value * static_cast<float>(ally.gems));
     }

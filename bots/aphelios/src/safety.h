@@ -68,7 +68,8 @@ struct Threat {
     Strike strike;
     // Tiles it can damage or stun; unseen, only those near or above `credible_weight`.
     bitboard area;
-    std::optional<cambc::distance_field> steps; // unseen: distance from `possible`, capped at the reach
+    // Unseen: distance from `possible`, capped at the reach; reused by the next build.
+    const cambc::distance_field* steps = nullptr;
 
     int distance(vec2 p) const;
     bool credible() const { return visible || weight >= safety_params::credible_weight; }
@@ -104,14 +105,12 @@ public:
     // Each threat by chance in reach times `hit_given_reach`, plus camps.
     float expected_damage(vec2 p);
     // Chance of taking any damage or a stun at p before our next turn (cancelling a recall).
-    float hit_chance(vec2 p);
-    bool threatened(vec2 p) { return hit_chance(p) >= safety_params::recall_risk; }
+    bool threatened(vec2 p);
 
     // Where a live member of an awake (or maybe awake) group would attack us: within 3, and no
     // visible champion nearer it (or as near with a lower id).
     const bitboard& camp_area();
-    const bitboard& enemy_area();     // within a credible threat's reach
-    const bitboard& contested_area(); // within reach of two or more credible threats
+    const bitboard& enemy_area(); // within a credible threat's reach
     // Tiles to keep off while routing: camps and credible enemies. Our own tile is included when
     // in danger, so routing can free the region we stand in.
     bitboard avoid();
@@ -156,7 +155,7 @@ private:
     std::array<std::int8_t, 16> gone_{}; // by enemy index: 0 unknown, 1 alive, 2 dead
     std::vector<Threat> threats_;
     std::optional<std::vector<CampHit>> members_;
-    std::optional<bitboard> camp_area_, enemy_area_, contested_area_;
+    std::optional<bitboard> camp_area_, enemy_area_;
     // By who fights: bit i of the low half for allies[i], of the high half for enemies[i].
     std::vector<std::pair<std::uint32_t, Trade>> fights_;
 };

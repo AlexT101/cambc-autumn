@@ -48,6 +48,36 @@ inline bitboard square(vec2 p, int r) {
     return b;
 }
 
+// The helpers below work in scratch boards: allocating a board (~300 fuel) costs more than the
+// host operations on it (~120).
+
+// `tiles` within Chebyshev r of p, in a scratch board valid until the next call.
+inline const bitboard& within(const bitboard& tiles, vec2 p, int r) {
+    static bitboard box{cambc::uninitialized};
+    box.clear();
+    box.draw_chebyshev(p, static_cast<float>(r));
+    box &= tiles;
+    return box;
+}
+
+inline std::vector<vec2> positions_within(const bitboard& tiles, vec2 p, int r) { return within(tiles, p, r).positions(); }
+inline bool any_within(const bitboard& tiles, vec2 p, int r) { return !within(tiles, p, r).is_empty(); }
+inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return within(tiles, p, r).count(); }
+
+// Live occupancy, each in its own scratch board, valid until its next read.
+inline const bitboard& live_champion_tiles(team side) {
+    static bitboard ally{cambc::uninitialized}, enemy{cambc::uninitialized};
+    auto& b = side == team::ally ? ally : enemy;
+    cambc::vision::champion_tiles_into(side, b);
+    return b;
+}
+
+inline const bitboard& live_camp_tiles() {
+    static bitboard b{cambc::uninitialized};
+    cambc::vision::camp_tiles_into(b);
+    return b;
+}
+
 inline constexpr std::uint16_t unreachable = cambc::distance_field::unreachable;
 
 struct Field {
@@ -67,9 +97,12 @@ inline int& max_field_layers() {
 }
 
 inline Field make_field(const bitboard& walls, const bitboard& goals) {
+    static bitboard visited{cambc::uninitialized};
     Field f;
-    f.goals = goals & ~walls;
-    bitboard visited;
+    // goals & ~walls
+    f.goals |= goals;
+    f.goals &= walls;
+    f.goals ^= goals;
     max_field_layers() = std::max<int>(max_field_layers(), f.steps.compute_with_expansion_count(walls, f.goals, visited));
     return f;
 }

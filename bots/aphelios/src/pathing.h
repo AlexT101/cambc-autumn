@@ -74,7 +74,8 @@ public:
     // Unseen units can still block these.
     bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile
     bitboard teleport_targets(); // free open or bush tiles within 3, not camp tiles or enemy spawn
-    bitboard ward_targets();     // within 2, not wall, hole, altar, enemy spawn or one of our wards
+    // Within 2, not wall, hole, altar, enemy spawn or one of our wards; nor a bush with `off_bushes`.
+    bitboard ward_targets(bool off_bushes = false);
 
 private:
     using Slot = std::unique_ptr<Field>;
@@ -89,9 +90,12 @@ private:
     Slot any_altar_;
     std::vector<Slot> altar_fields_, group_fields_, centre_fields_;
     bool centres_ready_ = false;
+    int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
     // By attack range, then group, then member.
     std::vector<std::vector<std::vector<std::optional<bitboard>>>> attack_tiles_;
-    std::optional<bitboard> blocked_;
+    // Kept between rebuilds: allocating a board costs more than filling it.
+    bitboard blocked_{cambc::uninitialized};
+    bool blocked_fresh_ = false;
     bitboard bumped_;
     int bumped_round_ = -1;
 };

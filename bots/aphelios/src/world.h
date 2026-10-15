@@ -25,15 +25,12 @@ struct Altar {
 
     const bitboard& tribute_tiles() const; // walkable for us within tribute range (1)
     const bitboard& lock_tiles() const;    // walkable for us within 2: where a lock can be placed from
-    int ally_steps() const;  // our walking steps from our spawn to the nearest tribute tile
-    int enemy_steps() const; // the enemy's from their spawn
 
 private:
     friend class World;
     friend struct StaticMap;
     const StaticMap* map_ = nullptr;
     mutable std::optional<bitboard> tribute_, lock_;
-    mutable std::optional<int> ally_steps_, enemy_steps_;
 };
 
 struct CampMember {
@@ -58,15 +55,12 @@ struct CampGroup {
     const bitboard& tiles() const;    // camp tiles: stand on one, with no enemy on any, to capture
     const bitboard& adjacent() const; // walkable tiles within 1 of a camp tile, camp tiles excluded
     const bitboard& threat() const;   // tiles within 3 of a camp tile, where its monsters attack
-    int ally_steps() const;  // our walking steps from our spawn to stand on a camp tile
-    int enemy_steps() const; // the enemy's from their spawn
 
 private:
     friend class World;
     friend struct StaticMap;
     const StaticMap* map_ = nullptr;
     mutable std::optional<bitboard> tiles_, adjacent_, threat_;
-    mutable std::optional<int> ally_steps_, enemy_steps_;
 };
 
 // An edge-connected set of bush tiles (diagonal bushes are separate clusters). From inside a
@@ -87,9 +81,12 @@ struct StaticMap {
     vec2 ally_spawn_centre, enemy_spawn_centre;
 
     bitboard impassable;       // walls | holes | altars: nobody walks or lands there
+    bitboard passable;         // ~impassable
     bitboard blocked_for_us;   // impassable | enemy spawn: static walls for our walking
     bitboard blocked_for_them; // impassable | our spawn
+    bitboard open_for_us;   // ~blocked_for_us
     bitboard open_for_them; // ~blocked_for_them
+    bitboard near_enemy_spawn; // within 1 of an enemy spawn tile
     bitboard walls_and_bushes;
     bitboard standable; // ~(camp_tiles | blocked_for_us)
 
@@ -181,8 +178,7 @@ struct ChampionBelief {
     int stats_round = -1;
     int gems = 0;
     int gems_round = -1;
-    int items = 0;
-    bool fast_recall = false; // a Home emblem, when last seen: recall takes home_recall_time turn ends
+    bool fast_recall = false; // a Home emblem, when last seen (enemies and ourselves): recall takes home_recall_time turn ends
     bool acted = false; // had completed its turn when last read this round
     // Turn-order priority for priority_round, and from the round after it.
     int priority = 0, next_priority = 0, priority_round = -1;
@@ -310,7 +306,12 @@ private:
     void prune(ChampionBelief& b) const;
     void update_champions(bool full);
     void update_champion(ChampionBelief& b, bool full);
-    static void fix(ChampionBelief& b, bitboard tiles, Moment when);
+    void read_vision(); // visible and unseen_, overwritten in place
+    // Each overwrites `possible` in place: assigning a new board would allocate.
+    static void fix(ChampionBelief& b, const bitboard& tiles, Moment when);
+    static void fix(ChampionBelief& b, vec2 tile, Moment when);
+    static void fix_nowhere(ChampionBelief& b, Moment when);
+    static void mark_fixed(ChampionBelief& b, Moment when);
     void advance(ChampionBelief& b);
     void update_camps();
     int hold_start(const CampGroup& G, team holder, int earliest) const;

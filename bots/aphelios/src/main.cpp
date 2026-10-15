@@ -32,7 +32,7 @@ struct Instance {
     std::unique_ptr<aph::World> world;
     std::unique_ptr<aph::Pathing> pathing;
     aph::Memory memory;
-    bool warmed_up = false;
+    bool map_warmed_up = false, warmed_up = false;
 
     void draft_turn() {
         run("draft", [&] { aph::play_draft(draft); });
@@ -72,8 +72,8 @@ struct Instance {
         if (!warmed_up)
             run("warm up", [&] {
                 aph::FuelMeter meter{"warm_up"};
-                warmed_up = world->map().warm_up(end_reserve)
-                            && pathing->warm_up(world->me().facts().attack_range(), end_reserve);
+                map_warmed_up = map_warmed_up || world->map().warm_up(end_reserve);
+                warmed_up = map_warmed_up && pathing->warm_up(world->me().facts().attack_range(), end_reserve);
             });
         aph::print_fuel_log();
     }

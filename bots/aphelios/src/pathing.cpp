@@ -21,7 +21,7 @@ Pathing::Pathing(const World& world) : world_{world} {}
 const StaticMap& Pathing::map() const { return world_.map(); }
 
 void Pathing::begin_turn() {
-    blocked_.reset();
+    blocked_fresh_ = false;
     if (bumped_round_ != world_.round) {
         bumped_.clear();
         bumped_round_ = world_.round;
@@ -127,9 +127,9 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
         cached(slot, single(map().groups[g].centre));
     }
     centres_ready_ = true;
-    for (int g = 0; g < static_cast<int>(map().groups.size()); ++g)
-        for (int i = 0; farmed(g) && i < static_cast<int>(map().groups[g].members.size()); ++i)
-            if (!prepare_member(g, i, attack_range, fuel_floor)) return false;
+    for (; warm_group_ < static_cast<int>(map().groups.size()); ++warm_group_, warm_member_ = 0)
+        for (; farmed(warm_group_) && warm_member_ < static_cast<int>(map().groups[warm_group_].members.size()); ++warm_member_)
+            if (!prepare_member(warm_group_, warm_member_, attack_range, fuel_floor)) return false;
     for (int a = 0; a < static_cast<int>(map().altars.size()); ++a) {
         if (!afford(altar_slot(a))) return false;
         to_altar(a);
@@ -157,16 +157,24 @@ Pathing::Nearest Pathing::nearest(const bitboard& goals, int max_steps) {
 }
 
 const bitboard& Pathing::blocked() {
-    if (!blocked_) {
-        auto b = map().blocked_for_us | cambc::vision::champion_tiles() | cambc::vision::camp_tiles()
-                 | cambc::vision::teleport_tiles() | bumped_;
-        b.set(my_pos(), false);
-        blocked_ = std::move(b);
+    if (!blocked_fresh_) {
+        static bitboard t{cambc::uninitialized};
+        cambc::vision::champion_tiles_into(team::ally, blocked_);
+        blocked_ |= map().blocked_for_us;
+        cambc::vision::champion_tiles_into(team::enemy, t);
+        blocked_ |= t;
+        cambc::vision::camp_tiles_into(t);
+        blocked_ |= t;
+        cambc::vision::teleport_tiles_into(t);
+        blocked_ |= t;
+        blocked_ |= bumped_;
+        blocked_.set(my_pos(), false);
+        blocked_fresh_ = true;
     }
-    return *blocked_;
+    return blocked_;
 }
 
-void Pathing::invalidate() { blocked_.reset(); }
+void Pathing::invalidate() { blocked_fresh_ = false; }
 
 std::vector<vec2> Pathing::closer_neighbours(const Field& field, const bitboard* avoid) {
     const vec2 me = my_pos();
@@ -196,7 +204,12 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
         r.steps = 0;
         return r;
     }
-    auto walls = blocked();
+    // Scratch kept between calls: the host overwrites every output in full.
+    static bitboard walls{cambc::uninitialized}, open_goals{cambc::uninitialized}, origin, visited{cambc::uninitialized};
+    static vec2 origin_at{-1, -1};
+    static cambc::distance_field field;
+    walls.clear();
+    walls |= blocked();
     if (avoid) {
         auto danger = *avoid;
         // Inside danger every neighbour is in it too: free the connected region we stand in.
@@ -204,18 +217,33 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
         walls |= danger;
     }
     walls.set(me, false);
-    const auto open_goals = goals & ~walls;
+    // goals & ~walls
+    open_goals.clear();
+    open_goals |= goals;
+    open_goals &= walls;
+    open_goals ^= goals;
     if (open_goals.is_empty()) return r;
     // Search outwards from the goals until it reaches us: every tile one layer nearer than ours
     // is then labelled, so each neighbour on a shortest route is known.
     FuelMeter meter{"route"};
-    cambc::distance_field field;
-    bitboard visited;
-    field.compute_to(walls, open_goals, single(me), visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
+    if (in_bounds(origin_at)) origin.set(origin_at, false);
+    origin.set(me);
+    origin_at = me;
+    field.compute_to(walls, open_goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
     const int here = field.get(me);
     if (here == unreachable) return r;
     r.steps = here;
-    for (auto d : field.next_moves_from(me)) r.first_steps.push_back(me + d);
+    // As distance_field::next_moves_from, without its vector: the nearest neighbours, north first.
+    std::array<std::uint16_t, 8> around{};
+    std::uint16_t best = unreachable;
+    for (int i = 0; i < 8; ++i) {
+        const vec2 p = me + directions[i];
+        around[i] = in_bounds(p) ? field.get(p) : unreachable;
+        best = std::min(best, around[i]);
+    }
+    if (best < here)
+        for (int i = 0; i < 8; ++i)
+            if (around[i] == best) r.first_steps.push_back(me + directions[i]);
     return r;
 }
 
@@ -284,12 +312,26 @@ bool Pathing::step_closer(vec2 target) {
 bool Pathing::step_towards(vec2 target, const bitboard* avoid) { return step_towards(single(target), avoid); }
 
 bitboard Pathing::dash_landings() {
+    static bitboard camps{cambc::uninitialized}, excluded{cambc::uninitialized}, t{cambc::uninitialized};
     const vec2 me = my_pos();
-    const auto camps = cambc::vision::camp_tiles();
+    cambc::vision::camp_tiles_into(camps);
     // Dash paths cross holes, altars and champions but not walls or camps.
-    auto landings = (map().walls | camps).reachable_tiles(me, 2);
-    landings &= ~(map().impassable | map().enemy_spawn | camps | cambc::vision::champion_tiles()
-                  | cambc::vision::teleport_tiles() | bumped_);
+    excluded.clear();
+    excluded |= map().walls;
+    excluded |= camps;
+    auto landings = excluded.reachable_tiles(me, 2);
+    landings &= map().open_for_us;
+    excluded.clear();
+    excluded |= camps;
+    cambc::vision::champion_tiles_into(team::ally, t);
+    excluded |= t;
+    cambc::vision::champion_tiles_into(team::enemy, t);
+    excluded |= t;
+    cambc::vision::teleport_tiles_into(t);
+    excluded |= t;
+    excluded |= bumped_;
+    excluded &= landings;
+    landings ^= excluded;
     landings.set(me, false);
     return landings;
 }
@@ -301,9 +343,14 @@ bitboard Pathing::teleport_targets() {
     return targets;
 }
 
-bitboard Pathing::ward_targets() {
+bitboard Pathing::ward_targets(bool off_bushes) {
+    static bitboard excluded{cambc::uninitialized};
     auto targets = square(my_pos(), 2);
-    targets &= ~(map().impassable | map().enemy_spawn | cambc::vision::ward_tiles(team::ally));
+    targets &= map().open_for_us;
+    cambc::vision::ward_tiles_into(team::ally, excluded);
+    if (off_bushes) excluded |= map().bushes;
+    excluded &= targets;
+    targets ^= excluded;
     return targets;
 }
 

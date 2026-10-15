@@ -76,9 +76,10 @@ bool buy(cambc::item_type shard, unsigned count) {
 // product more, since fights go to the side with more health and damage.
 void buy_shards(const ChampionFacts& f) {
     auto& me = cambc::self();
+    unsigned gold = me.gold_count();
+    if (gold < 30) return;
     const auto owned = me.item_count();
     const int main = main_stat(f);
-    unsigned gold = me.gold_count();
     for (int family : {jungle, monster}) {
         const int have = static_cast<int>(owned[shard_of(family, main)] + 5 * owned[emblem_of(family, main)]);
         const unsigned count = std::min<unsigned>(5 - std::min(have, 5), gold / 30);
@@ -87,6 +88,7 @@ void buy_shards(const ChampionFacts& f) {
         gold -= 30 * count;
         if (have + static_cast<int>(count) < 5) return;
     }
+    if (gold < 30) return;
     float health = me.max_health(), value = main == focus_stat ? me.focus() : me.strength();
     const float main_growth = main == focus_stat ? f.focus.growth : f.strength.growth;
     int partial_hp = static_cast<int>(owned[shard_of(bruiser, health_stat)]);
@@ -129,7 +131,7 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
     if (!me.can_attack()) return -1;
     const int range = world.me().facts().attack_range();
     const auto& map = world.map();
-    for (auto p : (cambc::vision::camp_tiles() & square(me.position(), range)).positions()) {
+    for (auto p : positions_within(live_camp_tiles(), me.position(), range)) {
         const int g = map.group_at(p);
         if (g < 0 || map.groups[g].has_monolith || !allowed(g)) continue;
         const auto& members = map.groups[g].members;
@@ -149,8 +151,9 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
 // Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
 // every turn, so only danger near us is worth the extra search.
 void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
+    if (!cambc::self().can_move()) return;
     const auto avoid = safety.avoid();
-    const bool near = !(avoid & square(cambc::self().position(), safety_params::avoid_radius)).is_empty();
+    const bool near = any_within(avoid, cambc::self().position(), safety_params::avoid_radius);
     if (!near || !pathing.step_towards(field, &avoid)) pathing.step_towards(field);
 }
 
@@ -541,7 +544,7 @@ void place_ward(const World& world, Pathing& pathing, Memory& memory) {
     if (ward_bushes(world, memory) || world.round % params::ward_period != 0) return;
     const vec2 spawn = world.map().ally_spawn_centre;
     std::optional<vec2> best;
-    for (auto p : (pathing.ward_targets() & ~world.map().bushes).positions())
+    for (auto p : pathing.ward_targets(true).positions())
         if (!best || dist(spawn, p) > dist(spawn, *best)) best = p;
     if (best) try_ward(*best, memory);
 }
@@ -593,13 +596,13 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     const vec2 here = me.position();
     const int range = world.me().facts().attack_range();
     const float strength = std::max(1.0f, me.strength());
-    const auto& enemy_spawn = world.map().enemy_spawn;
+    const auto& near_enemy_spawn = world.map().near_enemy_spawn;
     // Quickest first (ties in index order), so fights are simulated only up to the first won.
     std::array<std::pair<float, const ChampionBelief*>, 8> order;
     int n = 0;
     for (const auto& e : world.enemies) {
         if (n == static_cast<int>(order.size()) || !e.alive || !e.visible || dist(here, e.pos) > params::chase_radius
-            || !(enemy_spawn & square(e.pos, 1)).is_empty())
+            || near_enemy_spawn.is_set(e.pos))
             continue;
         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + e.health / strength;
         int i = n++;
