@@ -171,7 +171,7 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
     return best;
 }
 
-Cast enemy_cast(const World& world, bool keep_walk, bool hold_stun) {
+Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) {
     auto& me = cambc::self();
     Cast best;
     if (!me.can_cast() || !fuel_ok(fuel_needed)) return best;
@@ -185,45 +185,50 @@ Cast enemy_cast(const World& world, bool keep_walk, bool hold_stun) {
         const auto& a = f.abilities[s];
         const float threshold = a.excludes_walking && keep_walk ? keep_walk_value : min_value;
         const float raw = raw_damage(s);
-        const bool kills_only = hold_stun && a.stuns;
         const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= me.health(); };
+        const auto spared = [&](const ChampionBelief& e, float damage, float health) { return &e == hold && damage < health - 0.01f; };
         if (a.target == Targeting::unit) {
             for (const auto& e : world.enemies) {
                 if (!e.alive || !e.visible || dist(here, e.pos) > a.range() || suicidal(e)) continue;
                 const auto c = live(e);
                 if (!c.is_visible()) continue;
                 const float damage = damage_to(s, c, raw);
-                if (kills_only && damage < c.health() - 0.01f) continue;
+                if (spared(e, damage, c.health())) continue;
                 float v = hit_worth(world, e, damage, c.health(), enemy_spawn.is_set(e.pos));
                 if (a.stuns && !c.buffs().has_stun()) v += stun_worth(e, raw > 0);
                 if (v >= threshold && v > best.value) best = Cast{s, v, c, std::nullopt, {}};
             }
         } else if (a.target == Targeting::ground) {
             std::vector<Target> targets;
-            bitboard ren; // the area hits unseen enemies too: keep it off a Ren whose retaliation kills us
+            // The area hits every enemy in it, unseen too: keep it off a Ren whose retaliation kills
+            // us and off a held tributer it does not kill.
+            bitboard off;
             for (const auto& e : world.enemies) {
                 if (!e.alive) continue;
                 const float stun = a.stuns ? stun_worth(e, raw > 0) : 0;
                 if (e.visible) {
                     if (dist(here, e.pos) > a.reach()) continue;
                     if (suicidal(e)) {
-                        ren.draw_chebyshev(e.pos, 1);
+                        off.draw_chebyshev(e.pos, 1);
                         continue;
                     }
                     const auto c = live(e);
                     if (!c.is_visible()) continue;
                     const float damage = damage_to(s, c, raw);
-                    if (kills_only && damage < c.health() - 0.01f) continue;
+                    if (spared(e, damage, c.health())) {
+                        off.draw_chebyshev(e.pos, 1);
+                        continue;
+                    }
                     const float stunned = a.stuns && c.buffs().has_stun() ? stun : 0;
                     const float hit = hit_worth(world, e, damage, c.health(), enemy_spawn.is_set(e.pos));
                     targets.push_back({e.pos, 1, hit + stun - stunned});
-                } else if (!kills_only && e.tracked && !e.possible.is_empty()) {
+                } else if (e.tracked && !e.possible.is_empty()) {
                     const int n = static_cast<int>(e.possible.count());
                     if (n > max_unseen_tiles) continue;
                     const auto near = positions_within(e.possible, here, a.reach());
                     if (near.empty()) continue;
                     if (suicidal(e)) {
-                        for (auto p : near) ren.draw_chebyshev(p, 1);
+                        for (auto p : near) off.draw_chebyshev(p, 1);
                         continue;
                     }
                     const float health = e.health > 0 ? e.health : e.max_health;
@@ -235,7 +240,7 @@ Cast enemy_cast(const World& world, bool keep_walk, bool hold_stun) {
             }
             if (targets.empty()) continue;
             if (!risk) risk = wake_risk(world, here, a.reach());
-            best.offer(best_ground(s, threshold, targets, here, a.range(), *risk | ren));
+            best.offer(best_ground(s, threshold, targets, here, a.range(), *risk | off));
         }
     }
     return best;
@@ -309,9 +314,9 @@ Cast camp_cast(const World& world, int group) {
 
 } // namespace
 
-bool cast_at_enemies(const World& world, bool keep_walk, bool hold_stun) {
+bool cast_at_enemies(const World& world, bool keep_walk, const ChampionBelief* hold) {
     try {
-        return enemy_cast(world, keep_walk, hold_stun).execute();
+        return enemy_cast(world, keep_walk, hold).execute();
     } catch (const cambc::error&) {
         return false;
     }

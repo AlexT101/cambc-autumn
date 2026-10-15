@@ -123,10 +123,10 @@ void place_lock(const World& world) {
     }
 }
 
-bool attack_enemy(const World& world) {
+bool attack_enemy(const World& world, const ChampionBelief* hold = nullptr) {
     auto& me = cambc::self();
     if (!me.can_attack()) return false;
-    const auto target = attack_target(world);
+    const auto target = attack_target(world, false, hold);
     if (!target) return false;
     try {
         me.attack(*target);
@@ -526,6 +526,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         // capture that wins shares that walk with no later one. Gems past the win are worth nothing.
         const bool wins = group.gems >= short_by;
         const Field* to_bank = to_altar ? to_altar : wins ? &pathing.to_any_altar() : nullptr;
+        // A recall only goes home: the way out from an altar is walked.
         const int walk = to_bank ? pathing.centre_to_altar(g) : unreachable;
         const int back = to_altar ? homeward(walk) : walk;
         const int bank = back == unreachable ? 0 : back + (group.gems + 9) / 10;
@@ -538,7 +539,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         // Risky groups matter only while no affordable one is found; skip the costly clearing
         // estimate for groups that cannot beat it even with no clearing.
         if (best >= 0 && gems / static_cast<float>(trip + capture_rounds) <= best_value
-            && (bag == 0 || gems / static_cast<float>(back + bank + capture_rounds) <= from_altar_value))
+            && (bag == 0 || gems / static_cast<float>(walk + bank + capture_rounds) <= from_altar_value))
             continue;
         float clear_rounds = 0, damage = 0;
         if (belief.state != CampState::cleared) {
@@ -557,9 +558,9 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
             if (value > risky_value) risky = g, risky_value = value, risky_steps = steps;
         } else {
             if (value > best_value) best = g, best_value = value, best_steps = steps;
-            if (bag > 0 && back != unreachable) {
-                const int via_altar = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - world.round - bank_now - back) : 0;
-                from_altar_value = std::max(from_altar_value, gems / (static_cast<float>(back + bank + via_altar) + clear_rounds + capture_rounds));
+            if (bag > 0 && walk != unreachable) {
+                const int via_altar = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - world.round - bank_now - walk) : 0;
+                from_altar_value = std::max(from_altar_value, gems / (static_cast<float>(walk + bank + via_altar) + clear_rounds + capture_rounds));
             }
         }
     }
@@ -874,10 +875,19 @@ bool wants_shop(const World& world, Safety& safety, const Memory& memory) {
     return true;
 }
 
-// A tribute stunned on its last turn wastes the whole channel, and until then its owner can only
-// cancel: the visible tributer a ready stun reaches to wait for. None if a tribute in reach could
-// land before our next turn, or another enemy could stun or kill us before it.
-const ChampionBelief* tribute_to_stun_later(const World& world, Safety& safety) {
+bool alive_now(const ChampionBelief& b) {
+    try {
+        return cambc::detail::handle_access::make_champion(b.handle).is_alive();
+    } catch (const cambc::error&) {
+        return false;
+    }
+}
+
+// A tribute stunned on its last turn wastes the whole channel: the visible tributer a ready stun
+// reaches to wait for, left alone meanwhile, since a hit can make its owner cancel and act. None if
+// a tribute in reach could land before our next turn, another enemy could stun or kill us before
+// it, or our own bag can go in now.
+const ChampionBelief* tribute_to_stun_later(const World& world, Safety& safety, const Memory& memory) {
     const auto& self = world.me();
     const auto& f = self.facts();
     int reach = -1;
@@ -893,7 +903,7 @@ const ChampionBelief* tribute_to_stun_later(const World& world, Safety& safety) 
         if (e.channel_end_round <= world.round + 1) return nullptr;
         target = &e;
     }
-    if (!target || safety.lethal(self.pos)) return nullptr;
+    if (!target || safety.lethal(self.pos) || can_tribute_safely(world, safety, memory)) return nullptr;
     for (const auto& t : safety.threats()) {
         const int d = t.distance(self.pos);
         if (&world.enemies[t.enemy] != target && t.credible() && t.strike.hits(d) && t.strike.stuns[d]) return nullptr;
@@ -984,11 +994,11 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     }
 
     const bool holding = holding_capture(world);
-    const auto* stun_later = tribute_to_stun_later(world, safety);
-    bool attacked = attack_enemy(world);
+    const auto* stun_later = tribute_to_stun_later(world, safety, memory);
+    bool attacked = attack_enemy(world, stun_later);
     if (attacked) reset_and_attack_enemy(world, true, stun_later);
     cast_at_enemies(world, me.gem_count() > 0 && !holding, stun_later);
-    if (!attacked && !holding && dash_to_attack(world, pathing, stun_later)) attacked = attack_enemy(world);
+    if (!attacked && !holding && dash_to_attack(world, pathing, nullptr, stun_later)) attacked = attack_enemy(world, stun_later);
     if (attacked) reset_and_attack_enemy(world, false, stun_later);
     decision = holding ? 'P' : attacked ? 'A' : decision;
     if (!me.is_alive()) return;
@@ -997,13 +1007,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         memory.claim = world.map().group_at(me.position());
         return;
     }
-    if (stun_later) {
-        // Closer to hit it while it cannot act; each step keeps it in the stun's reach.
+    // A tributer cannot walk out of the stun's reach.
+    if (stun_later && alive_now(*stun_later)) {
         decision = 'D';
-        if (dist(me.position(), stun_later->pos) > world.me().facts().attack_range() && pathing.step_closer(stun_later->pos)) {
-            attack_enemy(world);
-            reset_and_attack_enemy(world, false, true);
-        }
         return;
     }
     if (me.gem_count() > 0) {

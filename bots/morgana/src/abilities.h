@@ -4,10 +4,11 @@
 namespace aph {
 
 class World;
+struct ChampionBelief;
 
 // The best enemy-hitting cast this turn, if worth it. With `keep_walk`, an excludes-walking cast
-// must be worth the walk (a kill or a cancelled tribute). With `hold_stun`, stunning slots only kill.
-bool cast_at_enemies(const World& world, bool keep_walk = false, bool hold_stun = false);
+// must be worth the walk (a kill or a cancelled tribute). `hold`: a tributer hit only to kill it.
+bool cast_at_enemies(const World& world, bool keep_walk = false, const ChampionBelief* hold = nullptr);
 
 // A damage or stun cast on the group being farmed (-1: the group of a camp in attack range),
 // held while enemies are near. Call only when not walking this turn.
