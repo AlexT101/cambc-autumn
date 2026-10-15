@@ -333,7 +333,8 @@ float min_camp_damage(const CampGroup& group, const CampBelief& belief, float st
     return damage;
 }
 
-// Beliefs about most groups do not change between turns, so neither does this.
+// Beliefs about most groups do not change between turns, so neither does this. Two strengths
+// are kept per group: ours alone and ours with allies'.
 float min_camp_damage(int g, const CampGroup& group, const CampBelief& belief, float strength, float* rounds) {
     struct Entry {
         bool valid = false, fresh = false;
@@ -341,14 +342,24 @@ float min_camp_damage(int g, const CampGroup& group, const CampBelief& belief, f
         std::array<float, 8> health{};
         float damage = 0, rounds = 0;
     };
-    static std::vector<Entry> cache;
+    struct Slots {
+        std::array<Entry, 2> entries;
+        int recent = 0;
+    };
+    static std::vector<Slots> cache;
     const auto& health = belief.health;
     if (health.size() > Entry{}.health.size()) return min_camp_damage(group, belief, strength, rounds);
     if (cache.size() <= static_cast<std::size_t>(g)) cache.resize(g + 1);
-    auto& e = cache[g];
+    auto& [entries, recent] = cache[g];
     const bool fresh = belief.state == CampState::respawning;
-    bool same = e.valid && e.fresh == fresh && e.strength == strength;
-    for (std::size_t i = 0; same && i < health.size(); ++i) same = e.health[i] == health[i];
+    const auto matches = [&](const Entry& e) {
+        bool same = e.valid && e.fresh == fresh && e.strength == strength;
+        for (std::size_t i = 0; same && i < health.size(); ++i) same = e.health[i] == health[i];
+        return same;
+    };
+    const bool same = matches(entries[recent]) || matches(entries[recent ^ 1]);
+    if (!same || !matches(entries[recent])) recent ^= 1;
+    auto& e = entries[recent];
     if (!same) {
         e.valid = true;
         e.fresh = fresh;
@@ -578,6 +589,12 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         if (best >= 0 && gems / static_cast<float>(trip + capture_rounds) <= best_value
             && (bag == 0 || gems / static_cast<float>(walk + bank + capture_rounds) <= from_altar_value))
             continue;
+        const auto too_late = [&](float clear_rounds) {
+            if (!deadline) return false;
+            const int last = pathing.centre_to_altar(g);
+            return last == unreachable
+                   || static_cast<float>(steps + wait + capture_rounds + last + tribute_turns(bag + group.gems)) + clear_rounds > static_cast<float>(left);
+        };
         if (claimed) {
             if (belief.state == CampState::cleared) continue;
             const bool fresh = belief.state == CampState::respawning;
@@ -588,10 +605,11 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
             const float left = health - others * static_cast<float>(working);
             if (health <= 0 || left <= 0) continue;
             const float rounds = left / (strength + others), part = strength * rounds / health;
+            if (too_late(rounds)) continue;
             float joint_rounds = 0;
-            const float hits = soften * min_camp_damage(group, belief, strength + others, &joint_rounds) * part;
+            const float hits = soften * min_camp_damage(g, group, belief, strength + others, &joint_rounds) * part;
             if (hits > spare_health) continue;
-            const float value = gems * part / (static_cast<float>(trip) + rounds);
+            const float value = gems * part / (static_cast<float>(trip) + rounds + capture_rounds);
             if (value > shared_value) shared = g, shared_value = value, shared_steps = steps;
             continue;
         }
@@ -599,17 +617,12 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         if (belief.state != CampState::cleared) {
             damage = soften * min_camp_damage(g, group, belief, strength, &clear_rounds);
         }
-        if (deadline) {
-            const int last = pathing.centre_to_altar(g);
-            if (last == unreachable
-                || static_cast<float>(steps + wait + capture_rounds + last + tribute_turns(bag + group.gems)) + clear_rounds > static_cast<float>(left))
-                continue;
-        }
+        if (too_late(clear_rounds)) continue;
         float value = gems / (static_cast<float>(trip) + clear_rounds + capture_rounds);
         if (damage > spare_health && partner > 0 && belief.state == CampState::alive) {
             float joint_rounds = 0;
             const float part = strength / (strength + partner);
-            if (soften * min_camp_damage(group, belief, strength + partner, &joint_rounds) * part <= spare_health) {
+            if (soften * min_camp_damage(g, group, belief, strength + partner, &joint_rounds) * part <= spare_health) {
                 damage = 0;
                 value = gems * part / (static_cast<float>(trip) + joint_rounds + capture_rounds);
             }

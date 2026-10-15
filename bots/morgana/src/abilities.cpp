@@ -234,7 +234,6 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
             bitboard off;
             for (const auto& e : world.enemies) {
                 if (!e.alive) continue;
-                const float stun = a.stuns ? stun_worth(e, raw > 0) : 0;
                 if (e.visible) {
                     if (dist(here, e.pos) > a.reach()) continue;
                     if (suicidal(e)) {
@@ -248,9 +247,9 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
                         off.draw_chebyshev(e.pos, 1);
                         continue;
                     }
-                    const float stunned = a.stuns && c.buffs().has_stun() ? stun : 0;
+                    const float stun = a.stuns && !c.buffs().has_stun() ? stun_worth(e, raw > 0) : 0;
                     const float hit = hit_worth(world, e, damage, c.health(), enemy_spawn.is_set(e.pos));
-                    targets.push_back({e.pos, 1, hit + stun - stunned});
+                    targets.push_back({e.pos, 1, hit + stun});
                 } else if (e.tracked && !e.possible.is_empty()) {
                     const int n = static_cast<int>(e.possible.count());
                     if (n > max_unseen_tiles) continue;
@@ -262,6 +261,7 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
                     }
                     const float health = e.health > 0 ? e.health : e.max_health;
                     const float hit = std::min(raw, health);
+                    const float stun = a.stuns ? stun_worth(e, raw > 0) : 0;
                     for (auto p : near)
                         targets.push_back({p, 1.0f / static_cast<float>(n),
                                            hit_worth(world, e, hit, health, enemy_spawn.is_set(p)) + stun});
