@@ -148,7 +148,9 @@ void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
 // Enemies yet to act this round strike before our next turn whatever the order; acting first
 // next round denies the second strike of those, and the only one of the others.
 void offer_escape(const World& world, const ChampionBelief& self, Safety& safety, Wish& wish) {
-    if (world.map().ally_spawn.is_set(self.pos)) return;
+    if (world.map().ally_spawn.is_set(self.pos)
+        || (!safety.built() && safety.damage_bound(self.pos, true) < self.health))
+        return;
     float damage = safety.camp_damage(self.pos);
     bool enemy = false;
     for (const auto& t : safety.threats()) {

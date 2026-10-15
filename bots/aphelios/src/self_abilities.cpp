@@ -158,7 +158,7 @@ bool travel_dash(const World& world, Pathing& pathing, const cambc::ability& das
 
 } // namespace
 
-std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only) {
+std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only, const ChampionBelief* hold) {
     auto& me = cambc::self();
     const vec2 here = me.position();
     const int range = world.me().facts().attack_range();
@@ -191,7 +191,8 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     std::optional<cambc::champion> best;
     float best_value = 0, best_health = 0;
     for (const auto& t : seen) {
-        if (dist(here, t.pos) > range || (stunnable_only && !t.stunnable)) continue;
+        if (dist(here, t.pos) > range || (stunnable_only && !t.stunnable) || (hold && t.pos == hold->pos && t.health > strength))
+            continue;
         float value = worth(t), retaliation = t.retaliation;
         if (splash)
             for (const auto& o : seen)
@@ -204,15 +205,15 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     return best;
 }
 
-bool reset_and_attack_enemy(const World& world, bool stunning_only, bool hold_stun) {
+bool reset_and_attack_enemy(const World& world, bool stunning_only, const ChampionBelief* hold) {
     auto& me = cambc::self();
     const auto& f = world.me().facts();
     if (me.can_attack()) return false;
     const int slot = f.slot_of(AbilityKind::attack_reset);
-    if ((slot >= 0 && f.abilities[slot].stuns) ? hold_stun : stunning_only) return false;
+    if (stunning_only && (slot < 0 || !f.abilities[slot].stuns)) return false;
     const auto reset = ready(world, AbilityKind::attack_reset);
     if (!reset) return false;
-    const auto target = attack_target(world, stunning_only);
+    const auto target = attack_target(world, stunning_only, hold);
     if (!target || !cast(*reset)) return false;
     try {
         me.attack(*target);
@@ -296,7 +297,7 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
     return false;
 }
 
-bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target) {
+bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target, const ChampionBelief* hold) {
     auto& me = cambc::self();
     const bool target_given = target != nullptr;
     if (!me.can_attack() || (!target_given && me.health() < dash_min_health * me.max_health())) return false;
@@ -312,7 +313,7 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
         if (!e.alive || !e.visible || dist(here, e.pos) > range + dash_steps || world.map().enemy_spawn.is_set(e.pos))
             continue;
         const float fraction = e.health / e.max_health;
-        const bool finish = e.health <= strength || (fraction < chase_health && fraction < my_fraction);
+        const bool finish = e.health <= strength || (fraction < chase_health && fraction < my_fraction && &e != hold);
         if (finish && (!target || e.health < target->health)) target = &e;
     }
     if (!target || dist(here, target->pos) > range + dash_steps) return false;
