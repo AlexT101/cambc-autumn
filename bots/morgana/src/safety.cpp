@@ -31,7 +31,8 @@ struct Fighter {
     const ChampionFacts* facts;
     float strength, focus;
     std::array<int, 2> ready_at; // own turn from which the slot can be cast
-    int arrives_at = 0;          // own turns spent walking into reach first
+    int arrives_at = 0;          // own turns spent walking into reach first, out of the enemy's reach until then
+    bool idle = false;           // never acts
     float health = 0, max_health = 0;
     float shield = 0;
     int shield_until = -1; // own turn at whose start the shield is lost
@@ -61,11 +62,12 @@ struct Side {
         for (int i = 0; i < count; ++i) total += std::max(0.0f, fighters[i].health);
         return total;
     }
-    // The living member with the least health and shield, or -1.
+    bool in_reach(int i) const { return fighters[i].health > 0 && fighters[i].arrives_at <= turn; }
+    // The living member in reach with the least health and shield, or -1.
     int weakest() const {
         int best = -1;
         for (int i = 0; i < count; ++i)
-            if (fighters[i].health > 0
+            if (in_reach(i)
                 && (best < 0 || fighters[i].health + fighters[i].shield < fighters[best].health + fighters[best].shield))
                 best = i;
         return best;
@@ -74,7 +76,7 @@ struct Side {
     int weakest_hurt(int caster) const {
         int best = -1;
         for (int i = 0; i < count; ++i)
-            if (i != caster && fighters[i].health > 0 && fighters[i].health < fighters[i].max_health
+            if (i != caster && in_reach(i) && fighters[i].health < fighters[i].max_health
                 && (best < 0 || fighters[i].health < fighters[best].health))
                 best = i;
         return best;
@@ -171,12 +173,12 @@ int attack(Fighter& f, int turn, Side& self, Side& other, float& damage) {
 }
 
 // One side's turn: stunned members (the strongest first) skip it.
-void act(Side& self, Side& other) {
+float act(Side& self, Side& other) {
     std::array<bool, max_fighters> skip{};
     for (int k = 0; k < self.stunned; ++k) {
         int best = -1;
         for (int i = 0; i < self.count; ++i)
-            if (!skip[i] && self.fighters[i].health > 0 && self.fighters[i].facts->passive != Passive::stun_immune
+            if (!skip[i] && self.in_reach(i) && self.fighters[i].facts->passive != Passive::stun_immune
                 && (best < 0 || self.fighters[i].strength > self.fighters[best].strength))
                 best = i;
         if (best < 0) break;
@@ -189,30 +191,35 @@ void act(Side& self, Side& other) {
     for (int i = 0; i < self.count; ++i) {
         auto& f = self.fighters[i];
         if (f.shield_until >= 0 && f.shield_until <= turn) f.shield = 0, f.shield_until = -1;
-        if (f.health > 0 && f.arrives_at <= turn && !skip[i]) hits += attack(f, turn, self, other, damage);
+        if (f.health > 0 && f.arrives_at <= turn && !f.idle && !skip[i]) hits += attack(f, turn, self, other, damage);
     }
     const int target = other.weakest();
     const float back = target >= 0 ? other.fighters[target].retaliation : 0.0f;
     other.hurt(damage, target);
     if (back > 0) self.hurt(static_cast<float>(hits) * back);
+    return damage;
 }
 
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does.
-std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = 24) {
+// `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
+std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = 24,
+                             std::array<float, 4>* dealt = nullptr) {
     prepare(us);
     prepare(them);
     int ours = 0, theirs = 0;
     for (int t = 0; t < 2 * horizon; ++t) {
         const bool their_turn = (t % 2 == 0) == they_first;
         if (their_turn) {
-            act(them, us);
+            const float d = act(them, us);
+            if (dealt && theirs < 5) (*dealt)[2] += d, (*dealt)[0] += theirs == 0 ? d : 0;
             if (us.camp > 0) us.hurt(us.camp);
             ++theirs;
             if (self_falls && us.self >= 0 && us.fighters[us.self].health <= 0) *self_falls = true;
             if (us.alive == 0) return {0, theirs};
         } else {
-            act(us, them);
+            const float d = act(us, them);
+            if (dealt && ours < 5) (*dealt)[3] += d, (*dealt)[1] += ours == 0 ? d : 0;
             ++ours;
             if (them.count > 0 && them.alive == 0) return {ours, 0};
         }
@@ -229,7 +236,7 @@ Trade trade(Side& us, Side& them) {
     t.our_health = us.health();
     t.their_health = them.health();
     if (them.count == 0) return t;
-    const auto [we_kill, they_kill] = simulate(us, them, true, &t.self_falls);
+    const auto [we_kill, they_kill] = simulate(us, them, true, &t.self_falls, 24, debug_fights ? &t.dealt : nullptr);
     t.turns_to_kill_them = we_kill;
     t.turns_to_kill_us = they_kill;
     t.lost = they_kill > 0;
@@ -540,7 +547,16 @@ Trade Safety::fight(vec2 p) {
         const auto& a = world_.allies[i];
         if (!(key >> i & 1)) continue;
         if (a.is_self) us.self = us.count;
-        us.join(a, a.is_self ? world_.round : next_turn_round(world_, a));
+        const int turn_round = a.is_self ? world_.round : next_turn_round(world_, a);
+        us.join(a, turn_round);
+        // Counted from the first turn, allies 5+ steps from the nearest enemy hit within 5 rounds
+        // 10-45% as often as one beside it, and the simulation overrated our side with each ally.
+        if (a.is_self) continue;
+        int gap = unreachable;
+        for (const auto& t : threats())
+            if (key >> (16 + t.enemy) & 1)
+                gap = std::min(gap, t.visible ? dist(a.pos, t.pos) : std::min(t.distance(a.pos), dist(a.pos, p) + t.distance(p)));
+        us.fighters[us.count - 1].arrives_at = std::max(0, gap - std::max(0, strike(a, turn_round).reach));
     }
     for (const auto& t : threats()) {
         const auto& e = world_.enemies[t.enemy];
@@ -571,7 +587,7 @@ Trade Safety::duel(int enemy) {
 int Safety::turns_to_kill_idle(vec2 p, int horizon) {
     Side us, them;
     us.join(world_.me(), world_.round);
-    us.fighters[0].arrives_at = 2 * horizon;
+    us.fighters[0].idle = true;
     us.camp = camp_damage(p, false);
     for (const auto& e : world_.enemies) {
         if (!e.alive || !e.visible || gone(e)) continue;

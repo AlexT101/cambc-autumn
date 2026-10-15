@@ -38,9 +38,15 @@ void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, cons
               << t.turns_to_kill_us << ' ' << t.turns_to_kill_them << ' ' << t.allies << ' ' << t.enemies << ' '
               << static_cast<int>(t.our_health) << ' ' << static_cast<int>(t.their_health) << ' ' << target << ' '
               << static_cast<int>(safety.camp_damage(p)) << ' ' << safety.lethal(p);
+    for (const float d : t.dealt) std::cout << ' ' << static_cast<int>(d);
+    for (const auto& a : world.allies)
+        if (a.alive && !a.is_self && a.visible && dist(p, a.pos) <= safety_params::fight_ally_radius)
+            std::cout << " a" << static_cast<std::uint32_t>(a.handle);
     for (const auto& th : safety.threats())
         if (th.credible() && th.strike.hits(th.distance(p)))
-            std::cout << ' ' << static_cast<std::uint32_t>(world.enemies[th.enemy].handle) << (th.visible ? 'v' : 'u');
+            std::cout << ' ' << static_cast<std::uint32_t>(world.enemies[th.enemy].handle) << (th.visible ? 'v' : 'u') << ':'
+                      << th.distance(p) << ':' << static_cast<int>(th.strike.at(th.distance(p))) << ':'
+                      << world.round - world.enemies[th.enemy].pos_round;
     std::cout << std::endl;
 }
 

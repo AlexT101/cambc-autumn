@@ -80,7 +80,8 @@ struct Threat {
 // health hid this: we died in 17% of won fights where we were the weakest, 4-7% otherwise.
 // Stuns skip the strongest opponent's turn; a heal goes to the weakest hurt ally other than the
 // caster, a shield to its caster until it expires; Ren hits back while she is the one hit.
-// Ignores items, positioning and the order within a side.
+// An ally joins once it could walk into reach of the nearest enemy, and is out of their reach
+// until then. Ignores items, other positioning and the order within a side.
 struct Trade {
     bool lost = false;          // they win when they strike first
     int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
@@ -88,6 +89,7 @@ struct Trade {
     bool self_falls = false;    // we die before their side does, when they strike first
     float our_health = 0, their_health = 0;
     int allies = 0, enemies = 0;
+    std::array<float, 4> dealt{}; // debug_fights only: see simulate()
 };
 
 class Safety {
