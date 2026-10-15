@@ -1,4 +1,4 @@
-// Ladder-style sparring bot: aphelios with one champion per camp (claims), farming at home, capture recalls, early retreat from packs, Jungle-Power builds and altar locks.
+// Ladder-style sparring bot: aphelios with one champion per camp (claims), farming at home, capture recalls, early retreat from packs, Jungle-Power-Durability builds and altar locks.
 #include "bot.h"
 #include <algorithm>
 #include <array>
@@ -54,11 +54,13 @@ cambc::item_type emblem_of(int family, int stat) {
     return cambc::item_type{static_cast<std::uint32_t>(family * 6 + stat * 2 + 1)};
 }
 
-// Casters whose spells out-damage their basic attacks per shard: Focus grows 10-15 a shard
-// against 3.5 Strength, and spell multipliers sum to 2-3.4 per 8 rounds, front-loaded in a fight.
+// Focus when a shard's Focus, over the damage spells' multipliers, beats four basic attacks'
+// Strength: spells front-load a fight. Ren's retaliation counts once a round.
 int main_stat(const ChampionFacts& f) {
-    using C = cambc::champion_type;
-    return f.type == C::stellar || f.type == C::prism || f.type == C::cassi ? focus_stat : strength_stat;
+    float spells = f.passive == Passive::retaliation ? retaliation_share * ability_cooldown : 0.0f;
+    for (const auto& a : f.abilities)
+        if (a.kind == AbilityKind::damage) spells += a.multiplier;
+    return f.focus.growth * spells > 4 * f.strength.growth ? focus_stat : strength_stat;
 }
 
 bool buy(cambc::item_type shard, unsigned count) {
@@ -72,8 +74,8 @@ bool buy(cambc::item_type shard, unsigned count) {
     }
 }
 
-// The ladder's usual build: a Jungle emblem (-30% camp damage) in the main stat, then Power
-// emblems (6 shards' stats for 5) in it. True if any was bought.
+// A Jungle emblem (-30% camp damage) in the main stat, a Power emblem (6 shards' stats for 5) in
+// it, a Durability emblem (-10% damage taken) in Health, then Power emblems. True if any was bought.
 bool buy_shards(const ChampionFacts& f) {
     auto& me = cambc::self();
     unsigned gold = me.gold_count();
@@ -81,12 +83,14 @@ bool buy_shards(const ChampionFacts& f) {
     const unsigned start = gold;
     const auto owned = me.item_count();
     const int main = main_stat(f);
-    const int have = static_cast<int>(owned[shard_of(jungle, main)] + 5 * owned[emblem_of(jungle, main)]);
-    if (have < 5) {
+    const std::array<std::array<int, 2>, 3> emblems{{{jungle, main}, {power, main}, {durability, health_stat}}};
+    for (const auto [family, stat] : emblems) {
+        const unsigned have = owned[shard_of(family, stat)] + 5 * owned[emblem_of(family, stat)];
+        if (have >= 5) continue;
         const unsigned count = std::min<unsigned>(5 - have, gold / 30);
-        if (!buy(shard_of(jungle, main), count)) return false;
+        if (!buy(shard_of(family, stat), count)) return gold < start;
         gold -= 30 * count;
-        if (have + static_cast<int>(count) < 5) return true;
+        if (have + count < 5) return true;
     }
     return (gold >= 30 && buy(shard_of(power, main), gold / 30)) || gold < start;
 }
@@ -278,12 +282,15 @@ float output(const ChampionBelief& c) {
     return damage;
 }
 
-// Camps hit a Jungle emblem's owner 30% softer.
+// Camps hit a Jungle emblem's owner 30% softer, and a Durability emblem's 10%.
 float camp_hit_factor() {
     const auto owned = cambc::self().item_count();
-    for (int stat : {strength_stat, focus_stat, health_stat})
-        if (owned[emblem_of(jungle, stat)] > 0) return 0.7f;
-    return 1.0f;
+    const auto has = [&](int family) {
+        return owned[emblem_of(family, strength_stat)] + owned[emblem_of(family, focus_stat)]
+                   + owned[emblem_of(family, health_stat)]
+               > 0;
+    };
+    return (has(jungle) ? 0.7f : 1.0f) * (has(durability) ? 0.9f : 1.0f);
 }
 
 constexpr int capture_rounds = 6;
