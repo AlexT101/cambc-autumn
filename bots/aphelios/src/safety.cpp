@@ -225,6 +225,8 @@ Trade trade(const Side& us, const Side& them) {
 } // namespace
 
 int next_turn_round(const World& world, const ChampionBelief& c) {
+    // Read for those in sight; ranks are a guess when priorities change unseen.
+    if (c.visible && !c.is_self) return c.acted ? world.round + 1 : world.round;
     return world.slot(c, world.round) > world.slot(world.me(), world.round) ? world.round : world.round + 1;
 }
 
