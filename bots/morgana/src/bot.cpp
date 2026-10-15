@@ -762,8 +762,11 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     int n = 0;
     for (const auto& e : world.enemies) {
         if (n == static_cast<int>(order.size()) || !e.alive || !e.visible || dist(here, e.pos) > params::chase_radius
-            || near_enemy_spawn.is_set(e.pos) || (dist(here, e.pos) > range && !own_ground(world, e.pos)))
+            || near_enemy_spawn.is_set(e.pos))
             continue;
+        // Out of reach on its own ground only when hurt: fights at central altars straddle the
+        // line, and a beaten enemy otherwise escapes a step across it.
+        if (dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= 0.5f * e.max_health) continue;
         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + e.health / strength;
         int i = n++;
         for (; i > 0 && order[i - 1].first > turns; --i) order[i] = order[i - 1];
