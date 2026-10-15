@@ -6,7 +6,6 @@ import { BANDS, GenFail, PRESETS, TEMPLATES, candidates, connect, generate, mark
 import { createEngine } from './wasm.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const GEN_DIR = path.join(ROOT, 'maps', 'gen');
 
 // The stored pool in maps/gen: [preset, count] or [{ mutate: map, ops }, count].
 const PLAN = [
@@ -28,6 +27,29 @@ const PLAN = [
   [{ mutate: 'collision', ops: ['walls*0.6', 'camps*0.8', 'picks=4'] }, 1], [{ mutate: 'elkring', ops: ['camps*1.3', 'bushes*0.5', 'picks=4'] }, 1],
   ['classic', 12],
 ];
+// maps/gen-central: every spawn's nearest altar in the middle zone (0.4-0.6 of the walk between
+// spawns), as on the ladder maps collision, corners, elkring, interlock and monolith.
+// Presets are generated with altar_zone=mid; entries may add a third element of overrides.
+const CENTRAL_PLAN = [
+  [{ mutate: 'collision', ops: ['walls*0.6', 'camps*1.2', 'picks=4'] }, 1], [{ mutate: 'collision', ops: ['bushes*0.5', 'camps+3', 'picks=5'] }, 1],
+  [{ mutate: 'collision', ops: ['walls*1.5', 'camps*0.8'] }, 1],
+  [{ mutate: 'elkring', ops: ['walls+0.04', 'picks=3'] }, 1], [{ mutate: 'elkring', ops: ['holes*0', 'camps+2', 'picks=4'] }, 1],
+  [{ mutate: 'elkring', ops: ['bushes*3', 'camps*1.3'] }, 1],
+  [{ mutate: 'interlock', ops: ['walls*0.5', 'camps*1.2', 'picks=5'] }, 1], [{ mutate: 'interlock', ops: ['walls*1.6', 'picks=3'] }, 1],
+  [{ mutate: 'interlock', ops: ['bushes*2', 'camps+3'] }, 1],
+  [{ mutate: 'monolith', ops: ['walls*0.5', 'camps*0.8', 'picks=3'] }, 1], [{ mutate: 'monolith', ops: ['walls*1.5', 'camps+3', 'picks=4'] }, 1],
+  [{ mutate: 'monolith', ops: ['bushes*2', 'altars-1'] }, 1],
+  [{ mutate: 'corners', ops: ['holes*0', 'camps*0.8', 'picks=3'] }, 1], [{ mutate: 'corners', ops: ['walls+0.04', 'bushes*2', 'picks=4'] }, 1],
+  [{ mutate: 'corners', ops: ['camps*1.3', 'altars-1'] }, 1],
+  [{ mutate: 'expanse', ops: ['altars-3', 'altars=mid', 'walls*0.6', 'picks=4'] }, 1], [{ mutate: 'lanes', ops: ['altars-5', 'altars=mid', 'camps*1.2'] }, 1],
+  [{ mutate: 'packs', ops: ['altars=mid', 'walls+0.03', 'picks=5'] }, 1], [{ mutate: 'rows', ops: ['altars=mid', 'walls*0.6', 'picks=3'] }, 1],
+  ['classic', 6], ['small-brawl', 2], ['tiny', 1], ['maze', 2], ['caves', 1], ['monolith', 2], ['contested-centre', 2], ['altar-poor', 1],
+  ['jungle', 1], ['fortress', 1], ['islands', 1], ['vaults', 1],
+];
+const SUITES = {
+  gen: { dir: 'maps/gen', plan: PLAN, seed: 0 },
+  central: { dir: 'maps/gen-central', plan: CENTRAL_PLAN, seed: 7, zone: 'mid' },
+};
 const FEATURES = ['area', 'reach_frac', 'walls', 'holes', 'bushes', 'spawn_dist', 'detour', 'choke', 'openness', 'altars', 'groups_side', 'gems_side', 'camp_ratio', 'picks'];
 
 function parseSet(items) {
@@ -64,7 +86,7 @@ function encode(engine, g) {
 function summary(name, m) {
   const types = Object.entries(m.types).map(([k, v]) => `${k.replace('_cluster', '')}:${v}`).join(',');
   return `${name.padEnd(30)} ${m.size.padStart(7)} ${m.sym.padEnd(10)} picks=${m.picks} spawn=${m.spawn} walls=${m.walls} holes=${m.holes} bush=${m.bushes} ` +
-    `dist=${m.spawn_dist} choke=${m.choke} altars=${m.altars} groups/side=${m.groups_side}${m.shared_groups ? `+${m.shared_groups} shared` : ''} gems/side=${m.gems_side} [${types}]`;
+    `dist=${m.spawn_dist} choke=${m.choke} altars=${m.altars} altar=${m.altar_zone}:${m.altar_ratio} groups/side=${m.groups_side}${m.shared_groups ? `+${m.shared_groups} shared` : ''} gems/side=${m.gems_side} [${types}]`;
 }
 
 // ---- mutation -----------------------------------------------------------------------------
@@ -86,10 +108,30 @@ function sharedCamps(g) {
   return g.camps.filter(c => tiles.has(c.y * g.W + c.x));
 }
 
+function placeAltar(g, rng, band) {
+  const f = spawnFields(g), occupied = g.campMask(), all = [];
+  for (let i = 0; i < g.t.length; i++) if (g.t[i] === ALTAR) all.push(i);
+  const free = (x, y, i) => g.t[i] === GROUND && !occupied[i] && i !== g.mirror(i) && all.every(j => Math.max(Math.abs(j % g.W - x), Math.abs(Math.floor(j / g.W) - y)) >= 5)
+    && [0, 1].every(team => g.spawnTiles(team).every(j => Math.max(Math.abs(j % g.W - x), Math.abs(Math.floor(j / g.W) - y)) >= 3));
+  for (const i of candidates(g, rng, f, band, free).slice(0, 40)) {
+    g.set(i % g.W, Math.floor(i / g.W), ALTAR);
+    if (stillConnected(g)) return true;
+    g.set(i % g.W, Math.floor(i / g.W), GROUND);
+  }
+  return false;
+}
+
 function mutate(g, rng, ops) {
   for (const op of ops) {
+    if (op === 'altars=mid') {
+      // Moves every walkable altar pair (and self-mirrored altar) into the central band.
+      const f = spawnFields(g), tiles = canonicalTiles(g, ALTAR).filter(i => g.reachNear(f.dA, i % g.W, Math.floor(i / g.W)) >= 0);
+      for (const i of tiles) g.set(i % g.W, Math.floor(i / g.W), GROUND);
+      for (let k = 0; k < tiles.length; k++) placeAltar(g, rng, BANDS.central);
+      continue;
+    }
     const m = /^(walls|holes|bushes|camps|altars|picks)([*+=-])([\d.]+)$/.exec(op);
-    if (!m) throw new Error(`bad --op ${op}: use walls|holes|bushes|camps|altars with *F, +N or -N, or picks=N`);
+    if (!m) throw new Error(`bad --op ${op}: use walls|holes|bushes|camps|altars with *F, +N or -N, picks=N or altars=mid`);
     const [, what, sign, num] = m, v = +num;
     if (what === 'picks') { g.picks = v; continue; }
     if (['walls', 'holes', 'bushes'].includes(what)) {
@@ -115,18 +157,7 @@ function mutate(g, rng, ops) {
     if (what === 'altars') {
       const tiles = canonicalTiles(g, ALTAR);
       if (sign === '-') for (const i of rng.shuffle(tiles).slice(0, Math.min(v, tiles.length - 1))) g.set(i % g.W, Math.floor(i / g.W), GROUND);
-      else for (let k = 0; k < v; k++) {
-        const f = spawnFields(g), occupied = g.campMask();
-        const all = [];
-        for (let i = 0; i < g.t.length; i++) if (g.t[i] === ALTAR) all.push(i);
-        const free = (x, y, i) => g.t[i] === GROUND && !occupied[i] && i !== g.mirror(i) && all.every(j => Math.max(Math.abs(j % g.W - x), Math.abs(Math.floor(j / g.W) - y)) >= 5)
-          && [0, 1].every(team => g.spawnTiles(team).every(j => Math.max(Math.abs(j % g.W - x), Math.abs(Math.floor(j / g.W) - y)) >= 3));
-        for (const i of candidates(g, rng, f, BANDS.any, free).slice(0, 40)) {
-          g.set(i % g.W, Math.floor(i / g.W), ALTAR);
-          if (stillConnected(g)) break;
-          g.set(i % g.W, Math.floor(i / g.W), GROUND);
-        }
-      }
+      else for (let k = 0; k < v; k++) placeAltar(g, rng, BANDS.any);
       continue;
     }
     const groups = campGroupsCanonical(g);
@@ -175,13 +206,15 @@ function loadGrid(engine, file) {
   return Grid.fromMap(engine.decode(fs.readFileSync(p)));
 }
 
-function mutated(engine, source, seed, ops) {
+function mutated(engine, source, seed, ops, zone) {
   const base = markVaults(loadGrid(engine, source));
   for (let attempt = 0; attempt < 20; attempt++) {
     const rng = makeRng(`mutate:${source}:${seed}:${attempt}`), g = mutate(base.clone(), rng, ops);
     const { errors } = validate(g);
     if (errors.length) continue;
-    g.meta = { mutate: path.basename(source, '.map26a'), ops, seed, attempt, metrics: metrics(g) };
+    const met = metrics(g);
+    if (zone && met.altar_zone !== zone) continue;
+    g.meta = { mutate: path.basename(source, '.map26a'), ops, seed, attempt, metrics: met };
     return g;
   }
   throw new GenFail(`mutating ${source} with ${ops.join(' ')} failed`);
@@ -207,15 +240,17 @@ function pickDiverse(cands, k) {
 }
 
 async function suite(opts) {
-  const engine = await createEngine(), out = path.resolve(opts.out ?? GEN_DIR), seed = +(opts.seed ?? 0), over = +(opts.oversample ?? 3);
+  const name = opts._[0] ?? 'gen', def = SUITES[name];
+  if (!def) throw new Error(`unknown suite ${name}; one of ${Object.keys(SUITES).join(', ')}`);
+  const engine = await createEngine(), out = path.resolve(opts.out ?? path.join(ROOT, def.dir)), seed = +(opts.seed ?? def.seed), over = +(opts.oversample ?? 3);
   fs.mkdirSync(out, { recursive: true });
-  const index = [], files = new Map();
-  for (const [idx, [what, n]] of PLAN.entries()) {
+  const index = [], files = new Map(), overrides = def.zone ? { altar_zone: def.zone } : {};
+  for (const [idx, [what, n, extra]] of def.plan.entries()) {
     const cands = [];
     for (let j = 0; j < n * (typeof what === 'string' ? over : 1); j++) {
       const s = seed * 100000 + idx * 100 + j;
       try {
-        const g = typeof what === 'string' ? generate(what, s) : mutated(engine, what.mutate, s, what.ops);
+        const g = typeof what === 'string' ? generate(what, s, { ...overrides, ...extra }) : mutated(engine, what.mutate, s, what.ops, def.zone);
         g.name = typeof what === 'string' ? `gen-${what}-${s}` : `mut-${what.mutate}-${s}`;
         g.bytes = encode(engine, g);
         cands.push(g);
@@ -233,7 +268,7 @@ async function suite(opts) {
     }
   }
   // Other runs may be reading the pool: replace only changed files, each by an atomic rename.
-  files.set('index.json', Buffer.from(JSON.stringify({ generator: 'tools/mapgen/mapgen.mjs suite', seed, oversample: over, maps: index }, null, 1) + '\n'));
+  files.set('index.json', Buffer.from(JSON.stringify({ generator: `tools/mapgen/mapgen.mjs suite${name === 'gen' ? '' : ` ${name}`}`, seed, oversample: over, maps: index }, null, 1) + '\n'));
   let changed = 0, removed = 0;
   for (const [f, bytes] of files) {
     const dest = path.join(out, f);
@@ -251,8 +286,9 @@ const USAGE = `usage: node tools/mapgen/mapgen.mjs <command>
   gen PRESET [--seed N] [--set k=v]... [--out FILE] [--show]
   mutate MAP [--seed N] --op OP [--op OP]... [--out FILE] [--show]
       OP: walls|holes|bushes *F (scale), +P/-P (add/remove fraction of the map), camps *F (rescale
-      distance from spawn), camps|altars +N/-N, picks=N
-  suite [--out maps/gen] [--seed S] [--oversample K]   rebuild the stored pool
+      distance from spawn), camps|altars +N/-N, picks=N, altars=mid (move walkable altars to the centre)
+  suite [gen|central] [--out DIR] [--seed S] [--oversample K]   rebuild a stored pool: maps/gen, or
+      maps/gen-central (nearest altars central)
   check FILE... [--show] [--json]           validate maps (any .map26a) and print metrics
   show FILE                                  ASCII view (1/2 spawns, # wall, o hole, " bush, A altar, camps lowercase as stored, uppercase their mirrors)`;
 

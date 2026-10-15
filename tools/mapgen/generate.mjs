@@ -276,7 +276,7 @@ function spawnFields(g, blockers) {
 // Contest ratio of a tile: 0 at team A's spawn, 0.5 equidistant, 1 at team B's.
 const ratio = (dA, dB, i) => dA[i] < 0 || dB[i] < 0 ? -1 : dA[i] / Math.max(1, dA[i] + dB[i]);
 
-const BANDS = { near: [0.06, 0.26], mid: [0.22, 0.42], contested: [0.38, 0.5], any: [0.06, 0.5] };
+const BANDS = { near: [0.06, 0.26], mid: [0.22, 0.42], contested: [0.38, 0.5], central: [0.4, 0.5], any: [0.06, 0.5] };
 
 function bandFor(rng, bias) {
   const w = { near: { near: 6, mid: 3, contested: 1 }, spread: { near: 3, mid: 4, contested: 3 }, contested: { near: 1, mid: 3, contested: 6 } }[bias];
@@ -347,7 +347,7 @@ function placeAltars(g, rng, s) {
     }
   }
   for (let k = 0; k < s.altars; k++) {
-    const f = spawnFields(g), band = k === 0 && s.altar_near ? BANDS.near : BANDS[rng.weighted(s.altar_bands)];
+    const f = spawnFields(g), band = s.altar_zone === 'mid' ? BANDS.central : k === 0 && s.altar_near ? BANDS.near : BANDS[rng.weighted(s.altar_bands)];
     let ok = false;
     for (const i of candidates(g, rng, f, band, free).slice(0, 40)) {
       const x = i % g.W, y = (i - x) / g.W, [mx, my] = g.mirrorXY(x, y);
@@ -513,6 +513,8 @@ export function validate(g, { strict = true } = {}) {
   return { errors, warnings };
 }
 
+export const altarZone = r => r === null ? null : r < 0.4 ? 'own' : r > 0.6 ? 'enemy' : 'mid';
+
 export function metrics(g) {
   const camps = g.campMask(), f = spawnFields(g, camps), open = spawnFields(g);
   const b = g.spawnTiles(1);
@@ -528,8 +530,15 @@ export function metrics(g) {
   const clear = g.clearance();
   let clearSum = 0;
   for (let i = 0; i < g.t.length; i++) if (open.dA[i] >= 0) clearSum += Math.min(clear[i], 6);
-  const altars = [];
-  for (let i = 0; i < g.t.length; i++) if (g.t[i] === ALTAR) altars.push(g.reachNear(f.dA, i % g.W, Math.floor(i / g.W)));
+  const altars = [], altarRatios = [];
+  for (let i = 0; i < g.t.length; i++) {
+    if (g.t[i] !== ALTAR) continue;
+    const x = i % g.W, y = (i - x) / g.W, dA = g.reachNear(f.dA, x, y), dB = g.reachNear(f.dB, x, y);
+    altars.push(dA);
+    if (dA >= 0 && dB >= 0) altarRatios.push([dA, dA / Math.max(1, dA + dB)]);
+  }
+  altarRatios.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+  const altarRatio = altarRatios.length ? altarRatios[0][1] : null;
   const { mine, shared } = sideGroups(g, open);
   const campDist = mine.map(q => q.dA).filter(Number.isFinite);
   const ratios = mine.filter(q => Number.isFinite(q.dA + q.dB)).map(q => q.dA / Math.max(1, q.dA + q.dB));
@@ -544,6 +553,8 @@ export function metrics(g) {
     spawn_dist: S, detour: Math.round(100 * S / Math.max(1, cheby)) / 100, choke: choke === Infinity ? null : choke,
     openness: Math.round(100 * clearSum / Math.max(1, reach)) / 100,
     altars: altars.length, altar_near: altars.length ? Math.min(...altars) : null,
+    // Nearest walkable altar's distance from own spawn over the sum of both spawns' distances.
+    altar_ratio: altarRatio === null ? null : Math.round(100 * altarRatio) / 100, altar_zone: altarZone(altarRatio),
     groups_side: mine.length, shared_groups: shared.length, camps_side: Object.values(types).reduce((a, b) => a + b, 0), types,
     gems_side: mine.reduce((n, q) => n + q.gems, 0) + shared.reduce((n, q) => n + q.gems / 2, 0),
     gold_side: mine.reduce((n, q) => n + q.gold, 0) + shared.reduce((n, q) => n + q.gold / 2, 0),
@@ -642,7 +653,7 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
       const { errors } = validate(g);
       if (errors.length) throw new GenFail(errors[0]);
       const met = metrics(g);
-      const why = gate(met, g);
+      const why = gate(met, g, spec);
       if (why) throw new GenFail(why);
       g.meta = { preset, seed, attempt, overrides, spec, metrics: met };
       return g;
@@ -654,11 +665,12 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
   throw new GenFail(`${preset}:${seed} failed after ${attempts} attempts (last: ${last})`);
 }
 
-function gate(met, g) {
+function gate(met, g, spec) {
   if (met.reach_frac < 0.35) return `only ${Math.round(100 * met.reach_frac)}% walkable and reachable`;
   if (met.spawn_dist < Math.max(20, 0.45 * Math.max(g.W, g.H))) return `spawns ${met.spawn_dist} apart`;
   if (met.gems_side < 120) return `only ${met.gems_side} gems per side`;
   if (!met.altars) return 'no altars';
+  if (spec.altar_zone && met.altar_zone !== spec.altar_zone) return `nearest altar in zone ${met.altar_zone}`;
   return null;
 }
 

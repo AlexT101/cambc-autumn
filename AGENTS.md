@@ -29,16 +29,16 @@ py run_batched.py <bot1> <bot2>      # names under bots/, or paths
 py run_batched.py --watch            # live progress of the newest batch, from another terminal
 ```
 
-Options: `--threads N` (default 16), `--one-side` (one game per map, sides drawn by `--side-seed`), `--maps-dir` (default `maps/`, skipping `maps/gen/`), `--gen [N]` (play the generated maps in `maps/gen/` instead: all, or N drawn by `--gen-seed`), `--fuel`, `--timeout SECONDS`, `--no-replays`. Results go to `replays/batch-TIMESTAMP/`: `results.json` (wins from bot 1's view, then per match), `<n>-<map>-<12|21>.repl26a` (`12` means bot 1 is team A), `run.log`, and `*.error.log` for failed matches. The exit code is non-zero if any match failed.
+Options: `--threads N` (default 16), `--one-side` (one game per map, sides drawn by `--side-seed`), `--maps-dir` (default `maps/`, skipping `maps/gen*/`), `--gen [N]` (play the generated maps in `maps/gen/` instead: all, or N drawn by `--gen-seed`), `--central` (play `maps/gen-central/` instead), `--fuel`, `--timeout SECONDS`, `--no-replays`. Results go to `replays/batch-TIMESTAMP/`: `results.json` (wins from bot 1's view, then per match), `<n>-<map>-<12|21>.repl26a` (`12` means bot 1 is team A), `run.log`, and `*.error.log` for failed matches. The exit code is non-zero if any match failed.
 
-The 9 maps in `maps/` are too few to avoid overfitting, and tournament maps differ, so also test on `maps/gen/` (committed, 120 symmetric maps that load and play to completion). Normally play all of them with `--gen` (240 games): single maps and small samples are too noisy to judge a change. `--gen N --gen-seed S` samples N for quick smoke tests. [tools/mapgen/mapgen.mjs](tools/mapgen/mapgen.mjs) builds them through the engine WASM's map builder (seeded, reproducible):
+The 9 maps in `maps/` are too few to avoid overfitting, and tournament maps differ, so also test on `maps/gen/` (committed, 120 symmetric maps that load and play to completion). Normally play all of them with `--gen` (240 games): single maps and small samples are too noisy to judge a change. `--gen N --gen-seed S` samples N for quick smoke tests. On 102 of them the nearest altar is on our own side, but on 5 of the 9 ladder maps it is central (and those are where we lose most), so also check `--central`: `maps/gen-central/`, 40 maps (80 games) where each spawn's nearest altar is 0.4-0.6 of the way between the spawns by walking distance (the `altar=` zone in `check`), mutated from collision, elkring, interlock, monolith and corners, from the other ladder maps with their altars moved to the centre, and from presets with `--set altar_zone=mid`. [tools/mapgen/mapgen.mjs](tools/mapgen/mapgen.mjs) builds them through the engine WASM's map builder (seeded, reproducible):
 
 ```
 node tools/mapgen/mapgen.mjs list                                  # presets (small-brawl, maze, classic, vaults, ...)
 node tools/mapgen/mapgen.mjs gen maze --seed 3 [--set picks=5] --out x.map26a --show
-node tools/mapgen/mapgen.mjs mutate expanse --op "walls*0.5" --op "camps*1.3" --out x.map26a   # mirror-preserving edits of a map
+node tools/mapgen/mapgen.mjs mutate expanse --op "walls*0.5" --op "camps*1.3" --out x.map26a   # mirror-preserving edits of a map (--op altars=mid centres altars)
 node tools/mapgen/mapgen.mjs check maps maps/gen                   # validity, reachability and metrics of any maps
-node tools/mapgen/mapgen.mjs suite                                 # rebuild maps/gen from its PLAN (only changed files are rewritten)
+node tools/mapgen/mapgen.mjs suite [central]                       # rebuild maps/gen (or maps/gen-central) from its PLAN (only changed files are rewritten)
 ```
 
 `cambc run --map NAME` resolves bare names only directly under `maps/`; pass `maps/gen/<file>.map26a` for generated maps.

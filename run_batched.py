@@ -18,6 +18,7 @@ from time import perf_counter, sleep
 
 ROOT = Path(__file__).resolve().parent
 GEN_DIR = ROOT / "maps" / "gen"
+CENTRAL_DIR = ROOT / "maps" / "gen-central"
 # Last seen seconds per map, used only to start the slowest games first.
 DURATIONS = ROOT / "replays" / "durations.json"
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
@@ -43,8 +44,8 @@ def nonnegative_int(value):
 
 
 def find_maps(maps_dir, gen=None, gen_seed=0):
-    """Maps under maps_dir (skipping maps/gen unless it is maps_dir), or with --gen all generated
-    maps (gen=0) or a seeded sample of gen of them."""
+    """Maps under maps_dir (skipping the generated pools maps/gen* below it), or with --gen all
+    generated maps in maps/gen (gen=0) or a seeded sample of gen of them."""
     if gen is not None:
         pool = sorted(p.resolve() for p in GEN_DIR.glob("*.map26a"))
         if not pool:
@@ -53,9 +54,9 @@ def find_maps(maps_dir, gen=None, gen_seed=0):
             raise ValueError(f"--gen {gen} exceeds the {len(pool)} generated maps in {GEN_DIR}")
         return sorted(random.Random(gen_seed).sample(pool, gen)) if gen else pool
     maps_dir = maps_dir.resolve()
-    skip_gen = GEN_DIR.resolve() != maps_dir and maps_dir in GEN_DIR.resolve().parents
+    skip = [d.resolve() for d in (ROOT / "maps").glob("gen*") if d.is_dir() and maps_dir in d.resolve().parents]
     return sorted(p.resolve() for p in maps_dir.rglob("*.map26a")
-                  if p.is_file() and not (skip_gen and GEN_DIR.resolve() in p.resolve().parents))
+                  if p.is_file() and not any(d in p.resolve().parents for d in skip))
 
 
 def map_key(path):
@@ -186,10 +187,13 @@ def main():
                         "under replays/ and each newer one")
     parser.add_argument("--threads", type=positive_int, default=16, help="Concurrent matches (default: 16)")
     parser.add_argument("--maps-dir", type=Path,
-                        help="Recursively find all .map26a files here (default: maps/, excluding maps/gen)")
+                        help="Recursively find all .map26a files here (default: maps/, excluding maps/gen*)")
     parser.add_argument("--gen", nargs="?", type=nonnegative_int, const=0, metavar="N",
                         help="Instead, play the generated maps in maps/gen (node tools/mapgen/mapgen.mjs suite): "
                         "all of them, or N sampled by --gen-seed")
+    parser.add_argument("--central", action="store_true",
+                        help="Instead, play maps/gen-central, where every nearest altar is central "
+                        "(node tools/mapgen/mapgen.mjs suite central)")
     parser.add_argument("--gen-seed", type=nonnegative_int, default=0, help="Seed for choosing --gen N maps (default: 0)")
     parser.add_argument("--output", type=Path, help="New results directory (default: replays/batch-TIMESTAMP)")
     parser.add_argument("--fuel", type=positive_int, help="Fuel per turn (run-batch --fuel-quantum)")
@@ -205,8 +209,10 @@ def main():
         return watch(Path(args.watch).resolve() if args.watch else None)
     if args.bot1 is None or args.bot2 is None:
         parser.error("bot1 and bot2 are required")
-    if args.gen is not None and args.maps_dir is not None:
-        parser.error("--gen and --maps-dir cannot be combined")
+    if (args.gen is not None) + (args.maps_dir is not None) + args.central > 1:
+        parser.error("--gen, --central and --maps-dir cannot be combined")
+    if args.central:
+        args.maps_dir = CENTRAL_DIR
     try:
         bots = [bot_path(args.bot1), bot_path(args.bot2)]
         maps = find_maps(args.maps_dir or ROOT / "maps", args.gen, args.gen_seed)
@@ -267,7 +273,7 @@ def main():
                 print(f"\r{line}\x1b[K")
             redraw(progress(len(records), len(jobs), wins, errors))
         report = {"bots": [str(p) for p in bots], "fuel": args.fuel, "timeout": args.timeout,
-                  "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None,
+                  "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None, "central": args.central,
                   "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
                   "scheduled": len(jobs), "completed": len(records), "wins": wins,
                   "errors": errors, "matches": sorted(records, key=lambda r: r["index"])}
