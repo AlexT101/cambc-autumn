@@ -64,6 +64,7 @@ struct Instance {
         });
 
         if (world->is_stale()) return;
+        run("turn end", [&] { world->note_turn_end(); });
         // Only comms reads vision again, and it changes only if we moved.
         const bool refresh = cambc::self().position() != world->me().pos
                              && aph::fuel_ok(world->observe_cost_estimate() + end_reserve);

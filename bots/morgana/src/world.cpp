@@ -84,13 +84,6 @@ std::vector<cambc::handle_champion_t> handles(team side) {
 }
 
 // Remaining channel turn ends, or nullopt if not channelling.
-std::pair<int, int> priorities(std::uint32_t h) {
-    std::int32_t now{}, next{};
-    check(sdk_bc_champion_priority(h, 0, &now));
-    check(sdk_bc_champion_priority(h, 1, &next));
-    return {now, next};
-}
-
 std::optional<int> channel_time(std::uint32_t h) {
     std::int32_t value{};
     if (sdk_champion_channel_time(h, &value) != 0) return std::nullopt;
@@ -617,12 +610,18 @@ void World::update() {
     FuelMeter meter{"update"};
     read_vision();
     const auto tributing = tributing_enemies(); // before update_champions ends their channels
-    update_champions(true);
+    // This round's order before anything dates a turn in it.
+    if (updated_round_ != round)
+        for (auto* team : {&allies, &enemies})
+            for (auto& c : *team) c.prev_rank = c.rank;
+    updated_round_ = round;
+    guard("priorities", [&] { read_priorities(); });
     // A priority read in round r applies from r + 1: ranks change when a round passes one unread.
     for (const auto* team : {&allies, &enemies})
         for (const auto& c : *team)
             ranks_stale_ |= c.next_priority != c.priority && ranked_round_ <= c.priority_round && c.priority_round < round;
     if (ranks_stale_) rank_turns();
+    update_champions(true);
     guard("camps", [&] { update_camps(); });
     guard("altars", [&] { update_altars(); });
     guard("wards", [&] { update_wards(); });
@@ -767,16 +766,36 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.gems = engine::gems(h);
     b.gems_round = round;
     if (b.side == team::enemy || b.is_self) b.fast_recall = engine::home_emblem(h);
-    if (!full) return;
+}
 
-    const auto [priority, next_priority] = engine::priorities(h);
-    if (b.side == team::enemy
-        && (next_priority != priority || (b.priority_round >= 0 && b.priority_round < round && priority != b.next_priority)))
-        enemy_priorities_change = true;
-    ranks_stale_ |= priority != b.priority || next_priority != b.next_priority;
-    b.priority = priority;
-    b.next_priority = next_priority;
-    b.priority_round = round;
+void World::read_priorities() {
+    for (auto* team : {&allies, &enemies})
+        for (auto& b : *team) {
+            const auto h = engine::id(b.handle);
+            std::int32_t priority{}, next_priority{};
+            // Fails for champions out of sight.
+            if (cambc::detail::sdk_bc_champion_priority(h, 0, &priority) != 0
+                || cambc::detail::sdk_bc_champion_priority(h, 1, &next_priority) != 0)
+                continue;
+            if (b.side == team::enemy
+                && (next_priority != priority || (b.priority_round >= 0 && b.priority_round < round && priority != b.next_priority)))
+                enemy_priorities_change = true;
+            ranks_stale_ |= priority != b.priority || next_priority != b.next_priority;
+            b.priority = priority;
+            b.next_priority = next_priority;
+            b.priority_round = round;
+        }
+}
+
+void World::note_turn_end() {
+    auto& self = cambc::self();
+    if (!me().alive || !self.is_alive()) return;
+    const vec2 p = self.position();
+    const int g = in_bounds(p) ? map().group_at(p) : -1;
+    if (g < 0 || camps[g].state != CampState::alive) return;
+    guard("turn end", [&] {
+        if (engine::group_state(map().groups[g].handle).first == 2) camps[g].cleared_by_us = round;
+    });
 }
 
 void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float health) {
@@ -853,7 +872,8 @@ int World::slot(const ChampionBelief& c, int r) const {
     // champions go last.
     const int others = static_cast<int>((c.side == team::ally ? enemies : allies).size());
     const bool first = (c.side == team::ally) == (map().team_a == (r % 2 == 1));
-    return c.rank < others ? 2 * c.rank + (first ? 0 : 1) : others + c.rank;
+    const int rank = r < round ? c.prev_rank : c.rank;
+    return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
 }
 
 int World::turns_between(const ChampionBelief& c, Moment from, Moment to) const {
@@ -1031,7 +1051,7 @@ void World::update_camps() {
                                              : previous == CampState::respawning
                                                  ? std::max(previous_round + 1, previous_respawn)
                                                  : std::max(previous_round, previous_respawn);
-                        c.held_since = holder ? hold_start(G, *holder, earliest) : -1;
+                        c.held_since = holder ? hold_start(G, *holder, earliest, c.cleared_by_us >= previous_round) : -1;
                     }
                 }
             } else {
@@ -1044,9 +1064,10 @@ void World::update_camps() {
 
 // A hold first seen at our turn began after our previous one: last round if a holder on the tiles
 // is us or acts after us this round, so cannot have arrived since; else, taking the later
-// possibility, this round.
-int World::hold_start(const CampGroup& G, team holder, int earliest) const {
-    if (earliest >= round) return round;
+// possibility, this round. A group cleared since our previous turn, other than by us in it, may
+// have been cleared this round before our turn, and no hold began before that.
+int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleared_by_us) const {
+    if (earliest >= round || (earliest >= 0 && !cleared_by_us)) return round;
     const auto& list = holder == team::ally ? allies : enemies;
     for (const auto& c : list)
         if (c.alive && c.pos_round == round && G.tiles().is_set(c.pos) && (c.is_self || slot(c, round) > slot(me(), round)))

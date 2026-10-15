@@ -183,6 +183,7 @@ struct ChampionBelief {
     // Turn-order priority for priority_round, and from the round after it.
     int priority = 0, next_priority = 0, priority_round = -1;
     int rank = 0; // place in its team's turn order, from the priorities last read
+    int prev_rank = 0; // its rank in the round of our previous update
 
     // Abilities: the earliest round each slot could be cast. Exact while visible (read from the
     // engine); through fog, projected with the cooldown rule assuming no unseen cast, so the real
@@ -234,6 +235,7 @@ struct CampBelief {
     std::optional<team> holder;
     int held_since = -1;
     int told_respawn = -1; // the respawn round the team was told through comms
+    int cleared_by_us = -1; // the round our own turn killed its last member while we stood on it
 };
 
 struct AltarBelief {
@@ -259,6 +261,8 @@ public:
     // Start of each play turn. The first call also builds the static map.
     void update();
     void observe();
+    // After our actions: note a group we cleared standing on it, so held from this round.
+    void note_turn_end();
     // Generous: 0.5-0.75k per champion measured.
     std::uint64_t observe_cost_estimate() const { return 1000 * (allies.size() + enemies.size()); }
 
@@ -277,7 +281,8 @@ public:
     bool is_stale() const { return cambc::round_number() != static_cast<std::uint32_t>(round); }
 
     const ChampionBelief& me() const { return allies[self_index]; }
-    // Index of the champion's turn in `round`, by its current rank.
+    // Index of the champion's turn in `round`, by its rank then: the current one for this round,
+    // that of our previous update for earlier rounds.
     int slot(const ChampionBelief& c, int round) const;
     Moment now() const { return {round, slot(me(), round)}; }
     // Turns the champion takes strictly between two moments.
@@ -303,6 +308,7 @@ private:
     void build_static();
     void init_beliefs();
     void rank_turns();
+    void read_priorities();
     void prune(ChampionBelief& b) const;
     void update_champions(bool full);
     void update_champion(ChampionBelief& b, bool full);
@@ -314,7 +320,7 @@ private:
     static void mark_fixed(ChampionBelief& b, Moment when);
     void advance(ChampionBelief& b);
     void update_camps();
-    int hold_start(const CampGroup& G, team holder, int earliest) const;
+    int hold_start(const CampGroup& G, team holder, int earliest, bool cleared_by_us) const;
     void update_altars();
     void update_wards();
     std::uint32_t tributing_enemies() const; // bit i: enemies[i] is believed to be tributing
@@ -324,6 +330,7 @@ private:
     bitboard unseen_; // ~visible
     bool ranks_stale_ = true;
     int ranked_round_ = -1;
+    int updated_round_ = -1;
 };
 
 } // namespace aph
