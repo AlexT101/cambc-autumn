@@ -171,7 +171,7 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
     return best;
 }
 
-Cast enemy_cast(const World& world, bool keep_walk) {
+Cast enemy_cast(const World& world, bool keep_walk, bool hold_stun) {
     auto& me = cambc::self();
     Cast best;
     if (!me.can_cast() || !fuel_ok(fuel_needed)) return best;
@@ -185,13 +185,16 @@ Cast enemy_cast(const World& world, bool keep_walk) {
         const auto& a = f.abilities[s];
         const float threshold = a.excludes_walking && keep_walk ? keep_walk_value : min_value;
         const float raw = raw_damage(s);
+        const bool kills_only = hold_stun && a.stuns;
         const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= me.health(); };
         if (a.target == Targeting::unit) {
             for (const auto& e : world.enemies) {
                 if (!e.alive || !e.visible || dist(here, e.pos) > a.range() || suicidal(e)) continue;
                 const auto c = live(e);
                 if (!c.is_visible()) continue;
-                float v = hit_worth(world, e, damage_to(s, c, raw), c.health(), enemy_spawn.is_set(e.pos));
+                const float damage = damage_to(s, c, raw);
+                if (kills_only && damage < c.health() - 0.01f) continue;
+                float v = hit_worth(world, e, damage, c.health(), enemy_spawn.is_set(e.pos));
                 if (a.stuns && !c.buffs().has_stun()) v += stun_worth(e, raw > 0);
                 if (v >= threshold && v > best.value) best = Cast{s, v, c, std::nullopt, {}};
             }
@@ -209,10 +212,12 @@ Cast enemy_cast(const World& world, bool keep_walk) {
                     }
                     const auto c = live(e);
                     if (!c.is_visible()) continue;
+                    const float damage = damage_to(s, c, raw);
+                    if (kills_only && damage < c.health() - 0.01f) continue;
                     const float stunned = a.stuns && c.buffs().has_stun() ? stun : 0;
-                    const float hit = hit_worth(world, e, damage_to(s, c, raw), c.health(), enemy_spawn.is_set(e.pos));
+                    const float hit = hit_worth(world, e, damage, c.health(), enemy_spawn.is_set(e.pos));
                     targets.push_back({e.pos, 1, hit + stun - stunned});
-                } else if (e.tracked && !e.possible.is_empty()) {
+                } else if (!kills_only && e.tracked && !e.possible.is_empty()) {
                     const int n = static_cast<int>(e.possible.count());
                     if (n > max_unseen_tiles) continue;
                     const auto near = positions_within(e.possible, here, a.reach());
@@ -304,9 +309,9 @@ Cast camp_cast(const World& world, int group) {
 
 } // namespace
 
-bool cast_at_enemies(const World& world, bool keep_walk) {
+bool cast_at_enemies(const World& world, bool keep_walk, bool hold_stun) {
     try {
-        return enemy_cast(world, keep_walk).execute();
+        return enemy_cast(world, keep_walk, hold_stun).execute();
     } catch (const cambc::error&) {
         return false;
     }

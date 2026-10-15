@@ -26,7 +26,8 @@ constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
 constexpr int endgame_shop_rounds = 100; // no shop trips this late: spent gold scores nothing
 
 // The turn's branch, for debug_fights: Chase, Attack, Retreat, Farm, Bank, Wait at an altar,
-// Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, rally (J), holding (P).
+// Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, rally (J), holding (P),
+// Delaying a stun.
 char decision = '-';
 
 // Read by tools/replay/fight_calibration.py.
@@ -696,6 +697,33 @@ bool wants_shop(const World& world, Safety& safety, const Memory& memory) {
     return true;
 }
 
+// A tribute stunned on its last turn wastes the whole channel, and until then its owner can only
+// cancel: the visible tributer a ready stun reaches to wait for. None if a tribute in reach could
+// land before our next turn, or another enemy could stun or kill us before it.
+const ChampionBelief* tribute_to_stun_later(const World& world, Safety& safety) {
+    const auto& self = world.me();
+    const auto& f = self.facts();
+    int reach = -1;
+    for (int s = 0; s < 2; ++s)
+        if (f.abilities[s].stuns && self.ability_ready(s, world.round))
+            reach = std::max(reach, f.abilities[s].kind == AbilityKind::attack_reset ? f.attack_range() : f.abilities[s].reach());
+    const ChampionBelief* target = nullptr;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible || e.channel != Channel::tribute || e.facts().passive == Passive::stun_immune
+            || dist(self.pos, e.pos) > reach)
+            continue;
+        // It lands at its owner's next turn start, which can come before ours next round.
+        if (e.channel_end_round <= world.round + 1) return nullptr;
+        target = &e;
+    }
+    if (!target || safety.lethal(self.pos)) return nullptr;
+    for (const auto& t : safety.threats()) {
+        const int d = t.distance(self.pos);
+        if (&world.enemies[t.enemy] != target && t.credible() && t.strike.hits(d) && t.strike.stuns[d]) return nullptr;
+    }
+    return target;
+}
+
 void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     if (me.gem_count() == 0 || !world.me().alive) memory.banking = false;
@@ -765,15 +793,25 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     }
 
     const bool holding = holding_capture(world);
+    const auto* stun_later = tribute_to_stun_later(world, safety);
     bool attacked = attack_enemy(world);
-    if (attacked) reset_and_attack_enemy(world, true);
-    cast_at_enemies(world, me.gem_count() > 0 && !holding);
-    if (!attacked && !holding && dash_to_attack(world, pathing)) attacked = attack_enemy(world);
-    if (attacked) reset_and_attack_enemy(world);
+    if (attacked) reset_and_attack_enemy(world, true, stun_later);
+    cast_at_enemies(world, me.gem_count() > 0 && !holding, stun_later);
+    if (!attacked && !holding && dash_to_attack(world, pathing, stun_later)) attacked = attack_enemy(world);
+    if (attacked) reset_and_attack_enemy(world, false, stun_later);
     decision = holding ? 'P' : attacked ? 'A' : decision;
     if (!me.is_alive()) return;
     if (!me.can_attack() || !me.can_cast()) safety.refresh();
     if (holding) return;
+    if (stun_later) {
+        // Closer to hit it while it cannot act; each step keeps it in the stun's reach.
+        decision = 'D';
+        if (dist(me.position(), stun_later->pos) > world.me().facts().attack_range() && pathing.step_closer(stun_later->pos)) {
+            attack_enemy(world);
+            reset_and_attack_enemy(world, false, true);
+        }
+        return;
+    }
     if (me.gem_count() > 0) {
         const bool safe = can_tribute_safely(world, safety, memory);
         const bool late = endgame(world, pathing);

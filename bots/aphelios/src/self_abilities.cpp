@@ -204,12 +204,12 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     return best;
 }
 
-bool reset_and_attack_enemy(const World& world, bool stunning_only) {
+bool reset_and_attack_enemy(const World& world, bool stunning_only, bool hold_stun) {
     auto& me = cambc::self();
     const auto& f = world.me().facts();
     if (me.can_attack()) return false;
     const int slot = f.slot_of(AbilityKind::attack_reset);
-    if (stunning_only && (slot < 0 || !f.abilities[slot].stuns)) return false;
+    if ((slot >= 0 && f.abilities[slot].stuns) ? hold_stun : stunning_only) return false;
     const auto reset = ready(world, AbilityKind::attack_reset);
     if (!reset) return false;
     const auto target = attack_target(world, stunning_only);
