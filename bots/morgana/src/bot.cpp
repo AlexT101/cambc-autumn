@@ -106,7 +106,7 @@ void buy_lock() {
 
 void place_lock(const World& world) {
     auto& me = cambc::self();
-    if (!world.me().alive) return;
+    if (!world.me().alive || me.is_submitting_gems()) return;
     const auto& lock = me.consumables()[cambc::consumable_type::altar_lock];
     if (lock.count() == 0) return;
     const auto& map = world.map();
@@ -231,6 +231,7 @@ bool submit_here(const World& world, Safety& safety, const Memory& memory) {
         if (world.altars[a].enemy_lock || dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
         const int turns = tribute_turns(me.gem_count());
         if (here != world.me().pos && !last_chance(world, turns) && !tribute_safe(safety, memory, turns)) return false;
+        place_lock(world); // first: it cancels every tribute at its altar
         try {
             me.submit_gems(altars[a].pos);
             return true;
