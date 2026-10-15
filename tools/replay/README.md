@@ -9,7 +9,7 @@ node tools/replay/extract.mjs --update-engine
 ```
 
 - Inputs are searched recursively. Each distinct replay (by sha256) is decoded once, in parallel worker threads, into `replays/.analysis/<first 16 hex of sha256>/`. Cached games are skipped unless `--force`, the extractor version changes or the engine changes.
-- Identical replays do occur: the bots and engine are deterministic, so a rematch on the same map can be byte-identical. All copies are listed in `meta.sources`; `index.json` has one row per source file.
+- Identical replays do occur: the bots and engine are deterministic, so a rematch on the same map can be byte-identical. All copies are listed in `meta.sources`; `index.json` has one row per source file. A shared game's `meta.teams` names come from whichever batch extracted it first, so take a batch's team names from its `index.json` rows (`teams`), not from `meta.json`.
 - Exit code 1 if any replay fails to decode or fails a hard validation check.
 - `--update-engine` starts `cambc view`, downloads the `v0_0_1-*.wasm` the viewer uses into `engine/`, and rewrites `engine/version.json`. If the snapshot layout changed (`Game_Visualiser_SnapshotSize() != 184696`), loading fails and the decoder in `engine.mjs` has to be re-ported from the viewer's `PanelChrome-*.js` (functions `xr`/`br`/`Sr` and table constant `Q`).
 - About 1.1 s per game on one thread (39 s for 532 games on 16). About 100 KB per game (gzipped).
