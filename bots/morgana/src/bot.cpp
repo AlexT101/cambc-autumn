@@ -609,7 +609,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
             float joint_rounds = 0;
             const float hits = soften * min_camp_damage(g, group, belief, strength + others, &joint_rounds) * part;
             if (hits > spare_health) continue;
-            const float value = gems * part / (static_cast<float>(trip) + rounds + capture_rounds);
+            const float value = gems * part / (static_cast<float>(trip) + rounds);
             if (value > shared_value) shared = g, shared_value = value, shared_steps = steps;
             continue;
         }
