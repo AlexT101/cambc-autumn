@@ -47,8 +47,8 @@ const CENTRAL_PLAN = [
   ['jungle', 1], ['fortress', 1], ['islands', 1], ['vaults', 1],
 ];
 const SUITES = {
-  gen: { dir: 'maps/gen', plan: PLAN, seed: 0 },
-  central: { dir: 'maps/gen-central', plan: CENTRAL_PLAN, seed: 7, zone: 'mid' },
+  gen: { dir: 'maps/gen', plan: PLAN, seed: 1016 },
+  central: { dir: 'maps/gen-central', plan: CENTRAL_PLAN, seed: 1017, zone: 'mid' },
 };
 const FEATURES = ['area', 'reach_frac', 'walls', 'holes', 'bushes', 'spawn_dist', 'detour', 'choke', 'openness', 'altars', 'groups_side', 'gems_side', 'camp_ratio', 'picks'];
 
