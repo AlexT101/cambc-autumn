@@ -644,9 +644,11 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
 
     const vec2 here = me.position();
     if (holding_capture(world)) return true;
-    // Whatever made us retreat stays out of bounds: we route around it or wait outside it, never
-    // step in to be sent back out.
-    const auto* zone = pack_zone(world);
+    // Carrying, whatever made us retreat stays out of bounds: we route around it or wait outside
+    // it rather than step in to be sent back out. Empty-handed, a step in risks nothing (the zone
+    // starts beyond any strike's reach) and keeps us at hand for when the pack moves on, while
+    // waiting or farming elsewhere cost about 10 games in 240.
+    const auto* zone = bag > 0 ? pack_zone(world) : nullptr;
 
     // Short of fuel, walk on towards the last choice rather than run out mid-turn.
     const auto walk_on = [&](int g) {
@@ -740,10 +742,13 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         return out == unreachable ? 0.0f : damage / me.max_health() * static_cast<float>(recall + out);
     };
     int help_group = -1, help_steps = unreachable;
-    // First readings of each group (clears, fields) cost several times the estimate: what is left
-    // waits for a later turn rather than the walk after it.
-    const auto walk_reserve = search_cost_estimate(map.width + map.height) + params::end_reserve;
-    for (int g = 0; g < static_cast<int>(groups.size()) && fuel_ok(walk_reserve); ++g) {
+    // First readings of each group (clears, fields) can cost several times the estimate: stop with
+    // enough left for the cheapest walk after it (the route falls back to descending a field), and
+    // read last turn's choice first so that a cut-short loop still weighs it.
+    const int n_groups = static_cast<int>(groups.size());
+    const int first = memory.farm_group >= 0 && memory.farm_group < n_groups ? memory.farm_group : 0;
+    for (int k = 0; k < n_groups && fuel_ok(small_cost_estimate + params::end_reserve); ++k) {
+        const int g = (first + k) % n_groups;
         const auto& group = groups[g];
         const auto& belief = world.camps[g];
         if (group.has_monolith || group.gems == 0 || (belief.state == CampState::cleared && ally_holding(g, false)))
