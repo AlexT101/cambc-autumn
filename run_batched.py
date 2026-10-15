@@ -163,12 +163,29 @@ def watch(target):
         return 0
 
 
+def clear_copied_cache(bot):
+    """A bot copied with its .cambc/build keeps a CMake cache pointing at the original's build
+    directory, and every build of the copy then fails; delete such a cache."""
+    build = bot / ".cambc" / "build"
+    cache = build / "CMakeCache.txt"
+    if not cache.is_file():
+        return
+    for line in cache.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith("bot_BINARY_DIR:"):
+            recorded = Path(line.split("=", 1)[1])
+            if recorded.resolve() != build.resolve():
+                print(f"Clearing {bot.name}'s build cache copied from {recorded}", flush=True)
+                shutil.rmtree(build)
+            return
+
+
 def build_bots(cli, bots, env, log):
     """Build each bot with `cambc build`, writing the output to `log`; return the first bot that
     fails, or None. run-batch's own compiles fail on Windows ("unable to open output file"), so
     it must find nothing left to build."""
     with log.open("w", encoding="utf-8") as stream:
         for bot in bots:
+            clear_copied_cache(bot)
             print(f"Building {bot.name}...", flush=True)
             built = subprocess.run([cli, "build", str(bot)], cwd=ROOT, env=env, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
