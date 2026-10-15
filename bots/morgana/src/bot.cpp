@@ -54,13 +54,13 @@ cambc::item_type emblem_of(int family, int stat) {
     return cambc::item_type{static_cast<std::uint32_t>(family * 6 + stat * 2 + 1)};
 }
 
-// Focus when a shard's Focus, over the damage spells' multipliers, beats four basic attacks'
-// Strength: spells front-load a fight. Ren's retaliation counts once a round.
+// Focus when a shard's Focus, over the damage spells' multipliers, beats five basic attacks'
+// Strength: spells front-load a fight.
 int main_stat(const ChampionFacts& f) {
-    float spells = f.passive == Passive::retaliation ? retaliation_share * ability_cooldown : 0.0f;
+    float spells = 0;
     for (const auto& a : f.abilities)
         if (a.kind == AbilityKind::damage) spells += a.multiplier;
-    return f.focus.growth * spells > 4 * f.strength.growth ? focus_stat : strength_stat;
+    return f.focus.growth * spells > 5 * f.strength.growth ? focus_stat : strength_stat;
 }
 
 bool buy(cambc::item_type shard, unsigned count) {
