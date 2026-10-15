@@ -65,9 +65,6 @@ inline constexpr float hurt_retreat_ratio = 0.75f;
 inline constexpr int recall_heal_bonus = 6;
 // Ladder teams wait at a camp about to return (2-3% of their time), never for long.
 inline constexpr int max_wait = 10;
-// Ladder teams clear their first camp together (three or four champions, first capture by r17-24)
-// where a lone champion takes 25-30 rounds over a wolf: until then, allies' clears get help.
-inline constexpr int opening_rounds = 30;
 // A claimed group's value to a second champion, against an unclaimed one's.
 inline constexpr float share_weight = 0.5f;
 
