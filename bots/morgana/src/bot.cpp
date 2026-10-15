@@ -450,7 +450,8 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         if (const auto* field = pathing.from_centre(g)) return pathing.descend(*field);
         return pathing.step_closer(groups[g].centre);
     };
-    const auto evaluation = (pathing.centres_ready() ? 0 : field_cost_estimate()) + 300 * groups.size();
+    // The loop below measured 0.5-1.5k a group.
+    const auto evaluation = (pathing.centres_ready() ? 0 : field_cost_estimate()) + 1000 * groups.size();
     if (!fuel_ok(evaluation + params::end_reserve)) {
         if (bag > 0) return false;
         // On large maps this can last hundreds of rounds, past the last choice's capture: once

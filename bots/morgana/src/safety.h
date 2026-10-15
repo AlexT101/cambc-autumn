@@ -124,7 +124,8 @@ public:
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p.
     Trade fight(vec2 p);
-    // Generous for one fight(): a simulation measured 1-10k, building the threats 2-16k.
+    // Generous for one fight(): a simulation grows with the fighters (1v1 ~6k, 4v4 ~17k, up to
+    // 26k) and this turn's costliest one; building the threats 2-16k.
     std::uint64_t fight_cost_estimate() const;
     // Us alone against one enemy.
     Trade duel(int enemy);
@@ -165,6 +166,7 @@ private:
     std::optional<bitboard> camp_area_, enemy_area_;
     // By who fights: bit i of the low half for allies[i], of the high half for enemies[i].
     std::vector<std::pair<std::uint32_t, Trade>> fights_;
+    std::uint64_t costliest_fight_ = 0;
 };
 
 } // namespace aph

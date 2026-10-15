@@ -546,12 +546,18 @@ Trade Safety::fight(vec2 p) {
         const auto& e = world_.enemies[t.enemy];
         if (key >> (16 + t.enemy) & 1) them.join(e, next_turn_round(world_, e));
     }
+    const auto before = fuel();
     fights_.emplace_back(key, trade(us, them));
+    if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
     return fights_.back().second;
 }
 
 std::uint64_t Safety::fight_cost_estimate() const {
-    return 10000 + (built_ ? 0 : 4000 + 3000 * static_cast<std::uint64_t>(world_.enemies.size()));
+    std::uint64_t champions = 0;
+    for (const auto& a : world_.allies) champions += a.alive && (a.is_self || a.visible);
+    for (const auto& e : world_.enemies) champions += e.alive && e.visible;
+    const auto simulation = std::max({std::uint64_t{10000}, 2000 + 2000 * champions, costliest_fight_ + costliest_fight_ / 4});
+    return simulation + (built_ ? 0 : 4000 + 3000 * static_cast<std::uint64_t>(world_.enemies.size()));
 }
 
 Trade Safety::duel(int enemy) {
