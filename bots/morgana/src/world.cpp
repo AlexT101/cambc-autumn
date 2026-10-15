@@ -636,7 +636,10 @@ void World::observe() {
 }
 
 void World::update_champions(bool full) {
-    for (auto& b : allies) guard("champion", [&] { update_champion(b, full); });
+    // Allies read this round have not changed but for our own move and heals, and nothing reads
+    // those before the next update.
+    for (auto& b : allies)
+        if (full || b.stats_round != round) guard("champion", [&] { update_champion(b, full); });
     for (auto& b : enemies) guard("champion", [&] { update_champion(b, full); });
 }
 
@@ -698,9 +701,10 @@ void World::update_champion(ChampionBelief& b, bool full) {
             }
             b.channel = Channel::none;
         }
-        if (b.side == team::enemy) {
+        // An untracked `possible` is unread until a fix overwrites it.
+        if (b.side == team::enemy && b.tracked) {
             advance(b);
-            prune(b);
+            if (b.tracked) prune(b);
         }
         return;
     }

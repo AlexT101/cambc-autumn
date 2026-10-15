@@ -25,6 +25,7 @@ public:
     // Null if not cached and computing it could take the fuel below `fuel_floor`.
     const Field* to_altar(int altar, std::uint64_t fuel_floor);
     const Field& to_any_altar();
+    int centre_to_altar(int group); // to_any_altar() at the group's centre, kept once read
     const Field& to_group(int group); // goals: the group's camp tiles, to stand on and capture
     // Walking steps from the centre of a group worth farming (gems, no monolith): by symmetry,
     // from anywhere to it. Null until warmed up; centres_ready() once all are.
@@ -88,6 +89,7 @@ private:
 
     const World& world_;
     Slot any_altar_;
+    std::vector<std::optional<int>> centre_to_altar_;
     std::vector<Slot> altar_fields_, group_fields_, centre_fields_;
     bool centres_ready_ = false;
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles

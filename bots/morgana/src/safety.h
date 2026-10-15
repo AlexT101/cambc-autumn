@@ -96,6 +96,12 @@ public:
 
     const std::vector<Threat>& threats();
     const Threat* threat(int enemy);
+    bool built() const { return built_; }
+    bool any_threat(); // threats() is not empty, without building it
+    // Without building the threats: at least worst_damage(p), and at least their sum with each
+    // visible enemy yet to act counted twice when `double_unacted`.
+    float damage_bound(vec2 p, bool double_unacted = false);
+    bool may_be_hit(vec2 p); // false only if no threat hits p
 
     // Chance the threat could be within reach of p; uniform over its possible tiles.
     float chance_in_reach(const Threat& t, vec2 p);
@@ -146,6 +152,7 @@ private:
     };
     const std::vector<CampHit>& awake_members();
     void build();
+    template <class F> void each_threat(vec2 p, F&& f);
     // Seen alive at turn start but dead now, once refreshed.
     bool gone(const ChampionBelief& c);
 

@@ -280,6 +280,12 @@ Strike strike(const ChampionBelief& c, int turn_round) {
     return out;
 }
 
+// An unseen enemy's best chance to be in reach of a tile, or 0 if too slight to count.
+float unseen_weight(int reach, int tiles) {
+    const float weight = std::min(1.0f, static_cast<float>((2 * reach + 1) * (2 * reach + 1)) / static_cast<float>(tiles));
+    return tiles == 0 || weight < credible_weight ? 0.0f : weight;
+}
+
 int Threat::distance(vec2 p) const {
     if (visible) return dist(p, pos);
     return steps ? steps->get(p) : unreachable;
@@ -386,8 +392,8 @@ void Safety::build() {
             continue;
         }
         const int tiles = static_cast<int>(e.possible.count());
-        const float weight = std::min(1.0f, static_cast<float>((2 * reach + 1) * (2 * reach + 1)) / static_cast<float>(tiles));
-        if (tiles == 0 || weight < credible_weight) continue;
+        const float weight = unseen_weight(reach, tiles);
+        if (weight == 0) continue;
         auto& t = threats_.emplace_back();
         t.enemy = e.index;
         t.strike = s;
@@ -408,6 +414,42 @@ void Safety::build() {
 const std::vector<Threat>& Safety::threats() {
     build();
     return threats_;
+}
+
+// f(enemy, strike, d) for each enemy build() makes a threat of, d at most its distance from p:
+// exact if visible; if unseen, 0 when a tile it could be on is within its reach of p, else past
+// the reach, as its field is wall-free and capped within the reach. Strikes only weaken with
+// distance, so this bounds the threats' damage and hits at p without building them.
+template <class F> void Safety::each_threat(vec2 p, F&& f) {
+    for (const auto& e : world_.enemies) {
+        if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
+        const auto s = strike(e, next_turn_round(world_, e));
+        if (s.reach < 0) continue;
+        if (e.visible) f(e, s, dist(p, e.pos));
+        else if (unseen_weight(s.reach, static_cast<int>(e.possible.count())) > 0)
+            f(e, s, any_within(e.possible, p, s.reach) ? 0 : s.reach + 1);
+    }
+}
+
+bool Safety::any_threat() {
+    if (built_) return !threats_.empty();
+    bool any = false;
+    each_threat({0, 0}, [&](const ChampionBelief&, const Strike&, int) { any = true; });
+    return any;
+}
+
+float Safety::damage_bound(vec2 p, bool double_unacted) {
+    float total = camp_damage(p);
+    each_threat(p, [&](const ChampionBelief& e, const Strike& s, int d) {
+        total += s.at(d) * (double_unacted && e.visible && !e.acted ? 2.0f : 1.0f);
+    });
+    return total;
+}
+
+bool Safety::may_be_hit(vec2 p) {
+    bool hit = false;
+    each_threat(p, [&](const ChampionBelief&, const Strike& s, int d) { hit |= s.hits(d); });
+    return hit;
 }
 
 const Threat* Safety::threat(int enemy) {
@@ -453,6 +495,7 @@ bool Safety::threatened(vec2 p) {
     float safe = 1;
     for (const auto& m : awake_members())
         if (dist(p, m.pos) <= m.reach && 1 - (safe *= 1 - m.weight) >= recall_risk) return true;
+    if (!built_ && !may_be_hit(p)) return false;
     for (const auto& t : threats())
         if (t.strike.hits(t.distance(p)) && 1 - (safe *= 1 - chance_in_reach(t, p) * hit_given_reach) >= recall_risk)
             return true;
@@ -541,15 +584,8 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
 
 bool Safety::lethal(vec2 p) {
     const float health = world_.me().health;
-    // Most turns every enemy's best strike falls short together; skip the threat build then.
-    if (!built_) {
-        constexpr float max_area = (2 * Strike::max_reach + 1) * (2 * Strike::max_reach + 1);
-        float bound = camp_damage(p);
-        for (const auto& e : world_.enemies)
-            if (e.alive && !gone(e) && (e.visible || (e.tracked && static_cast<float>(e.possible.count()) * credible_weight <= max_area)))
-                bound += strike(e, next_turn_round(world_, e)).damage[0];
-        if (bound < health) return false;
-    }
+    // Most turns no enemy is near enough; skip the threat build then.
+    if (!built_ && damage_bound(p) < health) return false;
     return worst_damage(p) >= health;
 }
 

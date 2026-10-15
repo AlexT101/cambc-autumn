@@ -57,6 +57,12 @@ const Field& Pathing::to_any_altar() {
     return cached(any_altar_, goals);
 }
 
+int Pathing::centre_to_altar(int group) {
+    auto& steps = entry(centre_to_altar_, map().groups.size(), group);
+    if (!steps) steps = to_any_altar().at(map().groups[group].centre);
+    return *steps;
+}
+
 const Field& Pathing::to_group(int group) { return cached(group_slot(group), map().groups[group].tiles()); }
 
 const Field* Pathing::from_centre(int group) {
@@ -77,7 +83,7 @@ const bitboard& Pathing::member_attack_tiles(int group, int member, int range) {
         FuelMeter meter{"attack_tiles"};
         const auto& s = map();
         auto tiles = s.viewers(s.groups[group].members[member].pos, range);
-        tiles &= ~s.blocked_for_us;
+        tiles &= s.open_for_us;
         slot = std::move(tiles);
     }
     return *slot;
