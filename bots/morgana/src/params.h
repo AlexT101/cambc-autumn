@@ -15,6 +15,17 @@ inline constexpr cambc::champion_draft draft_preference[] = {
     cambc::champion_draft::vendetta, cambc::champion_draft::willow,
 };
 
+// Open farm races (expanse, rows, monolith) have at least this much camp health per pick in camps
+// next to another camp, where Varg's splash pays; the next ladder map has 3400.
+inline constexpr float farm_race_splash_health = 5000;
+
+inline constexpr cambc::champion_draft farm_race_draft_preference[] = {
+    cambc::champion_draft::varg, cambc::champion_draft::vendetta, cambc::champion_draft::cassi_and_issac,
+    cambc::champion_draft::stellar, cambc::champion_draft::ryth, cambc::champion_draft::ren,
+    cambc::champion_draft::prism, cambc::champion_draft::tavi, cambc::champion_draft::marcella,
+    cambc::champion_draft::vesper_vale, cambc::champion_draft::willow,
+};
+
 // Left for the rest of the turn after optional work. Printing the debug fuel log can cost ~30k.
 inline constexpr std::uint64_t end_reserve = debug_fuel ? 40000 : 10000;
 
