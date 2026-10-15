@@ -419,25 +419,26 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         float rounds = 0;
         return soften * min_camp_damage(g, groups[g], world.camps[g], strength, &rounds) <= spare_health || ally_engaged(world, g);
     };
-    // An ally's claim keeps the rest of us off its group; of two claims made unseen of each
-    // other, the lower index keeps it.
+    // An ally's claim makes us its crew rather than its rival, unless we claimed it first.
     const auto taken = [&](int g) {
         for (const auto& a : world.allies)
-            if (!a.is_self && comms::claim_of(world, a.index) == g && (memory.claim != g || a.index < world.me().index))
-                return true;
+            if (!a.is_self && comms::claim_of(world, a.index) == g && (memory.claim != g || memory.crew)) return true;
         return false;
     };
     const bool melee = world.me().facts().walk_and_attack_independent();
     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear.
     const auto passing = [&](int g) {
         if (!affordable(g)) return false;
-        if (g == memory.farm_group) return !taken(g) || memory.claim < 0;
+        if (g == memory.farm_group) return true;
         if (taken(g)) return false;
         return melee || groups[g].gems > 0;
     };
     const auto attack_in_range = [&] {
         const int hit = attack_camp(world, passing);
-        if (hit >= 0) memory.claim = taken(hit) ? -1 : hit;
+        if (hit >= 0 && hit != memory.claim) {
+            memory.crew = taken(hit);
+            memory.claim = hit;
+        }
         if (hit < 0 || melee) return false; // walk on
         cast_at_camp(world, hit);
         reset_and_attack_camp(world, hit);
@@ -482,6 +483,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
                     memory.farm_group = g, nearest = d;
         }
         memory.claim = memory.farm_group;
+        memory.crew = false;
         walk_on(memory.farm_group);
         return true;
     }
@@ -522,6 +524,20 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         }
         return false;
     };
+    // Joining allies on a group, our part of its gems is our share of the damage still to deal
+    // when we arrive, and of the camps' hits.
+    const auto crew_strength = [&](int g) {
+        float total = 0;
+        for (const auto& a : world.allies)
+            if (!a.is_self && a.alive && comms::claim_of(world, a.index) == g) total += std::max(1.0f, output(a));
+        return total;
+    };
+    // A group too costly for us alone is still ours to call if an ally in reach with no claim of
+    // its own can join: valued, like a crew's, by our share of the work.
+    float partner = 0;
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && dist(here, a.pos) <= params::rally_radius && comms::claim_of(world, a.index) < 0)
+            partner = std::max(partner, std::max(1.0f, output(a)));
     int help_group = -1, help_steps = unreachable;
     for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
         const auto& group = groups[g];
@@ -562,6 +578,23 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         if (best >= 0 && gems / static_cast<float>(trip + capture_rounds) <= best_value
             && (bag == 0 || gems / static_cast<float>(walk + bank + capture_rounds) <= from_altar_value))
             continue;
+        if (claimed) {
+            if (belief.state == CampState::cleared) continue;
+            const bool fresh = belief.state == CampState::respawning;
+            float health = 0;
+            for (std::size_t i = 0; i < group.members.size(); ++i) health += fresh ? group.members[i].max_health : belief.health[i];
+            const float others = crew_strength(g);
+            const int working = std::max(0, steps - (fresh ? std::max(0, belief.respawn_round - world.round) : 0));
+            const float left = health - others * static_cast<float>(working);
+            if (health <= 0 || left <= 0) continue;
+            const float rounds = left / (strength + others), part = strength * rounds / health;
+            float joint_rounds = 0;
+            const float hits = soften * min_camp_damage(group, belief, strength + others, &joint_rounds) * part;
+            if (hits > spare_health) continue;
+            const float value = gems * part / (static_cast<float>(trip) + rounds);
+            if (value > shared_value) shared = g, shared_value = value, shared_steps = steps;
+            continue;
+        }
         float clear_rounds = 0, damage = 0;
         if (belief.state != CampState::cleared) {
             damage = soften * min_camp_damage(g, group, belief, strength, &clear_rounds);
@@ -572,10 +605,16 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
                 || static_cast<float>(steps + wait + capture_rounds + last + tribute_turns(bag + group.gems)) + clear_rounds > static_cast<float>(left))
                 continue;
         }
-        const float value = gems / (static_cast<float>(trip) + clear_rounds + capture_rounds);
-        if (claimed) {
-            if (value > shared_value) shared = g, shared_value = value, shared_steps = steps;
-        } else if (damage > spare_health && !ally_engaged(world, g)) {
+        float value = gems / (static_cast<float>(trip) + clear_rounds + capture_rounds);
+        if (damage > spare_health && partner > 0 && belief.state == CampState::alive) {
+            float joint_rounds = 0;
+            const float part = strength / (strength + partner);
+            if (soften * min_camp_damage(group, belief, strength + partner, &joint_rounds) * part <= spare_health) {
+                damage = 0;
+                value = gems * part / (static_cast<float>(trip) + joint_rounds + capture_rounds);
+            }
+        }
+        if (damage > spare_health && !ally_engaged(world, g)) {
             if (value > risky_value) risky = g, risky_value = value, risky_steps = steps;
         } else {
             if (value > best_value) best = g, best_value = value, best_steps = steps;
@@ -589,10 +628,10 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     if (bag > 0 && attack_in_range()) return true;
     if (best < 0) best = risky, best_steps = risky_steps, best_value = risky_value;
     memory.claim = best;
-    // Sharing an ally's group (rows: three camps for four or five) beats a long walk to a poor one.
-    if (shared >= 0 && (best < 0 || params::share_weight * shared_value > best_value))
-        best = shared, best_steps = shared_steps, memory.claim = -1;
-    if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = -1;
+    memory.crew = false;
+    if (shared >= 0 && (best < 0 || shared_value > best_value))
+        best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true;
+    if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true;
     if (best < 0) return true;
     memory.farm_group = best;
     const int cap = best_steps + max_detour;
@@ -1034,6 +1073,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (!me.can_attack() || !me.can_cast()) safety.refresh();
     if (holding) {
         memory.claim = world.map().group_at(me.position());
+        memory.crew = false;
         return;
     }
     // A tributer cannot walk out of the stun's reach.

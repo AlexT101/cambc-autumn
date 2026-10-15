@@ -14,6 +14,7 @@ struct Memory {
     bool banking = false; // our bag headed for an altar rather than another capture last turn
     int farm_group = -1;  // farm's latest choice, kept to walk on when fuel is short
     int claim = -1;       // the group we told allies we work towards, or -1
+    bool crew = false;    // joining an ally's claim rather than our own
     vec2 ward{-1, -1};    // our latest ward
     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
 };

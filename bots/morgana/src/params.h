@@ -65,7 +65,5 @@ inline constexpr float hurt_retreat_ratio = 0.75f;
 inline constexpr int recall_heal_bonus = 6;
 // Ladder teams wait at a camp about to return (2-3% of their time), never for long.
 inline constexpr int max_wait = 10;
-// A claimed group's value to a second champion, against an unclaimed one's.
-inline constexpr float share_weight = 0.5f;
 
 } // namespace aph::params
