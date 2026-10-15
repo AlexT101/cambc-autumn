@@ -9,9 +9,9 @@ namespace aph::params {
 inline constexpr bool random_draft = true;
 
 inline constexpr cambc::champion_draft draft_preference[] = {
-    cambc::champion_draft::cassi_and_issac, cambc::champion_draft::stellar, cambc::champion_draft::ryth,
-    cambc::champion_draft::ren, cambc::champion_draft::prism, cambc::champion_draft::tavi,
-    cambc::champion_draft::marcella, cambc::champion_draft::varg, cambc::champion_draft::vesper_vale,
+    cambc::champion_draft::cassi_and_issac, cambc::champion_draft::stellar, cambc::champion_draft::varg,
+    cambc::champion_draft::ryth, cambc::champion_draft::ren, cambc::champion_draft::prism,
+    cambc::champion_draft::tavi, cambc::champion_draft::marcella, cambc::champion_draft::vesper_vale,
     cambc::champion_draft::vendetta, cambc::champion_draft::willow,
 };
 
