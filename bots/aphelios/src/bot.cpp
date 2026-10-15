@@ -260,6 +260,7 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety, const Memor
 }
 
 constexpr int capture_rounds = 6;
+constexpr float stickiness = 1.2f;
 
 // Damage taken clearing a group alone with basic attacks, killing the deadliest first; also
 // the rounds it takes.
@@ -352,9 +353,12 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         float rounds = 0;
         return min_camp_damage(g, groups[g], world.camps[g], strength, &rounds) <= spare_health || ally_engaged(world, g);
     };
+    // A ranged hit costs the walk: none for a group without gems unless it is our choice.
+    const bool melee = world.me().facts().walk_and_attack_independent();
+    const auto passing = [&](int g) { return affordable(g) && (melee || groups[g].gems > 0 || g == memory.farm_group); };
     const auto attack_in_range = [&] {
-        const int hit = attack_camp(world, affordable);
-        if (hit < 0 || world.me().facts().walk_and_attack_independent()) return false; // walk on
+        const int hit = attack_camp(world, passing);
+        if (hit < 0 || melee) return false; // walk on
         cast_at_camp(world, hit);
         reset_and_attack_camp(world, hit);
         return true;
@@ -405,7 +409,13 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     const Field* to_altar = bag > 0 ? &pathing.to_any_altar() : nullptr; // trips matter only when carrying
     const int left = rounds_left(world);
     const Field* deadline = left <= endgame_horizon ? &pathing.to_any_altar() : nullptr;
-    const int bank_now = to_altar && to_altar->at(here) != unreachable ? to_altar->at(here) : 0;
+    // A bag rides a recall home when that reaches an altar sooner (recall_to_bank).
+    const int recall_home = to_altar && to_altar->at(map.ally_spawn_centre) != unreachable
+                                ? (world.me().fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time))
+                                      + to_altar->at(map.ally_spawn_centre)
+                                : unreachable;
+    const auto homeward = [&](int walk) { return std::min(walk, recall_home); };
+    const int bank_now = to_altar && to_altar->at(here) != unreachable ? homeward(to_altar->at(here)) : 0;
     float from_altar_value = 0;
     // Unaffordable groups only when nothing else is left: idling is worse.
     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable;
@@ -428,10 +438,19 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         // capture that wins shares that walk with no later one. Gems past the win are worth nothing.
         const bool wins = group.gems >= short_by;
         const Field* to_bank = to_altar ? to_altar : wins ? &pathing.to_any_altar() : nullptr;
-        const int back = to_bank ? to_bank->at(group.centre) : unreachable;
+        const int back = !to_bank ? unreachable : to_altar ? homeward(to_altar->at(group.centre)) : to_bank->at(group.centre);
         const int bank = back == unreachable ? 0 : back + (group.gems + 9) / 10;
         const int trip = steps - bank_now + bank;
-        const float gems = static_cast<float>(std::min(group.gems, short_by));
+        // Deep in enemy ground the gems are contested and the way home is through them; staying
+        // with last turn's choice keeps near ties from turning us back and forth. The spawn
+        // fields come with the map's warm-up, which ends before the centres'.
+        const int from_us = pathing.centres_ready() ? map.from_ally_spawn().at(group.centre) : unreachable;
+        const int from_them = pathing.centres_ready() ? map.from_enemy_spawn().at(group.centre) : unreachable;
+        float weight = from_us == unreachable || from_them == unreachable
+                           ? 1.0f
+                           : std::min(1.0f, 2.0f * static_cast<float>(from_them) / static_cast<float>(from_us + from_them));
+        if (g == memory.farm_group) weight *= stickiness;
+        const float gems = weight * static_cast<float>(std::min(group.gems, short_by));
         // Risky groups matter only while no affordable one is found; skip the costly clearing
         // estimate for groups that cannot beat it even with no clearing.
         if (best >= 0 && gems / static_cast<float>(trip + capture_rounds) <= best_value
