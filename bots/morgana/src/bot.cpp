@@ -592,8 +592,8 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         if (g == memory.farm_group) weight *= stickiness;
         const float gems = weight * static_cast<float>(std::min(group.gems, short_by));
         // Risky groups matter only while no affordable one is found; skip the costly clearing
-        // estimate for groups that cannot beat it even with no clearing.
-        if (best >= 0 && gems / static_cast<float>(trip + capture_rounds) <= best_value
+        // estimate for groups that cannot beat it even with no clearing. A crew's share can.
+        if (!claimed && best >= 0 && gems / static_cast<float>(trip + capture_rounds) <= best_value
             && (bag == 0 || gems / static_cast<float>(walk + bank + capture_rounds) <= from_altar_value))
             continue;
         const auto too_late = [&](float clear_rounds) {
