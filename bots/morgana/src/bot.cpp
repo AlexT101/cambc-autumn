@@ -1034,7 +1034,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (world.map().ally_spawn.is_set(me.position())) buy_lock();
     if (!world.me().can_act(world.round)) return;
     heal_ally(world);
-    shield_if_needed(world);
+    shield_if_needed(world, memory.farm_group);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     if (world.map().ally_spawn.is_set(me.position()) && me.health() < me.max_health()) {
         decision = 'H';
@@ -1047,7 +1047,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (home ? *home : want_home(world, safety)) {
         decision = 'R';
         memory.claim = -1;
-        if (world.me().facts().walk_and_attack_independent()) attack_enemy(world);
+        if (world.me().facts().walk_and_attack_independent() && attack_enemy(world)) reset_and_attack_enemy(world, true);
         cast_at_enemies(world, true);
         if (!me.is_alive()) return;
         if (!me.can_attack() || !me.can_cast()) safety.refresh();
@@ -1056,8 +1056,11 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
             bank_gems(world, pathing, safety, memory);
             return;
         }
+        // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
         dash_away(world, pathing, pathing.to_ally_spawn());
+        reset_and_attack_enemy(world);
         step_safely(pathing, pathing.to_ally_spawn(), safety);
+        reset_and_attack_enemy(world);
         return;
     }
 
@@ -1142,7 +1145,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
         if (world.me().alive && !world.map().ally_spawn.is_set(start) && fuel_ok(params::end_reserve + 15000))
             if (const auto t = safety.fight(start); t.enemies > 0) log_fight("FF", world, safety, start, t);
     heal_ally(world); // allies in reach after walking
-    shield_if_needed(world);
+    shield_if_needed(world, memory.farm_group);
     place_ward(world, pathing, memory); // where we end the turn
     place_lock(world);
     start_recall(world);

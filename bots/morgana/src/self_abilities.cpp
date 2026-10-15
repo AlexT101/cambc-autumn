@@ -369,11 +369,12 @@ bool heal_ally(const World& world) {
     return best && cast(*heal, *best);
 }
 
-bool shield_if_needed(const World& world) {
+bool shield_if_needed(const World& world, int farmed) {
     const auto& f = world.me().facts();
     const auto shield = ready(world, AbilityKind::shield);
     if (!shield) return false;
-    const vec2 here = cambc::self().position();
+    auto& me = cambc::self();
+    const vec2 here = me.position();
     if (world.map().ally_spawn.is_set(here)) return false;
     bool danger = false;
     for (const auto& e : world.enemies)
@@ -384,12 +385,13 @@ bool shield_if_needed(const World& world) {
         if (danger) break;
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || groups[g].strength <= 0) continue;
+        const bool hit = g == farmed || !me.can_attack();
         bool in_reach = false, hitting = false;
         for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
             if (c.health[i] <= 0) continue;
             const int d = dist(here, groups[g].members[i].pos);
             in_reach |= d <= camp_attack_range && groups[g].members[i].strength > 0;
-            hitting |= d <= f.attack_range();
+            hitting |= hit && d <= f.attack_range();
         }
         danger = in_reach && (c.awake != Awake::asleep || hitting);
     }
