@@ -230,9 +230,11 @@ bool endgame(const World& world, Pathing& pathing) {
     return walk != unreachable && rounds_left(world) <= walk + tribute_turns(bag) + endgame_margin;
 }
 
+void place_ward(const World& world, Pathing& pathing, Memory& memory);
+
 // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else is
 // judged again.
-bool submit_here(const World& world, Safety& safety, const Memory& memory) {
+bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     const vec2 here = me.position();
     const auto& altars = world.map().altars;
@@ -241,6 +243,7 @@ bool submit_here(const World& world, Safety& safety, const Memory& memory) {
         const int turns = tribute_turns(me.gem_count());
         if (here != world.me().pos && !any_risk(world, turns) && !tribute_safe(safety, memory, turns)) return false;
         place_lock(world); // first: it cancels every tribute at its altar
+        place_ward(world, pathing, memory); // first: no ward goes down while channelling
         try {
             me.submit_gems(altars[a].pos);
             return true;
@@ -250,17 +253,17 @@ bool submit_here(const World& world, Safety& safety, const Memory& memory) {
     return false;
 }
 
-void bank_gems(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if (submit_here(world, safety, memory)) return;
+void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    if (submit_here(world, pathing, safety, memory)) return;
     const vec2 here = cambc::self().position();
     const auto& altars = world.map().altars;
     bool any_locked = false;
     for (const auto& a : world.altars) any_locked |= a.enemy_lock;
     // One cached field covers every altar; per-altar fields are needed only to skip locked ones.
     if (!any_locked) {
-        if (dash_towards(world, pathing, pathing.to_any_altar()) && submit_here(world, safety, memory)) return;
+        if (dash_towards(world, pathing, pathing.to_any_altar()) && submit_here(world, pathing, safety, memory)) return;
         step_safely(pathing, pathing.to_any_altar(), safety);
-        submit_here(world, safety, memory);
+        submit_here(world, pathing, safety, memory);
         return;
     }
     // Breaking a lock takes a turn per hit left, about a step each. Fields not yet affordable
@@ -276,10 +279,10 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety, const Memor
         if (steps < best_steps) best = a, best_steps = steps;
     }
     if (best < 0) return;
-    if (dash_towards(world, pathing, pathing.to_altar(best)) && submit_here(world, safety, memory)) return;
+    if (dash_towards(world, pathing, pathing.to_altar(best)) && submit_here(world, pathing, safety, memory)) return;
     if (world.altars[best].enemy_lock && break_lock(world, best) && !world.me().facts().walk_and_attack_independent()) return;
     step_safely(pathing, pathing.to_altar(best), safety);
-    submit_here(world, safety, memory);
+    submit_here(world, pathing, safety, memory);
 }
 
 // Damage a turn, spells spread over their cooldown.
