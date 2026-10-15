@@ -121,6 +121,8 @@ public:
     // Tiles to keep off while routing: camps and credible enemies. Our own tile is included when
     // in danger, so routing can free the region we stand in.
     bitboard avoid();
+    // any_within(avoid(), p, r), without building the threats.
+    bool avoid_within(vec2 p, int r);
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p.

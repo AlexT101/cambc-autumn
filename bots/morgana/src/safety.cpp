@@ -292,6 +292,12 @@ float unseen_weight(int reach, int tiles) {
     return tiles == 0 || weight < credible_weight ? 0.0f : weight;
 }
 
+// Next to a compact possible set of side ~sqrt(tiles), the chance of being in reach falls by about
+// 1 / sqrt(tiles) per step out; keep the tiles still near the cutoff.
+int unseen_radius(int reach, int tiles) {
+    return std::clamp(static_cast<int>(static_cast<float>(reach) + 1.5f - credible_weight * std::sqrt(static_cast<float>(tiles))), 0, reach);
+}
+
 int Threat::distance(vec2 p) const {
     if (visible) return dist(p, pos);
     return steps ? steps->get(p) : unreachable;
@@ -405,10 +411,7 @@ void Safety::build() {
         t.strike = s;
         t.tiles = tiles;
         t.weight = weight;
-        // Next to a compact possible set of side ~sqrt(tiles), the chance of being in reach
-        // falls by about 1 / sqrt(tiles) per step out; keep the tiles still near the cutoff.
-        const int radius = std::clamp(
-            static_cast<int>(static_cast<float>(reach) + 1.5f - credible_weight * std::sqrt(static_cast<float>(tiles))), 0, reach);
+        const int radius = unseen_radius(reach, tiles);
         if (fields.size() <= static_cast<std::size_t>(e.index)) fields.resize(e.index + 1);
         auto& field = fields[e.index];
         if (!field) field = std::make_unique<cambc::distance_field>();
@@ -529,6 +532,26 @@ const bitboard& Safety::enemy_area() {
 }
 
 bitboard Safety::avoid() { return camp_area() | enemy_area(); }
+
+// Every unseen threat is credible: unseen_weight() drops the rest. Its area is `possible` grown by
+// its radius, so it comes within r of p exactly when `possible` comes within radius + r.
+bool Safety::avoid_within(vec2 p, int r) {
+    for (const auto& m : awake_members())
+        if (m.reach > 0 && dist(p, m.pos) <= m.reach + r) return true;
+    if (built_) return any_within(enemy_area(), p, r);
+    for (const auto& e : world_.enemies) {
+        if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
+        const int reach = strike(e, next_turn_round(world_, e)).reach;
+        if (reach < 0) continue;
+        if (e.visible) {
+            if (dist(p, e.pos) <= reach + r) return true;
+            continue;
+        }
+        const int tiles = static_cast<int>(e.possible.count());
+        if (unseen_weight(reach, tiles) > 0 && any_within(e.possible, p, unseen_radius(reach, tiles) + r)) return true;
+    }
+    return false;
+}
 
 Trade Safety::fight(vec2 p) {
     if (std::none_of(threats().begin(), threats().end(), [&](const Threat& t) { return t.strike.hits(t.distance(p)); })) return {};

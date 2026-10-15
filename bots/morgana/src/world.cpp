@@ -765,7 +765,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     // In observe() too, for a champion first seen after our move.
     b.gems = engine::gems(h);
     b.gems_round = round;
-    if (b.side == team::enemy || b.is_self) b.fast_recall = engine::home_emblem(h);
+    if (b.side == team::enemy) b.fast_recall = engine::home_emblem(h);
 }
 
 void World::read_priorities() {
@@ -940,7 +940,7 @@ void World::update_camps() {
         champs_read = true;
         cambc::vision::champion_tiles_into(team::ally, ally_champs_b);
         cambc::vision::champion_tiles_into(team::enemy, enemy_champs_b);
-        cambc::vision::champion_tiles_into(team::ally, champs_b);
+        champs_b = ally_champs_b;
         champs_b |= enemy_champs_b;
     };
     const auto ally_champs = [&]() -> const bitboard& { return read_champs(), ally_champs_b; };

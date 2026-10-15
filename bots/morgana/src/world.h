@@ -178,7 +178,7 @@ struct ChampionBelief {
     int stats_round = -1;
     int gems = 0;
     int gems_round = -1;
-    bool fast_recall = false; // a Home emblem, when last seen (enemies and ourselves): recall takes home_recall_time turn ends
+    bool fast_recall = false; // a Home emblem, when last seen (enemies; we never buy one): recall takes home_recall_time turn ends
     bool acted = false; // had completed its turn when last read this round
     // Turn-order priority for priority_round, and from the round after it.
     int priority = 0, next_priority = 0, priority_round = -1;

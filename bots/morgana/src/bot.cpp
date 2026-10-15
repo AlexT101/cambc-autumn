@@ -110,9 +110,14 @@ void buy_lock() {
     }
 }
 
+bool channelling() {
+    const auto& me = cambc::self();
+    return me.is_recalling() || me.is_submitting_gems() || me.is_teleporting();
+}
+
 void place_lock(const World& world) {
     auto& me = cambc::self();
-    if (!world.me().alive || me.is_submitting_gems()) return;
+    if (!world.me().alive || channelling()) return;
     const auto& lock = me.consumables()[cambc::consumable_type::altar_lock];
     if (lock.count() == 0) return;
     const auto& map = world.map();
@@ -172,9 +177,12 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
 // every turn, so only danger near us is worth the extra search.
 void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
     if (!cambc::self().can_move()) return;
+    if (!safety.avoid_within(cambc::self().position(), safety_params::avoid_radius)) {
+        pathing.step_towards(field);
+        return;
+    }
     const auto avoid = safety.avoid();
-    const bool near = any_within(avoid, cambc::self().position(), safety_params::avoid_radius);
-    if (!near || !pathing.step_towards(field, &avoid)) pathing.step_towards(field);
+    if (!pathing.step_towards(field, &avoid)) pathing.step_towards(field);
 }
 
 bool break_lock(const World& world, int altar) {
@@ -430,12 +438,11 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         float rounds = 0;
         return soften * min_camp_damage(g, groups[g], world.camps[g], strength, &rounds) <= spare_health || ally_engaged(world, g);
     };
+    std::array<bool, 64> ally_claims{};
+    for (const auto& a : world.allies)
+        if (const int c = comms::claim_of(world, a.index); !a.is_self && c >= 0 && c < 64) ally_claims[c] = true;
     // An ally's claim makes us its crew rather than its rival, unless we claimed it first.
-    const auto taken = [&](int g) {
-        for (const auto& a : world.allies)
-            if (!a.is_self && comms::claim_of(world, a.index) == g && (memory.claim != g || memory.crew)) return true;
-        return false;
-    };
+    const auto taken = [&](int g) { return g < 64 && ally_claims[g] && (memory.claim != g || memory.crew); };
     const bool melee = world.me().facts().walk_and_attack_independent();
     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear.
     const auto passing = [&](int g) {
@@ -730,7 +737,7 @@ bool ward_bushes(const World& world, Memory& memory) {
 }
 
 void place_ward(const World& world, Pathing& pathing, Memory& memory) {
-    if (!world.me().alive || cambc::self().ward_cooldown() > 0) return;
+    if (!world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return;
     if (ward_bushes(world, memory) || world.round % params::ward_period != 0) return;
     const vec2 spawn = world.map().ally_spawn_centre;
     std::optional<vec2> best;
@@ -1136,8 +1143,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
 // turn shorter. Damage before then cancels it at no cost.
 void start_recall(const World& world) {
     auto& me = cambc::self();
-    if (!world.me().alive || me.is_recalling() || me.is_submitting_gems() || me.is_teleporting()
-        || world.map().ally_spawn.is_set(me.position()))
+    if (!world.me().alive || channelling() || world.map().ally_spawn.is_set(me.position()))
         return;
     try {
         me.recall();
