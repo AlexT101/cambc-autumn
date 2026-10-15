@@ -11,7 +11,7 @@ Work from these two. Read `docs/` or `rules-verification/` only if they can't an
 
 ## Language
 
-The bot is **C++ only**, in [bots/aphelios/](bots/aphelios/); `bots/starter-cpp` is reference only. Frozen snapshots of earlier aphelios versions, used as sparring partners, go in `bots/baselines/<name>/` (e.g. `bots/baselines/v8`); never edit them. `v8-aggro` is v8 plus chasing the weakest visible enemy within 8 when above half health: a sparring partner that fights, since our baselines rarely do. `ladder` plays like the top ladder teams (one champion per camp, farming its own half, capture recalls, early retreat from packs, altar locks): a sparring partner that out-farms rather than out-fights. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:
+The bots are **C++ only**: [bots/aphelios/](bots/aphelios/) and [bots/morgana/](bots/morgana/), which was built from aphelios to play like the top ladder teams (one champion per camp, farming its own half, capture recalls, early retreat from packs, altar locks) and out-farms rather than out-fights. `bots/starter-cpp` is reference only. Frozen snapshots of earlier versions, used as sparring partners, go in `bots/baselines/<name>/` (`vN` for aphelios, e.g. `bots/baselines/v8`; `morgana-vN` for morgana); never edit them. `v8-aggro` is v8 plus chasing the weakest visible enemy within 8 when above half health: a sparring partner that fights, since our baselines rarely do. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:
 
 - [docs/handbook/](docs/handbook/) and [docs/champions/](docs/champions/): game rules, superseded by the YAML
 - [docs/guides/cpp/](docs/guides/cpp/): C++ guides
