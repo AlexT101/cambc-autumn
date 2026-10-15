@@ -31,7 +31,7 @@ struct Fighter {
     const ChampionFacts* facts;
     float strength, focus;
     std::array<int, 2> ready_at; // own turn from which the slot can be cast
-    int arrives_at = 0;          // own turns spent walking into reach first, out of the enemy's reach until then
+    int arrives_at = 0;          // own turns spent walking into reach first
     bool idle = false;           // never acts
     float health = 0, max_health = 0;
     float shield = 0;
@@ -62,12 +62,11 @@ struct Side {
         for (int i = 0; i < count; ++i) total += std::max(0.0f, fighters[i].health);
         return total;
     }
-    bool in_reach(int i) const { return fighters[i].health > 0 && fighters[i].arrives_at <= turn; }
-    // The living member in reach with the least health and shield, or -1.
+    // The living member with the least health and shield, or -1.
     int weakest() const {
         int best = -1;
         for (int i = 0; i < count; ++i)
-            if (in_reach(i)
+            if (fighters[i].health > 0
                 && (best < 0 || fighters[i].health + fighters[i].shield < fighters[best].health + fighters[best].shield))
                 best = i;
         return best;
@@ -76,7 +75,7 @@ struct Side {
     int weakest_hurt(int caster) const {
         int best = -1;
         for (int i = 0; i < count; ++i)
-            if (i != caster && in_reach(i) && fighters[i].health < fighters[i].max_health
+            if (i != caster && fighters[i].health > 0 && fighters[i].health < fighters[i].max_health
                 && (best < 0 || fighters[i].health < fighters[best].health))
                 best = i;
         return best;
@@ -178,7 +177,7 @@ float act(Side& self, Side& other) {
     for (int k = 0; k < self.stunned; ++k) {
         int best = -1;
         for (int i = 0; i < self.count; ++i)
-            if (!skip[i] && self.in_reach(i) && self.fighters[i].facts->passive != Passive::stun_immune
+            if (!skip[i] && self.fighters[i].health > 0 && self.fighters[i].facts->passive != Passive::stun_immune
                 && (best < 0 || self.fighters[i].strength > self.fighters[best].strength))
                 best = i;
         if (best < 0) break;
@@ -547,16 +546,7 @@ Trade Safety::fight(vec2 p) {
         const auto& a = world_.allies[i];
         if (!(key >> i & 1)) continue;
         if (a.is_self) us.self = us.count;
-        const int turn_round = a.is_self ? world_.round : next_turn_round(world_, a);
-        us.join(a, turn_round);
-        // Counted from the first turn, allies 5+ steps from the nearest enemy hit within 5 rounds
-        // 10-45% as often as one beside it, and the simulation overrated our side with each ally.
-        if (a.is_self) continue;
-        int gap = unreachable;
-        for (const auto& t : threats())
-            if (key >> (16 + t.enemy) & 1)
-                gap = std::min(gap, t.visible ? dist(a.pos, t.pos) : std::min(t.distance(a.pos), dist(a.pos, p) + t.distance(p)));
-        us.fighters[us.count - 1].arrives_at = std::max(0, gap - std::max(0, strike(a, turn_round).reach));
+        us.join(a, a.is_self ? world_.round : next_turn_round(world_, a));
     }
     for (const auto& t : threats()) {
         const auto& e = world_.enemies[t.enemy];
