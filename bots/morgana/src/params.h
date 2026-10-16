@@ -39,6 +39,11 @@ inline constexpr int chase_radius = 8;
 // outside vision of one arrive after it.
 inline constexpr int rally_radius = 12;
 
+// A cleared group in sight within this many steps is captured by the nearest free ally; kept as the
+// target for this many rounds out of sight.
+inline constexpr int pickup_steps = 12;
+inline constexpr int pickup_memory = 5;
+
 // Chain another capture onto a bag only below this: about one capture's worth (wolf 22, gem pair
 // 48), so a chain at most roughly doubles what a death would lose.
 inline constexpr int chain_bag_limit = 50;

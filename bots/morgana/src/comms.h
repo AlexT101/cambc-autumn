@@ -27,6 +27,10 @@ void post_rally(int round, vec2 pos);
 std::optional<Rally> rally();
 // The group we work towards (-1 for none), posted when it changes.
 void claim(int group);
+// The gems we carry, posted with the claim, in eights.
+void bag(int gems);
+// The gems an ally (by index) carries: exact in sight, else as last posted; 0 while dead.
+int bag_of(const World& world, int ally);
 // The group an ally (by index) claims, or -1 while it is dead.
 int claim_of(const World& world, int ally);
 

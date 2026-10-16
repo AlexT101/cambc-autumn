@@ -243,6 +243,13 @@ int bag_at_stake(const World& world) {
 // Tributing the bag wins: more gems are worth nothing, only the tribute is.
 bool winning_bag(const World& world) { return gems_short(world) <= 0; }
 
+// Our score and every bag the team carries reach the win: farming on only puts the bags at risk.
+bool team_wins(const World& world) {
+    int gems = world.score.ally;
+    for (const auto& a : world.allies) gems += a.is_self ? static_cast<int>(cambc::self().gem_count()) : comms::bag_of(world, a.index);
+    return gems >= static_cast<int>(cambc::constants::winning_gems);
+}
+
 // A tribute started or kept now is the bag's last chance to score, or wins the game while fleeing
 // gives the enemy time to win first: take it at any risk.
 bool any_risk(const World& world, int channel_turns) {
@@ -732,6 +739,39 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         walk_on(memory.farm_group);
         return true;
     }
+    const auto off_zone = [&](const bitboard& goals) { return zone ? goals & ~*zone : goals; };
+    const auto capture = [&](int g, int cap) {
+        if (!zone) dash_towards(world, pathing, groups[g].tiles());
+        if (fuel_ok(search_cost_estimate(cap) + params::end_reserve)) pathing.step_towards(off_zone(groups[g].tiles()), zone, cap);
+        else walk_on(g);
+    };
+    // A cleared group in sight, ours or one the enemy left, is the nearest free ally's to capture:
+    // priced by clearing time below, its gold would be worth nothing.
+    int pick = -1, pick_steps = unreachable;
+    for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
+        const auto& c = world.camps[g];
+        if (c.state != CampState::cleared || (groups[g].gems == 0 && groups[g].gold == 0)) continue;
+        if (c.state_round < world.round - (g == memory.farm_group ? params::pickup_memory : 0)) continue;
+        if (c.holder == team::enemy || taken(g) || ally_holding(g, false)) continue;
+        if (zone && (groups[g].tiles() & ~*zone).is_empty()) continue;
+        const Field* field = pathing.centres_ready() ? pathing.from_centre(g) : nullptr;
+        const auto steps_from = [&](vec2 p) { return field ? field->at(p) : dist(p, groups[g].centre); };
+        const int steps = steps_from(here);
+        if (steps > params::pickup_steps || steps >= pick_steps) continue;
+        bool nearest = true;
+        for (const auto& a : world.allies)
+            if (!a.is_self && a.alive && a.visible && a.channel == Channel::none && comms::bag_of(world, a.index) == 0) {
+                const int d = steps_from(a.pos);
+                nearest &= d > steps || (d == steps && a.index > world.me().index);
+            }
+        if (nearest) pick = g, pick_steps = steps;
+    }
+    if (pick >= 0) {
+        memory.claim = memory.farm_group = pick;
+        memory.crew = false;
+        capture(pick, pick_steps + max_detour);
+        return true;
+    }
     // Warmed-up centre fields give the steps a field from here would, without its cost. Walls are
     // static, so the steps are kept while we stand still, as when attacking a camp.
     static std::vector<int> centre_steps; // by group, -1 until read
@@ -945,12 +985,8 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     if (best < 0) return true;
     memory.farm_group = best;
     const int cap = best_steps + max_detour;
-    const bool search = fuel_ok(search_cost_estimate(cap) + params::end_reserve);
-    const auto off_zone = [&](const bitboard& goals) { return zone ? goals & ~*zone : goals; };
     if (world.camps[best].state == CampState::cleared) {
-        if (!zone) dash_towards(world, pathing, groups[best].tiles());
-        if (search) pathing.step_towards(off_zone(groups[best].tiles()), zone, cap);
-        else walk_on(best);
+        capture(best, cap);
         return true;
     }
     if (best_spell && spell_clear(world, pathing, best, cap, zone)) return true;
@@ -1466,7 +1502,8 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (me.gem_count() > 0) {
         const bool safe = can_tribute_safely(world, safety, memory);
         const bool late = endgame(world, pathing);
-        if (!safe && !late && !winning_bag(world) && chase(world, pathing, safety)) return;
+        const bool close = team_wins(world);
+        if (!safe && !late && !close && !winning_bag(world) && chase(world, pathing, safety)) return;
         if (!safe && can_tribute_here(world)) {
             // Hit with nothing to hit back: waiting here only takes more.
             if (memory.damage > 0 && !attack_target(world)) {
@@ -1480,7 +1517,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         }
         decision = 'B';
         const bool walked = attacked && !world.me().facts().walk_and_attack_independent();
-        memory.banking = late || walked || !may_chain(world, safety) || !farm(world, pathing, memory);
+        memory.banking = late || close || walked || !may_chain(world, safety) || !farm(world, pathing, memory);
         if (memory.banking) bank_gems(world, pathing, safety, memory); // a tribute can still start after a ranged attack
         return;
     }
@@ -1529,6 +1566,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     start_recall(world);
     set_turn_order(world, safety);
     comms::claim(memory.claim);
+    comms::bag(world.me().alive ? static_cast<int>(cambc::self().gem_count()) : 0);
     memory.round = world.round;
     memory.health = world.me().alive ? cambc::self().health() : 0;
 }
