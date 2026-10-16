@@ -91,9 +91,11 @@ const bitboard& Pathing::member_attack_tiles(int group, int member, int range) {
 
 bitboard Pathing::attack_tiles(int group, int range) {
     const auto& health = world_.camps[group].health;
+    // A group returns only once its camp tiles are empty: wait for it where it can be hit from.
+    const bool returning = world_.camps[group].state == CampState::respawning;
     bitboard tiles, freed;
     for (int i = 0; i < static_cast<int>(health.size()); ++i) {
-        if (health[i] > 0) tiles |= member_attack_tiles(group, i, range);
+        if (health[i] > 0 || returning) tiles |= member_attack_tiles(group, i, range);
         else freed.set(map().groups[group].members[i].pos);
     }
     tiles &= map().standable | freed;
@@ -113,8 +115,9 @@ bool Pathing::prepare_member(int group, int member, int range, std::uint64_t fue
 
 bool Pathing::prepare_attack_tiles(int group, int range, std::uint64_t fuel_floor) {
     const auto& health = world_.camps[group].health;
+    const bool returning = world_.camps[group].state == CampState::respawning;
     for (int i = 0; i < static_cast<int>(health.size()); ++i)
-        if (health[i] > 0 && !prepare_member(group, i, range, fuel_floor)) return false;
+        if ((health[i] > 0 || returning) && !prepare_member(group, i, range, fuel_floor)) return false;
     return true;
 }
 
@@ -130,8 +133,7 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
     const auto afford = [&](const Slot& slot) { return slot || fuel_ok(fuel_floor + cost); };
     if (!afford(any_altar_)) return false;
     to_any_altar();
-    // Farm reads only groups with gems and no monolith.
-    const auto farmed = [&](int g) { return !map().groups[g].has_monolith && map().groups[g].gems > 0; };
+    const auto farmed = [&](int g) { return map().groups[g].gems > 0 || map().groups[g].gold > 0; };
     for (int g = 0; g < static_cast<int>(map().groups.size()); ++g) {
         if (!farmed(g)) continue;
         auto& slot = entry(centre_fields_, map().groups.size(), g);

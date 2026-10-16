@@ -298,7 +298,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only) {
         if (group < 0) return {};
     }
     const auto& g = map.groups[group];
-    if (g.has_monolith || world.camps[group].state != CampState::alive) return {};
+    if (world.camps[group].state != CampState::alive) return {};
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && dist(here, e.pos) <= hold_range) return {};
 

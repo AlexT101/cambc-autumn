@@ -5,8 +5,9 @@
 
 namespace aph::params {
 
-// Random picks keep the bot tested with and against every champion; forced-draft variants turn it off.
-inline constexpr bool random_draft = true;
+// Off for local testing too, so results measure play rather than draft luck; random picks test
+// the bot with and against every champion.
+inline constexpr bool random_draft = false;
 
 inline constexpr cambc::champion_draft draft_preference[] = {
     cambc::champion_draft::cassi_and_issac, cambc::champion_draft::stellar, cambc::champion_draft::varg,
@@ -37,8 +38,6 @@ inline constexpr int chase_radius = 8;
 // Fights last about 5 rounds (local engagements: median 4-6), so allies more than a few steps
 // outside vision of one arrive after it.
 inline constexpr int rally_radius = 12;
-// Allies within this many steps of a damaging group a teammate attacks join it: wider pulls lost.
-inline constexpr int help_radius = 8;
 
 // Chain another capture onto a bag only below this: about one capture's worth (wolf 22, gem pair
 // 48), so a chain at most roughly doubles what a death would lose.
@@ -52,7 +51,5 @@ inline constexpr float retreat_ratio = 1.3f;
 inline constexpr float hurt_retreat_ratio = 0.75f;
 // A capture recall still pays when hurt if it costs at most this many more rounds to an altar.
 inline constexpr int recall_heal_bonus = 6;
-// Ladder teams wait at a camp about to return (2-3% of their time), never for long.
-inline constexpr int max_wait = 10;
 
 } // namespace aph::params

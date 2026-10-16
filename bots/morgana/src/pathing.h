@@ -27,13 +27,14 @@ public:
     const Field& to_any_altar();
     int centre_to_altar(int group); // to_any_altar() at the group's centre, kept once read
     const Field& to_group(int group); // goals: the group's camp tiles, to stand on and capture
-    // Walking steps from the centre of a group worth farming (gems, no monolith): by symmetry,
-    // from anywhere to it. Null until warmed up; centres_ready() once all are.
+    // Walking steps from the centre of a group that pays gems or gold: by symmetry, from anywhere
+    // to it. Null until warmed up; centres_ready() once all are.
     const Field* from_centre(int group);
     bool centres_ready() const { return centres_ready_; }
     // Walkable tiles from which a basic attack reaches and sees the member, camp tiles included.
     const bitboard& member_attack_tiles(int group, int member, int range);
-    // Over the members believed alive; off camp tiles, but for those of its dead members.
+    // Over the members believed alive; off camp tiles, but for those of its dead members. A
+    // respawning group returns only with its camp tiles empty: over all members, off them.
     bitboard attack_tiles(int group, int range);
     // Compute attack_tiles' missing parts while more than `fuel_floor` remains; true once cached.
     bool prepare_attack_tiles(int group, int range, std::uint64_t fuel_floor);
