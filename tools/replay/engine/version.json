@@ -1,8 +1,8 @@
 {
-  "cambc": "cambc 2.1.6",
+  "cambc": "cambc 2.2.2",
   "asset": "v0_0_1-ctH8uuEb.wasm",
   "snapshotSize": 184696,
   "sha256": "ce302dc6666ae43592f6936e572bc4baca92a345bff13ef7f986609ac666a0dc",
   "bytes": 616952,
-  "updated": "2026-10-14T13:19:01.880Z"
+  "updated": "2026-10-16T14:35:01.523Z"
 }
