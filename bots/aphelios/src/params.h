@@ -5,8 +5,9 @@
 
 namespace aph::params {
 
-// Random picks keep the bot tested with and against every champion; forced-draft variants turn it off.
-inline constexpr bool random_draft = true;
+// Off for local testing too, so results measure play rather than draft luck; random picks test
+// the bot with and against every champion.
+inline constexpr bool random_draft = false;
 
 inline constexpr cambc::champion_draft draft_preference[] = {
     cambc::champion_draft::cassi_and_issac, cambc::champion_draft::stellar, cambc::champion_draft::varg,
