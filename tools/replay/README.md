@@ -8,10 +8,11 @@ node tools/replay/extract.mjs <dirs or .repl26a files...> [--threads N] [--force
 node tools/replay/extract.mjs --update-engine
 ```
 
-- Inputs are searched recursively. Each distinct replay (by sha256) is decoded once, in parallel worker threads, into `replays/.analysis/<first 16 hex of sha256>/`. Cached games are skipped unless `--force`, the extractor version changes or the engine changes.
+- Inputs are searched recursively. Each distinct replay (by sha256) is decoded once, in parallel worker threads, into `replays/.analysis/<first 16 hex of sha256>/`. Cached games are skipped unless `--force`, the extractor version changes, their engine's copy changes or their validation failed.
 - Identical replays do occur: the bots and engine are deterministic, so a rematch on the same map can be byte-identical. All copies are listed in `meta.sources`; `index.json` has one row per source file. A shared game's `meta.teams` names come from whichever batch extracted it first, so take a batch's team names from its `index.json` rows (`teams`), not from `meta.json`.
 - Exit code 1 if any replay fails to decode or fails a hard validation check.
-- `--update-engine` starts `cambc view`, downloads the `v0_0_1-*.wasm` the viewer uses into `engine/`, and rewrites `engine/version.json`. If the snapshot layout changed (`Game_Visualiser_SnapshotSize() != 184696`), loading fails and the decoder in `engine.mjs` has to be re-ported from the viewer's `PanelChrome-*.js` (functions `xr`/`br`/`Sr` and table constant `Q`).
+- A replay's header names the engine that played it (`v0_0_1` until the ladder's 0.0.2 patch on 2026-10-16 about 08:00Z, `v0_0_2` since, for ladder and local `cambc run` alike), and only that engine loads it. Each replay is decoded with its own engine from `engine/`; `tools/mapgen` uses the newest.
+- `--update-engine` starts `cambc view`, downloads every `v*_*_*-*.wasm` the viewer ships into `engine/<version>.wasm`, and rewrites `engine/version.json`. If the snapshot layout changed (`Game_Visualiser_SnapshotSize() != 184696`), loading fails and the decoder in `engine.mjs` has to be re-ported from the viewer's `PanelChrome-*.js` (functions `xr`/`br`/`Sr` and table constant `Q`).
 - About 1.1 s per game on one thread (39 s for 532 games on 16). About 100 KB per game (gzipped).
 
 ## Files
@@ -20,7 +21,7 @@ node tools/replay/extract.mjs --update-engine
 | --- | --- |
 | `engine.mjs` | WASM wrapper (`Engine`, `Game`), snapshot decoder (`Snapshot`), static map extraction, enums, `mirror`/`ownFrame` helpers, zip unwrapping for local replays. |
 | `extract.mjs` | CLI and per-game extraction (`extractGame`). |
-| `engine/v0_0_1.wasm`, `engine/version.json` | Engine copy and its provenance (cambc version, asset name, snapshot size, sha256). |
+| `engine/<version>.wasm`, `engine/version.json` | Engine copies and their provenance (cambc version, snapshot size, and per version the asset name and sha256). |
 
 Output, under `replays/.analysis/`:
 
@@ -46,7 +47,7 @@ Python: `json.load(gzip.open(p))` for rounds, `[json.loads(l) for l in gzip.open
 
 ## meta.json
 
-- `v`, `engine` (version.json), `source`, `sha256`, `sourceKind` (`ladder`, `batch` or `file`), `sources` (every copy: `{source, kind, map, teams, group, matchId, position, problems?}`).
+- `v`, `engine` (`{version, cambc, asset, sha256, bytes}` of the engine that decoded it; games extracted before 2026-10-16 have no `version`, and all are v0_0_1), `source`, `sha256`, `sourceKind` (`ladder`, `batch` or `file`), `sources` (every copy: `{source, kind, map, teams, group, matchId, position, problems?}`).
 - `map`: `{name, hash, width, height, symmetry}`; `mapFile` is the relative path of the map JSON.
 - `teams[0|1]`: ladder `{name, id, ratingBefore}`; batch `{name, bot}` where `bot` is the index into `results.json` `bots` (`-12` files: bot 0 is team A).
 - `group`, `matchId`, `position`: ladder group and match.
@@ -54,7 +55,7 @@ Python: `json.load(gzip.open(p))` for rounds, `[json.loads(l) for l in gzip.open
 - `champions[]`: `{id, team, type, name, draftOrder, maxHp, kills, deaths, assists, earnedGold, gold, gems, stats}` at the end; `stats` is the engine's end-of-game statistics (`Game_Statistics_GetChampion`, identical to the ladder's `group.json`): kills, deaths, assists, earnedGold, spentGold, collectedGems, submittedGems, championDamageDone/Taken, monsterDamageDone/Taken, healingDone, shieldingDone, itemsBought (pairs), consumablesBought.
 - `result`: `{winner (0/1), outcome (engine: 1 = A, 2 = B), rounds, gems: [A, B], steps}`.
 - `faults`: first two bytes of the engine summary, believed to be per-team bot faults (always 0 so far; unverified).
-- `validation`: `{ok, hard[], soft[]}`. Hard: final round, tributed gems, winner and each champion's type, kills, deaths, assists, earned gold and engine statistics against `group.json` (or round and winner against `results.json`), plus derived death events against the engine's death counts. Soft (informational): derived kills, tributes, damage and gold against the engine statistics.
+- `validation`: `{ok, hard[], soft[]}`. Hard: final round, tributed gems, winner and each champion's type, kills, deaths, assists, earned gold and engine statistics against `group.json` (since 2026-10-16 its `statistics` are null, so only round, scores and winner, from the match and its `sides`; or round and winner against `results.json`), plus derived death events against the engine's death counts. Soft (informational): derived kills, tributes, damage and gold against the engine statistics.
 - `counts`: events per kind; `ms`: extraction time.
 
 ## maps/&lt;hash&gt;.json

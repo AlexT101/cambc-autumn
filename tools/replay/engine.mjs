@@ -7,8 +7,9 @@ const emitWarning = process.emitWarning;
 process.emitWarning = (w, ...a) => { if (!/WASI is an experimental/.test(String(w?.message ?? w))) emitWarning.call(process, w, ...a); };
 const { WASI } = await import('node:wasi');
 
+// One engine per ladder patch (engine/<version>.wasm, listed in engine/version.json): a replay
+// plays back only on the engine named in its header.
 export const ENGINE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'engine');
-export const WASM_PATH = path.join(ENGINE_DIR, 'v0_0_1.wasm');
 export const SNAPSHOT_SIZE = 184696;
 export const SNAPSHOT_ABI = 1;
 export const OBSERVER = { team: 2, champion: 0xFFFFFFFF };
@@ -45,12 +46,34 @@ export class EngineError extends Error {
   constructor(code, message) { super(`engine error ${code}: ${message}`); this.code = code; }
 }
 
-export function engineInfo() {
-  try { return JSON.parse(fs.readFileSync(path.join(ENGINE_DIR, 'version.json'), 'utf8')); } catch { return null; }
+let manifest;
+function engineManifest() {
+  if (manifest === undefined) {
+    try { manifest = JSON.parse(fs.readFileSync(path.join(ENGINE_DIR, 'version.json'), 'utf8')); } catch { manifest = null; }
+  }
+  return manifest;
 }
 
-export async function compileEngine(wasmPath = WASM_PATH) {
-  return WebAssembly.compile(fs.readFileSync(wasmPath));
+export function engineVersions() { return Object.keys(engineManifest()?.engines ?? {}).sort(); }
+export function latestEngine() { return engineVersions().at(-1); }
+export function wasmPath(version = latestEngine()) { return path.join(ENGINE_DIR, `${version}.wasm`); }
+
+export function engineInfo(version = latestEngine()) {
+  const m = engineManifest(), e = m?.engines?.[version];
+  return e ? { version, cambc: m.cambc, ...e } : null;
+}
+
+export async function compileEngine(version = latestEngine()) {
+  return WebAssembly.compile(fs.readFileSync(wasmPath(version)));
+}
+
+const REPLAY_MAGIC = 125779999602273n;
+
+// The engine version a replay was played on, e.g. 'v0_0_2', from its header.
+export function replayEngine(bytes) {
+  bytes = unwrapReplay(bytes);
+  if (bytes.length < 14 || bytes.readBigUInt64LE(0) !== REPLAY_MAGIC) throw new Error('not a replay file');
+  return `v${bytes[8]}_${bytes[9]}_${bytes[10]}`;
 }
 
 export class Engine {

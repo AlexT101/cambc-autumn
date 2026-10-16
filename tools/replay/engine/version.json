@@ -1,8 +1,17 @@
 {
   "cambc": "cambc 2.2.2",
-  "asset": "v0_0_1-ctH8uuEb.wasm",
   "snapshotSize": 184696,
-  "sha256": "ce302dc6666ae43592f6936e572bc4baca92a345bff13ef7f986609ac666a0dc",
-  "bytes": 616952,
-  "updated": "2026-10-16T14:35:01.523Z"
+  "updated": "2026-10-16T16:10:09.401Z",
+  "engines": {
+    "v0_0_1": {
+      "asset": "v0_0_1-ctH8uuEb.wasm",
+      "sha256": "ce302dc6666ae43592f6936e572bc4baca92a345bff13ef7f986609ac666a0dc",
+      "bytes": 616952
+    },
+    "v0_0_2": {
+      "asset": "v0_0_2-DFj19m76.wasm",
+      "sha256": "e123b59d9dea198762ab7a04db9b3cb6d06dfa991088e41c24750fc4cb88b947",
+      "bytes": 627412
+    }
+  }
 }

@@ -6,7 +6,7 @@ import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import {
-  Engine, compileEngine, engineInfo, WASM_PATH, ENGINE_DIR, SNAPSHOT_SIZE, STEP_KINDS, CHAMPIONS, DRAFT_CHAMPIONS, ITEMS, CONSUMABLES,
+  Engine, compileEngine, engineInfo, engineVersions, replayEngine, wasmPath, ENGINE_DIR, SNAPSHOT_SIZE, STEP_KINDS, CHAMPIONS, DRAFT_CHAMPIONS, ITEMS, CONSUMABLES,
   ABILITY_TYPES, BUFFS, CAMPS, CHANNELS, GROUP_STATES, mirror,
 } from './engine.mjs';
 
@@ -38,7 +38,7 @@ function sourceContext(file) {
     const sides = group.group?.sides ?? [];
     ctx.teams = ['a', 'b'].map(s => { const x = sides.find(q => q.side === s) ?? {}; return { name: x.teamName, id: x.teamId, ratingBefore: x.ratingBefore }; });
     const match = (group.matches ?? []).find(q => q.position === position) ?? (group.matches ?? [])[position - 1];
-    if (match) { ctx.matchId = match.id; ctx.expected = match.statistics ?? null; ctx.mapName = match.map?.name ?? match.mapName; }
+    if (match) { ctx.matchId = match.id; ctx.expected = match.statistics ?? sideResults(match); ctx.mapName = match.map?.name ?? match.mapName; }
   } else if (fs.existsSync(resultsFile) && (m = /^(\d+)-(.+)-(12|21)$/.exec(base))) {
     const res = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
     const bots = (res.bots ?? []).map(b => path.basename(b));
@@ -50,6 +50,18 @@ function sourceContext(file) {
     if (match) ctx.expected = { winnerBot: match.winner, rounds: match.rounds, order: match.order };
   }
   return ctx;
+}
+
+// Since 2026-10-16 the API returns `statistics: null`: the round, scores and winner are on the
+// match and its sides, in the statistics' shape.
+function sideResults(match) {
+  const a = match.sides?.find(q => q.side === 'a'), b = match.sides?.find(q => q.side === 'b');
+  if (!a || !b) return null;
+  return {
+    round: match.rounds,
+    teams: [{ team: 0, submittedGems: a.score }, { team: 1, submittedGems: b.score }],
+    outcome: a.result === 'win' ? 'teamA' : b.result === 'win' ? 'teamB' : undefined,
+  };
 }
 
 function mapKey(map) {
@@ -89,12 +101,15 @@ function buildMap(map, camps0) {
 function pairs(arr) { const r = []; arr.forEach((v, i) => { if (v) r.push(i, v); }); return r; }
 function diffCounts(a, b, names) { const r = {}; b.forEach((v, i) => { if (v !== a[i]) r[names[i]] = v - a[i]; }); return r; }
 
-export function extractGame(engine, file) {
+// `engines`: an Engine per engine version.
+export function extractGame(engines, file) {
   const t0 = performance.now();
   const bytes = fs.readFileSync(file);
   const hash = sha256(bytes);
   const ctx = sourceContext(file);
-  const g = engine.openReplay(bytes);
+  const version = replayEngine(bytes);
+  if (!engines[version]) throw new Error(`replay needs engine ${version}, not in tools/replay/engine (try --update-engine)`);
+  const g = engines[version].openReplay(bytes);
   try {
     const rawMap = g.map();
     const altarSet = new Set(rawMap.altars.map(([x, y]) => `${x},${y}`));
@@ -465,7 +480,7 @@ export function extractGame(engine, file) {
     const validation = validate(ctx, result, champions, events, stats, statsError);
     const mapHash = mapKey(rawMap);
     const metaOut = {
-      v: EXTRACTOR_VERSION, engine: engineInfo(), source: path.relative(ROOT, file).split(path.sep).join('/'), sha256: hash, sourceKind: ctx.kind,
+      v: EXTRACTOR_VERSION, engine: engineInfo(version), source: path.relative(ROOT, file).split(path.sep).join('/'), sha256: hash, sourceKind: ctx.kind,
       map: { name: ctx.map, hash: mapHash, width: rawMap.width, height: rawMap.height, symmetry: rawMap.symmetry },
       teams: ctx.teams, group: ctx.group, matchId: ctx.matchId, position: ctx.position,
       draft: { rounds: draft.numRounds, picks: draft.picks.map((p, ti) => p.slice(0, draft.counts[ti] || draft.numRounds).map(x => DRAFT_CHAMPIONS[x] ?? x)), pickIds: draft.picks },
@@ -569,7 +584,10 @@ function findReplays(inputs) {
 function cachedMeta(hash) {
   try {
     const m = JSON.parse(fs.readFileSync(path.join(OUT_ROOT, hash, 'meta.json'), 'utf8'));
-    return m.v === EXTRACTOR_VERSION && m.engine?.sha256 === engineInfo()?.sha256 ? m : null;
+    // Games extracted before engines were versioned name no version: all were v0_0_1. Failed
+    // validations are retried, as the checks change with the API.
+    const engine = engineInfo(m.engine?.version ?? 'v0_0_1');
+    return m.v === EXTRACTOR_VERSION && engine && m.engine?.sha256 === engine.sha256 && m.validation.ok ? m : null;
   } catch { return null; }
 }
 
@@ -621,6 +639,10 @@ function writeIndex() {
   });
 }
 
+async function createEngines(modules) {
+  return Object.fromEntries(await Promise.all(Object.entries(modules).map(async ([v, m]) => [v, await Engine.create(m)])));
+}
+
 async function updateEngine() {
   const { spawn } = await import('node:child_process');
   const port = 30000 + Math.floor(Math.random() * 20000);
@@ -639,18 +661,24 @@ async function updateEngine() {
     const main = /src="\.?\/?(assets\/index-[^"]+\.js)"/.exec(html)?.[1];
     if (!main) throw new Error('main asset not found in index.html');
     const js = await (await fetch(base + main)).text();
-    const wasmName = /v0_0_1-[A-Za-z0-9_-]+\.wasm/.exec(js)?.[0];
-    if (!wasmName) throw new Error(`no v0_0_1-*.wasm referenced in ${main}`);
-    const r = await fetch(base + 'assets/' + wasmName);
-    if (!r.ok) throw new Error(`download ${wasmName}: HTTP ${r.status}`);
-    const bytes = Buffer.from(await r.arrayBuffer());
-    const mod = await WebAssembly.compile(bytes);
-    await Engine.create(mod).catch(e => { throw new Error(`downloaded engine rejected: ${e.message}`); });
+    // The viewer ships every engine a ladder replay may name.
+    const names = [...new Set([...js.matchAll(/v\d+_\d+_\d+-[A-Za-z0-9_-]+\.wasm/g)].map(m => m[0]))].sort();
+    if (!names.length) throw new Error(`no v*_*_*-*.wasm referenced in ${main}`);
+    const engines = {};
+    for (const wasmName of names) {
+      const r = await fetch(base + 'assets/' + wasmName);
+      if (!r.ok) throw new Error(`download ${wasmName}: HTTP ${r.status}`);
+      const bytes = Buffer.from(await r.arrayBuffer());
+      await Engine.create(await WebAssembly.compile(bytes)).catch(e => { throw new Error(`downloaded engine ${wasmName} rejected: ${e.message}`); });
+      const v = wasmName.split('-')[0];
+      engines[v] = { asset: wasmName, sha256: sha256(bytes), bytes: bytes.length, data: bytes };
+    }
     fs.mkdirSync(ENGINE_DIR, { recursive: true });
-    fs.writeFileSync(WASM_PATH, bytes);
-    const info = { cambc: version, asset: wasmName, snapshotSize: SNAPSHOT_SIZE, sha256: sha256(bytes), bytes: bytes.length, updated: new Date().toISOString() };
+    for (const f of fs.readdirSync(ENGINE_DIR)) if (f.endsWith('.wasm')) fs.rmSync(path.join(ENGINE_DIR, f));
+    for (const [v, e] of Object.entries(engines)) { fs.writeFileSync(wasmPath(v), e.data); delete e.data; }
+    const info = { cambc: version, snapshotSize: SNAPSHOT_SIZE, updated: new Date().toISOString(), engines };
     fs.writeFileSync(path.join(ENGINE_DIR, 'version.json'), JSON.stringify(info, null, 2) + '\n');
-    console.log(`engine updated: ${wasmName} (${version}), sha256 ${info.sha256}`);
+    for (const [v, e] of Object.entries(engines)) console.log(`engine ${v}: ${e.asset} (${version}), sha256 ${e.sha256}`);
   } finally {
     if (process.platform === 'win32') spawn('taskkill', ['/pid', String(server.pid), '/T', '/F'], { stdio: 'ignore' });
     else server.kill();
@@ -670,8 +698,10 @@ async function main() {
   }
   if (opts.update) await updateEngine();
   if (!opts.inputs.length) { if (!opts.update) console.error('no inputs; see --help'); return opts.update ? 0 : 2; }
-  const module = await compileEngine();
-  await Engine.create(module);
+  const versions = engineVersions();
+  if (!versions.length) throw new Error('no engines in tools/replay/engine; run with --update-engine');
+  const modules = Object.fromEntries(await Promise.all(versions.map(async v => [v, await compileEngine(v)])));
+  await createEngines(modules);
   fs.mkdirSync(OUT_ROOT, { recursive: true });
   const files = findReplays(opts.inputs);
   const byHash = new Map();
@@ -688,7 +718,7 @@ async function main() {
   let next = 0, done = 0;
   const nThreads = Math.min(opts.threads, todo.length);
   await Promise.all(Array.from({ length: nThreads }, () => new Promise(resolve => {
-    const w = new Worker(fileURLToPath(import.meta.url), { workerData: { module } });
+    const w = new Worker(fileURLToPath(import.meta.url), { workerData: { modules } });
     const feed = () => { if (next < todo.length) w.postMessage(todo[next++]); else { w.terminate(); resolve(); } };
     w.on('message', m => {
       results.push(m);
@@ -706,11 +736,9 @@ async function main() {
   const failed = results.filter(r => !r.ok);
   const soft = results.reduce((a, r) => a + (r.soft ?? 0), 0);
   console.log(`extracted ${results.length - failed.length}/${results.length} in ${secs.toFixed(1)} s (${todo.length ? (secs * 1000 / todo.length).toFixed(0) : 0} ms/replay wall, ${nThreads} threads); ${soft} soft validation notes`);
-  const cachedFail = skipped.filter(m => !m.validation.ok);
-  for (const m of cachedFail) console.log(`cached FAIL ${m.source}: ${m.validation.hard.slice(0, 3).join('; ')}`);
   for (const p of dupProblems) console.log(`duplicate-source mismatch ${p}`);
-  if (failed.length || cachedFail.length || dupProblems.length) {
-    console.log(`${failed.length + cachedFail.length + dupProblems.length} failures`);
+  if (failed.length || dupProblems.length) {
+    console.log(`${failed.length + dupProblems.length} failures`);
     for (const f of failed) console.log(`  ${f.source}: ${f.error ?? f.hard.join('; ')}`);
     return 1;
   }
@@ -720,15 +748,15 @@ async function main() {
 if (isMainThread) {
   main().then(c => { process.exitCode = c; }, e => { console.error(e.stack ?? e); process.exitCode = 1; });
 } else {
-  let engine = await Engine.create(workerData.module);
+  let engines = await createEngines(workerData.modules);
   parentPort.on('message', async file => {
     const source = path.relative(ROOT, file);
     try {
-      const res = extractGame(engine, file);
+      const res = extractGame(engines, file);
       writeGame(res);
       parentPort.postMessage({ ok: res.meta.validation.ok, source, hard: res.meta.validation.hard, soft: res.meta.validation.soft.length, ms: res.meta.ms });
     } catch (e) {
-      engine = await Engine.create(workerData.module);
+      engines = await createEngines(workerData.modules);
       parentPort.postMessage({ ok: false, source, error: String(e.stack ?? e) });
     }
   });
