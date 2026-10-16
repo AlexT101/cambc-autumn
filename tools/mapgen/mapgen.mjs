@@ -26,6 +26,9 @@ const PLAN = [
   [{ mutate: 'lanes', ops: ['walls*0.5', 'altars+2', 'picks=3'] }, 1], [{ mutate: 'corners', ops: ['bushes*2', 'camps*1.3'] }, 1],
   [{ mutate: 'collision', ops: ['walls*0.6', 'camps*0.8', 'picks=4'] }, 1], [{ mutate: 'elkring', ops: ['camps*1.3', 'bushes*0.5', 'picks=4'] }, 1],
   ['classic', 12],
+  // Gems only from a monolith per side, or only from one shared group (ladder maps contest, stampede).
+  ['monolith-only', 4], [{ mutate: 'contest', ops: ['walls*2', 'camps*1.2', 'picks=4'] }, 1], [{ mutate: 'contest', ops: ['camps*0.8', 'bushes+0.04'] }, 1],
+  ['shared-gems', 4], [{ mutate: 'stampede', ops: ['holes*0.5', 'bushes*0.5', 'picks=4'] }, 1], [{ mutate: 'stampede', ops: ['camps*1.3', 'walls+0.03', 'picks=3'] }, 1],
 ];
 // maps/gen-central: every spawn's nearest altar in the middle zone (0.4-0.6 of the walk between
 // spawns), as on the ladder maps collision, corners, elkring, interlock and monolith.
@@ -45,6 +48,8 @@ const CENTRAL_PLAN = [
   [{ mutate: 'packs', ops: ['altars=mid', 'walls+0.03', 'picks=5'] }, 1], [{ mutate: 'rows', ops: ['altars=mid', 'walls*0.6', 'picks=3'] }, 1],
   ['classic', 6], ['small-brawl', 2], ['tiny', 1], ['maze', 2], ['caves', 1], ['monolith', 2], ['contested-centre', 2], ['altar-poor', 1],
   ['jungle', 1], ['fortress', 1], ['islands', 1], ['vaults', 1],
+  ['monolith-only', 2], [{ mutate: 'contest', ops: ['walls+0.04', 'camps*1.3', 'picks=4'] }, 1],
+  ['shared-gems', 2], [{ mutate: 'stampede', ops: ['camps*0.8', 'holes*0', 'picks=5'] }, 1],
 ];
 const SUITES = {
   gen: { dir: 'maps/gen', plan: PLAN, seed: 1018 },

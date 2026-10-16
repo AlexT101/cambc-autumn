@@ -334,7 +334,7 @@ function placeVaults(g, rng, s) {
 
 function placeAltars(g, rng, s) {
   const placed = [];
-  const free = (x, y) => g.get(x, y) === GROUND && rectDist(g.spawn, x, y) >= 3 && rectDist(g.spawn, ...g.mirrorXY(x, y)) >= 3
+  const free = (x, y) => g.get(x, y) === GROUND && rectDist(g.spawn, x, y) >= 3 && rectDist(g.spawn, ...g.mirrorXY(x, y)) >= 3 && !g.reserved?.has(g.idx(x, y))
     && [...placed, ...placed.map(([px, py]) => g.mirrorXY(px, py))].every(([px, py]) => cheb(px, py, x, y) >= s.altar_spacing);
   if (s.shared_altar) {
     const cx = (g.W - 1) / 2, cy = (g.H - 1) / 2, self = [];
@@ -369,6 +369,7 @@ const TEMPLATES = {
   elk_gems: rng => rng.chance(0.5) ? [['elk', 0, 1], ['gem_cluster', 1, 0], ['gem_cluster', 1, 1], ['gem_cluster', 1, 2]] : [['elk', 0, 0], ['gem_cluster', 1, 0]],
   gems: rng => [[['gem_cluster', 0, 0]], [['gem_cluster', 0, 0], ['gem_cluster', 1, 0]], [['gem_cluster', 0, 0], ['gem_cluster', 1, 0], ['gem_cluster', 0, 1], ['gem_cluster', 1, 1]], [['gem_cluster', 0, 0], ['gem_cluster', 0, 1], ['gem_cluster', 0, 2]]][rng.int(0, 3)],
   gold: rng => rng.chance(0.6) ? [['gold_cluster', 0, 0]] : [['gold_cluster', 0, 0], ['gold_cluster', 1, 0]],
+  gold_row: () => [['gold_cluster', 0, 0], ['gold_cluster', 1, 0], ['gold_cluster', 2, 0]],
   gold_gems: () => [['gem_cluster', 0, 0], ['gem_cluster', 1, 1], ['gold_cluster', 1, 0], ['gold_cluster', 0, 1]],
   monolith: () => [['monolith', 0, 0]],
   monolith_ring: () => [['monolith', 1, 1], ...[[0, 0], [1, 0], [2, 0], [0, 1], [2, 1], [0, 2], [1, 2], [2, 2]].map(([x, y]) => ['gem_cluster', x, y])],
@@ -396,8 +397,46 @@ function tryGroup(g, cells, s, shared = false) {
   return false;
 }
 
+// A self-mirrored band straddling the symmetry axis (through the centre, under rotation): `len`
+// tiles along it and `depth` rows on each side; inner[k] types the axis row, outer the rest.
+// Returns team A's half of the cells and every tile of the band plus a one-tile margin.
+function axisBand(g, rng, len, depth, inner, outer) {
+  const rot = g.sym === 'rotational', rowsY = g.sym === 'vertical' || (rot && g.H % 2 === 0 && (g.W % 2 === 1 || rng.chance(0.5)));
+  const across = rowsY ? g.H : g.W, along = rowsY ? g.W : g.H, xy = (u, v) => rowsY ? [u, v] : [v, u];
+  if (across % 2 || (rot && (along - len) % 2) || len + 2 > along) return null;
+  const a = rot ? (along - len) / 2 : rng.int(1, along - len - 1), cells = [], area = new Set();
+  for (let k = 0; k < len; k++) for (let d = 0; d < depth; d++) cells.push([d ? outer : inner[rot ? Math.min(k, len - 1 - k) : k], ...xy(a + k, across / 2 - 1 - d)]);
+  for (let u = a - 1; u <= a + len; u++) for (let v = across / 2 - depth - 1; v <= across / 2 + depth; v++) {
+    const [x, y] = xy(u, v);
+    if (g.in(x, y)) { area.add(g.idx(x, y)); area.add(g.mirror(g.idx(x, y))); }
+  }
+  return { cells, area };
+}
+
+// Carves a clearing for one large shared group worth 240-480 gems, placed first by placeCamps.
+function reserveShared(g, rng) {
+  for (let guard = 0; guard < 50; guard++) {
+    const len = rng.int(2, 6), depth = rng.chance(0.65) ? 2 : 1, inner = Array.from({ length: len }, () => rng.weighted({ elk: 3, wolf: 1, gem_cluster: 1 }));
+    const band = axisBand(g, rng, len, depth, inner, 'gem_cluster');
+    if (!band) continue;
+    const gems = 2 * band.cells.reduce((n, [t]) => n + CAMP[t].gems, 0);
+    if (gems < 240 || gems > 480) continue;
+    for (const i of band.area) g.t[i] = GROUND;
+    g.reserved = band.area;
+    g.sharedCells = band.cells;
+    return;
+  }
+  throw new GenFail('no room for a shared gem group');
+}
+
 function placeCamps(g, rng, s) {
   const total = () => g.camps.length;
+  if (g.sharedCells && !tryGroup(g, g.sharedCells, s, true)) throw new GenFail('shared gem group blocked');
+  for (let k = 0; k < (s.shared_gold ?? 0); k++)
+    for (let guard = 0; guard < 30; guard++) {
+      const len = rng.int(1, 3), band = axisBand(g, rng, len, 1, Array(len).fill('gold_cluster'), 'gold_cluster');
+      if (band && tryGroup(g, band.cells, s, true)) break;
+    }
   if (s.shared_camp) {
     const cx = Math.floor((g.W - 1) / 2), cy = Math.floor((g.H - 1) / 2), shapes = [[[0, 0]], [[0, 0], [1, 0]], [[0, 0], [0, 1]], [[0, 0], [1, 0], [0, 1]]];
     const type = rng.choice(['elk', 'wolf', 'gem_cluster']);
@@ -597,6 +636,19 @@ export const PRESETS = {
   tiny: { doc: '30x30, 5 picks, crowded', size: 30, aspect: 'square', picks: 5, groups: [3, 7] },
   huge: { doc: '100x100, many objectives', size: 100, aspect: 'square', picks: [4, 5], altars: [4, 8], groups: [14, 24] },
   random: { doc: 'Everything sampled from the full legal space' },
+  'monolith-only': {
+    doc: 'One to three monoliths per side are the only gem source; every other camp is gold (like the ladder map "contest")',
+    size: [40, 70], picks: { 4: 1, 5: 3 }, terrain: { open: 2, scatter: 3, rows: 0.5 }, wall_density: [0.01, 0.08],
+    holes: { none: 3, pits: 1, moat: 1 }, hole_amount: [0.01, 0.05], bushes: { none: 2, patches: 2, strips: 1 }, bush_amount: [0.01, 0.06],
+    altars: [1, 3], altar_bands: { mid: 1, contested: 2 }, monoliths: [1, 3], monolith_ring: 0, groups: [4, 9], camp_mix: { gold: 3, gold_row: 1 }, shared_camp: 0, vaults: 0,
+  },
+  'shared-gems': {
+    doc: 'One large self-mirrored gem group on the symmetry axis is the only gem source; every other camp is gold (like "stampede")',
+    size: [44, 70], aspect: { square: 1, wide: 2 }, symmetry: { vertical: 2, horizontal: 2, rotational: 1 }, picks: { 3: 1, 4: 2, 5: 2 },
+    terrain: { open: 2, scatter: 1, lanes: 0.5 }, wall_density: [0.01, 0.05], holes: { lakes: 2, moat: 1, pits: 1, none: 1 }, hole_amount: [0.05, 0.2],
+    bushes: { strips: 2, patches: 2, blobs: 1 }, bush_amount: [0.05, 0.16], altars: [1, 3], groups: [3, 8], camp_mix: { gold: 3, gold_row: 1 },
+    monoliths: 0, shared_camp: 0, shared_gems: true, shared_gold: [0, 2], vaults: 0,
+  },
   classic: {
     doc: 'Like the competition maps: sparse wall lines, bush blocks, thin hole moats, counts scaled to size',
     size: [30, 90], aspect: { square: 5, wide: 1, lanes: 1 }, terrain: { scatter: 5, open: 1, rows: 1 }, wall_density: [0, 0.09], wall_length: [0.15, 0.45],
@@ -644,6 +696,7 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
       holes(g, rng, spec);
       bushes(g, rng, spec);
       g.symmetrize();
+      if (spec.shared_gems) reserveShared(g, rng);
       pruneBushes(g, 4, spec.max_bush_clusters);
       placeSpawn(g, rng, spec);
       connect(g, rng, spec);
