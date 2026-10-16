@@ -48,6 +48,31 @@ inline bitboard square(vec2 p, int r) {
     return b;
 }
 
+// bitboard::positions() into a fixed buffer, without its count call and heap allocation (~300
+// fuel). The caller bounds the set to N tiles.
+template <std::size_t N> class Tiles {
+public:
+    explicit Tiles(const bitboard& b) : count_{std::min<std::uint32_t>(b.positions_into(std::span<vec2>{tiles_, N}), N)} {}
+    const vec2* begin() const { return tiles_; }
+    const vec2* end() const { return tiles_ + count_; }
+    std::size_t size() const { return count_; }
+    bool empty() const { return count_ == 0; }
+    const vec2& operator[](std::size_t i) const { return tiles_[i]; }
+
+private:
+    union {
+        vec2 tiles_[N]; // left uninitialised for the host to fill
+    };
+    std::uint32_t count_;
+};
+
+// The first set tile in board order; b must not be empty.
+inline vec2 first_tile(const bitboard& b) {
+    vec2 p;
+    (void)b.positions_into({&p, 1});
+    return p;
+}
+
 // The helpers below work in scratch boards: allocating a board (~300 fuel) costs more than the
 // host operations on it (~120).
 
@@ -60,7 +85,8 @@ inline const bitboard& within(const bitboard& tiles, vec2 p, int r) {
     return box;
 }
 
-inline std::vector<vec2> positions_within(const bitboard& tiles, vec2 p, int r) { return within(tiles, p, r).positions(); }
+// r <= 8.
+inline Tiles<17 * 17> positions_within(const bitboard& tiles, vec2 p, int r) { return Tiles<17 * 17>{within(tiles, p, r)}; }
 inline bool any_within(const bitboard& tiles, vec2 p, int r) { return !within(tiles, p, r).is_empty(); }
 inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return within(tiles, p, r).count(); }
 
@@ -125,7 +151,7 @@ inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }
 
 // WASI randomness is always zero in matches, so seed from our spawn and this instance's start.
 inline std::uint32_t random_seed() {
-    const auto spawn = cambc::map::spawn_region(team::ally).positions()[0];
+    const auto spawn = first_tile(cambc::map::spawn_region(team::ally));
     std::uint32_t seed = spawn.x * 73856093u ^ spawn.y * 19349663u;
     if (!cambc::is_draft()) {
         const auto start = cambc::self().position();

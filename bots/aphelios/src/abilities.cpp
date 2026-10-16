@@ -164,7 +164,7 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
     box &= skip;
     centres ^= box;
     // In board order, which breaks ties.
-    for (auto c : centres.positions()) {
+    for (auto c : Tiles<17 * 17>{centres}) {
         const float v = value[(c.y - here.y + range) * side + (c.x - here.x + range)];
         if (v > best.value && v >= min_weight_value) best.slot = slot, best.value = v, best.tile = c;
     }

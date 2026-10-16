@@ -120,7 +120,7 @@ struct Landings {
 template <class Score, class Keep> Landings ranked(const bitboard& landings, Score score, Keep keep) {
     Landings out;
     std::array<int, Landings::tries> scores{};
-    for (auto p : landings.positions()) {
+    for (auto p : Tiles<5 * 5>{landings}) {
         const int s = score(p);
         if (!keep(p, s)) continue;
         int i = out.count < Landings::tries ? out.count++ : Landings::tries;

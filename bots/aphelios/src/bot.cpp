@@ -575,12 +575,12 @@ bool ward_bushes(const World& world, Memory& memory) {
     std::optional<vec2> best;
     int best_tiles = 0;
     while (!candidates.is_empty()) {
-        const auto& c = map.bush_cluster(candidates.positions().front());
+        const auto& c = map.bush_cluster(first_tile(candidates));
         const int tiles = static_cast<int>((c.tiles & near).count());
         if (tiles > best_tiles) {
             const auto mine = c.tiles & candidates;
             const auto far = mine & deep;
-            best = (far.is_empty() ? mine : far).positions().front(), best_tiles = tiles;
+            best = first_tile(far.is_empty() ? mine : far), best_tiles = tiles;
         }
         candidates &= ~c.tiles;
     }

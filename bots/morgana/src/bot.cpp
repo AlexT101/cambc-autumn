@@ -940,7 +940,7 @@ bool ward_bushes(const World& world, Memory& memory) {
     std::optional<bitboard> best;
     int best_tiles = 0;
     while (!candidates.is_empty()) {
-        const auto& c = map.bush_cluster(candidates.positions().front());
+        const auto& c = map.bush_cluster(first_tile(candidates));
         const int tiles = static_cast<int>((c.tiles & near).count());
         if (tiles > best_tiles) {
             const auto mine = c.tiles & candidates;
@@ -951,9 +951,8 @@ bool ward_bushes(const World& world, Memory& memory) {
     }
     if (!best) return false;
     // A teammate's ward unseen in the bush blocks its tile, and allies pick the same tile first.
-    const auto tiles = best->positions();
-    for (std::size_t i = 0; i < std::min<std::size_t>(tiles.size(), 3); ++i)
-        if (try_ward(tiles[i], memory)) return true;
+    for (auto p : Tiles<3>{*best})
+        if (try_ward(p, memory)) return true;
     return false;
 }
 

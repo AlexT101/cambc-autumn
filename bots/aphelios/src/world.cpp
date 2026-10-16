@@ -106,6 +106,17 @@ std::optional<float> camp_health(std::uint32_t h) {
     return state.health;
 }
 
+// Whether a visible live camp is awake or asleep; nullopt if hidden or dead.
+std::optional<Awake> camp_awake(std::uint32_t h) {
+    std::uint32_t value{};
+    const auto code = sdk_camp_state(h, &value);
+    if (code == not_in_vision || code == not_found) return std::nullopt;
+    check(code);
+    if (value == 1) return Awake::awake;
+    if (value == 2) return Awake::asleep;
+    return std::nullopt;
+}
+
 // Camp-group state code (1 alive, 2 reward available, 3 respawning) and the respawn timer.
 std::pair<std::uint32_t, int> group_state(std::uint32_t h) {
     std::uint32_t state{};
@@ -330,7 +341,7 @@ bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor)
     auto left = bushes & square(p, radius) & ~clustered_;
     while (!left.is_empty()) {
         if (!fuel_ok(fuel_floor + (growth_ ? 0 : 20000))) return false;
-        const auto* c = grow_cluster(left.positions().front(), fuel_floor);
+        const auto* c = grow_cluster(first_tile(left), fuel_floor);
         if (!c) return false;
         left &= ~c->tiles;
     }
@@ -372,7 +383,7 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
     // Cast each cluster in reach once.
     auto left = bushes & square(p, radius);
     while (!left.is_empty()) {
-        const auto& cluster = bush_cluster(left.positions().front()).tiles;
+        const auto& cluster = bush_cluster(first_tile(left)).tiles;
         out |= cast_from_inside(cluster);
         left &= ~cluster;
     }
@@ -910,7 +921,7 @@ void World::update_camps() {
     const auto& s = map();
     std::vector<char> group_visible(s.groups.size(), 0);
     const auto seen = visible & s.camp_tiles;
-    for (auto p : seen.positions()) group_visible[s.group_at(p)] = 1;
+    for (auto p : Tiles<17 * 17 + 13 * 13>{seen}) group_visible[s.group_at(p)] = 1;
     // Read only for a visible group that is awake or cleared: most turns none is.
     static bitboard ally_champs_b{cambc::uninitialized}, enemy_champs_b{cambc::uninitialized},
         champs_b{cambc::uninitialized}, hidden_b{cambc::uninitialized};
@@ -982,7 +993,9 @@ void World::update_camps() {
 
             // Member health; a visible camp tile with no live camp on it is a dead member. Any drop,
             // a kill included, is damage, which wakes the group, but if the health is older than a
-            // sleep it may have fallen asleep again since.
+            // sleep it may have fallen asleep again since. A visible live member shows the group's
+            // wakefulness outright.
+            std::optional<Awake> seen_awake;
             for (std::size_t i = 0; i < G.members.size(); ++i) {
                 const auto& m = G.members[i];
                 if (!visible.is_set(m.pos)) continue;
@@ -998,10 +1011,14 @@ void World::update_camps() {
                 }
                 c.health[i] = hp;
                 c.health_round[i] = round;
+                if (hp > 0 && !seen_awake && c.state == CampState::alive) seen_awake = engine::camp_awake(m.handle);
             }
 
             if (c.state != CampState::alive) {
                 c.awake = Awake::asleep;
+            } else if (seen_awake) {
+                c.awake = *seen_awake;
+                c.quiet_rounds = 0;
             } else if (c.awake != Awake::asleep) {
                 // Asleep after 2 camp phases with no champion within 3: count rounds where the whole
                 // threat area is visible and empty. Anything unseen there could be a champion.

@@ -161,7 +161,10 @@ Pathing::Nearest Pathing::nearest(const bitboard& goals, int max_steps) {
     cambc::distance_field field;
     bitboard visited;
     field.compute_to(walls, single(me), open_goals, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
-    for (auto p : (visited & open_goals).positions()) {
+    static std::array<vec2, 100 * 100> tiles;
+    const auto count = (visited & open_goals).positions_into(tiles);
+    for (std::uint32_t i = 0; i < count; ++i) {
+        const vec2 p = tiles[i];
         const int steps = field.get(p);
         if (steps < n.steps) n.steps = steps, n.tiles.clear();
         if (steps == n.steps) n.tiles.push_back(p);
