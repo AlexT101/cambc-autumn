@@ -79,7 +79,7 @@ camps:
   wake: "A sleeping group wakes when any member takes damage."
   sleep: "An awake group sleeps after 2 consecutive camp phases with no champion within range 3. Damage does not keep it awake. Camps never regenerate."
   attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within range 3; ties go to the lowest id. Bushes do not hide champions from camps. Monsters never move."
-  state: "Bots cannot read whether a camp is awake or how far a capture has progressed."
+  state: "Bots can read whether a camp is dead, awake or asleep while its tile (its last tile, if dead) is in vision. They cannot read how far a capture has progressed."
 
 capture:
   condition: "After every monster in a group dies, the group stays empty until captured. A team captures it by standing on any of its camp tiles while no enemy stands on any. Adjacent tiles do not count."
