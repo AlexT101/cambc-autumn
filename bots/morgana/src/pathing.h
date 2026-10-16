@@ -98,6 +98,10 @@ private:
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
     // By attack range, then group, then member.
     std::vector<std::vector<std::vector<std::optional<bitboard>>>> attack_tiles_;
+    // attack_tiles' last result, by group, range and the members it covered.
+    int attack_group_ = -1, attack_range_ = -1;
+    std::uint64_t attack_members_ = 0;
+    bitboard attack_cache_{cambc::uninitialized};
     // Kept between rebuilds: allocating a board costs more than filling it.
     bitboard blocked_{cambc::uninitialized};
     bool blocked_fresh_ = false;

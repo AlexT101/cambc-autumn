@@ -202,10 +202,10 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
             reaching.push_back(&e);
         }
     const bool walk_matters = reaching.empty() || unstoppable;
-    bitboard free_stun;
+    std::optional<bitboard> free_stun;
     if (!walk_matters) {
-        free_stun.fill();
-        for (const auto* e : reaching) free_stun &= square(e->pos, 1);
+        free_stun.emplace().fill();
+        for (const auto* e : reaching) *free_stun &= square(e->pos, 1);
     }
     std::optional<bitboard> risk;
     for (int s = 0; s < 2; ++s) {
@@ -231,20 +231,21 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
             std::vector<Target> targets;
             // The area hits every enemy in it, unseen too: keep it off a Ren whose retaliation kills
             // us and off a held tributer it does not kill.
-            bitboard off;
+            std::optional<bitboard> off;
+            const auto keep_off = [&](vec2 p) { (off ? *off : off.emplace()).draw_chebyshev(p, 1); };
             for (const auto& e : world.enemies) {
                 if (!e.alive) continue;
                 if (e.visible) {
                     if (dist(here, e.pos) > a.reach()) continue;
                     if (suicidal(e)) {
-                        off.draw_chebyshev(e.pos, 1);
+                        keep_off(e.pos);
                         continue;
                     }
                     const auto c = live(e);
                     if (!c.is_visible()) continue;
                     const float damage = damage_to(s, c, raw);
                     if (spared(e, damage, c.health())) {
-                        off.draw_chebyshev(e.pos, 1);
+                        keep_off(e.pos);
                         continue;
                     }
                     const float stun = a.stuns && !c.buffs().has_stun() ? stun_worth(e, raw > 0) : 0;
@@ -256,7 +257,7 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
                     const auto near = positions_within(e.possible, here, a.reach());
                     if (near.empty()) continue;
                     if (suicidal(e)) {
-                        for (auto p : near) off.draw_chebyshev(p, 1);
+                        for (auto p : near) keep_off(p);
                         continue;
                     }
                     const float health = e.health > 0 ? e.health : e.max_health;
@@ -269,9 +270,11 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
             }
             if (targets.empty()) continue;
             if (!risk) risk = wake_risk(world, here, a.reach());
-            best.offer(best_ground(s, threshold, targets, here, a.range(), *risk | off));
+            auto skip = *risk;
+            if (off) skip |= *off;
+            best.offer(best_ground(s, threshold, targets, here, a.range(), skip));
             if (a.stuns && threshold > min_value && !walk_matters)
-                best.offer(best_ground(s, min_value, targets, here, a.range(), *risk | off | ~free_stun));
+                best.offer(best_ground(s, min_value, targets, here, a.range(), skip | ~*free_stun));
         }
     }
     return best;

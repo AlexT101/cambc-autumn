@@ -57,9 +57,11 @@ std::vector<Enemy> live_enemies(const World& world) {
     return out;
 }
 
-// Ourselves as we end the turn: moved, cooldowns restarted by casts.
-ChampionBelief live_self(const World& world) {
-    auto b = world.me();
+// Ourselves as we end the turn: moved, cooldowns restarted by casts. Nothing here reads the tile
+// sets, so only the state is copied.
+const ChampionBelief& live_self(const World& world) {
+    static ChampionBelief b;
+    static_cast<ChampionState&>(b) = world.me();
     auto& me = cambc::self();
     cambc::detail::champion_info info{};
     cambc::detail::check(cambc::detail::sdk_champion(static_cast<std::uint32_t>(world.me().handle), &info));
@@ -68,8 +70,11 @@ ChampionBelief live_self(const World& world) {
     b.strength = info.strength;
     b.focus = info.focus;
     b.gems = static_cast<int>(me.gem_count());
-    const auto abilities = me.abilities();
-    for (int s = 0; s < 2; ++s) b.ready_round[s] = world.round + std::max(0, static_cast<int>(abilities[s].cooldown()));
+    for (std::uint32_t s = 0; s < 2; ++s) {
+        std::int32_t cooldown{};
+        cambc::detail::check(cambc::detail::sdk_champion_cooldown(static_cast<std::uint32_t>(world.me().handle), s, &cooldown));
+        b.ready_round[s] = world.round + std::max(0, static_cast<int>(cooldown));
+    }
     return b;
 }
 
@@ -194,7 +199,7 @@ void set_turn_order(const World& world, Safety& safety) {
     auto& me = cambc::self();
     Wish wish;
     if (world.me().alive && fuel_ok(params::end_reserve)) {
-        const auto self = live_self(world);
+        const auto& self = live_self(world);
         const auto enemies = live_enemies(world);
         offer_engaged(self, enemies, wish);
         const Strike ours = strike(self, world.round + 1);

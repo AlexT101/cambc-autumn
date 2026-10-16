@@ -156,7 +156,8 @@ inline constexpr int home_recall_time = 3;       // turn ends, with a Home emble
 inline constexpr int teleport_crystal_range = 3; // Chebyshev, terrain ignored
 inline constexpr int ability_cooldown = 8;        // rounds from a cast to the slot's next
 
-struct ChampionBelief {
+// A champion's state without the tile sets that track it, which are costly to copy.
+struct ChampionState {
     cambc::handle_champion_t handle{};
     cambc::champion_type type{};
     team side = team::enemy;
@@ -194,16 +195,6 @@ struct ChampionBelief {
     Channel channel = Channel::none;
     int channel_end_round = -1;
 
-    // Enemies only: every tile it could be on, from what we have seen and how champions move.
-    // Teleport crystals are not modelled. Empty while dead; anywhere while !tracked.
-    bitboard possible;
-    // Dashers only: the part of `possible` reached by walking alone since the fix. A dash moves
-    // 2 more only once per cooldown, so the rest of `possible` is this widened by one dash.
-    bitboard undashed;
-    bool tracked = false;
-    Moment fixed, at; // when `possible` was last known exactly, and when it describes
-    int turns_since_fixed = 0;
-
     const ChampionFacts& facts() const { return aph::facts(type); }
     bool ability_ready(int slot, int round) const { return alive && round >= ready_round[slot]; }
     // No walking, attacking or casting on the respawn turn.
@@ -213,6 +204,18 @@ struct ChampionBelief {
     // True if an unseen reset could make the abilities ready earlier than ready_round says.
     bool cooldowns_uncertain() const { return !visible && facts().passive == Passive::reset_on_kill; }
     int age(int round) const { return pos_round < 0 ? 1 << 20 : round - pos_round; }
+};
+
+struct ChampionBelief : ChampionState {
+    // Enemies only: every tile it could be on, from what we have seen and how champions move.
+    // Teleport crystals are not modelled. Empty while dead; anywhere while !tracked.
+    bitboard possible;
+    // Dashers only: the part of `possible` reached by walking alone since the fix. A dash moves
+    // 2 more only once per cooldown, so the rest of `possible` is this widened by one dash.
+    bitboard undashed;
+    bool tracked = false;
+    Moment fixed, at; // when `possible` was last known exactly, and when it describes
+    int turns_since_fixed = 0;
 };
 
 enum class CampState : std::uint8_t {

@@ -93,12 +93,19 @@ bitboard Pathing::attack_tiles(int group, int range) {
     const auto& health = world_.camps[group].health;
     // A group returns only once its camp tiles are empty: wait for it where it can be hit from.
     const bool returning = world_.camps[group].state == CampState::respawning;
+    // The same members give the same tiles: farm asks for its target's every turn.
+    std::uint64_t included = 0;
+    for (int i = 0; i < static_cast<int>(health.size()) && i < 64; ++i)
+        if (health[i] > 0 || returning) included |= std::uint64_t{1} << i;
+    const bool keyed = health.size() <= 64;
+    if (keyed && attack_group_ == group && attack_range_ == range && attack_members_ == included) return attack_cache_;
     bitboard tiles, freed;
     for (int i = 0; i < static_cast<int>(health.size()); ++i) {
         if (health[i] > 0 || returning) tiles |= member_attack_tiles(group, i, range);
         else freed.set(map().groups[group].members[i].pos);
     }
     tiles &= map().standable | freed;
+    if (keyed) attack_group_ = group, attack_range_ = range, attack_members_ = included, attack_cache_ = tiles;
     return tiles;
 }
 
