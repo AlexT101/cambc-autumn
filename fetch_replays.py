@@ -90,6 +90,15 @@ def group_dir(out, g):
     return out / f"{stamp}-{slug(a['teamName'], a['teamId'])}-vs-{slug(b['teamName'], b['teamId'])}-{g['id'][:8]}"
 
 
+def fetch_bundle(url, attempts=12):
+    # Bundles are built on first request, which answers {"status":"pending"} until ready.
+    for attempt in range(attempts):
+        data = fetch(url)
+        if data[:2] == b"PK" or attempt == attempts - 1:
+            return data
+        sleep(min(2 + attempt * 2, 15))
+
+
 def download_group(out, g):
     d = group_dir(out, g)
     if (d / "group.json").exists():
@@ -100,7 +109,7 @@ def download_group(out, g):
     for m in detail["matches"]:
         if m["status"] != "finished" or not m.get("replayUrl"):
             continue
-        with zipfile.ZipFile(io.BytesIO(fetch(SITE + m["replayUrl"]))) as z:
+        with zipfile.ZipFile(io.BytesIO(fetch_bundle(SITE + m["replayUrl"]))) as z:
             for info in z.infolist():
                 stem = f"{m['position']}-{m['map']}"
                 name = f"{stem}.repl26a" if info.filename == "replay.repl26a" else f"{stem}.{Path(info.filename).name}"

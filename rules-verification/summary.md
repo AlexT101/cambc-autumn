@@ -21,15 +21,14 @@ All champion stats, abilities, passives, item costs, camp HP/gold/gems and game 
 
 | # | Docs say | Engine does | Docs typo or engine bug? |
 |---|---|---|---|
-| 1 | Monolith attack range is 5 (camp table) | Range 3, both in the engine's data and in live play | Probably a typo in the table: the same page says "all monsters have range 3". It would be an engine bug only if 5 was intended. |
-| 2 | An awake camp sleeps once it "does not take damage for 2 turns" | It sleeps after 2 camp phases with no champion within range 3. Taking damage does not keep it awake. | Docs typo; another line on the same page states the correct rule. |
-| 3 | Teleport crystal "can reach walls" | It cannot land on a wall, though it can cross walls | Docs typo. |
-| 4 | Ranged champions can't move and attack in one turn, and "the same rule applies for damaging abilities" | A damage spell never uses up the basic attack. Spells flagged "excludes walking" only stop you walking. | Docs wording. |
-| 5 | Placing an altar lock "cancels enemy channels" | It cancels every tribute channel at that altar, including your own team's | **Possible engine bug.** Another line of the docs says "existing tribute channels at that altar", which does match the engine. |
-| 6 | Capture means waiting "5 turns" on the camp | Stepping on during round R pays at round R+6 (six capture phases) | Off by one in the prose; the docs' diagram is consistent with the engine. |
-| 7 | A respawned champion returns with abilities ready | On the respawn turn itself it cannot move, attack or cast | **Possible engine bug.** |
-| 8 | Fuel page: a suspended bot "resumes next round" | A draft bot that runs out of fuel or yields before picking is never run again, and its remaining picks are random | Probably intended; the draft page's "remaining picks are random" agrees. |
-| 9 | Gem and gold clusters have range 0 (camp table) | The engine's data says range 3 | No effect in play, since their strength is 0. |
+| 1 | An awake camp sleeps once it "does not take damage for 2 turns" | It sleeps after 2 camp phases with no champion within range 3. Taking damage does not keep it awake. | Docs typo; another line on the same page states the correct rule. |
+| 2 | Teleport crystal "can reach walls" | It cannot land on a wall, though it can cross walls | Docs typo. |
+| 3 | Ranged champions can't move and attack in one turn, and "the same rule applies for damaging abilities" | A damage spell never uses up the basic attack. Spells flagged "excludes walking" only stop you walking. | Docs wording. |
+| 4 | Placing an altar lock "cancels enemy channels" | It cancels every tribute channel at that altar, including your own team's | **Possible engine bug.** Another line of the docs says "existing tribute channels at that altar", which does match the engine. |
+| 5 | Capture means waiting "5 turns" on the camp | Stepping on during round R pays at round R+6 (six capture phases) | Off by one in the prose; the docs' diagram is consistent with the engine. |
+| 6 | A respawned champion returns with abilities ready | On the respawn turn itself it cannot move, attack or cast | **Possible engine bug.** |
+| 7 | Fuel page: a suspended bot "resumes next round" | A draft bot that runs out of fuel or yields before picking is never run again, and its remaining picks are random | Probably intended; the draft page's "remaining picks are random" agrees. |
+| 8 | Gem and gold clusters have range 0 (camp table) | The engine's data says range 3 | No effect in play, since their strength is 0. |
 
 ## Clarifications and gaps (the docs were silent or vague; now settled)
 
