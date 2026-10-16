@@ -1,12 +1,12 @@
 # Bot API reference: C++
 
-*Public C++ SDK functions and methods.*
+*Public C++ SDK functions, methods and camp-group state types.*
 
 Start with [Getting Started](../guides/cpp/first-bot.md). Other languages: [Rust](./rust.md) · [Python](./python.md) · [OCaml](./ocaml.md).
 
 ## Contents
 
-- [cambc](#cambc) (23)
+- [cambc](#cambc) (79)
 - [cambc::ability](#cambc-ability) (35)
 - [cambc::ability_aoe_damage](#cambc-ability-aoe-damage) (1)
 - [cambc::ability_attack_reset](#cambc-ability-attack-reset) (1)
@@ -18,19 +18,20 @@ Start with [Getting Started](../guides/cpp/first-bot.md). Other languages: [Rust
 - [cambc::ability_shield](#cambc-ability-shield) (1)
 - [cambc::ability_target_mask](#cambc-ability-target-mask) (27)
 - [cambc::altar_lock](#cambc-altar-lock) (7)
-- [cambc::bitboard](#cambc-bitboard) (59)
-- [cambc::buff_collection](#cambc-buff-collection) (12)
-- [cambc::buff_collection::const_iterator](#cambc-buff-collection-const-iterator) (8)
+- [cambc::bitboard](#cambc-bitboard) (60)
+- [cambc::buff_collection](#cambc-buff-collection) (13)
+- [cambc::buff_collection::const_iterator](#cambc-buff-collection-const-iterator) (14)
 - [cambc::buff_enhanced_attack](#cambc-buff-enhanced-attack) (1)
 - [cambc::buff_restrictions](#cambc-buff-restrictions) (27)
 - [cambc::buff_shield](#cambc-buff-shield) (1)
 - [cambc::buff_stun](#cambc-buff-stun) (1)
-- [cambc::camp](#cambc-camp) (18)
+- [cambc::camp](#cambc-camp) (23)
+- [cambc::camp_state](#cambc-camp-state) (9)
 - [cambc::champion](#cambc-champion) (60)
 - [cambc::champion_state](#cambc-champion-state) (28)
 - [cambc::consumable](#cambc-consumable) (5)
 - [cambc::consumable_info](#cambc-consumable-info) (1)
-- [cambc::consumable_type](#cambc-consumable-type) (8)
+- [cambc::consumable_type](#cambc-consumable-type) (9)
 - [cambc::debug](#cambc-debug) (2)
 - [cambc::distance_field](#cambc-distance-field) (26)
 - [cambc::draft](#cambc-draft) (3)
@@ -38,12 +39,13 @@ Start with [Getting Started](../guides/cpp/first-bot.md). Other languages: [Rust
 - [cambc::enum_map](#cambc-enum-map) (10)
 - [cambc::error](#cambc-error) (5)
 - [cambc::item_info](#cambc-item-info) (1)
-- [cambc::item_type](#cambc-item-type) (15)
-- [cambc::map](#cambc-map) (14)
+- [cambc::item_type](#cambc-item-type) (16)
+- [cambc::map](#cambc-map) (19)
 - [cambc::map::camp_group](#cambc-map-camp-group) (11)
-- [cambc::shared_memory_buffer](#cambc-shared-memory-buffer) (6)
+- [cambc::shared_memory_buffer](#cambc-shared-memory-buffer) (7)
 - [cambc::shared_memory_buffer::reference](#cambc-shared-memory-buffer-reference) (5)
 - [cambc::teleport](#cambc-teleport) (10)
+- [cambc::type_tag_t](#cambc-type-tag-t) (1)
 - [cambc::uninitialized_t](#cambc-uninitialized-t) (1)
 - [cambc::unit](#cambc-unit) (11)
 - [cambc::vec2](#cambc-vec2) (23)
@@ -54,6 +56,246 @@ Start with [Getting Started](../guides/cpp/first-bot.md). Other languages: [Rust
 <a id="cambc"></a>
 
 ## cambc
+
+### ability
+
+```cpp
+class ability { };
+```
+
+A champion ability slot; actions require the owning champion to be self.
+
+### ability_aoe_damage
+
+```cpp
+struct ability_aoe_damage : ability_properties { static constexpr ability_kind kind; float range, modifier, radius; std::int32_t duration; };
+```
+
+Cached area-damage metadata, including effect radius and duration.
+
+### ability_attack_reset
+
+```cpp
+struct ability_attack_reset : ability_properties { static constexpr ability_kind kind; bool enhanced_attack; };
+```
+
+Attack-reset metadata; this payload has no targeting range.
+
+### ability_cc
+
+```cpp
+struct ability_cc : ability_properties { static constexpr ability_kind kind; float range, modifier; std::int32_t duration; };
+```
+
+Cached crowd-control ability metadata.
+
+### ability_damage
+
+```cpp
+struct ability_damage : ability_properties { static constexpr ability_kind kind; float range, modifier; };
+```
+
+Cached direct-damage ability metadata.
+
+### ability_dash
+
+```cpp
+struct ability_dash : ability_properties { static constexpr ability_kind kind; float range; };
+```
+
+Cached dash ability metadata.
+
+### ability_heal
+
+```cpp
+struct ability_heal : ability_properties { static constexpr ability_kind kind; float range, modifier; };
+```
+
+Cached healing ability metadata.
+
+### ability_info
+
+```cpp
+using ability_info = std::variant<ability_attack_reset, ability_damage, ability_aoe_damage, ability_cc, ability_heal, ability_dash, ability_shield>;
+```
+
+Owned, tagged ability metadata; use ability_types tags to select a typed payload.
+
+### ability_kind
+
+```cpp
+enum class ability_kind : std::uint32_t { attack_reset = 1, damage, aoe_damage, cc, heal, dash, shield };
+```
+
+Ability payload types reported by the engine.
+
+### ability_properties
+
+```cpp
+struct ability_properties { std::int32_t max_cooldown; ability_target_mask valid_targets; bool exclusive_with_movement; };
+```
+
+Properties shared by every ability payload.
+
+### ability_shield
+
+```cpp
+struct ability_shield : ability_properties { static constexpr ability_kind kind; float range, modifier; std::int32_t duration; };
+```
+
+Cached shield ability metadata.
+
+### ability_target_mask
+
+```cpp
+class ability_target_mask { public: static const ability_target_mask camps, enemies, allies, self, ground; };
+```
+
+Allowed ability target categories, not a geometric range mask.
+
+### altar_lock
+
+```cpp
+class altar_lock { };
+```
+
+An immutable observation of a visible altar lock.
+
+### bitboard
+
+```cpp
+class bitboard { };
+```
+
+Aligned tile mask, empty by default. Raw buffers are engine-chunked; linear buffers are row-major, least-significant bit first.
+
+### buff_collection
+
+```cpp
+class buff_collection { };
+```
+
+Buff values captured at construction. Call unit::buffs() for fresh values.
+
+### buff_enhanced_attack
+
+```cpp
+struct buff_enhanced_attack { static constexpr buff_types kind; std::int32_t duration; };
+```
+
+Owned enhanced-attack snapshot with remaining duration.
+
+### buff_restrictions
+
+```cpp
+class buff_restrictions { public: static const buff_restrictions move, attack, cast, shop, consumable, ward; };
+```
+
+Prohibited actions; contains(buff_restrictions::ward) checks ward placement.
+
+### buff_shield
+
+```cpp
+struct buff_shield { static constexpr buff_types kind; std::int32_t duration; float value; };
+```
+
+Owned shield snapshot with remaining duration and shield value.
+
+### buff_stun
+
+```cpp
+struct buff_stun { static constexpr buff_types kind; std::int32_t duration; };
+```
+
+Buff timers are remaining engine rounds, including any application-round extension.
+
+### buff_t
+
+```cpp
+using buff_t = std::variant<buff_shield, buff_stun, buff_enhanced_attack>;
+```
+
+Owned, tagged active-buff snapshot; each alternative includes its remaining duration.
+
+### buff_types
+
+```cpp
+enum class buff_types : std::uint32_t { shield, stun, enhanced_attack, count };
+```
+
+Supported active buff kinds; count is an inventory-size sentinel.
+
+### camp
+
+```cpp
+class camp : public unit { };
+```
+
+A runtime camp, with public spawn metadata and visibility-checked combat queries.
+
+### camp_state
+
+```cpp
+class camp_state { public: enum class enum_type : std::uint32_t { dead = 0, alive = 1, asleep = 2 }; static const camp_state dead; static const camp_state alive; static const camp_state asleep; };
+```
+
+An individual camp's captured lifecycle. States are mutually exclusive, not flags.
+
+### camp_stats
+
+```cpp
+struct camp_stats { float vision_radius; std::int32_t base_move_speed, base_attack_range; float base_health, health_growth, base_strength, strength_growth; float base_focus, focus_growth; };
+```
+
+Camp design stats and growth parameters; layout matches Game_CampStats.
+
+### camp_type
+
+```cpp
+enum class camp_type : std::int32_t { wolf, elk, gem_cluster, gold_cluster, monolith };
+```
+
+Physical camp types.
+
+### champion
+
+```cpp
+class champion : public unit { };
+```
+
+Champion handle with live queries and self-only actions.
+
+### champion_draft
+
+```cpp
+enum class champion_draft : std::int32_t { ryth = 0, vesper_vale, vendetta, cassi_and_issac, stellar, prism, marcella, willow, ren, varg, tavi, };
+```
+
+Draft choices; Cassi and Issac share one pick.
+
+### champion_state
+
+```cpp
+class champion_state { public: static const champion_state alive, recalling, submitting_gems, can_move, can_attack, completed_turn, recall_started, submit_gems_started, recall_cancelled, submit_gems_cancelled, can_cast, teleporting; };
+```
+
+Current life, channel and action flags; contains(champion_state::alive) checks the life bit.
+
+### champion_stats
+
+```cpp
+struct champion_stats { std::int32_t vision_radius, base_move_speed, base_attack_range; float base_health, health_growth, base_strength, strength_growth; float base_focus, focus_growth, camp_damage_multiplier; };
+```
+
+Champion design stats and growth values.
+
+### champion_type
+
+```cpp
+enum class champion_type : std::int32_t { ryth = 0, vesper_vale, vendetta, cassi, issac, stellar, prism, marcella, willow, ren, varg, tavi, };
+```
+
+Physical champion types; Cassi and Issac are separate champions.
 
 ### champions
 
@@ -73,6 +315,54 @@ Get all champion handles on one side, including champions outside vision.
 
 - `side`: Team to include.
 
+### consumable
+
+```cpp
+class consumable { };
+```
+
+A consumable inventory entry belonging to a champion.
+
+### consumable_info
+
+```cpp
+struct consumable_info { std::uint32_t cost, carry_limit; };
+```
+
+Engine-provided consumable price and inventory carry limit.
+
+### consumable_type
+
+```cpp
+class consumable_type { public: enum class enum_type : std::uint32_t { tp_crystal, altar_lock, count }; static const consumable_type tp_crystal; static const consumable_type altar_lock; static const consumable_type count; };
+```
+
+Consumable inventory keys.
+
+### debug_block
+
+```cpp
+debug_block(...)
+```
+
+Run the statements without spending fuel when the bot is built in debug mode (`cambc run`, the default); skipped entirely in release mode (`--release`, and always on the platform). The free budget per block is 1000 turns, beyond which the rest of the block is charged; ending the turn inside a block closes the free window. A macro: the code runs inline — `break`/`continue` apply to the enclosing loop, `return` leaves the enclosing function and fuel resumes on the way out. In release mode the code is type-checked but never evaluated. Call it unqualified (`debug_block({ ... });`), not as `cambc::debug_block`, and use no preprocessor directives inside.
+
+### distance_field
+
+```cpp
+class distance_field { };
+```
+
+Tile distances stored in engine-chunked order. Linear buffers contain row-major uint16 values.
+
+### draft_memory_buffer
+
+```cpp
+class draft_memory_buffer { };
+```
+
+Fixed-size team draft bytes captured at startup; assignment submits bytes without changing the snapshot.
+
 ### end_turn
 
 ```cpp
@@ -88,6 +378,30 @@ if (bc::fuel_remaining() < 1000) {
     bc::end_turn();
 }
 ```
+
+### enum_map
+
+```cpp
+template <class T, class Value = std::uint32_t> requires (std::is_enum_v<T> || requires { typename T::enum_type; requires std::is_enum_v<typename T::enum_type>; }) class enum_map { };
+```
+
+Contiguous, zero-initialised values indexed by an enum or enum wrapper with a count sentinel.
+
+### error
+
+```cpp
+class error : public std::runtime_error { };
+```
+
+Engine failure with its error code and a copied diagnostic.
+
+### error_code
+
+```cpp
+enum class error_code : std::int32_t { success = 0, invalid_handle = 1, out_of_memory = 2, file_not_found = 3, null_pointer = 4, invalid_argument = 5, map_parse_error = 6, invalid_map_file = 7, invalid_map_version = 8, replay_parse_error = 9, invalid_replay_file = 10, invalid_replay_version = 11, invalid_draft = 12, draft_not_drafting = 13, draft_duplicate_champion = 14, draft_invalid_round = 15, draft_unavailable = 16, already_initialized = 17, invalid_action = 18, invalid_action_memory_bad_range = 19, invalid_action_memory_draft_frozen = 20, invalid_action_move_cant_move = 21, invalid_action_move_bad_destination = 22, invalid_action_spell_cast_invalid_source = 23, invalid_action_spell_cast_invalid_slot = 24, invalid_action_spell_cast_no_ability = 25, invalid_action_spell_cast_cant_cast = 26, invalid_action_spell_cast_already_cast = 27, invalid_action_spell_cast_on_cooldown = 28, invalid_action_spell_cast_no_charges = 29, invalid_action_spell_cast_bad_target = 30, invalid_action_spell_cast_out_of_range = 31, invalid_action_spell_cast_bad_destination = 32, invalid_action_cant_act = 33, invalid_action_is_recalling = 34, invalid_action_is_submitting_gems = 35, invalid_action_move_already_moved = 36, invalid_action_move_out_of_range = 37, invalid_action_move_unreachable = 38, invalid_action_attack_invalid_source = 39, invalid_action_attack_cant_attack = 40, invalid_action_attack_already_attacked = 41, invalid_action_attack_bad_target = 42, invalid_action_attack_out_of_range = 43, invalid_action_recall_cant_channel = 44, invalid_action_submit_gems_cant_channel = 45, invalid_action_submit_gems_no_gems = 46, invalid_action_submit_gems_bad_altar = 47, invalid_action_submit_gems_out_of_range = 48, invalid_action_buy_item_not_on_spawn = 49, invalid_action_buy_item_invalid_item = 50, invalid_action_buy_item_invalid_count = 51, invalid_action_buy_item_not_enough_gold = 52, invalid_action_buy_item_inventory_full = 53, invalid_action_buy_item_stats_overflow = 54, invalid_action_buy_consumable_not_on_spawn = 55, invalid_action_buy_consumable_invalid_type = 56, invalid_action_buy_consumable_invalid_count = 57, invalid_action_buy_consumable_inventory_full = 58, invalid_action_buy_consumable_not_enough_gold = 59, invalid_action_use_consumable_invalid_type = 60, invalid_action_use_consumable_not_owned = 61, invalid_action_place_ward_no_charges = 62, invalid_action_place_ward_cant_place = 63, invalid_action_place_ward_bad_destination = 64, invalid_action_place_ward_out_of_range = 65, map_set_team_aspawn_area_bad_position = 66, map_add_bush_bad_position = 67, map_remove_bush_bad_position = 68, map_add_wall_bad_position = 69, map_remove_wall_bad_position = 70, map_add_hole_bad_position = 71, map_remove_hole_bad_position = 72, map_add_altar_bad_position = 73, map_remove_altar_bad_position = 74, map_get_bush_bad_position = 75, map_get_wall_bad_position = 76, map_get_hole_bad_position = 77, map_get_altar_bad_position = 78, map_get_camp_handle_at_bad_position = 79, map_add_camp_bad_position = 80, map_set_camp_bad_position = 81, invalid_action_champion_teleport_bad_destination = 82, invalid_action_respawn_group_blocked_spawn = 83, invalid_action_camp_teleport_bad_destination = 84, timeline_bad_seek_position = 85, timeline_bad_seek_substep = 86, api_no_map = 87, managed_resources_bad_position = 88, managed_resources_bad_radius = 89, managed_resources_aliasing = 90, managed_resources_metadata_mismatch = 91, managed_resources_opaque_origin = 92, api_invalid_team = 93, api_invalid_perspective = 94, api_not_initialized = 95, api_bad_position = 96, api_not_in_vision = 97, api_not_found = 98, api_invalid_camp_group = 99, api_invalid_camp_info = 100, api_invalid_camp = 101, api_invalid_champion = 102, api_invalid_ward = 103, api_invalid_ability = 104, api_not_teammate = 105, api_camp_group_not_waiting_to_respawn = 106, api_champion_alive = 107, api_invalid_champion_type = 108, api_invalid_camp_type = 109, api_value_out_of_range = 110, api_buffer_too_small = 111, api_not_owner = 112, invalid_action_recall_already_used = 113, invalid_action_submit_gems_already_used = 114, invalid_action_cancel_channel_not_channeling = 115, invalid_action_cancel_channel_already_used = 116, invalid_action_place_ward_ally_ward_present = 117, invalid_action_altar_lock_bad_altar = 118, invalid_action_altar_lock_out_of_range = 119, invalid_action_altar_lock_already_locked = 120, invalid_action_is_teleporting = 123, invalid_action_cancel_channel_not_cancellable = 124, invalid_action_submit_gems_altar_locked = 125, invalid_action_spell_cast_already_moved = 126, invalid_action_move_exclusive_spell_cast = 127, invalid_action_sell_not_tavi = 128, invalid_action_sell_invalid_item = 129, invalid_action_sell_not_owned = 130, invalid_action_sell_already_sold = 131, invalid_action_sell_gold_overflow = 132, invalid_action_sell_not_on_spawn = 133, };
+```
+
+Engine error codes; numeric values mirror EngineC/Errors.h.
 
 ### fuel_remaining
 
@@ -115,6 +429,30 @@ Get the total gems submitted by a team.
 
 - `side`: Team to count.
 
+### handle_camp_group_t
+
+```cpp
+enum class handle_camp_group_t : std::uint32_t { };
+```
+
+Strong identity of an engine-defined physical camp group.
+
+### handle_camp_t
+
+```cpp
+enum class handle_camp_t : std::uint32_t { };
+```
+
+Strong camp identity; convert to an integer only at the host ABI boundary.
+
+### handle_champion_t
+
+```cpp
+enum class handle_champion_t : std::uint32_t { };
+```
+
+Strong champion identity; convert to an integer only at the host ABI boundary.
+
 ### is_draft
 
 ```cpp
@@ -122,6 +460,38 @@ bool is_draft() noexcept
 ```
 
 Whether this guest has a draft perspective, without querying the host.
+
+### item
+
+```cpp
+using item = item_type;
+```
+
+Item-kind alias used by inventory entries.
+
+### item_info
+
+```cpp
+struct item_info { std::uint32_t cost, combine_count; std::optional<item_type> result; std::int32_t health_points, strength_points, focus_points; std::optional<item_passive> passive; float passive_magnitude; bool purchasable; };
+```
+
+Owned item metadata queried from the engine; combinations consume ingredients.
+
+### item_passive
+
+```cpp
+enum class item_passive : std::uint32_t { monster = 1, durability, treasure, jungle, home };
+```
+
+Optional item passive tags; no passive is represented by an empty optional.
+
+### item_type
+
+```cpp
+class item_type { public: enum class enum_type : std::uint32_t { monster_shard_of_strength, monster_emblem_of_strength, monster_shard_of_focus, monster_emblem_of_focus, monster_shard_of_health, monster_emblem_of_health, power_shard_of_strength, power_emblem_of_strength, power_shard_of_focus, power_emblem_of_focus, power_shard_of_health, power_emblem_of_health, durability_shard_of_strength, durability_emblem_of_strength, durability_shard_of_focus, durability_emblem_of_focus, durability_shard_of_health, durability_emblem_of_health, treasure_shard_of_strength, treasure_emblem_of_strength, treasure_shard_of_focus, treasure_emblem_of_focus, treasure_shard_of_health, treasure_emblem_of_health, jungle_shard_of_strength, jungle_emblem_of_strength, jungle_shard_of_focus, jungle_emblem_of_focus, jungle_shard_of_health, jungle_emblem_of_health, home_shard_of_strength, home_emblem_of_strength, home_shard_of_focus, home_emblem_of_focus, home_shard_of_health, home_emblem_of_health, bruiser_shard_of_strength, bruiser_emblem_of_strength, bruiser_shard_of_focus, bruiser_emblem_of_focus, bruiser_shard_of_health, bruiser_emblem_of_health, count }; static const item_type monster_shard_of_strength; static const item_type monster_emblem_of_strength; static const item_type monster_shard_of_focus; static const item_type monster_emblem_of_focus; static const item_type monster_shard_of_health; static const item_type monster_emblem_of_health; static const item_type power_shard_of_strength; static const item_type power_emblem_of_strength; static const item_type power_shard_of_focus; static const item_type power_emblem_of_focus; static const item_type power_shard_of_health; static const item_type power_emblem_of_health; static const item_type durability_shard_of_strength; static const item_type durability_emblem_of_strength; static const item_type durability_shard_of_focus; static const item_type durability_emblem_of_focus; static const item_type durability_shard_of_health; static const item_type durability_emblem_of_health; static const item_type treasure_shard_of_strength; static const item_type treasure_emblem_of_strength; static const item_type treasure_shard_of_focus; static const item_type treasure_emblem_of_focus; static const item_type treasure_shard_of_health; static const item_type treasure_emblem_of_health; static const item_type jungle_shard_of_strength; static const item_type jungle_emblem_of_strength; static const item_type jungle_shard_of_focus; static const item_type jungle_emblem_of_focus; static const item_type jungle_shard_of_health; static const item_type jungle_emblem_of_health; static const item_type home_shard_of_strength; static const item_type home_emblem_of_strength; static const item_type home_shard_of_focus; static const item_type home_emblem_of_focus; static const item_type home_shard_of_health; static const item_type home_emblem_of_health; static const item_type bruiser_shard_of_strength; static const item_type bruiser_emblem_of_strength; static const item_type bruiser_shard_of_focus; static const item_type bruiser_emblem_of_focus; static const item_type bruiser_shard_of_health; static const item_type bruiser_emblem_of_health; static const item_type count; };
+```
+
+Purchasable item types.
 
 ### opponent
 
@@ -132,6 +502,14 @@ constexpr team opponent(team side) noexcept
 Get the other team.
 
 - `side`: Team to flip.
+
+### passive_type
+
+```cpp
+enum class passive_type : std::uint8_t { none, bonus_gold, remote_shop, gem_focus, splash_attack, health_strength, reset_cooldowns_on_kill, retaliation, stun_immunity, };
+```
+
+Champion passive effect tags from the engine definition.
 
 ### resign
 
@@ -156,6 +534,38 @@ cambc::champion& self()
 ```
 
 Return this guest's authenticated champion; throws std::bad_optional_access during drafting.
+
+### shared_memory_buffer
+
+```cpp
+class shared_memory_buffer { };
+```
+
+Bounds-checked access to this team's shared bytes; reads and writes always reach the host.
+
+### symmetry
+
+```cpp
+enum class symmetry : std::int32_t { horizontal, vertical, rotational180 };
+```
+
+Map symmetry used to reflect tiles.
+
+### team
+
+```cpp
+enum class team { ally, enemy };
+```
+
+Teams relative to the bot.
+
+### teleport
+
+```cpp
+class teleport { };
+```
+
+A visible teleport reservation snapshot, including the observer's own channel.
 
 ### to_string
 
@@ -286,6 +696,46 @@ std::string to_string(vec2 value)
 Format as "(x, y)".
 
 - `value`: Value to format.
+
+### type_tag_t
+
+```cpp
+template <class T> struct type_tag_t { using type = T; };
+```
+
+Select a typed ability or buff payload without constructing a payload value.
+
+### uninitialized_t
+
+```cpp
+struct uninitialized_t { };
+```
+
+Tag for constructing a bitboard without initialising its contents.
+
+### unit
+
+```cpp
+class unit { };
+```
+
+Common live combat queries for champions and camps.
+
+### vec2
+
+```cpp
+class vec2 { public: std::int32_t x, y; static const vec2 north, north_east, east, south_east, south, south_west, west, north_west; };
+```
+
+Integer tile position or displacement.
+
+### ward
+
+```cpp
+class ward { };
+```
+
+Immutable snapshot of a visible ward.
 
 <a id="cambc-ability"></a>
 
@@ -1264,6 +1714,16 @@ std::vector<vec2> positions() const
 
 Get the positions of all set map tiles.
 
+### positions_into
+
+```cpp
+std::uint32_t positions_into(std::span<vec2> out) const
+```
+
+Write the positions of set map tiles into `out` and return how many were written.
+
+- `out`: Destination buffer; at most `out.size()` positions are written.
+
 ### print
 
 ```cpp
@@ -1537,6 +1997,14 @@ const_iterator begin() const
 
 Iterate captured buffs without refreshing; the collection must outlive the iterator.
 
+### const_iterator
+
+```cpp
+class const_iterator { public: using value_type = buff_t; using difference_type = std::ptrdiff_t; using iterator_category = std::forward_iterator_tag; using iterator_concept = std::forward_iterator_tag; using reference = const buff_t&; using pointer = const buff_t*; };
+```
+
+Forward iterator over captured buffs; references remain valid while the collection lives.
+
 ### end
 
 ```cpp
@@ -1649,6 +2117,30 @@ explicit const_iterator(const storage_type& values)
 
 Iterate the captured buffs in values.
 
+### difference_type
+
+```cpp
+using difference_type = std::ptrdiff_t;
+```
+
+Iterator distance type.
+
+### iterator_category
+
+```cpp
+using iterator_category = std::forward_iterator_tag;
+```
+
+Standard iterator category.
+
+### iterator_concept
+
+```cpp
+using iterator_concept = std::forward_iterator_tag;
+```
+
+C++20 iterator concept.
+
 ### operator->
 
 ```cpp
@@ -1696,6 +2188,30 @@ bool operator==(std::default_sentinel_t) const
 ```
 
 Check whether every captured buff has been visited.
+
+### pointer
+
+```cpp
+using pointer = const buff_t*;
+```
+
+Pointer to a captured buff.
+
+### reference
+
+```cpp
+using reference = const buff_t&;
+```
+
+Reference to a captured buff.
+
+### value_type
+
+```cpp
+using value_type = buff_t;
+```
+
+Iterated buff snapshot type.
 
 <a id="cambc-buff-enhanced-attack"></a>
 
@@ -2012,6 +2528,38 @@ float health() const override
 
 Query current health; live state requires a visible runtime identity.
 
+### is_alive
+
+```cpp
+bool is_alive() const
+```
+
+Query whether this camp is living (awake or asleep); uses the same visibility checks as state().
+
+### is_asleep
+
+```cpp
+bool is_asleep() const
+```
+
+Query whether this camp is living but dormant; uses the same visibility checks as state().
+
+### is_awake
+
+```cpp
+bool is_awake() const
+```
+
+Query whether this camp is awake; uses the same visibility checks as state().
+
+### is_dead
+
+```cpp
+bool is_dead() const
+```
+
+Query whether this camp is dead; uses the same visibility checks as state().
+
 ### is_elk
 
 ```cpp
@@ -2108,6 +2656,14 @@ vec2 spawn_position() const noexcept
 
 Get the camp's original spawn tile, not its current live position.
 
+### state
+
+```cpp
+camp_state state() const
+```
+
+Query dead, alive (awake), or asleep. The current tile, or last occupied tile when dead, must be in vision; hidden camps throw api_not_in_vision. This is separate from the camp-group state.
+
 ### strength
 
 ```cpp
@@ -2115,6 +2671,82 @@ float strength() const override
 ```
 
 Query current strength for this visible unit.
+
+<a id="cambc-camp-state"></a>
+
+## cambc::camp_state
+
+### camp_state
+
+```cpp
+constexpr camp_state() noexcept = default
+```
+
+Construct the dead state.
+
+### camp_state
+
+```cpp
+constexpr camp_state(enum_type state) noexcept
+```
+
+Wrap an underlying enum value without changing its identity.
+
+### enum_type
+
+```cpp
+enum class enum_type : std::uint32_t { dead = 0, alive = 1, asleep = 2 };
+```
+
+Underlying mutually exclusive engine values; alive means awake.
+
+### is_alive
+
+```cpp
+constexpr bool is_alive() const noexcept
+```
+
+Check whether the captured state is living, including asleep camps.
+
+### is_asleep
+
+```cpp
+constexpr bool is_asleep() const noexcept
+```
+
+Check whether the captured state is living but dormant.
+
+### is_awake
+
+```cpp
+constexpr bool is_awake() const noexcept
+```
+
+Check whether the captured state is awake (the alive enum value).
+
+### is_dead
+
+```cpp
+constexpr bool is_dead() const noexcept
+```
+
+Check whether the captured state is dead.
+
+### operator enum_type
+
+```cpp
+constexpr operator enum_type() const noexcept
+```
+
+Convert to the underlying engine enum.
+
+### operator T
+
+```cpp
+template <class T> requires std::is_integral_v<T> constexpr explicit operator T() const noexcept
+```
+
+Explicit integer conversion for host ABI values.
 
 <a id="cambc-champion"></a>
 
@@ -3058,6 +3690,14 @@ std::uint32_t cost() const
 
 Get the purchase cost in gold.
 
+### enum_type
+
+```cpp
+enum class enum_type : std::uint32_t { tp_crystal, altar_lock, count };
+```
+
+Underlying engine enum; wrapper values convert to it implicitly.
+
 ### info
 
 ```cpp
@@ -3700,6 +4340,14 @@ std::uint32_t cost() const
 
 Get the full value in gold: the purchase price, refunded in full when sold.
 
+### enum_type
+
+```cpp
+enum class enum_type : std::uint32_t { monster_shard_of_strength, monster_emblem_of_strength, monster_shard_of_focus, monster_emblem_of_focus, monster_shard_of_health, monster_emblem_of_health, power_shard_of_strength, power_emblem_of_strength, power_shard_of_focus, power_emblem_of_focus, power_shard_of_health, power_emblem_of_health, durability_shard_of_strength, durability_emblem_of_strength, durability_shard_of_focus, durability_emblem_of_focus, durability_shard_of_health, durability_emblem_of_health, treasure_shard_of_strength, treasure_emblem_of_strength, treasure_shard_of_focus, treasure_emblem_of_focus, treasure_shard_of_health, treasure_emblem_of_health, jungle_shard_of_strength, jungle_emblem_of_strength, jungle_shard_of_focus, jungle_emblem_of_focus, jungle_shard_of_health, jungle_emblem_of_health, home_shard_of_strength, home_emblem_of_strength, home_shard_of_focus, home_emblem_of_focus, home_shard_of_health, home_emblem_of_health, bruiser_shard_of_strength, bruiser_emblem_of_strength, bruiser_shard_of_focus, bruiser_emblem_of_focus, bruiser_shard_of_health, bruiser_emblem_of_health, count };
+```
+
+Underlying engine enum; wrapper values convert to it implicitly.
+
 ### focus_points
 
 ```cpp
@@ -3840,6 +4488,46 @@ cambc::camp camp(vec2 position)
 Find a camp by spawn tile, querying the engine on every call; throws if there is no camp.
 
 - `position`: Spawn tile of the camp.
+
+### camp_group
+
+```cpp
+class camp_group { };
+```
+
+A physical camp cluster and its rewards.
+
+### camp_group_alive
+
+```cpp
+struct camp_group_alive {};
+```
+
+The group still contains living camps; this state has no respawn countdown.
+
+### camp_group_respawning
+
+```cpp
+struct camp_group_respawning { std::int32_t timer; };
+```
+
+The group is waiting to respawn. The timer is the remaining round countdown; zero means respawning is currently blocked by occupied spawn tiles.
+
+### camp_group_reward_available
+
+```cpp
+struct camp_group_reward_available {};
+```
+
+All camps are defeated and the reward is available. The respawn countdown begins after the reward is captured.
+
+### camp_group_state
+
+```cpp
+using camp_group_state = std::variant<camp_group_alive, camp_group_reward_available, camp_group_respawning>;
+```
+
+Returned by camp_group.state(). Inspect camp_group_respawning.timer when the variant is respawning. Reading state requires at least one original camp spawn tile in current vision; otherwise the SDK reports a visibility error. max_respawn_timer gives the configured full duration, not the remaining countdown.
 
 ### camp_groups
 
@@ -4088,6 +4776,14 @@ std::byte objective_id{};
 bc::shared_memory.read(0, std::span<std::byte>{&objective_id, 1});
 ```
 
+### reference
+
+```cpp
+class reference { };
+```
+
+Byte proxy that reads and writes through SDK imports.
+
 ### size
 
 ```cpp
@@ -4245,6 +4941,18 @@ void visible_tiles_into(bitboard& out) const
 Like `visible_tiles`, but writes into `out` instead of returning a new board.
 
 - `out`: Destination; its previous contents are overwritten.
+
+<a id="cambc-type-tag-t"></a>
+
+## cambc::type_tag_t
+
+### type
+
+```cpp
+using type = T;
+```
+
+The tagged type.
 
 <a id="cambc-uninitialized-t"></a>
 

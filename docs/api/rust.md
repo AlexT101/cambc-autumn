@@ -1,13 +1,14 @@
 # Bot API reference: Rust
 
-*Public Rust SDK functions and methods.*
+*Public Rust SDK functions, methods and camp-group state types.*
 
 Start with [Getting Started](../guides/rust/first-bot.md). Other languages: [C++](./cpp.md) · [Python](./python.md) · [OCaml](./ocaml.md).
 
 ## Contents
 
-- [cambc](#cambc) (13)
+- [cambc](#cambc) (69)
 - [cambc::Ability](#cambc-ability) (30)
+- [cambc::ability_types](#cambc-ability-types) (10)
 - [cambc::AbilityInfo](#cambc-abilityinfo) (1)
 - [cambc::AbilityTargetMask](#cambc-abilitytargetmask) (22)
 - [cambc::AltarLock](#cambc-altarlock) (5)
@@ -15,8 +16,9 @@ Start with [Getting Started](../guides/rust/first-bot.md). Other languages: [C++
 - [cambc::BuffCollection](#cambc-buffcollection) (9)
 - [cambc::BuffPayload](#cambc-buffpayload) (1)
 - [cambc::BuffRestrictions](#cambc-buffrestrictions) (22)
-- [cambc::Camp](#cambc-camp) (9)
+- [cambc::Camp](#cambc-camp) (14)
 - [cambc::CampGroup](#cambc-campgroup) (8)
+- [cambc::CampState](#cambc-campstate) (4)
 - [cambc::Champion](#cambc-champion) (51)
 - [cambc::ChampionState](#cambc-championstate) (23)
 - [cambc::Consumable](#cambc-consumable) (4)
@@ -29,7 +31,7 @@ Start with [Getting Started](../guides/rust/first-bot.md). Other languages: [C++
 - [cambc::Error](#cambc-error) (2)
 - [cambc::ItemCounts](#cambc-itemcounts) (1)
 - [cambc::ItemType](#cambc-itemtype) (10)
-- [cambc::map](#cambc-map) (14)
+- [cambc::map](#cambc-map) (16)
 - [cambc::SharedMemory](#cambc-sharedmemory) (7)
 - [cambc::Team](#cambc-team) (1)
 - [cambc::Teleport](#cambc-teleport) (8)
@@ -42,6 +44,238 @@ Start with [Getting Started](../guides/rust/first-bot.md). Other languages: [C++
 
 ## cambc
 
+### Ability
+
+```rust
+pub struct Ability { /* private fields */ }
+```
+
+Immutable constructor-cached slot properties. The live cooldown is queried separately.
+
+### AbilityAoeDamage
+
+```rust
+pub struct AbilityAoeDamage { pub properties: AbilityProperties, pub range: f32, pub modifier: f32, pub radius: f32, pub duration: i32, }
+```
+
+Metadata for area damage, including radius and effect duration.
+
+### AbilityAttackReset
+
+```rust
+pub struct AbilityAttackReset { pub properties: AbilityProperties, pub enhanced_attack: bool, }
+```
+
+Metadata for resetting or enhancing the next attack; has no range.
+
+### AbilityCc
+
+```rust
+pub struct AbilityCc { pub properties: AbilityProperties, pub range: f32, pub modifier: f32, pub duration: i32, }
+```
+
+Metadata for crowd control, including range and duration.
+
+### AbilityDamage
+
+```rust
+pub struct AbilityDamage { pub properties: AbilityProperties, pub range: f32, pub modifier: f32, }
+```
+
+Metadata for direct damage, including range and its engine modifier.
+
+### AbilityDash
+
+```rust
+pub struct AbilityDash { pub properties: AbilityProperties, pub range: f32, }
+```
+
+Metadata for a movement ability and its range.
+
+### AbilityHeal
+
+```rust
+pub struct AbilityHeal { pub properties: AbilityProperties, pub range: f32, pub modifier: f32, }
+```
+
+Metadata for healing, including range and its engine modifier.
+
+### AbilityInfo
+
+```rust
+pub enum AbilityInfo { AttackReset(AbilityAttackReset), Damage(AbilityDamage), AoeDamage(AbilityAoeDamage), Cc(AbilityCc), Heal(AbilityHeal), Dash(AbilityDash), Shield(AbilityShield), }
+```
+
+Owned, checked ability metadata; an unused slot is represented by `None`.
+
+### AbilityKind
+
+```rust
+pub enum AbilityKind { AttackReset = 1,Damage = 2,AoeDamage = 3,Cc = 4,Heal = 5,Dash = 6,Shield = 7 }
+```
+
+Checked engine values. Implements TryFrom<u32> and Display; ALL lists the recognised values.
+
+### AbilityMetadata
+
+```rust
+pub trait AbilityMetadata { fn kind(&self) -> AbilityKind; fn properties(&self) -> &AbilityProperties; fn range(&self) -> Result<f32>; fn max_cooldown(&self) -> i32 ; fn valid_targets(&self) -> AbilityTargetMask ; fn is_exclusive_with_movement(&self) -> bool ; }
+```
+
+Object-safe cached immutable metadata. Range is an error for attack resets.
+
+### AbilityProperties
+
+```rust
+pub struct AbilityProperties { pub max_cooldown: i32, pub valid_targets: AbilityTargetMask, pub exclusive_with_movement: bool, }
+```
+
+Immutable cooldown, targeting and attribute metadata for one ability.
+
+### AbilityShield
+
+```rust
+pub struct AbilityShield { pub properties: AbilityProperties, pub range: f32, pub modifier: f32, pub duration: i32, }
+```
+
+Metadata for shielding, including range, modifier and duration.
+
+### AbilityTargetMask
+
+```rust
+bitflags! { pub struct AbilityTargetMask: u32 { const CAMPS = 1 << 0; const ENEMIES = 1 << 1; const ALLIES = 1 << 2; const SELF = 1 << 3; const GROUND = 1 << 4; } }
+```
+
+Allowed ability target categories; allies and enemies exclude self.
+
+### AltarLock
+
+```rust
+pub struct AltarLock { /* private fields */ }
+```
+
+An owning visible altar-lock snapshot with a targetable engine handle.
+
+### AttackTarget
+
+```rust
+pub trait AttackTarget { }
+```
+
+A champion, camp, unit or altar lock that a champion can attack.
+
+### Bitboard
+
+```rust
+pub struct Bitboard { /* private fields */ }
+```
+
+Aligned, owning engine-chunked tile mask. Clone copies all storage.
+
+### BuffCollection
+
+```rust
+pub struct BuffCollection { /* private fields */ }
+```
+
+Unit buffs captured at construction; call buffs() again for current values.
+
+### BuffInfo
+
+```rust
+pub trait BuffInfo { fn kind(&self) -> BuffKind; fn duration(&self) -> i32; fn shield_value(&self) -> Option<f32> ; }
+```
+
+Object-safe metadata for an owning live buff snapshot.
+
+### BuffKind
+
+```rust
+pub enum BuffKind { Shield = 0,Stun = 1,EnhancedAttack = 2 }
+```
+
+Checked engine values. Implements TryFrom<u32> and Display; ALL lists the recognised values.
+
+### BuffPayload
+
+```rust
+pub enum BuffPayload { Shield { duration: i32, value: f32, }, Stun { duration: i32, }, EnhancedAttack { duration: i32, }, }
+```
+
+An immutable buff value captured by a fresh collection query.
+
+### BuffRestrictions
+
+```rust
+bitflags! { pub struct BuffRestrictions: u8 { const MOVE = 1 << 0; const ATTACK = 1 << 1; const CAST = 1 << 2; const SHOP = 1 << 3; const CONSUMABLE = 1 << 4; const WARD = 1 << 5; } }
+```
+
+Prohibited actions, distinct from the active-buff kind mask.
+
+### Camp
+
+```rust
+pub struct Camp { /* private fields */ }
+```
+
+A camp with immutable spawn/type/group metadata and shared live `Unit` queries.
+
+### CampGroup
+
+```rust
+pub struct CampGroup { /* private fields */ }
+```
+
+Camp membership and rewards queried from the host; live state is queried separately.
+
+### CampGroupState
+
+```rust
+pub enum CampGroupState { Alive, RewardAvailable, Respawning(i32), }
+```
+
+Returned by CampGroup::state() inside Result. Alive has living camps; RewardAvailable is defeated but unclaimed; Respawning(timer) carries the remaining round countdown. Zero means respawning is blocked by occupied spawn tiles. Reading state requires at least one original camp spawn tile in current vision; otherwise the SDK reports a visibility error. max_respawn_timer gives the configured full duration, not the remaining countdown.
+
+### CampState
+
+```rust
+pub enum CampState { Dead = 0,Alive = 1,Asleep = 2 }
+```
+
+Checked engine values. Implements TryFrom<u32> and Display; ALL lists the recognised values.
+
+### CampStats
+
+```rust
+pub struct CampStats { pub vision_radius: f32, pub base_move_speed: i32, pub base_attack_range: i32, pub base_health: f32, pub health_growth: f32, pub base_strength: f32, pub strength_growth: f32, pub base_focus: f32, pub focus_growth: f32, }
+```
+
+Immutable camp design stats in the engine C layout, not current combat stats.
+
+### CampType
+
+```rust
+pub enum CampType { Wolf = 0,Elk = 1,GemCluster = 2,GoldCluster = 3,Monolith = 4 }
+```
+
+Checked engine values. Implements TryFrom<i32> and Display; ALL lists the recognised values.
+
+### CastTarget
+
+```rust
+pub trait CastTarget { }
+```
+
+A champion, camp or unit that an ability can be cast on.
+
+### Champion
+
+```rust
+pub struct Champion { /* private fields */ }
+```
+
+A champion handle or draft design, composed with `Unit` and cached slot metadata. Live stats, inventories and buffs are queried separately; actions require the current champion.
+
 ### champion_designs
 
 ```rust
@@ -49,6 +283,14 @@ pub fn champion_designs() -> Result<&'static [Champion; 12]>
 ```
 
 Borrow all initialised champion designs, with no live cooldown/visibility queries.
+
+### ChampionDraft
+
+```rust
+pub enum ChampionDraft { Ryth = 0,VesperVale = 1,Vendetta = 2,CassiAndIssac = 3,Stellar = 4,Prism = 5,Marcella = 6,Willow = 7,Ren = 8,Varg = 9,Tavi = 10 }
+```
+
+Checked engine values. Implements TryFrom<i32> and Display; ALL lists the recognised values.
 
 ### champions
 
@@ -58,17 +300,105 @@ pub fn champions(team: Option<Team>) -> Result<Vec<Champion>>
 
 All allied/enemy roster members, including hidden champions with cached visibility errors. # Arguments * `team` - `Some(team)` for one side, or `None` for both.
 
+### ChampionState
+
+```rust
+bitflags! { pub struct ChampionState: u32 { const ALIVE = 1 << 0; const RECALLING = 1 << 1; const SUBMITTING_GEMS = 1 << 2; const CAN_MOVE = 1 << 3; const CAN_ATTACK = 1 << 4; const COMPLETED_TURN = 1 << 5; const RECALL_STARTED = 1 << 6; const SUBMIT_GEMS_STARTED = 1 << 7; const RECALL_CANCELLED = 1 << 8; const SUBMIT_GEMS_CANCELLED = 1 << 9; const CAN_CAST = 1 << 11; const TELEPORTING = 1 << 12; } }
+```
+
+Champion state and turn-event flags with the engine's bit values.
+
+### ChampionStats
+
+```rust
+pub struct ChampionStats { pub vision_radius: i32, pub base_move_speed: i32, pub base_attack_range: i32, pub base_health: f32, pub health_growth: f32, pub base_strength: f32, pub strength_growth: f32, pub base_focus: f32, pub focus_growth: f32, pub camp_damage_multiplier: f32, }
+```
+
+Immutable champion design stats in the engine C layout, not current combat stats.
+
+### ChampionType
+
+```rust
+pub enum ChampionType { Ryth = 0,VesperVale = 1,Vendetta = 2,Cassi = 3,Issac = 4,Stellar = 5,Prism = 6,Marcella = 7,Willow = 8,Ren = 9,Varg = 10,Tavi = 11 }
+```
+
+Checked engine values. Implements TryFrom<i32> and Display; ALL lists the recognised values.
+
 ### constants
 
 ```rust
 pub fn constants() -> &'static Constants
 ```
 
+### Constants
+
+```rust
+pub struct Constants { pub capture_time: i32, pub camp_sleep_time: i32, pub respawn_time: i32, pub recall_time: i32, pub submit_gem_duration_multiplier: f64, pub submit_gem_base_duration: i32, pub submit_gem_minimum_duration: i32, pub submit_gems_range: i32, pub max_rounds: u32, pub winning_gems: u32, pub kill_gold: u32, pub assist_gold: u32, pub passive_gold: u32, pub spawn_healing: f32, pub active_wards: u32, pub shared_memory_bytes: u32, pub draft_memory_bytes: u32, pub tile_reveal_rounds: u32, pub ward_cooldown: i32, pub ward_lifetime: i32, pub ward_vision_radius: f32, pub ward_placement_radius: f32, pub altar_lock_hits: u32, pub tp_crystal_time: i32, /* private fields */ }
+```
+
+Immutable engine rule parameters, loaded by `cambc::init`; matches `Game_Settings`.
+
+### Consumable
+
+```rust
+pub struct Consumable { /* private fields */ }
+```
+
+A consumable type bound to a champion; counts are live and use requires self.
+
+### ConsumableInfo
+
+```rust
+pub struct ConsumableInfo { pub cost: u32, pub carry_limit: u32, }
+```
+
+Owned consumable cost and carry limit; matches the engine C record.
+
+### Consumables
+
+```rust
+pub struct Consumables(/* private fields */);
+```
+
+Type-indexed owner-bound consumables for a champion.
+
+### ConsumableType
+
+```rust
+pub enum ConsumableType { TpCrystal = 0, AltarLock = 1, }
+```
+
+Public consumable kinds in their dense indexing order.
+
+### debug_block
+
+```rust
+debug_block! { ... }
+```
+
+Run the statements without spending fuel when the bot is built in debug mode (`cambc run`, the default); skipped entirely in release mode (`--release`, and always on the platform). The free budget per block is 1000 turns, beyond which the rest is charged; ending the turn inside closes the free window. A macro: `debug_block! { statements }` runs the body inline, so `return` and `?` leave the enclosing function (fuel resumes on the way out). In release mode the body is type-checked but never evaluated.
+
+### DistanceField
+
+```rust
+pub struct DistanceField { /* private fields */ }
+```
+
+Owning, 16-byte-aligned map distances; cloning copies its chunked storage.
+
 ### draft_memory
 
 ```rust
 pub fn draft_memory() -> &'static DraftMemory
 ```
+
+### DraftMemory
+
+```rust
+pub struct DraftMemory { /* private fields */ }
+```
+
+Draft-memory startup snapshot and draft-only submission interface.
 
 ### end_turn
 
@@ -85,6 +415,22 @@ if bc::fuel_remaining()? < 1000 {
     bc::end_turn();
 }
 ```
+
+### Error
+
+```rust
+pub enum Error { Engine { raw_code: i32, code: Option<ErrorCode>, message: String, }, NoRange, MissingIdentity, }
+```
+
+An engine failure or a typed SDK precondition/metadata failure.
+
+### ErrorCode
+
+```rust
+pub enum ErrorCode { Success = 0,InvalidHandle = 1,OutOfMemory = 2,FileNotFound = 3,NullPointer = 4,InvalidArgument = 5,MapParseError = 6,InvalidMapFile = 7,InvalidMapVersion = 8,ReplayParseError = 9,InvalidReplayFile = 10,InvalidReplayVersion = 11,InvalidDraft = 12,DraftNotDrafting = 13,DraftDuplicateChampion = 14,DraftInvalidRound = 15,DraftUnavailable = 16,AlreadyInitialized = 17,InvalidAction = 18,InvalidActionMemoryBadRange = 19,InvalidActionMemoryDraftFrozen = 20,InvalidActionMoveCantMove = 21,InvalidActionMoveBadDestination = 22,InvalidActionSpellCastInvalidSource = 23,InvalidActionSpellCastInvalidSlot = 24,InvalidActionSpellCastNoAbility = 25,InvalidActionSpellCastCantCast = 26,InvalidActionSpellCastAlreadyCast = 27,InvalidActionSpellCastOnCooldown = 28,InvalidActionSpellCastNoCharges = 29,InvalidActionSpellCastBadTarget = 30,InvalidActionSpellCastOutOfRange = 31,InvalidActionSpellCastBadDestination = 32,InvalidActionCantAct = 33,InvalidActionIsRecalling = 34,InvalidActionIsSubmittingGems = 35,InvalidActionMoveAlreadyMoved = 36,InvalidActionMoveOutOfRange = 37,InvalidActionMoveUnreachable = 38,InvalidActionAttackInvalidSource = 39,InvalidActionAttackCantAttack = 40,InvalidActionAttackAlreadyAttacked = 41,InvalidActionAttackBadTarget = 42,InvalidActionAttackOutOfRange = 43,InvalidActionRecallCantChannel = 44,InvalidActionSubmitGemsCantChannel = 45,InvalidActionSubmitGemsNoGems = 46,InvalidActionSubmitGemsBadAltar = 47,InvalidActionSubmitGemsOutOfRange = 48,InvalidActionBuyItemNotOnSpawn = 49,InvalidActionBuyItemInvalidItem = 50,InvalidActionBuyItemInvalidCount = 51,InvalidActionBuyItemNotEnoughGold = 52,InvalidActionBuyItemInventoryFull = 53,InvalidActionBuyItemStatsOverflow = 54,InvalidActionBuyConsumableNotOnSpawn = 55,InvalidActionBuyConsumableInvalidType = 56,InvalidActionBuyConsumableInvalidCount = 57,InvalidActionBuyConsumableInventoryFull = 58,InvalidActionBuyConsumableNotEnoughGold = 59,InvalidActionUseConsumableInvalidType = 60,InvalidActionUseConsumableNotOwned = 61,InvalidActionPlaceWardNoCharges = 62,InvalidActionPlaceWardCantPlace = 63,InvalidActionPlaceWardBadDestination = 64,InvalidActionPlaceWardOutOfRange = 65,MapSetTeamAspawnAreaBadPosition = 66,MapAddBushBadPosition = 67,MapRemoveBushBadPosition = 68,MapAddWallBadPosition = 69,MapRemoveWallBadPosition = 70,MapAddHoleBadPosition = 71,MapRemoveHoleBadPosition = 72,MapAddAltarBadPosition = 73,MapRemoveAltarBadPosition = 74,MapGetBushBadPosition = 75,MapGetWallBadPosition = 76,MapGetHoleBadPosition = 77,MapGetAltarBadPosition = 78,MapGetCampHandleAtBadPosition = 79,MapAddCampBadPosition = 80,MapSetCampBadPosition = 81,InvalidActionChampionTeleportBadDestination = 82,InvalidActionRespawnGroupBlockedSpawn = 83,InvalidActionCampTeleportBadDestination = 84,TimelineBadSeekPosition = 85,TimelineBadSeekSubstep = 86,ApiNoMap = 87,ManagedResourcesBadPosition = 88,ManagedResourcesBadRadius = 89,ManagedResourcesAliasing = 90,ManagedResourcesMetadataMismatch = 91,ManagedResourcesOpaqueOrigin = 92,ApiInvalidTeam = 93,ApiInvalidPerspective = 94,ApiNotInitialized = 95,ApiBadPosition = 96,ApiNotInVision = 97,ApiNotFound = 98,ApiInvalidCampGroup = 99,ApiInvalidCampInfo = 100,ApiInvalidCamp = 101,ApiInvalidChampion = 102,ApiInvalidWard = 103,ApiInvalidAbility = 104,ApiNotTeammate = 105,ApiCampGroupNotWaitingToRespawn = 106,ApiChampionAlive = 107,ApiInvalidChampionType = 108,ApiInvalidCampType = 109,ApiValueOutOfRange = 110,ApiBufferTooSmall = 111,ApiNotOwner = 112,InvalidActionRecallAlreadyUsed = 113,InvalidActionSubmitGemsAlreadyUsed = 114,InvalidActionCancelChannelNotChanneling = 115,InvalidActionCancelChannelAlreadyUsed = 116,InvalidActionPlaceWardAllyWardPresent = 117,InvalidActionAltarLockBadAltar = 118,InvalidActionAltarLockOutOfRange = 119,InvalidActionAltarLockAlreadyLocked = 120,InvalidActionIsTeleporting = 123,InvalidActionCancelChannelNotCancellable = 124,InvalidActionSubmitGemsAltarLocked = 125,InvalidActionSpellCastAlreadyMoved = 126,InvalidActionMoveExclusiveSpellCast = 127,InvalidActionSellNotTavi = 128,InvalidActionSellInvalidItem = 129,InvalidActionSellNotOwned = 130,InvalidActionSellAlreadySold = 131,InvalidActionSellGoldOverflow = 132,InvalidActionSellNotOnSpawn = 133 }
+```
+
+Checked engine values. Implements TryFrom<i32> and Display; ALL lists the recognised values.
 
 ### fuel_remaining
 
@@ -116,13 +462,53 @@ Return the total number of gems submitted by a relative team. # Arguments * `tea
 pub fn init() -> Result<()>
 ```
 
-Initialise immutable SDK data. A static constructor runs this before `main` on the first turn's fuel, so calling it is only needed to retry or inspect a failed initialisation. Successful repeat calls do nothing; failures publish nothing and can be retried. No map layout is cached.
+Initialise immutable SDK data. A static constructor runs this before `main` on the first turn's fuel, so calling it is only needed to retry or inspect a failed initialisation. Successful repeat calls do nothing; failures publish nothing and can be retried. The map layout is cached after the first successful query.
 
 ### is_draft
 
 ```rust
 pub fn is_draft() -> bool
 ```
+
+### ItemCounts
+
+```rust
+pub struct ItemCounts(/* private fields */);
+```
+
+Index-safe owning item-count snapshots.
+
+### ItemInfo
+
+```rust
+pub struct ItemInfo { pub cost: u32, pub combine_count: u32, pub result: Option<ItemType>, pub health_points: i32, pub strength_points: i32, pub focus_points: i32, pub passive: Option<ItemPassive>, pub passive_magnitude: f32, pub purchasable: bool, }
+```
+
+Owned, engine-queried item metadata with checked optional tags.
+
+### ItemPassive
+
+```rust
+pub enum ItemPassive { Monster = 1, Durability = 2, Treasure = 3, Jungle = 4, Home = 5, }
+```
+
+Checked item-passive tag; item metadata uses `None` for no passive.
+
+### ItemType
+
+```rust
+pub enum ItemType { MonsterShardOfStrength = 0,MonsterEmblemOfStrength = 1,MonsterShardOfFocus = 2,MonsterEmblemOfFocus = 3,MonsterShardOfHealth = 4,MonsterEmblemOfHealth = 5,PowerShardOfStrength = 6,PowerEmblemOfStrength = 7,PowerShardOfFocus = 8,PowerEmblemOfFocus = 9,PowerShardOfHealth = 10,PowerEmblemOfHealth = 11,DurabilityShardOfStrength = 12,DurabilityEmblemOfStrength = 13,DurabilityShardOfFocus = 14,DurabilityEmblemOfFocus = 15,DurabilityShardOfHealth = 16,DurabilityEmblemOfHealth = 17,TreasureShardOfStrength = 18,TreasureEmblemOfStrength = 19,TreasureShardOfFocus = 20,TreasureEmblemOfFocus = 21,TreasureShardOfHealth = 22,TreasureEmblemOfHealth = 23,JungleShardOfStrength = 24,JungleEmblemOfStrength = 25,JungleShardOfFocus = 26,JungleEmblemOfFocus = 27,JungleShardOfHealth = 28,JungleEmblemOfHealth = 29,HomeShardOfStrength = 30,HomeEmblemOfStrength = 31,HomeShardOfFocus = 32,HomeEmblemOfFocus = 33,HomeShardOfHealth = 34,HomeEmblemOfHealth = 35,BruiserShardOfStrength = 36,BruiserEmblemOfStrength = 37,BruiserShardOfFocus = 38,BruiserEmblemOfFocus = 39,BruiserShardOfHealth = 40,BruiserEmblemOfHealth = 41 }
+```
+
+Checked engine values. Implements TryFrom<u32> and Display; ALL lists the recognised values.
+
+### PassiveType
+
+```rust
+pub enum PassiveType { None = 0,BonusGold = 1,RemoteShop = 2,GemFocus = 3,SplashAttack = 4,HealthStrength = 5,ResetCooldownsOnKill = 6,Retaliation = 7,StunImmunity = 8 }
+```
+
+Checked engine values. Implements TryFrom<u8> and Display; ALL lists the recognised values.
 
 ### resign
 
@@ -131,6 +517,14 @@ pub fn resign() -> Result<()>
 ```
 
 Resign the current team through the engine, preserving validation errors. A successful resign ends the game without returning, so buffered output is flushed first.
+
+### Result
+
+```rust
+pub type Result<T> = core::result::Result<T, Error>;
+```
+
+SDK result preserving host diagnostics or local validation errors.
 
 ### round_number
 
@@ -153,6 +547,62 @@ Borrow self's initialised wrapper, or `None` in draft; errors if SDK initialisat
 ```rust
 pub fn shared_memory() -> &'static SharedMemory
 ```
+
+### SharedMemory
+
+```rust
+pub struct SharedMemory { /* private fields */ }
+```
+
+Bounds-checked team shared memory with capacity cached by `cambc::init`. Byte values are always read from or written to the host.
+
+### Symmetry
+
+```rust
+pub enum Symmetry { Horizontal = 0,Vertical = 1,Rotational180 = 2 }
+```
+
+Checked engine values. Implements TryFrom<i32> and Display; ALL lists the recognised values.
+
+### Team
+
+```rust
+pub enum Team { Ally, Enemy, }
+```
+
+A team relative to the current guest perspective, not an absolute engine ID.
+
+### Teleport
+
+```rust
+pub struct Teleport { /* private fields */ }
+```
+
+An owning visible teleport reservation, including the observer's own channel. The caster type is internal metadata used by the accessor and hypothetical vision query.
+
+### Unit
+
+```rust
+pub struct Unit { /* private fields */ }
+```
+
+Shared live functionality for champion and camp views.
+
+### Vec2
+
+```rust
+pub struct Vec2 { pub x: i32, pub y: i32, }
+```
+
+Integer map coordinates or a displacement; arithmetic does not clamp to the map.
+
+### Ward
+
+```rust
+pub struct Ward { /* private fields */ }
+```
+
+An immutable snapshot of a visible ordinary ward.
 
 <a id="cambc-ability"></a>
 
@@ -381,6 +831,90 @@ pub fn valid_tiles(&self) -> Result<Bitboard>
 ```
 
 Build a fresh Chebyshev targeting-range mask around the live owner. Unused/unavailable slots and attack resets return errors; this is not a legality mask.
+
+<a id="cambc-ability-types"></a>
+
+## cambc::ability_types
+
+### AbilityInfo
+
+```rust
+pub use cambc::AbilityInfo;
+```
+
+Owned, checked ability metadata; an unused slot is represented by `None`.
+
+### AbilityMetadata
+
+```rust
+pub use cambc::AbilityMetadata;
+```
+
+Object-safe cached immutable metadata. Range is an error for attack resets.
+
+### AbilityProperties
+
+```rust
+pub use cambc::AbilityProperties;
+```
+
+Immutable cooldown, targeting and attribute metadata for one ability.
+
+### AoeDamage
+
+```rust
+pub use cambc::AbilityAoeDamage as AoeDamage;
+```
+
+Metadata for area damage, including radius and effect duration.
+
+### AttackReset
+
+```rust
+pub use cambc::AbilityAttackReset as AttackReset;
+```
+
+Metadata for resetting or enhancing the next attack; has no range.
+
+### Cc
+
+```rust
+pub use cambc::AbilityCc as Cc;
+```
+
+Metadata for crowd control, including range and duration.
+
+### Damage
+
+```rust
+pub use cambc::AbilityDamage as Damage;
+```
+
+Metadata for direct damage, including range and its engine modifier.
+
+### Dash
+
+```rust
+pub use cambc::AbilityDash as Dash;
+```
+
+Metadata for a movement ability and its range.
+
+### Heal
+
+```rust
+pub use cambc::AbilityHeal as Heal;
+```
+
+Metadata for healing, including range and its engine modifier.
+
+### Shield
+
+```rust
+pub use cambc::AbilityShield as Shield;
+```
+
+Metadata for shielding, including range, modifier and duration.
 
 <a id="cambc-abilityinfo"></a>
 
@@ -764,7 +1298,7 @@ pub fn linear_buffer_size(&self) -> usize
 pub fn new() -> Result<Self>
 ```
 
-Allocate an empty aligned owning mask from a freshly queried, validated layout. No global initialisation or cached layout is required.
+Allocate an empty aligned owning mask from the cached, validated layout. No global initialisation is required; the first call queries and caches the layout.
 
 ### positions
 
@@ -1262,6 +1796,38 @@ pub fn camp_group(&self) -> Result<CampGroup>
 
 Query this camp's group from the host; requires successful SDK initialisation and gameplay perspective.
 
+### is_alive
+
+```rust
+pub fn is_alive(&self) -> Result<bool>
+```
+
+Query whether this camp is living (awake or asleep); uses the same visibility checks as `state()`.
+
+### is_asleep
+
+```rust
+pub fn is_asleep(&self) -> Result<bool>
+```
+
+Query whether this camp is living but dormant; uses the same visibility checks as `state()`.
+
+### is_awake
+
+```rust
+pub fn is_awake(&self) -> Result<bool>
+```
+
+Query whether this camp is awake; uses the same visibility checks as `state()`.
+
+### is_dead
+
+```rust
+pub fn is_dead(&self) -> Result<bool>
+```
+
+Query whether this camp is dead; uses the same visibility checks as `state()`.
+
 ### is_elk
 
 ```rust
@@ -1303,6 +1869,14 @@ pub fn kind(&self) -> CampType
 ```rust
 pub fn spawn_position(&self) -> Vec2
 ```
+
+### state
+
+```rust
+pub fn state(&self) -> Result<CampState>
+```
+
+Query `CampState::Dead`, `Alive` (awake), or `Asleep` (living but dormant). The current tile, or last occupied tile when dead, must be in vision; hidden camps return `ApiNotInVision`. This is separate from the camp-group state.
 
 <a id="cambc-campgroup"></a>
 
@@ -1363,6 +1937,42 @@ pub fn state(&self) -> Result<CampGroupState>
 ```
 
 Query group state only when its spawn mask intersects current vision. Hidden/unknown groups return `ApiNotInVision`; invalid runtime tags remain errors.
+
+<a id="cambc-campstate"></a>
+
+## cambc::CampState
+
+### is_alive
+
+```rust
+pub const fn is_alive(self) -> bool
+```
+
+Check whether the captured state is living, including asleep camps.
+
+### is_asleep
+
+```rust
+pub const fn is_asleep(self) -> bool
+```
+
+Check whether the captured state is living but dormant.
+
+### is_awake
+
+```rust
+pub const fn is_awake(self) -> bool
+```
+
+Check whether the captured state is awake (the `Alive` enum value).
+
+### is_dead
+
+```rust
+pub const fn is_dead(self) -> bool
+```
+
+Check whether the captured state is dead.
 
 <a id="cambc-champion"></a>
 
@@ -2240,7 +2850,7 @@ pub fn linear_buffer_size(&self) -> usize
 pub fn new() -> Result<Self>
 ```
 
-Allocate aligned owning distance storage from a freshly queried, validated layout. No global initialisation or cached layout is required; compute or set values before use.
+Allocate aligned owning distance storage from the cached, validated layout. No global initialisation is required; compute or set values before use.
 
 ### next_move_from
 
@@ -2539,6 +3149,22 @@ pub fn camp_groups() -> Result<Vec<CampGroup>>
 ```
 
 Query engine groups on every call, including merged symmetry-seam clusters; also available in draft.
+
+### CampGroup
+
+```rust
+pub use cambc::CampGroup;
+```
+
+Camp membership and rewards queried from the host; live state is queried separately.
+
+### CampGroupState
+
+```rust
+pub use cambc::CampGroupState;
+```
+
+Live visible camp-group state; respawn countdown is present only while respawning.
 
 ### height
 

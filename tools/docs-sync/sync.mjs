@@ -49,7 +49,7 @@ if (!entry) throw new Error('Could not find the service entry bundle in /game/do
 const entrySrc = await get(`/service/assets/${entry}`);
 writeFileSync(join(work, entry), entrySrc);
 const chunkName = (prefix) => {
-  const m = entrySrc.match(new RegExp(`assets/(${prefix}-[\\w-]{8}\\.js)`));
+  const m = entrySrc.match(new RegExp(`assets/(${prefix}-[\\w-]{8}(?:-\\w+)?\\.js)`));
   if (!m) throw new Error(`Could not find the ${prefix} chunk`);
   return m[1];
 };
@@ -74,13 +74,13 @@ const patchesMod = loadModule(join(work, chunks.patches));
 
 const groups = docs.get('xe');                 // sidebar groups: [{title, ids}]
 const baseArticles = docs.get('ye');           // all articles, guides evaluated for C++
-const visualText = docs.get('Ce');             // Markdown descriptions of rule diagrams
-const apiEntries = docs.get('me');             // {lang: [{group,name,signature,description,example}]}
+const visualText = docs.get('we');             // Markdown descriptions of rule diagrams
+const apiEntries = docs.get('B');              // {lang: [{group,name,signature,description,example}]}
 const langLabel = docs.get('L');               // {cpp: 'C++', ...}
 const champions = grid.get('_');               // champion designs
 const championArt = grid.get('Y');             // id -> {image, thumb, banner, ...}
-const rulesExport = docs.get('Ae');            // the site's own "GameRules.md" generator
-const apiExport = docs.get('je');              // the site's own "BotAPI*.md" generator
+const rulesExport = docs.get('je');            // the site's own "GameRules.md" generator
+const apiExport = docs.get('Me');              // the site's own "BotAPI*.md" generator
 
 const articleOf = new Map(baseArticles.map(a => [a.id, a]));
 const ruleIds = groups.find(g => g.title === 'Game rules').ids;
@@ -214,7 +214,7 @@ function componentText(mod, fnName, seen = new Set()) {
   return [...new Set(out)];
 }
 const visualComponents = (() => {
-  const m = docs.src.match(/function wn\(\{name:e\}\)\{let t=(\{[^}]+\})\[e\]/);
+  const m = docs.src.match(/function [\w$]+\(\{name:e\}\)\{let t=(\{[^}]+\})\[e\]/);
   if (!m) return {};
   return Object.fromEntries([...m[1].matchAll(/"?([\w-]+)"?:([\w$]+)/g)].map(x => [x[1], x[2]]));
 })();

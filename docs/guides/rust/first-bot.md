@@ -154,7 +154,7 @@ Upload `submissions/my-bot.zip` on the platform's Submissions page. Bundle uses 
 
 Follow compilation status on the Submissions page, then open completed matches and replays from the platform.
 
-- [Bot API reference](../../api/rust.md) — Public Rust SDK functions and methods.
+- [Bot API reference](../../api/rust.md) — Public Rust SDK functions, methods and camp-group state types.
 - [Shared memory](../../handbook/12-shared-memory.md) — Your team’s two scratchpads: 1,024 bytes saved in the draft, and 8 bytes shared all match.
 
 ---

@@ -10,6 +10,48 @@ open Cambc
 
 ## Cambc
 
+### Cambc_error
+
+```ocaml
+exception Cambc_error of Error_code.t * string
+```
+
+Raised by every failing call.
+
+Public SDK type declaration.
+
+```ocaml
+exception Cambc_error of Error_code.t * string
+```
+
+### camp
+
+```ocaml
+type camp
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type camp
+```
+
+### champion
+
+```ocaml
+type champion
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type champion
+```
+
 ### champions
 
 ```ocaml
@@ -36,6 +78,23 @@ Use this value in your bot's draft or turn logic.
 
 ```ocaml
 let result = constants ()
+```
+
+### debug_block
+
+```ocaml
+val debug_block : (unit -> unit) -> unit
+```
+
+`debug_block f` runs `f` without spending fuel when the bot is built in debug mode (`cambc run`, the default); skipped entirely in release mode (`--release`, and always on the platform). The free budget per block is 1000 turns, beyond which the rest is charged; ending the turn inside closes the free window. Usage: `debug_block (fun () -> expensive_debug_operation ())`. @param f Runs in debug mode only; never called in release mode.
+
+Use this value in your bot's draft or turn logic.
+
+Inputs:
+- value1: (unit -> unit) (types from Cambc)
+
+```ocaml
+let result = debug_block value1
 ```
 
 ### end_turn
@@ -111,6 +170,34 @@ Use this value in your bot's draft or turn logic.
 
 ```ocaml
 let is_draft = is_draft ()
+```
+
+### Missing_identity
+
+```ocaml
+exception Missing_identity
+```
+
+A champion design from `Champion.designs` used where a live champion is needed; Rust `Error::MissingIdentity`.
+
+Public SDK type declaration.
+
+```ocaml
+exception Missing_identity
+```
+
+### No_range
+
+```ocaml
+exception No_range
+```
+
+An ability without a targeting range (attack reset); Rust `Error::NoRange`.
+
+Public SDK type declaration.
+
+```ocaml
+exception No_range
 ```
 
 ### resign
@@ -322,6 +409,20 @@ Inputs:
 
 ```ocaml
 let result = Ability.heal_amount value1
+```
+
+### info
+
+```ocaml
+type info = | Attack_reset of { properties : properties; enhanced_attack : bool } | Damage of { properties : properties; range : float; modifier : float } | Aoe_damage of { properties : properties; range : float; modifier : float; radius : float; duration : int; } | Cc of { properties : properties; range : float; modifier : float; duration : int } | Heal of { properties : properties; range : float; modifier : float } | Dash of { properties : properties; range : float } | Shield of { properties : properties; range : float; modifier : float; duration : int }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type info = | Attack_reset of { properties : properties; enhanced_attack : bool } | Damage of { properties : properties; range : float; modifier : float } | Aoe_damage of { properties : properties; range : float; modifier : float; radius : float; duration : int; } | Cc of { properties : properties; range : float; modifier : float; duration : int } | Heal of { properties : properties; range : float; modifier : float } | Dash of { properties : properties; range : float } | Shield of { properties : properties; range : float; modifier : float; duration : int }
 ```
 
 ### info
@@ -550,6 +651,20 @@ let result = Ability.mask_into value1 value2
 ### properties
 
 ```ocaml
+type properties = { max_cooldown : int; valid_targets : Ability_target.t; exclusive_with_movement : bool; }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type properties = { max_cooldown : int; valid_targets : Ability_target.t; exclusive_with_movement : bool; }
+```
+
+### properties
+
+```ocaml
 val properties : info -> properties
 ```
 
@@ -615,6 +730,20 @@ Inputs:
 let result = Ability.slot value1
 ```
 
+### t
+
+```ocaml
+type t
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t
+```
+
 ### valid_targets
 
 ```ocaml
@@ -663,6 +792,20 @@ Evaluate an ability before choosing a spell.
 
 ```ocaml
 let result = Ability_kind.all
+```
+
+### t
+
+```ocaml
+type t = | Attack_reset | Damage | Aoe_damage | Cc | Heal | Dash | Shield
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = | Attack_reset | Damage | Aoe_damage | Cc | Heal | Dash | Shield
 ```
 
 ### to_string
@@ -746,6 +889,20 @@ val equal : t -> t -> bool
 ```
 
 `equal a b` is true for identical sets. @param a First set. @param b Second set.
+
+### flag
+
+```ocaml
+type flag = Camps | Enemies | Allies | Self | Ground
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type flag = Camps | Enemies | Allies | Self | Ground
+```
 
 ### hash
 
@@ -861,6 +1018,20 @@ Inputs:
 let result = Ability_target.subset value1 value2
 ```
 
+### t
+
+```ocaml
+type t
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t
+```
+
 ### to_list
 
 ```ocaml
@@ -930,6 +1101,20 @@ Inputs:
 
 ```ocaml
 let is_enemy = Altar_lock.is_enemy value1
+```
+
+### t
+
+```ocaml
+type t = { team : Team.t; position : Vec2.t; hits_remaining : int }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = { team : Team.t; position : Vec2.t; hits_remaining : int }
 ```
 
 ## Cambc.Bitboard
@@ -1645,6 +1830,20 @@ Inputs:
 let result = Bitboard.shift_up_into value1 value2 value3
 ```
 
+### t
+
+```ocaml
+type t
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t
+```
+
 ### toggle
 
 ```ocaml
@@ -1883,6 +2082,20 @@ Inputs:
 let result = Buff.shield_value value1
 ```
 
+### t
+
+```ocaml
+type t = | Shield of { duration : int; value : float } | Stun of { duration : int } | Enhanced_attack of { duration : int }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = | Shield of { duration : int; value : float } | Stun of { duration : int } | Enhanced_attack of { duration : int }
+```
+
 ## Cambc.Buff_kind
 
 ### all
@@ -1897,6 +2110,20 @@ Inspect a visible unit's active effects when evaluating a fight.
 
 ```ocaml
 let result = Buff_kind.all
+```
+
+### t
+
+```ocaml
+type t = | Shield | Stun | Enhanced_attack
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = | Shield | Stun | Enhanced_attack
 ```
 
 ### to_string
@@ -1980,6 +2207,20 @@ val equal : t -> t -> bool
 ```
 
 `equal a b` is true for identical sets. @param a First set. @param b Second set.
+
+### flag
+
+```ocaml
+type flag = Move | Attack | Cast | Shop | Consumable | Ward
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type flag = Move | Attack | Cast | Shop | Consumable | Ward
+```
 
 ### hash
 
@@ -2095,6 +2336,20 @@ Inputs:
 let result = Buff_restrictions.subset value1 value2
 ```
 
+### t
+
+```ocaml
+type t
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t
+```
+
 ### to_list
 
 ```ocaml
@@ -2182,6 +2437,20 @@ Inputs:
 
 ```ocaml
 let result = Camp.attack_tiles_into value1 value2
+```
+
+### base_stats
+
+```ocaml
+type base_stats = { vision_radius : float; base_move_speed : int; base_attack_range : int; base_health : float; health_growth : float; base_strength : float; strength_growth : float; base_focus : float; focus_growth : float; }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type base_stats = { vision_radius : float; base_move_speed : int; base_attack_range : int; base_health : float; health_growth : float; base_strength : float; strength_growth : float; base_focus : float; focus_growth : float; }
 ```
 
 ### base_stats
@@ -2283,6 +2552,74 @@ Inputs:
 
 ```ocaml
 let result = Camp.health value1
+```
+
+### is_alive
+
+```ocaml
+val is_alive : t -> bool
+```
+
+Query whether this camp is living (awake or asleep); uses the visibility checks of `state`.
+
+Evaluate a visible camp before choosing where to farm.
+
+Inputs:
+- value1: t (types from Cambc.Camp)
+
+```ocaml
+let is_alive = Camp.is_alive value1
+```
+
+### is_asleep
+
+```ocaml
+val is_asleep : t -> bool
+```
+
+Query whether this camp is living but dormant; uses the visibility checks of `state`.
+
+Evaluate a visible camp before choosing where to farm.
+
+Inputs:
+- value1: t (types from Cambc.Camp)
+
+```ocaml
+let is_asleep = Camp.is_asleep value1
+```
+
+### is_awake
+
+```ocaml
+val is_awake : t -> bool
+```
+
+Query whether this camp is awake; uses the same visibility checks as `state`.
+
+Evaluate a visible camp before choosing where to farm.
+
+Inputs:
+- value1: t (types from Cambc.Camp)
+
+```ocaml
+let is_awake = Camp.is_awake value1
+```
+
+### is_dead
+
+```ocaml
+val is_dead : t -> bool
+```
+
+Query whether this camp is dead; uses the same visibility checks as `state`.
+
+Evaluate a visible camp before choosing where to farm.
+
+Inputs:
+- value1: t (types from Cambc.Camp)
+
+```ocaml
+let is_dead = Camp.is_dead value1
 ```
 
 ### is_elk
@@ -2455,6 +2792,37 @@ Inputs:
 let result = Camp.spawn_position value1
 ```
 
+### state
+
+```ocaml
+type state = Camp_state.t = Dead | Alive | Asleep
+```
+
+Individual camp lifecycle. `Alive` means awake; `Asleep` means living but dormant.
+
+Public SDK type declaration.
+
+```ocaml
+type state = Camp_state.t = Dead | Alive | Asleep
+```
+
+### state
+
+```ocaml
+val state : t -> state
+```
+
+Query `Dead`, `Alive` (awake), or `Asleep`. The current tile, or last occupied tile when dead, must be in vision; hidden camps raise `Api_not_in_vision`. This is separate from the camp-group state. @param c Camp to inspect.
+
+Evaluate a visible camp before choosing where to farm.
+
+Inputs:
+- value1: t (types from Cambc.Camp)
+
+```ocaml
+let result = Camp.state value1
+```
+
 ### strength
 
 ```ocaml
@@ -2470,6 +2838,20 @@ Inputs:
 
 ```ocaml
 let result = Camp.strength value1
+```
+
+### t
+
+```ocaml
+type t = camp
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = camp
 ```
 
 ## Cambc.Camp_group
@@ -2596,18 +2978,137 @@ let result = Camp_group.spawn_tiles_into value1 value2
 ### state
 
 ```ocaml
+type state = Alive | Reward_available | Respawning of int
+```
+
+Returned by Camp_group.state group. Alive has living camps; Reward_available is defeated but unclaimed; Respawning timer carries the remaining round countdown. Zero means respawning is blocked by occupied spawn tiles. Reading state requires at least one original camp spawn tile in current vision; otherwise the SDK reports a visibility error. max_respawn_timer gives the configured full duration, not the remaining countdown.
+
+Read the remaining respawn rounds for a group with an original spawn tile in current vision. Alive and unclaimed-reward states have no countdown.
+
+Inputs:
+- group: a camp group currently in vision
+
+```ocaml
+match Camp_group.state group with
+| Camp_group.Respawning timer -> Printf.printf "%d\n" timer
+| _ -> ()
+```
+
+### state
+
+```ocaml
 val state : t -> state
 ```
 
 `state g` is the group's current state. @param g Camp group.
 
-Evaluate a visible camp before choosing where to farm.
+Read the remaining respawn rounds for a group with an original spawn tile in current vision. Alive and unclaimed-reward states have no countdown.
 
 Inputs:
-- value1: t (types from Cambc.Camp_group)
+- group: a camp group currently in vision
 
 ```ocaml
-let result = Camp_group.state value1
+match Camp_group.state group with
+| Camp_group.Respawning timer -> Printf.printf "%d\n" timer
+| _ -> ()
+```
+
+### t
+
+```ocaml
+type t
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t
+```
+
+## Cambc.Camp_state
+
+### is_alive
+
+```ocaml
+val is_alive : t -> bool
+```
+
+Check whether the captured state is living, including asleep camps.
+
+Inspect a camp's captured life and wake state.
+
+Inputs:
+- value1: t (types from Cambc.Camp_state)
+
+```ocaml
+let is_alive = Camp_state.is_alive value1
+```
+
+### is_asleep
+
+```ocaml
+val is_asleep : t -> bool
+```
+
+Check whether the captured state is living but dormant.
+
+Inspect a camp's captured life and wake state.
+
+Inputs:
+- value1: t (types from Cambc.Camp_state)
+
+```ocaml
+let is_asleep = Camp_state.is_asleep value1
+```
+
+### is_awake
+
+```ocaml
+val is_awake : t -> bool
+```
+
+Check whether the captured state is awake (the `Alive` enum value).
+
+Inspect a camp's captured life and wake state.
+
+Inputs:
+- value1: t (types from Cambc.Camp_state)
+
+```ocaml
+let is_awake = Camp_state.is_awake value1
+```
+
+### is_dead
+
+```ocaml
+val is_dead : t -> bool
+```
+
+Check whether the captured state is dead.
+
+Inspect a camp's captured life and wake state.
+
+Inputs:
+- value1: t (types from Cambc.Camp_state)
+
+```ocaml
+let is_dead = Camp_state.is_dead value1
+```
+
+### t
+
+```ocaml
+type t = Dead | Alive | Asleep
+```
+
+An individual camp's captured lifecycle; states are mutually exclusive, not flags.
+
+Public SDK type declaration.
+
+```ocaml
+type t = Dead | Alive | Asleep
 ```
 
 ## Cambc.Camp_type
@@ -2624,6 +3125,20 @@ Evaluate a visible camp before choosing where to farm.
 
 ```ocaml
 let result = Camp_type.all
+```
+
+### t
+
+```ocaml
+type t = | Wolf | Elk | Gem_cluster | Gold_cluster | Monolith
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = | Wolf | Elk | Gem_cluster | Gold_cluster | Monolith
 ```
 
 ### to_string
@@ -2721,6 +3236,20 @@ Inputs:
 
 ```ocaml
 let result = Champion.attack_tiles_into value1 value2
+```
+
+### base_stats
+
+```ocaml
+type base_stats = { vision_radius : int; base_move_speed : int; base_attack_range : int; base_health : float; health_growth : float; base_strength : float; strength_growth : float; base_focus : float; focus_growth : float; camp_damage_multiplier : float; }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type base_stats = { vision_radius : int; base_move_speed : int; base_attack_range : int; base_health : float; health_growth : float; base_strength : float; strength_growth : float; base_focus : float; focus_growth : float; camp_damage_multiplier : float; }
 ```
 
 ### base_stats
@@ -3594,6 +4123,20 @@ Inputs:
 let result = Champion.submit_gems value1 value2
 ```
 
+### t
+
+```ocaml
+type t = champion
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = champion
+```
+
 ### team
 
 ```ocaml
@@ -3786,6 +4329,20 @@ Choose your team's roster during the draft phase.
 let result = Champion_draft.all
 ```
 
+### t
+
+```ocaml
+type t = | Ryth | Vesper_vale | Vendetta | Cassi_and_issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = | Ryth | Vesper_vale | Vendetta | Cassi_and_issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi
+```
+
 ### to_string
 
 ```ocaml
@@ -3867,6 +4424,20 @@ val equal : t -> t -> bool
 ```
 
 `equal a b` is true for identical sets. @param a First set. @param b Second set.
+
+### flag
+
+```ocaml
+type flag = | Alive | Recalling | Submitting_gems | Can_move | Can_attack | Completed_turn | Recall_started | Submit_gems_started | Recall_cancelled | Submit_gems_cancelled | Can_cast | Teleporting
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type flag = | Alive | Recalling | Submitting_gems | Can_move | Can_attack | Completed_turn | Recall_started | Submit_gems_started | Recall_cancelled | Submit_gems_cancelled | Can_cast | Teleporting
+```
 
 ### hash
 
@@ -3999,6 +4570,20 @@ Inputs:
 let result = Champion_state.subset value1 value2
 ```
 
+### t
+
+```ocaml
+type t
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t
+```
+
 ### to_list
 
 ```ocaml
@@ -4050,6 +4635,20 @@ Evaluate your champion's options during its turn.
 let result = Champion_type.all
 ```
 
+### t
+
+```ocaml
+type t = | Ryth | Vesper_vale | Vendetta | Cassi | Issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = | Ryth | Vesper_vale | Vendetta | Cassi | Issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi
+```
+
 ### to_string
 
 ```ocaml
@@ -4072,6 +4671,20 @@ Use this value in your bot's draft or turn logic.
 
 ```ocaml
 let result = Constants.get ()
+```
+
+### t
+
+```ocaml
+type t = { capture_time : int; camp_sleep_time : int; respawn_time : int; recall_time : int; submit_gem_duration_multiplier : float; submit_gem_base_duration : int; submit_gem_minimum_duration : int; submit_gems_range : int; max_rounds : int; winning_gems : int; kill_gold : int; assist_gold : int; passive_gold : int; spawn_healing : float; active_wards : int; shared_memory_bytes : int; draft_memory_bytes : int; tile_reveal_rounds : int; ward_cooldown : int; ward_lifetime : int; ward_vision_radius : float; ward_placement_radius : float; altar_lock_hits : int; tp_crystal_time : int; }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = { capture_time : int; camp_sleep_time : int; respawn_time : int; recall_time : int; submit_gem_duration_multiplier : float; submit_gem_base_duration : int; submit_gem_minimum_duration : int; submit_gems_range : int; max_rounds : int; winning_gems : int; kill_gold : int; assist_gold : int; passive_gold : int; spawn_healing : float; active_wards : int; shared_memory_bytes : int; draft_memory_bytes : int; tile_reveal_rounds : int; ward_cooldown : int; ward_lifetime : int; ward_vision_radius : float; ward_placement_radius : float; altar_lock_hits : int; tp_crystal_time : int; }
 ```
 
 ## Cambc.Constants.Passive_abilities
@@ -4199,6 +4812,20 @@ let result = Consumable.cost value1
 ### info
 
 ```ocaml
+type info = { cost : int; carry_limit : int }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type info = { cost : int; carry_limit : int }
+```
+
+### info
+
+```ocaml
 val info : t -> info
 ```
 
@@ -4211,6 +4838,20 @@ Inputs:
 
 ```ocaml
 let result = Consumable.info value1
+```
+
+### t
+
+```ocaml
+type t = Tp_crystal | Altar_lock
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = Tp_crystal | Altar_lock
 ```
 
 ### to_string
@@ -4276,6 +4917,20 @@ Inputs:
 
 ```ocaml
 let result = Consumable_counts.iter value1 value2
+```
+
+### t
+
+```ocaml
+type t
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t
 ```
 
 ### to_list
@@ -4654,6 +5309,20 @@ Inputs:
 let result = Distance_field.set value1 value2 value3
 ```
 
+### t
+
+```ocaml
+type t
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t
+```
+
 ### unreachable
 
 ```ocaml
@@ -4798,6 +5467,20 @@ Inspect a caught SDK error when diagnosing a rejected action.
 
 ```ocaml
 let result = Error_code.all
+```
+
+### t
+
+```ocaml
+type t = | Success | Invalid_handle | Out_of_memory | File_not_found | Null_pointer | Invalid_argument | Map_parse_error | Invalid_map_file | Invalid_map_version | Replay_parse_error | Invalid_replay_file | Invalid_replay_version | Invalid_draft | Draft_not_drafting | Draft_duplicate_champion | Draft_invalid_round | Draft_unavailable | Already_initialized | Invalid_action | Invalid_action_memory_bad_range | Invalid_action_memory_draft_frozen | Invalid_action_move_cant_move | Invalid_action_move_bad_destination | Invalid_action_spell_cast_invalid_source | Invalid_action_spell_cast_invalid_slot | Invalid_action_spell_cast_no_ability | Invalid_action_spell_cast_cant_cast | Invalid_action_spell_cast_already_cast | Invalid_action_spell_cast_on_cooldown | Invalid_action_spell_cast_no_charges | Invalid_action_spell_cast_bad_target | Invalid_action_spell_cast_out_of_range | Invalid_action_spell_cast_bad_destination | Invalid_action_cant_act | Invalid_action_is_recalling | Invalid_action_is_submitting_gems | Invalid_action_move_already_moved | Invalid_action_move_out_of_range | Invalid_action_move_unreachable | Invalid_action_attack_invalid_source | Invalid_action_attack_cant_attack | Invalid_action_attack_already_attacked | Invalid_action_attack_bad_target | Invalid_action_attack_out_of_range | Invalid_action_recall_cant_channel | Invalid_action_submit_gems_cant_channel | Invalid_action_submit_gems_no_gems | Invalid_action_submit_gems_bad_altar | Invalid_action_submit_gems_out_of_range | Invalid_action_buy_item_not_on_spawn | Invalid_action_buy_item_invalid_item | Invalid_action_buy_item_invalid_count | Invalid_action_buy_item_not_enough_gold | Invalid_action_buy_item_inventory_full | Invalid_action_buy_item_stats_overflow | Invalid_action_buy_consumable_not_on_spawn | Invalid_action_buy_consumable_invalid_type | Invalid_action_buy_consumable_invalid_count | Invalid_action_buy_consumable_inventory_full | Invalid_action_buy_consumable_not_enough_gold | Invalid_action_use_consumable_invalid_type | Invalid_action_use_consumable_not_owned | Invalid_action_place_ward_no_charges | Invalid_action_place_ward_cant_place | Invalid_action_place_ward_bad_destination | Invalid_action_place_ward_out_of_range | Map_set_team_aspawn_area_bad_position | Map_add_bush_bad_position | Map_remove_bush_bad_position | Map_add_wall_bad_position | Map_remove_wall_bad_position | Map_add_hole_bad_position | Map_remove_hole_bad_position | Map_add_altar_bad_position | Map_remove_altar_bad_position | Map_get_bush_bad_position | Map_get_wall_bad_position | Map_get_hole_bad_position | Map_get_altar_bad_position | Map_get_camp_handle_at_bad_position | Map_add_camp_bad_position | Map_set_camp_bad_position | Invalid_action_champion_teleport_bad_destination | Invalid_action_respawn_group_blocked_spawn | Invalid_action_camp_teleport_bad_destination | Timeline_bad_seek_position | Timeline_bad_seek_substep | Api_no_map | Managed_resources_bad_position | Managed_resources_bad_radius | Managed_resources_aliasing | Managed_resources_metadata_mismatch | Managed_resources_opaque_origin | Api_invalid_team | Api_invalid_perspective | Api_not_initialized | Api_bad_position | Api_not_in_vision | Api_not_found | Api_invalid_camp_group | Api_invalid_camp_info | Api_invalid_camp | Api_invalid_champion | Api_invalid_ward | Api_invalid_ability | Api_not_teammate | Api_camp_group_not_waiting_to_respawn | Api_champion_alive | Api_invalid_champion_type | Api_invalid_camp_type | Api_value_out_of_range | Api_buffer_too_small | Api_not_owner | Invalid_action_recall_already_used | Invalid_action_submit_gems_already_used | Invalid_action_cancel_channel_not_channeling | Invalid_action_cancel_channel_already_used | Invalid_action_place_ward_ally_ward_present | Invalid_action_altar_lock_bad_altar | Invalid_action_altar_lock_out_of_range | Invalid_action_altar_lock_already_locked | Invalid_action_is_teleporting | Invalid_action_cancel_channel_not_cancellable | Invalid_action_submit_gems_altar_locked | Invalid_action_spell_cast_already_moved | Invalid_action_move_exclusive_spell_cast | Invalid_action_sell_not_tavi | Invalid_action_sell_invalid_item | Invalid_action_sell_not_owned | Invalid_action_sell_already_sold | Invalid_action_sell_gold_overflow | Invalid_action_sell_not_on_spawn | Unknown of int
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = | Success | Invalid_handle | Out_of_memory | File_not_found | Null_pointer | Invalid_argument | Map_parse_error | Invalid_map_file | Invalid_map_version | Replay_parse_error | Invalid_replay_file | Invalid_replay_version | Invalid_draft | Draft_not_drafting | Draft_duplicate_champion | Draft_invalid_round | Draft_unavailable | Already_initialized | Invalid_action | Invalid_action_memory_bad_range | Invalid_action_memory_draft_frozen | Invalid_action_move_cant_move | Invalid_action_move_bad_destination | Invalid_action_spell_cast_invalid_source | Invalid_action_spell_cast_invalid_slot | Invalid_action_spell_cast_no_ability | Invalid_action_spell_cast_cant_cast | Invalid_action_spell_cast_already_cast | Invalid_action_spell_cast_on_cooldown | Invalid_action_spell_cast_no_charges | Invalid_action_spell_cast_bad_target | Invalid_action_spell_cast_out_of_range | Invalid_action_spell_cast_bad_destination | Invalid_action_cant_act | Invalid_action_is_recalling | Invalid_action_is_submitting_gems | Invalid_action_move_already_moved | Invalid_action_move_out_of_range | Invalid_action_move_unreachable | Invalid_action_attack_invalid_source | Invalid_action_attack_cant_attack | Invalid_action_attack_already_attacked | Invalid_action_attack_bad_target | Invalid_action_attack_out_of_range | Invalid_action_recall_cant_channel | Invalid_action_submit_gems_cant_channel | Invalid_action_submit_gems_no_gems | Invalid_action_submit_gems_bad_altar | Invalid_action_submit_gems_out_of_range | Invalid_action_buy_item_not_on_spawn | Invalid_action_buy_item_invalid_item | Invalid_action_buy_item_invalid_count | Invalid_action_buy_item_not_enough_gold | Invalid_action_buy_item_inventory_full | Invalid_action_buy_item_stats_overflow | Invalid_action_buy_consumable_not_on_spawn | Invalid_action_buy_consumable_invalid_type | Invalid_action_buy_consumable_invalid_count | Invalid_action_buy_consumable_inventory_full | Invalid_action_buy_consumable_not_enough_gold | Invalid_action_use_consumable_invalid_type | Invalid_action_use_consumable_not_owned | Invalid_action_place_ward_no_charges | Invalid_action_place_ward_cant_place | Invalid_action_place_ward_bad_destination | Invalid_action_place_ward_out_of_range | Map_set_team_aspawn_area_bad_position | Map_add_bush_bad_position | Map_remove_bush_bad_position | Map_add_wall_bad_position | Map_remove_wall_bad_position | Map_add_hole_bad_position | Map_remove_hole_bad_position | Map_add_altar_bad_position | Map_remove_altar_bad_position | Map_get_bush_bad_position | Map_get_wall_bad_position | Map_get_hole_bad_position | Map_get_altar_bad_position | Map_get_camp_handle_at_bad_position | Map_add_camp_bad_position | Map_set_camp_bad_position | Invalid_action_champion_teleport_bad_destination | Invalid_action_respawn_group_blocked_spawn | Invalid_action_camp_teleport_bad_destination | Timeline_bad_seek_position | Timeline_bad_seek_substep | Api_no_map | Managed_resources_bad_position | Managed_resources_bad_radius | Managed_resources_aliasing | Managed_resources_metadata_mismatch | Managed_resources_opaque_origin | Api_invalid_team | Api_invalid_perspective | Api_not_initialized | Api_bad_position | Api_not_in_vision | Api_not_found | Api_invalid_camp_group | Api_invalid_camp_info | Api_invalid_camp | Api_invalid_champion | Api_invalid_ward | Api_invalid_ability | Api_not_teammate | Api_camp_group_not_waiting_to_respawn | Api_champion_alive | Api_invalid_champion_type | Api_invalid_camp_type | Api_value_out_of_range | Api_buffer_too_small | Api_not_owner | Invalid_action_recall_already_used | Invalid_action_submit_gems_already_used | Invalid_action_cancel_channel_not_channeling | Invalid_action_cancel_channel_already_used | Invalid_action_place_ward_ally_ward_present | Invalid_action_altar_lock_bad_altar | Invalid_action_altar_lock_out_of_range | Invalid_action_altar_lock_already_locked | Invalid_action_is_teleporting | Invalid_action_cancel_channel_not_cancellable | Invalid_action_submit_gems_altar_locked | Invalid_action_spell_cast_already_moved | Invalid_action_move_exclusive_spell_cast | Invalid_action_sell_not_tavi | Invalid_action_sell_invalid_item | Invalid_action_sell_not_owned | Invalid_action_sell_already_sold | Invalid_action_sell_gold_overflow | Invalid_action_sell_not_on_spawn | Unknown of int
 ```
 
 ### to_string
@@ -5211,6 +5894,20 @@ Inputs:
 let result = Game_unit.strength value1
 ```
 
+### t
+
+```ocaml
+type t = [ `Champion of champion | `Camp of camp ]
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = [ `Champion of champion | `Camp of camp ]
+```
+
 ## Cambc.Item
 
 ### all
@@ -5225,6 +5922,20 @@ Plan a purchase or use an owned consumable.
 
 ```ocaml
 let result = Item.all
+```
+
+### t
+
+```ocaml
+type t = | Monster_shard_of_strength | Monster_emblem_of_strength | Monster_shard_of_focus | Monster_emblem_of_focus | Monster_shard_of_health | Monster_emblem_of_health | Power_shard_of_strength | Power_emblem_of_strength | Power_shard_of_focus | Power_emblem_of_focus | Power_shard_of_health | Power_emblem_of_health | Durability_shard_of_strength | Durability_emblem_of_strength | Durability_shard_of_focus | Durability_emblem_of_focus | Durability_shard_of_health | Durability_emblem_of_health | Treasure_shard_of_strength | Treasure_emblem_of_strength | Treasure_shard_of_focus | Treasure_emblem_of_focus | Treasure_shard_of_health | Treasure_emblem_of_health | Jungle_shard_of_strength | Jungle_emblem_of_strength | Jungle_shard_of_focus | Jungle_emblem_of_focus | Jungle_shard_of_health | Jungle_emblem_of_health | Home_shard_of_strength | Home_emblem_of_strength | Home_shard_of_focus | Home_emblem_of_focus | Home_shard_of_health | Home_emblem_of_health | Bruiser_shard_of_strength | Bruiser_emblem_of_strength | Bruiser_shard_of_focus | Bruiser_emblem_of_focus | Bruiser_shard_of_health | Bruiser_emblem_of_health
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = | Monster_shard_of_strength | Monster_emblem_of_strength | Monster_shard_of_focus | Monster_emblem_of_focus | Monster_shard_of_health | Monster_emblem_of_health | Power_shard_of_strength | Power_emblem_of_strength | Power_shard_of_focus | Power_emblem_of_focus | Power_shard_of_health | Power_emblem_of_health | Durability_shard_of_strength | Durability_emblem_of_strength | Durability_shard_of_focus | Durability_emblem_of_focus | Durability_shard_of_health | Durability_emblem_of_health | Treasure_shard_of_strength | Treasure_emblem_of_strength | Treasure_shard_of_focus | Treasure_emblem_of_focus | Treasure_shard_of_health | Treasure_emblem_of_health | Jungle_shard_of_strength | Jungle_emblem_of_strength | Jungle_shard_of_focus | Jungle_emblem_of_focus | Jungle_shard_of_health | Jungle_emblem_of_health | Home_shard_of_strength | Home_emblem_of_strength | Home_shard_of_focus | Home_emblem_of_focus | Home_shard_of_health | Home_emblem_of_health | Bruiser_shard_of_strength | Bruiser_emblem_of_strength | Bruiser_shard_of_focus | Bruiser_emblem_of_focus | Bruiser_shard_of_health | Bruiser_emblem_of_health
 ```
 
 ### to_string
@@ -5290,6 +6001,20 @@ Inputs:
 
 ```ocaml
 let result = Item_counts.iter value1 value2
+```
+
+### t
+
+```ocaml
+type t
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t
 ```
 
 ### to_list
@@ -5481,7 +6206,35 @@ Inputs:
 let result = Item_info.strength_points value1
 ```
 
+### t
+
+```ocaml
+type t = { cost : int; combine_count : int; result : Item.t option; health_points : int; strength_points : int; focus_points : int; passive : Item_passive.t option; passive_magnitude : float; purchasable : bool; }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = { cost : int; combine_count : int; result : Item.t option; health_points : int; strength_points : int; focus_points : int; passive : Item_passive.t option; passive_magnitude : float; purchasable : bool; }
+```
+
 ## Cambc.Item_passive
+
+### t
+
+```ocaml
+type t = Monster | Durability | Treasure | Jungle | Home
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = Monster | Durability | Treasure | Jungle | Home
+```
 
 ### to_string
 
@@ -5505,6 +6258,20 @@ Use this value in your bot's draft or turn logic.
 
 ```ocaml
 let result = Passive.all
+```
+
+### t
+
+```ocaml
+type t = | None | Bonus_gold | Remote_shop | Gem_focus | Splash_attack | Health_strength | Reset_cooldowns_on_kill | Retaliation | Stun_immunity
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = | None | Bonus_gold | Remote_shop | Gem_focus | Splash_attack | Health_strength | Reset_cooldowns_on_kill | Retaliation | Stun_immunity
 ```
 
 ### to_string
@@ -5532,6 +6299,20 @@ Inputs:
 
 ```ocaml
 let result = Shared_memory.get value1
+```
+
+### kind
+
+```ocaml
+type _ kind = | U8 : int kind | I8 : int kind | U16 : int kind | I16 : int kind | U32 : int kind | I32 : int kind | I64 : int64 kind | F32 : float kind | F64 : float kind
+```
+
+Element types for typed reads/writes (little-endian, like the Rust/C++ SDKs).
+
+Public SDK type declaration.
+
+```ocaml
+type _ kind = | U8 : int kind | I8 : int kind | U16 : int kind | I16 : int kind | U32 : int kind | I32 : int kind | I64 : int64 kind | F32 : float kind | F64 : float kind
 ```
 
 ### read
@@ -5663,6 +6444,20 @@ Use this value in your bot's draft or turn logic.
 let result = Symmetry.all
 ```
 
+### t
+
+```ocaml
+type t = | Horizontal | Vertical | Rotational180
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = | Horizontal | Vertical | Rotational180
+```
+
 ### to_string
 
 ```ocaml
@@ -5696,6 +6491,20 @@ Inputs:
 
 ```ocaml
 let result = Team.opponent value1
+```
+
+### t
+
+```ocaml
+type t = Ally | Enemy
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = Ally | Enemy
 ```
 
 ### to_string
@@ -5740,6 +6549,20 @@ Inputs:
 
 ```ocaml
 let is_enemy = Teleport.is_enemy value1
+```
+
+### t
+
+```ocaml
+type t = { champion : champion; team : Team.t; position : Vec2.t; remaining_time : int; }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = { champion : champion; team : Team.t; position : Vec2.t; remaining_time : int; }
 ```
 
 ### visible_tiles
@@ -6104,6 +6927,20 @@ val sub : t -> t -> t
 ```
 
 `sub a b` is the component-wise difference `a - b`. @param a First vector. @param b Second vector.
+
+### t
+
+```ocaml
+type t = { x : int; y : int }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = { x : int; y : int }
+```
 
 ### to_string
 
@@ -6690,6 +7527,20 @@ Inputs:
 
 ```ocaml
 let is_enemy = Ward.is_enemy value1
+```
+
+### t
+
+```ocaml
+type t = { position : Vec2.t; team : Team.t; remaining_time : int option }
+```
+
+
+
+Public SDK type declaration.
+
+```ocaml
+type t = { position : Vec2.t; team : Team.t; remaining_time : int option }
 ```
 
 ### visible_tiles

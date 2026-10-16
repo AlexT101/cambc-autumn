@@ -86,7 +86,7 @@ cambc run my-bot starter-rust -o replays --view
 The CLI builds changed source and opens the replay after the match. A map must be available in `maps/`; refresh the platform's published pool with `cambc maps pull`. Use this workflow instead of the editor's generic Run or Debug button: the bot needs the CAMBC match runner.
 
 - [Getting Started](./first-bot.md) — Create, test and submit a Rust bot with the CAMBC CLI.
-- [Bot API reference](../../api/rust.md) — Public Rust SDK functions and methods.
+- [Bot API reference](../../api/rust.md) — Public Rust SDK functions, methods and camp-group state types.
 
 ---
 

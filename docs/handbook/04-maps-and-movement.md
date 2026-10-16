@@ -12,6 +12,7 @@ The map is a grid, between 30*30 to 100*100, built from 5 different tiles as sho
 | ![Holes](../images/hole.png) Holes | Can be seen over, cannot be moved onto but can be dashed over. |
 | ![Bush](../images/bush.png) Bush | Blocks line of sight, can be moved onto. If you are within a bush, you can see out of the bush. |
 | ![Altar](../images/altar.png) Altar | Cannot be moved onto, used to submit gems. |
+| ![Spawn Tile](../images/spawn.png) Spawn Tile | Cannot be moved onto by opponents. Your team's champions spawns onto these tiles. While standing on these tiles you are healed. |
 
 The map also is populated with camps/monsters as outlined in the next section.
 
