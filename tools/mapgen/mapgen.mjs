@@ -52,8 +52,8 @@ const CENTRAL_PLAN = [
   ['shared-gems', 2], [{ mutate: 'stampede', ops: ['camps*0.8', 'holes*0', 'picks=5'] }, 1],
 ];
 const SUITES = {
-  gen: { dir: 'maps/gen', plan: PLAN, seed: 1018 },
-  central: { dir: 'maps/gen-central', plan: CENTRAL_PLAN, seed: 1019, zone: 'mid' },
+  gen: { dir: 'maps/gen', plan: PLAN, seed: 3107 },
+  central: { dir: 'maps/gen-central', plan: CENTRAL_PLAN, seed: 3108, zone: 'mid' },
 };
 const FEATURES = ['area', 'reach_frac', 'walls', 'holes', 'bushes', 'spawn_dist', 'detour', 'choke', 'openness', 'altars', 'groups_side', 'gems_side', 'camp_ratio', 'picks'];
 
