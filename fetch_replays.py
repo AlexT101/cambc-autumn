@@ -11,7 +11,9 @@ import io
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
+import tempfile
 from time import sleep
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -90,10 +92,29 @@ def group_dir(out, g):
     return out / f"{stamp}-{slug(a['teamName'], a['teamId'])}-vs-{slug(b['teamName'], b['teamId'])}-{g['id'][:8]}"
 
 
-def fetch_bundle(url, attempts=12):
+def cli_bundle(match_id):
+    """Since 2026-10-17 bundles need a signed-in session: `cambc matches download` uses `cambc login`'s."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "bundle.zip"
+        for attempt in range(12):
+            sleep(3)  # the CLI endpoint rate-limits bursts
+            r = subprocess.run(["cambc", "matches", "download", match_id, "-o", str(out)], capture_output=True, text=True, timeout=300)
+            if r.returncode == 0:
+                return out.read_bytes()
+            wait = re.search(r"retry after (\d+) seconds", r.stderr + r.stdout)
+            sleep(int(wait.group(1)) + 1 if wait else 2 ** min(attempt, 5))
+        raise RuntimeError(f"cambc matches download {match_id}: {(r.stderr or r.stdout).strip()[-300:]}")
+
+
+def fetch_bundle(url, match_id, attempts=12):
     # Bundles are built on first request, which answers {"status":"pending"} until ready.
     for attempt in range(attempts):
-        data = fetch(url)
+        try:
+            data = fetch(url)
+        except HTTPError as e:
+            if e.code != 401:
+                raise
+            return cli_bundle(match_id)
         if data[:2] == b"PK" or attempt == attempts - 1:
             return data
         sleep(min(2 + attempt * 2, 15))
@@ -109,7 +130,7 @@ def download_group(out, g):
     for m in detail["matches"]:
         if m["status"] != "finished" or not m.get("replayUrl"):
             continue
-        with zipfile.ZipFile(io.BytesIO(fetch_bundle(SITE + m["replayUrl"]))) as z:
+        with zipfile.ZipFile(io.BytesIO(fetch_bundle(SITE + m["replayUrl"], m["id"]))) as z:
             for info in z.infolist():
                 stem = f"{m['position']}-{m['map']}"
                 name = f"{stem}.repl26a" if info.filename == "replay.repl26a" else f"{stem}.{Path(info.filename).name}"

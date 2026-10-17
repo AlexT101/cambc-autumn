@@ -58,7 +58,7 @@ Rows use `--bot` (default aphelios), columns default to the row drafts on `--vs-
 
 ## Competitor replays
 
-[fetch_replays.py](fetch_replays.py) downloads ladder match replays through the site's public API (no sign-in):
+[fetch_replays.py](fetch_replays.py) downloads ladder match replays: listings come from the site's public API, but since 2026-10-17 replay bundles need a signed-in session, so it falls back to `cambc matches download` (run `cambc login` first; the endpoint rate-limits, so use `--threads 1`):
 
 ```
 py fetch_replays.py --list                          # ladder: rank, rating, record, team id, name
