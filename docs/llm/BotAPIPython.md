@@ -3714,7 +3714,7 @@ subject.cancel_submit_gems()
 def champion_name(self) -> ChampionType
 ```
 
-Return the champion's type.
+Return the champion's type; readable without vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4292,7 +4292,7 @@ subject.submit_gems(altar)
 def team(self) -> Team
 ```
 
-Return the champion's team.
+Return the champion's team; readable without vision.
 
 Evaluate your champion's options during its turn.
 

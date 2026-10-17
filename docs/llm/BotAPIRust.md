@@ -4253,7 +4253,7 @@ let result = subject.cancel_submit_gems()?;
 pub fn champion_name(&self) -> Result<ChampionType>
 ```
 
-Return this champion's type; live champions require a host query.
+Return this champion's type; live champions read it without vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4733,7 +4733,7 @@ let result = subject.submit_gems(altar)?;
 pub fn team(&self) -> Result<Team>
 ```
 
-Query the champion's team relative to the guest perspective.
+Query the champion's team relative to the guest perspective; no vision required.
 
 Evaluate your champion's options during its turn.
 

@@ -2115,7 +2115,7 @@ Cancel self's gem submission; returns an error when none is active.
 pub fn champion_name(&self) -> Result<ChampionType>
 ```
 
-Return this champion's type; live champions require a host query.
+Return this champion's type; live champions read it without vision.
 
 ### consumables
 
@@ -2373,7 +2373,7 @@ Begin submitting self's carried gems to `altar`; engine validates range and chan
 pub fn team(&self) -> Result<Team>
 ```
 
-Query the champion's team relative to the guest perspective.
+Query the champion's team relative to the guest perspective; no vision required.
 
 ### visible_tiles
 

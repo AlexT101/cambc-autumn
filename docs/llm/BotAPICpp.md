@@ -4893,7 +4893,7 @@ auto result = bc::champion(type);
 champion_type champion_name() const
 ```
 
-Get the entity or inventory entry kind.
+Get the entity or inventory entry kind; live champions read it without vision.
 
 Evaluate your champion's options during its turn.
 
@@ -5447,7 +5447,7 @@ subject.submit_gems(altar);
 team team() const
 ```
 
-Get the owning team relative to the authenticated bot.
+Get the owning team relative to the authenticated bot; live champions read it without vision.
 
 Evaluate your champion's options during its turn.
 

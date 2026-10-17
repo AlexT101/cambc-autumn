@@ -2921,7 +2921,7 @@ A design-only champion: immutable properties are available, live queries require
 champion_type champion_name() const
 ```
 
-Get the entity or inventory entry kind.
+Get the entity or inventory entry kind; live champions read it without vision.
 
 ### consumables
 
@@ -3270,7 +3270,7 @@ Start submitting gems at an altar.
 team team() const
 ```
 
-Get the owning team relative to the authenticated bot.
+Get the owning team relative to the authenticated bot; live champions read it without vision.
 
 ### visible_tiles
 

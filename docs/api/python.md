@@ -1845,7 +1845,7 @@ Cancel the current tribute; requires self.
 def champion_name(self) -> ChampionType
 ```
 
-Return the champion's type.
+Return the champion's type; readable without vision.
 
 ### consumables
 
@@ -2165,7 +2165,7 @@ Start tributing carried gems at an altar; requires self. Args: altar: Altar tile
 def team(self) -> Team
 ```
 
-Return the champion's team.
+Return the champion's team; readable without vision.
 
 ### visible_tiles
 
