@@ -1,9 +1,17 @@
-# For each champion killed by enemy champions: from the first round the victim saw a (later) attacker,
-# does a guaranteed escape path exist against the exact multi-turn reach of the visible enemies?
-# Conservative for the victim: enemies move by Chebyshev distance (walls ignored), other units ignored.
+"""For each champion killed by enemy champions: from the first round the victim saw a (later) attacker,
+does a guaranteed escape path exist against the exact multi-turn reach of the visible enemies?
+Conservative for the victim: enemies move by Chebyshev distance (walls ignored), other units ignored.
+Rows go to deathaudit.pkl in the working directory.
+
+  py deathaudit.py 100000                                     # the report: ladder games of the top six and us
+  py deathaudit.py --team procless "Intercontinental Fish"
+  py deathaudit.py --src replays/batch-20261017-091937-928141 --team nemesis rival
+Selection options: gamesel.py.
+"""
 import json, gzip, os, sys, collections, pickle, statistics as st
 from concurrent.futures import ProcessPoolExecutor
-ROOT = r'C:\Users\alext\Github\cambc-autumn\replays\.analysis'
+import gamesel
+ROOT = gamesel.ROOT
 MELEE = {'Ryth', 'Vendetta', 'Marcella', 'Ren', 'Varg', 'Issac'}
 DASH = {'Vesper Vale': 1, 'Vendetta': 1, 'Ren': 1, 'Issac': 1}
 RESET = {'Ryth': 1, 'Vesper Vale': 0, 'Vendetta': 0, 'Issac': 0, 'Marcella': 0, 'Willow': 1, 'Varg': 0, 'Tavi': 0}
@@ -35,7 +43,8 @@ def reach(nm, m, cd):
     return r
 
 
-def game(d):
+def game(args):
+    d, names = args
     try:
         m = json.load(open(os.path.join(ROOT, d, 'meta.json'), encoding='utf-8'))
         ev = [json.loads(l) for l in gzip.open(os.path.join(ROOT, d, 'events.jsonl.gz'), 'rt')]
@@ -158,7 +167,7 @@ def game(d):
             if set(R['champions'][vi]['sees'][i]) & attackers:
                 first = r
                 break
-        rec = dict(team=m['teams'][team[v]]['name'], victim=name[v], bag=de.get('gems', 0) or 0, D=D, first=first, game=d)
+        rec = dict(team=names[team[v]], victim=name[v], bag=de.get('gems', 0) or 0, D=D, first=first, game=d)
         if first is None:
             rec['class'] = 'never_seen'
         else:
@@ -177,16 +186,18 @@ def game(d):
 
 
 if __name__ == '__main__':
-    idxj = json.load(open(os.path.join(ROOT, 'index.json'), encoding='utf-8'))
-    tops = ['Intercontinental Fish', 'Mite', 'Sneaky Bush Campers', 'Univardisty of Shingtonwash', 'procless', 'PTN Hyperion']
-    dirs = sorted({g['dir'] for g in idxj['games'] if g['kind'] == 'ladder' and g['ok'] and '20261016' <= g['source'].split('/')[2][:8] and any(t in g['teams'] for t in tops)})
-    dirs = dirs[:int(sys.argv[1])]
+    p = gamesel.parser(__doc__, team=gamesel.TOPS)
+    p.add_argument('n', nargs='?', type=int, help='first N games (as --limit)')
+    a = p.parse_args()
+    a.limit = a.n or a.limit
+    games = gamesel.select(a)
+    per_team = gamesel.games_per_team(games)
     rows = []
-    with ProcessPoolExecutor(16) as ex:
-        for r in ex.map(game, dirs, chunksize=4):
+    with ProcessPoolExecutor(a.threads) as ex:
+        for r in ex.map(game, games, chunksize=4):
             rows += r
     pickle.dump(rows, open('deathaudit.pkl', 'wb'))
-    for t in tops:
+    for t in a.team:
         rs = [r for r in rows if r['team'] == t]
         if not rs:
             continue
@@ -196,4 +207,4 @@ if __name__ == '__main__':
         lead = [r['D'] - r['last_escapable'] for r in esc if r.get('last_escapable')]
         print(f"{t[:22]:22s} deaths {n:5d} never_seen {c['never_seen']/n:.2f} no_escape_at_sight {c['no_escape_at_sight']/n:.2f} "
               f"escapable_at_sight {c['escapable_at_sight']/n:.2f} unknown {c['unknown']/n:.2f} | last escapable -> death median "
-              f"{st.median(lead) if lead else '-'} | bag mean {st.mean(r['bag'] for r in rs):.1f}")
+              f"{st.median(lead) if lead else '-'} | bag mean {st.mean(r['bag'] for r in rs):.1f} | games {per_team[t]} deaths/game {n / per_team[t]:.2f}")

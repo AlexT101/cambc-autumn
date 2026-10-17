@@ -1,12 +1,15 @@
-# Ward argmax under V(w) = |Vis_ward(w) ∩ B(p)|, B(p) = walkable tiles within 6 of work tile p that p cannot see.
-# Line of sight approximated by supercover-free Bresenham between tile centres (walls and foreign bush tiles opaque).
+"""Ward argmax under V(w) = |Vis_ward(w) & B(p)|, B(p) = walkable tiles within 6 of work tile p that p cannot see.
+Line of sight approximated by supercover-free Bresenham between tile centres (walls and foreign bush tiles opaque).
+Static: it uses only the maps of the selected games.
+
+  py wardargmax3.py                                           # the report: ladder maps played since 10-16
+  py wardargmax3.py --src replays/batch-20261017-091937-928141  # the maps of a local batch
+Selection options: gamesel.py.
+"""
 import json, os, collections, statistics as st
-ROOT = r'C:\Users\alext\Github\cambc-autumn\replays\.analysis'
-idxj = json.load(open(os.path.join(ROOT, 'index.json'), encoding='utf-8'))
-maps = {}
-for g in idxj['games']:
-    if g['kind'] == 'ladder' and '20261016' <= g['source'].split('/')[2][:8]:
-        maps[g['map']] = g['mapHash']
+import gamesel
+ROOT = gamesel.ROOT
+maps = gamesel.maps(gamesel.select(gamesel.parser(__doc__).parse_args()))
 
 
 def line(a, b):

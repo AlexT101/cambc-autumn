@@ -1,9 +1,16 @@
-# Chase streaks: >= 3 consecutive own turns approaching the same visible enemy that starts each turn outside
-# the chaser's one-turn basic reach (melee 2, ranged 3). Outcome: did the chaser damage it during the streak
-# or the 3 rounds after; did the target keep its distance (fled) or let it shrink (anchored)?
+"""Chase streaks: >= 3 consecutive own turns approaching the same visible enemy that starts each turn outside
+the chaser's one-turn basic reach (melee 2, ranged 3). Outcome: did the chaser damage it during the streak
+or the 3 rounds after; did the target keep its distance (fled) or let it shrink (anchored)?
+
+  py chase.py 100000                                          # the report: every ladder game since 10-16
+  py chase.py --team procless "Intercontinental Fish"         # only games with these teams
+  py chase.py --src replays/batch-20261017-091937-928141 --team nemesis rival
+Selection options: gamesel.py (--team also picks the rows printed).
+"""
 import json, gzip, os, sys, collections
 from concurrent.futures import ProcessPoolExecutor
-ROOT = r'C:\Users\alext\Github\cambc-autumn\replays\.analysis'
+import gamesel
+ROOT = gamesel.ROOT
 MELEE = {'Ryth', 'Vendetta', 'Marcella', 'Ren', 'Varg', 'Issac'}
 
 
@@ -11,14 +18,14 @@ def cheb(a, b):
     return max(abs(a[0] - b[0]), abs(a[1] - b[1]))
 
 
-def game(d):
+def game(args):
+    d, names = args
     try:
         m = json.load(open(os.path.join(ROOT, d, 'meta.json'), encoding='utf-8'))
         ev = [json.loads(l) for l in gzip.open(os.path.join(ROOT, d, 'events.jsonl.gz'), 'rt')]
         R = json.load(gzip.open(os.path.join(ROOT, d, 'rounds.json.gz')))
     except Exception:
         return []
-    idxj_teams = None
     champs = m['champions']; ids = [c['id'] for c in champs]
     name = {c['id']: c['name'] for c in champs}; team = {c['id']: c['team'] for c in champs}
     idx = {c['id']: i for i, c in enumerate(champs)}
@@ -91,7 +98,7 @@ def game(d):
                 streak = None
         if streak and streak['n'] >= 3: out.append(streak)
     res = []
-    tnames = [m['teams'][0]['name'], m['teams'][1]['name']]
+    tnames = names
     for s in out:
         hit = any(s['first'] <= r <= s['last'] + 3 for r in hits[(s['c'], s['e'])])
         fled = s['dlast'] >= s['d0']
@@ -100,16 +107,24 @@ def game(d):
 
 
 if __name__ == '__main__':
-    idxj = json.load(open(os.path.join(ROOT, 'index.json'), encoding='utf-8'))
-    games = [g for g in idxj['games'] if g['kind'] == 'ladder' and g['ok'] and g['source'].split('/')[2][:8] >= '20261016']
-    dirs = sorted({g['dir'] for g in games})[:int(sys.argv[1])]
+    p = gamesel.parser(__doc__)
+    p.add_argument('n', nargs='?', type=int, help='first N games (as --limit)')
+    a = p.parse_args()
+    a.limit = a.n or a.limit
+    games = gamesel.select(a)
     rows = []
-    with ProcessPoolExecutor(16) as ex:
-        for r in ex.map(game, dirs, chunksize=4): rows += r
+    with ProcessPoolExecutor(a.threads) as ex:
+        for r in ex.map(game, games, chunksize=4): rows += r
     def show(label, rs):
         if not rs: return
-        f = [r for r in rs if r[3]]; a = [r for r in rs if not r[3]]
-        print(f'{label:22s} streaks {len(rs):6d}  target kept distance: {len(f)/len(rs):.2f} -> hit {sum(r[4] for r in f)/max(1,len(f)):.2f} | target let us close: hit {sum(r[4] for r in a)/max(1,len(a)):.2f}')
+        f = [r for r in rs if r[3]]; an = [r for r in rs if not r[3]]
+        print(f'{label:22s} streaks {len(rs):6d}  target kept distance: {len(f)/len(rs):.2f} -> hit {sum(r[4] for r in f)/max(1,len(f)):.2f} | target let us close: hit {sum(r[4] for r in an)/max(1,len(an)):.2f}')
     show('ALL', rows)
-    for t in ['Intercontinental Fish', 'Mite', 'Sneaky Bush Campers', 'Univardisty of Shingtonwash', 'procless', 'PTN Hyperion']:
+    per_team = gamesel.games_per_team(games)
+    for t in a.team or gamesel.TOPS:
         show(t, [r for r in rows if r[0] == t])
+    for t in a.team or gamesel.TOPS:
+        rs = [r for r in rows if r[0] == t]
+        for mel in (True, False):
+            show(f"{t[:14]} {'melee' if mel else 'ranged'}", [r for r in rs if r[1] == mel])
+        if rs: print(f'{t[:22]:22s} streaks per game {len(rs) / per_team[t]:.1f}')

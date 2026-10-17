@@ -1,29 +1,34 @@
-# Wasted spell opportunities: damage spell ready at the start of the champion's turn, a live monster of an
-# alive group within 4 (unit range; ground reach 5 ignored) at the end of the previous round, and no cast that round.
+"""Damage spells left uncast while farming: spell ready at the start of the champion's turn, attacking a camp this
+round or last, a live monster within 4 at the end of the previous round (unit range; ground reach 5 ignored), and
+no cast that round; first 300 rounds. Cast rate by champion and slot.
+
+  py spellwaste3.py procless                                  # the report: PTN Hyperion vs procless head to head
+  py spellwaste3.py --team procless "Intercontinental Fish"   # any team's ladder games
+  py spellwaste3.py --src replays/batch-20261017-091937-928141 --team nemesis
+Selection options: gamesel.py.
+"""
 import json, gzip, os, sys, collections
 from concurrent.futures import ProcessPoolExecutor
-ROOT = r'C:\Users\alext\Github\cambc-autumn\replays\.analysis'
+import gamesel
+ROOT = gamesel.ROOT
 SPELL = {'Stellar': [0, 1], 'Ryth': [0], 'Cassi': [0], 'Ren': [0], 'Prism': [0, 1], 'Tavi': [1], 'Marcella': [1]}
 W = 300
 
 
 def game(args):
-    d, teams = args
+    d, names, teams = args
     m = json.load(open(os.path.join(ROOT, d, 'meta.json'), encoding='utf-8'))
     R = json.load(gzip.open(os.path.join(ROOT, d, 'rounds.json.gz')))
     ev = [json.loads(l) for l in gzip.open(os.path.join(ROOT, d, 'events.jsonl.gz'), 'rt')]
     mp = json.load(open(os.path.join(ROOT, 'maps', m['map']['hash'] + '.json')))
     name = {c['id']: c['name'] for c in m['champions']}
     casts = set()
-    camp_casts = set()
     farming = set()
-    enemy_near = set()
     for e in ev:
         if e['k'] == 'attack' and 'camp' in e:
             farming.add((e['a'], e['r']))
         if e['k'] == 'cast':
             casts.add((e['a'], e['r'], e['slot']))
-            if e.get('cdmg'): camp_casts.add((e['a'], e['r'], e['slot']))
     # group alive state per round: forward fill groups rows [round, group, state, team, timer, respawn, awake, hp]
     cols = R['groupCols']
     gi = {c: i for i, c in enumerate(cols)}
@@ -31,7 +36,6 @@ def game(args):
     camp_pos = {}
     for c in mp['camps']:
         camp_pos.setdefault(c['group'], []).append((c['x'], c['y']))
-    strengthful = {g['id']: any(t in ('Wolf', 'Elk', 'Monolith') for t in g['types']) for g in mp['groups']}
     state = {}
     j = 0
     out = collections.Counter()
@@ -42,7 +46,7 @@ def game(args):
             row = rows[j]; state[row[gi['group']]] = (row[gi['state']], row[gi['hp']]); j += 1
         alive_groups = [g for g, (s, hp) in state.items() if s == 1 and hp and hp > 0]
         for c in R['champions']:
-            tn = m['teams'][c['team']]['name']
+            tn = names[c['team']]
             if tn not in teams: continue
             nm = name[c['id']]
             if nm not in SPELL or not c['alive'][i - 1] or c['turn'][i] not in (1, 2): continue
@@ -55,22 +59,29 @@ def game(args):
                 out[(tn, 'ready')] += 1
                 out[(tn, 'ready_cast')] += cast
                 if near:
+                    out[(tn, 'near')] += 1
+                    out[(tn, 'near_cast')] += cast
                     out[(tn, nm, s, 'n')] += 1
                     out[(tn, nm, s, 'c')] += cast
     return out
 
 
 if __name__ == '__main__':
-    opp = sys.argv[1]
-    idxj = json.load(open(os.path.join(ROOT, 'index.json'), encoding='utf-8'))
-    games = [g['dir'] for g in idxj['games'] if g['kind'] == 'ladder' and g['ok'] and 'PTN Hyperion' in g['teams'] and opp in g['teams'] and g['source'].split('/')[2][:8] >= '20261016']
+    p = gamesel.parser(__doc__)
+    p.add_argument('opp', nargs='?', help="PTN Hyperion's head-to-head games against OPP, every source copy (the report)")
+    a = p.parse_args()
+    if a.opp:
+        a.team, a.together, a.copies = ['PTN Hyperion', a.opp], True, True
+    teams = list(a.team or [])
+    games = gamesel.select(a)
     tot = collections.Counter()
-    with ProcessPoolExecutor(16) as ex:
-        for r in ex.map(game, [(d, {'PTN Hyperion', opp}) for d in games]):
+    with ProcessPoolExecutor(a.threads) as ex:
+        for r in ex.map(game, [(d, names, set(teams)) for d, names in games]):
             tot += r
-    for t in ('PTN Hyperion', opp):
+    print(f'{len(games)} games')
+    for t in teams:
         print(f"{t:14s} ready-turns {tot[(t, 'ready')]:7d} cast {tot[(t, 'ready_cast')] / max(1, tot[(t, 'ready')]):.2f} | "
-              f"ready with a live camp within 4: {tot[(t, 'ready_near_camp')]:7d} cast {tot[(t, 'ready_near_camp_cast')] / max(1, tot[(t, 'ready_near_camp')]):.2f}")
+              f"farming with a live camp within 4: {tot[(t, 'near')]:7d} cast {tot[(t, 'near_cast')] / max(1, tot[(t, 'near')]):.2f}")
     print('by champion/slot (actively farming, spell ready): cast rate')
     keys = sorted({k[:3] for k in tot if len(k) == 4}, key=lambda k: (k[1], k[2], k[0]))
     for k in keys:
