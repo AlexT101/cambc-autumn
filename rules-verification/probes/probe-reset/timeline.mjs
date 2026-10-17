@@ -2,10 +2,11 @@
 // (state, capture team, capture timer), and every step that moves a champion onto or off a group tile.
 //   node rules-verification/probes/probe-reset/timeline.mjs <replay.repl26a>
 import fs from 'node:fs';
-import { Engine, STEP_KINDS, PHASES, GROUP_STATES } from '../../../tools/replay/engine.mjs';
+import { Engine, STEP_KINDS, PHASES, GROUP_STATES, compileEngine, replayEngine } from '../../../tools/replay/engine.mjs';
 
-const e = await Engine.create();
-const g = e.openReplay(fs.readFileSync(process.argv[2]));
+const bytes = fs.readFileSync(process.argv[2]);
+const e = await Engine.create(await compileEngine(replayEngine(bytes)));
+const g = e.openReplay(bytes);
 const NONE = 0xFFFFFFFF;
 const team = t => ['A', 'B', '-'][t] ?? t;
 let prev = null, prevPos = new Map(), groupTiles = null;
