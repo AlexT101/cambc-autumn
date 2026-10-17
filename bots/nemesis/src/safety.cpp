@@ -308,10 +308,11 @@ Safety::Safety(const World& world) : world_{world} {}
 const std::vector<Safety::CampHit>& Safety::awake_members() {
     if (!members_) {
         members_.emplace();
-        // Each monster attacks the nearest champion within range, ties to the lowest id.
-        std::array<std::pair<vec2, std::uint32_t>, 2 * max_fighters> others;
+        // Each monster attacks the nearest champion within range, ties to the one acting first in
+        // the round of the next camp phase.
+        std::array<std::pair<vec2, bool>, 2 * max_fighters> others;
         int n = -1;
-        const auto self_id = static_cast<std::uint32_t>(world_.me().handle);
+        const int next = world_.round + 1, self_slot = world_.slot(world_.me(), next);
         static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
         bool reread = false;
         const auto& groups = world_.map().groups;
@@ -323,7 +324,7 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
                 for (const auto* side : {&world_.allies, &world_.enemies})
                     for (const auto& o : *side)
                         if (n < static_cast<int>(others.size()) && o.alive && o.visible && !o.is_self && !gone(o))
-                            others[n++] = {o.pos, static_cast<std::uint32_t>(o.handle)};
+                            others[n++] = {o.pos, world_.slot(o, next) < self_slot};
                 if (refresh_) {
                     reread = true;
                     cambc::vision::visible_tiles_into(seen);
@@ -336,7 +337,7 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
                 if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen.is_set(m.pos) && !camps.is_set(m.pos))) continue;
                 int reach = camp_attack_range;
                 for (int k = 0; k < n; ++k)
-                    reach = std::min(reach, dist(others[k].first, m.pos) - (others[k].second < self_id ? 1 : 0));
+                    reach = std::min(reach, dist(others[k].first, m.pos) - (others[k].second ? 1 : 0));
                 if (reach >= 0) members_->push_back({m.pos, m.strength, w, reach});
             }
         }
