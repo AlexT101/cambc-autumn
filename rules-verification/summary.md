@@ -1,6 +1,6 @@
 # Rules verification summary
 
-We tested the cambc2026a engine against the docs with 25 probe bots (`probes/`) across ten topics, and dumped the visualiser engine's own constants (`engine-constants.mjs` → `engine-constants.json`):
+We tested the cambc2026a engine against the docs with 27 probe bots (`probes/`) across ten topics, and dumped the visualiser engine's own constants (`engine-constants.mjs` → `engine-constants.json`):
 
 - settings and item/champion/camp data
 - turn order and memory
@@ -46,14 +46,15 @@ All champion stats, abilities, passives, item costs, camp HP/gold/gems and game 
   - Only the camp's own tiles count, not adjacent ones.
   - Progress resets the instant the tiles are empty or contested, even within one turn (a holder stepping off and dashing back, a teammate taking over after the holder left, an enemy stepping on and off), and the full count restarts. Moving between the group's tiles, or a teammate stepping on before the holder leaves, keeps it.
   - Split shares are floored, and the lowest champion id gets the remainder.
-  - Any occupied tile holds the camp's respawn indefinitely.
+  - A champion of either team on any camp tile at the start of a round when the group is due holds its respawn indefinitely; it returns, asleep, at the start of the round after the last occupant leaves. Occupation before the due round does not delay it.
+  - Gems paid into a bag during a tribute are scored with it; the channel length stays set by the starting bag. A channelling champion on a camp tile still holds and is paid.
 - **Gold:**
   - Gold starts at 0, there is no passive income, and killing camps gives none (only capturing does).
   - Bonuses apply to each champion's share and add together (Vesper + Treasure = +40%).
   - Gold is stored with fractions; the visible amount is rounded down.
 - **Damage:** modifiers multiply and are never rounded, and health is fractional (Jungle + Durability: 20 → 12.6).
 - **Camps:**
-  - Each monster attacks the nearest champion of either team, measured as a square distance, with ties going to the lowest id.
+  - Each monster attacks the nearest champion of either team, measured as a square distance, with ties going to whichever of them acts first in that round's turn order (team A first in odd rounds, team B in even, then priority, then id), not the lowest id (corrected 2026-10-17, `probe-denial` scenario 6).
   - Bushes don't hide you from camps.
   - Ren's retaliation hits camps too.
   - A stunned camp skips its next attack.
@@ -91,7 +92,6 @@ The YAML follows the docs on these or leaves them out:
 - whether Varg's splash hits diagonal neighbours
 - Durability emblem on its own, and the Monster bonus on spells
 - the gem remainder in an uneven split
-- gems gained during a tribute
 - Treasure on kill gold
 - Tavi selling
 - whether shield-absorbed damage cancels a recall

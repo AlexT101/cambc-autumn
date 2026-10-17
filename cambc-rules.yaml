@@ -78,18 +78,18 @@ camps:
   groups: "Cardinally connected monsters form a group. A group wakes together and shares one reward, the sum of its members'. Its camp tiles (SDK: spawn tiles) are its monsters' spawn positions."
   wake: "A sleeping group wakes when any member takes damage."
   sleep: "An awake group sleeps after 2 consecutive camp phases with no champion within range 3. Damage does not keep it awake. Camps never regenerate."
-  attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within range 3; ties go to the lowest id. Bushes do not hide champions from camps. Monsters never move."
+  attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within range 3; ties go to the champion that acts first in that round's turn order (rounds.champion_order, rounds.team_order), not the lowest id. Bushes do not hide champions from camps. Monsters never move."
   state: "Bots can read whether a camp is dead, awake or asleep while its tile (its last tile, if dead) is in vision. They cannot read how far a capture has progressed."
 
 capture:
   condition: "After every monster in a group dies, the group stays empty until captured. A team captures it by standing on any of its camp tiles while no enemy stands on any. Adjacent tiles do not count."
   timing: "If held from round R, the reward is paid at the capture phase of round R+6. Progress resets the moment the tiles become empty or contested, mid-turn included; re-holding restarts the count."
   reward: "Allies on the camp tiles at payout split the gems and gold. Each gets the floor share, and the lowest id also gets the remainder."
-  respawn: "At payout the group's timer is set to its longest member respawn. The group returns at the start of round payout + timer, or later while any of its camp tiles is occupied."
+  respawn: "At payout the group's timer is set to its longest member respawn. The group returns, asleep at full health, at the start of round payout + timer; if a champion of either team stands on any of its camp tiles at that round start, it returns at the start of the first round that finds them all empty. Occupation before then does not delay it."
 
 gems:
   sources: "Gems come only from capture shares and champion kills, and score nothing until tributed."
-  tribute: "Start a tribute (SDK: submit gems) within 1 of an altar while carrying at least 1 gem. The channel lasts max(1, ceil(starting gems / 10)) turn ends. On completion the whole current bag is scored. Damage does not interrupt it; stun cancels it and the gems stay carried."
+  tribute: "Start a tribute (SDK: submit gems) within 1 of an altar while carrying at least 1 gem. The channel lasts max(1, ceil(starting gems / 10)) turn ends. On completion the whole current bag is scored, including capture shares paid during the channel; a channelling champion on a camp tile holds it as usual. Damage does not interrupt it; stun cancels it and the gems stay carried."
 
 altar_locks:
   place: "Place a carried lock on an altar within 2. Each team can have at most one lock per altar."
