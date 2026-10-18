@@ -462,6 +462,8 @@ pub fn champions(team: Option<Team>) -> Result<Vec<Champion>>
 
 All allied/enemy roster members, including hidden champions with cached visibility errors. # Arguments * `team` - `Some(team)` for one side, or `None` for both.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Use this value in your bot's draft or turn logic.
 
 Inputs:
@@ -689,7 +691,7 @@ pub enum Error { Engine { raw_code: i32, code: Option<ErrorCode>, message: Strin
 ### ErrorCode
 
 ```rust
-pub enum ErrorCode { Success = 0,InvalidHandle = 1,OutOfMemory = 2,FileNotFound = 3,NullPointer = 4,InvalidArgument = 5,MapParseError = 6,InvalidMapFile = 7,InvalidMapVersion = 8,ReplayParseError = 9,InvalidReplayFile = 10,InvalidReplayVersion = 11,InvalidDraft = 12,DraftNotDrafting = 13,DraftDuplicateChampion = 14,DraftInvalidRound = 15,DraftUnavailable = 16,AlreadyInitialized = 17,InvalidAction = 18,InvalidActionMemoryBadRange = 19,InvalidActionMemoryDraftFrozen = 20,InvalidActionMoveCantMove = 21,InvalidActionMoveBadDestination = 22,InvalidActionSpellCastInvalidSource = 23,InvalidActionSpellCastInvalidSlot = 24,InvalidActionSpellCastNoAbility = 25,InvalidActionSpellCastCantCast = 26,InvalidActionSpellCastAlreadyCast = 27,InvalidActionSpellCastOnCooldown = 28,InvalidActionSpellCastNoCharges = 29,InvalidActionSpellCastBadTarget = 30,InvalidActionSpellCastOutOfRange = 31,InvalidActionSpellCastBadDestination = 32,InvalidActionCantAct = 33,InvalidActionIsRecalling = 34,InvalidActionIsSubmittingGems = 35,InvalidActionMoveAlreadyMoved = 36,InvalidActionMoveOutOfRange = 37,InvalidActionMoveUnreachable = 38,InvalidActionAttackInvalidSource = 39,InvalidActionAttackCantAttack = 40,InvalidActionAttackAlreadyAttacked = 41,InvalidActionAttackBadTarget = 42,InvalidActionAttackOutOfRange = 43,InvalidActionRecallCantChannel = 44,InvalidActionSubmitGemsCantChannel = 45,InvalidActionSubmitGemsNoGems = 46,InvalidActionSubmitGemsBadAltar = 47,InvalidActionSubmitGemsOutOfRange = 48,InvalidActionBuyItemNotOnSpawn = 49,InvalidActionBuyItemInvalidItem = 50,InvalidActionBuyItemInvalidCount = 51,InvalidActionBuyItemNotEnoughGold = 52,InvalidActionBuyItemInventoryFull = 53,InvalidActionBuyItemStatsOverflow = 54,InvalidActionBuyConsumableNotOnSpawn = 55,InvalidActionBuyConsumableInvalidType = 56,InvalidActionBuyConsumableInvalidCount = 57,InvalidActionBuyConsumableInventoryFull = 58,InvalidActionBuyConsumableNotEnoughGold = 59,InvalidActionUseConsumableInvalidType = 60,InvalidActionUseConsumableNotOwned = 61,InvalidActionPlaceWardNoCharges = 62,InvalidActionPlaceWardCantPlace = 63,InvalidActionPlaceWardBadDestination = 64,InvalidActionPlaceWardOutOfRange = 65,MapSetTeamAspawnAreaBadPosition = 66,MapAddBushBadPosition = 67,MapRemoveBushBadPosition = 68,MapAddWallBadPosition = 69,MapRemoveWallBadPosition = 70,MapAddHoleBadPosition = 71,MapRemoveHoleBadPosition = 72,MapAddAltarBadPosition = 73,MapRemoveAltarBadPosition = 74,MapGetBushBadPosition = 75,MapGetWallBadPosition = 76,MapGetHoleBadPosition = 77,MapGetAltarBadPosition = 78,MapGetCampHandleAtBadPosition = 79,MapAddCampBadPosition = 80,MapSetCampBadPosition = 81,InvalidActionChampionTeleportBadDestination = 82,InvalidActionRespawnGroupBlockedSpawn = 83,InvalidActionCampTeleportBadDestination = 84,TimelineBadSeekPosition = 85,TimelineBadSeekSubstep = 86,ApiNoMap = 87,ManagedResourcesBadPosition = 88,ManagedResourcesBadRadius = 89,ManagedResourcesAliasing = 90,ManagedResourcesMetadataMismatch = 91,ManagedResourcesOpaqueOrigin = 92,ApiInvalidTeam = 93,ApiInvalidPerspective = 94,ApiNotInitialized = 95,ApiBadPosition = 96,ApiNotInVision = 97,ApiNotFound = 98,ApiInvalidCampGroup = 99,ApiInvalidCampInfo = 100,ApiInvalidCamp = 101,ApiInvalidChampion = 102,ApiInvalidWard = 103,ApiInvalidAbility = 104,ApiNotTeammate = 105,ApiCampGroupNotWaitingToRespawn = 106,ApiChampionAlive = 107,ApiInvalidChampionType = 108,ApiInvalidCampType = 109,ApiValueOutOfRange = 110,ApiBufferTooSmall = 111,ApiNotOwner = 112,InvalidActionRecallAlreadyUsed = 113,InvalidActionSubmitGemsAlreadyUsed = 114,InvalidActionCancelChannelNotChanneling = 115,InvalidActionCancelChannelAlreadyUsed = 116,InvalidActionPlaceWardAllyWardPresent = 117,InvalidActionAltarLockBadAltar = 118,InvalidActionAltarLockOutOfRange = 119,InvalidActionAltarLockAlreadyLocked = 120,InvalidActionIsTeleporting = 123,InvalidActionCancelChannelNotCancellable = 124,InvalidActionSubmitGemsAltarLocked = 125,InvalidActionSpellCastAlreadyMoved = 126,InvalidActionMoveExclusiveSpellCast = 127,InvalidActionSellNotTavi = 128,InvalidActionSellInvalidItem = 129,InvalidActionSellNotOwned = 130,InvalidActionSellAlreadySold = 131,InvalidActionSellGoldOverflow = 132,InvalidActionSellNotOnSpawn = 133 }
+pub enum ErrorCode { Success = 0,InvalidHandle = 1,OutOfMemory = 2,FileNotFound = 3,NullPointer = 4,InvalidArgument = 5,MapParseError = 6,InvalidMapFile = 7,InvalidMapVersion = 8,ReplayParseError = 9,InvalidReplayFile = 10,InvalidReplayVersion = 11,InvalidDraft = 12,DraftNotDrafting = 13,DraftDuplicateChampion = 14,DraftInvalidRound = 15,DraftUnavailable = 16,AlreadyInitialized = 17,InvalidAction = 18,InvalidActionMemoryBadRange = 19,InvalidActionMemoryDraftFrozen = 20,InvalidActionMoveCantMove = 21,InvalidActionMoveBadDestination = 22,InvalidActionSpellCastInvalidSource = 23,InvalidActionSpellCastInvalidSlot = 24,InvalidActionSpellCastNoAbility = 25,InvalidActionSpellCastCantCast = 26,InvalidActionSpellCastAlreadyCast = 27,InvalidActionSpellCastOnCooldown = 28,InvalidActionSpellCastNoCharges = 29,InvalidActionSpellCastBadTarget = 30,InvalidActionSpellCastOutOfRange = 31,InvalidActionSpellCastBadDestination = 32,InvalidActionCantAct = 33,InvalidActionIsRecalling = 34,InvalidActionIsSubmittingGems = 35,InvalidActionMoveAlreadyMoved = 36,InvalidActionMoveOutOfRange = 37,InvalidActionMoveUnreachable = 38,InvalidActionAttackInvalidSource = 39,InvalidActionAttackCantAttack = 40,InvalidActionAttackAlreadyAttacked = 41,InvalidActionAttackBadTarget = 42,InvalidActionAttackOutOfRange = 43,InvalidActionRecallCantChannel = 44,InvalidActionSubmitGemsCantChannel = 45,InvalidActionSubmitGemsNoGems = 46,InvalidActionSubmitGemsBadAltar = 47,InvalidActionSubmitGemsOutOfRange = 48,InvalidActionBuyItemNotOnSpawn = 49,InvalidActionBuyItemInvalidItem = 50,InvalidActionBuyItemInvalidCount = 51,InvalidActionBuyItemNotEnoughGold = 52,InvalidActionBuyItemInventoryFull = 53,InvalidActionBuyItemStatsOverflow = 54,InvalidActionBuyConsumableNotOnSpawn = 55,InvalidActionBuyConsumableInvalidType = 56,InvalidActionBuyConsumableInvalidCount = 57,InvalidActionBuyConsumableInventoryFull = 58,InvalidActionBuyConsumableNotEnoughGold = 59,InvalidActionUseConsumableInvalidType = 60,InvalidActionUseConsumableNotOwned = 61,InvalidActionPlaceWardNoCharges = 62,InvalidActionPlaceWardCantPlace = 63,InvalidActionPlaceWardBadDestination = 64,InvalidActionPlaceWardOutOfRange = 65,MapSetTeamAspawnAreaBadPosition = 66,MapAddBushBadPosition = 67,MapRemoveBushBadPosition = 68,MapAddWallBadPosition = 69,MapRemoveWallBadPosition = 70,MapAddHoleBadPosition = 71,MapRemoveHoleBadPosition = 72,MapAddAltarBadPosition = 73,MapRemoveAltarBadPosition = 74,MapGetBushBadPosition = 75,MapGetWallBadPosition = 76,MapGetHoleBadPosition = 77,MapGetAltarBadPosition = 78,MapGetCampHandleAtBadPosition = 79,MapAddCampBadPosition = 80,MapSetCampBadPosition = 81,InvalidActionChampionTeleportBadDestination = 82,InvalidActionRespawnGroupBlockedSpawn = 83,InvalidActionCampTeleportBadDestination = 84,TimelineBadSeekPosition = 85,TimelineBadSeekSubstep = 86,ApiNoMap = 87,ManagedResourcesBadPosition = 88,ManagedResourcesBadRadius = 89,ManagedResourcesAliasing = 90,ManagedResourcesMetadataMismatch = 91,ManagedResourcesOpaqueOrigin = 92,ApiInvalidTeam = 93,ApiInvalidPerspective = 94,ApiNotInitialized = 95,ApiBadPosition = 96,ApiNotInVision = 97,ApiNotFound = 98,ApiInvalidCampGroup = 99,ApiInvalidCampInfo = 100,ApiInvalidCamp = 101,ApiInvalidChampion = 102,ApiInvalidWard = 103,ApiInvalidAbility = 104,ApiNotTeammate = 105,ApiCampGroupNotWaitingToRespawn = 106,ApiChampionAlive = 107,ApiInvalidChampionType = 108,ApiInvalidCampType = 109,ApiValueOutOfRange = 110,ApiBufferTooSmall = 111,ApiNotOwner = 112,InvalidActionRecallAlreadyUsed = 113,InvalidActionSubmitGemsAlreadyUsed = 114,InvalidActionCancelChannelNotChanneling = 115,InvalidActionCancelChannelAlreadyUsed = 116,InvalidActionPlaceWardAllyWardPresent = 117,InvalidActionAltarLockBadAltar = 118,InvalidActionAltarLockOutOfRange = 119,InvalidActionAltarLockAlreadyLocked = 120,InvalidActionIsTeleporting = 123,InvalidActionCancelChannelNotCancellable = 124,InvalidActionSubmitGemsAltarLocked = 125,InvalidActionSpellCastAlreadyMoved = 126,InvalidActionMoveExclusiveSpellCast = 127,InvalidActionSellNotTavi = 128,InvalidActionSellInvalidItem = 129,InvalidActionSellNotOwned = 130,InvalidActionSellAlreadySold = 131,InvalidActionSellGoldOverflow = 132,InvalidActionSellNotOnSpawn = 133,DraftAlreadyPicked = 134,DraftNoChampionSelected = 135 }
 ```
 
 Checked engine values. Implements TryFrom<i32> and Display; ALL lists the recognised values.
@@ -697,7 +699,7 @@ Checked engine values. Implements TryFrom<i32> and Display; ALL lists the recogn
 Public SDK type declaration.
 
 ```rust
-pub enum ErrorCode { Success = 0,InvalidHandle = 1,OutOfMemory = 2,FileNotFound = 3,NullPointer = 4,InvalidArgument = 5,MapParseError = 6,InvalidMapFile = 7,InvalidMapVersion = 8,ReplayParseError = 9,InvalidReplayFile = 10,InvalidReplayVersion = 11,InvalidDraft = 12,DraftNotDrafting = 13,DraftDuplicateChampion = 14,DraftInvalidRound = 15,DraftUnavailable = 16,AlreadyInitialized = 17,InvalidAction = 18,InvalidActionMemoryBadRange = 19,InvalidActionMemoryDraftFrozen = 20,InvalidActionMoveCantMove = 21,InvalidActionMoveBadDestination = 22,InvalidActionSpellCastInvalidSource = 23,InvalidActionSpellCastInvalidSlot = 24,InvalidActionSpellCastNoAbility = 25,InvalidActionSpellCastCantCast = 26,InvalidActionSpellCastAlreadyCast = 27,InvalidActionSpellCastOnCooldown = 28,InvalidActionSpellCastNoCharges = 29,InvalidActionSpellCastBadTarget = 30,InvalidActionSpellCastOutOfRange = 31,InvalidActionSpellCastBadDestination = 32,InvalidActionCantAct = 33,InvalidActionIsRecalling = 34,InvalidActionIsSubmittingGems = 35,InvalidActionMoveAlreadyMoved = 36,InvalidActionMoveOutOfRange = 37,InvalidActionMoveUnreachable = 38,InvalidActionAttackInvalidSource = 39,InvalidActionAttackCantAttack = 40,InvalidActionAttackAlreadyAttacked = 41,InvalidActionAttackBadTarget = 42,InvalidActionAttackOutOfRange = 43,InvalidActionRecallCantChannel = 44,InvalidActionSubmitGemsCantChannel = 45,InvalidActionSubmitGemsNoGems = 46,InvalidActionSubmitGemsBadAltar = 47,InvalidActionSubmitGemsOutOfRange = 48,InvalidActionBuyItemNotOnSpawn = 49,InvalidActionBuyItemInvalidItem = 50,InvalidActionBuyItemInvalidCount = 51,InvalidActionBuyItemNotEnoughGold = 52,InvalidActionBuyItemInventoryFull = 53,InvalidActionBuyItemStatsOverflow = 54,InvalidActionBuyConsumableNotOnSpawn = 55,InvalidActionBuyConsumableInvalidType = 56,InvalidActionBuyConsumableInvalidCount = 57,InvalidActionBuyConsumableInventoryFull = 58,InvalidActionBuyConsumableNotEnoughGold = 59,InvalidActionUseConsumableInvalidType = 60,InvalidActionUseConsumableNotOwned = 61,InvalidActionPlaceWardNoCharges = 62,InvalidActionPlaceWardCantPlace = 63,InvalidActionPlaceWardBadDestination = 64,InvalidActionPlaceWardOutOfRange = 65,MapSetTeamAspawnAreaBadPosition = 66,MapAddBushBadPosition = 67,MapRemoveBushBadPosition = 68,MapAddWallBadPosition = 69,MapRemoveWallBadPosition = 70,MapAddHoleBadPosition = 71,MapRemoveHoleBadPosition = 72,MapAddAltarBadPosition = 73,MapRemoveAltarBadPosition = 74,MapGetBushBadPosition = 75,MapGetWallBadPosition = 76,MapGetHoleBadPosition = 77,MapGetAltarBadPosition = 78,MapGetCampHandleAtBadPosition = 79,MapAddCampBadPosition = 80,MapSetCampBadPosition = 81,InvalidActionChampionTeleportBadDestination = 82,InvalidActionRespawnGroupBlockedSpawn = 83,InvalidActionCampTeleportBadDestination = 84,TimelineBadSeekPosition = 85,TimelineBadSeekSubstep = 86,ApiNoMap = 87,ManagedResourcesBadPosition = 88,ManagedResourcesBadRadius = 89,ManagedResourcesAliasing = 90,ManagedResourcesMetadataMismatch = 91,ManagedResourcesOpaqueOrigin = 92,ApiInvalidTeam = 93,ApiInvalidPerspective = 94,ApiNotInitialized = 95,ApiBadPosition = 96,ApiNotInVision = 97,ApiNotFound = 98,ApiInvalidCampGroup = 99,ApiInvalidCampInfo = 100,ApiInvalidCamp = 101,ApiInvalidChampion = 102,ApiInvalidWard = 103,ApiInvalidAbility = 104,ApiNotTeammate = 105,ApiCampGroupNotWaitingToRespawn = 106,ApiChampionAlive = 107,ApiInvalidChampionType = 108,ApiInvalidCampType = 109,ApiValueOutOfRange = 110,ApiBufferTooSmall = 111,ApiNotOwner = 112,InvalidActionRecallAlreadyUsed = 113,InvalidActionSubmitGemsAlreadyUsed = 114,InvalidActionCancelChannelNotChanneling = 115,InvalidActionCancelChannelAlreadyUsed = 116,InvalidActionPlaceWardAllyWardPresent = 117,InvalidActionAltarLockBadAltar = 118,InvalidActionAltarLockOutOfRange = 119,InvalidActionAltarLockAlreadyLocked = 120,InvalidActionIsTeleporting = 123,InvalidActionCancelChannelNotCancellable = 124,InvalidActionSubmitGemsAltarLocked = 125,InvalidActionSpellCastAlreadyMoved = 126,InvalidActionMoveExclusiveSpellCast = 127,InvalidActionSellNotTavi = 128,InvalidActionSellInvalidItem = 129,InvalidActionSellNotOwned = 130,InvalidActionSellAlreadySold = 131,InvalidActionSellGoldOverflow = 132,InvalidActionSellNotOnSpawn = 133 }
+pub enum ErrorCode { Success = 0,InvalidHandle = 1,OutOfMemory = 2,FileNotFound = 3,NullPointer = 4,InvalidArgument = 5,MapParseError = 6,InvalidMapFile = 7,InvalidMapVersion = 8,ReplayParseError = 9,InvalidReplayFile = 10,InvalidReplayVersion = 11,InvalidDraft = 12,DraftNotDrafting = 13,DraftDuplicateChampion = 14,DraftInvalidRound = 15,DraftUnavailable = 16,AlreadyInitialized = 17,InvalidAction = 18,InvalidActionMemoryBadRange = 19,InvalidActionMemoryDraftFrozen = 20,InvalidActionMoveCantMove = 21,InvalidActionMoveBadDestination = 22,InvalidActionSpellCastInvalidSource = 23,InvalidActionSpellCastInvalidSlot = 24,InvalidActionSpellCastNoAbility = 25,InvalidActionSpellCastCantCast = 26,InvalidActionSpellCastAlreadyCast = 27,InvalidActionSpellCastOnCooldown = 28,InvalidActionSpellCastNoCharges = 29,InvalidActionSpellCastBadTarget = 30,InvalidActionSpellCastOutOfRange = 31,InvalidActionSpellCastBadDestination = 32,InvalidActionCantAct = 33,InvalidActionIsRecalling = 34,InvalidActionIsSubmittingGems = 35,InvalidActionMoveAlreadyMoved = 36,InvalidActionMoveOutOfRange = 37,InvalidActionMoveUnreachable = 38,InvalidActionAttackInvalidSource = 39,InvalidActionAttackCantAttack = 40,InvalidActionAttackAlreadyAttacked = 41,InvalidActionAttackBadTarget = 42,InvalidActionAttackOutOfRange = 43,InvalidActionRecallCantChannel = 44,InvalidActionSubmitGemsCantChannel = 45,InvalidActionSubmitGemsNoGems = 46,InvalidActionSubmitGemsBadAltar = 47,InvalidActionSubmitGemsOutOfRange = 48,InvalidActionBuyItemNotOnSpawn = 49,InvalidActionBuyItemInvalidItem = 50,InvalidActionBuyItemInvalidCount = 51,InvalidActionBuyItemNotEnoughGold = 52,InvalidActionBuyItemInventoryFull = 53,InvalidActionBuyItemStatsOverflow = 54,InvalidActionBuyConsumableNotOnSpawn = 55,InvalidActionBuyConsumableInvalidType = 56,InvalidActionBuyConsumableInvalidCount = 57,InvalidActionBuyConsumableInventoryFull = 58,InvalidActionBuyConsumableNotEnoughGold = 59,InvalidActionUseConsumableInvalidType = 60,InvalidActionUseConsumableNotOwned = 61,InvalidActionPlaceWardNoCharges = 62,InvalidActionPlaceWardCantPlace = 63,InvalidActionPlaceWardBadDestination = 64,InvalidActionPlaceWardOutOfRange = 65,MapSetTeamAspawnAreaBadPosition = 66,MapAddBushBadPosition = 67,MapRemoveBushBadPosition = 68,MapAddWallBadPosition = 69,MapRemoveWallBadPosition = 70,MapAddHoleBadPosition = 71,MapRemoveHoleBadPosition = 72,MapAddAltarBadPosition = 73,MapRemoveAltarBadPosition = 74,MapGetBushBadPosition = 75,MapGetWallBadPosition = 76,MapGetHoleBadPosition = 77,MapGetAltarBadPosition = 78,MapGetCampHandleAtBadPosition = 79,MapAddCampBadPosition = 80,MapSetCampBadPosition = 81,InvalidActionChampionTeleportBadDestination = 82,InvalidActionRespawnGroupBlockedSpawn = 83,InvalidActionCampTeleportBadDestination = 84,TimelineBadSeekPosition = 85,TimelineBadSeekSubstep = 86,ApiNoMap = 87,ManagedResourcesBadPosition = 88,ManagedResourcesBadRadius = 89,ManagedResourcesAliasing = 90,ManagedResourcesMetadataMismatch = 91,ManagedResourcesOpaqueOrigin = 92,ApiInvalidTeam = 93,ApiInvalidPerspective = 94,ApiNotInitialized = 95,ApiBadPosition = 96,ApiNotInVision = 97,ApiNotFound = 98,ApiInvalidCampGroup = 99,ApiInvalidCampInfo = 100,ApiInvalidCamp = 101,ApiInvalidChampion = 102,ApiInvalidWard = 103,ApiInvalidAbility = 104,ApiNotTeammate = 105,ApiCampGroupNotWaitingToRespawn = 106,ApiChampionAlive = 107,ApiInvalidChampionType = 108,ApiInvalidCampType = 109,ApiValueOutOfRange = 110,ApiBufferTooSmall = 111,ApiNotOwner = 112,InvalidActionRecallAlreadyUsed = 113,InvalidActionSubmitGemsAlreadyUsed = 114,InvalidActionCancelChannelNotChanneling = 115,InvalidActionCancelChannelAlreadyUsed = 116,InvalidActionPlaceWardAllyWardPresent = 117,InvalidActionAltarLockBadAltar = 118,InvalidActionAltarLockOutOfRange = 119,InvalidActionAltarLockAlreadyLocked = 120,InvalidActionIsTeleporting = 123,InvalidActionCancelChannelNotCancellable = 124,InvalidActionSubmitGemsAltarLocked = 125,InvalidActionSpellCastAlreadyMoved = 126,InvalidActionMoveExclusiveSpellCast = 127,InvalidActionSellNotTavi = 128,InvalidActionSellInvalidItem = 129,InvalidActionSellNotOwned = 130,InvalidActionSellAlreadySold = 131,InvalidActionSellGoldOverflow = 132,InvalidActionSellNotOnSpawn = 133,DraftAlreadyPicked = 134,DraftNoChampionSelected = 135 }
 ```
 
 ### fuel_remaining
@@ -723,6 +725,8 @@ pub fn global_submitted_gems(team: Team) -> Result<u32>
 ```
 
 Return the total number of gems submitted by a relative team. # Arguments * `team` - Team to count.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Use this value in your bot's draft or turn logic.
 
@@ -1094,6 +1098,8 @@ pub fn cast_at(&self, destination: Vec2) -> Result<bool>
 
 Cast at a ground destination; requires the current champion. Returns `Ok(false)` for a newly revealed obstruction; invalid actions return `Err`. # Arguments * `destination` - Ground tile to cast at; must be within the ability's range.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -1111,6 +1117,8 @@ pub fn cast_on<T: crate::CastTarget + ?Sized>(&self, target: &T) -> Result<bool>
 ```
 
 Cast on a champion, camp or unit; requires the current champion. Unit casts land on the target's tile; returns `Ok(false)` for a newly revealed obstruction. Invalid actions return `Err`. # Arguments * `target` - Champion or camp to cast on; it must be a valid target category for this ability.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1130,6 +1138,8 @@ pub fn cast_untargeted(&self) -> Result<bool>
 
 Cast without an entity or destination; requires the current champion. Returns `Ok(false)` for a newly revealed obstruction; invalid actions return `Err`.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -1146,6 +1156,8 @@ pub fn cooldown(&self) -> Result<i32>
 ```
 
 Query the current cooldown; requires a live owner and propagates host errors.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1164,6 +1176,8 @@ pub fn damage_amount(&self) -> Result<f32>
 
 Query this live ability's damage; unsupported kinds propagate the engine error.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -1180,6 +1194,8 @@ pub fn damage_amount_against(&self, target: &crate::Champion) -> Result<f32>
 ```
 
 Predict health lost after mitigation and shields, capped at current health. The target must be visible. # Arguments * `target` - Visible champion that would be hit.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1199,6 +1215,8 @@ pub fn heal_amount(&self) -> Result<f32>
 
 Query this live ability's healing; unsupported kinds propagate the engine error.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -1215,6 +1233,8 @@ pub fn heal_amount_against(&self, target: &crate::Champion) -> Result<f32>
 ```
 
 Cap healing at the visible target's missing health. This does not cast or consume resources. # Arguments * `target` - Visible champion that would be healed.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1371,6 +1391,8 @@ pub fn is_on_cooldown(&self) -> Result<bool>
 
 Query whether the current cooldown is positive.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -1387,6 +1409,8 @@ pub fn is_ready(&self) -> Result<bool>
 ```
 
 Check whether this ability has metadata, is off cooldown, and its owner can cast.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1422,6 +1446,8 @@ pub fn mask_into(&self, out: &mut Bitboard) -> Result<()>
 
 Like [`Self::valid_tiles`], but writes into `out`. # Arguments * `out` - Destination mask; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -1440,6 +1466,8 @@ pub fn shield_amount(&self) -> Result<f32>
 
 Query this live ability's shielding; unsupported kinds propagate the engine error.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -1456,6 +1484,8 @@ pub fn shield_amount_against(&self, target: &crate::Champion) -> Result<f32>
 ```
 
 Query shielding against a particular champion, including engine target modifiers. # Arguments * `target` - Visible champion that would be shielded.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1508,6 +1538,8 @@ pub fn valid_tiles(&self) -> Result<Bitboard>
 ```
 
 Build a fresh Chebyshev targeting-range mask around the live owner. Unused/unavailable slots and attack resets return errors; this is not a legality mask.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -3597,6 +3629,8 @@ pub fn is_alive(&self) -> Result<bool>
 
 Query whether this camp is living (awake or asleep); uses the same visibility checks as `state()`.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -3613,6 +3647,8 @@ pub fn is_asleep(&self) -> Result<bool>
 ```
 
 Query whether this camp is living but dormant; uses the same visibility checks as `state()`.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -3631,6 +3667,8 @@ pub fn is_awake(&self) -> Result<bool>
 
 Query whether this camp is awake; uses the same visibility checks as `state()`.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -3647,6 +3685,8 @@ pub fn is_dead(&self) -> Result<bool>
 ```
 
 Query whether this camp is dead; uses the same visibility checks as `state()`.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -3783,6 +3823,8 @@ pub fn state(&self) -> Result<CampState>
 ```
 
 Query `CampState::Dead`, `Alive` (awake), or `Asleep` (living but dormant). The current tile, or last occupied tile when dead, must be in vision; hidden camps return `ApiNotInVision`. This is separate from the camp-group state.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -3923,6 +3965,8 @@ pub fn state(&self) -> Result<CampGroupState>
 
 Query group state only when its spawn mask intersects current vision. Hidden/unknown groups return `ApiNotInVision`; invalid runtime tags remain errors.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Read the remaining respawn rounds for a group with an original spawn tile in current vision. Alive and unclaimed-reward states have no countdown.
 
 Inputs:
@@ -4030,6 +4074,8 @@ pub fn attack<T: crate::AttackTarget + ?Sized>(&self, target: &T) -> Result<()>
 
 Attack a champion, camp, unit or altar lock; requires self and engine-valid targeting. # Arguments * `target` - Visible champion, camp or altar lock within attack range.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4065,6 +4111,8 @@ pub fn buy(&self, kind: ItemType) -> Result<()>
 
 Buy one item for self; engine validates location, gold and recipe. # Arguments * `kind` - Item to buy.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4084,6 +4132,8 @@ pub fn buy_consumable(&self, kind: ConsumableType) -> Result<()>
 
 Buy one consumable for self; engine validates gold and carry limit. # Arguments * `kind` - Consumable to buy.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4102,6 +4152,8 @@ pub fn buy_count(&self, kind: ItemType, count: u32) -> Result<()>
 ```
 
 Buy `count` items for self in one engine request. # Arguments * `kind` - Item to buy. * `count` - Number of copies to buy.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4123,6 +4175,8 @@ pub fn can_attack(&self) -> Result<bool>
 
 Check whether this champion can attack.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check the action allowance before spending fuel to choose an attack target.
 
 ```rust
@@ -4137,6 +4191,8 @@ pub fn can_buy(&self, item: ItemType, count: u32) -> Result<bool>
 ```
 
 Check whether an item can be bought in the current state. # Arguments * `item` - Item to buy. * `count` - Number of copies to buy.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4158,6 +4214,8 @@ pub fn can_buy_consumable(&self, consumable: ConsumableType) -> Result<bool>
 
 Check whether a consumable can be bought in the current state. # Arguments * `consumable` - Consumable to buy.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4177,6 +4235,8 @@ pub fn can_cast(&self) -> Result<bool>
 
 Check whether this champion can cast.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check the action allowance before spending fuel to evaluate ready abilities.
 
 ```rust
@@ -4192,6 +4252,8 @@ pub fn can_move(&self) -> Result<bool>
 
 Check whether this champion can move.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check the action allowance before spending fuel to plan a path.
 
 ```rust
@@ -4206,6 +4268,8 @@ pub fn can_sell(&self) -> Result<bool>
 ```
 
 Query self's current selling permission.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4223,6 +4287,8 @@ pub fn cancel_recall(&self) -> Result<()>
 
 Cancel self's recall; returns an error when no recall is active.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4238,6 +4304,8 @@ pub fn cancel_submit_gems(&self) -> Result<()>
 ```
 
 Cancel self's gem submission; returns an error when none is active.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4287,6 +4355,8 @@ pub fn end_turn(&self) -> Result<()>
 
 End self's current turn and yield; other/design champions return an ownership error.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4302,6 +4372,8 @@ pub fn gem_count(&self) -> Result<u32>
 ```
 
 Query the carried gem count of a live champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4319,6 +4391,8 @@ pub fn gold_count(&self) -> Result<u32>
 
 Query the self champion's current gold; other champions return an ownership error.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4334,6 +4408,8 @@ pub fn has_completed_turn(&self) -> Result<bool>
 ```
 
 Check whether this champion has completed its turn.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4351,6 +4427,8 @@ pub fn is_alive(&self) -> Result<bool>
 
 Query whether this live champion is alive; draft designs return an error.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4366,6 +4444,8 @@ pub fn is_ally(&self) -> Result<bool>
 ```
 
 Check whether this champion belongs to the observing team.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4383,6 +4463,8 @@ pub fn is_enemy(&self) -> Result<bool>
 
 Check whether this champion belongs to the opposing team.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4398,6 +4480,8 @@ pub fn is_recalling(&self) -> Result<bool>
 ```
 
 Check whether this champion is recalling.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4415,6 +4499,8 @@ pub fn is_submitting_gems(&self) -> Result<bool>
 
 Check whether this champion is submitting gems.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4430,6 +4516,8 @@ pub fn is_teleporting(&self) -> Result<bool>
 ```
 
 Check whether this champion is teleporting.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4447,6 +4535,8 @@ pub fn item_count(&self) -> Result<ItemCounts>
 
 Query and return an independent owning item-count snapshot.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4462,6 +4552,8 @@ pub fn move_absolute(&self, destination: Vec2) -> Result<bool>
 ```
 
 Move self to an absolute map destination; engine validates movement legality. Returns `Ok(false)` for newly revealed obstructions; known invalid destinations return `Err`. # Arguments * `destination` - Map tile to move to.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Take a planned step; false means no movement occurred.
 
@@ -4482,6 +4574,8 @@ pub fn move_towards(&self, target: Vec2) -> Result<bool>
 ```
 
 Move self to the reachable tile on a shortest path to `target`, avoiding walls, holes, altars, the enemy spawn and visible units. Returns `Ok(false)` without moving when already there, unable to move, or `target` is blocked or unreachable, and for a newly revealed obstruction. # Arguments * `target` - Map tile to approach.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Take a planned step; false means no movement occurred.
 
@@ -4519,6 +4613,8 @@ pub fn place_ward(&self, destination: Vec2) -> Result<bool>
 
 Place an ordinary ward for self at `destination`; engine validates all placement rules. Returns `Ok(false)` for newly revealed obstructions; known invalid destinations return `Err`. # Arguments * `destination` - Tile to place the ward on.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4538,6 +4634,8 @@ pub fn prev_priority(&self) -> Result<i32>
 
 Query the previous scheduling priority for this live champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4554,6 +4652,8 @@ pub fn priority(&self) -> Result<i32>
 
 Query the current/next scheduling priority for this live champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4569,6 +4669,8 @@ pub fn r#move(&self, delta: Vec2) -> Result<bool>
 ```
 
 Move self by a displacement from the freshly queried current position. Returns `Ok(false)` for newly revealed obstructions; known invalid destinations return `Err`. # Arguments * `delta` - Displacement from the current position.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Take a planned step; false means no movement occurred.
 
@@ -4590,6 +4692,8 @@ pub fn recall(&self) -> Result<()>
 
 Begin recalling self; the engine validates channel and action restrictions.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Recall when badly injured and safe from interruption.
 
 Inputs:
@@ -4610,6 +4714,8 @@ pub fn remaining_channel_time(&self) -> Result<i32>
 
 Query the current channel countdown for a visible live champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4626,6 +4732,8 @@ pub fn restrictions(&self) -> Result<BuffRestrictions>
 
 Query current action-restriction bits; distinct from active buff-kind flags.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4641,6 +4749,8 @@ pub fn sell(&self, kind: ItemType) -> Result<()>
 ```
 
 Sell one item for self; engine validates inventory and location. # Arguments * `kind` - Item to sell.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4660,6 +4770,8 @@ pub fn sell_count(&self, kind: ItemType, count: u32) -> Result<()>
 ```
 
 Sell sequentially `count` times, stopping at the first failure. Earlier successful sales are not rolled back. # Arguments * `kind` - Item to sell. * `count` - Number of copies to sell.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4681,6 +4793,8 @@ pub fn set_priority(&self, priority: i32) -> Result<()>
 
 Set self's scheduling priority through the engine. # Arguments * `priority` - New scheduling priority; takes effect from the next round and persists.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4700,6 +4814,8 @@ pub fn state(&self) -> Result<ChampionState>
 
 Query champion state flags, preserving all engine bits including unknown future bits.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4715,6 +4831,8 @@ pub fn submit_gems(&self, altar: Vec2) -> Result<()>
 ```
 
 Begin submitting self's carried gems to `altar`; engine validates range and channel state. # Arguments * `altar` - Altar tile to tribute at.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4735,6 +4853,8 @@ pub fn team(&self) -> Result<Team>
 
 Query the champion's team relative to the guest perspective; no vision required.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4751,6 +4871,8 @@ pub fn visible_tiles(&self) -> Result<Bitboard>
 
 Query a fresh owning vision mask for this live champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4766,6 +4888,8 @@ pub fn visible_tiles_from(&self, position: Vec2) -> Result<Bitboard>
 ```
 
 Query an owning hypothetical vision mask at `position`, not current visibility. # Arguments * `position` - Hypothetical tile to see from.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4785,6 +4909,8 @@ pub fn visible_tiles_from_into(&self, position: Vec2, out: &mut Bitboard) -> Res
 ```
 
 Like [`Self::visible_tiles_from`], but writes into `out`. # Arguments * `position` - Hypothetical tile to see from. * `out` - Destination mask; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4806,6 +4932,8 @@ pub fn visible_tiles_into(&self, out: &mut Bitboard) -> Result<()>
 
 Like [`Self::visible_tiles`], but writes into `out`. # Arguments * `out` - Destination mask; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4825,6 +4953,8 @@ pub fn ward_cooldown(&self) -> Result<i32>
 
 Query the current champion's ward-resource cooldown; requires self.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4841,6 +4971,8 @@ pub fn ward_placement_tiles(&self) -> Result<Bitboard>
 
 Build the self champion's placement-range mask using initialised constants. This geometric mask alone does not guarantee that ward placement is legal. # Panics Panics if SDK initialisation failed.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```rust
@@ -4856,6 +4988,8 @@ pub fn ward_placement_tiles_into(&self, out: &mut Bitboard) -> Result<()>
 ```
 
 Like [`Self::ward_placement_tiles`], but writes into `out`. # Panics Panics if SDK initialisation failed. # Arguments * `out` - Destination mask; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4875,6 +5009,8 @@ pub fn ward_positions(&self) -> Result<Vec<Vec2>>
 ```
 
 Query owning positions of the current champion's ordinary wards; requires self.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5295,6 +5431,8 @@ pub fn count(&self) -> Result<u32>
 
 Query the owning live champion's count of this consumable type.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Plan a purchase or use an owned consumable.
 
 Inputs:
@@ -5329,6 +5467,8 @@ pub fn use_at(&self, destination: Vec2) -> Result<bool>
 
 Use this consumable at `destination`; requires the self champion. Returns `Ok(false)` for newly revealed obstructions; known invalid destinations return `Err`. # Arguments * `destination` - Tile to use the consumable at.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Plan a purchase or use an owned consumable.
 
 Inputs:
@@ -5346,6 +5486,8 @@ pub fn use_untargeted(&self) -> Result<bool>
 ```
 
 Use this consumable without a destination; requires the self champion. Returns `Ok(false)` for newly revealed obstructions; known invalid destinations return `Err`.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Plan a purchase or use an owned consumable.
 
@@ -5845,6 +5987,8 @@ pub fn pick(kind: ChampionDraft) -> Result<()>
 
 Submit one draft selection; phase and availability failures propagate engine errors. # Arguments * `kind` - Champion to pick.
 
+**draft**: This function can only be used during draft phase, and not by bots during gameplay
+
 Choose your team's roster during the draft phase.
 
 Inputs:
@@ -5920,6 +6064,8 @@ pub fn submit(&self, bytes: &[u8]) -> Result<()>
 ```
 
 Submit caller bytes during draft for transfer to gameplay guests. Gameplay submissions return `InvalidAction`; the startup snapshot is unchanged. # Arguments * `bytes` - Bytes to pass to this team's gameplay bots.
+
+**draft**: This function can only be used during draft phase, and not by bots during gameplay
 
 Pass your drafting decisions to the bot's later turns using draft memory.
 
@@ -6547,6 +6693,8 @@ pub fn champion(&self) -> Result<Champion>
 
 Construct a live wrapper for the teleport caster, preserving host visibility errors.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -6649,6 +6797,8 @@ pub fn visible_tiles(&self) -> Result<Bitboard>
 
 Query hypothetical caster vision after arrival at the reserved destination. This is not a mask of tiles currently visible to the caster.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -6665,6 +6815,8 @@ pub fn visible_tiles_into(&self, out: &mut Bitboard) -> Result<()>
 ```
 
 Like [`Self::visible_tiles`], but writes into `out`. # Arguments * `out` - Destination mask; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -6703,6 +6855,8 @@ pub fn attack_tiles(&self) -> Result<Bitboard>
 
 Build the live unit's Chebyshev attack-range mask without filtering targets or attack availability. Hidden units and design-only champions propagate position/range query errors.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -6719,6 +6873,8 @@ pub fn attack_tiles_into(&self, out: &mut Bitboard) -> Result<()>
 ```
 
 Like [`Self::attack_tiles`], but writes into `out`. # Arguments * `out` - Destination mask; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -6738,6 +6894,8 @@ pub fn buffs(&self) -> Result<BuffCollection>
 
 Construct a fresh owning buff collection; designs and hidden units return an error.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -6755,6 +6913,8 @@ pub fn focus(&self) -> Result<f32>
 
 Query current focus.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -6771,6 +6931,8 @@ pub fn health(&self) -> Result<f32>
 ```
 
 Query current health points.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -6806,6 +6968,8 @@ pub fn max_health(&self) -> Result<f32>
 
 Query current maximum health points.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -6823,6 +6987,8 @@ pub fn position(&self) -> Result<Vec2>
 
 Query the current map position; hidden/design units propagate unavailability.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -6839,6 +7005,8 @@ pub fn strength(&self) -> Result<f32>
 ```
 
 Query current strength.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -7041,6 +7209,8 @@ pub fn altar_lock_at(position: Vec2) -> Result<AltarLock>
 
 Return an owning visible altar lock at `position`, preferring ally then enemy. # Arguments * `position` - Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7058,6 +7228,8 @@ pub fn altar_lock_tiles(team: Option<Team>) -> Result<Bitboard>
 
 Query visible altar-lock occupancy for `team`, or both sides when `None`. # Arguments * `team` - `Some(team)` for one side, or `None` for both.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7074,6 +7246,8 @@ pub fn altar_lock_tiles_into(team: Option<Team>, out: &mut Bitboard) -> Result<(
 ```
 
 Like [`altar_lock_tiles`], but writes into `out`. # Arguments * `team` - `Some(team)` for one side, or `None` for both. * `out` - Destination mask; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7093,6 +7267,8 @@ pub fn altar_locks(team: Option<Team>) -> Result<Vec<AltarLock>>
 
 Return owning visible altar-lock snapshots, optionally filtered by team. # Arguments * `team` - `Some(team)` for one side, or `None` for both.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7109,6 +7285,8 @@ pub fn camp_at(position: Vec2) -> Result<Camp>
 ```
 
 Look up a visible camp at its current position and borrow initialised metadata. Absence and hidden tiles are errors; unknown handles and uninitialised caches remain errors. # Arguments * `position` - Current tile of the camp.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7127,6 +7305,8 @@ pub fn camp_groups() -> Result<Vec<CampGroup>>
 
 Query groups with any camp spawn tile in current vision.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```rust
@@ -7141,6 +7321,8 @@ pub fn camp_tiles() -> Result<Bitboard>
 
 Query the current visible camp occupancy mask.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```rust
@@ -7154,6 +7336,8 @@ pub fn camp_tiles_into(out: &mut Bitboard) -> Result<()>
 ```
 
 Like [`camp_tiles`], but writes into `out`. # Arguments * `out` - Destination mask; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7172,6 +7356,8 @@ pub fn camps() -> Result<Vec<Camp>>
 
 Return owning wrappers for currently visible camps, using initialised map metadata.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```rust
@@ -7185,6 +7371,8 @@ pub fn champion_at(position: Vec2) -> Result<Champion>
 ```
 
 Return a live wrapper for the visible champion at `position`; absence and hidden tiles are errors. # Arguments * `position` - Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7203,6 +7391,8 @@ pub fn champion_tiles(team: Option<Team>) -> Result<Bitboard>
 
 Query visible champion occupancy for `team`, or both sides when `None`. # Arguments * `team` - `Some(team)` for one side, or `None` for both.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7219,6 +7409,8 @@ pub fn champion_tiles_into(team: Option<Team>, out: &mut Bitboard) -> Result<()>
 ```
 
 Like [`champion_tiles`], but writes into `out`. # Arguments * `team` - `Some(team)` for one side, or `None` for both. * `out` - Destination mask; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7238,6 +7430,8 @@ pub fn champions(team: Option<Team>) -> Result<Vec<Champion>>
 
 Return owning wrappers for currently visible champions, optionally filtered by team. # Arguments * `team` - `Some(team)` for one side, or `None` for both.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7254,6 +7448,8 @@ pub fn has_altar_lock(position: Vec2) -> Result<bool>
 ```
 
 Test for a visible altar lock for either team; missing or hidden locks return `false`. # Arguments * `position` - Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7272,6 +7468,8 @@ pub fn has_camp(position: Vec2) -> Result<bool>
 
 Query visible camp presence at `position`; invalid positions remain errors. # Arguments * `position` - Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7288,6 +7486,8 @@ pub fn has_champion(position: Vec2) -> Result<bool>
 ```
 
 Query visible champion presence at `position`; invalid positions remain errors. # Arguments * `position` - Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7306,6 +7506,8 @@ pub fn has_teleport(position: Vec2) -> Result<bool>
 
 Query whether a visible teleport reservation exists at `position`. # Arguments * `position` - Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7322,6 +7524,8 @@ pub fn has_ward(position: Vec2, team: Option<Team>) -> Result<bool>
 ```
 
 Test for a visible ward belonging to `team`; missing or hidden wards return `false`. # Arguments * `position` - Tile to query. * `team` - `Some(team)` for one side, or `None` for both.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7341,6 +7545,8 @@ pub fn teleport_at(position: Vec2) -> Result<Teleport>
 
 Return the visible teleport reservation at `position`. # Arguments * `position` - Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7358,6 +7564,8 @@ pub fn teleport_tiles() -> Result<Bitboard>
 
 Query current visible teleport-destination occupancy.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```rust
@@ -7371,6 +7579,8 @@ pub fn teleport_tiles_into(out: &mut Bitboard) -> Result<()>
 ```
 
 Like [`teleport_tiles`], but writes into `out`. # Arguments * `out` - Destination mask; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7389,6 +7599,8 @@ pub fn teleports() -> Result<Vec<Teleport>>
 
 Return owning visible teleport reservations with checked caster types and teams.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```rust
@@ -7403,6 +7615,8 @@ pub fn visible_tiles() -> Result<Bitboard>
 
 Query a fresh owning mask of current visible tiles.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```rust
@@ -7416,6 +7630,8 @@ pub fn visible_tiles_into(out: &mut Bitboard) -> Result<()>
 ```
 
 Like [`visible_tiles`], but writes into `out`. # Arguments * `out` - Destination mask; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7433,6 +7649,8 @@ pub fn ward_at(position: Vec2, team: Option<Team>) -> Result<Ward>
 ```
 
 Return a visible ordinary ward for `team`. # Arguments * `position` - Tile to query. * `team` - `Some(team)` for one side, or `None` for both.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7452,6 +7670,8 @@ pub fn ward_tiles(team: Option<Team>) -> Result<Bitboard>
 
 Query visible ordinary-ward occupancy for `team`, or both sides when `None`. # Arguments * `team` - `Some(team)` for one side, or `None` for both.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7468,6 +7688,8 @@ pub fn ward_tiles_into(team: Option<Team>, out: &mut Bitboard) -> Result<()>
 ```
 
 Like [`ward_tiles`], but writes into `out`. # Arguments * `team` - `Some(team)` for one side, or `None` for both. * `out` - Destination mask; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7486,6 +7708,8 @@ pub fn wards(team: Option<Team>) -> Result<Vec<Ward>>
 ```
 
 Return owning ordinary-ward observations, optionally filtered by team. Overlapping observations remain separate entries. # Arguments * `team` - `Some(team)` for one side, or `None` for both.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7591,6 +7815,8 @@ pub fn visible_tiles(&self) -> Result<Bitboard>
 
 Query hypothetical vision at the ward's position.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7607,6 +7833,8 @@ pub fn visible_tiles_from(position: Vec2) -> Result<Bitboard>
 ```
 
 Query a fresh hypothetical ordinary-ward vision mask at `position`. # Arguments * `position` - Hypothetical ward tile.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7625,6 +7853,8 @@ pub fn visible_tiles_from_into(position: Vec2, out: &mut Bitboard) -> Result<()>
 
 Like [`Self::visible_tiles_from`], but writes into `out`. # Arguments * `position` - Hypothetical ward tile. * `out` - Destination mask; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7642,6 +7872,8 @@ pub fn visible_tiles_into(&self, out: &mut Bitboard) -> Result<()>
 ```
 
 Like [`Self::visible_tiles`], but writes into `out`. # Arguments * `out` - Destination mask; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 

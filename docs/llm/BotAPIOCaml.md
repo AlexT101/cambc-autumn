@@ -60,6 +60,8 @@ val champions : ?team:Team.t -> unit -> Champion.t list
 
 `champions ?team ()` is every roster champion, including hidden ones. @param team Team to include; both teams when omitted.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Use this value in your bot's draft or turn logic.
 
 ```ocaml
@@ -134,6 +136,8 @@ val global_submitted_gems : Team.t -> int
 ```
 
 `global_submitted_gems team` is the total gems the team has tributed. @param team Team to count.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Use this value in your bot's draft or turn logic.
 
@@ -235,6 +239,8 @@ val self_champion : unit -> Champion.t
 ```
 
 The champion this bot controls; raises during the draft.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Use this value in your bot's draft or turn logic.
 
@@ -351,6 +357,8 @@ val cast : ?target:[ `Champion of champion | `Camp of camp ] -> ?at:Vec2.t -> t 
 
 Pass at most one of `~target` and `~at`. Unit casts land on the target's tile; ground casts take a tile. Returns false for a newly revealed obstruction; known invalid destinations raise `Cambc_error`. @param target Champion or camp to cast on. @param at Ground tile to cast at. @param a Ability slot of the bot's own champion. Altar locks are not valid ability targets.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -367,6 +375,8 @@ val cooldown : t -> int
 ```
 
 `cooldown a` is the remaining cooldown; 0 means ready. @param a Ability slot.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -385,6 +395,8 @@ val damage_amount : ?against:champion -> t -> float
 
 `damage_amount ?against a` is the damage the ability would deal, after mitigation and shields when `against` is given. @param against Optional visible champion the amount is computed against. @param a Ability slot.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -401,6 +413,8 @@ val heal_amount : ?against:champion -> t -> float
 ```
 
 `heal_amount ?against a` is the healing the ability would do, capped at the target's missing health when `against` is given. @param against Optional visible champion the amount is computed against. @param a Ability slot.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -570,6 +584,8 @@ val is_on_cooldown : t -> bool
 
 `is_on_cooldown a` is true while the cooldown is running. @param a Ability slot.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -586,6 +602,8 @@ val is_ready : t -> bool
 ```
 
 Check whether this ability is ready to cast. @param a Ability slot.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -637,6 +655,8 @@ val mask_into : t -> Bitboard.t -> unit
 ```
 
 Like `valid_tiles`, but writes into `out`. Raises `No_range` for attack resets. @param a Ability slot. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -704,6 +724,8 @@ val shield_amount : ?against:champion -> t -> float
 
 `shield_amount ?against a` is the shield the ability would grant. @param against Optional visible champion the amount is computed against. @param a Ability slot.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -768,6 +790,8 @@ val valid_tiles : t -> Bitboard.t
 ```
 
 `valid_tiles a` is the tiles within casting range; visibility and occupancy are not checked. @param a Ability slot.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -2412,6 +2436,8 @@ val attack_tiles : t -> Bitboard.t
 
 `attack_tiles c` is the tiles within attack range of `c`'s position. @param c Camp.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2428,6 +2454,8 @@ val attack_tiles_into : t -> Bitboard.t -> unit
 ```
 
 Like `attack_tiles`, but writes into `out`. @param c Camp. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -2478,6 +2506,8 @@ val buffs : t -> Buff.t list
 
 `buffs c` is the current buffs; raises if `c` is not visible. @param c Camp.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2520,6 +2550,8 @@ val focus : t -> float
 
 `focus c` is current focus; raises if `c` is not visible. @param c Camp.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2545,6 +2577,8 @@ val health : t -> float
 
 `health c` is current health; raises if `c` is not visible. @param c Camp.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2561,6 +2595,8 @@ val is_alive : t -> bool
 ```
 
 Query whether this camp is living (awake or asleep); uses the visibility checks of `state`.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -2579,6 +2615,8 @@ val is_asleep : t -> bool
 
 Query whether this camp is living but dormant; uses the visibility checks of `state`.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2596,6 +2634,8 @@ val is_awake : t -> bool
 
 Query whether this camp is awake; uses the same visibility checks as `state`.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2612,6 +2652,8 @@ val is_dead : t -> bool
 ```
 
 Query whether this camp is dead; uses the same visibility checks as `state`.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -2698,6 +2740,8 @@ val is_visible : t -> bool
 
 `is_visible c` is true when `c` is currently visible. @param c Camp.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2749,6 +2793,8 @@ val max_health : t -> float
 
 `max_health c` is current maximum health; raises if `c` is not visible. @param c Camp.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2765,6 +2811,8 @@ val position : t -> Vec2.t
 ```
 
 `position c` is the current tile; raises if `c` is not visible. @param c Camp.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -2814,6 +2862,8 @@ val state : t -> state
 
 Query `Dead`, `Alive` (awake), or `Asleep`. The current tile, or last occupied tile when dead, must be in vision; hidden camps raise `Api_not_in_vision`. This is separate from the camp-group state. @param c Camp to inspect.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2830,6 +2880,8 @@ val strength : t -> float
 ```
 
 `strength c` is current strength; raises if `c` is not visible. @param c Camp.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -3001,6 +3053,8 @@ val state : t -> state
 ```
 
 `state g` is the group's current state. @param g Camp group.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Read the remaining respawn rounds for a group with an original spawn tile in current vision. Alive and unclaimed-reward states have no countdown.
 
@@ -3176,6 +3230,8 @@ val attack : t -> [ `Champion of champion | `Camp of camp | `Altar_lock of Altar
 
 `attack c target` basic-attacks a visible champion, camp or altar lock in range. @param c The bot's own champion. @param target Unit or altar lock to attack.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3194,6 +3250,8 @@ val attack_range : t -> int
 
 `attack_range c` is the attack range in Chebyshev tiles; melee champions have range 1. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3211,6 +3269,8 @@ val attack_tiles : t -> Bitboard.t
 
 `attack_tiles c` is the tiles within attack range of `c`'s position. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3227,6 +3287,8 @@ val attack_tiles_into : t -> Bitboard.t -> unit
 ```
 
 Like `attack_tiles`, but writes into `out`. @param c Champion. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3277,6 +3339,8 @@ val buffs : t -> Buff.t list
 
 `buffs c` is the champion's current buffs; raises if `c` is not visible. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3293,6 +3357,8 @@ val buy : ?count:int -> t -> Item.t -> unit
 ```
 
 `buy ?count c item` buys items; the engine validates location, gold and recipe. @param count Number of copies; defaults to 1. @param c The bot's own champion. @param item Item type.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3312,6 +3378,8 @@ val buy_consumable : t -> Consumable.t -> unit
 
 `buy_consumable c k` buys one consumable; the engine validates gold and carry limit. @param c The bot's own champion. @param k Consumable type.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3330,6 +3398,8 @@ val can_attack : t -> bool
 
 Check whether this champion can attack. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check the action allowance before spending fuel to choose an attack target.
 
 ```ocaml
@@ -3345,6 +3415,8 @@ val can_buy : ?count:int -> t -> Item.t -> bool
 ```
 
 `can_buy ?count c item` is true when `c` can buy `item` in its current state. @param count Number of copies; defaults to 1. @param c Champion. @param item Item type.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3364,6 +3436,8 @@ val can_buy_consumable : t -> Consumable.t -> bool
 
 `can_buy_consumable c k` is true when `c` can buy a consumable now. @param c Champion. @param k Consumable type.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3382,6 +3456,8 @@ val can_cast : t -> bool
 
 Check whether this champion can cast. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check the action allowance before spending fuel to evaluate ready abilities.
 
 ```ocaml
@@ -3398,6 +3474,8 @@ val can_move : t -> bool
 
 Check whether this champion can move. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check the action allowance before spending fuel to plan a path.
 
 ```ocaml
@@ -3413,6 +3491,8 @@ val can_sell : t -> bool
 ```
 
 `can_sell c` is true when `c` can sell items in its current state. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3431,6 +3511,8 @@ val cancel_recall : t -> unit
 
 `cancel_recall c` cancels the current recall. @param c The bot's own champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3447,6 +3529,8 @@ val cancel_submit_gems : t -> unit
 ```
 
 `cancel_submit_gems c` cancels the current tribute. @param c The bot's own champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3482,6 +3566,8 @@ val consumable_count : t -> Consumable.t -> int
 
 `consumable_count c k` is how many of a consumable `c` carries. @param c Champion. @param k Consumable type.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3499,6 +3585,8 @@ val consumable_counts : t -> Consumable_counts.t
 ```
 
 `consumable_counts c` is `c`'s consumable inventory. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3531,6 +3619,8 @@ val end_turn : t -> unit
 
 `end_turn c` ends the turn now. @param c The bot's own champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3556,6 +3646,8 @@ val focus : t -> float
 
 `focus c` is current focus; raises if `c` is not visible. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3572,6 +3664,8 @@ val gem_count : t -> int
 ```
 
 `gem_count c` is the gems `c` is carrying. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3590,6 +3684,8 @@ val gold_count : t -> int
 
 `gold_count c` is the gold `c` is carrying. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3606,6 +3702,8 @@ val has_completed_turn : t -> bool
 ```
 
 Check whether this champion has completed its turn. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3632,6 +3730,8 @@ val health : t -> float
 
 `health c` is current health; raises if `c` is not visible. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Recall when badly injured and safe from interruption.
 
 Inputs:
@@ -3652,6 +3752,8 @@ val is_alive : t -> bool
 
 `is_alive c` is true while the champion is alive. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3668,6 +3770,8 @@ val is_ally : t -> bool
 ```
 
 Check whether this champion belongs to the observing team. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3686,6 +3790,8 @@ val is_dead : t -> bool
 
 `is_dead c` is `not (is_alive c)`. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3702,6 +3808,8 @@ val is_enemy : t -> bool
 ```
 
 Check whether this champion belongs to the opposing team. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3720,6 +3828,8 @@ val is_recalling : t -> bool
 
 Check whether this champion is recalling. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3737,6 +3847,8 @@ val is_submitting_gems : t -> bool
 
 Check whether this champion is submitting gems. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3753,6 +3865,8 @@ val is_teleporting : t -> bool
 ```
 
 Check whether this champion is teleporting. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3788,6 +3902,8 @@ val item_count : t -> Item.t -> int
 
 `item_count c item` is how many of `item` `c` holds. @param c Champion. @param item Item type.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3806,6 +3922,8 @@ val item_counts : t -> Item_counts.t
 
 `item_counts c` is `c`'s item inventory. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3822,6 +3940,8 @@ val max_health : t -> float
 ```
 
 `max_health c` is current maximum health; raises if `c` is not visible. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Recall when badly injured and safe from interruption.
 
@@ -3843,6 +3963,8 @@ val move : t -> Vec2.t -> bool
 
 Returns false for a newly revealed obstruction; known invalid destinations raise `Cambc_error`. @param c The bot's own champion. @param delta Displacement from the current position.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Take a planned step; false means no movement occurred.
 
 Inputs:
@@ -3863,6 +3985,8 @@ val move_absolute : t -> Vec2.t -> bool
 
 Returns false for a newly revealed obstruction; known invalid destinations raise `Cambc_error`. @param c The bot's own champion. @param destination Map tile to move to.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Take a planned step; false means no movement occurred.
 
 Inputs:
@@ -3882,6 +4006,8 @@ val move_towards : t -> Vec2.t -> bool
 ```
 
 Move to the reachable tile on a shortest path to `target`, avoiding walls, holes, altars, the enemy spawn and visible units. Returns false without moving when already there, unable to move, or `target` is blocked or unreachable, and for a newly revealed obstruction. @param c The bot's own champion. @param target Map tile to approach.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Take a planned step; false means no movement occurred.
 
@@ -3920,6 +4046,8 @@ val place_ward : t -> Vec2.t -> bool
 
 Returns false for a newly revealed obstruction; known invalid destinations raise `Cambc_error`. @param c The bot's own champion. @param destination Tile to place the ward on.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3938,6 +4066,8 @@ val position : t -> Vec2.t
 
 `position c` is the current tile; raises if `c` is not visible. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3954,6 +4084,8 @@ val prev_priority : t -> int
 ```
 
 `prev_priority c` is the priority used for the current round. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -3972,6 +4104,8 @@ val priority : t -> int
 
 `priority c` is the priority that will apply from the next round. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3988,6 +4122,8 @@ val recall : t -> unit
 ```
 
 `recall c` starts channelling a recall to the team spawn. @param c The bot's own champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Recall when badly injured and safe from interruption.
 
@@ -4009,6 +4145,8 @@ val remaining_channel_time : t -> int
 
 `remaining_channel_time c` is the rounds left on the current recall, tribute or teleport channel. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4026,6 +4164,8 @@ val restrictions : t -> Buff_restrictions.t
 
 `restrictions c` is the actions the champion's buffs currently prohibit. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4042,6 +4182,8 @@ val sell : ?count:int -> t -> Item.t -> unit
 ```
 
 `sell ?count c item` sells items; the engine validates inventory and location. @param count Number of copies; defaults to 1. @param c The bot's own champion. @param item Item type.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4061,6 +4203,8 @@ val set_priority : t -> int -> unit
 
 `set_priority c priority` sets the scheduling priority. @param c The bot's own champion. @param priority New priority; takes effect from the next round and persists.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4079,6 +4223,8 @@ val state : t -> Champion_state.t
 
 `state c` is the champion's life, channel and action flags. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4096,6 +4242,8 @@ val strength : t -> float
 
 `strength c` is current strength; raises if `c` is not visible. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4112,6 +4260,8 @@ val submit_gems : t -> Vec2.t -> unit
 ```
 
 `submit_gems c altar` starts tributing carried gems at an altar. @param c The bot's own champion. @param altar Altar tile to tribute at.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4145,6 +4295,8 @@ val team : t -> Team.t
 
 `team c` is the champion's team. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4161,6 +4313,8 @@ val use_consumable : ?at:Vec2.t -> t -> Consumable.t -> bool
 ```
 
 Returns false for a newly revealed obstruction; known invalid destinations raise `Cambc_error`. @param at Tile to use the consumable at, for targeted consumables. @param c The bot's own champion. @param k Consumable to use.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4180,6 +4334,8 @@ val visible_tiles : t -> Bitboard.t
 
 `visible_tiles c` is the tiles `c` currently sees. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4196,6 +4352,8 @@ val visible_tiles_from : Vec2.t -> t -> Bitboard.t
 ```
 
 `visible_tiles_from p c` is the vision `c` would have at `p`. @param p Hypothetical tile to see from. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4214,6 +4372,8 @@ val visible_tiles_from_into : Vec2.t -> t -> Bitboard.t -> unit
 ```
 
 Like `visible_tiles_from`, but writes into `out`. @param p Hypothetical tile to see from. @param c Champion. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4234,6 +4394,8 @@ val visible_tiles_into : t -> Bitboard.t -> unit
 
 Like `visible_tiles`, but writes into `out`. @param c Champion. @param out Destination; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4252,6 +4414,8 @@ val ward_cooldown : t -> int
 
 `ward_cooldown c` is the rounds until `c` can place another ward. @param c Champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4268,6 +4432,8 @@ val ward_placement_tiles : t -> Bitboard.t
 ```
 
 `ward_placement_tiles c` is the tiles where `c` could place a ward now. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4286,6 +4452,8 @@ val ward_placement_tiles_into : t -> Bitboard.t -> unit
 
 Like `ward_placement_tiles`, but writes into `out`. @param c Champion. @param out Destination; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4303,6 +4471,8 @@ val ward_positions : t -> Vec2.t list
 ```
 
 `ward_positions c` is the tiles of `c`'s placed wards. @param c Champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5372,6 +5542,8 @@ val pick : Champion_draft.t -> unit
 
 `pick champion` picks a champion for the current draft round; only valid during the draft. @param champion Champion to pick.
 
+**draft**: This function can only be used during draft phase, and not by bots during gameplay
+
 Choose your team's roster during the draft phase.
 
 Inputs:
@@ -5444,6 +5616,8 @@ val submit : Bytes.t -> unit
 
 `submit data` sets the draft memory passed to this team's gameplay bots; only valid during the draft. @param data Bytes to submit.
 
+**draft**: This function can only be used during draft phase, and not by bots during gameplay
+
 Pass your drafting decisions to the bot's later turns using draft memory.
 
 Inputs:
@@ -5472,7 +5646,7 @@ let result = Error_code.all
 ### t
 
 ```ocaml
-type t = | Success | Invalid_handle | Out_of_memory | File_not_found | Null_pointer | Invalid_argument | Map_parse_error | Invalid_map_file | Invalid_map_version | Replay_parse_error | Invalid_replay_file | Invalid_replay_version | Invalid_draft | Draft_not_drafting | Draft_duplicate_champion | Draft_invalid_round | Draft_unavailable | Already_initialized | Invalid_action | Invalid_action_memory_bad_range | Invalid_action_memory_draft_frozen | Invalid_action_move_cant_move | Invalid_action_move_bad_destination | Invalid_action_spell_cast_invalid_source | Invalid_action_spell_cast_invalid_slot | Invalid_action_spell_cast_no_ability | Invalid_action_spell_cast_cant_cast | Invalid_action_spell_cast_already_cast | Invalid_action_spell_cast_on_cooldown | Invalid_action_spell_cast_no_charges | Invalid_action_spell_cast_bad_target | Invalid_action_spell_cast_out_of_range | Invalid_action_spell_cast_bad_destination | Invalid_action_cant_act | Invalid_action_is_recalling | Invalid_action_is_submitting_gems | Invalid_action_move_already_moved | Invalid_action_move_out_of_range | Invalid_action_move_unreachable | Invalid_action_attack_invalid_source | Invalid_action_attack_cant_attack | Invalid_action_attack_already_attacked | Invalid_action_attack_bad_target | Invalid_action_attack_out_of_range | Invalid_action_recall_cant_channel | Invalid_action_submit_gems_cant_channel | Invalid_action_submit_gems_no_gems | Invalid_action_submit_gems_bad_altar | Invalid_action_submit_gems_out_of_range | Invalid_action_buy_item_not_on_spawn | Invalid_action_buy_item_invalid_item | Invalid_action_buy_item_invalid_count | Invalid_action_buy_item_not_enough_gold | Invalid_action_buy_item_inventory_full | Invalid_action_buy_item_stats_overflow | Invalid_action_buy_consumable_not_on_spawn | Invalid_action_buy_consumable_invalid_type | Invalid_action_buy_consumable_invalid_count | Invalid_action_buy_consumable_inventory_full | Invalid_action_buy_consumable_not_enough_gold | Invalid_action_use_consumable_invalid_type | Invalid_action_use_consumable_not_owned | Invalid_action_place_ward_no_charges | Invalid_action_place_ward_cant_place | Invalid_action_place_ward_bad_destination | Invalid_action_place_ward_out_of_range | Map_set_team_aspawn_area_bad_position | Map_add_bush_bad_position | Map_remove_bush_bad_position | Map_add_wall_bad_position | Map_remove_wall_bad_position | Map_add_hole_bad_position | Map_remove_hole_bad_position | Map_add_altar_bad_position | Map_remove_altar_bad_position | Map_get_bush_bad_position | Map_get_wall_bad_position | Map_get_hole_bad_position | Map_get_altar_bad_position | Map_get_camp_handle_at_bad_position | Map_add_camp_bad_position | Map_set_camp_bad_position | Invalid_action_champion_teleport_bad_destination | Invalid_action_respawn_group_blocked_spawn | Invalid_action_camp_teleport_bad_destination | Timeline_bad_seek_position | Timeline_bad_seek_substep | Api_no_map | Managed_resources_bad_position | Managed_resources_bad_radius | Managed_resources_aliasing | Managed_resources_metadata_mismatch | Managed_resources_opaque_origin | Api_invalid_team | Api_invalid_perspective | Api_not_initialized | Api_bad_position | Api_not_in_vision | Api_not_found | Api_invalid_camp_group | Api_invalid_camp_info | Api_invalid_camp | Api_invalid_champion | Api_invalid_ward | Api_invalid_ability | Api_not_teammate | Api_camp_group_not_waiting_to_respawn | Api_champion_alive | Api_invalid_champion_type | Api_invalid_camp_type | Api_value_out_of_range | Api_buffer_too_small | Api_not_owner | Invalid_action_recall_already_used | Invalid_action_submit_gems_already_used | Invalid_action_cancel_channel_not_channeling | Invalid_action_cancel_channel_already_used | Invalid_action_place_ward_ally_ward_present | Invalid_action_altar_lock_bad_altar | Invalid_action_altar_lock_out_of_range | Invalid_action_altar_lock_already_locked | Invalid_action_is_teleporting | Invalid_action_cancel_channel_not_cancellable | Invalid_action_submit_gems_altar_locked | Invalid_action_spell_cast_already_moved | Invalid_action_move_exclusive_spell_cast | Invalid_action_sell_not_tavi | Invalid_action_sell_invalid_item | Invalid_action_sell_not_owned | Invalid_action_sell_already_sold | Invalid_action_sell_gold_overflow | Invalid_action_sell_not_on_spawn | Unknown of int
+type t = | Success | Invalid_handle | Out_of_memory | File_not_found | Null_pointer | Invalid_argument | Map_parse_error | Invalid_map_file | Invalid_map_version | Replay_parse_error | Invalid_replay_file | Invalid_replay_version | Invalid_draft | Draft_not_drafting | Draft_duplicate_champion | Draft_invalid_round | Draft_unavailable | Already_initialized | Invalid_action | Invalid_action_memory_bad_range | Invalid_action_memory_draft_frozen | Invalid_action_move_cant_move | Invalid_action_move_bad_destination | Invalid_action_spell_cast_invalid_source | Invalid_action_spell_cast_invalid_slot | Invalid_action_spell_cast_no_ability | Invalid_action_spell_cast_cant_cast | Invalid_action_spell_cast_already_cast | Invalid_action_spell_cast_on_cooldown | Invalid_action_spell_cast_no_charges | Invalid_action_spell_cast_bad_target | Invalid_action_spell_cast_out_of_range | Invalid_action_spell_cast_bad_destination | Invalid_action_cant_act | Invalid_action_is_recalling | Invalid_action_is_submitting_gems | Invalid_action_move_already_moved | Invalid_action_move_out_of_range | Invalid_action_move_unreachable | Invalid_action_attack_invalid_source | Invalid_action_attack_cant_attack | Invalid_action_attack_already_attacked | Invalid_action_attack_bad_target | Invalid_action_attack_out_of_range | Invalid_action_recall_cant_channel | Invalid_action_submit_gems_cant_channel | Invalid_action_submit_gems_no_gems | Invalid_action_submit_gems_bad_altar | Invalid_action_submit_gems_out_of_range | Invalid_action_buy_item_not_on_spawn | Invalid_action_buy_item_invalid_item | Invalid_action_buy_item_invalid_count | Invalid_action_buy_item_not_enough_gold | Invalid_action_buy_item_inventory_full | Invalid_action_buy_item_stats_overflow | Invalid_action_buy_consumable_not_on_spawn | Invalid_action_buy_consumable_invalid_type | Invalid_action_buy_consumable_invalid_count | Invalid_action_buy_consumable_inventory_full | Invalid_action_buy_consumable_not_enough_gold | Invalid_action_use_consumable_invalid_type | Invalid_action_use_consumable_not_owned | Invalid_action_place_ward_no_charges | Invalid_action_place_ward_cant_place | Invalid_action_place_ward_bad_destination | Invalid_action_place_ward_out_of_range | Map_set_team_aspawn_area_bad_position | Map_add_bush_bad_position | Map_remove_bush_bad_position | Map_add_wall_bad_position | Map_remove_wall_bad_position | Map_add_hole_bad_position | Map_remove_hole_bad_position | Map_add_altar_bad_position | Map_remove_altar_bad_position | Map_get_bush_bad_position | Map_get_wall_bad_position | Map_get_hole_bad_position | Map_get_altar_bad_position | Map_get_camp_handle_at_bad_position | Map_add_camp_bad_position | Map_set_camp_bad_position | Invalid_action_champion_teleport_bad_destination | Invalid_action_respawn_group_blocked_spawn | Invalid_action_camp_teleport_bad_destination | Timeline_bad_seek_position | Timeline_bad_seek_substep | Api_no_map | Managed_resources_bad_position | Managed_resources_bad_radius | Managed_resources_aliasing | Managed_resources_metadata_mismatch | Managed_resources_opaque_origin | Api_invalid_team | Api_invalid_perspective | Api_not_initialized | Api_bad_position | Api_not_in_vision | Api_not_found | Api_invalid_camp_group | Api_invalid_camp_info | Api_invalid_camp | Api_invalid_champion | Api_invalid_ward | Api_invalid_ability | Api_not_teammate | Api_camp_group_not_waiting_to_respawn | Api_champion_alive | Api_invalid_champion_type | Api_invalid_camp_type | Api_value_out_of_range | Api_buffer_too_small | Api_not_owner | Invalid_action_recall_already_used | Invalid_action_submit_gems_already_used | Invalid_action_cancel_channel_not_channeling | Invalid_action_cancel_channel_already_used | Invalid_action_place_ward_ally_ward_present | Invalid_action_altar_lock_bad_altar | Invalid_action_altar_lock_out_of_range | Invalid_action_altar_lock_already_locked | Invalid_action_is_teleporting | Invalid_action_cancel_channel_not_cancellable | Invalid_action_submit_gems_altar_locked | Invalid_action_spell_cast_already_moved | Invalid_action_move_exclusive_spell_cast | Invalid_action_sell_not_tavi | Invalid_action_sell_invalid_item | Invalid_action_sell_not_owned | Invalid_action_sell_already_sold | Invalid_action_sell_gold_overflow | Invalid_action_sell_not_on_spawn | Draft_already_picked | Draft_no_champion_selected | Unknown of int
 ```
 
 
@@ -5480,7 +5654,7 @@ type t = | Success | Invalid_handle | Out_of_memory | File_not_found | Null_poin
 Public SDK type declaration.
 
 ```ocaml
-type t = | Success | Invalid_handle | Out_of_memory | File_not_found | Null_pointer | Invalid_argument | Map_parse_error | Invalid_map_file | Invalid_map_version | Replay_parse_error | Invalid_replay_file | Invalid_replay_version | Invalid_draft | Draft_not_drafting | Draft_duplicate_champion | Draft_invalid_round | Draft_unavailable | Already_initialized | Invalid_action | Invalid_action_memory_bad_range | Invalid_action_memory_draft_frozen | Invalid_action_move_cant_move | Invalid_action_move_bad_destination | Invalid_action_spell_cast_invalid_source | Invalid_action_spell_cast_invalid_slot | Invalid_action_spell_cast_no_ability | Invalid_action_spell_cast_cant_cast | Invalid_action_spell_cast_already_cast | Invalid_action_spell_cast_on_cooldown | Invalid_action_spell_cast_no_charges | Invalid_action_spell_cast_bad_target | Invalid_action_spell_cast_out_of_range | Invalid_action_spell_cast_bad_destination | Invalid_action_cant_act | Invalid_action_is_recalling | Invalid_action_is_submitting_gems | Invalid_action_move_already_moved | Invalid_action_move_out_of_range | Invalid_action_move_unreachable | Invalid_action_attack_invalid_source | Invalid_action_attack_cant_attack | Invalid_action_attack_already_attacked | Invalid_action_attack_bad_target | Invalid_action_attack_out_of_range | Invalid_action_recall_cant_channel | Invalid_action_submit_gems_cant_channel | Invalid_action_submit_gems_no_gems | Invalid_action_submit_gems_bad_altar | Invalid_action_submit_gems_out_of_range | Invalid_action_buy_item_not_on_spawn | Invalid_action_buy_item_invalid_item | Invalid_action_buy_item_invalid_count | Invalid_action_buy_item_not_enough_gold | Invalid_action_buy_item_inventory_full | Invalid_action_buy_item_stats_overflow | Invalid_action_buy_consumable_not_on_spawn | Invalid_action_buy_consumable_invalid_type | Invalid_action_buy_consumable_invalid_count | Invalid_action_buy_consumable_inventory_full | Invalid_action_buy_consumable_not_enough_gold | Invalid_action_use_consumable_invalid_type | Invalid_action_use_consumable_not_owned | Invalid_action_place_ward_no_charges | Invalid_action_place_ward_cant_place | Invalid_action_place_ward_bad_destination | Invalid_action_place_ward_out_of_range | Map_set_team_aspawn_area_bad_position | Map_add_bush_bad_position | Map_remove_bush_bad_position | Map_add_wall_bad_position | Map_remove_wall_bad_position | Map_add_hole_bad_position | Map_remove_hole_bad_position | Map_add_altar_bad_position | Map_remove_altar_bad_position | Map_get_bush_bad_position | Map_get_wall_bad_position | Map_get_hole_bad_position | Map_get_altar_bad_position | Map_get_camp_handle_at_bad_position | Map_add_camp_bad_position | Map_set_camp_bad_position | Invalid_action_champion_teleport_bad_destination | Invalid_action_respawn_group_blocked_spawn | Invalid_action_camp_teleport_bad_destination | Timeline_bad_seek_position | Timeline_bad_seek_substep | Api_no_map | Managed_resources_bad_position | Managed_resources_bad_radius | Managed_resources_aliasing | Managed_resources_metadata_mismatch | Managed_resources_opaque_origin | Api_invalid_team | Api_invalid_perspective | Api_not_initialized | Api_bad_position | Api_not_in_vision | Api_not_found | Api_invalid_camp_group | Api_invalid_camp_info | Api_invalid_camp | Api_invalid_champion | Api_invalid_ward | Api_invalid_ability | Api_not_teammate | Api_camp_group_not_waiting_to_respawn | Api_champion_alive | Api_invalid_champion_type | Api_invalid_camp_type | Api_value_out_of_range | Api_buffer_too_small | Api_not_owner | Invalid_action_recall_already_used | Invalid_action_submit_gems_already_used | Invalid_action_cancel_channel_not_channeling | Invalid_action_cancel_channel_already_used | Invalid_action_place_ward_ally_ward_present | Invalid_action_altar_lock_bad_altar | Invalid_action_altar_lock_out_of_range | Invalid_action_altar_lock_already_locked | Invalid_action_is_teleporting | Invalid_action_cancel_channel_not_cancellable | Invalid_action_submit_gems_altar_locked | Invalid_action_spell_cast_already_moved | Invalid_action_move_exclusive_spell_cast | Invalid_action_sell_not_tavi | Invalid_action_sell_invalid_item | Invalid_action_sell_not_owned | Invalid_action_sell_already_sold | Invalid_action_sell_gold_overflow | Invalid_action_sell_not_on_spawn | Unknown of int
+type t = | Success | Invalid_handle | Out_of_memory | File_not_found | Null_pointer | Invalid_argument | Map_parse_error | Invalid_map_file | Invalid_map_version | Replay_parse_error | Invalid_replay_file | Invalid_replay_version | Invalid_draft | Draft_not_drafting | Draft_duplicate_champion | Draft_invalid_round | Draft_unavailable | Already_initialized | Invalid_action | Invalid_action_memory_bad_range | Invalid_action_memory_draft_frozen | Invalid_action_move_cant_move | Invalid_action_move_bad_destination | Invalid_action_spell_cast_invalid_source | Invalid_action_spell_cast_invalid_slot | Invalid_action_spell_cast_no_ability | Invalid_action_spell_cast_cant_cast | Invalid_action_spell_cast_already_cast | Invalid_action_spell_cast_on_cooldown | Invalid_action_spell_cast_no_charges | Invalid_action_spell_cast_bad_target | Invalid_action_spell_cast_out_of_range | Invalid_action_spell_cast_bad_destination | Invalid_action_cant_act | Invalid_action_is_recalling | Invalid_action_is_submitting_gems | Invalid_action_move_already_moved | Invalid_action_move_out_of_range | Invalid_action_move_unreachable | Invalid_action_attack_invalid_source | Invalid_action_attack_cant_attack | Invalid_action_attack_already_attacked | Invalid_action_attack_bad_target | Invalid_action_attack_out_of_range | Invalid_action_recall_cant_channel | Invalid_action_submit_gems_cant_channel | Invalid_action_submit_gems_no_gems | Invalid_action_submit_gems_bad_altar | Invalid_action_submit_gems_out_of_range | Invalid_action_buy_item_not_on_spawn | Invalid_action_buy_item_invalid_item | Invalid_action_buy_item_invalid_count | Invalid_action_buy_item_not_enough_gold | Invalid_action_buy_item_inventory_full | Invalid_action_buy_item_stats_overflow | Invalid_action_buy_consumable_not_on_spawn | Invalid_action_buy_consumable_invalid_type | Invalid_action_buy_consumable_invalid_count | Invalid_action_buy_consumable_inventory_full | Invalid_action_buy_consumable_not_enough_gold | Invalid_action_use_consumable_invalid_type | Invalid_action_use_consumable_not_owned | Invalid_action_place_ward_no_charges | Invalid_action_place_ward_cant_place | Invalid_action_place_ward_bad_destination | Invalid_action_place_ward_out_of_range | Map_set_team_aspawn_area_bad_position | Map_add_bush_bad_position | Map_remove_bush_bad_position | Map_add_wall_bad_position | Map_remove_wall_bad_position | Map_add_hole_bad_position | Map_remove_hole_bad_position | Map_add_altar_bad_position | Map_remove_altar_bad_position | Map_get_bush_bad_position | Map_get_wall_bad_position | Map_get_hole_bad_position | Map_get_altar_bad_position | Map_get_camp_handle_at_bad_position | Map_add_camp_bad_position | Map_set_camp_bad_position | Invalid_action_champion_teleport_bad_destination | Invalid_action_respawn_group_blocked_spawn | Invalid_action_camp_teleport_bad_destination | Timeline_bad_seek_position | Timeline_bad_seek_substep | Api_no_map | Managed_resources_bad_position | Managed_resources_bad_radius | Managed_resources_aliasing | Managed_resources_metadata_mismatch | Managed_resources_opaque_origin | Api_invalid_team | Api_invalid_perspective | Api_not_initialized | Api_bad_position | Api_not_in_vision | Api_not_found | Api_invalid_camp_group | Api_invalid_camp_info | Api_invalid_camp | Api_invalid_champion | Api_invalid_ward | Api_invalid_ability | Api_not_teammate | Api_camp_group_not_waiting_to_respawn | Api_champion_alive | Api_invalid_champion_type | Api_invalid_camp_type | Api_value_out_of_range | Api_buffer_too_small | Api_not_owner | Invalid_action_recall_already_used | Invalid_action_submit_gems_already_used | Invalid_action_cancel_channel_not_channeling | Invalid_action_cancel_channel_already_used | Invalid_action_place_ward_ally_ward_present | Invalid_action_altar_lock_bad_altar | Invalid_action_altar_lock_out_of_range | Invalid_action_altar_lock_already_locked | Invalid_action_is_teleporting | Invalid_action_cancel_channel_not_cancellable | Invalid_action_submit_gems_altar_locked | Invalid_action_spell_cast_already_moved | Invalid_action_move_exclusive_spell_cast | Invalid_action_sell_not_tavi | Invalid_action_sell_invalid_item | Invalid_action_sell_not_owned | Invalid_action_sell_already_sold | Invalid_action_sell_gold_overflow | Invalid_action_sell_not_on_spawn | Draft_already_picked | Draft_no_champion_selected | Unknown of int
 ```
 
 ### to_string
@@ -5748,6 +5922,8 @@ val attack_tiles : t -> Bitboard.t
 
 `attack_tiles u` is the tiles within attack range of `u`'s position. @param u Unit.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -5764,6 +5940,8 @@ val attack_tiles_into : t -> Bitboard.t -> unit
 ```
 
 Like `attack_tiles`, but writes into `out`. @param u Unit. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5783,6 +5961,8 @@ val buffs : t -> Buff.t list
 
 `buffs u` is the current buffs; raises if `u` is not visible. @param u Unit.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -5800,6 +5980,8 @@ val focus : t -> float
 
 `focus u` is current focus; raises if `u` is not visible. @param u Unit.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -5816,6 +5998,8 @@ val health : t -> float
 ```
 
 `health u` is current health; raises if `u` is not visible. @param u Unit.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5851,6 +6035,8 @@ val max_health : t -> float
 
 `max_health u` is current maximum health; raises if `u` is not visible. @param u Unit.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -5868,6 +6054,8 @@ val position : t -> Vec2.t
 
 `position u` is the current tile; raises if `u` is not visible. @param u Unit.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -5884,6 +6072,8 @@ val strength : t -> float
 ```
 
 `strength u` is current strength; raises if `u` is not visible. @param u Unit.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -6573,6 +6763,8 @@ val visible_tiles : t -> Bitboard.t
 
 `visible_tiles t` is the tiles visible from the reservation. @param t Teleport snapshot.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -6589,6 +6781,8 @@ val visible_tiles_into : t -> Bitboard.t -> unit
 ```
 
 Like `visible_tiles`, but writes into `out`. @param t Teleport snapshot. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -6976,6 +7170,8 @@ val altar_lock_at : Vec2.t -> Altar_lock.t
 
 `altar_lock_at p` is the visible altar lock on `p`, ally first; raises if there is none. @param p Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -6992,6 +7188,8 @@ val altar_lock_at_opt : Vec2.t -> Altar_lock.t option
 ```
 
 Like `altar_lock_at`, but `None` instead of raising. @param p Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7010,6 +7208,8 @@ val altar_lock_tiles : ?team:Team.t -> unit -> Bitboard.t
 
 `altar_lock_tiles ?team ()` is the tiles of visible altar locks. @param team Team to include; both teams when omitted.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```ocaml
@@ -7023,6 +7223,8 @@ val altar_lock_tiles_into : ?team:Team.t -> Bitboard.t -> unit
 ```
 
 Like `altar_lock_tiles`, but writes into `out`. @param team Team to include; both teams when omitted. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7041,6 +7243,8 @@ val altar_locks : ?team:Team.t -> unit -> Altar_lock.t list
 
 `altar_locks ?team ()` is snapshots of visible altar locks. @param team Team to include; both teams when omitted.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```ocaml
@@ -7054,6 +7258,8 @@ val camp_at : Vec2.t -> Camp.t
 ```
 
 `camp_at p` is the visible camp currently on `p`; raises if there is none or the tile is hidden. @param p Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7072,6 +7278,8 @@ val camp_at_opt : Vec2.t -> Camp.t option
 
 Like `camp_at`, but `None` instead of raising. @param p Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7089,6 +7297,8 @@ val camp_groups : unit -> Camp_group.t list
 
 Camp groups with at least one visible camp.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```ocaml
@@ -7103,6 +7313,8 @@ val camp_tiles : unit -> Bitboard.t
 
 Tiles of visible camps.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```ocaml
@@ -7116,6 +7328,8 @@ val camp_tiles_into : Bitboard.t -> unit
 ```
 
 Like `camp_tiles`, but writes into `out`. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7134,6 +7348,8 @@ val camps : unit -> Camp.t list
 
 Visible camps.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```ocaml
@@ -7147,6 +7363,8 @@ val champion_at : Vec2.t -> Champion.t
 ```
 
 `champion_at p` is the visible champion on `p`; raises if there is none or the tile is hidden. @param p Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7165,6 +7383,8 @@ val champion_at_opt : Vec2.t -> Champion.t option
 
 Like `champion_at`, but `None` instead of raising. @param p Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7182,6 +7402,8 @@ val champion_tiles : ?team:Team.t -> unit -> Bitboard.t
 
 `champion_tiles ?team ()` is the tiles of visible champions. @param team Team to include; both teams when omitted.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```ocaml
@@ -7195,6 +7417,8 @@ val champion_tiles_into : ?team:Team.t -> Bitboard.t -> unit
 ```
 
 Like `champion_tiles`, but writes into `out`. @param team Team to include; both teams when omitted. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7213,6 +7437,8 @@ val champions : ?team:Team.t -> unit -> Champion.t list
 
 `champions ?team ()` is the visible champions. @param team Team to include; both teams when omitted.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```ocaml
@@ -7226,6 +7452,8 @@ val has_altar_lock : Vec2.t -> bool
 ```
 
 `has_altar_lock p` is true when a visible altar lock of either team is on `p`. @param p Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7244,6 +7472,8 @@ val has_camp : Vec2.t -> bool
 
 `has_camp p` is true when a visible camp is on `p`. @param p Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7260,6 +7490,8 @@ val has_champion : Vec2.t -> bool
 ```
 
 `has_champion p` is true when a visible champion is on `p`. @param p Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7278,6 +7510,8 @@ val has_teleport : Vec2.t -> bool
 
 `has_teleport p` is true when a visible teleport reservation is on `p`. @param p Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7294,6 +7528,8 @@ val has_ward : ?team:Team.t -> Vec2.t -> bool
 ```
 
 `has_ward ?team p` is true when a visible ward is on `p`; hidden wards give `false`. @param team Team to restrict to; either team when omitted. @param p Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7312,6 +7548,8 @@ val teleport_at : Vec2.t -> Teleport.t
 
 `teleport_at p` is the visible teleport reservation on `p`; raises if there is none. @param p Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7328,6 +7566,8 @@ val teleport_at_opt : Vec2.t -> Teleport.t option
 ```
 
 Like `teleport_at`, but `None` instead of raising. @param p Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7346,6 +7586,8 @@ val teleport_tiles : unit -> Bitboard.t
 
 Tiles of visible teleport reservations.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```ocaml
@@ -7359,6 +7601,8 @@ val teleport_tiles_into : Bitboard.t -> unit
 ```
 
 Like `teleport_tiles`, but writes into `out`. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7377,6 +7621,8 @@ val teleports : unit -> Teleport.t list
 
 Snapshots of visible teleport reservations.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```ocaml
@@ -7391,6 +7637,8 @@ val visible_tiles : unit -> Bitboard.t
 
 Every tile visible to the bot's champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```ocaml
@@ -7404,6 +7652,8 @@ val visible_tiles_into : Bitboard.t -> unit
 ```
 
 Like `visible_tiles`, but writes into `out`. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7422,6 +7672,8 @@ val ward_at : ?team:Team.t -> Vec2.t -> Ward.t
 
 `ward_at ?team p` is the visible ward on `p`; raises if there is none. @param team Team to restrict to; either team when omitted. @param p Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7438,6 +7690,8 @@ val ward_at_opt : ?team:Team.t -> Vec2.t -> Ward.t option
 ```
 
 Like `ward_at`, but `None` instead of raising. @param team Team to restrict to; either team when omitted. @param p Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7456,6 +7710,8 @@ val ward_tiles : ?team:Team.t -> unit -> Bitboard.t
 
 `ward_tiles ?team ()` is the tiles of visible wards. @param team Team to include; both teams when omitted.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```ocaml
@@ -7469,6 +7725,8 @@ val ward_tiles_into : ?team:Team.t -> Bitboard.t -> unit
 ```
 
 Like `ward_tiles`, but writes into `out`. @param team Team to include; both teams when omitted. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7486,6 +7744,8 @@ val wards : ?team:Team.t -> unit -> Ward.t list
 ```
 
 `wards ?team ()` is snapshots of visible wards. @param team Team to include; both teams when omitted.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7551,6 +7811,8 @@ val visible_tiles : t -> Bitboard.t
 
 `visible_tiles w` is the tiles the ward sees. @param w Ward snapshot.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7567,6 +7829,8 @@ val visible_tiles_from : Vec2.t -> Bitboard.t
 ```
 
 `visible_tiles_from p` is the vision an ordinary ward would have at `p`. @param p Hypothetical ward tile.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -7585,6 +7849,8 @@ val visible_tiles_from_into : Vec2.t -> Bitboard.t -> unit
 
 Like `visible_tiles_from`, but writes into `out`. @param p Hypothetical ward tile. @param out Destination; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7602,6 +7868,8 @@ val visible_tiles_into : t -> Bitboard.t -> unit
 ```
 
 Like `visible_tiles`, but writes into `out`. @param w Ward snapshot. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 

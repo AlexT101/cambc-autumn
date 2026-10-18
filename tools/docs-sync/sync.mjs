@@ -72,15 +72,28 @@ const patchesMod = loadModule(join(work, chunks.patches));
 
 // ---------------------------------------------------------------- data
 
-const groups = docs.get('xe');                 // sidebar groups: [{title, ids}]
-const baseArticles = docs.get('ye');           // all articles, guides evaluated for C++
-const visualText = docs.get('we');             // Markdown descriptions of rule diagrams
-const apiEntries = docs.get('B');              // {lang: [{group,name,signature,description,example}]}
-const langLabel = docs.get('L');               // {cpp: 'C++', ...}
+// Minified names change with every site build, so find them through the site's own code:
+// the Agents.md download buttons, the sidebar and the visual block renderer.
+const nameIn = (re, what) => {
+  const m = docs.src.match(re);
+  if (!m) throw new Error(`Could not find ${what} in the docs chunk`);
+  return m.slice(1);
+};
+const [rulesExportName, articlesName] = nameIn(/generate:\(\)=>([\w$]+)\(\[\.\.\.[\w$]+\.map\([\w$]+=>([\w$]+)\.find/, 'the GameRules.md generator');
+const [apiExportName, langLabelName, apiEntriesName] = nameIn(/generate:\(\)=>([\w$]+)\([\w$]+,([\w$]+)\[[\w$]+\],([\w$]+)\[[\w$]+\]\)/, 'the BotAPI*.md generator');
+const [groupsName] = nameIn(/([\w$]+)\.find\([\w$]+=>[\w$]+\.title===`Game rules`\)/, 'the sidebar groups');
+const [visualTextName] = nameIn(/case`visual`:\{let [\w$]+=([\w$]+)\[[\w$]+\.name\]/, 'the diagram descriptions');
+
+const groups = docs.get(groupsName);           // sidebar groups: [{title, ids}]
+const baseArticles = docs.get(articlesName);   // all articles, guides evaluated for C++
+const visualText = docs.get(visualTextName);   // Markdown descriptions of rule diagrams
+const apiEntries = docs.get(apiEntriesName);   // {lang: [{group,name,signature,description,example}]}
+const langLabel = docs.get(langLabelName);     // {cpp: 'C++', ...}
 const champions = grid.get('_');               // champion designs
 const championArt = grid.get('Y');             // id -> {image, thumb, banner, ...}
-const rulesExport = docs.get('je');            // the site's own "GameRules.md" generator
-const apiExport = docs.get('Me');              // the site's own "BotAPI*.md" generator
+const rulesExport = docs.get(rulesExportName); // the site's own "GameRules.md" generator
+const apiExport = docs.get(apiExportName);     // the site's own "BotAPI*.md" generator
+console.log('names:', { groupsName, articlesName, visualTextName, apiEntriesName, langLabelName, rulesExportName, apiExportName });
 
 const articleOf = new Map(baseArticles.map(a => [a.id, a]));
 const ruleIds = groups.find(g => g.title === 'Game rules').ids;
@@ -89,8 +102,8 @@ const guideIds = groups.find(g => g.title === 'Guides').ids;
 // the article list calls them as e.g. he(`cpp`).
 const guideBuilders = {};
 {
-  const ye = docs.decls.get('ye');
-  for (const [, fn] of docs.src.slice(ye.start, ye.end).matchAll(/([\w$]+)\(`cpp`\)/g)) {
+  const list = docs.decls.get(articlesName);
+  for (const [, fn] of docs.src.slice(list.start, list.end).matchAll(/([\w$]+)\(`cpp`\)/g)) {
     const build = docs.get(fn);
     if (typeof build === 'function') guideBuilders[build('cpp').id] = build;
   }
@@ -220,7 +233,7 @@ const visualComponents = (() => {
 })();
 const demoComponents = (() => {
   const out = {};
-  for (const [, kind, comp] of docs.src.matchAll(/case`(bitboard-demo|bitboard-layout|distance-demo)`:return\(0,H\.jsx\)\(([\w$]+)/g)) out[kind] = comp;
+  for (const [, kind, comp] of docs.src.matchAll(/case`(bitboard-demo|bitboard-layout|distance-demo)`:return\(0,[\w$]+\.jsx\)\(([\w$]+)/g)) out[kind] = comp;
   return out;
 })();
 function diagramDetails(lines, summary) {

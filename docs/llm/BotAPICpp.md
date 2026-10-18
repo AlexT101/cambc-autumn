@@ -438,6 +438,8 @@ std::vector<cambc::champion> champions()
 
 Get allied and enemy champion handles, including champions outside vision.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Use this value in your bot's draft or turn logic.
 
 Inputs:
@@ -454,6 +456,8 @@ std::vector<cambc::champion> champions(team side)
 ```
 
 Get all champion handles on one side, including champions outside vision. @param side Team to include.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Use this value in your bot's draft or turn logic.
 
@@ -600,7 +604,7 @@ class error : public std::runtime_error { };
 ### error_code
 
 ```cpp
-enum class error_code : std::int32_t { success = 0, invalid_handle = 1, out_of_memory = 2, file_not_found = 3, null_pointer = 4, invalid_argument = 5, map_parse_error = 6, invalid_map_file = 7, invalid_map_version = 8, replay_parse_error = 9, invalid_replay_file = 10, invalid_replay_version = 11, invalid_draft = 12, draft_not_drafting = 13, draft_duplicate_champion = 14, draft_invalid_round = 15, draft_unavailable = 16, already_initialized = 17, invalid_action = 18, invalid_action_memory_bad_range = 19, invalid_action_memory_draft_frozen = 20, invalid_action_move_cant_move = 21, invalid_action_move_bad_destination = 22, invalid_action_spell_cast_invalid_source = 23, invalid_action_spell_cast_invalid_slot = 24, invalid_action_spell_cast_no_ability = 25, invalid_action_spell_cast_cant_cast = 26, invalid_action_spell_cast_already_cast = 27, invalid_action_spell_cast_on_cooldown = 28, invalid_action_spell_cast_no_charges = 29, invalid_action_spell_cast_bad_target = 30, invalid_action_spell_cast_out_of_range = 31, invalid_action_spell_cast_bad_destination = 32, invalid_action_cant_act = 33, invalid_action_is_recalling = 34, invalid_action_is_submitting_gems = 35, invalid_action_move_already_moved = 36, invalid_action_move_out_of_range = 37, invalid_action_move_unreachable = 38, invalid_action_attack_invalid_source = 39, invalid_action_attack_cant_attack = 40, invalid_action_attack_already_attacked = 41, invalid_action_attack_bad_target = 42, invalid_action_attack_out_of_range = 43, invalid_action_recall_cant_channel = 44, invalid_action_submit_gems_cant_channel = 45, invalid_action_submit_gems_no_gems = 46, invalid_action_submit_gems_bad_altar = 47, invalid_action_submit_gems_out_of_range = 48, invalid_action_buy_item_not_on_spawn = 49, invalid_action_buy_item_invalid_item = 50, invalid_action_buy_item_invalid_count = 51, invalid_action_buy_item_not_enough_gold = 52, invalid_action_buy_item_inventory_full = 53, invalid_action_buy_item_stats_overflow = 54, invalid_action_buy_consumable_not_on_spawn = 55, invalid_action_buy_consumable_invalid_type = 56, invalid_action_buy_consumable_invalid_count = 57, invalid_action_buy_consumable_inventory_full = 58, invalid_action_buy_consumable_not_enough_gold = 59, invalid_action_use_consumable_invalid_type = 60, invalid_action_use_consumable_not_owned = 61, invalid_action_place_ward_no_charges = 62, invalid_action_place_ward_cant_place = 63, invalid_action_place_ward_bad_destination = 64, invalid_action_place_ward_out_of_range = 65, map_set_team_aspawn_area_bad_position = 66, map_add_bush_bad_position = 67, map_remove_bush_bad_position = 68, map_add_wall_bad_position = 69, map_remove_wall_bad_position = 70, map_add_hole_bad_position = 71, map_remove_hole_bad_position = 72, map_add_altar_bad_position = 73, map_remove_altar_bad_position = 74, map_get_bush_bad_position = 75, map_get_wall_bad_position = 76, map_get_hole_bad_position = 77, map_get_altar_bad_position = 78, map_get_camp_handle_at_bad_position = 79, map_add_camp_bad_position = 80, map_set_camp_bad_position = 81, invalid_action_champion_teleport_bad_destination = 82, invalid_action_respawn_group_blocked_spawn = 83, invalid_action_camp_teleport_bad_destination = 84, timeline_bad_seek_position = 85, timeline_bad_seek_substep = 86, api_no_map = 87, managed_resources_bad_position = 88, managed_resources_bad_radius = 89, managed_resources_aliasing = 90, managed_resources_metadata_mismatch = 91, managed_resources_opaque_origin = 92, api_invalid_team = 93, api_invalid_perspective = 94, api_not_initialized = 95, api_bad_position = 96, api_not_in_vision = 97, api_not_found = 98, api_invalid_camp_group = 99, api_invalid_camp_info = 100, api_invalid_camp = 101, api_invalid_champion = 102, api_invalid_ward = 103, api_invalid_ability = 104, api_not_teammate = 105, api_camp_group_not_waiting_to_respawn = 106, api_champion_alive = 107, api_invalid_champion_type = 108, api_invalid_camp_type = 109, api_value_out_of_range = 110, api_buffer_too_small = 111, api_not_owner = 112, invalid_action_recall_already_used = 113, invalid_action_submit_gems_already_used = 114, invalid_action_cancel_channel_not_channeling = 115, invalid_action_cancel_channel_already_used = 116, invalid_action_place_ward_ally_ward_present = 117, invalid_action_altar_lock_bad_altar = 118, invalid_action_altar_lock_out_of_range = 119, invalid_action_altar_lock_already_locked = 120, invalid_action_is_teleporting = 123, invalid_action_cancel_channel_not_cancellable = 124, invalid_action_submit_gems_altar_locked = 125, invalid_action_spell_cast_already_moved = 126, invalid_action_move_exclusive_spell_cast = 127, invalid_action_sell_not_tavi = 128, invalid_action_sell_invalid_item = 129, invalid_action_sell_not_owned = 130, invalid_action_sell_already_sold = 131, invalid_action_sell_gold_overflow = 132, invalid_action_sell_not_on_spawn = 133, };
+enum class error_code : std::int32_t { success = 0, invalid_handle = 1, out_of_memory = 2, file_not_found = 3, null_pointer = 4, invalid_argument = 5, map_parse_error = 6, invalid_map_file = 7, invalid_map_version = 8, replay_parse_error = 9, invalid_replay_file = 10, invalid_replay_version = 11, invalid_draft = 12, draft_not_drafting = 13, draft_duplicate_champion = 14, draft_invalid_round = 15, draft_unavailable = 16, already_initialized = 17, invalid_action = 18, invalid_action_memory_bad_range = 19, invalid_action_memory_draft_frozen = 20, invalid_action_move_cant_move = 21, invalid_action_move_bad_destination = 22, invalid_action_spell_cast_invalid_source = 23, invalid_action_spell_cast_invalid_slot = 24, invalid_action_spell_cast_no_ability = 25, invalid_action_spell_cast_cant_cast = 26, invalid_action_spell_cast_already_cast = 27, invalid_action_spell_cast_on_cooldown = 28, invalid_action_spell_cast_no_charges = 29, invalid_action_spell_cast_bad_target = 30, invalid_action_spell_cast_out_of_range = 31, invalid_action_spell_cast_bad_destination = 32, invalid_action_cant_act = 33, invalid_action_is_recalling = 34, invalid_action_is_submitting_gems = 35, invalid_action_move_already_moved = 36, invalid_action_move_out_of_range = 37, invalid_action_move_unreachable = 38, invalid_action_attack_invalid_source = 39, invalid_action_attack_cant_attack = 40, invalid_action_attack_already_attacked = 41, invalid_action_attack_bad_target = 42, invalid_action_attack_out_of_range = 43, invalid_action_recall_cant_channel = 44, invalid_action_submit_gems_cant_channel = 45, invalid_action_submit_gems_no_gems = 46, invalid_action_submit_gems_bad_altar = 47, invalid_action_submit_gems_out_of_range = 48, invalid_action_buy_item_not_on_spawn = 49, invalid_action_buy_item_invalid_item = 50, invalid_action_buy_item_invalid_count = 51, invalid_action_buy_item_not_enough_gold = 52, invalid_action_buy_item_inventory_full = 53, invalid_action_buy_item_stats_overflow = 54, invalid_action_buy_consumable_not_on_spawn = 55, invalid_action_buy_consumable_invalid_type = 56, invalid_action_buy_consumable_invalid_count = 57, invalid_action_buy_consumable_inventory_full = 58, invalid_action_buy_consumable_not_enough_gold = 59, invalid_action_use_consumable_invalid_type = 60, invalid_action_use_consumable_not_owned = 61, invalid_action_place_ward_no_charges = 62, invalid_action_place_ward_cant_place = 63, invalid_action_place_ward_bad_destination = 64, invalid_action_place_ward_out_of_range = 65, map_set_team_aspawn_area_bad_position = 66, map_add_bush_bad_position = 67, map_remove_bush_bad_position = 68, map_add_wall_bad_position = 69, map_remove_wall_bad_position = 70, map_add_hole_bad_position = 71, map_remove_hole_bad_position = 72, map_add_altar_bad_position = 73, map_remove_altar_bad_position = 74, map_get_bush_bad_position = 75, map_get_wall_bad_position = 76, map_get_hole_bad_position = 77, map_get_altar_bad_position = 78, map_get_camp_handle_at_bad_position = 79, map_add_camp_bad_position = 80, map_set_camp_bad_position = 81, invalid_action_champion_teleport_bad_destination = 82, invalid_action_respawn_group_blocked_spawn = 83, invalid_action_camp_teleport_bad_destination = 84, timeline_bad_seek_position = 85, timeline_bad_seek_substep = 86, api_no_map = 87, managed_resources_bad_position = 88, managed_resources_bad_radius = 89, managed_resources_aliasing = 90, managed_resources_metadata_mismatch = 91, managed_resources_opaque_origin = 92, api_invalid_team = 93, api_invalid_perspective = 94, api_not_initialized = 95, api_bad_position = 96, api_not_in_vision = 97, api_not_found = 98, api_invalid_camp_group = 99, api_invalid_camp_info = 100, api_invalid_camp = 101, api_invalid_champion = 102, api_invalid_ward = 103, api_invalid_ability = 104, api_not_teammate = 105, api_camp_group_not_waiting_to_respawn = 106, api_champion_alive = 107, api_invalid_champion_type = 108, api_invalid_camp_type = 109, api_value_out_of_range = 110, api_buffer_too_small = 111, api_not_owner = 112, invalid_action_recall_already_used = 113, invalid_action_submit_gems_already_used = 114, invalid_action_cancel_channel_not_channeling = 115, invalid_action_cancel_channel_already_used = 116, invalid_action_place_ward_ally_ward_present = 117, invalid_action_altar_lock_bad_altar = 118, invalid_action_altar_lock_out_of_range = 119, invalid_action_altar_lock_already_locked = 120, invalid_action_is_teleporting = 123, invalid_action_cancel_channel_not_cancellable = 124, invalid_action_submit_gems_altar_locked = 125, invalid_action_spell_cast_already_moved = 126, invalid_action_move_exclusive_spell_cast = 127, invalid_action_sell_not_tavi = 128, invalid_action_sell_invalid_item = 129, invalid_action_sell_not_owned = 130, invalid_action_sell_already_sold = 131, invalid_action_sell_gold_overflow = 132, invalid_action_sell_not_on_spawn = 133, draft_already_picked = 134, draft_no_champion_selected = 135, };
 ```
 
 Engine error codes; numeric values mirror EngineC/Errors.h.
@@ -608,7 +612,7 @@ Engine error codes; numeric values mirror EngineC/Errors.h.
 Public SDK type declaration.
 
 ```cpp
-enum class error_code : std::int32_t { success = 0, invalid_handle = 1, out_of_memory = 2, file_not_found = 3, null_pointer = 4, invalid_argument = 5, map_parse_error = 6, invalid_map_file = 7, invalid_map_version = 8, replay_parse_error = 9, invalid_replay_file = 10, invalid_replay_version = 11, invalid_draft = 12, draft_not_drafting = 13, draft_duplicate_champion = 14, draft_invalid_round = 15, draft_unavailable = 16, already_initialized = 17, invalid_action = 18, invalid_action_memory_bad_range = 19, invalid_action_memory_draft_frozen = 20, invalid_action_move_cant_move = 21, invalid_action_move_bad_destination = 22, invalid_action_spell_cast_invalid_source = 23, invalid_action_spell_cast_invalid_slot = 24, invalid_action_spell_cast_no_ability = 25, invalid_action_spell_cast_cant_cast = 26, invalid_action_spell_cast_already_cast = 27, invalid_action_spell_cast_on_cooldown = 28, invalid_action_spell_cast_no_charges = 29, invalid_action_spell_cast_bad_target = 30, invalid_action_spell_cast_out_of_range = 31, invalid_action_spell_cast_bad_destination = 32, invalid_action_cant_act = 33, invalid_action_is_recalling = 34, invalid_action_is_submitting_gems = 35, invalid_action_move_already_moved = 36, invalid_action_move_out_of_range = 37, invalid_action_move_unreachable = 38, invalid_action_attack_invalid_source = 39, invalid_action_attack_cant_attack = 40, invalid_action_attack_already_attacked = 41, invalid_action_attack_bad_target = 42, invalid_action_attack_out_of_range = 43, invalid_action_recall_cant_channel = 44, invalid_action_submit_gems_cant_channel = 45, invalid_action_submit_gems_no_gems = 46, invalid_action_submit_gems_bad_altar = 47, invalid_action_submit_gems_out_of_range = 48, invalid_action_buy_item_not_on_spawn = 49, invalid_action_buy_item_invalid_item = 50, invalid_action_buy_item_invalid_count = 51, invalid_action_buy_item_not_enough_gold = 52, invalid_action_buy_item_inventory_full = 53, invalid_action_buy_item_stats_overflow = 54, invalid_action_buy_consumable_not_on_spawn = 55, invalid_action_buy_consumable_invalid_type = 56, invalid_action_buy_consumable_invalid_count = 57, invalid_action_buy_consumable_inventory_full = 58, invalid_action_buy_consumable_not_enough_gold = 59, invalid_action_use_consumable_invalid_type = 60, invalid_action_use_consumable_not_owned = 61, invalid_action_place_ward_no_charges = 62, invalid_action_place_ward_cant_place = 63, invalid_action_place_ward_bad_destination = 64, invalid_action_place_ward_out_of_range = 65, map_set_team_aspawn_area_bad_position = 66, map_add_bush_bad_position = 67, map_remove_bush_bad_position = 68, map_add_wall_bad_position = 69, map_remove_wall_bad_position = 70, map_add_hole_bad_position = 71, map_remove_hole_bad_position = 72, map_add_altar_bad_position = 73, map_remove_altar_bad_position = 74, map_get_bush_bad_position = 75, map_get_wall_bad_position = 76, map_get_hole_bad_position = 77, map_get_altar_bad_position = 78, map_get_camp_handle_at_bad_position = 79, map_add_camp_bad_position = 80, map_set_camp_bad_position = 81, invalid_action_champion_teleport_bad_destination = 82, invalid_action_respawn_group_blocked_spawn = 83, invalid_action_camp_teleport_bad_destination = 84, timeline_bad_seek_position = 85, timeline_bad_seek_substep = 86, api_no_map = 87, managed_resources_bad_position = 88, managed_resources_bad_radius = 89, managed_resources_aliasing = 90, managed_resources_metadata_mismatch = 91, managed_resources_opaque_origin = 92, api_invalid_team = 93, api_invalid_perspective = 94, api_not_initialized = 95, api_bad_position = 96, api_not_in_vision = 97, api_not_found = 98, api_invalid_camp_group = 99, api_invalid_camp_info = 100, api_invalid_camp = 101, api_invalid_champion = 102, api_invalid_ward = 103, api_invalid_ability = 104, api_not_teammate = 105, api_camp_group_not_waiting_to_respawn = 106, api_champion_alive = 107, api_invalid_champion_type = 108, api_invalid_camp_type = 109, api_value_out_of_range = 110, api_buffer_too_small = 111, api_not_owner = 112, invalid_action_recall_already_used = 113, invalid_action_submit_gems_already_used = 114, invalid_action_cancel_channel_not_channeling = 115, invalid_action_cancel_channel_already_used = 116, invalid_action_place_ward_ally_ward_present = 117, invalid_action_altar_lock_bad_altar = 118, invalid_action_altar_lock_out_of_range = 119, invalid_action_altar_lock_already_locked = 120, invalid_action_is_teleporting = 123, invalid_action_cancel_channel_not_cancellable = 124, invalid_action_submit_gems_altar_locked = 125, invalid_action_spell_cast_already_moved = 126, invalid_action_move_exclusive_spell_cast = 127, invalid_action_sell_not_tavi = 128, invalid_action_sell_invalid_item = 129, invalid_action_sell_not_owned = 130, invalid_action_sell_already_sold = 131, invalid_action_sell_gold_overflow = 132, invalid_action_sell_not_on_spawn = 133, };
+enum class error_code : std::int32_t { success = 0, invalid_handle = 1, out_of_memory = 2, file_not_found = 3, null_pointer = 4, invalid_argument = 5, map_parse_error = 6, invalid_map_file = 7, invalid_map_version = 8, replay_parse_error = 9, invalid_replay_file = 10, invalid_replay_version = 11, invalid_draft = 12, draft_not_drafting = 13, draft_duplicate_champion = 14, draft_invalid_round = 15, draft_unavailable = 16, already_initialized = 17, invalid_action = 18, invalid_action_memory_bad_range = 19, invalid_action_memory_draft_frozen = 20, invalid_action_move_cant_move = 21, invalid_action_move_bad_destination = 22, invalid_action_spell_cast_invalid_source = 23, invalid_action_spell_cast_invalid_slot = 24, invalid_action_spell_cast_no_ability = 25, invalid_action_spell_cast_cant_cast = 26, invalid_action_spell_cast_already_cast = 27, invalid_action_spell_cast_on_cooldown = 28, invalid_action_spell_cast_no_charges = 29, invalid_action_spell_cast_bad_target = 30, invalid_action_spell_cast_out_of_range = 31, invalid_action_spell_cast_bad_destination = 32, invalid_action_cant_act = 33, invalid_action_is_recalling = 34, invalid_action_is_submitting_gems = 35, invalid_action_move_already_moved = 36, invalid_action_move_out_of_range = 37, invalid_action_move_unreachable = 38, invalid_action_attack_invalid_source = 39, invalid_action_attack_cant_attack = 40, invalid_action_attack_already_attacked = 41, invalid_action_attack_bad_target = 42, invalid_action_attack_out_of_range = 43, invalid_action_recall_cant_channel = 44, invalid_action_submit_gems_cant_channel = 45, invalid_action_submit_gems_no_gems = 46, invalid_action_submit_gems_bad_altar = 47, invalid_action_submit_gems_out_of_range = 48, invalid_action_buy_item_not_on_spawn = 49, invalid_action_buy_item_invalid_item = 50, invalid_action_buy_item_invalid_count = 51, invalid_action_buy_item_not_enough_gold = 52, invalid_action_buy_item_inventory_full = 53, invalid_action_buy_item_stats_overflow = 54, invalid_action_buy_consumable_not_on_spawn = 55, invalid_action_buy_consumable_invalid_type = 56, invalid_action_buy_consumable_invalid_count = 57, invalid_action_buy_consumable_inventory_full = 58, invalid_action_buy_consumable_not_enough_gold = 59, invalid_action_use_consumable_invalid_type = 60, invalid_action_use_consumable_not_owned = 61, invalid_action_place_ward_no_charges = 62, invalid_action_place_ward_cant_place = 63, invalid_action_place_ward_bad_destination = 64, invalid_action_place_ward_out_of_range = 65, map_set_team_aspawn_area_bad_position = 66, map_add_bush_bad_position = 67, map_remove_bush_bad_position = 68, map_add_wall_bad_position = 69, map_remove_wall_bad_position = 70, map_add_hole_bad_position = 71, map_remove_hole_bad_position = 72, map_add_altar_bad_position = 73, map_remove_altar_bad_position = 74, map_get_bush_bad_position = 75, map_get_wall_bad_position = 76, map_get_hole_bad_position = 77, map_get_altar_bad_position = 78, map_get_camp_handle_at_bad_position = 79, map_add_camp_bad_position = 80, map_set_camp_bad_position = 81, invalid_action_champion_teleport_bad_destination = 82, invalid_action_respawn_group_blocked_spawn = 83, invalid_action_camp_teleport_bad_destination = 84, timeline_bad_seek_position = 85, timeline_bad_seek_substep = 86, api_no_map = 87, managed_resources_bad_position = 88, managed_resources_bad_radius = 89, managed_resources_aliasing = 90, managed_resources_metadata_mismatch = 91, managed_resources_opaque_origin = 92, api_invalid_team = 93, api_invalid_perspective = 94, api_not_initialized = 95, api_bad_position = 96, api_not_in_vision = 97, api_not_found = 98, api_invalid_camp_group = 99, api_invalid_camp_info = 100, api_invalid_camp = 101, api_invalid_champion = 102, api_invalid_ward = 103, api_invalid_ability = 104, api_not_teammate = 105, api_camp_group_not_waiting_to_respawn = 106, api_champion_alive = 107, api_invalid_champion_type = 108, api_invalid_camp_type = 109, api_value_out_of_range = 110, api_buffer_too_small = 111, api_not_owner = 112, invalid_action_recall_already_used = 113, invalid_action_submit_gems_already_used = 114, invalid_action_cancel_channel_not_channeling = 115, invalid_action_cancel_channel_already_used = 116, invalid_action_place_ward_ally_ward_present = 117, invalid_action_altar_lock_bad_altar = 118, invalid_action_altar_lock_out_of_range = 119, invalid_action_altar_lock_already_locked = 120, invalid_action_is_teleporting = 123, invalid_action_cancel_channel_not_cancellable = 124, invalid_action_submit_gems_altar_locked = 125, invalid_action_spell_cast_already_moved = 126, invalid_action_move_exclusive_spell_cast = 127, invalid_action_sell_not_tavi = 128, invalid_action_sell_invalid_item = 129, invalid_action_sell_not_owned = 130, invalid_action_sell_already_sold = 131, invalid_action_sell_gold_overflow = 132, invalid_action_sell_not_on_spawn = 133, draft_already_picked = 134, draft_no_champion_selected = 135, };
 ```
 
 ### fuel_remaining
@@ -634,6 +638,8 @@ std::uint32_t global_submitted_gems(team side)
 ```
 
 Get the total gems submitted by a team. @param side Team to count.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Use this value in your bot's draft or turn logic.
 
@@ -833,6 +839,8 @@ cambc::champion& self()
 ```
 
 Return this guest's authenticated champion; throws std::bad_optional_access during drafting.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Use this value in your bot's draft or turn logic.
 
@@ -1176,6 +1184,8 @@ std::int32_t cooldown() const
 
 Get the remaining owner turn-end ticks; zero means ready.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 ```cpp
@@ -1191,6 +1201,8 @@ float damage_amount() const
 
 Query damage before absorption/health limits; includes caster items and passives.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 ```cpp
@@ -1205,6 +1217,8 @@ float damage_amount(const champion& target) const
 ```
 
 Predict health lost after mitigation and shields, capped at current health. Target must be visible. @param target Visible champion that would be hit.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1242,6 +1256,8 @@ float heal_amount() const
 
 Query heal before absorption/health limits; includes caster items and passives.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 ```cpp
@@ -1256,6 +1272,8 @@ float heal_amount(const champion& target) const
 ```
 
 Cap healing at the visible target's missing health. Does not cast or consume resources. @param target Visible champion that would be healed.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1435,6 +1453,8 @@ bool is_on_cooldown() const
 
 Query whether the live ability has a positive remaining cooldown.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 ```cpp
@@ -1449,6 +1469,8 @@ bool is_ready() const
 ```
 
 Check whether this ability is ready to cast.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1480,6 +1502,8 @@ void mask_into(bitboard& out) const
 
 Like `valid_tiles`, but writes into `out` instead of returning a new board. @param out Destination; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -1498,6 +1522,8 @@ float shield_amount() const
 
 Query shield before absorption/health limits; includes caster items and passives.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 ```cpp
@@ -1512,6 +1538,8 @@ float shield_amount(const champion& target) const
 ```
 
 Query full shield strength for a visible target. Does not cast or consume resources. @param target Visible champion that would be shielded.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1546,6 +1574,8 @@ bool use() const
 
 Cast without a target or destination. Returns false for a newly revealed hidden obstruction; known invalid destinations throw.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 ```cpp
@@ -1560,6 +1590,8 @@ bool use(const camp& target) const
 ```
 
 Cast on a camp; the cast lands on the target's tile. Returns false for a newly revealed hidden obstruction; known invalid destinations throw. @param target Camp to cast on.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1579,6 +1611,8 @@ bool use(const champion& target) const
 
 Cast on a champion; unit casts land on the target's tile. Returns false for a newly revealed hidden obstruction; known invalid destinations throw. @param target Champion to cast on.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -1596,6 +1630,8 @@ bool use(vec2 destination) const
 ```
 
 Cast at a ground tile. Returns false for a newly revealed hidden obstruction; known invalid destinations throw. @param destination Ground tile to cast at.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -1629,6 +1665,8 @@ bitboard valid_tiles() const
 ```
 
 Casting range only; does not filter visibility, occupancy or target categories. Throws for range-less or unused slots, hidden owners, and design-only abilities.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate an ability before choosing a spell.
 
@@ -4178,6 +4216,8 @@ float focus() const override
 
 Query current focus for this visible unit.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -4194,6 +4234,8 @@ float health() const override
 ```
 
 Query current health; live state requires a visible runtime identity.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -4212,6 +4254,8 @@ bool is_alive() const
 
 Query whether this camp is living (awake or asleep); uses the same visibility checks as state().
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -4228,6 +4272,8 @@ bool is_asleep() const
 ```
 
 Query whether this camp is living but dormant; uses the same visibility checks as state().
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -4246,6 +4292,8 @@ bool is_awake() const
 
 Query whether this camp is awake; uses the same visibility checks as state().
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -4262,6 +4310,8 @@ bool is_dead() const
 ```
 
 Query whether this camp is dead; uses the same visibility checks as state().
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -4348,6 +4398,8 @@ bool is_visible() const override
 
 Check whether live state is available; hidden units and design-only views return false.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -4399,6 +4451,8 @@ float max_health() const override
 
 Query current maximum health; live state requires a visible runtime identity.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -4431,6 +4485,8 @@ vec2 position() const override
 ```
 
 Get the tile position; live entity views query current engine state.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -4466,6 +4522,8 @@ camp_state state() const
 
 Query dead, alive (awake), or asleep. The current tile, or last occupied tile when dead, must be in vision; hidden camps throw api_not_in_vision. This is separate from the camp-group state.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -4482,6 +4540,8 @@ float strength() const override
 ```
 
 Query current strength for this visible unit.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -4648,6 +4708,8 @@ void attack(const altar_lock& target) const
 
 Attack an altar lock; requires the authenticated self and host-validated action availability. @param target Visible altar lock within attack range.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4666,6 +4728,8 @@ void attack(const unit& target) const
 
 Attack a champion or camp view; requires the authenticated self and host-validated action availability. @param target Visible champion or camp within attack range.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4683,6 +4747,8 @@ std::int32_t attack_range() const override
 ```
 
 Get the unit's attack range in tiles; champion state is queried live.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4714,6 +4780,8 @@ void buy(consumable_type type) const
 
 Buy a consumable for self. @param type Consumable to buy.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4731,6 +4799,8 @@ void buy(item_type type, std::uint32_t count = 1) const
 ```
 
 Buy items for self. @param type Item to buy. @param count Number of copies to buy.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4751,6 +4821,8 @@ bool can_attack() const
 
 Check whether this champion can attack.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check the action allowance before spending fuel to choose an attack target.
 
 ```cpp
@@ -4765,6 +4837,8 @@ bool can_buy(consumable_type consumable) const
 ```
 
 Check whether a consumable can be bought in the current state. @param consumable Consumable to buy.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4783,6 +4857,8 @@ bool can_buy(item_type item, std::uint32_t count = 1) const
 ```
 
 Check whether an item can be bought in the current state. @param item Item to buy. @param count Number of copies to buy.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4803,6 +4879,8 @@ bool can_cast() const
 
 Check whether this champion can cast.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check the action allowance before spending fuel to evaluate ready abilities.
 
 ```cpp
@@ -4817,6 +4895,8 @@ bool can_move() const
 ```
 
 Check whether this champion can move.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check the action allowance before spending fuel to plan a path.
 
@@ -4833,6 +4913,8 @@ bool can_sell() const
 
 Check whether the authenticated self currently has permission to sell.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -4848,6 +4930,8 @@ void cancel_recall() const
 
 Cancel an active recall.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -4862,6 +4946,8 @@ void cancel_submit_gems() const
 ```
 
 Cancel an active gem submission.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4925,6 +5011,8 @@ void end_turn() const
 
 Yield the current champion turn.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -4939,6 +5027,8 @@ float focus() const override
 ```
 
 Query current focus for this visible unit.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4955,6 +5045,8 @@ std::uint32_t gem_count() const
 
 Get carried gems.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -4969,6 +5061,8 @@ std::uint32_t gold_count() const
 ```
 
 Get gold; this query requires self.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -4985,6 +5079,8 @@ bool has_completed_turn() const
 
 Check whether this champion has completed its turn.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -4999,6 +5095,8 @@ float health() const override
 ```
 
 Get current and maximum health.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Recall when badly injured and safe from interruption.
 
@@ -5020,6 +5118,8 @@ bool is_alive() const
 
 Check whether the champion is alive.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5034,6 +5134,8 @@ bool is_ally() const
 ```
 
 Check whether this champion belongs to the observing team.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5050,6 +5152,8 @@ bool is_enemy() const
 
 Check whether this champion belongs to the opposing team.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5064,6 +5168,8 @@ bool is_recalling() const
 ```
 
 Check whether this champion is recalling.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5080,6 +5186,8 @@ bool is_submitting_gems() const
 
 Check whether this champion is submitting gems.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5094,6 +5202,8 @@ bool is_teleporting() const
 ```
 
 Check whether this champion is teleporting.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5125,6 +5235,8 @@ enum_map<item_type> item_count() const
 
 Get item counts indexed by item type.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5139,6 +5251,8 @@ float max_health() const override
 ```
 
 Query current maximum health; live state requires a visible runtime identity.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Recall when badly injured and safe from interruption.
 
@@ -5160,6 +5274,8 @@ bool move(vec2 delta) const
 
 Attempt to move by a delta from the current position. Returns false for a newly revealed hidden obstruction; known invalid destinations throw. @param delta Displacement from the current position.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Take a planned step; false means no movement occurred.
 
 Inputs:
@@ -5180,6 +5296,8 @@ bool move_absolute(vec2 destination) const
 
 Attempt to move to an absolute destination tile. Returns false for a newly revealed hidden obstruction; known invalid destinations throw. @param destination Map tile to move to.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Take a planned step; false means no movement occurred.
 
 Inputs:
@@ -5199,6 +5317,8 @@ bool move_towards(vec2 target) const
 ```
 
 Move to the reachable tile on a shortest path to `target`, avoiding walls, holes, altars, the enemy spawn and visible units. Returns false without moving when already there, unable to move, or `target` is blocked or unreachable, and false for a newly revealed hidden obstruction. @param target Map tile to approach.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Take a planned step; false means no movement occurred.
 
@@ -5251,6 +5371,8 @@ bool place_ward(vec2 destination) const
 
 Place a ward at a destination tile. Returns false for a newly revealed hidden obstruction; known invalid destinations throw. @param destination Tile to place the ward on.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -5269,6 +5391,8 @@ vec2 position() const override
 
 Get the tile position; live entity views query current engine state.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5283,6 +5407,8 @@ std::int32_t prev_priority() const
 ```
 
 Get the scheduling priority used for the current round.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5299,6 +5425,8 @@ std::int32_t priority() const
 
 Get the scheduling priority for the next round.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5313,6 +5441,8 @@ void recall() const
 ```
 
 Start recalling to spawn.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Recall when badly injured and safe from interruption.
 
@@ -5334,6 +5464,8 @@ std::int32_t remaining_channel_time() const
 
 Query the visible champion's remaining channel rounds; no active channel throws.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5349,6 +5481,8 @@ buff_restrictions restrictions() const
 
 Union of active buff restrictions; requires visibility.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5363,6 +5497,8 @@ void sell(item_type type, std::uint32_t count = 1) const
 ```
 
 Sell items for self; the engine validates champion and shop restrictions. @param type Item to sell. @param count Number of copies to sell.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5383,6 +5519,8 @@ void set_priority(std::int32_t priority) const
 
 Set the scheduling priority for the next round. @param priority New scheduling priority; takes effect from the next round and persists.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -5401,6 +5539,8 @@ champion_state state() const
 
 Get current state and action availability.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5416,6 +5556,8 @@ float strength() const override
 
 Query current strength for this visible unit.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5430,6 +5572,8 @@ void submit_gems(vec2 altar) const
 ```
 
 Start submitting gems at an altar. @param altar Altar tile to tribute at.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5449,6 +5593,8 @@ team team() const
 
 Get the owning team relative to the authenticated bot; live champions read it without vision.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5464,6 +5610,8 @@ bitboard visible_tiles() const
 
 Get tiles visible to this champion.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5478,6 +5626,8 @@ bitboard visible_tiles_from(vec2 position) const
 ```
 
 Vision at a hypothetical position, using this champion's design. @param position Hypothetical tile to see from.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5496,6 +5646,8 @@ void visible_tiles_from_into(vec2 position, bitboard& out) const
 ```
 
 Like `visible_tiles_from`, but writes into `out` instead of returning a new board. @param position Hypothetical tile to see from. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5516,6 +5668,8 @@ void visible_tiles_into(bitboard& out) const
 
 Like `visible_tiles`, but writes into `out` instead of returning a new board. @param out Destination; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -5534,6 +5688,8 @@ std::int32_t ward_cooldown() const
 
 Query the authenticated champion's remaining ward recharge rounds.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5549,6 +5705,8 @@ bitboard ward_placement_tiles() const
 
 Compute self-only ward placement range from current position and engine settings.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -5563,6 +5721,8 @@ void ward_placement_tiles_into(bitboard& out) const
 ```
 
 Like `ward_placement_tiles`, but writes into `out` instead of returning a new board. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -5581,6 +5741,8 @@ std::vector<vec2> ward_positions() const
 ```
 
 Query an owning list of wards placed by the authenticated self champion.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -6076,6 +6238,8 @@ std::uint32_t count() const
 
 Get the number currently owned.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Plan a purchase or use an owned consumable.
 
 Inputs:
@@ -6110,6 +6274,8 @@ bool use() const
 
 Use the entry on a target or tile, if required; the host validates the self-only action. Returns false for a newly revealed hidden obstruction; known invalid destinations throw.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Plan a purchase or use an owned consumable.
 
 Inputs:
@@ -6126,6 +6292,8 @@ bool use(vec2 destination) const
 ```
 
 Use the entry on a target or tile, if required; the host validates the self-only action. Returns false for a newly revealed hidden obstruction; known invalid destinations throw. @param destination Tile to use the consumable at.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Plan a purchase or use an owned consumable.
 
@@ -6773,6 +6941,8 @@ void pick(champion_draft pick)
 
 Submit a champion pick for the current draft round. @param pick Champion to pick.
 
+**draft**: This function can only be used during draft phase, and not by bots during gameplay
+
 Choose your team's roster during the draft phase.
 
 Inputs:
@@ -6923,6 +7093,8 @@ draft_memory_buffer& operator=(const draft_memory_buffer& other)
 
 Submit another buffer's captured bytes, including self-assignment.
 
+**draft**: This function can only be used during draft phase, and not by bots during gameplay
+
 ### operator=
 
 ```cpp
@@ -6930,6 +7102,8 @@ draft_memory_buffer& operator=(std::initializer_list<std::byte> bytes)
 ```
 
 Submit byte initialiser lists; an empty list submits no data.
+
+**draft**: This function can only be used during draft phase, and not by bots during gameplay
 
 ### operator=
 
@@ -6939,6 +7113,8 @@ draft_memory_buffer& operator=(std::span<const std::byte> bytes)
 
 Submit bytes immediately; errors throw and leave captured bytes unchanged. Oversized input is truncated to capacity; shorter input leaves the remaining engine bytes unchanged.
 
+**draft**: This function can only be used during draft phase, and not by bots during gameplay
+
 ### operator=
 
 ```cpp
@@ -6946,6 +7122,8 @@ template <std::ranges::contiguous_range Range> requires (std::ranges::sized_rang
 ```
 
 Submit contiguous arrays, vectors or spans of trivially copyable values using native layout.
+
+**draft**: This function can only be used during draft phase, and not by bots during gameplay
 
 ### size
 
@@ -7925,6 +8103,8 @@ camp_group_state state() const
 
 Current lifecycle state; remembered state outside current vision is not exposed.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Read the remaining respawn rounds for a group with an original spawn tile in current vision. Alive and unclaimed-reward states have no countdown.
 
 Inputs:
@@ -8110,6 +8290,8 @@ cambc::champion champion() const
 
 Construct a live view of the champion in the teleport reservation.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -8237,6 +8419,8 @@ bitboard visible_tiles() const
 
 Hypothetical caster vision after arriving at the reserved destination, not current visibility.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -8253,6 +8437,8 @@ void visible_tiles_into(bitboard& out) const
 ```
 
 Like `visible_tiles`, but writes into `out` instead of returning a new board. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -8329,6 +8515,8 @@ bitboard attack_tiles() const
 
 Build the live unit's Chebyshev attack-range mask; does not filter targets or attack availability. Hidden units and design-only champions propagate position/range query errors.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -8343,6 +8531,8 @@ void attack_tiles_into(bitboard& out) const
 ```
 
 Like `attack_tiles`, but writes into `out` instead of returning a new board. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -8362,6 +8552,8 @@ buff_collection buffs() const
 
 Construct a fresh owning buff collection; previous collections retain their captured values.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -8377,6 +8569,8 @@ virtual float focus() const = 0
 
 Query current focus for this visible unit.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -8391,6 +8585,8 @@ virtual float health() const = 0
 ```
 
 Query current health; live state requires a visible runtime identity.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -8422,6 +8618,8 @@ virtual float max_health() const = 0
 
 Query current maximum health; live state requires a visible runtime identity.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -8437,6 +8635,8 @@ virtual vec2 position() const = 0
 
 Get the tile position; live entity views query current engine state.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Evaluate your champion's options during its turn.
 
 ```cpp
@@ -8451,6 +8651,8 @@ virtual float strength() const = 0
 ```
 
 Query current strength for this visible unit.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Evaluate your champion's options during its turn.
 
@@ -8743,6 +8945,8 @@ cambc::altar_lock altar_lock_at(vec2 position)
 
 Prefer the allied lock if both teams have a lock on this altar. @param position Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -8760,6 +8964,8 @@ bitboard altar_lock_tiles()
 
 Query current altar-lock occupancy for the selected team or both teams.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -8773,6 +8979,8 @@ bitboard altar_lock_tiles(team side)
 ```
 
 Query current altar-lock occupancy for the selected team or both teams. @param side Team to include.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -8791,6 +8999,8 @@ void altar_lock_tiles_into(bitboard& out)
 
 Like `altar_lock_tiles()`, but writes into `out`. @param out Destination; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -8807,6 +9017,8 @@ void altar_lock_tiles_into(team side, bitboard& out)
 ```
 
 Like `altar_lock_tiles`, but writes into `out` instead of returning a new board. @param side Team to include. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -8826,6 +9038,8 @@ std::vector<cambc::altar_lock> altar_locks()
 
 Get fresh, owning visible altar-lock snapshots, optionally filtered by team.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -8839,6 +9053,8 @@ std::vector<cambc::altar_lock> altar_locks(team side)
 ```
 
 Get fresh, owning visible altar-lock snapshots, optionally filtered by team. @param side Team to include.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -8857,6 +9073,8 @@ cambc::camp camp_at(vec2 position)
 
 Find a currently visible camp. @param position Current tile of the camp.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -8874,6 +9092,8 @@ std::vector<map::camp_group> camp_groups()
 
 A group is currently visible when any original spawn tile is in effective vision, even if empty.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -8888,6 +9108,8 @@ bitboard camp_tiles()
 
 Get camp occupancy from the current perspective.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -8901,6 +9123,8 @@ void camp_tiles_into(bitboard& out)
 ```
 
 Like `camp_tiles`, but writes into `out` instead of returning a new board. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -8919,6 +9143,8 @@ std::vector<cambc::camp> camps()
 
 Get an owning list of currently visible camps, recomputed each call.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -8932,6 +9158,8 @@ cambc::champion champion_at(vec2 position)
 ```
 
 Create a fresh view of the currently visible champion at a position. @param position Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -8950,6 +9178,8 @@ bitboard champion_tiles()
 
 Get visible champion occupancy for both sides.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -8963,6 +9193,8 @@ bitboard champion_tiles(team side)
 ```
 
 Get visible champion occupancy for one side. @param side Team to include.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -8981,6 +9213,8 @@ void champion_tiles_into(bitboard& out)
 
 Like `champion_tiles()`, but writes into `out`. @param out Destination; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -8997,6 +9231,8 @@ void champion_tiles_into(team side, bitboard& out)
 ```
 
 Like `champion_tiles`, but writes into `out` instead of returning a new board. @param side Team to include. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9016,6 +9252,8 @@ std::vector<cambc::champion> champions()
 
 Get a fresh champion list for the current view and optional team filter.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -9029,6 +9267,8 @@ std::vector<cambc::champion> champions(team side)
 ```
 
 Get an owning list of currently visible champions, recomputed each call. @param side Team to include.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9047,6 +9287,8 @@ bool has_altar_lock(vec2 position)
 
 Check for a visible altar lock for either team; missing or hidden locks return false. @param position Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -9063,6 +9305,8 @@ bool has_camp(vec2 position)
 ```
 
 False on hidden or empty tiles; invalid positions retain the engine's error. @param position Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9081,6 +9325,8 @@ bool has_champion(vec2 position)
 
 Check visible champion occupancy at a tile; invalid positions retain engine errors. @param position Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -9098,6 +9344,8 @@ bool has_teleport(vec2 position)
 
 Check whether a tile is occupied by a visible teleport reservation. @param position Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -9114,6 +9362,8 @@ bool has_ward(vec2 position, team side)
 ```
 
 Check ward occupancy for `side`; hidden or absent wards return false. @param position Tile to query. @param side Team the ward must belong to.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9133,6 +9383,8 @@ bool has_ward(vec2 position)
 
 Check ward occupancy at a tile; hidden or absent wards return false. @param position Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -9149,6 +9401,8 @@ teleport teleport_at(vec2 position)
 ```
 
 Get the visible teleport reservation on a tile. @param position Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9167,6 +9421,8 @@ bitboard teleport_tiles()
 
 Query current visible teleport-reservation occupancy.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -9180,6 +9436,8 @@ void teleport_tiles_into(bitboard& out)
 ```
 
 Like `teleport_tiles`, but writes into `out` instead of returning a new board. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9198,6 +9456,8 @@ std::vector<teleport> teleports()
 
 Get fresh, owning visible teleport-reservation snapshots.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -9212,6 +9472,8 @@ bitboard visible_tiles()
 
 Query current visible tiles.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -9225,6 +9487,8 @@ void visible_tiles_into(bitboard& out)
 ```
 
 Like `visible_tiles`, but writes into `out` instead of returning a new board. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9242,6 +9506,8 @@ cambc::ward ward_at(vec2 position, team side)
 ```
 
 Get the ordinary ward at a tile for one team. @param position Tile to query. @param side Team the ward must belong to.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9261,6 +9527,8 @@ cambc::ward ward_at(vec2 position)
 
 Get the ordinary ward at a tile. @param position Tile to query.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -9278,6 +9546,8 @@ bitboard ward_tiles()
 
 Query visible ordinary-ward occupancy for both teams.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -9291,6 +9561,8 @@ bitboard ward_tiles(team side)
 ```
 
 Query visible ordinary-ward occupancy for one team. @param side Team to include.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9309,6 +9581,8 @@ void ward_tiles_into(bitboard& out)
 
 Like `ward_tiles()`, but writes into `out`. @param out Destination; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -9325,6 +9599,8 @@ void ward_tiles_into(team side, bitboard& out)
 ```
 
 Like `ward_tiles`, but writes into `out` instead of returning a new board. @param side Team to include. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9344,6 +9620,8 @@ std::vector<cambc::ward> wards()
 
 Fresh visible ordinary-ward observations; overlapping records remain distinct.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 ```cpp
@@ -9357,6 +9635,8 @@ std::vector<cambc::ward> wards(team side)
 ```
 
 Get fresh ordinary-ward observations filtered by team. @param side Team to include.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9470,6 +9750,8 @@ bitboard visible_tiles() const
 
 Hypothetical vision from this ward's position, ignoring current team visibility.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -9486,6 +9768,8 @@ static bitboard visible_tiles_from(vec2 position)
 ```
 
 Query the mask for ordinary-ward vision at a placement tile. @param position Hypothetical ward tile.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
@@ -9504,6 +9788,8 @@ static void visible_tiles_from_into(vec2 position, bitboard& out)
 
 Like `visible_tiles_from`, but writes into `out` instead of returning a new board. @param position Hypothetical ward tile. @param out Destination; its previous contents are overwritten.
 
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -9521,6 +9807,8 @@ void visible_tiles_into(bitboard& out) const
 ```
 
 Like `visible_tiles`, but writes into `out`. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
 Check visible objects before choosing a destination.
 
