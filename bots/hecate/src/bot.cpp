@@ -1973,7 +1973,7 @@ int stake_of(const World& world, const ChampionBelief& a) {
 // enough to come, and for at most escort_max_wait rounds a bag. Meets a coming ally in sight halfway.
 bool await_escort(const World& world, Pathing& pathing, Memory& memory) {
     if (bag_at_stake(world) < params::escort_bag || memory.damage > 0 || memory.escort_waited >= params::escort_max_wait
-        || winning_bag(world) || closing(world) || endgame(world, pathing))
+        || shared_gems_map(world.map()) || winning_bag(world) || closing(world) || endgame(world, pathing))
         return false;
     const vec2 here = cambc::self().position();
     const auto* mate = partner(world);
@@ -1996,7 +1996,9 @@ bool await_escort(const World& world, Pathing& pathing, Memory& memory) {
 
 // With an empty bag, go to an ally's big bag within reach and stay around it, on its way to an
 // altar and through its tribute.
+// Not on shared-gem maps: every capture there makes a big bag, and the team belongs at the block.
 bool escort(const World& world, Pathing& pathing, Memory& memory) {
+    if (shared_gems_map(world.map())) return false;
     const vec2 here = cambc::self().position();
     const ChampionBelief* carrier = nullptr;
     for (const auto& a : world.allies) {
