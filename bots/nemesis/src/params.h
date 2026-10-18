@@ -24,8 +24,10 @@ inline constexpr cambc::champion_draft draft_5[] = {
     cambc::champion_draft::cassi_and_issac, cambc::champion_draft::varg, cambc::champion_draft::stellar,
     cambc::champion_draft::ryth, cambc::champion_draft::tavi};
 
-// Left for the rest of the turn after optional work. Printing the debug fuel log can cost ~30k.
-inline constexpr std::uint64_t end_reserve = debug_fuel ? 40000 : 10000;
+// Left for the rest of the turn after optional work.
+inline constexpr std::uint64_t end_reserve = 10000;
+// A walk not prepared last turn is searched for first, leaving at least this for the turn.
+inline constexpr std::uint64_t walk_first_floor = 40000;
 
 // Rounds out of sight after which an enemy could be anywhere.
 inline constexpr int track_horizon = 10;

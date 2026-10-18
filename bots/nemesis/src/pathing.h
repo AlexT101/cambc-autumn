@@ -2,6 +2,7 @@
 // search costs a fixed setup plus a little per layer, not per tile, so routes run in full.
 #pragma once
 #include <cambc.h>
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -27,6 +28,13 @@ public:
     const Field& to_any_altar();
     int centre_to_altar(int group); // to_any_altar() at the group's centre, kept once read
     const Field& to_group(int group); // goals: the group's camp tiles, to stand on and capture
+    // Static steps to tiles within `range` of the group's camp tiles, around the camps believed alive:
+    // the walk to its attack tiles but for sight lines near the end. Range 0: onto its camp tiles, to
+    // capture. Null if the search out to us would take the fuel below `fuel_floor`.
+    const Field* approach(int group, int range, std::uint64_t fuel_floor);
+    bool approach_ready(int group, int range); // usable from here without a search
+    std::uint64_t approach_cost(int group, int range); // 0 when ready
+    int approach_steps(int group, int range);
     // Walking steps from the centre of a group worth farming (gems, no monolith): by symmetry,
     // from anywhere to it. Null until warmed up; centres_ready() once all are.
     const Field* from_centre(int group);
@@ -41,6 +49,8 @@ public:
     bool prepare_member_tiles(int group, int range, std::uint32_t members, std::uint64_t fuel_floor);
     // Precompute while more than `fuel_floor` remains; true once everything is cached.
     bool warm_up(int attack_range, std::uint64_t fuel_floor);
+    // The centre fields first: until they are ready, farm builds a field from wherever we stand.
+    bool warm_centres(std::uint64_t fuel_floor);
 
     struct Nearest {
         int steps = unreachable;
@@ -51,13 +61,15 @@ public:
 
     // Static walls, visible units and teleport reservations, and tiles bumped this round.
     const bitboard& blocked();
-    void invalidate();
+    void invalidate(); // after we move or dash
+    vec2 my_pos();     // our tile, read again after invalidate() or in a new round
     // Free neighbours that get strictly closer on a static field, nearest first.
     std::vector<vec2> closer_neighbours(const Field& field, const bitboard* avoid = nullptr);
 
     struct Route {
-        int steps = unreachable;      // 0: already on a goal; unreachable: none within the cap
-        std::vector<vec2> first_steps; // all equally short, in compass order
+        int steps = unreachable; // 0: already on a goal; unreachable: none within the cap
+        int count = 0;
+        std::array<vec2, 8> first_steps; // the first `count`: all equally short, in compass order
     };
     Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable);
 
@@ -85,14 +97,32 @@ private:
     const Field& cached(Slot& slot, const bitboard& goals);
     Slot& altar_slot(int altar);
     Slot& group_slot(int group);
+    struct Approach {
+        Field field;
+        bitboard camps; // the live camp tiles it walks around
+    };
+    std::unique_ptr<Approach>& approach_slot(int group, int range);
+    // approach_ready's latest answer: farm asks it once a group with nothing changed between.
+    struct ReadyCheck {
+        const Approach* slot = nullptr;
+        int round = -1;
+        vec2 at{-1, -1};
+        bool ready = false;
+    } ready_check_;
+    std::unique_ptr<Approach> spare_approach_; // a replaced one, refilled by the next search
+    const bitboard& live_camps(); // members believed alive, as of this round
     std::optional<bitboard>& attack_slot(int group, int member, int range);
     bool prepare_member(int group, int member, int range, std::uint64_t fuel_floor);
     const StaticMap& map() const;
+    bool farmed(int group) const; // farm reads only groups with a reward and no monolith
 
     const World& world_;
     Slot any_altar_;
     std::vector<std::optional<int>> centre_to_altar_;
     std::vector<Slot> altar_fields_, group_fields_, centre_fields_;
+    std::vector<std::vector<std::unique_ptr<Approach>>> approach_fields_; // by range, then group
+    bitboard live_camps_;
+    int live_camps_round_ = -1;
     bool centres_ready_ = false;
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
     // By attack range, then group, then member.
@@ -101,7 +131,11 @@ private:
     bitboard blocked_{cambc::uninitialized};
     bool blocked_fresh_ = false;
     bitboard bumped_;
+    bool bumped_any_ = false;
     int bumped_round_ = -1;
+    vec2 pos_;
+    std::uint32_t pos_round_ = 0;
+    bool pos_fresh_ = false;
 };
 
 } // namespace aph

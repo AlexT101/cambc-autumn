@@ -2,6 +2,7 @@
 #include <cambc.h>
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <iostream>
 #include <vector>
 
@@ -23,6 +24,16 @@ inline constexpr bool debug_beliefs = false;
 inline constexpr int debug_beliefs_period = 10;
 // Fight-model calibration: an "FF" stdout line per turn in reach of an enemy, "FC" per chase.
 inline constexpr bool debug_fights = false;
+
+// A choice made worse to save fuel: one "SHORTCUT round champion what" stdout line. debug_block
+// spends no fuel in local (non-release) builds and is compiled out of release ones.
+inline void note_shortcut(const char* what) {
+    debug_block({
+        if (!cambc::is_draft())
+            std::printf("SHORTCUT %d %u %s\n", cambc::round_number(),
+                        static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), what);
+    });
+}
 
 // The Monolith group the team is besieging this turn, or -1: every camp action skips other Monoliths.
 inline int& siege_group() {
@@ -79,6 +90,22 @@ inline vec2 first_tile(const bitboard& b) {
     return p;
 }
 
+// out = a | b, a & b, a ^ b, ~a: one host call each, where the operators allocate a result (~130) or
+// take two calls to copy (clear and |=). out may be a or b.
+inline void or_into(const bitboard& a, const bitboard& b, bitboard& out) {
+    cambc::detail::check(cambc::detail::sdk_Bitboard_Union(a.ptr(), b.ptr(), out.ptr()));
+}
+inline void and_into(const bitboard& a, const bitboard& b, bitboard& out) {
+    cambc::detail::check(cambc::detail::sdk_Bitboard_Intersect(a.ptr(), b.ptr(), out.ptr()));
+}
+inline void xor_into(const bitboard& a, const bitboard& b, bitboard& out) {
+    cambc::detail::check(cambc::detail::sdk_Bitboard_Xor(a.ptr(), b.ptr(), out.ptr()));
+}
+inline void not_into(const bitboard& a, bitboard& out) {
+    cambc::detail::check(cambc::detail::sdk_Bitboard_Not(a.ptr(), out.ptr()));
+}
+inline void copy_into(const bitboard& a, bitboard& out) { or_into(a, a, out); }
+
 // The helpers below work in scratch boards: allocating a board (~300 fuel) costs more than the
 // host operations on it (~120).
 
@@ -131,10 +158,8 @@ inline int& max_field_layers() {
 inline Field make_field(const bitboard& walls, const bitboard& goals) {
     static bitboard visited{cambc::uninitialized};
     Field f;
-    // goals & ~walls
-    f.goals |= goals;
-    f.goals &= walls;
-    f.goals ^= goals;
+    not_into(walls, f.goals);
+    f.goals &= goals;
     max_field_layers() = std::max<int>(max_field_layers(), f.steps.compute_with_expansion_count(walls, f.goals, visited));
     return f;
 }
@@ -236,27 +261,30 @@ private:
     std::uint32_t round_ = 0;
 };
 
-// A meter still open when this runs is reported on the next line.
+// A meter still open when this runs is reported on the next line. Free in local builds, where
+// debug_block spends no fuel; release builds print nothing.
 inline void print_fuel_log() {
     if constexpr (debug_fuel) {
-        std::cout << "fuel r" << cambc::round_number() << " c"
-                  << (cambc::is_draft() ? -1 : static_cast<int>(static_cast<cambc::handle_champion_t>(cambc::self())));
-        auto& log = fuel_log();
-        for (std::size_t i = 0; i < log.size(); ++i) {
-            if (!log[i].label) continue;
-            std::cout << ' ' << log[i].label << '=';
-            if (log[i].spilled) {
-                std::cout << "SPILLED(r" << log[i].round << ')';
-                continue;
+        debug_block({
+            std::cout << "fuel r" << cambc::round_number() << " c"
+                      << (cambc::is_draft() ? -1 : static_cast<int>(static_cast<cambc::handle_champion_t>(cambc::self())));
+            auto& log = fuel_log();
+            for (std::size_t i = 0; i < log.size(); ++i) {
+                if (!log[i].label) continue;
+                std::cout << ' ' << log[i].label << '=';
+                if (log[i].spilled) {
+                    std::cout << "SPILLED(r" << log[i].round << ')';
+                    continue;
+                }
+                std::uint64_t total = log[i].used;
+                int count = 1;
+                for (std::size_t j = i + 1; j < log.size(); ++j)
+                    if (log[j].label == log[i].label && !log[j].spilled) total += log[j].used, ++count, log[j].label = nullptr;
+                std::cout << total;
+                if (count > 1) std::cout << '/' << count;
             }
-            std::uint64_t total = log[i].used;
-            int count = 1;
-            for (std::size_t j = i + 1; j < log.size(); ++j)
-                if (log[j].label == log[i].label && !log[j].spilled) total += log[j].used, ++count, log[j].label = nullptr;
-            std::cout << total;
-            if (count > 1) std::cout << '/' << count;
-        }
-        std::cout << " left=" << fuel() << '\n';
+            std::cout << " left=" << fuel() << '\n';
+        });
         fuel_log().clear();
     }
 }

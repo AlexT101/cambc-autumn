@@ -56,6 +56,19 @@ py tools/variants/matrix.py --resume replays/matrix-TIMESTAMP # finish unfinishe
 
 Rows use `--bot` (default aphelios), columns default to the row drafts on `--vs-bot`; run_batched options pass through. Identical row and column entries play mirror matches, reported as team A's win rate: with both sides played, each map should go to the same team twice.
 
+## Fuel
+
+Each turn has 100k fuel (the first 200k), and nemesis cuts decisions short when it runs low. [tools/fuel/bench.py](tools/fuel/bench.py) measures fuel per turn and checks fuel optimisations: with its default 100M budget no fuel gate trips, so a change that only saves fuel must leave every replay byte-identical. Use the small default map set; hundreds of maps are not needed for that check.
+
+```
+py tools/fuel/bench.py run nemesis --out replays/fuel/base.json          # 16 games vs rival, 8 maps, both sides
+py tools/fuel/bench.py run variants/x --out replays/fuel/x.json
+py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # identical replays, fuel change
+py tools/fuel/bench.py run nemesis --fuel 0 --out replays/fuel/real.json  # the real budget: counts shortcuts and lost turns
+```
+
+nemesis prints a `SHORTCUT round champion what` line wherever fuel made it choose worse (`note_shortcut` in util.h), inside `debug_block`, so it is free in local builds and absent from release ones; `--fuel 0` sums them. Set `debug_fuel` in util.h for per-phase costs (`FuelMeter`; each meter costs ~170 fuel itself). Cost model: about 1 fuel per WASM instruction, memset/memcpy 1 per byte, an allocation ~130 plus ~290 to free, a host bitboard operation ~1 per 8x8 chunk plus ~15 (~185 on 100x100), a full distance field ~26k on 100x100, a thrown and caught `cambc::error` ~3.9k, `std::cout` ~11k of static initialisation (use printf). The draft bot fills `DraftPlan` (draft.h, 1024 bytes) with static map data the champions would otherwise compute: per-group walking steps from both spawns and every altar, and attack tiles.
+
 ## Competitor replays
 
 [fetch_replays.py](fetch_replays.py) downloads ladder match replays: listings come from the site's public API, but since 2026-10-17 replay bundles need a signed-in session, so it falls back to `cambc matches download` (run `cambc login` first; the endpoint rate-limits, so use `--threads 1`):

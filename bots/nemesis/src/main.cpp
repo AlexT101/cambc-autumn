@@ -1,6 +1,6 @@
 // Each instance is the draft bot or one champion; Cassi and Issac are two.
 #include <cambc.h>
-#include <iostream>
+#include <cstdio>
 #include <memory>
 #include "bot.h"
 #include "champions.h"
@@ -20,9 +20,9 @@ template <class F> bool run(const char* phase, F&& f) {
         f();
         return true;
     } catch (const std::exception& e) {
-        std::cout << "r" << cambc::round_number() << ' ' << phase << " error: " << e.what() << std::endl;
+        std::printf("r%u %s error: %s\n", cambc::round_number(), phase, e.what());
     } catch (...) {
-        std::cout << "r" << cambc::round_number() << ' ' << phase << " error: unknown exception" << std::endl;
+        std::printf("r%u %s error: unknown exception\n", cambc::round_number(), phase);
     }
     return false;
 }
@@ -51,7 +51,7 @@ struct Instance {
                 const auto& m = world->map();
                 std::cout << "map " << m.width << 'x' << m.height << ' ' << cambc::to_string(m.symmetry) << " groups "
                           << m.groups.size() << " altars " << m.altars.size()
-                          << " plan " << (world->plan ? "ok" : "missing") << '\n';
+                          << " plan " << (m.drafted() ? "ok" : "missing") << '\n';
                 aph::check_facts_against_engine();
             }
         });
@@ -66,17 +66,20 @@ struct Instance {
         if (world->is_stale()) return;
         run("turn end", [&] { world->note_turn_end(); });
         // Only comms reads vision again, and it changes only if we moved.
-        const bool refresh = cambc::self().position() != world->me().pos
-                             && aph::fuel_ok(world->observe_cost_estimate() + end_reserve);
+        const bool moved = cambc::self().position() != world->me().pos;
+        const bool refresh = moved && aph::fuel_ok(world->observe_cost_estimate() + end_reserve);
+        if (moved && !refresh) aph::note_shortcut("comms-stale-vision");
         run("comms send", [&] { aph::comms::send(*world, refresh); });
         run("debug", [&] { world->debug_output(); });
+        run("prepare", [&] { aph::prepare_next_turn(*world, *pathing, memory); });
         // Field costs are estimated from the deepest field so far; on the first turn none is
         // measured yet, so an estimate can miss by a whole field.
         if (!warmed_up)
             run("warm up", [&] {
                 aph::FuelMeter meter{"warm_up"};
                 const auto reserve = end_reserve + (world->round == world->first_round ? aph::field_cost_estimate() : 0);
-                map_warmed_up = map_warmed_up || world->map().warm_up(reserve);
+                const bool centres = pathing->warm_centres(reserve);
+                map_warmed_up = map_warmed_up || (centres && world->map().warm_up(reserve));
                 warmed_up = map_warmed_up && pathing->warm_up(world->me().facts().attack_range(), reserve);
             });
         aph::print_fuel_log();
@@ -94,7 +97,8 @@ int main() {
         else
             instance.play_turn();
         if (const auto now = cambc::round_number(); now != round)
-            std::cout << "r" << round << " turn ran out of fuel, finished in r" << now << std::endl;
+            std::printf("r%u turn ran out of fuel, finished in r%u\n", round, now);
+        if (const auto now = cambc::round_number(); now != round) aph::note_shortcut("out-of-fuel");
         cambc::end_turn();
     }
 }

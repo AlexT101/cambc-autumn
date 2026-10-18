@@ -1,7 +1,6 @@
 #include "turn_order.h"
 #include <algorithm>
 #include <array>
-#include <optional>
 #include <vector>
 #include "params.h"
 #include "safety.h"
@@ -24,6 +23,8 @@ constexpr float recall_value = 60;
 // An enemy yet to act this round moves before our next turn anyway: acting before its turn next
 // round denies it only a second one.
 constexpr float unacted_share = 0.5f;
+// refresh(), offer_channel() and offer_escape(), besides building the threats; no fight is simulated.
+constexpr std::uint64_t offers_cost = 6000;
 
 struct Wish {
     int band = idle;
@@ -42,8 +43,9 @@ struct Enemy {
 
 // Visible enemies still alive after our turn, with their health now. One raw read each: every
 // SDK accessor reads the whole record again.
-std::vector<Enemy> live_enemies(const World& world) {
-    std::vector<Enemy> out;
+const std::vector<Enemy>& live_enemies(const World& world) {
+    static std::vector<Enemy> out; // kept across turns: growing it reallocates
+    out.clear();
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible) continue;
         const auto h = static_cast<std::uint32_t>(e.handle);
@@ -57,9 +59,19 @@ std::vector<Enemy> live_enemies(const World& world) {
     return out;
 }
 
-// Ourselves as we end the turn: moved, cooldowns restarted by casts.
-ChampionBelief live_self(const World& world) {
-    auto b = world.me();
+// Ourselves as we end the turn: moved, cooldowns restarted by casts. The fields read here only:
+// copying a belief copies its bitboards.
+const ChampionBelief& live_self(const World& world) {
+    static ChampionBelief b;
+    const auto& now = world.me();
+    b.handle = now.handle;
+    b.type = now.type;
+    b.side = now.side;
+    b.index = now.index;
+    b.is_self = true;
+    b.alive = now.alive;
+    b.visible = now.visible;
+    b.max_health = now.max_health;
     auto& me = cambc::self();
     cambc::detail::champion_info info{};
     cambc::detail::check(cambc::detail::sdk_champion(static_cast<std::uint32_t>(world.me().handle), &info));
@@ -93,13 +105,20 @@ int gems_lost(const World& world, const ChampionBelief& e) {
     return gems;
 }
 
-// Strikes for next round, by index, each worked out on first use.
-using Strikes = std::array<std::optional<Strike>, 8>;
+// Strikes for next round, by index, each worked out on first use. Slots not used are left
+// unwritten: the engine charges for every byte.
+struct Strikes {
+    unsigned known = 0;
+    union {
+        std::array<Strike, 8> by_index;
+    };
+    Strikes() {}
+};
 
 const Strike& next_strike(const World& world, const ChampionBelief& c, Strikes& cache) {
-    auto& s = cache[static_cast<std::size_t>(c.index)];
-    if (!s) s = strike(c, world.round + 1);
-    return *s;
+    auto& s = cache.by_index[static_cast<std::size_t>(c.index)];
+    if (!(cache.known >> c.index & 1)) cache.known |= 1u << c.index, s = strike(c, world.round + 1);
+    return s;
 }
 
 // Damage our next turn and those of the allies we see could deal to a tile, each walking first.
@@ -130,12 +149,21 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
     }
 }
 
+// Building the threats costs the most here, so the offers check what they can without them first.
+bool threats_affordable(Safety& safety) {
+    if (safety.built() || fuel_ok(safety.build_cost_estimate() + offers_cost + params::end_reserve)) return true;
+    if (safety.any_threat()) note_shortcut("turn-order-sim");
+    return false;
+}
+
 // Our channel ends at our next turn's start, unless an enemy acting first cancels it: any damage
 // cancels a recall, only a stun a tribute or a teleport.
 void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
     auto& me = cambc::self();
     const bool recall = me.is_recalling();
-    if (!(recall || me.is_submitting_gems() || me.is_teleporting()) || me.remaining_channel_time() != 1) return;
+    if (!(recall || me.is_submitting_gems() || me.is_teleporting()) || me.remaining_channel_time() != 1
+        || !threats_affordable(safety))
+        return;
     for (const auto& t : safety.threats()) {
         const int d = t.distance(self.pos);
         if (!t.credible() || !t.strike.hits(d) || !(recall || t.strike.stuns[d])) continue;
@@ -149,7 +177,7 @@ void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
 // next round denies the second strike of those, and the only one of the others.
 void offer_escape(const World& world, const ChampionBelief& self, Safety& safety, Wish& wish) {
     if (world.map().ally_spawn.is_set(self.pos)
-        || (!safety.built() && safety.damage_bound(self.pos, true) < self.health))
+        || (!safety.built() && safety.damage_bound(self.pos, true) < self.health) || !threats_affordable(safety))
         return;
     float damage = safety.camp_damage(self.pos);
     bool enemy = false;
@@ -193,14 +221,17 @@ void offer_engaged(const ChampionBelief& self, const std::vector<Enemy>& enemies
 void set_turn_order(const World& world, Safety& safety) {
     auto& me = cambc::self();
     Wish wish;
+    if (world.me().alive && !fuel_ok(params::end_reserve)) note_shortcut("turn-order");
     if (world.me().alive && fuel_ok(params::end_reserve)) {
-        const auto self = live_self(world);
-        const auto enemies = live_enemies(world);
+        const auto& self = live_self(world);
+        const auto& enemies = live_enemies(world);
         offer_engaged(self, enemies, wish);
         const Strike ours = strike(self, world.round + 1);
         offer_kills(world, self, ours, enemies, wish);
         offer_heal(world, self, enemies, wish);
-        if (fuel_ok(safety.fight_cost_estimate() + params::end_reserve)) {
+        if (!fuel_ok(offers_cost + params::end_reserve)) {
+            if (safety.any_threat()) note_shortcut("turn-order-sim");
+        } else {
             safety.refresh();
             offer_channel(self, safety, wish);
             offer_escape(world, self, safety, wish);

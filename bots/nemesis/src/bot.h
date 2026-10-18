@@ -23,5 +23,8 @@ struct Memory {
 
 // `world` is as of the turn's start; ask cambc for anything that changes after acting.
 void play_turn(const World& world, Pathing& pathing, Memory& memory);
+// With the turn's spare fuel: the walk to our farm choice from where we ended, so that a costly
+// turn next round still walks it well.
+void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory);
 
 } // namespace aph

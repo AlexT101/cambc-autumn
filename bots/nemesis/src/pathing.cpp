@@ -7,8 +7,6 @@ namespace aph {
 
 namespace {
 
-vec2 my_pos() { return cambc::self().position(); }
-
 template <class T> T& entry(std::vector<T>& table, std::size_t count, int i) {
     if (table.size() != count) table.resize(count);
     return table[static_cast<std::size_t>(i)];
@@ -22,8 +20,10 @@ const StaticMap& Pathing::map() const { return world_.map(); }
 
 void Pathing::begin_turn() {
     blocked_fresh_ = false;
+    pos_fresh_ = false;
     if (bumped_round_ != world_.round) {
         bumped_.clear();
+        bumped_any_ = false;
         bumped_round_ = world_.round;
     }
 }
@@ -59,11 +59,107 @@ const Field& Pathing::to_any_altar() {
 
 int Pathing::centre_to_altar(int group) {
     auto& steps = entry(centre_to_altar_, map().groups.size(), group);
+    if (!steps) steps = map().drafted_altar_steps(group);
     if (!steps) steps = to_any_altar().at(map().groups[group].centre);
     return *steps;
 }
 
 const Field& Pathing::to_group(int group) { return cached(group_slot(group), map().groups[group].tiles()); }
+
+const bitboard& Pathing::live_camps() {
+    if (live_camps_round_ != world_.round) {
+        live_camps_round_ = world_.round;
+        live_camps_.clear();
+        const auto& groups = map().groups;
+        for (std::size_t g = 0; g < groups.size(); ++g) {
+            const auto& c = world_.camps[g];
+            if (c.state != CampState::alive) continue;
+            for (std::size_t i = 0; i < groups[g].members.size(); ++i)
+                if (i >= c.health.size() || c.health[i] > 0) live_camps_.set(groups[g].members[i].pos);
+        }
+    }
+    return live_camps_;
+}
+
+std::unique_ptr<Pathing::Approach>& Pathing::approach_slot(int group, int range) {
+    const auto r = static_cast<std::size_t>(range);
+    if (approach_fields_.size() <= r) approach_fields_.resize(r + 1);
+    return entry(approach_fields_[r], map().groups.size(), group);
+}
+
+bool Pathing::approach_ready(int group, int range) {
+    const auto& slot = approach_slot(group, range);
+    if (!slot) return false;
+    const vec2 me = my_pos();
+    auto& c = ready_check_;
+    if (c.slot != slot.get() || c.round != world_.round || c.at != me)
+        c = {slot.get(), world_.round, me, slot->field.at(me) != unreachable && slot->camps == live_camps()};
+    return c.ready;
+}
+
+// About our distance to the group: from the approach field it replaces, the group's centre field,
+// or by way of our spawn. Walking around live camps can add a few layers.
+// Negative when no field bounds it.
+int Pathing::approach_steps(int group, int range) {
+    const auto& s = map();
+    const vec2 me = my_pos();
+    const vec2 centre = s.groups[group].centre;
+    int steps = -1;
+    if (const auto& old = approach_slot(group, range); old && old->field.at(me) != unreachable) steps = old->field.at(me);
+    else if (const auto* from = from_centre(group)) steps = from->at(me);
+    else if (s.from_ally_spawn_ready() && s.from_ally_spawn().at(me) != unreachable && s.from_ally_spawn().at(centre) != unreachable)
+        steps = s.from_ally_spawn().at(me) + s.from_ally_spawn().at(centre);
+    else if (s.drafted() && s.ally_spawn.is_set(me) && s.ally_steps(group) != unreachable)
+        steps = s.ally_steps(group);
+    return std::min(steps, s.width + s.height);
+}
+
+// Unbounded, walls seldom double the distance as the crow flies.
+std::uint64_t Pathing::approach_cost(int group, int range) {
+    if (approach_ready(group, range)) return 0;
+    const int steps = approach_steps(group, range);
+    return search_cost_estimate(steps >= 0 ? steps : std::min(2 * dist(my_pos(), map().groups[group].centre), map().width + map().height));
+}
+
+const Field* Pathing::approach(int group, int range, std::uint64_t fuel_floor) {
+    if (approach_ready(group, range)) return &approach_slot(group, range)->field;
+    // Searched out to our tile only: it costs by our distance rather than the map's, and every
+    // tile of a walk down it is labelled, so it lasts the whole way unless we leave it or a camp
+    // dies or returns.
+    const int steps = approach_steps(group, range);
+    if (!fuel_ok(fuel_floor + approach_cost(group, range))) return nullptr;
+    const auto& s = map();
+    const vec2 me = my_pos();
+    // Unbounded, the search goes as deep as the fuel above the floor allows.
+    const auto per_layer = static_cast<int>(search_chunks());
+    const int affordable = (static_cast<int>(fuel() - fuel_floor) - static_cast<int>(search_cost_estimate(0))) / per_layer;
+    const int layers = steps >= 0 ? steps + params::max_detour : std::clamp(affordable, 1, s.width + s.height);
+    FuelMeter meter{"approach"};
+    if (!spare_approach_) spare_approach_ = std::make_unique<Approach>();
+    auto& made = *spare_approach_;
+    static bitboard walls{cambc::uninitialized}, open{cambc::uninitialized}, origin{cambc::uninitialized},
+        visited{cambc::uninitialized};
+    copy_into(live_camps(), made.camps);
+    or_into(s.blocked_for_us, made.camps, walls);
+    auto& goals = made.field.goals;
+    if (range == 0) {
+        copy_into(s.groups[group].tiles(), goals);
+    } else {
+        goals.clear();
+        for (const auto& m : s.groups[group].members) goals.draw_chebyshev(m.pos, static_cast<float>(range));
+        not_into(walls, open);
+        goals &= open;
+    }
+    walls.set(me, false);
+    origin.clear();
+    origin.set(me);
+    made.field.steps.compute_to(walls, goals, origin, visited, static_cast<std::uint16_t>(layers));
+    if (made.field.at(me) == unreachable) return nullptr;
+    auto& slot = approach_slot(group, range);
+    std::swap(slot, spare_approach_);
+    ready_check_.slot = nullptr;
+    return &slot->field;
+}
 
 const Field* Pathing::from_centre(int group) {
     const auto& slot = entry(centre_fields_, map().groups.size(), group);
@@ -79,6 +175,7 @@ std::optional<bitboard>& Pathing::attack_slot(int group, int member, int range) 
 
 const bitboard& Pathing::member_attack_tiles(int group, int member, int range) {
     auto& slot = attack_slot(group, member, range);
+    if (!slot && map().attack_tiles_drafted(group, range)) slot = map().drafted_attack_tiles(group, member, range);
     if (!slot) {
         FuelMeter meter{"attack_tiles"};
         const auto& s = map();
@@ -91,17 +188,24 @@ const bitboard& Pathing::member_attack_tiles(int group, int member, int range) {
 
 bitboard Pathing::attack_tiles(int group, int range) {
     const auto& health = world_.camps[group].health;
-    bitboard tiles, freed;
+    static bitboard freed{cambc::uninitialized};
+    bitboard tiles;
+    bool any_freed = false;
     for (int i = 0; i < static_cast<int>(health.size()); ++i) {
-        if (health[i] > 0) tiles |= member_attack_tiles(group, i, range);
-        else freed.set(map().groups[group].members[i].pos);
+        if (health[i] > 0) {
+            tiles |= member_attack_tiles(group, i, range);
+            continue;
+        }
+        if (!any_freed) copy_into(map().standable, freed);
+        any_freed = true;
+        freed.set(map().groups[group].members[i].pos);
     }
-    tiles &= map().standable | freed;
+    tiles &= any_freed ? freed : map().standable;
     return tiles;
 }
 
 bool Pathing::prepare_member(int group, int member, int range, std::uint64_t fuel_floor) {
-    if (attack_slot(group, member, range)) return true;
+    if (attack_slot(group, member, range) || map().attack_tiles_drafted(group, range)) return true;
     // Bush clusters in reach are the costly part; without them a shadowcast or two remain.
     constexpr std::uint64_t viewers_cost = 10000;
     if (!fuel_ok(fuel_floor + viewers_cost)
@@ -125,24 +229,32 @@ bool Pathing::prepare_member_tiles(int group, int range, std::uint32_t members, 
     return true;
 }
 
-bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
+bool Pathing::farmed(int g) const { return !map().groups[g].has_monolith && map().groups[g].gems + map().groups[g].gold > 0; }
+
+bool Pathing::warm_centres(std::uint64_t fuel_floor) {
+    if (centres_ready_) return true;
     const auto cost = field_cost_estimate();
-    const auto afford = [&](const Slot& slot) { return slot || fuel_ok(fuel_floor + cost); };
-    if (!afford(any_altar_)) return false;
-    to_any_altar();
-    // Farm reads only groups with a reward and no monolith.
-    const auto farmed = [&](int g) { return !map().groups[g].has_monolith && map().groups[g].gems + map().groups[g].gold > 0; };
     for (int g = 0; g < static_cast<int>(map().groups.size()); ++g) {
         if (!farmed(g)) continue;
         auto& slot = entry(centre_fields_, map().groups.size(), g);
         if (slot) continue;
-        if (!afford(slot)) return false;
+        if (!fuel_ok(fuel_floor + cost)) return false;
         cached(slot, single(map().groups[g].centre));
     }
     centres_ready_ = true;
-    for (; warm_group_ < static_cast<int>(map().groups.size()); ++warm_group_, warm_member_ = 0)
-        for (; farmed(warm_group_) && warm_member_ < static_cast<int>(map().groups[warm_group_].members.size()); ++warm_member_)
-            if (!prepare_member(warm_group_, warm_member_, attack_range, fuel_floor)) return false;
+    return true;
+}
+
+bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
+    const auto cost = field_cost_estimate();
+    const auto afford = [&](const Slot& slot) { return slot || fuel_ok(fuel_floor + cost); };
+    if (!warm_centres(fuel_floor) || !afford(any_altar_)) return false;
+    to_any_altar();
+    for (; warm_group_ < static_cast<int>(map().groups.size()); ++warm_group_, warm_member_ = 0) {
+        if (!farmed(warm_group_) || map().attack_tiles_drafted(warm_group_, attack_range)) continue;
+        for (; warm_member_ < static_cast<int>(map().groups[warm_group_].members.size()); ++warm_member_)
+            if (!fuel_ok(fuel_floor + small_cost_estimate) || !prepare_member(warm_group_, warm_member_, attack_range, fuel_floor)) return false;
+    }
     for (int a = 0; a < static_cast<int>(map().altars.size()); ++a) {
         if (!afford(altar_slot(a))) return false;
         to_altar(a);
@@ -183,14 +295,27 @@ const bitboard& Pathing::blocked() {
         blocked_ |= t;
         cambc::vision::teleport_tiles_into(t);
         blocked_ |= t;
-        blocked_ |= bumped_;
+        if (bumped_any_) blocked_ |= bumped_;
         blocked_.set(my_pos(), false);
         blocked_fresh_ = true;
     }
     return blocked_;
 }
 
-void Pathing::invalidate() { blocked_fresh_ = false; }
+void Pathing::invalidate() {
+    blocked_fresh_ = false;
+    pos_fresh_ = false;
+}
+
+vec2 Pathing::my_pos() {
+    const auto round = cambc::round_number();
+    if (!pos_fresh_ || pos_round_ != round) {
+        pos_ = cambc::self().position();
+        pos_round_ = round;
+        pos_fresh_ = true;
+    }
+    return pos_;
+}
 
 std::vector<vec2> Pathing::closer_neighbours(const Field& field, const bitboard* avoid) {
     const vec2 me = my_pos();
@@ -224,20 +349,18 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
     static bitboard walls{cambc::uninitialized}, open_goals{cambc::uninitialized}, origin, visited{cambc::uninitialized};
     static vec2 origin_at{-1, -1};
     static cambc::distance_field field;
-    walls.clear();
-    walls |= blocked();
-    if (avoid) {
-        auto danger = *avoid;
+    copy_into(blocked(), walls);
+    if (avoid && avoid->is_set(me)) {
         // Inside danger every neighbour is in it too: free the connected region we stand in.
-        if (danger.is_set(me)) danger &= ~(~danger).reachable_tiles(me, static_cast<std::uint16_t>(map().width + map().height));
+        auto danger = *avoid;
+        danger &= ~(~danger).reachable_tiles(me, static_cast<std::uint16_t>(map().width + map().height));
         walls |= danger;
+    } else if (avoid) {
+        walls |= *avoid;
     }
     walls.set(me, false);
-    // goals & ~walls
-    open_goals.clear();
-    open_goals |= goals;
-    open_goals &= walls;
-    open_goals ^= goals;
+    not_into(walls, open_goals);
+    open_goals &= goals;
     if (open_goals.is_empty()) return r;
     // Search outwards from the goals until it reaches us: every tile one layer nearer than ours
     // is then labelled, so each neighbour on a shortest route is known.
@@ -259,7 +382,7 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
     }
     if (best < here)
         for (int i = 0; i < 8; ++i)
-            if (around[i] == best) r.first_steps.push_back(me + directions[i]);
+            if (around[i] == best) r.first_steps[r.count++] = me + directions[i];
     return r;
 }
 
@@ -271,6 +394,7 @@ bool Pathing::try_move(vec2 tile) {
         }
         // A hidden unit was there: the tile is now revealed to us for the rest of the round.
         bumped_.set(tile);
+        bumped_any_ = true;
         invalidate();
     } catch (const cambc::error&) {
     }
@@ -282,12 +406,15 @@ bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max
     // Each retry costs a search, and only a hidden blocker makes one worth it.
     const auto retry_cost = search_cost_estimate(std::min(max_steps, map().width + map().height)) + params::end_reserve;
     for (int attempt = 0; attempt < 3; ++attempt) {
-        if (attempt > 0 && !fuel_ok(retry_cost)) return false;
+        if (attempt > 0 && !fuel_ok(retry_cost)) {
+            note_shortcut("route-retry");
+            return false;
+        }
         const auto r = route(goals, avoid, max_steps);
         bool bumped = false;
-        for (auto p : r.first_steps) {
-            if (try_move(p)) return true;
-            bumped |= bumped_.is_set(p);
+        for (int i = 0; i < r.count; ++i) {
+            if (try_move(r.first_steps[i])) return true;
+            bumped |= bumped_.is_set(r.first_steps[i]);
         }
         if (!bumped) return false;
     }
@@ -299,7 +426,8 @@ bool Pathing::step_towards(const Field& field, const bitboard* avoid, int max_de
     if (here == 0 || !cambc::self().can_move()) return false;
     if (here != unreachable) {
         const int cap = here + max_detour;
-        if (fuel_ok(search_cost_estimate(cap) + params::end_reserve) && step_towards(field.goals, avoid, cap)) return true;
+        if (!fuel_ok(search_cost_estimate(cap) + params::end_reserve)) note_shortcut("static-descend");
+        else if (step_towards(field.goals, avoid, cap)) return true;
     }
     return descend(field, avoid);
 }
@@ -332,20 +460,17 @@ bitboard Pathing::dash_landings() {
     const vec2 me = my_pos();
     cambc::vision::camp_tiles_into(camps);
     // Dash paths cross holes, altars and champions but not walls or camps.
-    excluded.clear();
-    excluded |= map().walls;
-    excluded |= camps;
+    or_into(map().walls, camps, excluded);
     auto landings = excluded.reachable_tiles(me, 2);
     landings &= map().open_for_us;
-    excluded.clear();
-    excluded |= camps;
+    copy_into(camps, excluded);
     cambc::vision::champion_tiles_into(team::ally, t);
     excluded |= t;
     cambc::vision::champion_tiles_into(team::enemy, t);
     excluded |= t;
     cambc::vision::teleport_tiles_into(t);
     excluded |= t;
-    excluded |= bumped_;
+    if (bumped_any_) excluded |= bumped_;
     excluded &= landings;
     landings ^= excluded;
     landings.set(me, false);

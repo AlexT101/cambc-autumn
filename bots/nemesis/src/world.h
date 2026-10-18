@@ -19,6 +19,19 @@ namespace aph {
 
 struct StaticMap;
 
+// For start-up data kept to the end: a bump allocator over static storage, which starts zeroed
+// for free, where each malloc costs ~130 fuel. Nothing is freed.
+void* static_alloc(std::size_t bytes, std::size_t align);
+template <class T> struct StaticAlloc {
+    using value_type = T;
+    StaticAlloc() = default;
+    template <class U> constexpr StaticAlloc(const StaticAlloc<U>&) noexcept {}
+    T* allocate(std::size_t n) { return static_cast<T*>(static_alloc(n * sizeof(T), alignof(T))); }
+    void deallocate(T*, std::size_t) noexcept {}
+    template <class U> bool operator==(const StaticAlloc<U>&) const noexcept { return true; }
+};
+template <class T> using StaticVector = std::vector<T, StaticAlloc<T>>;
+
 struct Altar {
     vec2 pos;
     int mirror = -1; // index of the symmetric altar (itself if on the axis)
@@ -43,7 +56,7 @@ struct CampMember {
 
 struct CampGroup {
     std::uint32_t handle; // engine camp-group id
-    std::vector<CampMember> members;
+    StaticVector<CampMember> members;
     vec2 centre;        // the member tile nearest the members' mean position
     int gold = 0, gems = 0;
     int respawn = 0;    // rounds from capture payout to return
@@ -71,24 +84,34 @@ struct BushCluster {
 };
 
 struct StaticMap {
+    // From the engine's map, with the draft's analysis if it wrote one for this map.
+    static std::unique_ptr<StaticMap> build();
+
     int width = 0, height = 0;
     cambc::symmetry symmetry{};
     bool team_a = true; // team A starts odd rounds; B starts even rounds and wins a full tie
 
-    bitboard walls, holes, bushes, altar_tiles, camp_tiles;
-    bitboard ally_spawn, enemy_spawn;
+    // The SDK's own boards, read once at start-up.
+    const bitboard& walls = cambc::map::walls();
+    const bitboard& holes = cambc::map::holes();
+    const bitboard& bushes = cambc::map::bushes();
+    const bitboard& altar_tiles = cambc::map::altars();
+    const bitboard& ally_spawn = cambc::map::spawn_region(team::ally);
+    const bitboard& enemy_spawn = cambc::map::spawn_region(team::enemy);
+    bitboard camp_tiles;
     std::vector<vec2> ally_spawn_tiles, enemy_spawn_tiles;
     vec2 ally_spawn_centre, enemy_spawn_centre;
 
-    bitboard impassable;       // walls | holes | altars: nobody walks or lands there
-    bitboard passable;         // ~impassable
-    bitboard blocked_for_us;   // impassable | enemy spawn: static walls for our walking
-    bitboard blocked_for_them; // impassable | our spawn
-    bitboard open_for_us;   // ~blocked_for_us
-    bitboard open_for_them; // ~blocked_for_them
+    // Written whole by World::build_static, so not cleared first.
+    bitboard impassable{cambc::uninitialized};       // walls | holes | altars: nobody walks or lands there
+    bitboard passable{cambc::uninitialized};         // ~impassable
+    bitboard blocked_for_us{cambc::uninitialized};   // impassable | enemy spawn: static walls for our walking
+    bitboard blocked_for_them{cambc::uninitialized}; // impassable | our spawn
+    bitboard open_for_us{cambc::uninitialized};      // ~blocked_for_us
+    bitboard open_for_them{cambc::uninitialized};    // ~blocked_for_them
     bitboard near_enemy_spawn; // within 1 of an enemy spawn tile
-    bitboard walls_and_bushes;
-    bitboard standable; // ~(camp_tiles | blocked_for_us)
+    bitboard walls_and_bushes{cambc::uninitialized};
+    bitboard standable{cambc::uninitialized}; // ~(camp_tiles | blocked_for_us)
 
     std::vector<Altar> altars;
     std::vector<CampGroup> groups;
@@ -101,6 +124,7 @@ struct StaticMap {
 
     // Walking steps over static terrain (camps and units ignored).
     const Field& from_ally_spawn() const;
+    bool from_ally_spawn_ready() const { return ally_field_.has_value(); }
     const Field& from_enemy_spawn() const;
     const BushCluster& bush_cluster(vec2 p) const;
     const bitboard& near_bushes() const; // tiles with a bush within ward placement range (2)
@@ -114,23 +138,38 @@ struct StaticMap {
     // Compute derived parts while more than `fuel_floor` fuel remains; true once all are done.
     bool warm_up(std::uint64_t fuel_floor) const;
 
+    // Walking steps to a group's centre from our spawn and from theirs: the spawn fields' values.
+    int ally_steps(int group) const;
+    int enemy_steps(int group) const;
+    // From the draft, when it has them: the steps to a group's centre from the tribute tiles of
+    // every altar, and from one of our spawn tiles; a member's attack tiles (Pathing).
+    std::optional<int> drafted_altar_steps(int group) const;
+    std::optional<int> drafted_spawn_steps(vec2 tile, int group) const;
+    bool drafted() const { return plan_ != nullptr; }
+    bool spawn_steps_drafted() const { return plan_ && plan_->spawn_tiles > 0; }
+    bool attack_tiles_drafted(int group, int range) const;
+    bitboard drafted_attack_tiles(int group, int member, int range) const;
+
 private:
     friend class World;
+    const DraftPlan* plan_ = nullptr; // matching this map
+    mutable std::vector<int> attack_bit_; // per drafted group: its members' first bit in plan_->data
+    int drafted_steps(int group, int which) const;
     // Per tile, row-major, in static storage, which starts zeroed for free: filling a vector costs
     // ~1 fuel a byte. One map per process.
     static constexpr int max_tiles = 100 * 100;
     inline static std::array<std::uint16_t, max_tiles> group_lookup_{}; // group index + 1, or 0
+    inline static std::array<std::uint16_t, max_tiles> altar_lookup_{}; // altar index + 1, or 0
     mutable std::optional<Field> ally_field_, enemy_field_;
     mutable std::deque<BushCluster> bush_clusters_; // found so far; references stay valid
     mutable bitboard clustered_;                     // their tiles
     inline static std::array<std::uint16_t, max_tiles> cluster_of_{}; // cluster index + 1, or 0
     struct Growth {
-        bitboard tiles, grown; // the 8-connected flood, and the edge-connected part reached so far
+        bitboard tiles;        // the 8-connected flood
         bool diagonal = false; // the flood joins bushes only diagonally somewhere: grow by edges
     };
-    mutable std::optional<Growth> growth_; // a cluster being found, unfinished for lack of fuel
-    // The cluster grown from p, or from the unfinished growth if p is in its flood; null if the
-    // fuel fell to the floor first.
+    mutable std::optional<Growth> growth_; // a flood whose cluster was not found for lack of fuel
+    // The cluster grown from p; null if the fuel fell to the floor first.
     const BushCluster* grow_cluster(vec2 p, std::uint64_t fuel_floor) const;
     mutable std::optional<bitboard> diagonal_links_, near_bushes_;
     const bitboard& diagonal_links() const; // bushes with a bush diagonal neighbour joined only diagonally
@@ -195,12 +234,16 @@ struct ChampionBelief {
     int channel_end_round = -1;
 
     // Enemies only: every tile it could be on, from what we have seen and how champions move.
-    // Teleport crystals are not modelled. Empty while dead; anywhere while !tracked.
-    bitboard possible;
+    // Teleport crystals are not modelled. Empty while dead; anywhere while !tracked. Left
+    // uninitialised until the first fix, so never set for allies.
+    bitboard possible{cambc::uninitialized};
     // Dashers only: the part of `possible` reached by walking alone since the fix. A dash moves
     // 2 more only once per cooldown, so the rest of `possible` is this widened by one dash.
-    bitboard undashed;
+    bitboard undashed{cambc::uninitialized};
+    bool undashed_all = false; // undashed == possible
     bool tracked = false;
+    // Nonzero lineages: possible and undashed equal those of every enemy with the same one.
+    std::uint32_t lineage = 0;
     Moment fixed, at; // when `possible` was last known exactly, and when it describes
     int turns_since_fixed = 0;
 
@@ -227,8 +270,8 @@ struct CampBelief {
     CampState state = CampState::alive;
     int state_round = 0;     // last round the state was seen; 0 = the start-of-game assumption
     int respawn_round = -1;  // while respawning
-    std::vector<float> health;     // per member, last seen; 0 = dead
-    std::vector<int> health_round; // per member: the last round its health was known
+    StaticVector<float> health;     // per member, last seen; 0 = dead
+    StaticVector<int> health_round; // per member: the last round its health was known
     // Groups sleep until damaged and fall asleep after 2 camp phases with no champion within 3.
     Awake awake = Awake::asleep;
     int last_damaged_round = -1; // a health drop we saw
@@ -294,7 +337,6 @@ public:
     int turns_between(const ChampionBelief& c, Moment from, Moment to) const;
     int round = 0;
     int first_round = 0; // this instance's first play round
-    std::optional<DraftPlan> plan;
 
     std::vector<ChampionBelief> allies; // in handle order, self included
     std::vector<ChampionBelief> enemies;
@@ -310,22 +352,32 @@ public:
     bool enemy_priorities_change = false;
 
 private:
-    void build_static();
     void init_beliefs();
     void rank_turns();
-    void read_priorities();
+    // Also keeps each champion's rank of the previous round when a new one starts.
+    void read_priorities(bool new_round);
     void prune(ChampionBelief& b) const;
+    static void note_emptied(ChampionBelief& b);
     void update_champions(bool full);
     void update_champion(ChampionBelief& b, bool full);
     void read_vision(); // visible and unseen_, overwritten in place
     // Each overwrites `possible` in place: assigning a new board would allocate.
-    static void fix(ChampionBelief& b, const bitboard& tiles, Moment when);
+    static void fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when);
     static void fix(ChampionBelief& b, vec2 tile, Moment when);
     static void fix_nowhere(ChampionBelief& b, Moment when);
     static void mark_fixed(ChampionBelief& b, Moment when);
     void advance(ChampionBelief& b);
-    static void walk(bitboard& tiles, const StaticMap& s, int steps);
-    static void widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps);
+    // advance() then prune(), with the prune folded into the growth.
+    void advance_and_prune(ChampionBelief& b);
+    // Adds `turns` of movement to `possible`, ending on `land`; returns whether a dash widened it.
+    bool grow(ChampionBelief& b, int turns, const bitboard& land);
+    // Where a growth pruned straight after can end: open to them and out of sight.
+    const bitboard& landing();
+    // advance and prune an enemy of a lineage, or copy the result of one of the same lineage and
+    // inputs tracked earlier in this pass.
+    void track(ChampionBelief& b);
+    static void walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard& land);
+    static void widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps, const bitboard& land);
     // Every change to `possible` but growth goes to `undashed` too.
     static void also_undashed(ChampionBelief& b, const bitboard& tiles);
     void update_camps();
@@ -337,6 +389,21 @@ private:
 
     std::unique_ptr<StaticMap> static_;
     bitboard unseen_; // ~visible
+    bitboard landing_{cambc::uninitialized}; // open_for_them & unseen_, once landing_ready_
+    bool landing_ready_ = false;
+    std::vector<std::uint8_t> group_visible_; // update_camps() scratch
+    // Per group: unseen, update_camps() could still change it (a hold paying out, a return, an
+    // awake group's wakefulness going unknown).
+    std::vector<std::uint8_t> camps_pending_;
+    struct Tracked {
+        std::uint32_t before, after;
+        int leader, turns, tsf;
+        Moment fixed, at;
+        bool dasher, dash, fast_recall;
+    };
+    std::array<Tracked, 8> tracked_{}; // this pass's track() results
+    int tracked_count_ = 0;
+    std::uint32_t lineages_ = 0;
     bool ranks_stale_ = true;
     int ranked_round_ = -1;
     int updated_round_ = -1;

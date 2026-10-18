@@ -1,7 +1,10 @@
 #include "world.h"
 #include <algorithm>
+#include <cstddef>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
+#include <span>
 #include <string>
 
 namespace aph {
@@ -57,30 +60,32 @@ bool home_emblem(std::uint32_t h) {
 
 // Static camp data in one batched raw call: map::camp_groups() builds an SDK object graph that
 // costs more fuel than the data itself. Per group: id, gold, gems, max respawn, member count, then
-// per member: id, type, x, y.
-std::vector<std::uint32_t> camp_layout() {
-    std::vector<std::uint32_t> words(256);
+// per member: id, type, x, y. Static storage starts zeroed for free, where a vector pays to clear.
+std::span<const std::uint32_t> camp_layout() {
+    static std::array<std::uint32_t, 4096> words;
+    static std::vector<std::uint32_t> more;
     std::uint32_t count{};
     check(sdk_map_camp_layout(words.data(), static_cast<std::uint32_t>(words.size()), &count));
-    if (count > words.size()) {
-        words.resize(count);
-        check(sdk_map_camp_layout(words.data(), count, &count));
-    }
-    words.resize(count);
-    return words;
+    if (count <= words.size()) return {words.data(), count};
+    more.resize(count);
+    check(sdk_map_camp_layout(more.data(), count, &count));
+    return {more.data(), std::min<std::size_t>(count, more.size())};
 }
 
-// Every champion handle of a side, visible or not, in id (= pick) order.
-std::vector<cambc::handle_champion_t> handles(team side) {
+using Handles = std::array<cambc::handle_champion_t, 16>;
+
+// Every champion handle of a side, visible or not, in id (= pick) order; returns the count.
+int handles(team side, Handles& out) {
+    std::array<std::uint32_t, 16> raw;
     std::uint32_t count{};
     check(side == team::ally ? sdk_num_allies(&count) : sdk_num_enemies(&count));
-    std::vector<std::uint32_t> raw(count);
+    count = std::min<std::uint32_t>(count, raw.size());
     check(side == team::ally ? sdk_allies(raw.data(), count, &count) : sdk_enemies(raw.data(), count, &count));
-    raw.resize(count);
-    std::sort(raw.begin(), raw.end());
-    std::vector<cambc::handle_champion_t> out;
-    for (auto h : raw) out.push_back(static_cast<cambc::handle_champion_t>(h));
-    return out;
+    const int n = static_cast<int>(std::min<std::uint32_t>(count, raw.size()));
+    for (int i = 1; i < n; ++i)
+        for (int j = i; j > 0 && raw[j] < raw[j - 1]; --j) std::swap(raw[j], raw[j - 1]);
+    for (int i = 0; i < n; ++i) out[i] = static_cast<cambc::handle_champion_t>(raw[i]);
+    return n;
 }
 
 // Remaining channel turn ends, or nullopt if not channelling.
@@ -127,28 +132,60 @@ int fire_round(int round, int remaining, bool acted) {
     return round + std::max(remaining, 0) + (acted ? 1 : 0);
 }
 
-vec2 central_tile(const std::vector<vec2>& tiles) {
+// The first of `tiles` nearest their mean; `region` holds just them.
+vec2 central_tile(const bitboard& region, const std::vector<vec2>& tiles) {
     long sx = 0, sy = 0;
     for (auto p : tiles) sx += p.x, sy += p.y;
     const vec2 mean{static_cast<int>(sx / static_cast<long>(tiles.size())), static_cast<int>(sy / static_cast<long>(tiles.size()))};
+    if (region.is_set(mean)) return mean; // the only tile at distance 0
     return *std::min_element(tiles.begin(), tiles.end(), [&](vec2 a, vec2 b) {
         return (a - mean).length_squared() < (b - mean).length_squared();
     });
 }
 
-vec2 central_tile(const std::vector<CampMember>& members) {
+vec2 central_tile(const StaticVector<CampMember>& members) {
     long sx = 0, sy = 0;
     for (const auto& m : members) sx += m.pos.x, sy += m.pos.y;
     const auto n = static_cast<long>(members.size());
     const vec2 mean{static_cast<int>(sx / n), static_cast<int>(sy / n)};
-    return std::min_element(members.begin(), members.end(), [&](const CampMember& a, const CampMember& b) {
-        return (a.pos - mean).length_squared() < (b.pos - mean).length_squared();
-    })->pos;
+    vec2 best = members.front().pos;
+    auto nearest = (best - mean).length_squared();
+    for (std::size_t i = 1; i < members.size(); ++i)
+        if (const auto d = (members[i].pos - mean).length_squared(); d < nearest) nearest = d, best = members[i].pos;
+    return best;
 }
 
-// Grows `tiles` by king steps onto open tiles: what a distance field capped at `steps` reaches,
-// for less fuel at one or two steps.
-void dilate(bitboard& tiles, const bitboard& open, int steps) {
+bool dash_ready(const ChampionBelief& b, int round) {
+    bool dash = false;
+    for (int slot = 0; slot < 2; ++slot)
+        dash |= b.facts().abilities[slot].kind == AbilityKind::dash && (b.ability_ready(slot, round) || b.cooldowns_uncertain());
+    return dash;
+}
+
+// Host operations writing into `out`, with no clear first or new board.
+void assign(bitboard& out, const bitboard& a) {
+    cambc::detail::check(cambc::detail::sdk_Bitboard_Union(a.ptr(), a.ptr(), out.ptr()));
+}
+
+void assign_or(bitboard& out, const bitboard& a, const bitboard& b) {
+    cambc::detail::check(cambc::detail::sdk_Bitboard_Union(a.ptr(), b.ptr(), out.ptr()));
+}
+
+void assign_and(bitboard& out, const bitboard& a, const bitboard& b) {
+    cambc::detail::check(cambc::detail::sdk_Bitboard_Intersect(a.ptr(), b.ptr(), out.ptr()));
+}
+
+void assign_not(bitboard& out, const bitboard& a) { cambc::detail::check(cambc::detail::sdk_Bitboard_Not(a.ptr(), out.ptr())); }
+
+bool disjoint(const bitboard& a, const bitboard& b) {
+    static bitboard both{cambc::uninitialized};
+    assign_and(both, a, b);
+    return both.is_empty();
+}
+
+// Grows `tiles` by king steps onto open tiles, the last onto `land` within them: what a distance
+// field capped at `steps` reaches, for less fuel at one or two steps.
+void dilate(bitboard& tiles, const bitboard& open, int steps, const bitboard& land) {
     static bitboard t1{cambc::uninitialized}, t2{cambc::uninitialized};
     for (; steps > 0; --steps) {
         tiles.shift_right_into(1, t1);
@@ -159,15 +196,28 @@ void dilate(bitboard& tiles, const bitboard& open, int steps) {
         tiles.shift_up_into(-1, t2);
         tiles |= t1;
         tiles |= t2;
-        tiles &= open;
+        tiles &= steps == 1 ? land : open;
     }
 }
 
-std::vector<cambc::champion_type> types_from_draft(team side) {
-    std::vector<cambc::champion_type> types;
-    for (auto pick : cambc::draft::current_draft(side))
-        for (auto t : bodies(pick)) types.push_back(t);
-    return types;
+using Types = std::array<cambc::champion_type, 16>;
+
+// The bodies of a side's draft picks, in id order; returns the count.
+int types_from_draft(team side, Types& out) {
+    namespace raw = cambc::detail;
+    const auto absolute = raw::absolute_team(side);
+    std::uint8_t rounds{};
+    raw::check(raw::sdk_draft_num_rounds(&rounds));
+    int n = 0;
+    for (std::uint32_t r = 0; r < rounds; ++r) {
+        std::int32_t pick{};
+        const auto code = raw::sdk_draft_get(absolute, r, &pick);
+        if (code == 16) continue; // not drafted
+        raw::check(code);
+        for (auto t : bodies(static_cast<cambc::champion_draft>(pick)))
+            if (n < static_cast<int>(out.size())) out[n++] = t;
+    }
+    return n;
 }
 
 const char* name(CampState s) {
@@ -243,11 +293,20 @@ template <class F> void guard(const char* what, F&& f) {
     try {
         f();
     } catch (const std::exception& e) {
-        std::cout << "world " << what << " error: " << e.what() << '\n';
+        std::printf("world %s error: %s\n", what, e.what());
     }
 }
 
 } // namespace
+
+void* static_alloc(std::size_t bytes, std::size_t align) {
+    alignas(16) static std::byte pool[1 << 16];
+    static std::size_t used = 0;
+    const std::size_t start = (used + align - 1) / align * align;
+    if (align > 16 || start + bytes > sizeof(pool)) return ::operator new(bytes);
+    used = start + bytes;
+    return pool + start;
+}
 
 vec2 StaticMap::mirror(vec2 p) const {
     switch (symmetry) {
@@ -262,11 +321,7 @@ bitboard StaticMap::mirror(const bitboard& b) const { return b.reflect(symmetry)
 
 int StaticMap::group_at(vec2 p) const { return static_cast<int>(group_lookup_[tile_index(p)]) - 1; }
 
-int StaticMap::altar_at(vec2 p) const {
-    for (int i = 0; i < static_cast<int>(altars.size()); ++i)
-        if (altars[i].pos == p) return i;
-    return -1;
-}
+int StaticMap::altar_at(vec2 p) const { return in_bounds(p) ? static_cast<int>(altar_lookup_[tile_index(p)]) - 1 : -1; }
 
 const Field& StaticMap::from_ally_spawn() const {
     if (!ally_field_) {
@@ -298,45 +353,60 @@ const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) con
         // of bushes joined only diagonally; then grow from p by edge steps within it.
         auto tiles = (~bushes).reachable_tiles(p, static_cast<std::uint16_t>(width * height));
         const bool diagonal = !(tiles & diagonal_links()).is_empty();
-        growth_ = Growth{std::move(tiles), single(p), diagonal};
+        growth_ = Growth{std::move(tiles), diagonal};
     }
     auto& g = *growth_;
-    if (!g.diagonal) g.grown = g.tiles;
-    static bitboard next{cambc::uninitialized}, shifted{cambc::uninitialized};
-    while (g.diagonal) {
-        next.clear();
-        next |= g.grown;
-        for (int d : {1, -1}) {
-            g.grown.shift_right_into(d, shifted);
-            next |= shifted;
-            g.grown.shift_up_into(d, shifted);
-            next |= shifted;
-        }
-        next &= g.tiles;
-        if (next == g.grown) break;
-        g.grown.swap(next);
-        if (!fuel_ok(fuel_floor)) return nullptr;
-    }
-    // Indexing costs ~20 fuel a tile. bush_cluster() passes no floor and must finish.
-    const int size = static_cast<int>(g.grown.count());
-    if (fuel_floor > 0 && !fuel_ok(fuel_floor + 20 * static_cast<std::uint64_t>(size))) return nullptr;
+    static std::array<vec2, max_tiles> flood, reached;
+    const auto n = static_cast<int>(g.tiles.positions_into(flood));
+    // Indexing costs ~20 fuel a tile, an edge-step flood in WASM ~150 (a host step over the whole
+    // board ~2k). bush_cluster() passes no floor and must finish.
+    if (fuel_floor > 0 && !fuel_ok(fuel_floor + (g.diagonal ? 170 : 20) * static_cast<std::uint64_t>(n))) return nullptr;
+    const auto index = static_cast<std::uint16_t>(bush_clusters_.size() + 1);
     BushCluster c;
-    c.size = size;
-    c.tiles = std::move(g.grown);
+    if (!g.diagonal) {
+        for (int i = 0; i < n; ++i) cluster_of_[tile_index(flood[i])] = index;
+        c.size = n;
+        c.tiles = std::move(g.tiles);
+    } else {
+        // Tiles of the flood in no cluster yet are marked pending; those of other clusters are
+        // not edge-connected to p.
+        constexpr std::uint16_t pending = 0xFFFF;
+        for (int i = 0; i < n; ++i)
+            if (auto& k = cluster_of_[tile_index(flood[i])]; k == 0) k = pending;
+        int size = 0;
+        reached[size++] = p;
+        cluster_of_[tile_index(p)] = index;
+        c.tiles.set(p);
+        for (int head = 0; head < size; ++head)
+            for (const vec2 d : {vec2::north, vec2::east, vec2::south, vec2::west}) {
+                const vec2 q = reached[head] + d;
+                if (!in_bounds(q)) continue;
+                auto& k = cluster_of_[tile_index(q)];
+                if (k != pending) continue;
+                k = index;
+                reached[size++] = q;
+                c.tiles.set(q);
+            }
+        for (int i = 0; i < n; ++i)
+            if (auto& k = cluster_of_[tile_index(flood[i])]; k == pending) k = 0;
+        c.size = size;
+    }
     clustered_ |= c.tiles;
     growth_.reset();
-    for (auto t : c.tiles.positions()) cluster_of_[tile_index(t)] = static_cast<std::uint16_t>(bush_clusters_.size() + 1);
     bush_clusters_.push_back(std::move(c));
     return &bush_clusters_.back();
 }
 
 bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const {
-    auto left = bushes & square(p, radius) & ~clustered_;
+    static bitboard left{cambc::uninitialized}, rest{cambc::uninitialized};
+    not_into(clustered_, left);
+    left &= within(bushes, p, radius);
     while (!left.is_empty()) {
         if (!fuel_ok(fuel_floor + (growth_ ? 0 : 20000))) return false;
         const auto* c = grow_cluster(first_tile(left), fuel_floor);
         if (!c) return false;
-        left &= ~c->tiles;
+        not_into(c->tiles, rest);
+        left &= rest;
     }
     return true;
 }
@@ -368,17 +438,29 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
     // with each kind of viewer's opaque set. A viewer outside bushes sees through none, and never
     // into one; a viewer in a cluster sees through that cluster only.
     const auto r = static_cast<std::uint16_t>(radius);
-    const auto cast_from_inside = [&](const bitboard& cluster) {
-        return (walls_and_bushes & ~cluster).shadow_cast(p, r) & cluster;
+    static bitboard opaque{cambc::uninitialized}, seen{cambc::uninitialized}, left{cambc::uninitialized},
+        rest{cambc::uninitialized};
+    const auto cast_from_inside = [&](const bitboard& cluster, bitboard& out) {
+        xor_into(walls_and_bushes, cluster, opaque); // walls_and_bushes & ~cluster
+        opaque.shadow_cast_into(p, r, out);
+        out &= cluster;
     };
-    if (bushes.is_set(p)) return cast_from_inside(bush_cluster(p).tiles);
+    if (bushes.is_set(p)) {
+        bitboard out{cambc::uninitialized};
+        cast_from_inside(bush_cluster(p).tiles, out);
+        return out;
+    }
     auto out = walls_and_bushes.shadow_cast(p, r);
     // Cast each cluster in reach once.
-    auto left = bushes & square(p, radius);
+    left.clear();
+    left.draw_chebyshev(p, static_cast<float>(radius));
+    left &= bushes;
     while (!left.is_empty()) {
         const auto& cluster = bush_cluster(first_tile(left)).tiles;
-        out |= cast_from_inside(cluster);
-        left &= ~cluster;
+        cast_from_inside(cluster, seen);
+        out |= seen;
+        not_into(cluster, rest);
+        left &= rest;
     }
     return out;
 }
@@ -408,6 +490,75 @@ bool StaticMap::warm_up(std::uint64_t fuel_floor) const {
         a.lock_tiles();
     }
     return true;
+}
+
+int StaticMap::drafted_steps(int group, int which) const {
+    std::uint16_t steps;
+    std::memcpy(&steps, plan_->data.data() + group * DraftPlan::group_bytes + 2 * which, sizeof steps);
+    return steps;
+}
+
+int StaticMap::ally_steps(int group) const {
+    return plan_ ? drafted_steps(group, 0) : from_ally_spawn().at(groups[group].centre);
+}
+
+int StaticMap::enemy_steps(int group) const {
+    return plan_ ? drafted_steps(group, 1) : from_enemy_spawn().at(groups[group].centre);
+}
+
+std::optional<int> StaticMap::drafted_altar_steps(int group) const {
+    if (!plan_) return std::nullopt;
+    return drafted_steps(group, 2);
+}
+
+std::optional<int> StaticMap::drafted_spawn_steps(vec2 tile, int group) const {
+    if (!spawn_steps_drafted() || !ally_spawn.is_set(tile)) return std::nullopt;
+    const int base = drafted_steps(group, 0);
+    if (base == unreachable) return base;
+    const int i = static_cast<int>(std::find(ally_spawn_tiles.begin(), ally_spawn_tiles.end(), tile) - ally_spawn_tiles.begin());
+    return base + (plan_->data[group * DraftPlan::group_bytes + 6 + i / 4] >> (2 * (i % 4)) & 3);
+}
+
+bool StaticMap::attack_tiles_drafted(int group, int range) const {
+    return plan_ && group < plan_->attack_groups
+           && std::find(DraftPlan::attack_ranges.begin(), DraftPlan::attack_ranges.end(), range) != DraftPlan::attack_ranges.end();
+}
+
+bitboard StaticMap::drafted_attack_tiles(int group, int member, int range) const {
+    if (attack_bit_.empty()) {
+        int bit = plan_->groups * DraftPlan::group_bytes * 8;
+        attack_bit_.reserve(plan_->attack_groups);
+        for (int g = 0; g < plan_->attack_groups; ++g) {
+            attack_bit_.push_back(bit);
+            bit += static_cast<int>(groups[g].members.size()) * DraftPlan::member_bits;
+        }
+    }
+    int bit = attack_bit_[group] + member * DraftPlan::member_bits;
+    for (const int r : DraftPlan::attack_ranges) {
+        if (r == range) break;
+        bit += (2 * r + 1) * (2 * r + 1);
+    }
+    // A row at a time into the engine's 8x8 chunks; tiles off the map are never set.
+    const int side = 2 * range + 1;
+    const auto at = static_cast<std::size_t>(bit >> 3);
+    std::uint64_t rows = 0;
+    std::memcpy(&rows, plan_->data.data() + at, std::min<std::size_t>(sizeof rows, plan_->data.size() - at));
+    rows >>= bit & 7;
+    bitboard tiles;
+    std::uint64_t* words = tiles.ptr();
+    const auto stride = cambc::detail::layout().chunk_stride;
+    const vec2 p = groups[group].members[member].pos;
+    for (int y = p.y - range; y <= p.y + range; ++y, rows >>= side) {
+        std::uint64_t row = rows & ((std::uint64_t{1} << side) - 1);
+        if (!row) continue;
+        int x = p.x - range;
+        if (x < 0) row >>= -x, x = 0;
+        std::uint64_t* line = words + (y >> 3) * stride + (x >> 3);
+        const int shift = (y & 7) * 8;
+        line[0] |= (row << (x & 7) & 0xff) << shift;
+        if (const auto rest = row >> (8 - (x & 7))) line[1] |= rest << shift;
+    }
+    return tiles;
 }
 
 const bitboard& Altar::tribute_tiles() const {
@@ -461,7 +612,7 @@ const bitboard& CampGroup::threat() const {
 }
 
 
-void World::build_static() {
+std::unique_ptr<StaticMap> StaticMap::build() {
     FuelMeter meter{"build_static"};
     auto s = std::make_unique<StaticMap>();
     s->width = cambc::map::width();
@@ -469,31 +620,27 @@ void World::build_static() {
     s->symmetry = cambc::map::symmetry();
     s->team_a = cambc::detail::sdk_my_team() == 0;
 
-    s->walls = cambc::map::walls();
-    s->holes = cambc::map::holes();
-    s->bushes = cambc::map::bushes();
-    s->altar_tiles = cambc::map::altars();
-    s->ally_spawn = cambc::map::spawn_region(team::ally);
-    s->enemy_spawn = cambc::map::spawn_region(team::enemy);
     s->ally_spawn_tiles = s->ally_spawn.positions();
     s->enemy_spawn_tiles = s->enemy_spawn.positions();
-    s->ally_spawn_centre = central_tile(s->ally_spawn_tiles);
-    s->enemy_spawn_centre = central_tile(s->enemy_spawn_tiles);
+    s->ally_spawn_centre = central_tile(s->ally_spawn, s->ally_spawn_tiles);
+    s->enemy_spawn_centre = central_tile(s->enemy_spawn, s->enemy_spawn_tiles);
 
-    s->impassable = s->walls | s->holes | s->altar_tiles;
-    s->passable = ~s->impassable;
-    s->blocked_for_us = s->impassable | s->enemy_spawn;
-    s->blocked_for_them = s->impassable | s->ally_spawn;
-    s->open_for_us = ~s->blocked_for_us;
-    s->open_for_them = ~s->blocked_for_them;
+    assign_or(s->impassable, s->walls, s->holes);
+    s->impassable |= s->altar_tiles;
+    assign_not(s->passable, s->impassable);
+    assign_or(s->blocked_for_us, s->impassable, s->enemy_spawn);
+    assign_or(s->blocked_for_them, s->impassable, s->ally_spawn);
+    assign_not(s->open_for_us, s->blocked_for_us);
+    assign_not(s->open_for_them, s->blocked_for_them);
     for (auto t : s->enemy_spawn_tiles) s->near_enemy_spawn.draw_chebyshev(t, 1);
-    s->walls_and_bushes = s->walls | s->bushes;
+    assign_or(s->walls_and_bushes, s->walls, s->bushes);
 
     const auto altar_positions = s->altar_tiles.positions();
     s->altars.resize(altar_positions.size());
     for (std::size_t i = 0; i < altar_positions.size(); ++i) {
         s->altars[i].pos = altar_positions[i];
         s->altars[i].map_ = s.get();
+        s->altar_lookup_[tile_index(altar_positions[i])] = static_cast<std::uint16_t>(i + 1);
     }
     for (auto& a : s->altars) a.mirror = s->altar_at(s->mirror(a.pos));
 
@@ -536,40 +683,48 @@ void World::build_static() {
         g.centre = central_tile(g.members);
     }
     for (auto& g : s->groups) g.mirror = s->group_at(s->mirror(g.centre));
-    s->standable = ~(s->camp_tiles | s->blocked_for_us);
+    assign_or(s->standable, s->camp_tiles, s->blocked_for_us);
+    assign_not(s->standable, s->standable);
 
-    static_ = std::move(s);
+    const auto* plan = read_draft_plan();
+    if (plan && plan->steps && plan->width == s->width && plan->height == s->height && plan->groups == s->groups.size()
+        && !s->ally_spawn_tiles.empty() && plan->spawn_x == s->ally_spawn_tiles[0].x && plan->spawn_y == s->ally_spawn_tiles[0].y
+        && (plan->spawn_tiles == 0 || plan->spawn_tiles == s->ally_spawn_tiles.size())) {
+        max_field_layers() = std::max<int>(max_field_layers(), plan->field_layers);
+        s->plan_ = plan;
+    }
+    return s;
 }
 
 void World::init_beliefs() {
     FuelMeter meter{"init_beliefs"};
     const auto& s = map();
-    plan = read_draft_plan();
     const auto self_handle = static_cast<cambc::handle_champion_t>(cambc::self());
 
     for (const auto side : {team::ally, team::enemy}) {
         auto& list = side == team::ally ? allies : enemies;
-        auto handles = engine::handles(side);
-        const auto types = types_from_draft(side);
-        list.reserve(handles.size());
-        for (std::size_t i = 0; i < handles.size(); ++i) {
-            ChampionBelief b;
+        engine::Handles handles;
+        const int n = engine::handles(side, handles);
+        Types types;
+        const int known = types_from_draft(side, types);
+        list.reserve(n);
+        for (int i = 0; i < n; ++i) {
+            auto& b = list.emplace_back();
             b.handle = handles[i];
             b.side = side;
-            b.index = static_cast<int>(i);
+            b.index = i;
             b.is_self = handles[i] == self_handle;
             // Draft picks are readable in play and handles follow pick order; a visible champion's
             // own type overrides this below if they ever disagree.
-            b.type = b.is_self ? cambc::self().champion_name() : i < types.size() ? types[i] : cambc::champion_type::ryth;
+            b.type = b.is_self ? cambc::self().champion_name() : i < known ? types[i] : cambc::champion_type::ryth;
             b.pos = side == team::ally ? s.ally_spawn_centre : s.enemy_spawn_centre;
             b.pos_round = round;
             b.pos_source = Source::inferred;
             b.health = b.max_health = b.facts().health.base;
             b.strength = b.facts().strength.base;
             b.focus = b.facts().focus.base;
-            if (side == team::enemy) fix(b, s.enemy_spawn, {1, -1});
-            if (b.is_self) self_index = static_cast<int>(i);
-            list.push_back(std::move(b));
+            if (side == team::enemy) fix_at_spawn(b, s.enemy_spawn, {1, -1});
+            if (b.is_self) self_index = i;
         }
     }
 
@@ -580,15 +735,13 @@ void World::init_beliefs() {
         std::optional<bitboard> reach[2];
         const auto grown = [&](bool dash) -> const bitboard& {
             if (!reach[dash]) {
-                auto tiles = s.enemy_spawn;
+                auto& tiles = reach[dash].emplace(cambc::uninitialized);
                 if (dash) {
-                    cambc::distance_field field;
-                    field.compute(s.walls, s.enemy_spawn, tiles, 3);
-                    tiles &= s.open_for_them;
+                    widen_by_dash(s.enemy_spawn, tiles, s, 1, s.open_for_them);
                 } else {
-                    dilate(tiles, s.open_for_them, 1);
+                    assign(tiles, s.enemy_spawn);
+                    walk(tiles, s, 1, s.open_for_them);
                 }
-                reach[dash] = std::move(tiles);
             }
             return *reach[dash];
         };
@@ -596,8 +749,11 @@ void World::init_beliefs() {
             b.at = now();
             b.turns_since_fixed = turns_between(b, b.fixed, b.at);
             if (b.turns_since_fixed > 0) {
-                b.possible = grown(b.facts().has_dash());
-                if (b.facts().has_dash()) b.undashed = grown(false);
+                const bool dasher = b.facts().has_dash();
+                assign(b.possible, grown(dasher));
+                if (dasher) assign(b.undashed, grown(false));
+                b.undashed_all = false;
+                b.lineage = 0x40000000u | dasher;
             }
         }
     }
@@ -616,7 +772,7 @@ void World::update() {
     // First turn; a failure part-way is retried next turn from scratch.
     if (!ready()) {
         first_round = round;
-        if (!static_) build_static();
+        if (!static_) static_ = StaticMap::build();
         allies.clear();
         enemies.clear();
         init_beliefs();
@@ -624,16 +780,8 @@ void World::update() {
     FuelMeter meter{"update"};
     read_vision();
     const auto tributing = tributing_enemies(); // before update_champions ends their channels
-    // This round's order before anything dates a turn in it.
-    if (updated_round_ != round)
-        for (auto* team : {&allies, &enemies})
-            for (auto& c : *team) c.prev_rank = c.rank;
+    guard("priorities", [&] { read_priorities(updated_round_ != round); });
     updated_round_ = round;
-    guard("priorities", [&] { read_priorities(); });
-    // A priority read in round r applies from r + 1: ranks change when a round passes one unread.
-    for (const auto* team : {&allies, &enemies})
-        for (const auto& c : *team)
-            ranks_stale_ |= c.next_priority != c.priority && ranked_round_ <= c.priority_round && c.priority_round < round;
     if (ranks_stale_) rank_turns();
     update_champions(true);
     guard("camps", [&] { update_camps(); });
@@ -649,6 +797,7 @@ void World::observe() {
 }
 
 void World::update_champions(bool full) {
+    tracked_count_ = 0;
     // Allies read this round have not changed but for our own move and heals, and nothing reads
     // those before the next update.
     for (auto& b : allies)
@@ -672,12 +821,13 @@ void World::update_champion(ChampionBelief& b, bool full) {
                 b.died_round = round;
                 b.respawn_earliest = round - 1 + cambc::constants::respawn_time;
                 b.respawn_latest = round + cambc::constants::respawn_time + 1;
+                // Nothing reads where a dead champion could be: once is enough.
+                fix_nowhere(b, now());
             }
             b.alive = false;
             b.visible = false;
             b.gems = 0;
             b.channel = Channel::none;
-            fix_nowhere(b, now());
             return;
         }
         if (!b.alive) {
@@ -694,7 +844,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
             b.health = b.max_health;
             b.gems = 0;
             b.ready_round = {b.respawned_round + 1, b.respawned_round + 1};
-            if (b.side == team::enemy) fix(b, s.enemy_spawn, {round - 1, -1});
+            if (b.side == team::enemy) fix_at_spawn(b, s.enemy_spawn, {round - 1, -1});
         }
     }
 
@@ -714,14 +864,15 @@ void World::update_champion(ChampionBelief& b, bool full) {
                 if (b.side == team::enemy) {
                     b.possible |= s.enemy_spawn;
                     also_undashed(b, s.enemy_spawn);
+                    b.lineage = 0;
                 }
             }
             b.channel = Channel::none;
         }
         // An untracked `possible` is unread until a fix overwrites it.
         if (b.side == team::enemy && b.tracked) {
-            advance(b);
-            if (b.tracked) prune(b);
+            if (b.lineage) track(b);
+            else advance_and_prune(b);
         }
         return;
     }
@@ -742,7 +893,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
                 std::cout << "trackcheck r" << round << " E" << b.index << ' ' << b.facts().name << " at " << str(seen)
                           << " outside its " << b.possible.count() << " possible tiles; fixed r" << b.fixed.round << '\n';
         }
-        fix(b, seen, now());
+        // Fixed there at this turn's update already, and nothing moves during our turn.
+        if (full || last_seen != round || b.pos != seen) fix(b, seen, now());
     }
     b.pos = {info->x, info->y};
     b.pos_round = round;
@@ -767,6 +919,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     if (b.side == team::enemy && b.channel == Channel::teleport) {
         b.possible |= square(b.pos, teleport_crystal_range) & ~s.blocked_for_them;
         also_undashed(b, b.possible);
+        b.lineage = 0;
     }
     for (int slot = 0; slot < 2; ++slot) {
         const int cd = engine::cooldown(h, static_cast<std::uint32_t>(slot));
@@ -788,15 +941,20 @@ void World::update_champion(ChampionBelief& b, bool full) {
     if (b.side == team::enemy) b.fast_recall = engine::home_emblem(h);
 }
 
-void World::read_priorities() {
+void World::read_priorities(bool new_round) {
     for (auto* team : {&allies, &enemies})
         for (auto& b : *team) {
+            // This round's order before anything dates a turn in it.
+            if (new_round) b.prev_rank = b.rank;
             const auto h = engine::id(b.handle);
             std::int32_t priority{}, next_priority{};
-            // Fails for champions out of sight.
+            // Fails for champions out of sight. A priority read in round r applies from r + 1:
+            // ranks change when a round passes one unread.
             if (cambc::detail::sdk_bc_champion_priority(h, 0, &priority) != 0
-                || cambc::detail::sdk_bc_champion_priority(h, 1, &next_priority) != 0)
+                || cambc::detail::sdk_bc_champion_priority(h, 1, &next_priority) != 0) {
+                ranks_stale_ |= b.next_priority != b.priority && ranked_round_ <= b.priority_round && b.priority_round < round;
                 continue;
+            }
             if (b.side == team::enemy
                 && (next_priority != priority || (b.priority_round >= 0 && b.priority_round < round && priority != b.next_priority)))
                 enemy_priorities_change = true;
@@ -827,11 +985,11 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float healt
     b.pos_round = seen_round;
     b.pos_source = Source::comms;
     // The poster's turn in that round is unknown, and so is whether it saw a recall about to land.
-    fix(b, map().enemy_spawn, {seen_round, -1});
+    fix_at_spawn(b, map().enemy_spawn, {seen_round, -1});
     b.possible.set(pos);
     if (b.facts().has_dash()) b.undashed.set(pos);
-    advance(b);
-    prune(b);
+    b.lineage = 0;
+    advance_and_prune(b);
 }
 
 void World::note_capture(int group, int respawn_round) {
@@ -839,6 +997,7 @@ void World::note_capture(int group, int respawn_round) {
     auto& c = camps[group];
     c.told_respawn = respawn_round;
     if (c.state_round == round) return; // in view: our own reading stands
+    if (static_cast<std::size_t>(group) < camps_pending_.size()) camps_pending_[group] = 1;
     c.state = CampState::respawning;
     c.respawn_round = respawn_round;
     c.awake = Awake::asleep;
@@ -848,51 +1007,61 @@ void World::note_capture(int group, int respawn_round) {
 
 void World::read_vision() {
     cambc::vision::visible_tiles_into(visible);
-    unseen_.fill();
-    unseen_ ^= visible;
+    assign_not(unseen_, visible);
+    landing_ready_ = false;
 }
 
+// `undashed` is read only while turns_since_fixed <= ability_cooldown, in advance(), which first
+// adds the turns; the next fix resets it. Once no later advance can read it, it is left stale.
 void World::also_undashed(ChampionBelief& b, const bitboard& tiles) {
-    if (b.facts().has_dash()) b.undashed |= tiles;
+    if (b.facts().has_dash() && b.turns_since_fixed < ability_cooldown) b.undashed |= tiles;
 }
 
 void World::mark_fixed(ChampionBelief& b, Moment when) {
     if (b.facts().has_dash()) {
-        b.undashed.clear();
-        b.undashed |= b.possible;
+        assign(b.undashed, b.possible);
+        b.undashed_all = true;
     }
     b.tracked = true;
     b.fixed = b.at = when;
     b.turns_since_fixed = 0;
 }
 
-void World::fix(ChampionBelief& b, const bitboard& tiles, Moment when) {
-    b.possible.clear();
-    b.possible |= tiles;
+// Enemies fixed to their spawn at the same moment share a lineage.
+void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when) {
+    assign(b.possible, spawn);
     mark_fixed(b, when);
+    b.lineage = 0x80000000u | static_cast<std::uint32_t>(when.round) << 6 | static_cast<std::uint32_t>(when.slot + 1);
 }
 
 void World::fix(ChampionBelief& b, vec2 tile, Moment when) {
     b.possible.clear();
     b.possible.set(tile);
     mark_fixed(b, when);
+    b.lineage = 0;
 }
 
 void World::fix_nowhere(ChampionBelief& b, Moment when) {
     b.possible.clear();
     mark_fixed(b, when);
+    b.lineage = 0;
 }
 
 void World::rank_turns() {
     ranks_stale_ = false;
     ranked_round_ = round;
     for (auto* team : {&allies, &enemies}) {
-        const auto priority = [&](const ChampionBelief& x) { return round > x.priority_round ? x.next_priority : x.priority; };
-        for (auto& c : *team) {
-            c.rank = 0;
-            for (const auto& o : *team)
-                c.rank += priority(o) > priority(c) || (priority(o) == priority(c) && o.handle < c.handle);
+        // Handles ascend with the index: a tie goes to the lower index.
+        const int n = std::min(static_cast<int>(team->size()), 16);
+        std::array<int, 16> priority;
+        for (int i = 0; i < n; ++i) {
+            const auto& x = (*team)[i];
+            priority[i] = round > x.priority_round ? x.next_priority : x.priority;
         }
+        std::array<int, 16> rank{};
+        for (int i = 0; i < n; ++i)
+            for (int j = i + 1; j < n; ++j) ++rank[priority[j] > priority[i] ? i : j];
+        for (int i = 0; i < n; ++i) (*team)[i].rank = rank[i];
     }
 }
 
@@ -906,6 +1075,7 @@ int World::slot(const ChampionBelief& c, int r) const {
 }
 
 int World::turns_between(const ChampionBelief& c, Moment from, Moment to) const {
+    if (!(from < to)) return 0;
     int turns = 0;
     for (int r = std::max(from.round, 1); r <= to.round; ++r) {
         const Moment turn{r, slot(c, r)};
@@ -916,7 +1086,6 @@ int World::turns_between(const ChampionBelief& c, Moment from, Moment to) const 
 
 void World::advance(ChampionBelief& b) {
     if (!b.tracked) return;
-    const auto& s = map();
     if (round - b.fixed.round > params::track_horizon) {
         b.tracked = false;
         b.possible.clear();
@@ -925,71 +1094,156 @@ void World::advance(ChampionBelief& b) {
     const auto to = now();
     const int turns = turns_between(b, b.at, to);
     b.at = to;
-    if (turns == 0) return;
+    if (turns > 0) (void)grow(b, turns, map().open_for_them);
+}
+
+void World::advance_and_prune(ChampionBelief& b) {
+    if (!b.tracked) return;
+    if (round - b.fixed.round > params::track_horizon) {
+        b.tracked = false;
+        b.possible.clear();
+        return;
+    }
+    const auto to = now();
+    const int turns = turns_between(b, b.at, to);
+    b.at = to;
+    if (turns == 0) {
+        prune(b);
+    } else {
+        (void)grow(b, turns, landing());
+        note_emptied(b);
+    }
+}
+
+const bitboard& World::landing() {
+    if (!landing_ready_) {
+        assign_and(landing_, map().open_for_them, unseen_);
+        landing_ready_ = true;
+    }
+    return landing_;
+}
+
+bool World::grow(ChampionBelief& b, int turns, const bitboard& land) {
+    const auto& s = map();
     b.turns_since_fixed += turns;
+    const bool dasher = b.facts().has_dash();
+    const bool undashed_read = dasher && b.turns_since_fixed <= ability_cooldown;
+    const bool undashed_kept = dasher && b.turns_since_fixed < ability_cooldown;
     // A recall started on any turn after the fix lands at the start of the turn recall turn ends
     // later, which is a full turn: from turn recall + 1 on, add the spawn before growing.
     if (b.turns_since_fixed > (b.fast_recall ? home_recall_time : cambc::constants::recall_time)) {
         b.possible |= s.enemy_spawn;
-        also_undashed(b, s.enemy_spawn);
+        if (undashed_read) b.undashed |= s.enemy_spawn;
     }
     FuelMeter meter{"track"};
-    const bool dasher = b.facts().has_dash();
     if (!dasher) {
-        walk(b.possible, s, turns);
-        return;
+        walk(b.possible, s, turns, land);
+        return false;
     }
     // A dash readies once per cooldown: from the undashed tiles it adds 2 steps once in these
     // turns; tiles already reached with a dash grow only by walking until the next is ready.
-    bool dash = false;
-    for (int slot = 0; slot < 2; ++slot)
-        dash |= b.facts().abilities[slot].kind == AbilityKind::dash && (b.ability_ready(slot, round) || b.cooldowns_uncertain());
-    static bitboard dashed{cambc::uninitialized};
-    if (dash) {
-        widen_by_dash(b.undashed, dashed, s, turns);
-        if (b.turns_since_fixed > ability_cooldown) widen_by_dash(b.possible, b.possible, s, turns);
-        else walk(b.possible, s, turns);
+    const bool dash = dash_ready(b, round);
+    if (dash && undashed_read && !b.undashed_all) {
+        static bitboard dashed{cambc::uninitialized};
+        widen_by_dash(b.undashed, dashed, s, turns, land);
+        walk(b.possible, s, turns, land);
         b.possible |= dashed;
+        if (undashed_kept) walk(b.undashed, s, turns, land);
+    } else if (dash) {
+        // undashed lies within possible (equal to it, or read no more): dashing from possible
+        // covers dashing from it.
+        if (undashed_kept) walk(b.undashed, s, turns, land);
+        widen_by_dash(b.possible, b.possible, s, turns, land);
     } else {
-        walk(b.possible, s, turns);
+        walk(b.possible, s, turns, land);
+        if (undashed_kept) {
+            if (b.undashed_all) assign(b.undashed, b.possible);
+            else walk(b.undashed, s, turns, land);
+        }
     }
-    walk(b.undashed, s, turns);
+    b.undashed_all = b.undashed_all && !dash && undashed_kept;
+    return dash;
+}
+
+void World::track(ChampionBelief& b) {
+    if (round - b.fixed.round > params::track_horizon) {
+        b.tracked = false;
+        b.possible.clear();
+        return;
+    }
+    const auto to = now();
+    const int turns = turns_between(b, b.at, to);
+    // With no turns to add, every enemy of a lineage gets the same prune this pass.
+    if (!turns) {
+        b.at = to;
+        prune(b);
+        return;
+    }
+    const bool dasher = b.facts().has_dash();
+    for (int i = 0; i < tracked_count_; ++i) {
+        const auto& t = tracked_[i];
+        if (t.before != b.lineage || t.turns != turns || t.tsf != b.turns_since_fixed || t.fixed != b.fixed || t.at != b.at
+            || t.dasher != dasher || t.fast_recall != b.fast_recall || t.dash != (dasher && dash_ready(b, round)))
+            continue;
+        const auto& leader = enemies[t.leader];
+        assign(b.possible, leader.possible);
+        if (dasher && leader.turns_since_fixed < ability_cooldown) assign(b.undashed, leader.undashed);
+        b.undashed_all = leader.undashed_all;
+        b.tracked = leader.tracked;
+        b.at = to;
+        b.turns_since_fixed = leader.turns_since_fixed;
+        b.lineage = t.after;
+        return;
+    }
+    Tracked t{b.lineage, ++lineages_, b.index, turns, b.turns_since_fixed, b.fixed, b.at, dasher, false, b.fast_recall};
+    b.at = to;
+    t.dash = grow(b, turns, landing());
+    note_emptied(b);
+    b.lineage = t.after;
+    if (tracked_count_ < static_cast<int>(tracked_.size())) tracked_[tracked_count_++] = t;
 }
 
 // `possible` never holds a tile closed to them, so a walk dilates it.
-void World::walk(bitboard& tiles, const StaticMap& s, int steps) {
+void World::walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard& land) {
     if (steps <= 2) {
-        dilate(tiles, s.open_for_them, steps);
+        dilate(tiles, s.open_for_them, steps, land);
         return;
     }
     static cambc::distance_field field;
     static bitboard grown{cambc::uninitialized};
     field.compute(s.blocked_for_them, tiles, grown, static_cast<std::uint16_t>(steps));
     tiles.swap(grown);
+    if (&land != &s.open_for_them) tiles &= land;
 }
 
 // `steps` turns with one dash (2 king steps, with that turn's walk): it crosses holes, altars and
 // champions, so only walls bound it and landings are filtered after.
-void World::widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps) {
+void World::widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps, const bitboard& land) {
     static cambc::distance_field field;
     static bitboard grown{cambc::uninitialized};
     field.compute(s.walls, from, grown, static_cast<std::uint16_t>(steps + 2));
-    grown &= s.open_for_them;
+    grown &= land;
     out.swap(grown);
 }
 
 void World::prune(ChampionBelief& b) const {
     b.possible &= unseen_;
-    if (b.facts().has_dash()) b.undashed &= unseen_;
-    // Emptied by something unmodelled (a teleport crystal, say): it could be anywhere.
+    if (b.facts().has_dash() && b.turns_since_fixed < ability_cooldown) b.undashed &= unseen_;
+    note_emptied(b);
+}
+
+// Emptied by something unmodelled (a teleport crystal, say): it could be anywhere.
+void World::note_emptied(ChampionBelief& b) {
     if (b.tracked && b.possible.is_empty()) b.tracked = false;
 }
 
 void World::update_camps() {
     const auto& s = map();
-    std::vector<char> group_visible(s.groups.size(), 0);
-    const auto seen = visible & s.camp_tiles;
-    for (auto p : Tiles<17 * 17 + 13 * 13>{seen}) group_visible[s.group_at(p)] = 1;
+    group_visible_.assign(s.groups.size(), 0);
+    static bitboard seen{cambc::uninitialized};
+    assign_and(seen, visible, s.camp_tiles);
+    for (auto p : Tiles<17 * 17 + 13 * 13>{seen}) group_visible_[s.group_at(p)] = 1;
+    const auto& group_visible = group_visible_;
     // Read only for a visible group that is awake or cleared: most turns none is.
     static bitboard ally_champs_b{cambc::uninitialized}, enemy_champs_b{cambc::uninitialized},
         champs_b{cambc::uninitialized}, hidden_b{cambc::uninitialized};
@@ -999,23 +1253,21 @@ void World::update_camps() {
         champs_read = true;
         cambc::vision::champion_tiles_into(team::ally, ally_champs_b);
         cambc::vision::champion_tiles_into(team::enemy, enemy_champs_b);
-        champs_b.clear();
-        champs_b |= ally_champs_b;
-        champs_b |= enemy_champs_b;
+        assign_or(champs_b, ally_champs_b, enemy_champs_b);
     };
     const auto champs = [&]() -> const bitboard& { return read_champs(), champs_b; };
     // Where a champion could stand unseen: ~(visible | impassable).
     const auto hidden = [&]() -> const bitboard& {
         if (!hidden_made) {
             hidden_made = true;
-            hidden_b.clear();
-            hidden_b |= unseen_;
-            hidden_b &= s.passable;
+            assign_and(hidden_b, unseen_, s.passable);
         }
         return hidden_b;
     };
 
+    camps_pending_.resize(s.groups.size());
     for (std::size_t g = 0; g < s.groups.size(); ++g) {
+        if (!group_visible[g] && !camps_pending_[g]) continue;
         guard("camp", [&] {
             const auto& G = s.groups[g];
             auto& c = camps[g];
@@ -1089,8 +1341,8 @@ void World::update_camps() {
             } else if (c.awake != Awake::asleep) {
                 // Asleep after 2 camp phases with no champion within 3: count rounds where the whole
                 // threat area is visible and empty. Anything unseen there could be a champion.
-                const bool fully_seen = (G.threat() & hidden()).is_empty();
-                if (fully_seen && (G.threat() & champs()).is_empty()) {
+                const bool fully_seen = disjoint(G.threat(), hidden());
+                if (fully_seen && disjoint(G.threat(), champs())) {
                     if (++c.quiet_rounds >= 2) c.awake = Awake::asleep;
                 } else {
                     c.quiet_rounds = 0;
@@ -1098,9 +1350,9 @@ void World::update_camps() {
             }
 
             if (c.state == CampState::cleared) {
-                if ((G.tiles() & hidden()).is_empty()) {
+                if (disjoint(G.tiles(), hidden())) {
                     std::uint32_t occupants = 0;
-                    if (!(G.tiles() & champs()).is_empty()) {
+                    if (!disjoint(G.tiles(), champs())) {
                         for (const auto& b : allies)
                             if (b.alive && (b.visible || b.is_self) && G.tiles().is_set(b.pos)) occupants |= 1u << b.index;
                         for (const auto& b : enemies)
@@ -1145,6 +1397,8 @@ void World::update_camps() {
                 c.occupants = 0;
             }
         });
+        const auto& c = camps[g];
+        camps_pending_[g] = (c.state == CampState::cleared && c.holder) || c.state == CampState::respawning || c.awake == Awake::awake;
     }
 }
 
@@ -1162,33 +1416,66 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
 }
 
 void World::update_altars() {
+    namespace raw = cambc::detail;
     const auto& s = map();
-    for (std::size_t a = 0; a < s.altars.size(); ++a) {
-        if (!visible.is_set(s.altars[a].pos)) continue;
+    const auto seen = [&](int a) {
+        if (a < 0) return;
         altars[a] = AltarBelief{};
         altars[a].seen_round = round;
+    };
+    // A tile test costs ~75 fuel an altar, a board operation about 1 per 8x8 chunk.
+    if (s.altars.size() * 40 > search_chunks()) {
+        static bitboard in_view{cambc::uninitialized};
+        assign_and(in_view, visible, s.altar_tiles);
+        for (auto p : Tiles<128>{in_view}) seen(s.altar_at(p));
+    } else {
+        for (std::size_t a = 0; a < s.altars.size(); ++a)
+            if (visible.is_set(s.altars[a].pos)) seen(static_cast<int>(a));
     }
-    for (const auto& lock : cambc::vision::altar_locks()) {
-        const int a = s.altar_at(lock.position());
+    std::uint32_t count{};
+    raw::check(raw::sdk_altar_locks(nullptr, 0, &count));
+    if (count == 0) return;
+    std::vector<raw::altar_lock_info> locks(count);
+    raw::check(raw::sdk_altar_locks(locks.data(), count, &count));
+    const auto own = static_cast<std::uint32_t>(raw::sdk_my_team());
+    for (std::uint32_t i = 0; i < count && i < locks.size(); ++i) {
+        const auto& lock = locks[i];
+        const int a = s.altar_at({lock.x, lock.y});
         if (a < 0) continue;
         auto& belief = altars[a];
         belief.seen_round = round;
-        if (lock.is_ally()) {
+        if (lock.team == own) {
             belief.ally_lock = true;
-            belief.ally_lock_hits = static_cast<int>(lock.hits_remaining());
+            belief.ally_lock_hits = static_cast<int>(lock.hits_remaining);
         } else {
             belief.enemy_lock = true;
-            belief.enemy_lock_hits = static_cast<int>(lock.hits_remaining());
+            belief.enemy_lock_hits = static_cast<int>(lock.hits_remaining);
         }
     }
 }
 
 void World::update_wards() {
-    for (const auto& w : cambc::vision::wards(team::enemy)) {
-        auto it = std::find_if(enemy_wards.begin(), enemy_wards.end(), [&](const auto& s) { return s.pos == w.position(); });
-        if (it != enemy_wards.end()) it->round = round;
-        else enemy_wards.push_back({w.position(), round});
+    namespace raw = cambc::detail;
+    std::uint32_t count{};
+    raw::check(raw::sdk_wards(nullptr, 0, &count));
+    std::array<raw::ward_info, 32> few;
+    std::vector<raw::ward_info> many;
+    raw::ward_info* wards = few.data();
+    if (count > few.size()) {
+        many.resize(count);
+        wards = many.data();
     }
+    if (count > 0) raw::check(raw::sdk_wards(wards, count, &count));
+    count = std::min<std::uint32_t>(count, many.empty() ? few.size() : many.size());
+    const auto own = static_cast<std::uint32_t>(raw::sdk_my_team());
+    for (std::uint32_t i = 0; i < count; ++i) {
+        if (wards[i].team == own) continue;
+        const vec2 pos{wards[i].x, wards[i].y};
+        auto it = std::find_if(enemy_wards.begin(), enemy_wards.end(), [&](const auto& s) { return s.pos == pos; });
+        if (it != enemy_wards.end()) it->round = round;
+        else enemy_wards.push_back({pos, round});
+    }
+    if (enemy_wards.empty()) return;
     // Gone if its tile is in view without it; each enemy keeps at most one ward.
     std::erase_if(enemy_wards, [&](const auto& s) { return s.round != round && visible.is_set(s.pos); });
     std::sort(enemy_wards.begin(), enemy_wards.end(), [](const auto& a, const auto& b) { return a.round > b.round; });

@@ -141,6 +141,7 @@ bool dash_to_first(const cambc::ability& dash, Pathing& pathing, const Landings&
 }
 
 std::optional<cambc::ability> travel_dash_ready(const World& world) {
+    if (!world.me().facts().has_dash()) return std::nullopt;
     if (enemy_within(world, cambc::self().position(), travel_dash_clearance)) return std::nullopt;
     return ready(world, AbilityKind::dash);
 }
@@ -163,7 +164,6 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     const vec2 here = me.position();
     const int range = world.me().facts().attack_range();
     const bool splash = world.me().facts().passive == Passive::splash_attack;
-    const float strength = me.strength(), health = me.health();
     const auto& enemy_spawn = world.map().enemy_spawn;
     struct Seen {
         cambc::champion c;
@@ -183,6 +183,8 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
         } catch (const cambc::error&) {
         }
     }
+    if (seen.empty()) return std::nullopt;
+    const float strength = me.strength(), health = me.health();
     // An enemy on its spawn heals to full at its turn end: only a kill or a stun is worth anything.
     const auto worth = [&](const Seen& s) {
         if (s.health <= strength) return s.health + kill_value;
@@ -208,9 +210,8 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
 bool reset_and_attack_enemy(const World& world, bool stunning_only, const ChampionBelief* hold) {
     auto& me = cambc::self();
     const auto& f = world.me().facts();
-    if (me.can_attack()) return false;
     const int slot = f.slot_of(AbilityKind::attack_reset);
-    if (stunning_only && (slot < 0 || !f.abilities[slot].stuns)) return false;
+    if (slot < 0 || (stunning_only && !f.abilities[slot].stuns) || me.can_attack()) return false;
     const auto reset = ready(world, AbilityKind::attack_reset);
     if (!reset) return false;
     const auto target = attack_target(world, stunning_only, hold);
@@ -222,12 +223,26 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only, const Champi
     return true;
 }
 
+// Monsters never move: the tiles within each range of a camp tile are kept.
+bool camp_in_reach(const World& world, vec2 p, int range) {
+    static std::array<std::optional<bitboard>, 4> near;
+    if (range < 0 || range >= static_cast<int>(near.size())) return true;
+    auto& tiles = near[static_cast<std::size_t>(range)];
+    if (!tiles) {
+        tiles.emplace();
+        for (const auto& g : world.map().groups)
+            for (const auto& m : g.members) tiles->draw_chebyshev(m.pos, static_cast<float>(range));
+    }
+    return tiles->is_set(p);
+}
+
 bool reset_and_attack_camp(const World& world, int group) {
     auto& me = cambc::self();
-    if (me.can_attack()) return false;
-    const vec2 here = me.position();
     const auto& f = world.me().facts();
+    if (!f.has_attack_reset() || me.can_attack()) return false;
+    const vec2 here = me.position();
     const int range = f.attack_range();
+    if (!camp_in_reach(world, here, range)) return false;
     const auto reset = ready(world, AbilityKind::attack_reset);
     if (!reset) return false;
     const auto& map = world.map();
@@ -275,7 +290,10 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
     // A goal within a dash is a walk or two away: not worth the cooldown or the search.
     if (any_within(goals, here, dash_steps)) return false;
     const int layers = std::max(world.map().width + world.map().height, max_field_layers()); // a maze runs deeper
-    if (!fuel_ok(search_cost_estimate(layers) + params::end_reserve)) return false;
+    if (!fuel_ok(search_cost_estimate(layers) + params::end_reserve)) {
+        note_shortcut("travel-dash");
+        return false;
+    }
     static bitboard open_goals{cambc::uninitialized}, origin, visited{cambc::uninitialized};
     static cambc::distance_field field;
     const auto& walls = pathing.blocked();
@@ -298,6 +316,7 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
 }
 
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target, const ChampionBelief* hold) {
+    if (!world.me().facts().has_dash()) return false;
     auto& me = cambc::self();
     const bool target_given = target != nullptr;
     if (!me.can_attack() || (!target_given && me.health() < dash_min_health * me.max_health())) return false;

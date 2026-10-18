@@ -26,6 +26,8 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
 // `hold` as for attack_target. `group`: only that group's camps (-1: any).
 bool reset_and_attack_enemy(const World& world, bool stunning_only = false, const ChampionBelief* hold = nullptr);
 bool reset_and_attack_camp(const World& world, int group = -1);
+// A camp tile lies within `range` of p.
+bool camp_in_reach(const World& world, vec2 p, int range);
 
 // Travel: dash to the landing nearest the goals if it gains at least 2 steps and no enemy is near
 // enough to want the dash for a fight or an escape.

@@ -24,7 +24,13 @@ constexpr float min_camp_value = 50;
 constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
 constexpr int hold_range = 6;       // camp casts wait while a visible enemy is this close
 constexpr int camp_attack_range = 3;
-constexpr std::uint64_t fuel_needed = 18000; // measured: mean ~1k, max 16k
+// Measured on ten maps: up to ~10k with no enemy in sight, ~12.6k with one in reach and ~18.7k
+// with four; mean ~1.5k.
+std::uint64_t enemy_cast_cost(int visible, int unseen) {
+    return 12000 + 2500 * static_cast<std::uint64_t>(visible) + 1000 * static_cast<std::uint64_t>(unseen);
+}
+// Likewise: up to ~1k plus ~0.5k a member, and up to ~6.6k more for a ground cast.
+std::uint64_t camp_cast_cost(std::size_t members, bool ground) { return 2000 + 800 * members + (ground ? 8000 : 0); }
 
 cambc::champion live(const ChampionBelief& b) { return cambc::detail::handle_access::make_champion(b.handle); }
 
@@ -115,10 +121,12 @@ struct Target {
     float worth;  // if hit
 };
 
-// Groups with a camp tile within `radius`, by the map, seen or not.
-std::vector<int> groups_near(const World& world, vec2 p, int radius) {
+// Groups with a camp tile within `radius`, by the map, seen or not. The scratch vectors and
+// boards here are kept across calls: allocating costs more than the work.
+const std::vector<int>& groups_near(const World& world, vec2 p, int radius) {
     const auto& map = world.map();
-    std::vector<int> out;
+    static std::vector<int> out;
+    out.clear();
     for (auto tile : positions_within(map.camp_tiles, p, radius)) {
         const int g = map.group_at(tile);
         if (g >= 0 && std::find(out.begin(), out.end(), g) == out.end()) out.push_back(g);
@@ -133,10 +141,11 @@ void draw_alive_members(const World& world, int g, bitboard& out) {
 }
 
 // Ground centres to skip: their 3x3 would hit a member of a sleeping group, which wakes whole,
-// with a monster near us; or a monolith's group.
-bitboard wake_risk(const World& world, vec2 here, int reach) {
+// with a monster near us; or a monolith's group. In a scratch board valid until the next call.
+const bitboard& wake_risk(const World& world, vec2 here, int reach) {
     const auto& groups = world.map().groups;
-    bitboard risk;
+    static bitboard risk{cambc::uninitialized};
+    risk.clear();
     for (int g : groups_near(world, here, reach)) {
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || c.awake == Awake::awake || groups[g].strength <= 0) continue;
@@ -158,8 +167,10 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
     if (targets.empty()) return best;
     range = std::min(range, max_range);
     const int side = 2 * range + 1;
-    std::array<float, (2 * max_range + 1) * (2 * max_range + 1)> value{};
-    bitboard centres;
+    std::array<float, (2 * max_range + 1) * (2 * max_range + 1)> value;
+    std::fill_n(value.begin(), side * side, 0.0f);
+    static bitboard centres{cambc::uninitialized};
+    centres.clear();
     for (const auto& t : targets) {
         centres.draw_chebyshev(t.pos, 1);
         for (int dy = -1; dy <= 1; ++dy)
@@ -187,9 +198,25 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
 Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) {
     auto& me = cambc::self();
     Cast best;
-    if (!me.can_cast() || !fuel_ok(fuel_needed)) return best;
+    if (!me.can_cast()) return best;
     const vec2 here = me.position();
     const auto& f = world.me().facts();
+    // Most turns no enemy is in reach: skip the engine reads below.
+    int reach = -1;
+    bool ground = false;
+    for (const auto& a : f.abilities)
+        if (a.hits_enemies()) reach = std::max(reach, a.reach()), ground |= a.target == Targeting::ground;
+    int visible = 0, unseen = 0;
+    for (const auto& e : world.enemies) {
+        if (!e.alive) continue;
+        if (e.visible) visible += dist(here, e.pos) <= reach;
+        else unseen += ground && e.tracked;
+    }
+    if (visible + unseen == 0) return best;
+    if (!fuel_ok(enemy_cast_cost(visible, unseen))) {
+        note_shortcut("enemy-cast");
+        return best;
+    }
     const auto& enemy_spawn = world.map().enemy_spawn;
     keep_walk = keep_walk && me.can_move();
     // A stun takes its target's walk as the cast takes ours: with every visible enemy that could
@@ -205,12 +232,15 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
             reaching.push_back(&e);
         }
     const bool walk_matters = reaching.empty() || unstoppable;
-    bitboard free_stun;
+    static bitboard not_free{cambc::uninitialized}; // ~free_stun
     if (!walk_matters) {
+        static bitboard free_stun{cambc::uninitialized};
         free_stun.fill();
         for (const auto* e : reaching) free_stun &= square(e->pos, 1);
+        not_free.fill();
+        not_free ^= free_stun;
     }
-    std::optional<bitboard> risk;
+    const bitboard* risk = nullptr;
     for (int s = 0; s < 2; ++s) {
         if (!castable(world, s)) continue;
         const auto& a = f.abilities[s];
@@ -231,10 +261,12 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
                 if (v >= (free ? min_value : threshold) && v > best.value) best = Cast{s, v, c, std::nullopt, {}};
             }
         } else if (a.target == Targeting::ground) {
-            std::vector<Target> targets;
+            static std::vector<Target> targets;
+            targets.clear();
             // The area hits every enemy in it, unseen too: keep it off a Ren whose retaliation kills
             // us and off a held tributer it does not kill.
-            bitboard off;
+            static bitboard off{cambc::uninitialized};
+            off.clear();
             for (const auto& e : world.enemies) {
                 if (!e.alive) continue;
                 if (e.visible) {
@@ -271,10 +303,16 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
                 }
             }
             if (targets.empty()) continue;
-            if (!risk) risk = wake_risk(world, here, a.reach());
-            best.offer(best_ground(s, threshold, targets, here, a.range(), *risk | off));
-            if (a.stuns && threshold > min_value && !walk_matters)
-                best.offer(best_ground(s, min_value, targets, here, a.range(), *risk | off | ~free_stun));
+            if (!risk) risk = &wake_risk(world, here, a.reach());
+            static bitboard skip{cambc::uninitialized};
+            skip.clear();
+            skip |= *risk;
+            skip |= off;
+            best.offer(best_ground(s, threshold, targets, here, a.range(), skip));
+            if (a.stuns && threshold > min_value && !walk_matters) {
+                skip |= not_free;
+                best.offer(best_ground(s, min_value, targets, here, a.range(), skip));
+            }
         }
     }
     return best;
@@ -282,7 +320,7 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
 
 Cast camp_cast(const World& world, int group, bool attackers_only) {
     auto& me = cambc::self();
-    if (!me.can_cast() || !fuel_ok(fuel_needed)) return {};
+    if (!me.can_cast()) return {};
     const auto& f = world.me().facts();
     // Varg, Willow, Vesper, Vendetta and Issac have nothing to cast here, and others often nothing ready.
     const std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};
@@ -304,13 +342,20 @@ Cast camp_cast(const World& world, int group, bool attackers_only) {
     if ((g.has_monolith && group != siege_group()) || world.camps[group].state != CampState::alive) return {};
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && dist(here, e.pos) <= hold_range) return {};
+    const bool ground =
+        (ready[0] && f.abilities[0].target == Targeting::ground) || (ready[1] && f.abilities[1].target == Targeting::ground);
+    if (!fuel_ok(camp_cast_cost(g.members.size(), ground))) {
+        note_shortcut("camp-cast");
+        return {};
+    }
 
     struct Member {
         cambc::camp camp;
         vec2 pos;
         float health, stun;
     };
-    std::vector<Member> members;
+    static std::vector<Member> members;
+    members.clear();
     for (int i = 0; i < static_cast<int>(g.members.size()); ++i) {
         if (world.camps[group].health[i] <= 0 || (attackers_only && g.members[i].strength <= 0)
             || !cambc::vision::has_camp(g.members[i].pos))
@@ -337,9 +382,11 @@ Cast camp_cast(const World& world, int group, bool attackers_only) {
                 if (v >= min_camp_value && v > best.value) best = Cast{s, v, std::nullopt, m.camp, {}};
             }
         } else if (a.target == Targeting::ground) {
-            std::vector<Target> targets;
+            static std::vector<Target> targets;
+            targets.clear();
             for (const auto& m : members) targets.push_back({m.pos, 1, std::min(raw, m.health) + (a.stuns ? m.stun : 0)});
-            bitboard skip;
+            static bitboard skip{cambc::uninitialized};
+            skip.clear();
             for (int other : groups_near(world, here, a.reach()))
                 if (other != group && world.camps[other].state == CampState::alive) draw_alive_members(world, other, skip);
             best.offer(best_ground(s, min_camp_value, targets, here, a.range(), skip));

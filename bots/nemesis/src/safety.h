@@ -15,6 +15,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <vector>
 #include "util.h"
 
@@ -89,13 +90,14 @@ struct Trade {
     float our_health = 0, their_health = 0;
     int allies = 0, enemies = 0;
     std::array<float, 4> dealt{}; // debug_fights only: see simulate()
+    bool cut = false; // short of fuel, not played out: lost and self_falls are assumed
 };
 
 class Safety {
 public:
     explicit Safety(const World& world);
 
-    const std::vector<Threat>& threats();
+    std::span<const Threat> threats();
     const Threat* threat(int enemy);
     bool built() const { return built_; }
     bool any_threat(); // threats() is not empty, without building it
@@ -125,11 +127,16 @@ public:
     bool avoid_within(vec2 p, int r);
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
-    // could hit p.
+    // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
     Trade fight(vec2 p);
-    // Generous for one fight(): a simulation grows with the fighters (1v1 ~6k, 4v4 ~17k, up to
-    // 26k) and this turn's costliest one; building the threats 2-16k.
-    std::uint64_t fight_cost_estimate() const;
+    // Enough for most fights: a simulation grows with the fighters and the turns played (1v1
+    // ~4k, 3v3 ~12k on average, up to ~30k to the horizon) and this turn's costliest one; plus
+    // build_cost_estimate().
+    std::uint64_t fight_cost_estimate();
+    // At most what building the threats costs, 0 once built: measured up to ~1.3k, ~0.7k more per
+    // visible enemy and per unseen credible one a capped search, up to ~2.6k on 41x30 to ~4.6k on
+    // 100x100.
+    std::uint64_t build_cost_estimate();
     // Us alone against one enemy.
     Trade duel(int enemy);
     // Their turns for the visible enemies and camps to kill us at p if we never act (channelling),
@@ -154,7 +161,18 @@ private:
         float weight;
         int reach; // farthest distance at which it would pick us
     };
+    static std::vector<CampHit>& member_pool();
     const std::vector<CampHit>& awake_members();
+    // An enemy's strike for its next turn and, unseen, its possible tiles and weight (0: not
+    // credible), worked out on first use: beliefs are fixed for the turn.
+    struct Foe {
+        Strike strike;
+        int tiles;
+        float weight;
+        vec2 asked; // unseen: the last tile asked about, and whether `possible` is within reach of it
+        bool near;
+    };
+    Foe& foe(const ChampionBelief& e);
     void build();
     template <class F> void each_threat(vec2 p, F&& f);
     // Seen alive at turn start but dead now, once refreshed.
@@ -164,11 +182,29 @@ private:
     bool built_ = false;
     bool refresh_ = false;
     std::array<std::int8_t, 16> gone_{}; // by enemy index: 0 unknown, 1 alive, 2 dead
-    std::vector<Threat> threats_;
-    std::optional<std::vector<CampHit>> members_;
+    // Left uninitialised: the engine charges for every byte written. Bit i: foes_[i] is set.
+    std::uint16_t known_ = 0;
+    union {
+        std::array<Foe, 16> foes_;
+    };
+    // The first `threat_count_` of a pool kept across turns (one Safety lives at a time): growing a
+    // vector reallocates at ~300 fuel a time, and each Threat allocates a bitboard.
+    std::vector<Threat>& threats_;
+    int threat_count_ = 0;
+    std::vector<CampHit>& members_; // likewise; valid once `members_known_`
+    bool members_known_ = false;
     std::optional<bitboard> camp_area_, enemy_area_;
-    // By who fights: bit i of the low half for allies[i], of the high half for enemies[i].
-    std::vector<std::pair<std::uint32_t, Trade>> fights_;
+    // By who fights: bit i of the low half for allies[i], of the high half for enemies[i]. A memo:
+    // past `max_fights` the oldest is replaced.
+    struct FightMemo {
+        std::uint32_t key;
+        Trade trade;
+    };
+    static constexpr int max_fights = 8;
+    int fight_count_ = 0;
+    union {
+        std::array<FightMemo, max_fights> fights_;
+    };
     std::uint64_t costliest_fight_ = 0;
 };
 
