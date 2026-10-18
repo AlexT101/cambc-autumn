@@ -3,7 +3,7 @@
 Build a copy of morgana with `debug_fights = true` (src/util.h), play batches with replays as
 bot 1, extract them, then:
 
-    py run_batched.py variants/morgana-cal baselines/morgana-univ --gen
+    py run_batched.py variants/morgana-cal baselines/morgana-v5 --gen
     node tools/replay/extract.mjs replays/batch-X
     py tools/replay/fight_calibration.py replays/batch-X [more batches...] [--by FIELD,...]
 
