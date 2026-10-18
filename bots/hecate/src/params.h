@@ -90,15 +90,5 @@ inline constexpr int kite_early = 10;
 inline constexpr int contest_gems = 40;
 // Keep the current siege target unless another is sooner by this many rounds (bot.cpp siege_candidate).
 inline constexpr int siege_stickiness = 20;
-// Escorts (bot.cpp await_escort, escort): a bag (Cassi's and Issac's together) of at least
-// escort_bag gems sets out for an altar, and tributes, only with escort_count allies within
-// escort_radius, waiting for them at most escort_max_wait rounds a bag. Allies within escort_reach,
-// seen within escort_horizon rounds, come to it.
-inline constexpr int escort_bag = 150;
-inline constexpr int escort_count = 2;
-inline constexpr int escort_radius = 5;
-inline constexpr int escort_reach = 18;
-inline constexpr int escort_horizon = 20;
-inline constexpr int escort_max_wait = 20;
 
 } // namespace aph::params

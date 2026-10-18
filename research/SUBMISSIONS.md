@@ -23,5 +23,6 @@ The public API returns a null submission id and version, so `replays/mine` games
 | 20 | 2026-10-18 19:34 | #19 + siege walks funded by fuel not distance (swirl stall), tribute safety over 6 turns, chip hits on harmless camps during spell cooldowns (uncommitted at submission) | as #19 |
 | 21 | 2026-10-18 20:28 | #20 + big-bag escort: a 150+ carrier waits for 2 allies before banking, empty-handed allies within 18 come and guard it | as #19 |
 | 22 | 2026-10-18 21:34 | #21 with no escort on shared-gem maps (v21 lost both stampede scrims v20 had won) | as #19 |
+| — | 2026-10-18 ~22:10 | version 20 made active again (ladder scrims: v20 28-47, v21 26-49, v22 24-51 on the same maps) | as #19 |
 
 Add a row with each new submission.

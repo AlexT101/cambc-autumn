@@ -73,3 +73,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    rounds, unless hit, winning, closing or in the endgame) until escort_count (2) allies are within escort_radius
    (5); empty-handed allies within escort_reach (18) go and stand by it (escort()). 51.3% vs version 20 locally; on
    Monolith-only maps big bags lost to deaths 7 vs 14 in the same 32 games; vs a carrier-hunting copy 15/20 vs 13/20.
+13. Version 22 (item 12 without the escort on shared-gem maps) and the revert. Ladder scrims vs the top 5 on the
+   same seeded maps, paired: version 20 28-47, version 21 26-49, version 22 24-51 (vs version 20: 6 flips up, 10
+   down); against the top 10 version 22 went 55-95. The escort halved big bags lost locally but did not help on the
+   ladder (contest still 1-9 vs the top 10), so hecate is back to version 20 (item 11), which is the active
+   submission again. The escort code is in history: version 21 = 26e6920, version 22 = 33d61fd.

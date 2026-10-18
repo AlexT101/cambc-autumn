@@ -1959,71 +1959,6 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     return true;
 }
 
-// What an ally's death would hand over, as posted: both bags for Cassi and Issac.
-int stake_of(const World& world, const ChampionBelief& a) {
-    int bag = std::max(0, comms::bag_of(world, a.index));
-    if (a.facts().passive == Passive::linked_pair)
-        for (const auto& o : world.allies)
-            if (&o != &a && o.alive && o.facts().passive == Passive::linked_pair) bag += std::max(0, comms::bag_of(world, o.index));
-    return bag;
-}
-
-// A big bag sets out for an altar, and tributes, only with allies around it: alone, an ambush
-// takes all of it. Not a bag that wins or must score now, nor once hit, nor with nobody near
-// enough to come, and for at most escort_max_wait rounds a bag. Meets a coming ally in sight halfway.
-bool await_escort(const World& world, Pathing& pathing, Memory& memory) {
-    if (bag_at_stake(world) < params::escort_bag || memory.damage > 0 || memory.escort_waited >= params::escort_max_wait
-        || shared_gems_map(world.map()) || winning_bag(world) || closing(world) || endgame(world, pathing))
-        return false;
-    const vec2 here = cambc::self().position();
-    const auto* mate = partner(world);
-    int near = 0, others = 0;
-    const ChampionBelief* coming = nullptr;
-    for (const auto& a : world.allies) {
-        if (a.is_self || !a.alive || &a == mate || a.pos_round < 0) continue;
-        ++others;
-        const int d = dist(here, a.pos);
-        if (a.visible && d <= params::escort_radius) ++near;
-        else if ((a.visible || a.age(world.round) <= params::escort_horizon) && d <= params::escort_reach
-                 && stake_of(world, a) < params::escort_bag && (!coming || d < dist(here, coming->pos)))
-            coming = &a;
-    }
-    if (!coming || near >= std::min(params::escort_count, others)) return false;
-    ++memory.escort_waited;
-    if (coming->visible) pathing.step_towards_funded(square(coming->pos, 1) & world.map().standable, end_reserve);
-    return true;
-}
-
-// With an empty bag, go to an ally's big bag within reach and stay around it, on its way to an
-// altar and through its tribute.
-// Not on shared-gem maps: every capture there makes a big bag, and the team belongs at the block.
-bool escort(const World& world, Pathing& pathing, Memory& memory) {
-    if (shared_gems_map(world.map())) return false;
-    const vec2 here = cambc::self().position();
-    const ChampionBelief* carrier = nullptr;
-    for (const auto& a : world.allies) {
-        if (a.is_self || !a.alive || a.pos_round < 0) continue;
-        const int d = dist(here, a.pos);
-        // Out of sight where it was last seen: it has moved on.
-        if (d > params::escort_reach || (!a.visible && (a.age(world.round) > params::escort_horizon || d <= params::escort_radius)))
-            continue;
-        if (stake_of(world, a) >= params::escort_bag && (!carrier || d < dist(here, carrier->pos))) carrier = &a;
-    }
-    if (!carrier) return false;
-    decision = 'E';
-    memory.claim = -1;
-    memory.siege = false;
-    memory.staged_since = -1;
-    static bitboard goals{cambc::uninitialized};
-    goals.clear();
-    goals.draw_chebyshev(carrier->pos, 2.0f);
-    goals &= world.map().standable;
-    if (const auto* zone = pack_zone(world)) goals |= *zone, goals ^= *zone;
-    if (goals.is_empty() || goals.is_set(here)) return true;
-    pathing.step_towards_funded(goals, end_reserve);
-    return true;
-}
-
 bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory) {
     if (!can_tribute_here(world)) return false;
     const int turns = tribute_turns(cambc::self().gem_count());
@@ -2567,7 +2502,7 @@ bool siege_heal_trip(const World& world, const Memory& memory, Safety& safety) {
 
 void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
-    if (me.gem_count() == 0 || !world.me().alive) memory.banking = false, memory.escort_waited = 0;
+    if (me.gem_count() == 0 || !world.me().alive) memory.banking = false;
     if (!world.me().alive) {
         memory.claim = -1;
         buy_shards(world.me().facts()); // the dead can only shop
@@ -2715,10 +2650,6 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
             decision = 'W';
             return; // until they leave or come
         }
-        if (await_escort(world, pathing, memory)) {
-            decision = 'w';
-            return;
-        }
         decision = 'B';
         const bool walked = attacked && !world.me().facts().walk_and_attack_independent();
         memory.banking = late || close || walked || !may_chain(world, safety) || !farm(world, pathing, safety, memory);
@@ -2737,7 +2668,6 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         decision = 'X';
         return;
     }
-    if (escort(world, pathing, memory)) return;
     decision = 'F';
     if (shared_gems_map(world.map()) ? kite(world, pathing, memory) : siege(world, pathing, memory)) {
         decision = 'G';
