@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
+#include <memory>
 #include <vector>
 
 namespace aph {
@@ -161,6 +162,19 @@ inline Field make_field(const bitboard& walls, const bitboard& goals) {
     not_into(walls, f.goals);
     f.goals &= goals;
     max_field_layers() = std::max<int>(max_field_layers(), f.steps.compute_with_expansion_count(walls, f.goals, visited));
+    return f;
+}
+
+// Costs at most search_cost_estimate(max_layers). Null if cut short: a complete field's layer
+// count is one over its deepest step, so one below the cap proves it whole.
+inline std::unique_ptr<Field> make_field(const bitboard& walls, const bitboard& goals, int max_layers) {
+    static bitboard visited{cambc::uninitialized};
+    auto f = std::make_unique<Field>();
+    not_into(walls, f->goals);
+    f->goals &= goals;
+    const int layers = f->steps.compute_with_expansion_count(walls, f->goals, visited, static_cast<std::uint16_t>(max_layers));
+    if (layers >= max_layers) return nullptr;
+    max_field_layers() = std::max(max_field_layers(), layers);
     return f;
 }
 

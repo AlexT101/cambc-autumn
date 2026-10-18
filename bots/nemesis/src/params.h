@@ -26,6 +26,11 @@ inline constexpr cambc::champion_draft draft_5[] = {
 
 // Left for the rest of the turn after optional work.
 inline constexpr std::uint64_t end_reserve = 10000;
+// Left after work whose cost is bounded, at the end of the turn: little runs after warm-up.
+inline constexpr std::uint64_t last_reserve = 2000;
+// Layers a capped centre field may run past the farther spawn's steps to it. Measured on 194
+// maps: 15% run deeper, and the cut field is redone at twice the cap.
+inline constexpr int centre_depth_margin = 24;
 // A walk not prepared last turn is searched for first, leaving at least this for the turn.
 inline constexpr std::uint64_t walk_first_floor = 40000;
 

@@ -231,6 +231,16 @@ bool Pathing::prepare_member_tiles(int group, int range, std::uint32_t members, 
 
 bool Pathing::farmed(int g) const { return !map().groups[g].has_monolith && map().groups[g].gems + map().groups[g].gold > 0; }
 
+int& Pathing::centre_cap(int group) {
+    auto& cap = entry(centre_caps_, map().groups.size(), group);
+    if (!cap && map().drafted()) {
+        const int steps = std::max(map().ally_steps(group), map().enemy_steps(group));
+        // Off the spawns' walking routes, a centre is on an island: its field is shallow.
+        cap = (steps == unreachable ? 0 : steps) + params::centre_depth_margin;
+    }
+    return cap;
+}
+
 bool Pathing::warm_centres(std::uint64_t fuel_floor) {
     if (centres_ready_) return true;
     const auto cost = field_cost_estimate();
@@ -238,8 +248,18 @@ bool Pathing::warm_centres(std::uint64_t fuel_floor) {
         if (!farmed(g)) continue;
         auto& slot = entry(centre_fields_, map().groups.size(), g);
         if (slot) continue;
-        if (!fuel_ok(fuel_floor + cost)) return false;
-        cached(slot, single(map().groups[g].centre));
+        if (!centre_cap(g)) {
+            if (!fuel_ok(fuel_floor + cost)) return false;
+            cached(slot, single(map().groups[g].centre));
+            continue;
+        }
+        while (!slot) {
+            auto& cap = centre_cap(g);
+            if (!fuel_ok(params::last_reserve + search_cost_estimate(cap))) return false;
+            FuelMeter meter{"field"};
+            slot = make_field(map().blocked_for_us, single(map().groups[g].centre), cap);
+            if (!slot) cap *= 2;
+        }
     }
     centres_ready_ = true;
     return true;

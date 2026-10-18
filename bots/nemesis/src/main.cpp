@@ -96,9 +96,12 @@ int main() {
             instance.draft_turn();
         else
             instance.play_turn();
-        if (const auto now = cambc::round_number(); now != round)
+        // Out of fuel, we resumed as this round's turn with a fresh budget: play it rather than end it.
+        if (const auto now = cambc::round_number(); now != round) {
             std::printf("r%u turn ran out of fuel, finished in r%u\n", round, now);
-        if (const auto now = cambc::round_number(); now != round) aph::note_shortcut("out-of-fuel");
+            aph::note_shortcut("out-of-fuel");
+            continue;
+        }
         cambc::end_turn();
     }
 }

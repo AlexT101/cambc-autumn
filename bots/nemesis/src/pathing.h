@@ -50,6 +50,7 @@ public:
     // Precompute while more than `fuel_floor` remains; true once everything is cached.
     bool warm_up(int attack_range, std::uint64_t fuel_floor);
     // The centre fields first: until they are ready, farm builds a field from wherever we stand.
+    // A field capped at centre_cap() has a bounded cost, so it may go down to last_reserve.
     bool warm_centres(std::uint64_t fuel_floor);
 
     struct Nearest {
@@ -115,11 +116,14 @@ private:
     bool prepare_member(int group, int member, int range, std::uint64_t fuel_floor);
     const StaticMap& map() const;
     bool farmed(int group) const; // farm reads only groups with a reward and no monolith
+    // Layers to cap its centre field at, doubled after a field cut short; 0: uncapped (no draft plan).
+    int& centre_cap(int group);
 
     const World& world_;
     Slot any_altar_;
     std::vector<std::optional<int>> centre_to_altar_;
     std::vector<Slot> altar_fields_, group_fields_, centre_fields_;
+    std::vector<int> centre_caps_;
     std::vector<std::vector<std::unique_ptr<Approach>>> approach_fields_; // by range, then group
     bitboard live_camps_;
     int live_camps_round_ = -1;
