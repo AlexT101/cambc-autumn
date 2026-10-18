@@ -18,7 +18,7 @@ The bots are **C++ only**. Each bot's draft is a fixed preference order compiled
 | [aphelios](bots/aphelios/) | starter | first bot; sparring partner |
 | [morgana](bots/morgana/) | aphelios | out-farms rather than out-fights: one-price farm valuation, crews, capture recalls |
 | [rival](bots/rival/) | morgana-v5 | plays like the top five ladder teams: gold camps, team sieges of Monoliths and big shared groups, retreats only when hurt or carrying |
-| [nemesis](bots/nemesis/) | rival | rival plus fixes from top-team replays and turn audits; the bot we submit ([research/SUBMISSIONS.md](research/SUBMISSIONS.md)) |
+| [nemesis](bots/nemesis/) | rival | rival plus fixes from top-team replays and turn audits |
 | [hecate](bots/hecate/) | nemesis 2dba924 | strongest locally (~59% vs nemesis-v2); changes and results in [research/hecate/CHANGES.md](research/hecate/CHANGES.md) |
 
 `bots/starter-cpp` is reference only. Frozen snapshots used as A/B baselines live in `bots/baselines/<bot>-vN/`; never edit them. `morgana-v5` is morgana ec43299, from before the one-price farm valuation (rival's base). `nemesis-v1` is nemesis e647cbd. `nemesis-v2` is nemesis 2dba924 (hecate's base). Delete a baseline once the current bots beat it about 80% of the time. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:

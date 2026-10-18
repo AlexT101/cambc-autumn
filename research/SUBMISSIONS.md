@@ -17,5 +17,7 @@ The public API returns a null submission id and version, so `replays/mine` games
 | 11 | 2026-10-18 03:58 | nemesis ea54740 (fuel overhaul, bush wards) | as #8 |
 | 12 | unrecorded | see the platform's submissions page | |
 | 13 | 2026-10-18 06:10 | nemesis 2dba924 (least exposed retreat step) | as #8 |
+| 14-17 | unrecorded | see the platform's submissions page | |
+| 18 | 2026-10-18 15:05 | hecate fddba49 | as #8 |
 
 Add a row with each new submission.
