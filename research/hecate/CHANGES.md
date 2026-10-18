@@ -61,3 +61,15 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
      below its partner (useful_damage).
    - Locally all level: 48.7% vs hecate-v1; without the v17 port and gold farmer 46.2%; hecate-v1 plus only the
      Cassi/Issac targeting 51.3%. Ladder scrims vs the top 5 on the same maps: 27-48, against 20-55 for version 18.
+11. Version 20, from replay reviews of version 19 on the ladder.
+   - siege() and kite() walk with Pathing::step_towards_funded (from v17: the search is capped by fuel, not by
+     distance + max_detour). On swirl a lake made the route longer than the cap and the team stood still for ~1200
+     rounds; failed siege walks there fell from 1836 to 76.
+   - tribute_safe() judges the next params::tribute_window (6) turns instead of the whole channel, so a 200+ bag no
+     longer waits on any enemy in sight; the per-turn re-check cancels if a threat closes in.
+   - Waiting out a spell cooldown at a spell station, hit any harmless camp in reach.
+   - 52.3% vs version 19 locally; ladder scrims vs the top 5 on the same maps 28-47 (v19 27-48).
+12. Version 21: big-bag escort. A carrier with bag_at_stake >= escort_bag (150) waits (up to escort_max_wait 20
+   rounds, unless hit, winning, closing or in the endgame) until escort_count (2) allies are within escort_radius
+   (5); empty-handed allies within escort_reach (18) go and stand by it (escort()). 51.3% vs version 20 locally; on
+   Monolith-only maps big bags lost to deaths 7 vs 14 in the same 32 games; vs a carrier-hunting copy 15/20 vs 13/20.

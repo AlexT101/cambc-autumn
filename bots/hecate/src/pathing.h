@@ -79,6 +79,7 @@ public:
     // A hidden blocker fails a move without spending the walk; the other first steps are tried,
     // then the route is replanned.
     bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable);
+    bool step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor);
     bool step_towards(vec2 target, const bitboard* avoid = nullptr);
     // A live route within `max_detour` of the static distance, else greedy descent of the field.
     bool step_towards(const Field& field, const bitboard* avoid = nullptr, int max_detour = aph::max_detour);

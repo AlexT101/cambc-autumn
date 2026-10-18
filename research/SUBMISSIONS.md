@@ -20,5 +20,7 @@ The public API returns a null submission id and version, so `replays/mine` games
 | 14-17 | unrecorded | see the platform's submissions page | |
 | 18 | 2026-10-18 15:05 | hecate fddba49 | as #8 |
 | 19 | 2026-10-18 18:58 | hecate fddba49 + Fish draft, Focus Ren with reflect in camp estimates, v17 farm port, Cassi gold farmer, Cassi/Issac weaker-body targeting (uncommitted at submission) | ren, stellar, cassi, ryth, varg |
+| 20 | 2026-10-18 19:34 | #19 + siege walks funded by fuel not distance (swirl stall), tribute safety over 6 turns, chip hits on harmless camps during spell cooldowns (uncommitted at submission) | as #19 |
+| 21 | 2026-10-18 20:28 | #20 + big-bag escort: a 150+ carrier waits for 2 allies before banking, empty-handed allies within 18 come and guard it | as #19 |
 
 Add a row with each new submission.

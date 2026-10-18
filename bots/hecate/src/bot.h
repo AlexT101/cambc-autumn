@@ -20,6 +20,7 @@ struct Memory {
     bool crew = false;    // joining an ally's claim rather than our own
     bool siege = false;   // our claim is a Monolith the team attacks together
     int staged_since = -1; // round we started waiting near the Monolith for the others
+    int escort_waited = 0; // rounds our bag has waited for escorts
     vec2 ward{-1, -1};    // our latest ward
     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
 };
