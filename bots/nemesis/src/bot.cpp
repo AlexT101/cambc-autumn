@@ -240,6 +240,48 @@ bool flee_camps(Pathing& pathing, Safety& safety, const Field& home) {
     return best && pathing.try_move(*best);
 }
 
+// Inside danger a route home is only the shortest walk, ties in compass order, which can lead
+// along the enemies we flee: take the homeward step that can be hit least, then the nearest home,
+// then the farthest from them. A sideways step goes first only when it can be hit less.
+void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+    auto& me = cambc::self();
+    if (!me.can_move()) return;
+    const vec2 here = me.position();
+    if (!safety.avoid_within(here, vision_radius)) {
+        pathing.step_towards(home);
+        return;
+    }
+    const auto avoid = safety.avoid();
+    if (!avoid.is_set(here) && pathing.step_towards(home, &avoid)) return;
+    const int steps = home.at(here);
+    const auto& blocked = pathing.blocked();
+    struct Option {
+        vec2 p;
+        float damage;
+        int steps, gap;
+    };
+    std::array<Option, 8> options;
+    int n = 0;
+    for (auto d : directions) {
+        const vec2 p = here + d;
+        if (!in_bounds(p) || blocked.is_set(p)) continue;
+        const int s = home.at(p);
+        if (s == unreachable || s > steps) continue;
+        int gap = unreachable;
+        for (const auto& e : world.enemies)
+            if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
+        options[n++] = {p, safety.damage_bound(p), s, gap};
+    }
+    std::stable_sort(options.begin(), options.begin() + n, [](const Option& a, const Option& b) {
+        if (a.damage != b.damage) return a.damage < b.damage;
+        if (a.steps != b.steps) return a.steps < b.steps;
+        return a.gap > b.gap;
+    });
+    for (int i = 0; i < n; ++i)
+        if (pathing.try_move(options[i].p)) return;
+    pathing.step_towards(home);
+}
+
 bool break_lock(const World& world, int altar) {
     auto& me = cambc::self();
     const vec2 p = world.map().altars[altar].pos;
@@ -1833,7 +1875,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
         dash_away(world, pathing, pathing.to_ally_spawn());
         reset_and_attack_enemy(world);
-        if (!flee_camps(pathing, safety, pathing.to_ally_spawn())) step_safely(pathing, pathing.to_ally_spawn(), safety);
+        if (!flee_camps(pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
         reset_and_attack_enemy(world);
         return;
     }
@@ -1868,7 +1910,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
             if (memory.damage > 0 && !attack_target(world)) {
                 decision = 'R';
                 dash_away(world, pathing, pathing.to_ally_spawn());
-                step_safely(pathing, pathing.to_ally_spawn(), safety);
+                retreat_step(world, pathing, safety, pathing.to_ally_spawn());
                 return;
             }
             decision = 'W';
