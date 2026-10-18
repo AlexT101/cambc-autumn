@@ -1597,7 +1597,7 @@ void World::dump_beliefs() const {
     static std::size_t written = 0;
     static std::uint64_t last_cost = 0;
     static bool mapped = false;
-    if (!(round <= 3 || round % debug_beliefs_period == 0) || !fuel_ok(params::end_reserve + 15000)) return;
+    if (!(round <= 3 || round % debug_beliefs_period == 0) || !fuel_ok(end_reserve + 15000)) return;
     const std::size_t budget = (1u << 20) * 9 / 10 / std::max<std::size_t>(allies.size(), 1);
     if (written >= budget) return;
     const auto start = fuel();
@@ -1650,7 +1650,7 @@ void World::dump_beliefs() const {
             continue;
         }
         // -2: left out for fuel.
-        if (!fuel_ok(params::end_reserve + 10000)) {
+        if (!fuel_ok(end_reserve + 10000)) {
             out.num(-2);
             continue;
         }

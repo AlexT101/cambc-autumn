@@ -195,41 +195,15 @@ inline std::uint64_t search_cost_estimate(int layers) {
 
 inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }
 
-// WASI randomness is always zero in matches, so seed from our spawn and this instance's start.
-inline std::uint32_t random_seed() {
-    const auto spawn = first_tile(cambc::map::spawn_region(team::ally));
-    std::uint32_t seed = spawn.x * 73856093u ^ spawn.y * 19349663u;
-    if (!cambc::is_draft()) {
-        const auto start = cambc::self().position();
-        seed ^= start.x * 83492791u ^ start.y * 2654435761u;
-    }
-    return seed;
-}
-
-// PCG32. Seeding std::mt19937 alone costs about 15k fuel in WASM.
-class Rng {
-public:
-    explicit Rng(std::uint64_t seed) : state_{seed + 0x853c49e6748fea9bULL} { next(); }
-    std::uint32_t next() {
-        const std::uint64_t old = state_;
-        state_ = old * 6364136223846793005ULL + 1442695040888963407ULL;
-        const auto xorshifted = static_cast<std::uint32_t>(((old >> 18u) ^ old) >> 27u);
-        const auto rot = static_cast<std::uint32_t>(old >> 59u);
-        return (xorshifted >> rot) | (xorshifted << ((32u - rot) & 31u));
-    }
-
-private:
-    std::uint64_t state_;
-};
-
-inline Rng& rng() {
-    static Rng generator{random_seed()};
-    return generator;
-}
-
-inline unsigned random_below(unsigned limit) {
-    return static_cast<unsigned>((static_cast<std::uint64_t>(rng().next()) * limit) >> 32);
-}
+// Left for the rest of the turn after optional work.
+inline constexpr std::uint64_t end_reserve = 10000;
+// Left after work whose cost is bounded, at the end of the turn: little runs after warm-up.
+inline constexpr std::uint64_t last_reserve = 2000;
+// Layers a capped centre field may run past the farther spawn's steps to it; a field cut short
+// is redone at twice the cap.
+inline constexpr int centre_depth_margin = 24;
+// A walk not prepared last turn is searched for first, leaving at least this for the turn.
+inline constexpr std::uint64_t walk_first_floor = 40000;
 
 inline void draw_dot(vec2 p, std::uint32_t rgb) {
     if constexpr (debug_draw) cambc::debug::draw_dot(p, rgb);

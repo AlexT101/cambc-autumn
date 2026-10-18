@@ -5,46 +5,17 @@
 
 namespace aph::params {
 
-// Pick in random order instead of by the draft orders below.
-inline constexpr bool random_draft = false;
-
 inline constexpr cambc::champion_draft draft_preference[] = {
     cambc::champion_draft::cassi_and_issac, cambc::champion_draft::varg, cambc::champion_draft::stellar,
     cambc::champion_draft::ryth, cambc::champion_draft::tavi, cambc::champion_draft::ren,
     cambc::champion_draft::prism, cambc::champion_draft::vesper_vale, cambc::champion_draft::vendetta,
     cambc::champion_draft::marcella, cambc::champion_draft::willow,
 };
-// Maps with 3, 4 or 5 picks draft their own order first, then fall back to draft_preference.
-inline constexpr cambc::champion_draft draft_3[] = {
-    cambc::champion_draft::cassi_and_issac, cambc::champion_draft::varg, cambc::champion_draft::stellar};
-inline constexpr cambc::champion_draft draft_4[] = {
-    cambc::champion_draft::cassi_and_issac, cambc::champion_draft::varg, cambc::champion_draft::stellar,
-    cambc::champion_draft::ryth};
-inline constexpr cambc::champion_draft draft_5[] = {
-    cambc::champion_draft::cassi_and_issac, cambc::champion_draft::varg, cambc::champion_draft::stellar,
-    cambc::champion_draft::ryth, cambc::champion_draft::tavi};
-
-// Left for the rest of the turn after optional work.
-inline constexpr std::uint64_t end_reserve = 10000;
-// Left after work whose cost is bounded, at the end of the turn: little runs after warm-up.
-inline constexpr std::uint64_t last_reserve = 2000;
-// Layers a capped centre field may run past the farther spawn's steps to it; a field cut short
-// is redone at twice the cap.
-inline constexpr int centre_depth_margin = 24;
-// A walk not prepared last turn is searched for first, leaving at least this for the turn.
-inline constexpr std::uint64_t walk_first_floor = 40000;
 
 // Rounds out of sight after which an enemy could be anywhere.
 inline constexpr int track_horizon = 10;
 
-// Extra steps a live route may take over the static walking distance.
-inline constexpr int max_detour = 16;
-
 inline constexpr float recall_health_fraction = 0.35f;
-// Leave awake camps while the health still covers the walk out of their reach (bot.cpp camp_trapped).
-inline constexpr bool camp_trap = true;
-// Pick the camp member to hit by damage removed per hit, and Varg's by splash (bot.cpp attack_camp).
-inline constexpr bool camp_targeting = true;
 // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
 inline constexpr float finish_camp_health_fraction = 0.6f;
 // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
@@ -52,14 +23,6 @@ inline constexpr float camp_risk = 0.35f;
 // Enemy-ground discount: a group's weight is min(1, 2 d_enemy / (d_ally + d_enemy)) to this power.
 inline constexpr float home_power = 2.0f;
 inline constexpr int ward_period = 20;
-// Bush tiles this near can hide an attacker that reaches us: ranged attacks 3, abilities 4.
-inline constexpr int bush_watch_radius = 4;
-// Gold for which a champion with no gems recalls to shop: one emblem.
-inline constexpr unsigned shop_trip_gold = 150;
-// Recall from a capture as it pays when the gold then buys an emblem, keeping the bag.
-inline constexpr bool shop_recall = true;
-// Champion vision: enemies farther off are seen only through wards and are rarely caught.
-inline constexpr int chase_radius = 8;
 // An ally this near with no claim of its own can partner on a group too costly for us alone.
 inline constexpr int rally_radius = 12;
 // Help a struggling teammate clear its damaging group within this many steps.
@@ -71,21 +34,15 @@ inline constexpr int chain_bag_limit = 80;
 // the win, or the enemy's score within enemy_close.
 inline constexpr int close_margin = 60;
 inline constexpr int enemy_close = 100;
-// Lock any altar where an enemy is tributing (a lock cancels every tribute at its altar).
-inline constexpr bool lock_tributers = true;
-// Stun an enemy tribute that would win them the game at once, cancelling ours if need be.
-inline constexpr bool stop_winning_tribute = true;
 
-// Early retreat (outmatched): enemies this near against allies this near; leave when their health
-// times damage beats ours by this ratio. Above half health and carrying under brake_bag gems, the
-// ratio is too high to trigger.
-inline constexpr int pack_radius = 7;
+// Early retreat (outmatched): enemies within two steps of their reach against allies this near;
+// leave when their health times damage beats ours by this ratio. Above half health and carrying
+// under brake_bag gems, the ratio is too high to trigger.
 inline constexpr int pack_ally_radius = 5;
 inline constexpr float retreat_ratio = 100.0f;
 inline constexpr float hurt_retreat_ratio = 2.5f;
 inline constexpr int brake_bag = 30;
 // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
-inline constexpr bool home_retreat = true;
 inline constexpr float home_retreat_ratio = 2.0f;
 // A capture recall still pays when hurt if it costs at most this many more rounds to an altar.
 inline constexpr int recall_heal_bonus = 6;
@@ -94,18 +51,16 @@ inline constexpr int max_wait = 5;
 // Share of champion-rounds spent attacking camps: the part of the game a shard's speed-up counts for.
 inline constexpr float clear_share = 0.15f;
 
-// Monolith sieges (bot.cpp siege): the team goes once its output clears the Monolith within this
-// many rounds (siege_rounds_only on maps whose only gems are Monoliths; 0 elsewhere: never) and
-// the hits, by this share after stuns and spells from out of reach, cost at most this share of
-// the team's health; a siege under way keeps going within the slack.
-inline constexpr int siege_rounds = 0;
-inline constexpr int siege_rounds_only = 60;
+// Monolith sieges (bot.cpp siege), only on maps whose only gems are Monoliths: the team goes once
+// its output clears the Monolith within this many rounds and the hits, by this share after stuns
+// and spells from out of reach, cost at most this share of the team's health; a siege under way
+// keeps going within the slack.
+inline constexpr int siege_rounds = 60;
 inline constexpr float siege_hit_share = 0.75f;
 inline constexpr float siege_pool_share = 0.6f;
 inline constexpr float siege_commit_slack = 1.3f;
 inline constexpr int siege_respawn_wait = 30;
-// Wait this near (out of its reach) until this share of the team's output has come, at most this long.
-inline constexpr int siege_stage_radius = 5;
+// Wait just out of reach until this share of the team's output has come, at most this long.
 inline constexpr float siege_gather_share = 0.6f;
 inline constexpr int siege_max_wait = 20;
 // Below this health a champion out of the Monolith's reach recalls to heal.
@@ -119,9 +74,7 @@ inline constexpr int big_respawn_wait = 60;
 inline constexpr int big_holders = 3;
 // A Monolith's 200 gems split over this many holders: one bag takes a 20-turn tribute.
 inline constexpr int monolith_holders = 2;
-// Choose the siege target by walk and respawn wait, keeping the current one unless another is
-// sooner by this many rounds (bot.cpp siege_candidate).
-inline constexpr bool siege_sticky = true;
+// Keep the current siege target unless another is sooner by this many rounds (bot.cpp siege_candidate).
 inline constexpr int siege_stickiness = 20;
 
 } // namespace aph::params

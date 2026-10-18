@@ -151,7 +151,7 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
 
 // Building the threats costs the most here, so the offers check what they can without them first.
 bool threats_affordable(Safety& safety) {
-    if (safety.built() || fuel_ok(safety.build_cost_estimate() + offers_cost + params::end_reserve)) return true;
+    if (safety.built() || fuel_ok(safety.build_cost_estimate() + offers_cost + end_reserve)) return true;
     if (safety.any_threat()) note_shortcut("turn-order-sim");
     return false;
 }
@@ -211,9 +211,9 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
 // Fights go to the first hit, and a stun before the enemy's turn removes it: the ally nearest a
 // visible enemy acts first.
 void offer_engaged(const ChampionBelief& self, const std::vector<Enemy>& enemies, Wish& wish) {
-    int nearest = params::chase_radius + 1;
+    int nearest = vision_radius + 1;
     for (const auto& [e, health] : enemies) nearest = std::min(nearest, dist(self.pos, e->pos));
-    if (nearest <= params::chase_radius) wish.offer(engaged, static_cast<float>(params::chase_radius + 1 - nearest));
+    if (nearest <= vision_radius) wish.offer(engaged, static_cast<float>(vision_radius + 1 - nearest));
 }
 
 } // namespace
@@ -221,15 +221,15 @@ void offer_engaged(const ChampionBelief& self, const std::vector<Enemy>& enemies
 void set_turn_order(const World& world, Safety& safety) {
     auto& me = cambc::self();
     Wish wish;
-    if (world.me().alive && !fuel_ok(params::end_reserve)) note_shortcut("turn-order");
-    if (world.me().alive && fuel_ok(params::end_reserve)) {
+    if (world.me().alive && !fuel_ok(end_reserve)) note_shortcut("turn-order");
+    if (world.me().alive && fuel_ok(end_reserve)) {
         const auto& self = live_self(world);
         const auto& enemies = live_enemies(world);
         offer_engaged(self, enemies, wish);
         const Strike ours = strike(self, world.round + 1);
         offer_kills(world, self, ours, enemies, wish);
         offer_heal(world, self, enemies, wish);
-        if (!fuel_ok(offers_cost + params::end_reserve)) {
+        if (!fuel_ok(offers_cost + end_reserve)) {
             if (safety.any_threat()) note_shortcut("turn-order-sim");
         } else {
             safety.refresh();

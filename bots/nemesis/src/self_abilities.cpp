@@ -12,7 +12,6 @@ namespace aph {
 
 namespace {
 
-constexpr int camp_attack_range = 3;
 constexpr int dash_steps = 2;
 constexpr int reset_hold_margin = 2;      // an enemy this far beyond attack range keeps the reset off camps
 constexpr int travel_dash_clearance = 10; // no visible enemy this close for a travel dash
@@ -290,7 +289,7 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
     // A goal within a dash is a walk or two away: not worth the cooldown or the search.
     if (any_within(goals, here, dash_steps)) return false;
     const int layers = std::max(world.map().width + world.map().height, max_field_layers()); // a maze runs deeper
-    if (!fuel_ok(search_cost_estimate(layers) + params::end_reserve)) {
+    if (!fuel_ok(search_cost_estimate(layers) + end_reserve)) {
         note_shortcut("travel-dash");
         return false;
     }

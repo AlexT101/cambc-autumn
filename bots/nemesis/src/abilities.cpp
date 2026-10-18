@@ -23,7 +23,6 @@ constexpr float keep_walk_value = 250;
 constexpr float min_camp_value = 50;
 constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
 constexpr int hold_range = 6;       // camp casts wait while a visible enemy is this close
-constexpr int camp_attack_range = 3;
 std::uint64_t enemy_cast_cost(int visible, int unseen) {
     return 12000 + 2500 * static_cast<std::uint64_t>(visible) + 1000 * static_cast<std::uint64_t>(unseen);
 }
@@ -107,7 +106,7 @@ float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
     if (e.facts().passive == Passive::stun_immune) return 0;
     float v = stun_value;
     if (e.channel == Channel::tribute) v += tribute_stun_bonus + gem_value * static_cast<float>(e.gems);
-    if (params::stop_winning_tribute && e.channel == Channel::tribute && enemy_tribute_wins(world, e)) v += winning_tribute_value;
+    if (e.channel == Channel::tribute && enemy_tribute_wins(world, e)) v += winning_tribute_value;
     if (!damaging && kept_recall(e)) v += recall_cancel_value;
     return v;
 }

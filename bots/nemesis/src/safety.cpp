@@ -679,7 +679,7 @@ Trade Safety::fight(vec2 p) {
     }
     const auto before = fuel();
     auto& slot = fights_[fight_count_++ % max_fights];
-    slot = {key, trade(us, them, params::end_reserve)};
+    slot = {key, trade(us, them, end_reserve)};
     if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
     return slot.trade;
 }

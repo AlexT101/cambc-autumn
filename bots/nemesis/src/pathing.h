@@ -7,10 +7,12 @@
 #include <memory>
 #include <optional>
 #include <vector>
-#include "params.h"
 #include "util.h"
 
 namespace aph {
+
+// Extra steps a live route may take over the static walking distance.
+inline constexpr int max_detour = 16;
 
 class World;
 struct StaticMap;
@@ -79,7 +81,7 @@ public:
     bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable);
     bool step_towards(vec2 target, const bitboard* avoid = nullptr);
     // A live route within `max_detour` of the static distance, else greedy descent of the field.
-    bool step_towards(const Field& field, const bitboard* avoid = nullptr, int max_detour = params::max_detour);
+    bool step_towards(const Field& field, const bitboard* avoid = nullptr, int max_detour = aph::max_detour);
     // Cheap fallbacks without a search, when fuel is short: a step down the field, or one that
     // gets closer to the target as the crow flies.
     bool descend(const Field& field, const bitboard* avoid = nullptr);

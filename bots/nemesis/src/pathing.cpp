@@ -133,7 +133,7 @@ const Field* Pathing::approach(int group, int range, std::uint64_t fuel_floor) {
     // Unbounded, the search goes as deep as the fuel above the floor allows.
     const auto per_layer = static_cast<int>(search_chunks());
     const int affordable = (static_cast<int>(fuel() - fuel_floor) - static_cast<int>(search_cost_estimate(0))) / per_layer;
-    const int layers = steps >= 0 ? steps + params::max_detour : std::clamp(affordable, 1, s.width + s.height);
+    const int layers = steps >= 0 ? steps + max_detour : std::clamp(affordable, 1, s.width + s.height);
     FuelMeter meter{"approach"};
     if (!spare_approach_) spare_approach_ = std::make_unique<Approach>();
     auto& made = *spare_approach_;
@@ -236,7 +236,7 @@ int& Pathing::centre_cap(int group) {
     if (!cap && map().drafted()) {
         const int steps = std::max(map().ally_steps(group), map().enemy_steps(group));
         // Off the spawns' walking routes, a centre is on an island: its field is shallow.
-        cap = (steps == unreachable ? 0 : steps) + params::centre_depth_margin;
+        cap = (steps == unreachable ? 0 : steps) + centre_depth_margin;
     }
     return cap;
 }
@@ -255,7 +255,7 @@ bool Pathing::warm_centres(std::uint64_t fuel_floor) {
         }
         while (!slot) {
             auto& cap = centre_cap(g);
-            if (!fuel_ok(params::last_reserve + search_cost_estimate(cap))) return false;
+            if (!fuel_ok(last_reserve + search_cost_estimate(cap))) return false;
             FuelMeter meter{"field"};
             slot = make_field(map().blocked_for_us, single(map().groups[g].centre), cap);
             if (!slot) cap *= 2;
@@ -424,7 +424,7 @@ bool Pathing::try_move(vec2 tile) {
 bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps) {
     if (!cambc::self().can_move()) return false;
     // Each retry costs a search, and only a hidden blocker makes one worth it.
-    const auto retry_cost = search_cost_estimate(std::min(max_steps, map().width + map().height)) + params::end_reserve;
+    const auto retry_cost = search_cost_estimate(std::min(max_steps, map().width + map().height)) + end_reserve;
     for (int attempt = 0; attempt < 3; ++attempt) {
         if (attempt > 0 && !fuel_ok(retry_cost)) {
             note_shortcut("route-retry");
@@ -446,7 +446,7 @@ bool Pathing::step_towards(const Field& field, const bitboard* avoid, int max_de
     if (here == 0 || !cambc::self().can_move()) return false;
     if (here != unreachable) {
         const int cap = here + max_detour;
-        if (!fuel_ok(search_cost_estimate(cap) + params::end_reserve)) note_shortcut("static-descend");
+        if (!fuel_ok(search_cost_estimate(cap) + end_reserve)) note_shortcut("static-descend");
         else if (step_towards(field.goals, avoid, cap)) return true;
     }
     return descend(field, avoid);

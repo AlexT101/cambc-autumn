@@ -29,10 +29,7 @@ inline constexpr float recall_risk = 0.2f;
 inline constexpr float credible_weight = 0.5f;
 // An awake camp we have not watched for 2 rounds may have fallen asleep.
 inline constexpr float unknown_camp_weight = 0.5f;
-inline constexpr int camp_attack_range = 3;
 inline constexpr int fight_ally_radius = 4;
-// Routing around danger farther than this is left to later turns: routes are replanned each turn.
-inline constexpr int avoid_radius = 8;
 } // namespace safety_params
 
 // The most an enemy can do on its next turn to a tile at each Chebyshev distance from where it

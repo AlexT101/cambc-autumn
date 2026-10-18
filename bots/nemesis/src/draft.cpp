@@ -163,16 +163,7 @@ void play_draft(DraftState& state) {
     }
     state.plan.field_layers = static_cast<std::uint16_t>(max_field_layers());
     write_plan(state);
-    if constexpr (params::random_draft) {
-        auto order = all_champions();
-        for (std::size_t i = order.size() - 1; i > 0; --i) std::swap(order[i], order[random_below(i + 1)]);
-        pick_first_available(state, order);
-    } else {
-        const auto picks = cambc::draft::team_size();
-        using Order = std::span<const cambc::champion_draft>;
-        const Order own = picks <= 3 ? Order{params::draft_3} : picks == 4 ? Order{params::draft_4} : Order{params::draft_5};
-        if (!pick_first_available(state, own)) pick_first_available(state, params::draft_preference);
-    }
+    pick_first_available(state, params::draft_preference);
 }
 
 void ensure_picked(DraftState& state) {

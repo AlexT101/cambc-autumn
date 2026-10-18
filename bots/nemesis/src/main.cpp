@@ -13,7 +13,7 @@
 
 namespace {
 
-using aph::params::end_reserve;
+using aph::end_reserve;
 
 template <class F> bool run(const char* phase, F&& f) {
     try {

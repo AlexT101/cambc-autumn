@@ -193,6 +193,11 @@ struct Moment {
 inline constexpr int home_recall_time = 3;       // turn ends, with a Home emblem
 inline constexpr int teleport_crystal_range = 3; // Chebyshev, terrain ignored
 inline constexpr int ability_cooldown = 8;        // rounds from a cast to the slot's next
+inline constexpr int ability_range = 4;           // unit, ground and ally abilities
+inline constexpr int camp_attack_range = 3;
+inline constexpr int vision_radius = 8;           // a champion's
+inline constexpr unsigned shard_price = 30;
+inline constexpr unsigned emblem_price = 5 * shard_price; // five identical shards
 
 struct ChampionBelief {
     cambc::handle_champion_t handle{};
