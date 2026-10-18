@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <span>
 
 namespace aph {
 
@@ -147,21 +146,6 @@ inline constexpr std::array<ChampionFacts, 12> champion_table = [] {
 
 constexpr const ChampionFacts& facts(cambc::champion_type type) {
     return champion_table[static_cast<std::size_t>(type)];
-}
-
-namespace facts_detail {
-using C = cambc::champion_type;
-inline constexpr C cassi_issac[] = {C::cassi, C::issac};
-// Indexed by cambc::champion_draft; the Cassi and Issac entry is unused.
-inline constexpr C single_body[] = {C::ryth, C::vesper_vale, C::vendetta, C::cassi, C::stellar, C::prism,
-                                    C::marcella, C::willow, C::ren, C::varg, C::tavi};
-static_assert(static_cast<int>(cambc::champion_draft::tavi) == 10);
-} // namespace facts_detail
-
-// The bodies a draft pick puts on the map, in id order (Cassi before Issac).
-constexpr std::span<const cambc::champion_type> bodies(cambc::champion_draft pick) {
-    if (pick == cambc::champion_draft::cassi_and_issac) return facts_detail::cassi_issac;
-    return {&facts_detail::single_body[static_cast<std::size_t>(pick)], 1};
 }
 
 // Compare the table with the engine's champion designs; returns the number of mismatches and

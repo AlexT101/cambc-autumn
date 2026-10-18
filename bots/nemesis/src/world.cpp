@@ -31,6 +31,13 @@ std::optional<champion_info> champion(std::uint32_t h) {
     return info;
 }
 
+// Readable for hidden and dead champions too.
+cambc::champion_type type(std::uint32_t h) {
+    champion_identity identity{};
+    check(sdk_champion_identity(h, &identity));
+    return static_cast<cambc::champion_type>(identity.type);
+}
+
 bool alive(std::uint32_t h) {
     std::int32_t value{};
     check(sdk_champion_is_alive(h, &value));
@@ -198,26 +205,6 @@ void dilate(bitboard& tiles, const bitboard& open, int steps, const bitboard& la
         tiles |= t2;
         tiles &= steps == 1 ? land : open;
     }
-}
-
-using Types = std::array<cambc::champion_type, 16>;
-
-// The bodies of a side's draft picks, in id order; returns the count.
-int types_from_draft(team side, Types& out) {
-    namespace raw = cambc::detail;
-    const auto absolute = raw::absolute_team(side);
-    std::uint8_t rounds{};
-    raw::check(raw::sdk_draft_num_rounds(&rounds));
-    int n = 0;
-    for (std::uint32_t r = 0; r < rounds; ++r) {
-        std::int32_t pick{};
-        const auto code = raw::sdk_draft_get(absolute, r, &pick);
-        if (code == 16) continue; // not drafted
-        raw::check(code);
-        for (auto t : bodies(static_cast<cambc::champion_draft>(pick)))
-            if (n < static_cast<int>(out.size())) out[n++] = t;
-    }
-    return n;
 }
 
 const char* name(CampState s) {
@@ -705,8 +692,6 @@ void World::init_beliefs() {
         auto& list = side == team::ally ? allies : enemies;
         engine::Handles handles;
         const int n = engine::handles(side, handles);
-        Types types;
-        const int known = types_from_draft(side, types);
         list.reserve(n);
         for (int i = 0; i < n; ++i) {
             auto& b = list.emplace_back();
@@ -714,9 +699,7 @@ void World::init_beliefs() {
             b.side = side;
             b.index = i;
             b.is_self = handles[i] == self_handle;
-            // Draft picks are readable in play and handles follow pick order; a visible champion's
-            // own type overrides this below if they ever disagree.
-            b.type = b.is_self ? cambc::self().champion_name() : i < known ? types[i] : cambc::champion_type::ryth;
+            b.type = engine::type(engine::id(handles[i]));
             b.pos = side == team::ally ? s.ally_spawn_centre : s.enemy_spawn_centre;
             b.pos_round = round;
             b.pos_source = Source::inferred;
@@ -877,11 +860,6 @@ void World::update_champion(ChampionBelief& b, bool full) {
         return;
     }
 
-    const auto seen_type = static_cast<cambc::champion_type>(info->type);
-    if (debug_log && seen_type != b.type)
-        std::cout << "world: " << cambc::to_string(b.side) << b.index << " drafted as " << b.facts().name << " but is "
-                  << facts(seen_type).name << '\n';
-    b.type = seen_type;
     const int last_seen = b.stats_round;
     const auto state = cambc::champion_state::from_bits_retain(static_cast<std::uint32_t>(info->state));
     b.acted = !b.is_self && state.contains(cambc::champion_state::completed_turn);
