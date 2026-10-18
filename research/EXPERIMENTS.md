@@ -42,3 +42,4 @@ The whole team as one PVP pack: 2-8% vs nemesis. It earns ~150 gold a game again
 ## hecate (2026-10-18)
 
 Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md). Level or lost: true first striker in the fight sim, shopping ×2 emblems, third-party camp damage in the fight sim, rally assist, caster poke from our own ground, Cassi/Issac target priority, kite cap 40, altar control (6 variants), central-group kiting, Focus builds (−4), alternative drafts (no Cassi 39.5%), and Monolith + cluster sieges on normal maps (5-40%).
+- Ladder-motivated, lost or level locally (vs hecate, 390 games): gold valued 3× in farm choice (`worth = gems + 3 · gold · clear_share`) 46.9%; the top teams' draft (Ren, Stellar, Cassi, Ryth, Varg) with Focus builds for Ren 42.3%. Both target gaps seen against Intercontinental Fish ([LADDER-FISH.md](LADDER-FISH.md)), which our own bots don't exploit, so judge them on the ladder, not locally.

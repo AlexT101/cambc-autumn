@@ -50,3 +50,14 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    Safety::strike_of (per-turn strike cache) in step_guard and visible_threat, cheap tile tests first, known_fight
    memo lookup before the fuel gate, lethal() only when it decides, one-pass fight_key. 100M bench: 16/16 identical,
    mean -0.5%, p99 -1.9%.
+10. Ladder-driven changes from the Intercontinental Fish analysis ([../LADDER-FISH.md](../LADDER-FISH.md)); frozen
+   baseline before them: bots/baselines/hecate-v1. Submitted as version 19.
+   - Draft copied from the top ladder teams: Ren, Stellar, Cassi, Ryth, Varg (Tavi last). Ren builds Focus (its
+     stun and retaliation scale with it), and solo camp estimates count its retaliation on each monster that hits it.
+   - From v17: spell-station clears for ranged champions and pickup of a freshly cleared group in sight
+     (local_spell_plan, collect_local_reward), with the farm evaluation's fuel kept clear of the pickup.
+   - Cassi farms gold: gold_farmer_weight 4 on its gold value, and it hits harmless gold-only groups in passing.
+   - Cassi and Issac: basic attacks pick the pair with the weakest body, and damage only counts once it takes a body
+     below its partner (useful_damage).
+   - Locally all level: 48.7% vs hecate-v1; without the v17 port and gold farmer 46.2%; hecate-v1 plus only the
+     Cassi/Issac targeting 51.3%. Ladder scrims vs the top 5 on the same maps: 27-48, against 20-55 for version 18.

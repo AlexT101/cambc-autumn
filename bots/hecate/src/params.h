@@ -6,10 +6,10 @@
 namespace aph::params {
 
 inline constexpr cambc::champion_draft draft_preference[] = {
-    cambc::champion_draft::cassi_and_issac, cambc::champion_draft::varg, cambc::champion_draft::stellar,
-    cambc::champion_draft::ryth, cambc::champion_draft::tavi, cambc::champion_draft::ren,
-    cambc::champion_draft::prism, cambc::champion_draft::vesper_vale, cambc::champion_draft::vendetta,
-    cambc::champion_draft::marcella, cambc::champion_draft::willow,
+    cambc::champion_draft::ren, cambc::champion_draft::stellar, cambc::champion_draft::cassi_and_issac,
+    cambc::champion_draft::ryth, cambc::champion_draft::varg, cambc::champion_draft::prism,
+    cambc::champion_draft::vesper_vale, cambc::champion_draft::vendetta, cambc::champion_draft::marcella,
+    cambc::champion_draft::willow, cambc::champion_draft::tavi,
 };
 
 // Rounds out of sight after which an enemy could be anywhere.
@@ -55,6 +55,8 @@ inline constexpr float shop_heal_fraction = 0.6f;
 inline constexpr int max_wait = 5;
 // Share of champion-rounds spent attacking camps: the part of the game a shard's speed-up counts for.
 inline constexpr float clear_share = 0.15f;
+// Cassi's weight on gold in farm choice: it takes the gold-only groups the others pass up.
+inline constexpr float gold_farmer_weight = 4.0f;
 
 // Monolith sieges (bot.cpp siege), only on maps whose only gems are Monoliths: the team goes once
 // its output clears the Monolith within this many rounds and the hits, by this share after stuns

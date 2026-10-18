@@ -19,5 +19,6 @@ The public API returns a null submission id and version, so `replays/mine` games
 | 13 | 2026-10-18 06:10 | nemesis 2dba924 (least exposed retreat step) | as #8 |
 | 14-17 | unrecorded | see the platform's submissions page | |
 | 18 | 2026-10-18 15:05 | hecate fddba49 | as #8 |
+| 19 | 2026-10-18 18:58 | hecate fddba49 + Fish draft, Focus Ren with reflect in camp estimates, v17 farm port, Cassi gold farmer, Cassi/Issac weaker-body targeting (uncommitted at submission) | ren, stellar, cassi, ryth, varg |
 
 Add a row with each new submission.

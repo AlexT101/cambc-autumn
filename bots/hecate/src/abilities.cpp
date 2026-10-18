@@ -88,7 +88,8 @@ bool kept_recall(const ChampionBelief& e) {
 }
 
 // A kill takes the bag, both bags for Cassi and Issac, who die together. Other damage to an
-// enemy on its spawn heals at its turn end.
+// enemy on its spawn heals at its turn end, and damage to the healthier of Cassi and Issac only
+// counts once it takes that body below the other.
 float hit_worth(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
     if (health > 0 && damage >= health - 0.01f) {
         int gems = e.gems;
@@ -98,7 +99,7 @@ float hit_worth(const World& world, const ChampionBelief& e, float damage, float
         return health + kill_bonus + gem_value * static_cast<float>(gems);
     }
     if (on_spawn || damage <= 0) return 0;
-    return damage + (kept_recall(e) ? recall_cancel_value : 0);
+    return useful_damage(damage, health, linked_partner_health(world, e)) + (kept_recall(e) ? recall_cancel_value : 0);
 }
 
 // `damaging`: the hit's worth already counts a cancelled recall.

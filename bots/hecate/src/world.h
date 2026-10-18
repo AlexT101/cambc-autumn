@@ -412,4 +412,18 @@ private:
     int updated_round_ = -1;
 };
 
+// Cassi and Issac die together: the visible partner's health, or a huge value.
+inline float linked_partner_health(const World& world, const ChampionBelief& e) {
+    if (e.facts().passive != Passive::linked_pair) return 1e9f;
+    for (const auto& o : world.enemies)
+        if (&o != &e && o.alive && o.visible && o.facts().passive == Passive::linked_pair) return o.health;
+    return 1e9f;
+}
+
+// Of `damage` on a body at `health`, what brings its pair's death closer: only what takes it below
+// its partner, for Cassi and Issac.
+inline float useful_damage(float damage, float health, float partner) {
+    return partner >= health ? damage : std::max(0.0f, damage - (health - partner));
+}
+
 } // namespace aph

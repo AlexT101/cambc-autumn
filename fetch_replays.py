@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import io
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -25,20 +26,36 @@ ROOT = Path(__file__).resolve().parent
 SITE = "https://2026a.battlecode.co.uk"
 API = SITE + "/api/v1"
 MY_TEAM = "547efb5b-57e5-4355-8501-3b331f506d62"
+WEB_COOKIE_FILE = Path(os.environ.get("APPDATA", Path.home())) / "cambc" / "web-cookie.txt"
+HEADERS = {"User-Agent": "cambc-replay-fetch"}
 
 
-def fetch(url, retries=4):
+def use_web_cookie(path):
+    """The website's own session (not `cambc login`'s) fills in each side's submission id and version."""
+    cookie = path.read_text(encoding="utf-8-sig").strip()
+    if cookie.lower().startswith("cookie:"):
+        cookie = cookie[7:].strip()
+    HEADERS["Cookie"] = cookie
+    me = get_json("/match-groups", scope="all", team=MY_TEAM)
+    if not me["groups"] or not has_versions(get_json(f"/match-groups/{me['groups'][0]['id']}")):
+        print(f"warning: {path} gave no submission versions; the cookie may be wrong or expired", file=sys.stderr)
+
+
+def fetch(url, retries=8):
     for attempt in range(retries + 1):
+        wait = 2 ** min(attempt, 5)
         try:
-            with urlopen(Request(url, headers={"User-Agent": "cambc-replay-fetch"}), timeout=60) as r:
+            with urlopen(Request(url, headers=HEADERS), timeout=60) as r:
                 return r.read()
         except HTTPError as e:
             if e.code not in (429, 500, 502, 503, 504) or attempt == retries:
                 raise
+            if e.headers.get("Retry-After", "").isdigit():
+                wait = int(e.headers["Retry-After"]) + 1
         except URLError:
             if attempt == retries:
                 raise
-        sleep(2 ** attempt)
+        sleep(wait)
 
 
 def get_json(path, **params):
@@ -120,14 +137,23 @@ def fetch_bundle(url, match_id, attempts=12):
         sleep(min(2 + attempt * 2, 15))
 
 
-def download_group(out, g):
+def has_versions(detail):
+    return any(s.get("version") for s in detail["group"]["sides"])
+
+
+def download_group(out, g, replays=True):
+    """With replays=False only group.json is written; a later run with replays fills in the games."""
     d = group_dir(out, g)
-    if (d / "group.json").exists():
+    meta = d / "group.json"
+    old = json.loads(meta.read_text(encoding="utf-8")) if meta.exists() else None
+    want_meta = old is None or ("Cookie" in HEADERS and not has_versions(old))
+    want_replays = replays and not any(d.glob("*.repl26a"))
+    if not want_meta and not want_replays:
         return d, 0
     detail = get_json(f"/match-groups/{g['id']}")
     d.mkdir(parents=True, exist_ok=True)
     count = 0
-    for m in detail["matches"]:
+    for m in detail["matches"] if want_replays else []:
         if m["status"] != "finished" or not m.get("replayUrl"):
             continue
         with zipfile.ZipFile(io.BytesIO(fetch_bundle(SITE + m["replayUrl"], m["id"]))) as z:
@@ -153,6 +179,9 @@ def main():
     p.add_argument("--out", type=Path)
     p.add_argument("--threads", type=int, default=4)
     p.add_argument("--list", action="store_true", help="print the ladder and exit")
+    p.add_argument("--no-replays", action="store_true", help="write only each group's group.json")
+    p.add_argument("--web-cookie", type=Path, default=WEB_COOKIE_FILE,
+                   help="file holding the website's Cookie header, used when it exists (default: %(default)s)")
     args = p.parse_args()
     if args.mine:
         args.team.append(MY_TEAM)
@@ -161,6 +190,8 @@ def main():
     args.out = args.out or ROOT / "replays" / ("mine" if args.mine else "ladder")
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")
+    if args.web_cookie.exists():
+        use_web_cookie(args.web_cookie)
 
     ladder = get_json("/ladder")
     if args.list:
@@ -183,7 +214,7 @@ def main():
     args.out.mkdir(parents=True, exist_ok=True)
     done = failed = replays = 0
     with ThreadPoolExecutor(args.threads) as pool:
-        futures = {pool.submit(download_group, args.out, g): g for g in groups.values()}
+        futures = {pool.submit(download_group, args.out, g, not args.no_replays): g for g in groups.values()}
         for f, g in futures.items():
             try:
                 d, n = f.result()

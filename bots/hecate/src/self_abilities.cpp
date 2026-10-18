@@ -169,6 +169,7 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
         vec2 pos;
         float health, retaliation;
         bool stunnable;
+        float partner; // Cassi or Issac: the visible other body's health
     };
     std::vector<Seen> seen;
     for (auto p : positions_within(live_champion_tiles(team::enemy), here, range + (splash ? 1 : 0))) {
@@ -178,7 +179,11 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
             const float retaliation = passive == Passive::retaliation ? retaliation_share * c.focus() : 0.0f;
             // Buffs are read only when asked for: building them allocates.
             const bool stunnable = stunnable_only && passive != Passive::stun_immune && !c.buffs().has_stun();
-            seen.push_back({c, p, c.health(), retaliation, stunnable});
+            float partner = 1e9f;
+            if (passive == Passive::linked_pair)
+                for (const auto& e : world.enemies)
+                    if (e.alive && e.visible && e.pos != p && e.facts().passive == Passive::linked_pair) partner = e.health;
+            seen.push_back({c, p, c.health(), retaliation, stunnable, partner});
         } catch (const cambc::error&) {
         }
     }
@@ -187,10 +192,10 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     // An enemy on its spawn heals to full at its turn end: only a kill or a stun is worth anything.
     const auto worth = [&](const Seen& s) {
         if (s.health <= strength) return s.health + kill_value;
-        return enemy_spawn.is_set(s.pos) ? 0.0f : strength;
+        return enemy_spawn.is_set(s.pos) ? 0.0f : useful_damage(strength, s.health, s.partner);
     };
     std::optional<cambc::champion> best;
-    float best_value = 0, best_health = 0;
+    float best_value = 0, best_health = 0, best_pair = 0;
     for (const auto& t : seen) {
         if (dist(here, t.pos) > range || (stunnable_only && !t.stunnable) || (hold && t.pos == hold->pos && t.health > strength))
             continue;
@@ -199,9 +204,10 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
             for (const auto& o : seen)
                 if (&o != &t && dist(o.pos, t.pos) <= 1) value += worth(o), retaliation += o.retaliation;
         if ((value <= 0 && !stunnable_only) || retaliation >= health) continue;
-        if (!splash) value = 0; // the weakest
-        if (!best || value > best_value || (value == best_value && t.health < best_health))
-            best = t.c, best_value = value, best_health = t.health;
+        if (!splash) value = 0; // the weakest, a pair by its weaker body
+        const float pair = std::min(t.health, t.partner);
+        if (!best || value > best_value || (value == best_value && (pair < best_pair || (pair == best_pair && t.health < best_health))))
+            best = t.c, best_value = value, best_health = t.health, best_pair = pair;
     }
     return best;
 }

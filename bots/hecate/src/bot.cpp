@@ -67,12 +67,12 @@ cambc::item_type emblem_of(int family, int stat) {
 bool spell_builds = false;
 
 // Focus when a shard's Focus, over the damage spells' multipliers, beats five basic attacks'
-// Strength: spells front-load a fight.
+// Strength: spells front-load a fight. Ren's retaliation also scales with Focus.
 int main_stat(const ChampionFacts& f) {
     float spells = 0;
     for (const auto& a : f.abilities)
         if (a.kind == AbilityKind::damage) spells += a.multiplier;
-    if (spell_builds && spells > 0) return focus_stat;
+    if ((spell_builds && spells > 0) || f.passive == Passive::retaliation) return focus_stat;
     return f.focus.growth * spells > 5 * f.strength.growth ? focus_stat : strength_stat;
 }
 
@@ -458,8 +458,8 @@ constexpr int capture_rounds = 6;
 constexpr float stickiness = 1.2f;
 
 // Damage taken clearing a group alone with basic attacks, killing the deadliest first; also
-// the rounds it takes.
-float min_camp_damage(const CampGroup& group, const CampBelief& belief, float strength, float* rounds) {
+// the rounds it takes. `reflect`: damage each hit on us returns to its monster (Ren).
+float min_camp_damage(const CampGroup& group, const CampBelief& belief, float strength, float* rounds, float reflect = 0) {
     struct Left {
         float health, strength;
     };
@@ -478,16 +478,36 @@ float min_camp_damage(const CampGroup& group, const CampBelief& belief, float st
     }
     std::sort(left, left + n, [](const Left& a, const Left& b) { return a.strength * b.health > b.strength * a.health; });
     float damage = 0, elapsed = 0;
-    for (int i = 0; i < n; ++i) {
-        elapsed += std::ceil(left[i].health / strength);
-        damage += left[i].strength * (elapsed - 1);
+    if (reflect <= 0) {
+        for (int i = 0; i < n; ++i) {
+            elapsed += std::ceil(left[i].health / strength);
+            damage += left[i].strength * (elapsed - 1);
+        }
+        *rounds = elapsed;
+        return damage;
+    }
+    // Each round we hit the first living target, then every living attacker hits us and takes the
+    // reflection. Stepped from one death to the next.
+    for (int i = 0; i < n;) {
+        const float own = left[i].strength > 0 ? reflect : 0.0f;
+        float k = std::max(1.0f, std::ceil(left[i].health / (strength + own)));
+        for (int j = i + 1; j < n; ++j)
+            if (left[j].health > 0 && left[j].strength > 0) k = std::min(k, std::max(1.0f, std::ceil(left[j].health / reflect)));
+        // Our hit in round k fells it before it strikes; otherwise it struck every round.
+        const float hits = left[i].health - k * strength - (k - 1) * own <= 0 ? k - 1 : k;
+        damage += left[i].strength * hits;
+        left[i].health -= k * strength + hits * own;
+        for (int j = i + 1; j < n; ++j)
+            if (left[j].health > 0 && left[j].strength > 0) damage += left[j].strength * k, left[j].health -= k * reflect;
+        elapsed += k;
+        while (i < n && left[i].health <= 0) ++i;
     }
     *rounds = elapsed;
     return damage;
 }
 
 // Kept per group and strength while the group's belief is unchanged.
-float min_camp_damage(const World& world, int g, float strength, float* rounds) {
+float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0) {
     const auto& group = world.map().groups[g];
     const auto& belief = world.camps[g];
     struct Slots {
@@ -495,11 +515,11 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds) 
         bool fresh = false;
         std::array<float, 8> health{};
         int count = 0, next = 0;
-        std::array<float, 4> strength{}, damage{}, rounds{};
+        std::array<float, 4> strength{}, reflect{}, damage{}, rounds{};
     };
     static std::vector<Slots> cache;
     const auto& health = belief.health;
-    if (health.size() > Slots{}.health.size()) return min_camp_damage(group, belief, strength, rounds);
+    if (health.size() > Slots{}.health.size()) return min_camp_damage(group, belief, strength, rounds, reflect);
     if (cache.size() <= static_cast<std::size_t>(g)) cache.resize(std::max(world.map().groups.size(), static_cast<std::size_t>(g) + 1));
     auto& c = cache[g];
     if (c.checked != world.round) {
@@ -514,7 +534,7 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds) 
         }
     }
     for (int i = 0; i < c.count; ++i)
-        if (c.strength[i] == strength) {
+        if (c.strength[i] == strength && c.reflect[i] == reflect) {
             *rounds = c.rounds[i];
             return c.damage[i];
         }
@@ -522,7 +542,8 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds) 
     c.next = (c.next + 1) % static_cast<int>(c.strength.size());
     c.count = std::max(c.count, i + 1);
     c.strength[i] = strength;
-    c.damage[i] = min_camp_damage(group, belief, strength, &c.rounds[i]);
+    c.reflect[i] = reflect;
+    c.damage[i] = min_camp_damage(group, belief, strength, &c.rounds[i], reflect);
     *rounds = c.rounds[i];
     return c.damage[i];
 }
@@ -737,25 +758,365 @@ bool step_onto_cleared(const World& world, Pathing& pathing, int g) {
     return false;
 }
 
+struct FarmSpellPlan {
+    int group = -1, slot = -1, steps = 0;
+    vec2 station{-1, -1}, first{-1, -1};
+    float approach = 0, rounds = 0;
+};
+
+struct FarmEvaluationReserve {
+    bool ready = false;
+    std::uint64_t macro_required = 0;
+    std::uint64_t protected_floor = 0;
+};
+
+FarmEvaluationReserve farm_evaluation_reserve(const World& world, Pathing& pathing, const Memory& memory, vec2 here) {
+    const auto& map = world.map();
+    const int group = memory.farm_group;
+    const int range = group >= 0 && group < static_cast<int>(map.groups.size())
+        && world.camps[group].state != CampState::cleared ? world.me().facts().attack_range() : 0;
+    const bool steps_free = pathing.centres_ready() || (map.ally_spawn.is_set(here) && map.spawn_steps_drafted());
+    const auto evaluation = (steps_free ? 0 : field_cost_estimate()) + 1000 * map.groups.size();
+    const auto walk = group < 0 || group >= static_cast<int>(map.groups.size()) ? std::uint64_t{0}
+        : pathing.approach_cost(group, range);
+    FarmEvaluationReserve reserve;
+    reserve.ready = true;
+    reserve.macro_required = evaluation + walk + end_reserve;
+    // The macro evaluation's fixed setup after the optional spell scan includes several small
+    // queries plus its final fuel gate. Two existing small-operation allowances cover that bridge
+    // and one bounded query overshoot without inflating the macro's own estimator.
+    reserve.protected_floor = reserve.macro_required + 2 * small_cost_estimate;
+    return reserve;
+}
+
+// Final local execution only; macro spell pricing remains inherited. Taking this approach
+// needs a real unit-damage station and an affordable checked prefix.
+FarmSpellPlan local_spell_plan(const World& world, Pathing& pathing, Safety& safety, const Memory& memory,
+                               FarmEvaluationReserve& continuation) {
+    FarmSpellPlan best;
+    const int g = memory.farm_group;
+    const auto& map = world.map();
+    if (!world.me().facts().ranged || memory.banking || g < 0 || g >= static_cast<int>(map.groups.size())) return best;
+    const auto& G = map.groups[g];
+    const auto& c = world.camps[g];
+    if (G.has_monolith || G.members.size() > 16 || c.state != CampState::alive || G.strength <= 0) return best;
+    auto& me = cambc::self();
+    const vec2 here = me.position();
+    if (dist(here, G.centre) > vision_radius) return best;
+    continuation = farm_evaluation_reserve(world, pathing, memory, here);
+    const auto floor = std::max(end_reserve + 15000, continuation.protected_floor);
+    if (!fuel_ok(floor + 20000 + safety.build_cost_estimate()) || world.is_stale()) return best;
+    const auto started = fuel();
+    const auto funded = [&] { return !world.is_stale() && fuel() >= floor && fuel() + 20000 >= started; };
+    try {
+        const auto& f = world.me().facts();
+        int slot = -1, cooldown = 0;
+        float raw = 0;
+        for (int s = 0; s < 2; ++s) {
+            if (f.abilities[s].kind != AbilityKind::damage || f.abilities[s].target != Targeting::unit) continue;
+            const auto a = me.abilities()[s];
+            const float damage = a.damage_amount();
+            if (a.can_target_camps() && damage >= 50 && damage > raw) slot = s, raw = damage, cooldown = a.cooldown();
+        }
+        if (slot < 0 || cooldown > ability_cooldown || me.restrictions().bits()) return best;
+        static bitboard visible{cambc::uninitialized}, alive{cambc::uninitialized};
+        cambc::vision::visible_tiles_into(visible);
+        cambc::vision::camp_tiles_into(alive);
+        std::uint32_t members = 0;
+        int anchor = -1;
+        float health = 0, harmless_health = 0;
+        for (int i = 0; i < static_cast<int>(G.members.size()); ++i) {
+            if (!funded() || !visible.is_set(G.members[i].pos)) return best;
+            if (!alive.is_set(G.members[i].pos)) continue;
+            const float hp = cambc::vision::camp_at(G.members[i].pos).health();
+            if (G.members[i].strength <= 0) { harmless_health += hp; continue; }
+            if (hp < 50) return best; // the existing cast selector refuses a lone sub-50 value
+            members |= 1u << i; health += hp;
+            if (anchor < 0) anchor = i;
+        }
+        if (anchor < 0 || !pathing.prepare_member_tiles(g, ability_range, members, floor) || !funded()) return best;
+        static struct { int group = -1; std::uint32_t members = 0; std::array<vec2, 8> stations; } cached;
+        if (cached.group != g || cached.members != members) {
+            cached.group = g; cached.members = members;
+            for (int i = 0; i < 8; ++i) cached.stations[i] = G.members[anchor].pos + vec2{directions[i].x * ability_range, directions[i].y * ability_range};
+        }
+        const auto& blocked = pathing.blocked();
+        if (!funded() || !fuel_ok(floor + safety.build_cost_estimate())) return {};
+        const auto& enemies = safety.enemy_area();
+        const float factor = camp_hit_factor();
+        const float spare = me.health() - me.max_health()
+            * (bag_at_stake(world) >= params::brake_bag ? 0.6f : params::recall_health_fraction);
+        struct Hazard { vec2 pos; float hit; };
+        std::array<Hazard, 32> hazards;
+        int n_hazards = 0;
+        // One local static scan: every candidate prefix lies within4, so radius7 covers its camps.
+        for (auto tile : positions_within(map.camp_tiles, here, 4 + camp_attack_range)) {
+            if (!funded()) return {};
+            const int other = map.group_at(tile);
+            if (other < 0) continue;
+            int scanned = 0;
+            for (const auto& m : map.groups[other].members) {
+                if ((scanned++ & 7) == 0 && !funded()) return {};
+                if (m.pos != tile || m.strength <= 0) continue;
+                if (n_hazards == static_cast<int>(hazards.size())) return {};
+                hazards[n_hazards++] = {tile, factor * m.strength};
+            }
+        }
+        const auto static_load = [&](vec2 p) {
+            float load = 0;
+            for (int i = 0; i < n_hazards; ++i)
+                if (dist(p, hazards[i].pos) <= camp_attack_range) load += hazards[i].hit;
+            return load; // no ally target-sharing or dormant/dead lifecycle credit
+        };
+        for (int i = -2; i < 8; ++i) {
+            if (!funded()) return {};
+            const vec2 p = i == -2 ? here : i == -1 ? memory.farm_station : cached.stations[i];
+            if (!in_bounds(p) || dist(here, p) > 4 || (p != here && blocked.is_set(p))
+                || enemies.is_set(p) || map.camp_tiles.is_set(p) || static_load(p) > 0) continue;
+            bool reaches = true;
+            for (int m = 0; m < static_cast<int>(G.members.size()); ++m)
+                if (members >> m & 1) reaches &= pathing.member_attack_tiles(g, m, ability_range).is_set(p);
+            if (!reaches) continue;
+            vec2 at = here, first = here;
+            int steps = 0;
+            float approach = 0;
+            bool path = true;
+            while (at != p) {
+                if (!funded()) return {};
+                at += vec2{(p.x > at.x) - (p.x < at.x), (p.y > at.y) - (p.y < at.y)};
+                if (steps++ == 0) first = at;
+                if (blocked.is_set(at) || !visible.is_set(at) || enemies.is_set(at)) { path = false; break; }
+                approach += static_load(at);
+            }
+            if (!path || approach > spare) continue;
+            if (best.group >= 0 && (approach > best.approach || (approach == best.approach && steps >= best.steps))) continue;
+            best = {g, slot, steps, p, first, approach,
+                    health / (raw / static_cast<float>(ability_cooldown))
+                    // Serial harmless cleanup is conservative; accepted station basics reduce
+                    // its freshly read HP next turn, without assuming parallel future damage.
+                    + harmless_health / std::max(1.0f, basic_output(world.me()))
+                    + static_cast<float>(steps + std::max(0, cooldown - steps) + 1 + (harmless_health > 0 ? ability_range : 0))};
+        }
+        if (!funded()) return {};
+    } catch (const cambc::error&) { return {}; }
+    return best;
+}
+
+// At most the retained choice, its claim and actual recent work; no all-map reward scan.
+bool collect_local_reward(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    auto& me = cambc::self();
+    if (!me.can_move() || memory.banking || world.is_stale()) return false;
+    const auto& map = world.map();
+    const vec2 here = me.position();
+    const std::array<int, 3> choices{memory.farm_group, memory.claim, memory.worked_round >= world.round - 1 ? memory.worked_group : -1};
+    const auto plausible_group = [&](int g) {
+        if (g < 0 || g >= static_cast<int>(map.groups.size())) return false;
+        const auto& G = map.groups[g];
+        const auto& c = world.camps[g];
+        const bool may_be_empty = c.state == CampState::cleared || c.state_round < world.round
+            || (memory.worked_group == g && memory.worked_round == world.round);
+        return may_be_empty && !G.has_monolith && G.gems + G.gold > 0 && G.members.size() <= 16 && dist(here, G.centre) <= vision_radius;
+    };
+    bool plausible = false;
+    for (int g : choices) plausible |= plausible_group(g);
+    if (!plausible) return false; // do not require a belief refresh after our own clearing hit
+    // Kept clear of the fuel farm's evaluation needs, as local_spell_plan is.
+    const auto floor = std::max(end_reserve + small_cost_estimate, farm_evaluation_reserve(world, pathing, memory, here).protected_floor);
+    if (!fuel_ok(floor + 15000 + safety.build_cost_estimate())) return false;
+    const auto started = fuel();
+    const auto funded = [&] { return !world.is_stale() && fuel() >= floor && fuel() + 15000 >= started; };
+    try {
+        static bitboard visible{cambc::uninitialized}, camps{cambc::uninitialized}, allies{cambc::uninitialized}, enemies{cambc::uninitialized};
+        cambc::vision::visible_tiles_into(visible); cambc::vision::camp_tiles_into(camps);
+        cambc::vision::champion_tiles_into(team::ally, allies); cambc::vision::champion_tiles_into(team::enemy, enemies);
+        struct Hazard { vec2 pos; float hit; int group; };
+        std::array<Hazard, 64> hazards;
+        int n_hazards = 0;
+        bool hazards_known = false;
+        const auto camp_load = [&](vec2 p, int cleared) {
+            float load = 0;
+            for (int i = 0; i < n_hazards; ++i)
+                if (hazards[i].group != cleared && dist(p, hazards[i].pos) <= camp_attack_range) load += hazards[i].hit;
+            return load;
+        };
+        for (int k = 0; k < 3; ++k) {
+            if (!funded()) return false;
+            const int g = choices[k];
+            if (!plausible_group(g) || (k > 0 && g == choices[0]) || (k > 1 && g == choices[1])) continue;
+            const auto& G = map.groups[g];
+            bool empty = true, held = false;
+            for (const auto& m : G.members) {
+                if (!funded()) return false;
+                empty &= visible.is_set(m.pos) && !camps.is_set(m.pos);
+                held |= enemies.is_set(m.pos) || (allies.is_set(m.pos) && m.pos != here);
+            }
+            if (!empty || held) continue; // preserve every visible holder, independent of claims
+            std::uint32_t state = 0;
+            cambc::detail::check(cambc::detail::sdk_camp_group_state(G.handle, &state));
+            if (state != 2) continue;
+            const auto& blocked = pathing.blocked();
+            if (!funded() || !fuel_ok(floor + safety.build_cost_estimate())) return false;
+            const auto& danger = safety.enemy_area();
+            if (!hazards_known) {
+                // Every admitted prefix stays within our local square. Full static raw load
+                // avoids assuming another champion will remain the camp's nearest target.
+                for (auto tile : positions_within(map.camp_tiles, here, vision_radius + camp_attack_range)) {
+                    if (!funded()) return false;
+                    const int other = map.group_at(tile);
+                    if (other < 0) continue;
+                    int scanned = 0;
+                    for (const auto& m : map.groups[other].members) {
+                        if ((scanned++ & 7) == 0 && !funded()) return false;
+                        if (m.pos != tile || m.strength <= 0) continue;
+                        if (n_hazards == static_cast<int>(hazards.size())) return false;
+                        hazards[n_hazards++] = {tile, m.strength, other};
+                    }
+                }
+                hazards_known = true;
+            }
+            int keeper = -1, keeper_steps = unreachable;
+            vec2 our_first{-1, -1};
+            for (const auto& a : world.allies) {
+                if (!funded()) return false;
+                if (!a.alive || (!a.is_self && !a.visible)) continue;
+                if (!a.is_self && comms::claim_of(world, a.index) != g) continue;
+                const auto live = cambc::detail::handle_access::make_champion(a.handle);
+                const auto status = live.state();
+                if (status.is_dead() || status.contains(cambc::champion_state::teleporting)
+                    || status.contains(cambc::champion_state::submitting_gems) || live.restrictions().contains(cambc::buff_restrictions::move)) continue;
+                const bool recalling = status.contains(cambc::champion_state::recalling);
+                if (recalling && live.remaining_channel_time() <= 3) continue;
+                if (!status.contains(cambc::champion_state::can_move) && !(recalling && !status.contains(cambc::champion_state::completed_turn))) continue;
+                const vec2 from = live.position();
+                if (dist(here, from) > vision_radius) continue;
+                const bool bag_risk = a.is_self ? bag_at_stake(world) >= params::brake_bag
+                                               : live.gem_count() >= static_cast<unsigned>(params::brake_bag);
+                const float spare = live.health() - (bag_risk ? 0.6f : params::recall_health_fraction) * live.max_health();
+                for (const auto& m : G.members) {
+                    const int steps = dist(from, m.pos);
+                    if (!funded()) return false;
+                    if (steps > 4 || dist(here, m.pos) > vision_radius || danger.is_set(m.pos)) continue;
+                    // This freshly empty reward group cannot attack during its own capture.
+                    float cost = static_cast<float>(capture_rounds) * camp_load(m.pos, g);
+                    vec2 at = from, first = from;
+                    bool path = true;
+                    while (at != m.pos) {
+                        if (!funded()) return false;
+                        at += vec2{(m.pos.x > at.x) - (m.pos.x < at.x), (m.pos.y > at.y) - (m.pos.y < at.y)};
+                        if (at == from + vec2{(m.pos.x > from.x) - (m.pos.x < from.x), (m.pos.y > from.y) - (m.pos.y < from.y)}) first = at;
+                        if (blocked.is_set(at) || (at == here && !a.is_self) || !visible.is_set(at) || danger.is_set(at)) { path = false; break; }
+                        cost += camp_load(at, g);
+                    }
+                    // Zero modeled exposure lets us finish this pickup now; a longer low-HP
+                    // approach would be preempted by retreat on the next turn.
+                    const bool free_pickup = a.is_self && steps <= 1 && cost == 0;
+                    if (!path || (cost > spare && !free_pickup)) continue;
+                    if (keeper < 0 || steps < keeper_steps || (steps == keeper_steps && a.index < keeper)) {
+                        keeper = a.index; keeper_steps = steps;
+                        if (a.is_self) our_first = first;
+                    }
+                }
+            }
+            if (keeper != world.me().index) continue;
+            if (!funded() || me.position() != here) return false;
+            if (keeper_steps == 0 || pathing.try_move(our_first)) {
+                memory.farm_group = memory.claim = g; memory.crew = memory.farm_spell = false;
+                note_shortcut("farm-local-reward");
+                return true;
+            }
+            return false;
+        }
+    } catch (const cambc::error&) { return false; }
+    return false;
+}
+
 // Carrying gems, farming on chains a capture onto the bag: it saves the walk to the altar and
 // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
 // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
-bool farm(const World& world, Pathing& pathing, Memory& memory) {
+bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    if (collect_local_reward(world, pathing, safety, memory)) return true;
+    FarmEvaluationReserve continuation;
+    auto spell_plan = local_spell_plan(world, pathing, safety, memory, continuation);
     auto& me = cambc::self();
     const auto& map = world.map();
     const auto& groups = map.groups;
     const int range = world.me().facts().attack_range();
-    const float strength = std::max(1.0f, output(world.me())), soften = camp_hit_factor();
+    const float strength = std::max(1.0f, output(world.me())), soften = camp_hit_factor(), reflect = world.me().retaliation();
     const float max_health = me.max_health();
     const float spare_health = (me.health() - params::recall_health_fraction * max_health) / params::camp_risk;
     const int bag = me.gem_count();
     const int short_by = gems_short(world);
+    if (world.is_stale()) return true;
+    if (spell_plan.group >= 0) {
+        float rounds = 0;
+        const float damage = soften * min_camp_damage(world, spell_plan.group, strength, &rounds);
+        const auto* centre = pathing.from_centre(spell_plan.group);
+        const int out = centre ? centre->at(map.ally_spawn_centre) : dist(map.ally_spawn_centre, groups[spell_plan.group].centre);
+        const float heal = out == unreachable ? 0 : damage / max_health
+            * static_cast<float>((world.me().fast_recall ? home_recall_time : cambc::constants::recall_time) + out);
+        if (memory.farm_spell || damage > spare_health || spell_plan.rounds < rounds + heal) {
+            const auto floor = end_reserve + 15000;
+            if (fuel_ok(floor) && !world.is_stale()) {
+                if (spell_plan.steps > 0 && me.can_move()) {
+                    if (pathing.try_move(spell_plan.first)) {
+                        memory.farm_spell = true; memory.farm_station = spell_plan.station;
+                        memory.claim = spell_plan.group;
+                        note_shortcut("farm-spell-approach");
+                        return true; // excludes-walking casts wait until the next own turn
+                    }
+                } else if (spell_plan.steps == 0) {
+                    bool basic = false;
+                    // At the safe station the walk is already kept: harmless basics can share
+                    // this turn with a legal spell. Never spend a ranged basic before approach.
+                    if (me.can_attack()) {
+                        const auto& G = groups[spell_plan.group];
+                        for (int i = 0; i < static_cast<int>(G.members.size()); ++i) {
+                            if (!fuel_ok(floor) || world.is_stale()) break;
+                            const auto& m = G.members[i];
+                            if (m.strength > 0 || dist(me.position(), m.pos) > range || !cambc::vision::has_camp(m.pos)) continue;
+                            try {
+                                const auto camp = G.camp(i);
+                                if (!camp.is_visible() || camp.health() <= 0) continue;
+                                if (!fuel_ok(floor) || world.is_stale()) break;
+                                me.attack(camp); basic = true; break;
+                            } catch (const cambc::error&) {}
+                        }
+                    }
+                    if (world.is_stale()) return true;
+                    bool ground_ready = false;
+                    const bool walked = me.position() != world.me().pos;
+                    for (int s = 0; s < 2; ++s) {
+                        const auto& a = world.me().facts().abilities[s];
+                        ground_ready |= a.target == Targeting::ground && a.hits_enemies()
+                            && !(a.excludes_walking && walked) && world.me().ability_ready(s, world.round);
+                    }
+                    // Match camp_cast_cost's current selector work, retaining the execution tail.
+                    const std::uint64_t cast_cost = 2000 + 800 * groups[spell_plan.group].members.size() + (ground_ready ? 8000 : 0);
+                    const bool cast = me.can_cast() && !world.is_stale() && fuel_ok(floor + cast_cost)
+                        && cast_at_camp(world, spell_plan.group, true);
+                    if (basic || cast) {
+                        memory.farm_spell = true; memory.farm_station = spell_plan.station;
+                        memory.claim = memory.worked_group = spell_plan.group; memory.worked_round = world.round;
+                        note_shortcut(cast ? "farm-spell-cast" : "farm-spell-basic");
+                        return true;
+                    }
+                    if (!me.can_cast() || me.abilities()[spell_plan.slot].cooldown() > 0) {
+                        memory.farm_spell = true; memory.farm_station = spell_plan.station;
+                        note_shortcut("farm-spell-cooldown");
+                        return true; // a bounded native cooldown, at a revalidated safe station
+                    }
+                }
+            }
+            spell_plan = {}; // failed action or selector: fall through to inherited farming
+        }
+    }
+    memory.farm_spell = false;
     // Groups in passing pay too (gold clusters are never chosen below), but not one whose clear
     // costs more health than we can spare.
     const auto affordable = [&](int g) {
         if (g == memory.farm_group || groups[g].strength <= 0) return true;
         float rounds = 0;
-        return soften * min_camp_damage(world, g, strength, &rounds) <= spare_health || ally_engaged(world, g);
+        return soften * min_camp_damage(world, g, strength, &rounds, reflect) <= spare_health || ally_engaged(world, g);
     };
     std::array<bool, 64> ally_claims{};
     for (const auto& a : world.allies)
@@ -763,15 +1124,18 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     // An ally's claim makes us its crew rather than its rival, unless we claimed it first.
     const auto taken = [&](int g) { return g < 64 && ally_claims[g] && (memory.claim != g || memory.crew); };
     const bool melee = world.me().facts().walk_and_attack_independent();
+    // Cassi farms gold: the team's weakest body takes the harmless gold-only groups.
+    const bool gold_farmer = world.me().facts().passive == Passive::linked_pair && !melee;
     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear.
     const auto passing = [&](int g) {
         if (!affordable(g)) return false;
         if (g == memory.farm_group) return true;
         if (taken(g)) return false;
-        return melee || groups[g].gems > 0;
+        return melee || groups[g].gems > 0 || (gold_farmer && groups[g].strength <= 0);
     };
     const auto attack_in_range = [&] {
         const int hit = attack_camp(world, passing);
+        if (hit >= 0) memory.worked_group = hit, memory.worked_round = world.round;
         if (hit >= 0 && hit != memory.claim) {
             memory.crew = taken(hit);
             memory.claim = hit;
@@ -787,6 +1151,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         return true;
     };
     if (bag == 0 && attack_in_range()) return true;
+    if (world.is_stale()) return true;
 
     // One holder keeps a capture going, and sharers split the reward: the lowest id stays.
     const auto ally_holding = [&](int g, bool lower_only) {
@@ -827,9 +1192,8 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     const bool on_spawn = map.ally_spawn.is_set(here);
     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.
     const auto walk_reserve = [&](int g) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(g)); };
-    const bool steps_free = pathing.centres_ready() || (on_spawn && map.spawn_steps_drafted());
-    const auto evaluation = (steps_free ? 0 : field_cost_estimate()) + 1000 * groups.size();
-    if (!fuel_ok(evaluation + walk_reserve(memory.farm_group) + end_reserve)) {
+    if (!continuation.ready) continuation = farm_evaluation_reserve(world, pathing, memory, here);
+    if (!fuel_ok(continuation.macro_required)) {
         note_shortcut("farm-no-evaluation");
         if (bag > 0) return false;
         // On large maps this can last hundreds of rounds, past the last choice's capture: once
@@ -882,8 +1246,9 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     float from_altar_value = 0;
     // Unaffordable groups, then allies' claims, only when nothing else is left: idling is worse.
     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable, shared = -1, shared_steps = unreachable;
+    bool best_spell = false;
     float best_value = 0, risky_value = 0, shared_value = 0;
-    const float per_gold = gold_worth(world, short_by);
+    const float per_gold = gold_worth(world, short_by) * (gold_farmer ? params::gold_farmer_weight : 1.0f);
     // An ally in sight clearing its claimed damaging group gets help only if finishing it alone
     // would take it below the recall line: one champion per camp otherwise.
     const auto struggling = [&](int g) {
@@ -891,7 +1256,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g || !groups[g].threat().is_set(a.pos))
                 continue;
             float rounds = 0;
-            const float damage = min_camp_damage(groups[g], world.camps[g], std::max(1.0f, output(a)), &rounds);
+            const float damage = min_camp_damage(groups[g], world.camps[g], std::max(1.0f, output(a)), &rounds, a.retaliation());
             if (a.health - damage < params::recall_health_fraction * a.max_health) return true;
         }
         return false;
@@ -1041,7 +1406,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         float clear_rounds = 0, damage = 0;
         bool spell = false;
         if (belief.state != CampState::cleared) {
-            damage = soften * min_camp_damage(world, g, strength, &clear_rounds);
+            damage = soften * min_camp_damage(world, g, strength, &clear_rounds, reflect);
             // Clearing with spells from out of the camps' range is slower but costs no health.
             if (group.strength > 0 && belief.state != CampState::cleared) {
                 const float kite = spell_clear_rounds(map, g, belief, range, spells, basic);
@@ -1067,7 +1432,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         if (damage > spare_health && !ally_engaged(world, g)) {
             if (value > risky_value) risky = g, risky_value = value, risky_steps = steps;
         } else {
-            if (value > best_value) best = g, best_value = value, best_steps = steps;
+            if (value > best_value) best = g, best_value = value, best_steps = steps, best_spell = spell;
             if (bag > 0 && walk != unreachable) {
                 const int via_altar = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - world.round - bank_now - walk) : 0;
                 const float from_altar = static_cast<float>(walk + cycle_bank + via_altar) + clear_rounds + capture_rounds;
@@ -1078,12 +1443,14 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     if (k < n_groups) note_shortcut("farm-partial-evaluation");
     if (bag > 0 && (best < 0 || best_value <= from_altar_value)) return false;
     if (bag > 0 && attack_in_range()) return true;
+    if (world.is_stale()) return true;
     if (best < 0) best = risky, best_steps = risky_steps, best_value = risky_value;
     memory.claim = best;
     memory.crew = false;
+    memory.farm_spell = best >= 0 && best_spell;
     if (shared >= 0 && (best < 0 || shared_value > best_value))
-        best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true;
-    if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true;
+        best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, memory.farm_spell = false;
+    if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, memory.farm_spell = false;
     if (best < 0) return true;
     memory.farm_group = best;
     const int cap = best_steps + max_detour;
@@ -1235,7 +1602,7 @@ bool finishing_camp(const World& world) {
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || c.awake == Awake::asleep || !groups[g].threat().is_set(here)) continue;
         float rounds = 0;
-        damage += camp_hit_factor() * min_camp_damage(world, g, std::max(1.0f, output(world.me())), &rounds);
+        damage += camp_hit_factor() * min_camp_damage(world, g, std::max(1.0f, output(world.me())), &rounds, world.me().retaliation());
         any = true;
     }
     return any && damage < params::finish_camp_health_fraction * cambc::self().health();
@@ -2289,7 +2656,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         }
         decision = 'B';
         const bool walked = attacked && !world.me().facts().walk_and_attack_independent();
-        memory.banking = late || close || walked || !may_chain(world, safety) || !farm(world, pathing, memory);
+        memory.banking = late || close || walked || !may_chain(world, safety) || !farm(world, pathing, safety, memory);
         if (memory.banking) bank_gems(world, pathing, safety, memory); // a tribute can still start after a ranged attack
         return;
     }
@@ -2310,7 +2677,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         decision = 'G';
         return;
     }
-    farm(world, pathing, memory);
+    farm(world, pathing, safety, memory);
 }
 
 // Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a
