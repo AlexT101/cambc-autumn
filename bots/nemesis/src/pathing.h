@@ -89,8 +89,8 @@ public:
     // Unseen units can still block these.
     bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile
     bitboard teleport_targets(); // free open or bush tiles within 3, not camp tiles or enemy spawn
-    // Within 2, not wall, hole, altar, enemy spawn or one of our wards; nor a bush with `off_bushes`.
-    bitboard ward_targets(bool off_bushes = false);
+    // Within 2, not wall, hole, altar, enemy spawn or one of our wards.
+    bitboard ward_targets();
 
 private:
     using Slot = std::unique_ptr<Field>;

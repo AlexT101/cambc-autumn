@@ -1118,7 +1118,7 @@ void place_ward(const World& world, Pathing& pathing, Memory& memory) {
     if (ward_bushes(world, memory) || world.round % params::ward_period != 0) return;
     const vec2 spawn = world.map().ally_spawn_centre;
     std::optional<vec2> best;
-    for (auto p : pathing.ward_targets(true).positions())
+    for (auto p : pathing.ward_targets().positions())
         if (!best || dist(spawn, p) > dist(spawn, *best)) best = p;
     if (best) try_ward(*best, memory);
 }

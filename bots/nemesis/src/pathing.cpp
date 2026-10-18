@@ -484,12 +484,11 @@ bitboard Pathing::teleport_targets() {
     return targets;
 }
 
-bitboard Pathing::ward_targets(bool off_bushes) {
+bitboard Pathing::ward_targets() {
     static bitboard excluded{cambc::uninitialized};
     auto targets = square(my_pos(), 2);
     targets &= map().open_for_us;
     cambc::vision::ward_tiles_into(team::ally, excluded);
-    if (off_bushes) excluded |= map().bushes;
     excluded &= targets;
     targets ^= excluded;
     return targets;
