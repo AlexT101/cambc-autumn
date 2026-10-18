@@ -732,10 +732,10 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
 
     const vec2 here = me.position();
     if (holding_capture(world)) return true;
-    // Carrying, whatever made us retreat stays out of bounds: we route around it or wait outside
-    // it rather than step in to be sent back out. Empty-handed, a step in risks nothing (the zone
-    // starts beyond any strike's reach) and keeps us at hand for when the pack moves on.
-    const auto* zone = bag > 0 ? pack_zone(world) : nullptr;
+    // With our own or a linked partner's bag at stake, whatever made us retreat stays out of
+    // bounds: we route around it or wait outside it. With neither bag at stake, a step in keeps
+    // us at hand for when the pack moves on (the zone starts beyond any strike's reach).
+    const auto* zone = bag_at_stake(world) > 0 ? pack_zone(world) : nullptr;
 
     // Short of fuel, walk on towards the last choice rather than run out mid-turn. Static fields
     // are kept, so after the first walk to a group this costs a descent.
@@ -1219,7 +1219,7 @@ const bitboard* pack_zone(const World& world) {
                     our_damage += output(a);
                 }
             const bool hurt = cambc::self().health() < 0.5f * cambc::self().max_health()
-                          || static_cast<int>(cambc::self().gem_count()) >= params::brake_bag;
+                          || bag_at_stake(world) >= params::brake_bag;
             // A pack in our half has come to fight there.
             const bool home = own_ground(world, here);
             const float healthy = home ? params::home_retreat_ratio : params::retreat_ratio;
@@ -1474,7 +1474,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     // Whenever the capture's gold then buys an emblem, bag and all: we come back out stronger and
     // at full health, and bank the bag on a later trip.
     if (!wins && lands - payout <= 1 && world.me().facts().passive != Passive::remote_shop
-        && rounds_left(world) > endgame_shop_rounds) {
+        && rounds_left(world) > endgame_shop_rounds && !closing(world)) {
         int sharers = 0;
         for (const auto& a : world.allies)
             sharers += a.alive && (a.is_self || (a.visible && world.map().groups[g].tiles().is_set(a.pos)));
@@ -1680,7 +1680,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         memory.staged_since = -1;
         memory.claim = g;
         memory.crew = false;
-        pathing.step_towards(G.tiles(), nullptr, dist(here, G.centre) + max_detour);
+        pathing.step_towards_funded(G.tiles(), end_reserve);
         return true;
     }
     memory.siege = true;
@@ -1751,15 +1751,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     }
     if (goals.is_empty()) goals = square(m, siege_stage_radius) & map.standable & ~G.threat();
     if (!goals.is_set(here)) {
-        const Field* field = nullptr;
-        if (fuel_ok(search_cost_estimate(d + max_detour) + end_reserve))
-            pathing.step_towards(goals, nullptr, d + max_detour);
-        else if (d > siege_stage_radius && (field = pathing.approach(g, siege_stage_radius, end_reserve)))
-            pathing.step_towards(*field);
-        else {
-            note_shortcut("crow-flies-siege");
-            pathing.step_closer(m);
-        }
+        pathing.step_towards_funded(goals, end_reserve);
         if (engaged && !low) attack_camp(world, [&](int h) { return h == g; });
         if (engaged) cast_at_camp(world, g);
         if (engaged && !low) reset_and_attack_camp(world, g);
@@ -1774,10 +1766,11 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     return true;
 }
 
-// A caster stepped out of the Monolith's reach goes home to heal before it is needed again.
+// Heal between siege attacks, but let capture_recall time a required capture holder's departure.
 bool siege_heal_trip(const World& world, const Memory& memory, Safety& safety) {
     const auto& me = cambc::self();
-    return memory.siege && me.health() < params::siege_heal_fraction * me.max_health() && !safety.threatened(me.position());
+    return memory.siege && me.health() < params::siege_heal_fraction * me.max_health() && !safety.threatened(me.position())
+           && !holding_capture(world);
 }
 
 void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {

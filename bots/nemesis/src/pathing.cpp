@@ -441,6 +441,39 @@ bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max
     return false;
 }
 
+bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor) {
+    const auto round = cambc::round_number();
+    if (world_.round != round) return false;
+    if (!cambc::self().can_move() || goals.is_set(my_pos())) return false;
+    const auto fixed = search_cost_estimate(0) + small_cost_estimate;
+    const auto chunks = search_chunks();
+    for (int attempt = 0; attempt < 3; ++attempt) {
+        const auto remaining = fuel();
+        if (remaining < fuel_floor || remaining - fuel_floor < fixed + chunks) {
+            note_shortcut("siege-route-fuel");
+            return false;
+        }
+        // A shortest simple path cannot exceed the map's tile count. Budget every search at
+        // its actual cap, including hidden-blocker retries, and never substitute other goals.
+        const int cap = static_cast<int>(std::min<std::uint64_t>(
+            static_cast<std::uint64_t>(map().width) * map().height,
+            (remaining - fuel_floor - fixed) / chunks));
+        if (cambc::round_number() != round) return false;
+        const auto r = route(goals, nullptr, cap);
+        if (cambc::round_number() != round) return false;
+        bool bumped = false;
+        for (int i = 0; i < r.count; ++i) {
+            if (cambc::round_number() != round) return false;
+            const auto before_move = fuel();
+            if (before_move < fuel_floor || before_move - fuel_floor < last_reserve) return false;
+            if (try_move(r.first_steps[i])) return true;
+            bumped |= bumped_.is_set(r.first_steps[i]);
+        }
+        if (!bumped) return false;
+    }
+    return false;
+}
+
 bool Pathing::step_towards(const Field& field, const bitboard* avoid, int max_detour) {
     const int here = field.at(my_pos());
     if (here == 0 || !cambc::self().can_move()) return false;
