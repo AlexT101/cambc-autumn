@@ -14,8 +14,7 @@
 namespace aph {
 
 // Derived static parts are built on first use: all at once costs too much fuel on large maps.
-// WASM loops cost ~10 fuel per iteration (sorting 120 pairs ~45k, an unordered_map ~70k); host
-// bitboard and field calls ~30-350 each. Prefer host operations; avoid sorting and hashing.
+// WASM loops, sorting and hashing are costly; host bitboard and field calls are cheap.
 
 struct StaticMap;
 
@@ -226,7 +225,7 @@ struct ChampionBelief {
 
     // Abilities: the earliest round each slot could be cast. Exact while visible (read from the
     // engine); through fog, projected with the cooldown rule assuming no unseen cast, so the real
-    // round can be later, never earlier, except that Vendetta resets hers by killing anything.
+    // round can be later, never earlier, except that a Vendetta kill readies both.
     std::array<int, 2> ready_round{0, 0};
     std::array<int, 2> last_cast_round{-1, -1}; // inferred from the cooldown jumping up
 
@@ -311,7 +310,6 @@ public:
     void observe();
     // After our actions: note a group we cleared standing on it, so held from this round.
     void note_turn_end();
-    // Generous: 0.5-0.75k per champion measured.
     std::uint64_t observe_cost_estimate() const { return 1000 * (allies.size() + enemies.size()); }
 
     // Merge a teammate's sighting (from comms), with health as a share of max; ignored if not

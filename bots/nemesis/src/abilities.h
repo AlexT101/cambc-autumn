@@ -13,7 +13,7 @@ bool cast_at_enemies(const World& world, bool keep_walk = false, const ChampionB
 
 // A damage or stun cast on the group being farmed (-1: the group of a camp in attack range),
 // held while enemies are near. Call only when not walking this turn.
-// `attackers_only`: spells only on members that deal damage, which basic attacks leave to them.
+// `attackers_only`: target only members with Strength.
 bool cast_at_camp(const World& world, int group, bool attackers_only = false);
 
 // A visible enemy tributing a bag that wins them the game.

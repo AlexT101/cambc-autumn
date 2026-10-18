@@ -52,7 +52,7 @@ struct Side {
         std::array<Fighter, max_fighters> fighters;
     };
     int count = 0;
-    int alive = 0; // members with health above 0: none fall back above it
+    int alive = 0; // members with health above 0; the fallen stay down
     int turn = 0; // own turns taken
     int self = -1; // our own fighter
     int stunned = 0; // members that lose their next turn
@@ -217,7 +217,7 @@ float act(Side& self, Side& other) {
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does.
 // `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
-// {-1, -1} if the fuel left fell below `fuel_floor` first: long fights cost up to ~30k.
+// {-1, -1} if the fuel left fell below `fuel_floor` first.
 std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = 24,
                              std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0) {
     prepare(us);

@@ -24,12 +24,9 @@ constexpr float min_camp_value = 50;
 constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
 constexpr int hold_range = 6;       // camp casts wait while a visible enemy is this close
 constexpr int camp_attack_range = 3;
-// Measured on ten maps: up to ~10k with no enemy in sight, ~12.6k with one in reach and ~18.7k
-// with four; mean ~1.5k.
 std::uint64_t enemy_cast_cost(int visible, int unseen) {
     return 12000 + 2500 * static_cast<std::uint64_t>(visible) + 1000 * static_cast<std::uint64_t>(unseen);
 }
-// Likewise: up to ~1k plus ~0.5k a member, and up to ~6.6k more for a ground cast.
 std::uint64_t camp_cast_cost(std::size_t members, bool ground) { return 2000 + 800 * members + (ground ? 8000 : 0); }
 
 cambc::champion live(const ChampionBelief& b) { return cambc::detail::handle_access::make_champion(b.handle); }
@@ -141,7 +138,8 @@ void draw_alive_members(const World& world, int g, bitboard& out) {
 }
 
 // Ground centres to skip: their 3x3 would hit a member of a sleeping group, which wakes whole,
-// with a monster near us; or a monolith's group. In a scratch board valid until the next call.
+// with a monster near us, or of a sleeping Monolith group other than the siege target. In a
+// scratch board valid until the next call.
 const bitboard& wake_risk(const World& world, vec2 here, int reach) {
     const auto& groups = world.map().groups;
     static bitboard risk{cambc::uninitialized};
@@ -158,8 +156,7 @@ const bitboard& wake_risk(const World& world, vec2 here, int reach) {
     return risk;
 }
 
-// Centres within `range` of `here`, off `skip`. Each target adds to the 9 centres around it, in
-// target order, rather than every centre scanning every target.
+// Centres within `range` of `here`, off `skip`.
 Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& targets, vec2 here, int range,
                  const bitboard& skip) {
     constexpr int max_range = 5; // ability ranges are 4
@@ -322,7 +319,6 @@ Cast camp_cast(const World& world, int group, bool attackers_only) {
     auto& me = cambc::self();
     if (!me.can_cast()) return {};
     const auto& f = world.me().facts();
-    // Varg, Willow, Vesper, Vendetta and Issac have nothing to cast here, and others often nothing ready.
     const std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};
     if (!ready[0] && !ready[1]) return {};
     const bool stuns = (ready[0] && f.abilities[0].stuns) || (ready[1] && f.abilities[1].stuns);

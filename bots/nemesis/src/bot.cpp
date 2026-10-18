@@ -1,8 +1,8 @@
-// Sparring bot built on rival (after the top ladder teams): crews on camps, gold-only camps, team
-// sieges of Monoliths and big shared groups, capture recalls that also go shopping, banking every
-// bag once the race is close, and altar locks. Fights are taken whatever the numbers, except
-// against a pack in our own half. Champions never stand under camps they cannot outlast, wait at
-// most a few rounds for a camp to return, and stun any enemy tribute that would win the game.
+// Crews on camps, gold-only camps, team sieges of Monoliths and big shared groups, capture recalls
+// that also go shopping, banking every bag once the race is close, and altar locks. Fights are
+// taken whatever the numbers, except when hurt or carrying, or against a pack in our own half.
+// Champions never stand under camps they cannot outlast, wait at most a few rounds for a camp to
+// return, and stun any enemy tribute that would win the game.
 #include "bot.h"
 #include <algorithm>
 #include <array>
@@ -30,8 +30,8 @@ constexpr int endgame_shop_rounds = 100; // no shop trips this late: spent gold 
 constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
 
 // The turn's branch, for debug_fights: Chase, Attack, Retreat, Farm, Bank, Wait at an altar,
-// Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, holding (P),
-// Delaying a stun, capture recall (Q).
+// Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, Shopping trip,
+// holding (P), Delaying a stun, capture recall (Q).
 char decision = '-';
 
 // Read by tools/replay/fight_calibration.py.
@@ -272,7 +272,6 @@ bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
 
 int tribute_turns(int gems) { return std::max(1, (gems + 9) / 10); }
 
-// Carried gems score nothing after the round limit.
 int rounds_left(const World& world) { return static_cast<int>(cambc::constants::max_rounds) - world.round; }
 
 // Gems still to capture, beyond the bag and the tributes allies in sight are channelling, before
@@ -444,9 +443,7 @@ float min_camp_damage(const CampGroup& group, const CampBelief& belief, float st
     return damage;
 }
 
-// Beliefs about most groups do not change between turns, so neither does this. Farm asks for up
-// to three strengths per group (ours alone, with a crew, with a partner); beliefs change only
-// between turns, so each group's are compared with the kept ones once a round.
+// Kept per group and strength while the group's belief is unchanged.
 float min_camp_damage(const World& world, int g, float strength, float* rounds) {
     const auto& group = world.map().groups[g];
     const auto& belief = world.camps[g];
@@ -487,8 +484,8 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds) 
     return c.damage[i];
 }
 
-// Ladder teams farm their own half: enemy ground is worth far less. Static: kept per group,
-// since farm reads every group's each turn.
+// A group's weight by its side of the map: 1 in our half, falling towards the enemy spawn. Kept
+// per group.
 float home_ground(const StaticMap& map, int g) {
     static std::vector<float> cache; // -1 until read
     if (cache.size() != map.groups.size()) cache.assign(map.groups.size(), -1.0f);
@@ -569,9 +566,8 @@ float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, 
     return std::max(attackers / spells, reachable / basic) + rest / (basic + spells);
 }
 
-// Gems one gold is worth to us: a shard (30 gold) adds its stat's growth, which speeds the clears
-// of the gems still to farm before either team reaches the win; `clear_share` is the part of our
-// time spent clearing.
+// Gems one gold is worth to us: a shard (30 gold) adds its stat's growth, which speeds our share
+// of the clears of the gems still to farm before either team reaches the win.
 float gold_worth(const World& world, int short_by) {
     const auto& self = world.me();
     const auto& f = self.facts();
@@ -700,8 +696,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     if (holding_capture(world)) return true;
     // Carrying, whatever made us retreat stays out of bounds: we route around it or wait outside
     // it rather than step in to be sent back out. Empty-handed, a step in risks nothing (the zone
-    // starts beyond any strike's reach) and keeps us at hand for when the pack moves on, while
-    // waiting or farming elsewhere cost about 10 games in 240.
+    // starts beyond any strike's reach) and keeps us at hand for when the pack moves on.
     const auto* zone = bag > 0 ? pack_zone(world) : nullptr;
 
     // Short of fuel, walk on towards the last choice rather than run out mid-turn. Static fields
@@ -727,7 +722,6 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
     const bool on_spawn = map.ally_spawn.is_set(here);
     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.
     const auto walk_reserve = [&](int g) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(g)); };
-    // The loop below measured 0.5-1.5k a group.
     const bool steps_free = pathing.centres_ready() || (on_spawn && map.spawn_steps_drafted());
     const auto evaluation = (steps_free ? 0 : field_cost_estimate()) + 1000 * groups.size();
     if (!fuel_ok(evaluation + walk_reserve(memory.farm_group) + params::end_reserve)) {
@@ -879,8 +873,8 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
             help_group = g, help_steps = steps;
         const bool claimed = taken(g);
         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
-        // tribute. Counting those without a bag favours camps near altars, which lost games; but a
-        // capture that wins shares that walk with no later one. Gems past the win are worth nothing.
+        // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
+        // it. Gems past the win are worth nothing.
         const bool wins = group.gems >= short_by;
         const Field* to_bank = to_altar ? to_altar : wins ? &pathing.to_any_altar() : nullptr;
         // A recall only goes home: the way out from an altar is walked.
@@ -893,10 +887,10 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
         const int bank = back == unreachable ? 0 : back + chained_tribute;
         const int cycle_bank = back == unreachable ? 0 : back + tribute_turns(group.gems);
         const int trip = steps + wait - bank_now + bank;
-        // Staying with last turn's choice keeps near ties from turning us back and forth. The spawn
-        // fields come with the map's warm-up, which ends before the centres'.
+        // The spawn fields home_ground reads are warm once the centres are.
         if (known.home < 0 && pathing.centres_ready()) known.home = home_ground(map, g);
         float weight = pathing.centres_ready() ? known.home : 1.0f;
+        // Staying with last turn's choice keeps near ties from turning us back and forth.
         if (g == memory.farm_group) weight *= stickiness;
         const float gems = weight * static_cast<float>(std::min(group.gems, short_by));
         const float gold = weight * per_gold * static_cast<float>(group.gold);
@@ -1156,12 +1150,10 @@ bool own_ground(const World& world, vec2 p) {
     return us == unreachable || them == unreachable || us <= them;
 }
 
-// Ladder teams leave when a group they cannot match comes into view, not at contact: enemies
-// seen within `pack_radius` (by us, or by a teammate last round) against us and the allies near
-// us, health times damage a side; hurt, we leave at less.
-// The tiles where that holds against us and the allies near us now: within `pack_radius` of every
-// member of an enemy subset that outmatches us. Retreat starts inside it, and every advance (farm,
-// bank, chase) keeps out of it, so what made us retreat cannot pull us straight back in.
+// The tiles within `pack_radius` of every member of an enemy subset (seen this round or last) that
+// outmatches us and the allies near us, by health times damage a side; hurt or carrying, at less.
+// Retreat starts inside it, and every advance (farm, bank, chase) keeps out of it, so what made us
+// retreat cannot pull us straight back in.
 const bitboard* pack_zone(const World& world) {
     static int round = -1;
     static bitboard zone;
@@ -1190,7 +1182,7 @@ const bitboard* pack_zone(const World& world) {
                 }
             const bool hurt = cambc::self().health() < 0.5f * cambc::self().max_health()
                           || static_cast<int>(cambc::self().gem_count()) >= params::brake_bag;
-            // A pack in our half has come to fight there: met piecemeal it won most fights.
+            // A pack in our half has come to fight there.
             const bool home = params::home_retreat && own_ground(world, here);
             const float healthy = home ? params::home_retreat_ratio : params::retreat_ratio;
             const float ours = (hurt ? std::min(healthy, params::hurt_retreat_ratio) : healthy) * our_health * our_damage;
@@ -1424,8 +1416,8 @@ bool recall_outruns(const World& world) {
     return true;
 }
 
-// Ladder teams recall from a capture they hold, timed to land home the turn it pays: the gems
-// skip the walk when an altar is nearer by way of home, and the stop heals and shops.
+// Recall from a capture we hold, timed to land home the turn it pays: the gems skip the walk when
+// an altar is nearer by way of home, and the stop heals and shops.
 bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     auto& me = cambc::self();
     if (!holding_capture(world)) return false;
@@ -1441,8 +1433,8 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     const int walk = to_altar.at(here), from_spawn = to_altar.at(world.map().ally_spawn_centre);
     if (walk == unreachable || from_spawn == unreachable) return false;
     const bool wins = capture_share(world, g) >= gems_short(world);
-    // The top ladder team recalls as a capture pays whenever its gold then buys an emblem, bag
-    // and all: it comes back out stronger and at full health, and banks the bag on a later trip.
+    // Whenever the capture's gold then buys an emblem, bag and all: we come back out stronger and
+    // at full health, and bank the bag on a later trip.
     if (params::shop_recall && !wins && lands - payout <= 1 && world.me().facts().passive != Passive::remote_shop
         && rounds_left(world) > endgame_shop_rounds) {
         int sharers = 0;
@@ -1455,9 +1447,8 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     return lands - payout + from_spawn < walk + (hurt ? params::recall_heal_bonus : 0);
 }
 
-// With an empty bag, a full emblem's gold goes home, riding a recall unless walking is quicker:
-// the bot otherwise carries 150+ gold for long stretches between forced visits, and the stop
-// also heals.
+// With an empty bag, a full emblem's gold goes home to shop, riding a recall unless walking is
+// quicker.
 bool wants_shop(const World& world, Safety& safety, const Memory& memory) {
     auto& me = cambc::self();
     if (me.gem_count() > 0 || me.gold_count() < params::shop_trip_gold || memory.damage > 0
@@ -1525,9 +1516,7 @@ bool can_stop_winning_tribute(const World& world) {
     return false;
 }
 
-// Monoliths: 20000 health and 200 Strength, worth 200 gems and 300 gold in one capture. Top teams
-// farm until their shards make the team strong enough, then go together: melee adjacent, ranged
-// at 3, the hurt stepping out to 4 where they still cast; Monoliths never regenerate.
+// Every gem source on the map is a Monolith.
 bool monolith_only(const StaticMap& map) {
     static int only = -1;
     if (only < 0) {
@@ -1570,12 +1559,11 @@ SiegeLoad siege_load(const World& world, int g) {
     return load;
 }
 
-// A group too big for one champion or a crew: a Monolith, or a shared block like stampede's elk
-// and gem clusters, worth a large share of the win.
+// A group other than a Monolith too big for one champion or a crew, like stampede's shared block
+// of elk and gem clusters.
 bool big_group(const CampGroup& G) { return !G.has_monolith && G.gems >= params::big_gems; }
 
-// Nearest our spawn first; one the enemy holds or that returns too late is skipped. Top teams wait
-// at a big group through its respawn.
+// The Monolith or big group to siege; one the enemy holds or that returns too late is skipped.
 int siege_candidate(const World& world, const Memory& memory) {
     const auto& map = world.map();
     static std::vector<int> sieged; // the Monoliths and big groups, in group order
@@ -1623,6 +1611,8 @@ bool siege_ready(const World& world, int g, bool committed) {
     return rounds <= limit * slack && taken <= params::siege_pool_share * pool * slack;
 }
 
+// Once the team is strong enough it goes together: melee adjacent, ranged at their range, the hurt
+// stepping out to 4, where casters still cast.
 bool siege(const World& world, Pathing& pathing, Memory& memory) {
     auto& me = cambc::self();
     const auto& map = world.map();
@@ -1698,7 +1688,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         if (range > 1) inner.draw_chebyshev(G.members[i].pos, static_cast<float>(range - 1));
     }
     hit = std::max(hit, siege_strongest(G)) * camp_hit_factor();
-    // A tank leaves while it can still walk out of reach: a hit a step until 4 away.
+    // Leave while we can still walk out of reach: a hit a step until 4 away.
     const int role = f.ranged ? range : 1;
     const bool low = me.health() < hit * static_cast<float>(camp_range + 2 - role);
 

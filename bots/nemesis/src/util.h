@@ -36,7 +36,8 @@ inline void note_shortcut(const char* what) {
     });
 }
 
-// The Monolith group the team is besieging this turn, or -1: every camp action skips other Monoliths.
+// The Monolith or big group the team is besieging this turn, or -1: camp actions skip every other
+// Monolith.
 inline int& siege_group() {
     static int g = -1;
     return g;

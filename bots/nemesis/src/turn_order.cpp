@@ -87,8 +87,8 @@ const ChampionBelief& live_self(const World& world) {
 
 bool we_start(const World& world, int round) { return world.map().team_a == (round % 2 == 1); }
 
-// When its team starts next round, its first champion acts before all of ours. Its priority for
-// next round is final once it has acted, or if its team never changes priority.
+// We can act before `e` next round unless its team starts and it is their first champion. Its
+// priority for next round is final once it has acted, or if its team never changes priority.
 bool can_act_before(const World& world, const ChampionBelief& e) {
     if (we_start(world, world.round + 1) || (world.enemy_priorities_change && !e.acted)) return true;
     for (const auto& o : world.enemies)

@@ -35,7 +35,7 @@ public:
     bool approach_ready(int group, int range); // usable from here without a search
     std::uint64_t approach_cost(int group, int range); // 0 when ready
     int approach_steps(int group, int range);
-    // Walking steps from the centre of a group worth farming (gems, no monolith): by symmetry,
+    // Walking steps from the centre of a group worth farming (a reward, no Monolith): by symmetry,
     // from anywhere to it. Null until warmed up; centres_ready() once all are.
     const Field* from_centre(int group);
     bool centres_ready() const { return centres_ready_; }
@@ -103,7 +103,7 @@ private:
         bitboard camps; // the live camp tiles it walks around
     };
     std::unique_ptr<Approach>& approach_slot(int group, int range);
-    // approach_ready's latest answer: farm asks it once a group with nothing changed between.
+    // approach_ready's latest answer, reused for the same slot, round and tile.
     struct ReadyCheck {
         const Approach* slot = nullptr;
         int round = -1;

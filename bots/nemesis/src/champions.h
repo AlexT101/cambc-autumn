@@ -38,7 +38,7 @@ enum class Passive : std::uint8_t {
     linked_pair,       // Cassi and Issac: if either dies, both die
 };
 
-inline constexpr float retaliation_share = 0.2f; // of Ren's Focus, per hit she takes
+inline constexpr float retaliation_share = 0.2f; // of Ren's Focus, per hit taken
 
 struct Stat {
     float base, growth; // growth is per shard
@@ -77,7 +77,6 @@ struct ChampionFacts {
     std::array<AbilityFacts, 2> abilities;
 
     constexpr int attack_range() const { return ranged ? 3 : 1; }
-    // Melee champions walk and attack independently; for ranged ones either spends both.
     constexpr bool walk_and_attack_independent() const { return !ranged; }
 
     constexpr bool has(AbilityKind kind) const {

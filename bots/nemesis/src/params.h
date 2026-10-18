@@ -5,7 +5,7 @@
 
 namespace aph::params {
 
-// Random picks keep the bot tested with and against every champion; forced-draft variants turn it off.
+// Pick in random order instead of by the draft orders below.
 inline constexpr bool random_draft = false;
 
 inline constexpr cambc::champion_draft draft_preference[] = {
@@ -28,8 +28,8 @@ inline constexpr cambc::champion_draft draft_5[] = {
 inline constexpr std::uint64_t end_reserve = 10000;
 // Left after work whose cost is bounded, at the end of the turn: little runs after warm-up.
 inline constexpr std::uint64_t last_reserve = 2000;
-// Layers a capped centre field may run past the farther spawn's steps to it. Measured on 194
-// maps: 15% run deeper, and the cut field is redone at twice the cap.
+// Layers a capped centre field may run past the farther spawn's steps to it; a field cut short
+// is redone at twice the cap.
 inline constexpr int centre_depth_margin = 24;
 // A walk not prepared last turn is searched for first, leaving at least this for the turn.
 inline constexpr std::uint64_t walk_first_floor = 40000;
@@ -60,14 +60,12 @@ inline constexpr unsigned shop_trip_gold = 150;
 inline constexpr bool shop_recall = true;
 // Champion vision: enemies farther off are seen only through wards and are rarely caught.
 inline constexpr int chase_radius = 8;
-// Fights last about 5 rounds (local engagements: median 4-6), so allies more than a few steps
-// outside vision of one arrive after it.
+// An ally this near with no claim of its own can partner on a group too costly for us alone.
 inline constexpr int rally_radius = 12;
-// Allies within this many steps of a damaging group a teammate attacks join it: wider pulls lost.
+// Help a struggling teammate clear its damaging group within this many steps.
 inline constexpr int help_radius = 8;
 
-// Chain another capture onto a bag only below this. Top ladder teams bank bags of 66 (median) and
-// our sparring partners seldom hunt carriers, so a bag can grow past one capture's worth.
+// Chain another capture onto a bag (Cassi's and Issac's together) only below this.
 inline constexpr int chain_bag_limit = 80;
 // Closing (bot.cpp closing): bank when our score and the team's bags come within close_margin of
 // the win, or the enemy's score within enemy_close.
@@ -79,29 +77,27 @@ inline constexpr bool lock_tributers = true;
 inline constexpr bool stop_winning_tribute = true;
 
 // Early retreat (outmatched): enemies this near against allies this near; leave when their health
-// times damage beats ours by this ratio. Top teams ignore the numbers unless below half health or
-// carrying brake_bag gems, so the healthy, light ratio never triggers.
+// times damage beats ours by this ratio. Above half health and carrying under brake_bag gems, the
+// ratio is too high to trigger.
 inline constexpr int pack_radius = 7;
 inline constexpr int pack_ally_radius = 5;
 inline constexpr float retreat_ratio = 100.0f;
 inline constexpr float hurt_retreat_ratio = 2.5f;
 inline constexpr int brake_bag = 30;
-// In our own half, give way to packs at this ratio: an enemy pack there has come to fight, and met
-// piecemeal it won most fights (small maps against aphelios: 74% -> 82% of games).
+// In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
 inline constexpr bool home_retreat = true;
 inline constexpr float home_retreat_ratio = 2.0f;
 // A capture recall still pays when hurt if it costs at most this many more rounds to an altar.
 inline constexpr int recall_heal_bonus = 6;
-// Ladder teams wait at a camp about to return (2-3% of their time), never for long. Waits of 6-10
-// rounds lost 4-5% of games to going elsewhere (2026-10-17, 712 games against rival).
+// Most rounds to wait at a camp for it to return.
 inline constexpr int max_wait = 5;
-// Share of champion-rounds spent attacking camps (top ladder teams: about 25%).
+// Share of champion-rounds spent attacking camps: the part of the game a shard's speed-up counts for.
 inline constexpr float clear_share = 0.15f;
 
 // Monolith sieges (bot.cpp siege): the team goes once its output clears the Monolith within this
-// many rounds (siege_rounds_only on maps whose only gems are Monoliths; elsewhere none, as top teams
-// leave the monolith map's alone) and the hits, by this share after stuns and spells from out of
-// reach, cost at most this share of its health; a siege under way keeps going within the slack.
+// many rounds (siege_rounds_only on maps whose only gems are Monoliths; 0 elsewhere: never) and
+// the hits, by this share after stuns and spells from out of reach, cost at most this share of
+// the team's health; a siege under way keeps going within the slack.
 inline constexpr int siege_rounds = 0;
 inline constexpr int siege_rounds_only = 60;
 inline constexpr float siege_hit_share = 0.75f;

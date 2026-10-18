@@ -3,13 +3,8 @@
 // turn from host bitboard and field calls.
 //
 // Unseen enemies are weighted by the uniform chance that they stand within reach of a tile:
-// |square(tile, reach) & possible| / |possible|. Over 1200 ladder games (per-champion vision,
-// rounds since the attacker was last seen): visible enemies dealt 92% of champion hits; within
-// reach of the uniformly weighted possible set, being in reach ran at 0.6-0.9x that chance and
-// a hit at 0.15-0.25x; the hit rate inside the dilated set fell from 5% a round one round after
-// losing sight to 1% after four and 0.3% after eight, as the set grows. So the weight shrinks
-// with staleness by itself, and an enemy whose best weight is below `credible_weight` is left
-// out. Typical cost: 1-5k fuel a turn, ~1.5-3k more per unseen credible enemy.
+// |square(tile, reach) & possible| / |possible|. The weight shrinks with staleness as the set
+// grows, and an enemy whose best weight is below `credible_weight` is left out.
 #pragma once
 #include <cambc.h>
 #include <array>
@@ -25,13 +20,12 @@ class World;
 struct ChampionBelief;
 
 namespace safety_params {
-// Ladder: a visible enemy within reach hit that champion in 23-27% of rounds.
+// Chance a round that an enemy within reach hits us.
 inline constexpr float hit_given_reach = 0.25f;
 // A recall is kept while the chance of damage before our next turn is below this: a visible
 // enemy in reach is enough on its own; an unseen one needs a weight near 1.
 inline constexpr float recall_risk = 0.2f;
-// Unseen enemies with a lower best weight are left out entirely. From 0.5 being in reach ran at
-// 33% or more and a hit at 4.6% a round, six times the rate outside the dilated set.
+// Unseen enemies with a lower best weight are left out entirely.
 inline constexpr float credible_weight = 0.5f;
 // An awake camp we have not watched for 2 rounds may have fallen asleep.
 inline constexpr float unknown_camp_weight = 0.5f;
@@ -77,10 +71,9 @@ struct Threat {
 };
 
 // A fight with sides alternating turns, each side's damage focused on the other's weakest member
-// and spilling over, so the fallen stop dealing damage (Cassi and Issac fall together). Pooled
-// health hid this: we died in 17% of won fights where we were the weakest, 4-7% otherwise.
+// and spilling over, so the fallen stop dealing damage (Cassi and Issac fall together).
 // Stuns skip the strongest opponent's turn; a heal goes to the weakest hurt ally other than the
-// caster, a shield to its caster until it expires; Ren hits back while she is the one hit.
+// caster, a shield to its caster until it expires; Ren hits back while Ren is the one hit.
 // Ignores items, positioning and the order within a side.
 struct Trade {
     bool lost = false;          // they win when they strike first
@@ -129,13 +122,10 @@ public:
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
     Trade fight(vec2 p);
-    // Enough for most fights: a simulation grows with the fighters and the turns played (1v1
-    // ~4k, 3v3 ~12k on average, up to ~30k to the horizon) and this turn's costliest one; plus
-    // build_cost_estimate().
+    // Enough for most fights, by the champions in sight and this turn's costliest simulation;
+    // plus build_cost_estimate().
     std::uint64_t fight_cost_estimate();
-    // At most what building the threats costs, 0 once built: measured up to ~1.3k, ~0.7k more per
-    // visible enemy and per unseen credible one a capped search, up to ~2.6k on 41x30 to ~4.6k on
-    // 100x100.
+    // At most what building the threats costs, 0 once built.
     std::uint64_t build_cost_estimate();
     // Us alone against one enemy.
     Trade duel(int enemy);
@@ -144,8 +134,7 @@ public:
     int turns_to_kill_idle(vec2 p, int horizon);
     // Could the credible threats and camps kill us at p before our next turn?
     bool lethal(vec2 p);
-    // Off spawn, and below the recall line, or somewhere lethal in a fight we lose. Retreating
-    // from every lost fight cost tempo in testing (6-7 of 18 against an early baseline) for few deaths saved.
+    // Off spawn, and below the recall line, or somewhere lethal in a fight we lose.
     bool should_retreat();
 
     // Drop everything cached, after something this turn changed the fight: a kill, a stun or a

@@ -22,8 +22,8 @@ struct DraftPlan {
     std::uint8_t attack_groups = 0; // leading groups whose members' attack tiles are in
     std::uint16_t field_layers = 0; // the deepest field computed
     // Per group, group_bytes: walking steps to its centre from our spawn, from theirs and from the
-    // tribute tiles of every altar (u16 each), then 2 bits per ally spawn tile: its steps over
-    // ours. Then per group up to attack_groups, per member, its attack tiles at each of
+    // tribute tiles of every altar (u16 each), then 2 bits per ally spawn tile: its steps beyond
+    // the whole spawn's. Then per group up to attack_groups, per member, its attack tiles at each of
     // attack_ranges: bits over the square around it, by rows from the bottom left.
     std::array<std::uint8_t, 1010> data{};
 

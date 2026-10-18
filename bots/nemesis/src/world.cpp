@@ -1129,8 +1129,8 @@ bool World::grow(ChampionBelief& b, int turns, const bitboard& land) {
     const bool dasher = b.facts().has_dash();
     const bool undashed_read = dasher && b.turns_since_fixed <= ability_cooldown;
     const bool undashed_kept = dasher && b.turns_since_fixed < ability_cooldown;
-    // A recall started on any turn after the fix lands at the start of the turn recall turn ends
-    // later, which is a full turn: from turn recall + 1 on, add the spawn before growing.
+    // A recall started on any turn after the fix lands at the start of the turn after its last
+    // turn end, which is a full turn: from turn recall_time + 1 on, add the spawn before growing.
     if (b.turns_since_fixed > (b.fast_recall ? home_recall_time : cambc::constants::recall_time)) {
         b.possible |= s.enemy_spawn;
         if (undashed_read) b.undashed |= s.enemy_spawn;
