@@ -1,0 +1,18 @@
+| team | locks/g | cancelled an enemy tribute | gems in cancelled channels | placed in own/mid/enemy half | placed by r150 | destroyed | mean life (rounds) |
+|---|---|---|---|---|---|---|---|
+| Fish | 0.00 | 0% | 0 | 0/0/0 | 0% | 0% | 0 |
+| Nyxius | 0.00 | 0% | 0 | 0/0/0 | 0% | 0% | 0 |
+| Mite | 3.08 | 2% | 3152 | 302/655/90 | 19% | 53% | 197 |
+| procless | 0.00 | 0% | 0 | 0/0/0 | 0% | 0% | 0 |
+| nt4 | 2.40 | 7% | 510 | 5/61/6 | 19% | 69% | 249 |
+| SBC | 0.00 | 0% | 0 | 0/0/0 | 0% | 0% | 0 |
+| Univ | 3.78 | 2% | 1394 | 212/438/98 | 25% | 58% | 185 |
+| PTN | 2.53 | 1% | 80 | 106/169/1 | 17% | 50% | 148 |
+- Shawn 20261016-080003-Shawn-vs-Mite-508d7cff/2-eight r190 denied 22; 20261016-084005-Intercontinental-Fish-vs-Shawn-d6bbf563/2-packs r328 denied 44; 20261016-093004-Shawn-vs-Sneaky-Bush-Campers-0662a563/5-pilgrimage r595 denied 22; 20261016-094003-Shawn-vs-Intercontinental-Fish-e2c6bd08/1-eight r335 denied 72
+- Mite 20261016-080003-Shawn-vs-Mite-508d7cff/2-eight r853 denied 600; 20261016-095003-Mite-vs-Sneaky-Bush-Campers-53530061/4-collision r165 denied 22; 20261016-101001-Shawn-vs-Mite-f97962de/5-elkring r560 denied 108; 20261016-102209-Mite-vs-VeryGood-26229c79/4-monolith r385 denied 132
+- Univ 20261016-090004-Nyxius-vs-Univardisty-of-Shingtonw-c217c986/1-eight r272 denied 22; 20261016-090004-Nyxius-vs-Univardisty-of-Shingtonw-c217c986/1-eight r314 denied 22; 20261016-092156-Univardisty-of-Shingtonw-vs-VeryGood-1ab69855/1-eight r478 denied 22; 20261016-095003-Intercontinental-Fish-vs-Univardisty-of-Shingtonw-67c8e148/5-contest r1536 denied 200
+- hello 20261016-102209-hello-vs-Intercontinental-Fish-5c4091e6/1-packs r217 denied 48; 20261016-104003-Mite-vs-hello-10018ad2/3-corners r333 denied 36; 20261016-104003-Mite-vs-hello-10018ad2/3-corners r384 denied 22; 20261016-104003-Mite-vs-hello-10018ad2/3-corners r560 denied 36
+- ❤️Quantom❤️ 20261016-124005-Quantom-vs-Sneaky-Bush-Campers-347dafce/3-rushbait_v2 r439 denied 36
+- AlphaSlop 20261017-024004-Mite-vs-AlphaSlop-ada67644/1-collision r122 denied 44; 20261017-032005-AlphaSlop-vs-Intercontinental-Fish-a8646286/3-contest r1141 denied 400
+- nt4 20261017-043003-new-team-4-vs-Intercontinental-Fish-763d2cb6/3-contest r1131 denied 200; 20261017-054004-Intercontinental-Fish-vs-new-team-4-0c21865d/5-swirl r274 denied 88; 20261016-143005-PTN-Hyperion-vs-new-team-4-23369eb1/5-ambush r620 denied 120; 20261016-153003-new-team-4-vs-PTN-Hyperion-c6250798/2-corners r298 denied 80
+- PTN 20261016-114005-Nyxius-vs-PTN-Hyperion-bb461d63/4-eight r261 denied 44; 20261017-003123-procless-vs-PTN-Hyperion-aa589fa2/2-elkring r443 denied 36

@@ -1,0 +1,338 @@
+150 games, 333 deaths (+80 linked)
+ktype [('Stellar', 73), ('Ren', 57), ('Ryth', 38), ('Tavi', 37), ('Varg', 33), ('Cassi', 32), ('Issac', 21), ('Prism', 14), ('camp:$$$$EEEE(24,58)m', 5), ('Vendetta', 4), ('camp:$$$E(24,15)e', 4), ('camp:$$EE(36,5)o', 4), ('camp:EE(31,44)o', 2), ('camp:$E(19,2)o', 1), ('camp:EEEEEEGGGGGG(56,25)m', 1)]
+doing [('fighting', 203), ('farming', 79), ('homeward', 15), ('recalling', 11), ('walking', 11), ('banking', 6), ('tributing', 5), ('capturing', 3)]
+vt [('Stellar', 71), ('Varg', 60), ('Ryth', 55), ('Cassi', 53), ('Issac', 53), ('Tavi', 41)]
+half [(0, 212), (1, 73), (-1, 48)]
+7e765f3899e3d60f ambush    L r 165 Cassi   by camp:EE(31,44)o bag  0+  0 farming   EE(31,44)o         0 hp1st   40/700 camp  580 ch    0 al0 en0 | 
+7e765f3899e3d60f ambush    L r 165 Issac   by camp:EE(31,44)o bag  0+  0 farming   EEGG(43,65)e       1 hp1st  780/900 camp  240 ch    0 al0 en0 | 
+7e765f3899e3d60f ambush    L r 426 Cassi   by Vendetta       bag  0+  0 fighting                     0 hp1st  700/700 camp    0 ch  700 al1 en2 | Vendetta#8 d700 seen3@8 ally3
+7e765f3899e3d60f ambush    L r 426 Issac   by Vendetta       bag  0+  0 fighting                     0 hp1st  900/900 camp    0 ch  894 al1 en2 | Ren#9 d894 seen1@7 ally1
+7e765f3899e3d60f ambush    L r 680 Cassi   by Varg           bag  0+  0 recalling EEGG(43,65)e       1 hp1st  220/700 camp  480 ch  220 al0 en2 | Varg#6 d220 seen0@2 ally0
+7e765f3899e3d60f ambush    L r 680 Issac   by Varg           bag  0+  0 homeward                     0 hp1st  900/900 camp    0 ch    0 al0 en0 | 
+66f4ac7af2de1516 monolith  L r 241 Tavi    by Ren            bag  0+  0 fighting                     0 hp1st  610/750 camp    0 ch  610 al0 en1 | Ren#10 d610 seen11@9 ally15
+66f4ac7af2de1516 monolith  L r 263 Stellar by Ren            bag  0+  0 farming   WW(46,40)e         1 hp1st  578/900 camp  126 ch  508 al0 en1 | Ren#10 d508 seen1@6 ally15
+66f4ac7af2de1516 monolith  L r 351 Tavi    by Cassi          bag  0+  0 farming   WW(29,46)o         0 hp1st  274/750 camp  154 ch  274 al0 en1 | Cassi#7 d274 seen15@7 ally15
+75afcf7d8ca8199b contest   L r  40 Issac   by Stellar        bag  0+  0 farming   $$$(18,27)o        0 hp1st  655/900 camp    0 ch  655 al2 en2 | Ryth#8 d350 seen1@4 ally10; Cassi#6 d140 seen1@4 bush ally9; Stellar#9 d165 seen9@8 ally15
+75afcf7d8ca8199b contest   L r  47 Tavi    by Tavi           bag  0+  0 farming   $$$(27,18)o        0 hp1st  590/750 camp    0 ch  590 al2 en2 | Stellar#9 d375 seen15@7 ally15; Tavi#10 d215 seen9@9 ally15
+75afcf7d8ca8199b contest   L r 152 Issac   by Issac          bag  0+  0 fighting                     1 hp1st  900/900 camp    0 ch  900 al3 en5 | Stellar#9 d105 seen6@6 ally12; Tavi#10 d382 seen1@8 ally4; Cassi#6 d290 seen1@4 ally4; Issac#7 d123 seen2@4 ally5
+75afcf7d8ca8199b contest   L r 155 Varg    by Tavi           bag  0+  0 fighting                     1 hp1st  771/1000 camp    0 ch 1236 al2 en5 | Stellar#9 d783 seen11@8 ally11; Ren#11 d225 seen4@8 ally4; Tavi#10 d128 seen8@8 ally8; Issac#7 d40 seen9@8 ally9; Cassi#6 d60 seen10@8 ally10
+75afcf7d8ca8199b contest   L r 171 Tavi    by Tavi           bag  0+  0 fighting                     0 hp1st  605/750 camp    0 ch  605 al1 en1 | Ren#11 d20 seen12@7 ally15; Tavi#10 d585 seen14@8 ally15
+75afcf7d8ca8199b contest   L r 198 Stellar by Ren            bag  0+  0 fighting                     0 hp1st  750/750 camp    0 ch  750 al0 en2 | Stellar#9 d444 seen2@6 ally15; Ren#11 d306 seen2@6 ally7
+75afcf7d8ca8199b contest   L r 255 Ryth    by Ren            bag  0+  0 fighting                     0 hp1st  806/1500 camp    0 ch  806 al2 en4 | Ryth#8 d100 seen15@2 ally15; Tavi#10 d501 seen15@5 ally15; Stellar#9 d35 seen3@8 ally7; Ren#11 d170 seen15@6 ally15
+75afcf7d8ca8199b contest   L r 266 Cassi   by Stellar        bag  0+  0 fighting                     1 hp1st  700/700 camp    0 ch  700 al0 en5 | Ren#11 d255 seen10@7 bush ally15; Stellar#9 d296 seen11@8 bush ally15; Ryth#8 d100 seenNone@5 ally15; Issac#7 d50 seen7@9 ally7
+75afcf7d8ca8199b contest   L r 266 Issac   by Stellar        bag  0+  0 homeward                     0 hp1st   51/900 camp    0 ch    0 al2 en0 | 
+75afcf7d8ca8199b contest   L r 317 Tavi    by Ryth           bag  0+  0 fighting                     0 hp1st  264/750 camp    0 ch  264 al1 en1 | Ryth#8 d264 seen3@4 ally10
+75afcf7d8ca8199b contest   L r 359 Cassi   by Tavi           bag  0+  0 farming   $$$(22,31)e        1 hp1st  700/700 camp    0 ch  700 al3 en2 | Stellar#9 d420 seen3@8 ally3; Tavi#10 d280 seen3@6 ally5
+75afcf7d8ca8199b contest   L r 359 Issac   by Tavi           bag  0+  0 farming   $$$(22,31)e        1 hp1st  900/900 camp    0 ch    0 al3 en2 | 
+75afcf7d8ca8199b contest   L r 374 Ryth    by Stellar        bag  0+  0 fighting                     0 hp1st 1500/1500 camp    0 ch 1500 al2 en1 | Tavi#10 d501 seen9@7 ally11; Stellar#9 d999 seen8@8 ally10
+75afcf7d8ca8199b contest   L r 389 Varg    by Issac          bag  0+  0 fighting                     1 hp1st 1100/1100 camp    0 ch 1350 al0 en3 | Ren#11 d440 seen1@7 ally1; Stellar#9 d294 seen9@8 ally15; Issac#7 d386 seen8@7 ally10; Cassi#6 d230 seen4@7 ally4
+75afcf7d8ca8199b contest   L r 413 Stellar by Issac          bag  0+  0 fighting                     1 hp1st 1096/1125 camp    0 ch 1096 al0 en4 | Ren#11 d58 seen3@4 ally15; Ryth#8 d90 seen3@8 ally4; Stellar#9 d674 seen3@8 bush ally3; Issac#7 d148 seen4@8 bush ally5; Cassi#6 d126 seen8@8 ally15
+75afcf7d8ca8199b contest   L r 617 Tavi    by Ren            bag  0+  0 fighting                     -1 hp1st  650/750 camp    0 ch  650 al1 en1 | Tavi#10 d532 seen3@7 ally8; Ren#11 d118 seen4@8 ally4
+75afcf7d8ca8199b contest   L r 712 Varg    by Ren            bag  0+  0 fighting                     1 hp1st  525/1400 camp    0 ch  775 al0 en1 | Ren#11 d775 seen15@2 ally15
+75afcf7d8ca8199b contest   L r 821 Stellar by Stellar        bag  0+  0 fighting                     0 hp1st 1125/1125 camp    0 ch 1125 al3 en4 | Stellar#9 d484 seen10@8 ally10; Ryth#8 d90 seen7@7 ally10; Ren#11 d76 seen6@4 ally10; Tavi#10 d475 seen6@5 ally6
+75afcf7d8ca8199b contest   L r 824 Cassi   by Ryth           bag  0+  0 recalling                    0 hp1st  689/1056 camp    0 ch  689 al2 en1 | Cassi#6 d27 seen3@5 ally6; Stellar#9 d486 seen11@8 ally11; Ryth#8 d176 seen5@5 ally10
+75afcf7d8ca8199b contest   L r 824 Issac   by Ryth           bag  0+  0 walking                      0 hp1st 1280/1280 camp    0 ch    0 al0 en0 | 
+75afcf7d8ca8199b contest   L r 824 Tavi    by Ryth           bag  0+  0 recalling                    0 hp1st  372/750 camp    0 ch  372 al2 en1 | Ryth#8 d110 seen7@7 ally10; Ren#11 d262 seen3@6 ally8
+75afcf7d8ca8199b contest   L r 957 Tavi    by Stellar        bag  0+  0 farming   M(32,18)e          0 hp1st  106/750 camp  600 ch  106 al1 en1 | Stellar#9 d106 seen4@7 ally7
+75afcf7d8ca8199b contest   L r 959 Stellar by Stellar        bag  0+  0 recalling M(32,18)e          0 hp1st  315/1125 camp  504 ch  315 al0 en1 | Stellar#9 d315 seen9@9 ally9
+75afcf7d8ca8199b contest   L r1062 Tavi    by Stellar        bag  0+  0 homeward                     1 hp1st  750/750 camp    0 ch  750 al0 en3 | Stellar#9 d720 seen3@9 ally3; Cassi#6 d30 seen2@6 ally2
+75afcf7d8ca8199b contest   L r1102 Ryth    by Ryth           bag  0+  0 fighting                     -1 hp1st 1700/1700 camp    0 ch 1700 al3 en3 | Ryth#8 d805 seen2@5 bush ally15; Tavi#10 d895 seen4@6 ally15
+75afcf7d8ca8199b contest   L r1104 Varg    by Stellar        bag  0+  0 farming   $$$(18,27)o        0 hp1st  887/1500 camp    0 ch 1137 al2 en4 | Tavi#10 d220 seen15@6 ally15; Stellar#9 d613 seen4@7 ally15; Ren#11 d304 seen5@8 ally5
+75afcf7d8ca8199b contest   L r1149 Issac   by Stellar        bag200+  0 banking                      0 hp1st 1375/1375 camp    0 ch 1375 al2 en3 | Tavi#10 d832 seen2@8 ally3; Issac#7 d113 seen5@7 ally6; Stellar#9 d430 seen15@11 ally15
+75afcf7d8ca8199b contest   L r1157 Stellar by Stellar        bag  0+  0 fighting                     0 hp1st 1125/1125 camp    0 ch 1125 al0 en1 | Stellar#9 d1125 seen14@16 ally15
+75afcf7d8ca8199b contest   L r1158 Tavi    by Issac          bag  0+  0 fighting                     0 hp1st  204/750 camp    0 ch  204 al0 en1 | Issac#7 d204 seen14@9 ally14
+75afcf7d8ca8199b contest   L r1364 Ryth    by Stellar        bag  0+  0 fighting                     0 hp1st 1273/1700 camp    0 ch 1273 al3 en2 | Ren#11 d133 seen0@2 bush ally4; Cassi#6 d423 seen6@5 ally15; Ryth#8 d90 seen7@6 ally12; Stellar#9 d627 seen15@8 ally15
+75afcf7d8ca8199b contest   L r1368 Tavi    by Stellar        bag  0+  0 fighting                     0 hp1st  304/750 camp    0 ch  304 al1 en2 | Stellar#9 d304 seen9@6 bush ally11
+75afcf7d8ca8199b contest   L r1394 Stellar by Stellar        bag  0+  0 fighting                     0 hp1st 1125/1125 camp    0 ch 1125 al2 en1 | Stellar#9 d1125 seenNone@5 ally1
+75afcf7d8ca8199b contest   L r1400 Cassi   by Stellar        bag  0+200 fighting                     1 hp1st  641/1056 camp    0 ch  641 al0 en1 | Tavi#10 d94 seen8@7 ally8; Stellar#9 d547 seen8@7 ally8
+75afcf7d8ca8199b contest   L r1400 Issac   by Stellar        bag200+  0 banking                      0 hp1st 1375/1375 camp    0 ch    0 al0 en0 | 
+75afcf7d8ca8199b contest   L r1472 Varg    by Stellar        bag200+  0 tributing                    0 hp1st 1500/1500 camp    0 ch 1500 al0 en2 | Tavi#10 d1030 seenNone@4 bush ally4; Stellar#9 d470 seenNone@5 bush ally3
+75afcf7d8ca8199b contest   L r1483 Tavi    by Tavi           bag  0+  0 fighting                     0 hp1st  750/750 camp    0 ch  750 al2 en4 | Ren#11 d108 seen8@5 ally8; Ryth#8 d100 seen7@7 ally15; Tavi#10 d542 seen1@7 ally15
+75afcf7d8ca8199b contest   L r1509 Stellar by Issac          bag  0+  0 fighting                     0 hp1st  923/1125 camp    0 ch  924 al0 en1 | Tavi#10 d32 seen15@7 ally15; Issac#7 d892 seen4@6 ally4
+75afcf7d8ca8199b contest   L r1538 Cassi   by Ryth           bag  0+  0 fighting                     0 hp1st 1056/1056 camp    0 ch 1056 al1 en1 | Stellar#9 d680 seen8@8 ally15; Ryth#8 d376 seen6@8 ally10
+75afcf7d8ca8199b contest   L r1538 Issac   by Ryth           bag  0+  0 homeward                     0 hp1st 1375/1375 camp    0 ch  833 al1 en1 | Stellar#9 d743 seen8@8 ally15; Ryth#8 d90 seen6@8 ally10
+75afcf7d8ca8199b contest   L r1575 Ryth    by Ren            bag  0+  0 fighting                     0 hp1st 1700/1700 camp    0 ch 1700 al1 en3 | Ren#11 d892 seen1@7 ally2; Ryth#8 d90 seen0@4 ally1; Stellar#9 d718 seen0@5 ally1
+75afcf7d8ca8199b contest   L r1602 Varg    by Issac          bag  0+  0 fighting                     0 hp1st 1500/1500 camp    0 ch 1750 al1 en2 | Tavi#10 d1132 seen4@5 ally4; Issac#7 d618 seen7@5 ally7
+75afcf7d8ca8199b contest   L r1623 Stellar by Stellar        bag  0+  0 fighting                     0 hp1st 1125/1125 camp    0 ch 1125 al3 en1 | Ren#11 d534 seen1@6 ally1; Stellar#9 d591 seen3@7 ally3
+75afcf7d8ca8199b contest   L r1645 Cassi   by Tavi           bag  0+  0 fighting                     0 hp1st 1056/1056 camp    0 ch 1056 al1 en1 | Tavi#10 d1056 seen7@6 ally7
+75afcf7d8ca8199b contest   L r1645 Issac   by Tavi           bag  0+  0 walking                      0 hp1st 1375/1375 camp    0 ch    0 al2 en1 | 
+75afcf7d8ca8199b contest   L r1695 Ryth    by Issac          bag  0+  0 farming   M(17,31)o          0 hp1st 1700/1700 camp  756 ch  944 al2 en2 | Ryth#8 d738 seen3@7 ally3; Issac#7 d206 seen5@4 ally7
+75afcf7d8ca8199b contest   L r1698 Tavi    by Issac          bag  0+  0 farming   M(17,31)o          0 hp1st  620/750 camp    0 ch  620 al1 en1 | Issac#7 d620 seen6@7 ally6
+75afcf7d8ca8199b contest   L r1715 Varg    by Stellar        bag  0+  0 fighting                     0 hp1st 1500/1500 camp    0 ch 1750 al1 en1 | Stellar#9 d1750 seen0@4 ally0
+75afcf7d8ca8199b contest   L r1846 Tavi    by Ren            bag  0+  0 fighting                     0 hp1st  720/750 camp    0 ch  720 al2 en1 | Tavi#10 d70 seen8@9 ally9; Ren#11 d650 seen15@5 ally15
+75afcf7d8ca8199b contest   L r1878 Issac   by Tavi           bag  0+  0 farming   M(32,18)e          0 hp1st  493/1375 camp  882 ch  493 al2 en1 | Ryth#8 d90 seen2@7 ally3; Tavi#10 d403 seen2@5 ally6
+75afcf7d8ca8199b contest   L r1894 Varg    by Issac          bag  0+  0 farming   M(32,18)e          0 hp1st 1246/1500 camp  882 ch  866 al1 en1 | Ryth#8 d576 seen7@6 ally11; Issac#7 d290 seen5@7 ally6
+75afcf7d8ca8199b contest   L r1896 Stellar by Issac          bag  0+  0 fighting                     0 hp1st 1125/1125 camp    0 ch 1125 al0 en2 | Ryth#8 d90 seen7@7 ally11; Issac#7 d1035 seen7@9 ally7
+75afcf7d8ca8199b contest   L r1916 Ryth    by Stellar        bag  0+  0 fighting                     0 hp1st  931/1700 camp    0 ch  931 al0 en1 | Stellar#9 d931 seen9@4 ally15
+7d42502bddcf6313 interlock L r  83 Stellar by Ryth           bag 22+  0 fighting                     0 hp1st  550/750 camp    0 ch  550 al3 en1 | Ryth#5 d410 seen15@7 ally15; Stellar#6 d140 seenNone@5
+7d42502bddcf6313 interlock L r  89 Issac   by Ryth           bag  0+ 22 homeward                     0 hp1st  520/900 camp    0 ch  520 al2 en4 | Ryth#5 d105 seen13@9 ally15; Stellar#6 d210 seen5@6 ally5; Ren#8 d125 seen5@8 ally5; Prism#7 d80 seen0@5 ally4
+7d42502bddcf6313 interlock L r 178 Ryth    by Ren            bag  0+  0 fighting                     0 hp1st  719/1200 camp    0 ch  719 al3 en2 | Prism#7 d295 seen10@9 ally10; Ren#8 d424 seen6@8 ally6
+7d42502bddcf6313 interlock L r 187 Cassi   by Prism          bag  0+ 22 fighting                     0 hp1st  700/700 camp    0 ch  700 al1 en3 | Ryth#5 d400 seen3@7 ally14; Prism#7 d300 seen6@7 ally15
+7d42502bddcf6313 interlock L r 187 Issac   by Prism          bag 22+  0 recalling                    0 hp1st  680/900 camp   20 ch    0 al0 en0 | 
+7d42502bddcf6313 interlock L r 270 Varg    by Ryth           bag  0+  0 fighting                     0 hp1st  775/1000 camp    0 ch 1025 al3 en2 | Stellar#6 d515 seen15@6 ally15; Ryth#5 d510 seen15@5 ally15
+7d42502bddcf6313 interlock L r 348 Ryth    by Prism          bag 22+  0 fighting                     0 hp1st  980/1400 camp    0 ch  980 al0 en1 | Ren#8 d800 seen15@3 ally15; Prism#7 d180 seen15@7 ally15
+7d42502bddcf6313 interlock L r 393 Cassi   by Stellar        bag  0+  0 farming   W(5,21)o           0 hp1st  137/700 camp   98 ch  137 al0 en2 | Ryth#5 d100 seenNone@6 bush ally14; Stellar#6 d37 seen1@6 ally14
+7d42502bddcf6313 interlock L r 393 Issac   by Stellar        bag  0+  0 farming   W(5,8)o            0 hp1st  886/900 camp   28 ch    0 al0 en0 | 
+7d42502bddcf6313 interlock L r 519 Stellar by Stellar        bag  0+  0 farming   EE(31,10)e         0 hp1st  314/750 camp  168 ch  314 al0 en2 | Stellar#6 d314 seen15@8 ally15
+7d42502bddcf6313 interlock L r 542 Cassi   by Ren            bag 22+  0 fighting                     0 hp1st  718/842 camp    0 ch  718 al1 en1 | Ren#8 d718 seen9@8 bush ally15
+7d42502bddcf6313 interlock L r 542 Issac   by Ren            bag  0+  0 walking                      0 hp1st 1090/1090 camp    0 ch    0 al0 en0 | 
+7d42502bddcf6313 interlock L r 614 Stellar by Stellar        bag 22+  0 fighting                     0 hp1st  624/750 camp    0 ch  624 al1 en1 | Stellar#6 d624 seen3@6 ally3
+7d42502bddcf6313 interlock L r 668 Ryth    by Ryth           bag  0+  0 fighting                     0 hp1st  967/1700 camp    0 ch  967 al1 en2 | Ren#8 d18 seen9@7 ally9; Stellar#6 d378 seen13@9 ally15; Ryth#5 d571 seen15@8 ally15
+7d42502bddcf6313 interlock L r 682 Cassi   by Stellar        bag 22+  0 fighting                     0 hp1st  660/842 camp    0 ch  660 al0 en3 | Ren#8 d310 seen3@8 ally15; Stellar#6 d350 seen4@9 ally15
+7d42502bddcf6313 interlock L r 682 Issac   by Stellar        bag  0+  0 fighting                     0 hp1st  922/1375 camp    0 ch 1000 al1 en0 | Ryth#5 d1000 seen14@11 ally15
+7d42502bddcf6313 interlock L r 780 Ryth    by Ryth           bag  0+  0 fighting                     1 hp1st 1610/1700 camp    0 ch 1610 al0 en2 | Ryth#5 d778 seen9@7 ally9; Prism#7 d832 seen1@7 ally1
+7d42502bddcf6313 interlock L r 807 Stellar by Prism          bag 22+  0 walking                      0 hp1st 1024/1125 camp    0 ch 1024 al0 en2 | Prism#7 d709 seenNone@4 bush ally15; Stellar#6 d315 seenNone@5 ally14
+3b2c6a17f9220b8a eight     L r  42 Tavi    by Issac          bag  0+  0 fighting                     0 hp1st  530/750 camp   60 ch  470 al2 en4 | Ren#0 d185 seen5@9 ally7; Ryth#2 d200 seen14@8 ally15; Issac#5 d85 seen15@8 ally15
+3b2c6a17f9220b8a eight     L r 127 Ryth    by Ryth           bag 22+  0 fighting                     0 hp1st 1020/1200 camp    0 ch 1020 al2 en2 | Ren#0 d400 seen10@13 bush ally10; Ryth#2 d620 seen15@7 ally15
+3b2c6a17f9220b8a eight     L r 333 Ryth    by Ryth           bag  0+  0 fighting                     0 hp1st  780/1200 camp  120 ch  680 al1 en1 | Ryth#2 d680 seen12@8 ally15
+3b2c6a17f9220b8a eight     L r 459 Stellar by Ryth           bag  0+  0 farming   WW(18,10)o         -1 hp1st  666/750 camp   28 ch  666 al3 en2 | Ren#0 d100 seen4@8 ally4; Ryth#2 d566 seen7@8 bush ally7
+3b2c6a17f9220b8a eight     L r 500 Tavi    by Stellar        bag 22+  0 fighting                     0 hp1st  540/750 camp    0 ch  540 al2 en2 | Ren#0 d205 seen2@6 bush ally15; Stellar#3 d335 seen1@7 ally15
+3b2c6a17f9220b8a eight     L r 510 Issac   by Ren            bag 44+  0 banking                      0 hp1st  749/1375 camp    0 ch  749 al1 en4 | Stellar#3 d429 seen15@3 ally15; Ren#0 d230 seen15@4 ally15; Ryth#2 d90 seen12@4 bush ally15
+b55a03509a635a09 elkring   L r 167 Stellar by Vendetta       bag  0+  0 farming   $E(10,27)e         0 hp1st  372/750 camp  252 ch  288 al2 en1 | Vendetta#1 d288 seen11@10 ally11
+b55a03509a635a09 elkring   L r 178 Tavi    by camp:$E(19,2)o bag  0+  0 homeward                     1 hp1st  175/1125 camp  289 ch  112 al1 en1 | Ren#0 d112 seen6@9 ally15
+b55a03509a635a09 elkring   L r 360 Ryth    by Vendetta       bag 36+  0 fighting                     0 hp1st 1682/1700 camp    0 ch 1682 al0 en2 | Vendetta#1 d1682 seen14@9 ally14
+b55a03509a635a09 elkring   L r 417 Varg    by Ren            bag  0+  0 fighting                     1 hp1st  556/1000 camp    0 ch 1002 al0 en2 | Issac#5 d163 seen14@7 ally14; Ren#0 d519 seen15@4 ally15; Cassi#4 d320 seen6@8 bush ally6
+b55a03509a635a09 elkring   L r 484 Stellar by Ryth           bag  0+  0 farming   $E(19,2)o          1 hp1st  860/1125 camp  151 ch  860 al2 en2 | Ryth#3 d446 seen7@8 ally14; Vendetta#1 d414 seen9@9 ally9
+a0a41aaf4adc74a1 stampede  L r 344 Ryth    by camp:EEEEEEGGGGGG(56,25)m bag  0+  0 farming   EEEEEEGGGGGG(56,25)m -1 hp1st   60/1200 camp 1200 ch    0 al2 en2 | 
+a0a41aaf4adc74a1 stampede  L r 356 Issac   by Ryth           bag  0+  0 fighting                     -1 hp1st  480/900 camp  420 ch  300 al1 en2 | Ryth#3 d300 seen15@8 ally15
+a0a41aaf4adc74a1 stampede  L r 583 Tavi    by Ryth           bag  0+  0 fighting                     -1 hp1st  634/1125 camp   76 ch  634 al0 en2 | Ryth#3 d616 seen9@8 ally9; Ren#0 d18 seen7@9 ally7
+a0a41aaf4adc74a1 stampede  L r 976 Stellar by Varg           bag  0+  0 recalling                    -1 hp1st  750/750 camp    0 ch  750 al2 en1 | Varg#1 d550 seen15@6 ally15; Stellar#2 d200 seen10@8 ally15
+a0a41aaf4adc74a1 stampede  L r1137 Varg    by Varg           bag  0+  0 fighting                     0 hp1st 1500/1500 camp    0 ch 1750 al1 en1 | Varg#1 d1750 seen2@4 ally3
+a0a41aaf4adc74a1 stampede  L r1177 Tavi    by Ren            bag  0+  0 fighting                     -1 hp1st  994/1125 camp    0 ch  994 al1 en2 | Ren#0 d994 seen9@8 ally15
+7f70c21ce0bb0546 corners   L r  45 Varg    by Ren            bag  0+  0 farming   W(33,36)o          0 hp1st  900/1000 camp  160 ch 1000 al0 en2 | Ren#5 d660 seen5@8 ally5; Cassi#0 d340 seen6@9 ally6
+7f70c21ce0bb0546 corners   L r 137 Cassi   by camp:E(33,32)o bag  0+  0 homeward                     0 hp1st   60/700 camp  540 ch    0 al0 en0 | 
+7f70c21ce0bb0546 corners   L r 191 Stellar by Varg           bag 22+  0 fighting                     0 hp1st  750/750 camp    0 ch  750 al1 en2 | Varg#3 d750 seen10@7 ally15
+7f70c21ce0bb0546 corners   L r 218 Tavi    by Stellar        bag  0+  0 farming   E(37,32)e          0 hp1st  388/750 camp    0 ch  388 al1 en3 | Ryth#4 d110 seen15@6 ally15; Stellar#2 d278 seen15@8 ally15
+7f70c21ce0bb0546 corners   L r 297 Varg    by Cassi          bag 22+  0 fighting                     0 hp1st  484/1000 camp    0 ch  734 al3 en2 | Varg#3 d160 seen15@2 ally15; Ren#5 d226 seen6@8 ally13; Cassi#0 d348 seen4@9 ally4
+7f70c21ce0bb0546 corners   L r 396 Tavi    by Stellar        bag 36+  0 fighting                     0 hp1st 1087/1125 camp   25 ch 1062 al2 en2 | Ren#5 d92 seen2@7 ally5; Ryth#4 d99 seen8@8 ally13; Stellar#2 d871 seen3@8 ally4
+7f70c21ce0bb0546 corners   L r 521 Tavi    by Cassi          bag 22+  0 fighting                     0 hp1st  270/1125 camp    0 ch  270 al1 en1 | Cassi#0 d270 seen15@8 ally15
+7f70c21ce0bb0546 corners   L r 550 Stellar by Stellar        bag 36+  0 fighting                     0 hp1st 1125/1125 camp    0 ch 1125 al1 en2 | Stellar#2 d1125 seen3@8 ally3
+5ead7f5074f35e19 stampede  L r 710 Tavi    by Tavi           bag  0+  0 fighting                     -1 hp1st  747/1125 camp    0 ch  747 al0 en1 | Tavi#4 d747 seen15@6 ally15
+5ead7f5074f35e19 stampede  L r 755 Cassi   by Tavi           bag  0+  0 fighting                     -1 hp1st 1056/1056 camp    0 ch 1056 al3 en4 | Tavi#4 d683 seen4@6 bush ally4; Stellar#2 d374 seen3@6 bush ally4
+c586802b84f9c609 rushbait_ L r 564 Stellar by Ren            bag 36+  0 fighting                     -1 hp1st  621/1125 camp    0 ch  621 al0 en1 | Ren#0 d621 seen15@7 ally15
+7677f0a5696ee4dc collision L r 195 Cassi   by Stellar        bag 22+  0 fighting                     -1 hp1st  300/700 camp    0 ch  300 al1 en1 | Stellar#0 d300 seen5@8 ally15
+7677f0a5696ee4dc collision L r 254 Varg    by Tavi           bag 22+  0 fighting                     0 hp1st  477/1000 camp  140 ch  555 al0 en1 | Tavi#1 d555 seen3@8 ally3
+7677f0a5696ee4dc collision L r 303 Cassi   by Tavi           bag 22+ 22 fighting                     0 hp1st  700/700 camp    0 ch  700 al0 en1 | Tavi#1 d550 seen4@7 ally15; Ren#2 d150 seen8@8 ally15
+7677f0a5696ee4dc collision L r 356 Stellar by Ren            bag 36+  0 fighting                     0 hp1st  848/1125 camp    0 ch  848 al0 en2 | Stellar#0 d705 seen3@7 ally14; Ren#2 d143 seen9@8 ally12
+7677f0a5696ee4dc collision L r 364 Varg    by Stellar        bag 22+  0 fighting                     0 hp1st 1144/1200 camp    0 ch 1394 al0 en2 | Ren#2 d456 seen7@8 ally15; Stellar#0 d938 seen6@8 ally15
+7677f0a5696ee4dc collision L r 455 Cassi   by Tavi           bag 22+ 22 fighting                     0 hp1st  576/700 camp    0 ch  576 al1 en2 | Ren#2 d512 seen12@8 ally15; Tavi#1 d64 seen7@8 ally12
+7677f0a5696ee4dc collision L r 485 Varg    by Ren            bag 36+  0 fighting                     0 hp1st 1500/1500 camp    0 ch 2000 al0 en2 | Tavi#1 d1883 seen7@8 ally15; Ren#2 d117 seen8@8 ally8
+7677f0a5696ee4dc collision L r 515 Stellar by Stellar        bag 36+  0 fighting                     0 hp1st 1062/1125 camp    0 ch 1062 al0 en1 | Stellar#0 d1062 seen3@8 ally8
+7677f0a5696ee4dc collision L r 557 Cassi   by Ren            bag 22+ 36 fighting                     0 hp1st  660/842 camp    0 ch  660 al1 en1 | Ren#2 d660 seen2@5 ally14
+7677f0a5696ee4dc collision L r 664 Varg    by Tavi           bag  0+  0 fighting                     -1 hp1st 1462/1500 camp    0 ch 1712 al1 en2 | Stellar#0 d1163 seen12@8 ally15; Tavi#1 d549 seen11@8 ally15
+7677f0a5696ee4dc collision L r 671 Issac   by Stellar        bag  0+ 44 homeward                     -1 hp1st 1173/1375 camp   25 ch 1173 al1 en2 | Stellar#0 d993 seen15@8 ally15; Tavi#1 d180 seen15@7 ally15
+7677f0a5696ee4dc collision L r 678 Stellar by Stellar        bag 22+  0 fighting                     0 hp1st 1125/1125 camp    0 ch 1125 al0 en2 | Stellar#0 d495 seen4@8 ally15; Ren#2 d630 seen2@7 ally2
+152309dd3a2842f4 swirl     L r  97 Cassi   by Cassi          bag  0+  0 farming   WWWW(31,16)o       0 hp1st  365/700 camp   14 ch  365 al3 en5 | Cassi#0 d100 seen11@None bush ally11; Issac#1 d40 seen10@6 ally10; Varg#3 d160 seen14@4 ally15; Ryth#4 d65 seen15@5 ally15
+152309dd3a2842f4 swirl     L r 100 Ryth    by Ren            bag  0+  0 fighting                     0 hp1st 1080/1200 camp    0 ch 1080 al2 en5 | Ryth#4 d325 seen5@7 ally15; Varg#3 d320 seen15@6 ally15; Issac#1 d120 seen4@7 bush ally11; Ren#2 d225 seenNone@2 bush ally8; Cassi#0 d90 seenNone@2 bush ally13
+152309dd3a2842f4 swirl     L r 105 Stellar by Varg           bag  0+  0 fighting                     0 hp1st  710/750 camp   80 ch  670 al1 en5 | Ren#2 d140 seen1@5 ally10; Varg#3 d250 seen11@6 ally11; Cassi#0 d170 seen1@4 ally15; Ryth#4 d110 seen14@4 bush ally15
+152309dd3a2842f4 swirl     L r 205 Varg    by Cassi          bag  0+  0 farming   $$$E(20,14)o       0 hp1st 1300/1300 camp  336 ch 1308 al1 en2 | Cassi#0 d489 seen6@8 ally6; Ren#2 d585 seen5@8 ally5; Issac#1 d234 seen6@8 ally6
+152309dd3a2842f4 swirl     L r 251 Ryth    by camp:$$$E(24,15)e bag  0+  0 farming   $$$E(20,14)o       0 hp1st  820/1200 camp  780 ch   40 al2 en0 | Ren#2 d40 seen5@6 ally12
+152309dd3a2842f4 swirl     L r 289 Varg    by Issac          bag  0+  0 farming   $(20,8)o           1 hp1st 1258/1300 camp    0 ch 1508 al2 en4 | Issac#1 d473 seen9@5 ally11; Varg#3 d775 seen10@3 ally15; Cassi#0 d260 seen10@8 ally12
+152309dd3a2842f4 swirl     L r 424 Stellar by Ryth           bag  0+  0 fighting                     1 hp1st  536/750 camp    0 ch  536 al1 en5 | Ren#2 d20 seen4@9 ally15; Ryth#4 d516 seen15@7 ally15
+152309dd3a2842f4 swirl     L r 440 Cassi   by Ryth           bag  0+  0 fighting                     0 hp1st 1056/1056 camp    0 ch 1056 al1 en3 | Ren#2 d36 seen13@7 ally15; Cassi#0 d267 seenNone@3 bush ally15; Ryth#4 d753 seen15@7 ally15
+152309dd3a2842f4 swirl     L r 487 Ryth    by Ryth           bag  0+  0 fighting                     0 hp1st 1166/1200 camp    0 ch 1166 al2 en2 | Cassi#0 d134 seen13@11 ally15; Ryth#4 d1032 seen15@7 ally15
+152309dd3a2842f4 swirl     L r 515 Stellar by Varg           bag  0+  0 fighting                     0 hp1st  975/975 camp    0 ch  975 al1 en1 | Cassi#0 d230 seen13@16 ally13; Varg#3 d745 seen3@3 bush ally3
+152309dd3a2842f4 swirl     L r 581 Varg    by Issac          bag  0+  0 farming   $$$E(20,14)o       0 hp1st 1160/1300 camp   42 ch 1558 al2 en4 | Ren#2 d385 seen15@6 ally15; Ryth#4 d675 seen15@8 ally15; Cassi#0 d260 seen4@7 ally4; Issac#1 d238 seen9@6 bush ally10
+152309dd3a2842f4 swirl     L r 594 Ryth    by camp:$$$E(20,14)o bag  0+  0 fighting                     1 hp1st 1045/1200 camp  280 ch  765 al2 en2 | Ryth#4 d540 seen8@7 bush ally15; Ren#2 d225 seen14@8 ally15
+152309dd3a2842f4 swirl     L r 603 Stellar by Varg           bag  0+  0 farming   $$$E(20,14)o       1 hp1st  871/1125 camp  302 ch  569 al1 en1 | Ren#2 d72 seen1@3 ally15; Varg#3 d497 seen8@8 ally15
+152309dd3a2842f4 swirl     L r 806 Stellar by Varg           bag  0+  0 farming   $$$E(24,15)e       -1 hp1st 1087/1125 camp   38 ch 1087 al2 en2 | Varg#3 d1087 seen9@6 ally10
+152309dd3a2842f4 swirl     L r 809 Issac   by Varg           bag  0+  0 fighting                     0 hp1st 1375/1375 camp    0 ch 1375 al1 en1 | Varg#3 d1375 seen10@7 ally11
+152309dd3a2842f4 swirl     L r 813 Varg    by Varg           bag  0+  0 fighting                     -1 hp1st 1300/1300 camp   42 ch 1758 al0 en1 | Varg#3 d1758 seen10@7 ally11
+152309dd3a2842f4 swirl     L r 850 Ryth    by Cassi          bag  0+  0 fighting                     1 hp1st  680/1200 camp    0 ch  680 al0 en2 | Cassi#0 d475 seen14@5 ally15; Ren#2 d205 seen3@6 ally14
+152309dd3a2842f4 swirl     L r 881 Stellar by Varg           bag  0+  0 fighting                     0 hp1st 1125/1125 camp    0 ch 1125 al3 en4 | Issac#1 d775 seenNone@2 bush ally3; Varg#3 d350 seen15@None ally15
+152309dd3a2842f4 swirl     L r 881 Cassi   by Varg           bag  0+  0 fighting                     0 hp1st 1056/1056 camp    0 ch 1056 al3 en3 | Varg#3 d1056 seen14@None ally15
+5f39c6aebf5a07e4 collision L r  83 Cassi   by Cassi          bag  0+  0 fighting                     0 hp1st  355/700 camp    0 ch  355 al1 en2 | Ren#2 d40 seen15@4 ally15; Cassi#0 d315 seen15@6 ally15
+5f39c6aebf5a07e4 collision L r 168 Stellar by Stellar        bag 22+  0 fighting                     0 hp1st  900/900 camp    0 ch  900 al0 en3 | Issac#1 d240 seen4@8 ally8; Stellar#3 d660 seen3@8 ally4
+5f39c6aebf5a07e4 collision L r 201 Issac   by Stellar        bag 22+ 22 banking                      0 hp1st  420/900 camp    0 ch  420 al2 en2 | Stellar#3 d420 seen15@7 ally15
+5f39c6aebf5a07e4 collision L r 276 Stellar by Ren            bag 44+  0 fighting                     0 hp1st  865/900 camp    0 ch  865 al0 en1 | Cassi#0 d230 seen15@6 ally15; Ren#2 d635 seen2@7 ally2
+5f39c6aebf5a07e4 collision L r 308 Varg    by Ren            bag 22+  0 farming   W(24,22)m          0 hp1st  920/1000 camp    0 ch 1170 al2 en1 | Issac#1 d274 seen7@8 ally7; Ren#2 d512 seen13@8 ally15; Cassi#0 d384 seen2@8 ally2
+5f39c6aebf5a07e4 collision L r 311 Cassi   by Cassi          bag 22+  0 fighting                     0 hp1st  654/700 camp   20 ch  634 al1 en2 | Ren#2 d415 seen7@8 ally15; Issac#1 d68 seen6@8 ally10; Cassi#0 d150 seen12@9 ally12
+5f39c6aebf5a07e4 collision L r 410 Varg    by Stellar        bag 22+  0 farming   W(19,27)e          0 hp1st  960/1000 camp   60 ch 1210 al1 en1 | Stellar#3 d1210 seen4@8 ally4
+5f39c6aebf5a07e4 collision L r 444 Cassi   by Stellar        bag 22+ 22 walking                      -1 hp1st  672/700 camp    0 ch  672 al2 en1 | Stellar#3 d672 seen15@6 ally15
+5f39c6aebf5a07e4 collision L r 449 Stellar by Cassi          bag 36+  0 fighting                     -1 hp1st 1125/1125 camp    0 ch 1125 al0 en2 | Stellar#3 d611 seen15@7 ally15; Cassi#0 d514 seen3@9 ally3
+5f39c6aebf5a07e4 collision L r 538 Cassi   by Ren            bag  0+ 36 farming   W(15,31)e          0 hp1st  701/771 camp   70 ch  673 al1 en1 | Ren#2 d673 seen9@8 ally15
+57a109e48e8733f2 swirl     L r  35 Issac   by Varg           bag  0+  0 homeward                     0 hp1st  140/900 camp    0 ch  140 al2 en3 | Varg#4 d140 seen15@4 ally15
+57a109e48e8733f2 swirl     L r  69 Varg    by Issac          bag  0+  0 fighting                     0 hp1st 1000/1000 camp    0 ch 1250 al2 en3 | Tavi#3 d861 seen15@4 bush ally15; Issac#1 d164 seen4@2 bush ally15; Varg#4 d225 seen7@5 ally15
+57a109e48e8733f2 swirl     L r  80 Ryth    by Stellar        bag  0+  0 fighting                     0 hp1st 1200/1200 camp    0 ch 1200 al0 en4 | Issac#1 d120 seen5@6 ally15; Varg#4 d300 seen4@6 ally10; Tavi#3 d518 seen5@6 ally14; Stellar#2 d262 seenNone@6 ally1
+57a109e48e8733f2 swirl     L r  97 Stellar by Stellar        bag  0+  0 fighting                     0 hp1st  750/750 camp    0 ch  750 al2 en4 | Varg#4 d375 seen15@6 ally15; Cassi#0 d290 seen0@5 ally15; Stellar#2 d85 seen12@9 ally15
+57a109e48e8733f2 swirl     L r 183 Ryth    by Stellar        bag  0+  0 fighting                     0 hp1st 1200/1200 camp    0 ch 1200 al4 en3 | Stellar#2 d511 seenNone@5 bush; Tavi#3 d519 seen7@7 bush ally7; Varg#4 d170 seen7@6 ally7
+57a109e48e8733f2 swirl     L r 188 Varg    by Varg           bag  0+  0 fighting                     -1 hp1st  390/1000 camp  120 ch  495 al3 en3 | Tavi#3 d105 seen1@6 ally9; Stellar#2 d70 seen1@2 bush ally1; Varg#4 d320 seen8@9 ally12
+57a109e48e8733f2 swirl     L r 198 Issac   by Stellar        bag  0+  0 fighting                     0 hp1st  700/900 camp    0 ch  700 al2 en2 | Varg#4 d340 seen15@3 ally15; Stellar#2 d360 seen2@7 ally13
+57a109e48e8733f2 swirl     L r 216 Stellar by Cassi          bag  0+  0 fighting                     0 hp1st  750/750 camp    0 ch  750 al0 en4 | Stellar#2 d210 seen15@6 bush ally15; Tavi#3 d519 seen3@8 ally5; Cassi#0 d21 seen1@6 ally1
+57a109e48e8733f2 swirl     L r 254 Ryth    by Cassi          bag  0+  0 fighting                     0 hp1st 1200/1200 camp    0 ch 1200 al1 en3 | Cassi#0 d566 seen15@None ally15; Stellar#2 d545 seen15@None bush ally15; Issac#1 d90 seen3@5 ally4
+57a109e48e8733f2 swirl     L r 283 Cassi   by Varg           bag  0+  0 farming   WWWW(31,16)o       0 hp1st  680/700 camp   60 ch  640 al3 en2 | Varg#4 d640 seen2@4 ally7
+57a109e48e8733f2 swirl     L r 283 Varg    by Tavi           bag  0+  0 farming   $(24,21)e          0 hp1st  900/1000 camp    0 ch 1150 al3 en2 | Varg#4 d720 seen2@5 ally7; Tavi#3 d430 seen14@5 ally15
+57a109e48e8733f2 swirl     L r 299 Stellar by Cassi          bag  0+  0 homeward                     0 hp1st  750/750 camp    0 ch  750 al0 en2 | Cassi#0 d750 seen6@10 ally8
+57a109e48e8733f2 swirl     L r 325 Ryth    by Tavi           bag  0+  0 fighting                     0 hp1st 1200/1200 camp    0 ch 1200 al0 en2 | Cassi#0 d830 seen15@None ally15; Tavi#3 d370 seen8@7 ally9
+57a109e48e8733f2 swirl     L r 350 Cassi   by Cassi          bag  0+  0 walking                      0 hp1st  700/700 camp    0 ch  700 al2 en2 | Cassi#0 d700 seen14@None ally15
+57a109e48e8733f2 swirl     L r 379 Varg    by Tavi           bag  0+  0 fighting                     0 hp1st 1000/1000 camp    0 ch 1000 al1 en2 | Tavi#3 d1000 seen15@6 ally15
+57a109e48e8733f2 swirl     L r 387 Stellar by Tavi           bag  0+  0 fighting                     0 hp1st  750/750 camp    0 ch 1155 al1 en1 | Stellar#2 d300 seen15@8 ally15; Tavi#3 d855 seen15@6 ally15
+57a109e48e8733f2 swirl     L r 395 Ryth    by Tavi           bag  0+  0 fighting                     0 hp1st 1200/1200 camp    0 ch 1200 al0 en1 | Tavi#3 d1200 seen15@None ally15
+57a109e48e8733f2 swirl     L r 414 Issac   by Tavi           bag  0+  0 walking                      0 hp1st  900/900 camp    0 ch  900 al1 en1 | Tavi#3 d900 seen15@None ally15
+57a109e48e8733f2 swirl     L r 449 Varg    by Tavi           bag  0+  0 farming   $(24,21)e          0 hp1st 1000/1000 camp    0 ch 1250 al1 en2 | Tavi#3 d1250 seen4@9 ally15
+fe1ecca544d7008f swirl     L r  75 Varg    by camp:$$EE(36,5)o bag  0+  0 farming   $$EE(36,5)o        1 hp1st   40/1000 camp 1060 ch    0 al1 en0 | 
+fe1ecca544d7008f swirl     L r 164 Cassi   by Cassi          bag  0+  0 fighting                     1 hp1st  842/842 camp    0 ch  842 al3 en3 | Cassi#2 d842 seen8@7 ally11
+fe1ecca544d7008f swirl     L r 166 Ryth    by Issac          bag  0+  0 fighting                     1 hp1st  630/1400 camp    0 ch  630 al2 en4 | Cassi#2 d30 seen9@7 ally9; Issac#3 d310 seen7@6 ally7; Ryth#4 d110 seen6@8 ally6; Varg#0 d180 seen9@6 ally10
+fe1ecca544d7008f swirl     L r 244 Issac   by Varg           bag  0+  0 recalling                    1 hp1st  900/900 camp    0 ch  900 al3 en2 | Stellar#1 d612 seen3@8 ally15; Ryth#4 d110 seen3@8 ally15; Varg#0 d178 seen10@7 ally11
+fe1ecca544d7008f swirl     L r 250 Stellar by Stellar        bag 66+  0 farming   $(20,8)o           1 hp1st 1087/1125 camp    0 ch 1087 al1 en1 | Stellar#1 d763 seen9@9 ally15; Varg#0 d324 seen13@8 ally13
+fe1ecca544d7008f swirl     L r 321 Cassi   by Cassi          bag  0+  0 fighting                     1 hp1st  914/914 camp    0 ch  914 al3 en3 | Cassi#2 d914 seen15@10 ally15
+fe1ecca544d7008f swirl     L r 403 Cassi   by Cassi          bag  0+  0 fighting                     1 hp1st  914/914 camp    0 ch  914 al4 en2 | Cassi#2 d914 seen5@8 ally5
+fe1ecca544d7008f swirl     L r 403 Varg    by Issac          bag  0+  0 farming   $$$E(20,14)o       0 hp1st 1000/1000 camp   60 ch 1440 al3 en2 | Issac#3 d1440 seen13@5 ally15
+fe1ecca544d7008f swirl     L r 452 Ryth    by Cassi          bag  0+  0 farming   EEGG(19,1)o        1 hp1st  377/1700 camp  378 ch  377 al0 en2 | Cassi#2 d377 seen3@7 ally15
+fe1ecca544d7008f swirl     L r 473 Stellar by Ryth           bag176+  0 tributing                    0 hp1st  799/1125 camp    0 ch  799 al2 en2 | Stellar#1 d756 seen15@6 bush ally15; Ryth#4 d43 seen15@4 bush ally15
+fe1ecca544d7008f swirl     L r 526 Ryth    by Cassi          bag  0+  0 fighting                     1 hp1st 1700/1700 camp    0 ch 1700 al1 en4 | Cassi#2 d1700 seen3@8 ally3
+18e8e972f5e5656d ambush    L r 420 Stellar by Stellar        bag  0+  0 farming   EEGG(56,34)o       1 hp1st  210/750 camp  420 ch  210 al0 en1 | Stellar#1 d210 seen4@9 ally15
+fdc87d5e2e8b0f15 collision L r  58 Issac   by Stellar        bag  0+  0 fighting                     -1 hp1st  500/900 camp   20 ch  480 al0 en3 | Issac#3 d40 seen5@8 ally5; Varg#0 d130 seen13@9 ally13; Stellar#1 d310 seen8@8 ally9
+fdc87d5e2e8b0f15 collision L r  82 Stellar by Stellar        bag 44+  0 fighting                     0 hp1st  750/750 camp    0 ch  750 al1 en1 | Stellar#1 d750 seen9@8 ally15
+fdc87d5e2e8b0f15 collision L r 176 Stellar by Varg           bag 44+  0 fighting                     0 hp1st  736/750 camp   28 ch  722 al2 en2 | Stellar#1 d614 seen15@14 ally15; Varg#0 d108 seen15@14 ally15
+fdc87d5e2e8b0f15 collision L r 184 Cassi   by Varg           bag  0+  0 fighting                     0 hp1st  440/700 camp    0 ch  440 al1 en2 | Varg#0 d440 seen10@9 ally11
+fdc87d5e2e8b0f15 collision L r 250 Varg    by Stellar        bag 44+  0 fighting                     0 hp1st  325/1000 camp   20 ch  325 al0 en2 | Stellar#1 d325 seen15@8 ally15
+fdc87d5e2e8b0f15 collision L r 306 Stellar by Stellar        bag  0+  0 tributing                    -1 hp1st  694/750 camp    0 ch  694 al0 en1 | Stellar#1 d694 seen8@9 ally8
+fdc87d5e2e8b0f15 collision L r 341 Cassi   by Stellar        bag  0+ 22 farming   E(21,37)e          0 hp1st  340/700 camp    0 ch  340 al1 en2 | Stellar#1 d340 seen14@9 ally15
+fdc87d5e2e8b0f15 collision L r 349 Varg    by Cassi          bag  0+  0 farming   E(21,37)e          0 hp1st  748/1000 camp  294 ch  956 al0 en2 | Varg#0 d405 seen6@9 ally15; Cassi#2 d551 seen2@8 ally15
+fdc87d5e2e8b0f15 collision L r 461 Cassi   by Varg           bag  0+ 22 fighting                     0 hp1st  700/700 camp    0 ch  700 al1 en1 | Varg#0 d700 seen15@7 ally15
+4883f386a44ebd93 corners   L r  93 Tavi    by Stellar        bag 36+  0 fighting                     0 hp1st  550/750 camp    0 ch  550 al1 en2 | Ryth#0 d230 seen15@6 ally15; Stellar#3 d320 seen4@8 ally4
+4883f386a44ebd93 corners   L r 311 Tavi    by Varg           bag 36+  0 fighting                     0 hp1st  844/900 camp   28 ch  830 al2 en3 | Ryth#0 d100 seen3@8 ally3; Tavi#5 d220 seen3@7 ally3; Varg#4 d510 seen15@7 ally15
+4883f386a44ebd93 corners   L r 313 Cassi   by Tavi           bag 22+  0 fighting                     0 hp1st  828/842 camp   98 ch  744 al1 en2 | Ryth#0 d100 seen3@9 ally3; Varg#4 d630 seen15@8 ally15; Tavi#5 d14 seen11@8 ally11
+4883f386a44ebd93 corners   L r 470 Stellar by Issac          bag  0+  0 farming   W(33,36)o          0 hp1st  770/1050 camp   42 ch  770 al1 en3 | Issac#2 d770 seen7@8 ally9
+4883f386a44ebd93 corners   L r 486 Issac   by Cassi          bag  0+132 walking                      0 hp1st  424/900 camp    0 ch  424 al1 en3 | Issac#2 d318 seen15@4 ally15; Cassi#1 d106 seen15@8 ally15
+4883f386a44ebd93 corners   L r 646 Issac   by Ryth           bag 22+  0 fighting                     0 hp1st  900/900 camp    0 ch  900 al1 en1 | Ryth#0 d900 seen15@8 ally15
+534d0c8e4883da6e eight     L r  62 Varg    by Stellar        bag  0+  0 fighting                     0 hp1st  660/1000 camp    0 ch  860 al2 en2 | Stellar#1 d435 seen15@8 ally15; Ryth#4 d300 seen15@7 ally15; Ren#5 d125 seen9@9 ally11
+534d0c8e4883da6e eight     L r 144 Tavi    by Cassi          bag  0+  0 fighting                     0 hp1st  510/750 camp    0 ch  510 al3 en3 | Cassi#2 d290 seen11@7 ally14; Issac#3 d120 seen15@7 ally15; Ryth#4 d100 seen9@8 ally11
+534d0c8e4883da6e eight     L r 182 Ryth    by camp:EE(27,3)e bag  0+  0 homeward                     0 hp1st   60/1200 camp  960 ch    0 al1 en0 | 
+534d0c8e4883da6e eight     L r 269 Issac   by Ryth           bag  0+  0 fighting                     0 hp1st  718/900 camp    0 ch  718 al2 en3 | Ren#5 d360 seen7@8 ally13; Varg#0 d210 seen8@8 ally8; Ryth#4 d147 seen7@6 ally7
+534d0c8e4883da6e eight     L r 272 Ryth    by Ryth           bag  0+  0 fighting                     0 hp1st 1178/1200 camp    0 ch 1178 al1 en3 | Varg#0 d840 seen6@9 ally7; Ren#5 d204 seen13@8 ally15; Ryth#4 d134 seen8@8 ally9
+534d0c8e4883da6e eight     L r 412 Issac   by Cassi          bag 36+ 36 fighting                     0 hp1st  412/900 camp    0 ch  412 al4 en2 | Issac#3 d50 seenNone@4 bush ally0; Cassi#2 d362 seen8@8 bush ally15
+534d0c8e4883da6e eight     L r 453 Stellar by Stellar        bag 94+  0 fighting                     1 hp1st  585/1125 camp   38 ch  548 al1 en1 | Ren#5 d184 seen9@7 ally12; Stellar#1 d364 seen8@9 ally9
+534d0c8e4883da6e eight     L r 520 Ryth    by Ryth           bag  0+  0 fighting                     0 hp1st  906/1200 camp    0 ch  906 al1 en2 | Issac#3 d198 seen15@8 ally15; Ryth#4 d708 seen15@4 ally15
+534d0c8e4883da6e eight     L r 539 Tavi    by Ren            bag 44+  0 fighting                     0 hp1st  887/1125 camp    0 ch  888 al2 en3 | Cassi#2 d612 seen1@6 ally12; Ren#5 d276 seen6@9 ally6
+534d0c8e4883da6e eight     L r 549 Cassi   by Ren            bag 22+132 fighting                     0 hp1st  476/700 camp    0 ch  476 al0 en1 | Ren#5 d476 seen5@7 ally8
+534d0c8e4883da6e eight     L r 557 Varg    by Stellar        bag  0+  0 fighting                     0 hp1st  840/1500 camp    0 ch 1090 al1 en2 | Stellar#1 d876 seen5@8 ally5; Ren#5 d214 seen3@7 ally15
+534d0c8e4883da6e eight     L r 622 Stellar by Ryth           bag270+  0 fighting                     0 hp1st  785/1125 camp    0 ch  785 al1 en2 | Stellar#1 d414 seen15@5 ally15; Ryth#4 d371 seen15@8 ally15
+534d0c8e4883da6e eight     L r 658 Cassi   by Cassi          bag 22+  0 fighting                     0 hp1st  686/700 camp    0 ch  686 al1 en1 | Cassi#2 d686 seen5@7 ally5
+534d0c8e4883da6e eight     L r 707 Tavi    by Ren            bag 72+  0 fighting                     0 hp1st  497/1125 camp   13 ch  484 al2 en2 | Ren#5 d385 seen3@7 ally5; Ryth#4 d99 seen12@9 ally15
+a1b4e85b4eb4abf8 swirl     L r  49 Stellar by Ren            bag  0+  0 farming   $$$E(24,15)e       0 hp1st  410/750 camp    0 ch  410 al3 en1 | Ren#0 d410 seen0@4 bush ally15
+a1b4e85b4eb4abf8 swirl     L r 157 Cassi   by camp:$$$E(24,15)e bag  0+  0 recalling                    0 hp1st  590/842 camp   44 ch  546 al3 en1 | Stellar#1 d200 seen9@6 ally15; Ren#0 d346 seen7@5 ally15
+a1b4e85b4eb4abf8 swirl     L r 226 Stellar by Ren            bag  0+  0 fighting                     0 hp1st  750/750 camp  120 ch  630 al4 en1 | Ren#0 d630 seen2@5 ally15
+a1b4e85b4eb4abf8 swirl     L r 241 Issac   by Ren            bag  0+  0 fighting                     0 hp1st  759/1185 camp    0 ch  759 al2 en3 | Tavi#3 d325 seen7@4 ally14; Varg#2 d270 seen8@4 ally8; Ren#0 d164 seen15@1 ally15
+a1b4e85b4eb4abf8 swirl     L r 314 Stellar by Ren            bag  0+  0 fighting                     1 hp1st  750/750 camp    0 ch  750 al3 en2 | Ren#0 d750 seen0@8 ally3
+a1b4e85b4eb4abf8 swirl     L r 345 Issac   by Ren            bag  0+  0 walking                      1 hp1st 1185/1185 camp    0 ch 1185 al1 en2 | Stellar#1 d750 seen13@9 ally13; Ren#0 d435 seen15@7 ally15
+a1b4e85b4eb4abf8 swirl     L r 393 Ryth    by Ren            bag  0+  0 fighting                     1 hp1st 1111/1700 camp    0 ch 1111 al1 en2 | Tavi#3 d450 seen9@None ally9; Ren#0 d661 seen14@9 ally15
+a1b4e85b4eb4abf8 swirl     L r 401 Varg    by Ren            bag  0+  0 fighting                     0 hp1st 1208/1500 camp    0 ch 1458 al0 en3 | Tavi#3 d324 seen15@3 ally15; Ren#0 d1134 seen15@3 ally15
+a1b4e85b4eb4abf8 swirl     L r 455 Issac   by Ren            bag  0+  0 capturing                    0 hp1st 1185/1185 camp    0 ch 1185 al1 en3 | Stellar#1 d340 seenNone@5 bush ally15; Ren#0 d845 seenNone@4 ally15
+a1b4e85b4eb4abf8 swirl     L r 461 Stellar by Stellar        bag  0+  0 fighting                     1 hp1st  430/750 camp    0 ch  430 al0 en1 | Stellar#1 d430 seen6@8 ally15
+a1b4e85b4eb4abf8 swirl     L r 504 Varg    by Ren            bag  0+  0 recalling                    0 hp1st  929/1500 camp    0 ch 1179 al1 en3 | Varg#2 d504 seen14@5 ally14; Tavi#3 d292 seen3@6 ally3; Ren#0 d382 seen15@6 ally15
+a1b4e85b4eb4abf8 swirl     L r 550 Ryth    by Ren            bag 88+  0 fighting                     1 hp1st 1700/1700 camp    0 ch 1700 al3 en1 | Ren#0 d1637 seen12@8 ally14; Stellar#1 d63 seen15@6 ally15
+a1b4e85b4eb4abf8 swirl     L r 556 Stellar by camp:$$$E(24,15)e bag  0+  0 homeward                     0 hp1st  222/750 camp   87 ch  135 al2 en1 | Ren#0 d135 seen11@8 ally15
+a1b4e85b4eb4abf8 swirl     L r 558 Cassi   by Ren            bag  0+  0 recalling                    1 hp1st  720/1056 camp    0 ch  720 al0 en1 | Ren#0 d720 seen15@8 ally15
+a1b4e85b4eb4abf8 swirl     L r 586 Varg    by Ren            bag  0+  0 farming   WWWW(31,16)o       1 hp1st 1462/1500 camp  151 ch 1662 al0 en1 | Ren#0 d1662 seen9@8 ally15
+a1b4e85b4eb4abf8 swirl     L r 628 Ryth    by Ren            bag  0+  0 fighting                     1 hp1st 1700/1700 camp   38 ch 1662 al3 en3 | Ren#0 d1662 seen9@11 ally9
+a1b4e85b4eb4abf8 swirl     L r 663 Cassi   by Ren            bag  0+  0 fighting                     1 hp1st 1056/1056 camp    0 ch 1056 al3 en1 | Ren#0 d1056 seen2@5 ally15
+a1b4e85b4eb4abf8 swirl     L r 672 Varg    by Ren            bag  0+  0 fighting                     1 hp1st 1228/1500 camp    0 ch 1478 al0 en2 | Ren#0 d1478 seen15@6 ally15
+4e40ed80f59dc81c swirl     L r  41 Varg    by Stellar        bag  0+  0 farming   $$$E(24,15)e       1 hp1st  900/1000 camp  360 ch  790 al4 en3 | Ren#3 d125 seen5@5 ally15; Stellar#0 d410 seen3@3 bush ally5; Tavi#2 d220 seen15@7 ally15; Prism#1 d35 seenNone@3 bush ally7
+4e40ed80f59dc81c swirl     L r 107 Cassi   by camp:$$EE(36,5)o bag  0+  0 farming   $$EE(36,5)o        1 hp1st   20/700 camp  560 ch    0 al0 en0 | 
+4e40ed80f59dc81c swirl     L r 135 Varg    by Prism          bag  0+  0 fighting                     1 hp1st  920/1000 camp  300 ch  870 al0 en3 | Ren#3 d579 seen8@5 bush ally8; Prism#1 d291 seen9@8 ally9
+4e40ed80f59dc81c swirl     L r 211 Issac   by Stellar        bag  0+  0 recalling                    0 hp1st   44/1090 camp  294 ch   44 al4 en1 | Stellar#0 d44 seen10@8 ally15
+4e40ed80f59dc81c swirl     L r 263 Varg    by Prism          bag  0+  0 fighting                     0 hp1st  548/1000 camp   42 ch  756 al0 en3 | Ren#3 d400 seen15@7 bush ally15; Stellar#0 d210 seen15@6 ally15; Prism#1 d146 seen12@8 ally12
+4e40ed80f59dc81c swirl     L r 290 Issac   by Prism          bag  0+  0 walking                      1 hp1st  743/1185 camp  168 ch  617 al2 en2 | Ren#3 d400 seen15@None ally15; Prism#1 d217 seen15@8 ally15
+4e40ed80f59dc81c swirl     L r 351 Ryth    by Stellar        bag  0+  0 fighting                     1 hp1st 1295/1700 camp    0 ch 1295 al1 en2 | Ren#3 d837 seen15@10 ally15; Stellar#0 d458 seen6@7 ally15
+4e40ed80f59dc81c swirl     L r 392 Stellar by Prism          bag  0+  0 fighting                     1 hp1st 1125/1125 camp   76 ch 1050 al3 en2 | Ren#3 d624 seen5@5 ally7; Prism#1 d426 seen11@8 bush ally11
+4e40ed80f59dc81c swirl     L r 406 Cassi   by Tavi           bag  0+  0 farming   $$$E(24,15)e       0 hp1st  370/700 camp    0 ch  370 al2 en3 | Prism#1 d330 seenNone@5 bush ally15; Tavi#2 d40 seen1@3 ally15
+4e40ed80f59dc81c swirl     L r 469 Stellar by Ren            bag  0+  0 fighting                     1 hp1st 1125/1125 camp    0 ch 1125 al2 en2 | Prism#1 d788 seen15@None ally15; Ren#3 d338 seen6@7 ally6
+4e40ed80f59dc81c swirl     L r 486 Cassi   by Prism          bag  0+  0 fighting                     1 hp1st  700/700 camp    0 ch  700 al3 en3 | Prism#1 d620 seen7@8 ally15; Tavi#2 d80 seen7@6 ally14
+4e40ed80f59dc81c swirl     L r 488 Ryth    by Tavi           bag  0+  0 fighting                     0 hp1st 1090/1700 camp    0 ch 1090 al1 en2 | Ren#3 d92 seen11@7 ally15; Prism#1 d331 seen15@7 ally15; Stellar#0 d454 seen13@8 ally13; Tavi#2 d214 seen15@5 ally15
+4e40ed80f59dc81c swirl     L r 499 Varg    by Ren            bag  0+  0 farming   $(24,21)e          0 hp1st 1046/1500 camp    0 ch 1296 al0 en2 | Tavi#2 d405 seen13@7 ally15; Ren#3 d891 seen15@7 ally15
+4e40ed80f59dc81c swirl     L r 562 Cassi   by Ren            bag  0+  0 fighting                     0 hp1st  700/700 camp   60 ch  640 al2 en1 | Ren#3 d640 seen0@4 ally3
+4e40ed80f59dc81c swirl     L r 570 Ryth    by Ren            bag  0+  0 farming   $$$E(20,14)o       1 hp1st 1700/1700 camp  151 ch 1549 al2 en1 | Ren#3 d1549 seen2@2 ally9
+4e40ed80f59dc81c swirl     L r 593 Varg    by Ren            bag  0+  0 fighting                     0 hp1st  835/1500 camp    0 ch  835 al1 en1 | Ren#3 d835 seen15@3 ally15
+4e40ed80f59dc81c swirl     L r 601 Stellar by Ren            bag  0+  0 fighting                     1 hp1st 1125/1125 camp    0 ch 1125 al0 en1 | Ren#3 d1125 seen0@3 ally15
+57feb2d9b4e74f75 lanes     L r 282 Ryth    by Tavi           bag 22+  0 homeward                     1 hp1st  910/1200 camp    0 ch  910 al0 en1 | Tavi#5 d910 seen5@6 ally5
+de009ab6653abaac collision L r  58 Issac   by Ren            bag  0+  0 farming   $(22,24)e          0 hp1st  515/900 camp   20 ch  495 al2 en2 | Tavi#2 d426 seen15@8 ally15; Ren#1 d69 seen15@6 ally15
+de009ab6653abaac collision L r  63 Varg    by Tavi           bag  0+  0 fighting                     0 hp1st  724/1000 camp    0 ch  974 al0 en3 | Ren#1 d245 seen15@8 ally15; Stellar#0 d445 seen5@9 ally9; Tavi#2 d284 seen15@7 ally15
+de009ab6653abaac collision L r 100 Stellar by Tavi           bag  0+  0 farming   $(22,16)o          -1 hp1st  393/750 camp   98 ch  323 al0 en1 | Ren#1 d203 seen10@7 ally11; Tavi#2 d120 seen4@8 ally4
+de009ab6653abaac collision L r 165 Issac   by Stellar        bag 22+  0 banking                      0 hp1st  740/900 camp    0 ch  740 al1 en3 | Ren#1 d175 seen13@8 ally14; Tavi#2 d530 seen4@7 ally13; Stellar#0 d35 seen1@7 ally15
+de009ab6653abaac collision L r 176 Varg    by Tavi           bag  0+  0 fighting                     0 hp1st  724/1000 camp  140 ch 1036 al0 en2 | Ren#1 d203 seen15@7 ally15; Tavi#2 d833 seen11@8 ally15
+de009ab6653abaac collision L r 268 Cassi   by Tavi           bag  0+ 22 farming   W(19,27)e          0 hp1st  700/700 camp    0 ch  700 al3 en1 | Tavi#2 d700 seen4@8 ally5
+de009ab6653abaac collision L r 305 Stellar by Tavi           bag  0+  0 farming   W(24,18)m          -1 hp1st  409/825 camp  112 ch  409 al1 en1 | Tavi#2 d409 seen5@9 ally5
+de009ab6653abaac collision L r 313 Varg    by Tavi           bag  0+  0 farming   W(24,22)m          0 hp1st  595/1000 camp  160 ch  695 al0 en1 | Tavi#2 d695 seen10@8 ally10
+de009ab6653abaac collision L r 371 Issac   by Tavi           bag 22+  0 banking                      0 hp1st  788/900 camp    0 ch  788 al0 en2 | Tavi#2 d788 seen6@8 ally15
+de009ab6653abaac collision L r 463 Cassi   by Stellar        bag 22+  0 fighting                     0 hp1st  700/700 camp    0 ch  700 al1 en1 | Stellar#0 d700 seen5@8 ally15
+de009ab6653abaac collision L r 474 Varg    by Stellar        bag 58+  0 fighting                     0 hp1st  676/1000 camp    0 ch  926 al1 en2 | Ren#1 d425 seen15@18 ally15; Stellar#0 d501 seen15@9 ally15
+de009ab6653abaac collision L r 596 Cassi   by Tavi           bag  0+  0 farming   W(24,22)m          0 hp1st  460/700 camp  200 ch  460 al1 en1 | Tavi#2 d460 seen13@8 ally13
+fda3700e274736fc ambush    L r 384 Issac   by Marcella       bag  0+  0 fighting                     0 hp1st  900/900 camp    0 ch  900 al0 en2 | Marcella#0 d483 seen0@3 ally0; Ren#3 d417 seen1@5 ally1
+26929382680aff4a lanes     L r 337 Varg    by Ren            bag  0+  0 fighting                     1 hp1st  765/1200 camp    0 ch 1015 al0 en1 | Ren#2 d1015 seen2@7 bush ally2
+7fccc08369e0239a stampede  L r 139 Ryth    by Issac          bag  0+  0 fighting                     -1 hp1st  445/1200 camp    0 ch  445 al0 en3 | Cassi#2 d310 seen5@8 ally5; Issac#3 d135 seen15@8 ally15
+7fccc08369e0239a stampede  L r 271 Tavi    by Tavi           bag  0+  0 fighting                     -1 hp1st  590/750 camp    0 ch  590 al0 en2 | Tavi#5 d303 seen7@8 ally7; Stellar#1 d287 seen3@7 ally3
+7fccc08369e0239a stampede  L r 528 Stellar by Prism          bag  0+  0 farming   EEEEEEGGGGGG(56,25)m -1 hp1st  582/750 camp  168 ch  582 al1 en1 | Prism#0 d582 seen12@8 ally15
+7fccc08369e0239a stampede  L r 643 Tavi    by Prism          bag  0+  0 farming   EEEEEEGGGGGG(56,25)m -1 hp1st  816/900 camp   84 ch  816 al2 en2 | Prism#0 d816 seen4@8 ally5
+7fccc08369e0239a stampede  L r 649 Stellar by Prism          bag  0+  0 fighting                     -1 hp1st  750/750 camp    0 ch  750 al1 en1 | Prism#0 d750 seen7@8 ally13
+7fccc08369e0239a stampede  L r 695 Ryth    by Cassi          bag  0+  0 fighting                     1 hp1st  442/1400 camp    0 ch  442 al0 en2 | Cassi#2 d442 seen15@9 bush ally15
+7fccc08369e0239a stampede  L r 768 Cassi   by Stellar        bag  0+  0 fighting                     -1 hp1st 1056/1056 camp    0 ch 1056 al2 en2 | Stellar#1 d1056 seen10@8 ally10
+7fccc08369e0239a stampede  L r 777 Tavi    by Prism          bag  0+  0 fighting                     -1 hp1st  900/900 camp    0 ch  900 al0 en3 | Stellar#1 d35 seen15@7 ally15; Prism#0 d865 seen11@9 ally12
+4f2424f3c0836fac pilgrimag L r  83 Ryth    by camp:$$$$EEEE(24,58)m bag  0+  0 farming   $$$$EEEE(24,58)m   -1 hp1st  100/1200 camp 1180 ch    0 al3 en1 | 
+4f2424f3c0836fac pilgrimag L r  98 Stellar by Varg           bag  0+  0 fighting                     -1 hp1st  630/750 camp  480 ch  270 al1 en1 | Ryth#4 d100 seen15@7 ally15; Varg#3 d170 seen13@8 ally15
+4f2424f3c0836fac pilgrimag L r 104 Tavi    by Varg           bag  0+  0 fighting                     -1 hp1st  230/750 camp   60 ch  230 al0 en1 | Varg#3 d230 seen15@6 ally15
+4f2424f3c0836fac pilgrimag L r 179 Issac   by Stellar        bag  0+  0 farming   $GWW(46,43)e       -1 hp1st  320/900 camp  100 ch  320 al1 en2 | Stellar#5 d320 seenNone@4 ally14
+4f2424f3c0836fac pilgrimag L r 608 Issac   by Ryth           bag  0+  0 homeward                     -1 hp1st  468/1375 camp    0 ch  468 al0 en2 | Ryth#4 d468 seen3@6 bush ally15
+4f2424f3c0836fac pilgrimag L r 648 Varg    by Stellar        bag  0+  0 fighting                     -1 hp1st 1020/1400 camp    0 ch 1020 al1 en1 | Stellar#5 d1020 seen10@8 ally10
+527fd8eb5bf04331 lanes     L r 179 Varg    by camp:E(39,13)o bag  0+  0 farming   E(39,13)o          0 hp1st  490/1000 camp  715 ch  225 al1 en1 | Varg#7 d225 seen10@9 ally10
+527fd8eb5bf04331 lanes     L r 210 Tavi    by Ren            bag  0+  0 fighting                     0 hp1st  568/750 camp    0 ch  568 al0 en2 | Ren#11 d568 seen9@8 ally9
+527fd8eb5bf04331 lanes     L r 373 Ryth    by Issac          bag  0+  0 fighting                     1 hp1st  353/1200 camp    0 ch  353 al0 en2 | Varg#7 d75 seen15@6 ally15; Cassi#8 d120 seen3@8 ally3; Issac#9 d158 seen5@8 ally5
+e63c7fea5a276fbf pilgrimag L r  73 Ryth    by camp:$$$$EEEE(24,58)m bag  0+  0 fighting                     -1 hp1st 1140/1200 camp 1120 ch   20 al0 en0 | Ren#11 d20 seen10@8 ally10
+e63c7fea5a276fbf pilgrimag L r  94 Tavi    by camp:$$$$EEEE(24,58)m bag  0+  0 farming   $$$$EEEE(24,58)m   -1 hp1st  470/750 camp  320 ch  150 al1 en1 | Ryth#10 d150 seen7@8 ally7
+e63c7fea5a276fbf pilgrimag L r 109 Stellar by Issac          bag  0+  0 homeward                     -1 hp1st  350/750 camp    0 ch  350 al0 en1 | Cassi#8 d200 seen6@5 ally13; Issac#9 d150 seen5@5 ally8
+e63c7fea5a276fbf pilgrimag L r 311 Varg    by Ren            bag  0+  0 fighting                     -1 hp1st  757/1400 camp    0 ch 1257 al1 en2 | Stellar#7 d950 seen8@3 ally15; Ren#11 d307 seen5@7 ally5
+e63c7fea5a276fbf pilgrimag L r 406 Issac   by Issac          bag  0+ 68 fighting                     0 hp1st  536/900 camp    0 ch  537 al0 en1 | Issac#9 d537 seen15@6 ally15
+f56cf538e9c3651d stampede  L r 418 Cassi   by Tavi           bag  0+  0 farming   EEEEEEGGGGGG(56,25)m -1 hp1st  700/700 camp    0 ch  700 al2 en5 | Cassi#0 d680 seen7@9 ally10; Tavi#5 d20 seen9@8 ally11
+f56cf538e9c3651d stampede  L r 431 Varg    by Prism          bag  0+  0 fighting                     -1 hp1st  540/1500 camp    0 ch 1040 al0 en1 | Prism#3 d1040 seen14@7 ally14
+26c356d964f0fcb0 swirl     L r  72 Stellar by camp:$$EE(36,5)o bag  0+  0 farming   $WW(43,10)o        1 hp1st   30/750 camp  530 ch    0 al1 en0 | 
+26c356d964f0fcb0 swirl     L r 123 Varg    by Stellar        bag  0+  0 farming   $$$E(24,15)e       1 hp1st  620/1000 camp  294 ch  786 al2 en2 | Stellar#1 d786 seen3@6 bush ally7
+26c356d964f0fcb0 swirl     L r 132 Cassi   by Stellar        bag  0+  0 capturing                    0 hp1st  700/700 camp    0 ch  700 al2 en4 | Stellar#1 d585 seen1@4 ally15; Tavi#2 d35 seenNone@4 bush ally15; Issac#4 d80 seen6@6 ally14
+26c356d964f0fcb0 swirl     L r 140 Ryth    by Stellar        bag  0+  0 farming   $(24,21)e          0 hp1st  633/1200 camp    0 ch  633 al1 en1 | Stellar#1 d633 seen13@2 bush ally15
+26c356d964f0fcb0 swirl     L r 235 Cassi   by camp:$$$E(24,15)e bag  0+  0 walking                      1 hp1st   70/700 camp  574 ch    0 al2 en0 | 
+26c356d964f0fcb0 swirl     L r 416 Stellar by Stellar        bag  0+  0 fighting                     1 hp1st  750/750 camp    0 ch  750 al3 en2 | Stellar#1 d750 seen15@8 ally15
+9428d747a626e501 elkring   L r 117 Varg    by Cassi          bag  0+  0 fighting                     0 hp1st  990/1200 camp    0 ch 1240 al0 en1 | Cassi#2 d727 seen12@3 bush ally12; Issac#3 d513 seen8@5 ally8
+9428d747a626e501 elkring   L r 147 Cassi   by camp:$E(26,9)e bag  0+  0 fighting                     0 hp1st  406/700 camp   86 ch  320 al1 en0 | Stellar#1 d320 seen1@5 ally15
+9428d747a626e501 elkring   L r 252 Ryth    by camp:$E(10,27)e bag  0+  0 fighting                     0 hp1st  654/1400 camp   90 ch  565 al1 en2 | Stellar#1 d252 seen3@8 ally3; Issac#3 d213 seen15@7 ally15; Ryth#0 d100 seen8@8 ally8
+9428d747a626e501 elkring   L r 331 Stellar by Ren            bag  0+  0 farming   $E(26,9)e          0 hp1st  372/750 camp    0 ch  372 al1 en1 | Ren#4 d372 seen6@7 ally12
+9428d747a626e501 elkring   L r 360 Issac   by Ryth           bag  0+  0 farming   $E(19,2)o          1 hp1st  806/1090 camp  126 ch  680 al1 en1 | Ryth#0 d306 seen7@8 ally14; Tavi#5 d374 seen2@5 ally8
+9428d747a626e501 elkring   L r 438 Tavi    by Stellar        bag  0+  0 farming   $E(19,2)o          1 hp1st 1125/1125 camp   76 ch 1049 al1 en2 | Tavi#5 d337 seen8@8 ally15; Stellar#1 d713 seenNone@5 bush
+9428d747a626e501 elkring   L r 446 Ryth    by Stellar        bag  0+  0 farming   $E(19,2)o          1 hp1st 1473/1700 camp  227 ch 1473 al0 en4 | Stellar#1 d1038 seen6@7 ally7; Tavi#5 d337 seen10@7 ally15; Ryth#0 d99 seen1@6 ally1
+9428d747a626e501 elkring   L r 457 Varg    by Stellar        bag 36+  0 fighting                     0 hp1st 1500/1500 camp    0 ch 1750 al0 en3 | Ren#4 d597 seen0@4 ally8; Issac#3 d760 seen3@7 ally13; Stellar#1 d393 seen7@8 ally15
+9428d747a626e501 elkring   L r 505 Stellar by Ryth           bag 36+  0 tributing                    0 hp1st  648/900 camp    0 ch  648 al0 en1 | Ryth#0 d648 seenNone@5 bush
+9428d747a626e501 elkring   L r 536 Ryth    by Cassi          bag  0+  0 fighting                     0 hp1st 1700/1700 camp    0 ch 1700 al1 en3 | Cassi#2 d1021 seen6@9 ally6; Ren#4 d679 seen3@5 ally3
+9428d747a626e501 elkring   L r 550 Cassi   by Ren            bag 36+ 36 fighting                     0 hp1st  869/1056 camp    0 ch  869 al2 en1 | Ren#4 d869 seen7@8 ally11
+add646675692c42f pilgrimag L r  96 Tavi    by Ryth           bag  0+  0 fighting                     -1 hp1st  630/750 camp   60 ch  570 al2 en2 | Ren#5 d330 seen3@8 bush ally4; Stellar#2 d140 seen6@8 ally7; Ryth#4 d100 seen9@8 ally9
+add646675692c42f pilgrimag L r 232 Issac   by camp:$$$$EEEE(24,58)m bag  0+  0 farming   $$$$EEEE(24,58)m   -1 hp1st  120/900 camp  900 ch    0 al1 en0 | 
+add646675692c42f pilgrimag L r 346 Ryth    by camp:$$$$EEEE(24,58)m bag  0+  0 fighting                     -1 hp1st  570/1200 camp  480 ch   90 al1 en0 | Varg#3 d90 seen11@9 ally12
+add646675692c42f pilgrimag L r 443 Stellar by Ren            bag  0+  0 fighting                     -1 hp1st  310/750 camp    0 ch  310 al1 en2 | Ren#5 d310 seen15@6 ally15
+00a49610278fcd04 corners   L r 354 Ryth    by Ryth           bag  0+  0 tributing                    0 hp1st 1600/1600 camp  294 ch 1306 al0 en3 | Ryth#4 d952 seen9@7 ally9; Ren#5 d354 seen4@8 ally4
+00a49610278fcd04 corners   L r 403 Tavi    by Cassi          bag 36+  0 fighting                     0 hp1st  601/1125 camp    0 ch  601 al0 en1 | Cassi#0 d601 seen12@9 ally14
+00a49610278fcd04 corners   L r 420 Varg    by Varg           bag  0+  0 fighting                     0 hp1st 1200/1200 camp    0 ch 1700 al0 en2 | Cassi#0 d564 seen15@8 ally15; Varg#3 d1026 seen7@14 ally7; Ryth#4 d110 seen15@6 ally15
+00a49610278fcd04 corners   L r 523 Issac   by Ren            bag  0+  0 fighting                     0 hp1st 1375/1375 camp    0 ch 1375 al1 en2 | Stellar#2 d1143 seen14@9 ally15; Ren#5 d232 seen6@7 ally15
+4cdf484edb7f33b4 swirl     L r  69 Ryth    by camp:$$EE(36,5)o bag  0+  0 farming   $$EE(36,5)o        1 hp1st   20/1200 camp  800 ch    0 al0 en0 | 
+4cdf484edb7f33b4 swirl     L r 235 Stellar by Ryth           bag  0+  0 farming   $(20,8)o           1 hp1st  710/750 camp    0 ch  710 al3 en5 | Ren#2 d205 seen2@5 ally3; Ryth#4 d365 seen15@8 ally15; Varg#3 d140 seen13@7 ally14
+4cdf484edb7f33b4 swirl     L r 347 Ryth    by Varg           bag  0+  0 fighting                     1 hp1st 1200/1200 camp  240 ch  960 al1 en2 | Varg#3 d960 seen7@8 ally15
+4cdf484edb7f33b4 swirl     L r 408 Varg    by Cassi          bag  0+  0 fighting                     1 hp1st  389/1500 camp  265 ch  421 al0 en4 | Issac#1 d72 seen15@5 ally15; Ren#2 d220 seen15@6 bush ally15; Cassi#0 d129 seen15@5 bush ally15
+4cdf484edb7f33b4 swirl     L r 485 Ryth    by Ryth           bag  0+  0 fighting                     0 hp1st 1210/1300 camp    0 ch 1210 al1 en1 | Ryth#4 d1210 seen1@3 bush ally15
+4cdf484edb7f33b4 swirl     L r 628 Stellar by Ren            bag  0+  0 fighting                     1 hp1st 1125/1125 camp   38 ch 1087 al1 en2 | Ren#2 d412 seen2@None ally2; Varg#3 d675 seen9@8 bush ally10
+4cdf484edb7f33b4 swirl     L r 635 Issac   by Ryth           bag  0+  0 fighting                     1 hp1st 1168/1375 camp    0 ch 1168 al0 en1 | Ryth#4 d1168 seen8@8 ally15
+4cdf484edb7f33b4 swirl     L r 858 Varg    by Cassi          bag  0+  0 farming   $$$E(20,14)o       0 hp1st  962/1500 camp  113 ch 1098 al2 en2 | Ren#2 d992 seen5@7 ally5; Cassi#0 d106 seen15@None ally15
+4cdf484edb7f33b4 swirl     L r 958 Issac   by Ryth           bag  0+  0 fighting                     1 hp1st 1375/1375 camp    0 ch 1375 al1 en2 | Ren#2 d801 seen10@9 ally15; Ryth#4 d574 seen4@6 ally4
+4cdf484edb7f33b4 swirl     L r 965 Stellar by Ren            bag  0+  0 fighting                     1 hp1st  553/1125 camp    0 ch  553 al1 en2 | Issac#1 d121 seen15@7 ally15; Ren#2 d432 seen15@4 ally15
+4cdf484edb7f33b4 swirl     L r 981 Ryth    by Ryth           bag  0+  0 farming   $$$E(24,15)e       -1 hp1st 1296/1500 camp  252 ch 1170 al1 en2 | Ren#2 d934 seen9@8 ally15; Ryth#4 d236 seen0@3 ally10
+4cdf484edb7f33b4 swirl     L r1049 Varg    by Varg           bag  0+  0 fighting                     0 hp1st 1500/1500 camp    0 ch 1693 al1 en3 | Cassi#0 d153 seen2@6 ally15; Issac#1 d40 seen3@3 bush ally15; Varg#3 d1500 seen6@3 bush ally15
+4cdf484edb7f33b4 swirl     L r1051 Ryth    by Varg           bag  0+  0 fighting                     0 hp1st 1500/1500 camp    0 ch 1500 al0 en3 | Varg#3 d1300 seen2@5 ally15; Cassi#0 d200 seenNone@3 ally15
+bad55339923d51cb stampede  L r 188 Stellar by Cassi          bag  0+  0 fighting                     0 hp1st  686/750 camp    0 ch  686 al1 en2 | Ryth#4 d250 seen10@6 bush ally10; Tavi#5 d330 seen15@8 bush ally15; Cassi#2 d106 seen13@8 bush ally13
+bad55339923d51cb stampede  L r 364 Tavi    by Tavi           bag  0+  0 fighting                     0 hp1st  750/825 camp    0 ch  750 al0 en1 | Tavi#5 d750 seenNone@5 bush ally2
+6d7e0884e2a2cb50 lanes     L r 244 Issac   by Cassi          bag  0+  0 farming   W(46,11)e          0 hp1st  516/1280 camp  154 ch  404 al0 en1 | Cassi#0 d404 seen14@8 ally14
+6d7e0884e2a2cb50 lanes     L r 409 Issac   by Stellar        bag  0+ 22 capturing                    0 hp1st  566/1280 camp    0 ch  566 al1 en2 | Stellar#5 d566 seen15@6 ally15
+872da98f148cec3e corners   L r  53 Issac   by Ryth           bag  0+  0 fighting                     1 hp1st  760/900 camp    0 ch  760 al2 en3 | Ren#2 d365 seen14@7 ally15; Issac#1 d160 seen3@5 ally4; Ryth#4 d135 seen15@4 ally15; Varg#3 d100 seen5@8 ally5
+872da98f148cec3e corners   L r  58 Tavi    by Varg           bag  0+  0 fighting                     0 hp1st  630/750 camp  120 ch  510 al0 en4 | Ryth#4 d200 seen15@6 ally15; Issac#1 d160 seen11@11 ally11; Varg#3 d150 seen8@8 ally10
+872da98f148cec3e corners   L r 172 Issac   by Varg           bag 36+  0 fighting                     0 hp1st  322/900 camp    0 ch  322 al3 en3 | Issac#1 d80 seen6@8 ally6; Varg#3 d242 seen12@8 ally12
+872da98f148cec3e corners   L r 178 Tavi    by Varg           bag 22+  0 fighting                     0 hp1st  750/750 camp    0 ch  750 al1 en3 | Stellar#5 d340 seen4@8 ally15; Ren#2 d40 seen7@8 ally10; Varg#3 d370 seen10@9 ally15
+872da98f148cec3e corners   L r 255 Stellar by Stellar        bag  0+  0 farming   W(37,36)e          0 hp1st  261/825 camp   14 ch  261 al2 en3 | Stellar#5 d261 seen12@8 ally12
+872da98f148cec3e corners   L r 260 Ryth    by Varg           bag 36+  0 fighting                     0 hp1st 1006/1200 camp    0 ch 1006 al1 en3 | Ryth#4 d296 seen15@9 ally15; Varg#3 d472 seen15@7 ally15; Stellar#5 d238 seen15@8 ally15
+872da98f148cec3e corners   L r 344 Stellar by Varg           bag  0+  0 fighting                     0 hp1st  825/825 camp   84 ch  741 al1 en1 | Varg#3 d741 seen5@8 ally9
+872da98f148cec3e corners   L r 374 Tavi    by Varg           bag  0+  0 farming   E(37,32)e          0 hp1st  440/750 camp   70 ch  426 al1 en3 | Varg#3 d426 seen15@5 ally15
+872da98f148cec3e corners   L r 633 Varg    by Cassi          bag 36+  0 fighting                     -1 hp1st 1387/1500 camp  227 ch 1349 al0 en3 | Ryth#4 d684 seen9@10 ally9; Varg#3 d648 seen11@8 ally11; Cassi#0 d17 seen6@8 ally7

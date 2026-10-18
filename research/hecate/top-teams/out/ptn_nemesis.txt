@@ -1,0 +1,16 @@
+games since 2026-10-17T13:00: 10
+| game | opp | res | rounds | tributed us/them | captured gems us/them | monolith gems us/them | their captures on our side | our deaths (bag gems lost) | their deaths (bags) | our camp deaths | tributed at r300 us/them |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 20261017-130622-Mite-vs-PTN-Hyperion-1cd3404a/1-rushbait_v2 | Mite | L | 566 | 798/1016 | 922/1052 | 0/0 | 0 | 0 (0) | 0 (0) | 0 | 352/402 |
+| 20261017-130622-Mite-vs-PTN-Hyperion-1cd3404a/2-stampede | Mite | L | 456 | 0/1080 | 0/1080 | 0/0 | 0 | 2 (0) | 2 (0) | 0 | 0/360 |
+| 20261017-130622-Mite-vs-PTN-Hyperion-1cd3404a/3-contest | Mite | L | 2000 | 0/0 | 0/0 | 0/0 | 0 | 89 (0) | 2 (0) | 0 | 0/0 |
+| 20261017-130622-Mite-vs-PTN-Hyperion-1cd3404a/4-corners | Mite | L | 699 | 962/1066 | 918/1168 | 0/0 | 138 | 14 (304) | 6 (348) | 0 | 226/428 |
+| 20261017-130622-Mite-vs-PTN-Hyperion-1cd3404a/5-eight | Mite | W | 666 | 1112/766 | 1074/920 | 0/0 | 44 | 12 (496) | 11 (556) | 0 | 512/292 |
+| 20261017-154011-Mite-vs-PTN-Hyperion-6c90138d/1-packs | Mite | L | 464 | 728/1008 | 704/1032 | 0/0 | 192 | 4 (0) | 2 (24) | 0 | 476/660 |
+| 20261017-154011-Mite-vs-PTN-Hyperion-6c90138d/2-rows | Mite | L | 356 | 924/1012 | 990/1056 | 0/0 | 0 | 0 (0) | 0 (0) | 0 | 660/792 |
+| 20261017-154011-Mite-vs-PTN-Hyperion-6c90138d/3-rushbait_v2 | Mite | L | 611 | 930/1008 | 966/1110 | 0/0 | 0 | 1 (58) | 2 (102) | 0 | 374/344 |
+| 20261017-154011-Mite-vs-PTN-Hyperion-6c90138d/4-stampede | Mite | L | 451 | 0/1080 | 0/1080 | 0/0 | 0 | 5 (0) | 1 (0) | 0 | 0/360 |
+| 20261017-154011-Mite-vs-PTN-Hyperion-6c90138d/5-contest | Mite | L | 2000 | 0/0 | 0/0 | 0/0 | 0 | 90 (0) | 2 (0) | 0 | 0/0 |
+
+- vs Mite: 10 games, PTN won 1; per game captured 557 vs 850 gems (25.7 vs 47.4 captures); deaths 21.7 vs 2.8; bag gems lost 86 vs 103; camp deaths 0.00
+  our deaths to them: ownhalf 96%, recalling 62%, ambushed 50%, near_altar 15%, farming 12%, camp_hurt 6%, bag30 5%, enemyhalf 4%, on_capture_tile 1% (n=217)

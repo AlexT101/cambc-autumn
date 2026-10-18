@@ -1,0 +1,10 @@
+| team | damage/stun casts per 100 alive champion-rounds | on champions | on camps | hit nothing |
+|---|---|---|---|---|
+| Fish | 5.9 | 27% | 73% | 0% |
+| Nyxius | 4.0 | 30% | 70% | 0% |
+| Mite | 4.1 | 33% | 67% | 0% |
+| procless | 4.6 | 24% | 76% | 0% |
+| nt4 | 3.5 | 29% | 71% | 0% |
+| SBC | 4.2 | 37% | 63% | 0% |
+| Univ | 4.9 | 32% | 68% | 0% |
+| PTN | 3.2 | 28% | 72% | 0% |

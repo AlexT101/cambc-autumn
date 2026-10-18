@@ -1,0 +1,39 @@
+games since 2026-10-16T21:18: 31
+| game | opp | res | rounds | tributed us/them | captured gems us/them | monolith gems us/them | their captures on our side | our deaths (bag gems lost) | their deaths (bags) | our camp deaths | tributed at r300 us/them |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 20261016-230029-Mite-vs-PTN-Hyperion-fe4abf76/1-stampede | Mite | L | 495 | 0/1080 | 0/1080 | 0/0 | 0 | 6 (0) | 1 (0) | 1 | 0/360 |
+| 20261016-230029-Mite-vs-PTN-Hyperion-fe4abf76/2-contest | Mite | L | 2000 | 0/0 | 0/0 | 0/0 | 0 | 103 (0) | 2 (0) | 0 | 0/0 |
+| 20261016-230029-Mite-vs-PTN-Hyperion-fe4abf76/3-corners | Mite | W | 798 | 1030/966 | 1140/1024 | 0/0 | 116 | 6 (88) | 11 (66) | 0 | 226/174 |
+| 20261016-230029-Mite-vs-PTN-Hyperion-fe4abf76/4-eight | Mite | L | 487 | 110/1036 | 380/876 | 0/0 | 88 | 12 (182) | 3 (44) | 2 | 110/474 |
+| 20261016-230029-Mite-vs-PTN-Hyperion-fe4abf76/5-elkring | Mite | L | 518 | 666/1026 | 864/936 | 0/0 | 0 | 8 (144) | 3 (18) | 1 | 414/522 |
+| 20261016-230512-Mite-vs-PTN-Hyperion-efe65d7b/1-lanes | Mite | L | 378 | 678/1000 | 700/1000 | 0/0 | 0 | 1 (22) | 0 (0) | 1 | 482/598 |
+| 20261016-230512-Mite-vs-PTN-Hyperion-efe65d7b/2-packs | Mite | L | 477 | 720/1016 | 840/940 | 0/0 | 192 | 7 (120) | 1 (0) | 0 | 448/620 |
+| 20261016-230512-Mite-vs-PTN-Hyperion-efe65d7b/3-rows | Mite | L | 373 | 924/1023 | 924/1056 | 0/0 | 0 | 0 (0) | 0 (0) | 0 | 726/792 |
+| 20261016-230512-Mite-vs-PTN-Hyperion-efe65d7b/4-rushbait_v2 | Mite | W | 644 | 1008/972 | 1058/1060 | 0/0 | 0 | 0 (0) | 2 (0) | 0 | 402/352 |
+| 20261017-003123-procless-vs-PTN-Hyperion-aa589fa2/1-corners | procless | L | 384 | 452/1024 | 510/1104 | 0/0 | 138 | 0 (0) | 0 (0) | 0 | 350/616 |
+| 20261017-003123-procless-vs-PTN-Hyperion-aa589fa2/2-elkring | procless | W | 569 | 1044/828 | 1008/972 | 0/0 | 144 | 2 (0) | 5 (0) | 0 | 540/432 |
+| 20261017-003123-procless-vs-PTN-Hyperion-aa589fa2/3-interlock | procless | L | 523 | 600/1032 | 622/1054 | 0/0 | 216 | 3 (0) | 2 (0) | 0 | 358/380 |
+| 20261017-003123-procless-vs-PTN-Hyperion-aa589fa2/4-monolith | procless | L | 431 | 930/1010 | 988/1120 | 0/0 | 88 | 1 (0) | 2 (0) | 0 | 520/564 |
+| 20261017-003123-procless-vs-PTN-Hyperion-aa589fa2/5-lanes | procless | W | 409 | 1014/776 | 1072/776 | 0/0 | 0 | 0 (0) | 1 (0) | 0 | 584/476 |
+| 20261017-005039-procless-vs-PTN-Hyperion-77d5f22f/2-elkring | procless | W | 535 | 1008/648 | 972/864 | 0/0 | 36 | 0 (0) | 6 (36) | 0 | 540/324 |
+| 20261017-005039-procless-vs-PTN-Hyperion-77d5f22f/3-interlock | procless | L | 524 | 688/1038 | 710/1104 | 0/0 | 288 | 0 (0) | 3 (0) | 0 | 330/430 |
+| 20261017-005039-procless-vs-PTN-Hyperion-77d5f22f/4-monolith | procless | L | 431 | 930/1010 | 988/1120 | 0/0 | 88 | 1 (0) | 2 (0) | 0 | 520/564 |
+| 20261017-024038-procless-vs-PTN-Hyperion-655c9a93/1-corners | procless | L | 383 | 488/1018 | 590/988 | 0/0 | 116 | 3 (44) | 0 (0) | 1 | 298/552 |
+| 20261017-024038-procless-vs-PTN-Hyperion-655c9a93/2-elkring | procless | W | 559 | 1008/936 | 1008/1044 | 0/0 | 144 | 5 (36) | 7 (72) | 0 | 432/360 |
+| 20261017-024038-procless-vs-PTN-Hyperion-655c9a93/3-interlock | procless | W | 545 | 1004/750 | 938/1004 | 0/0 | 216 | 1 (0) | 6 (0) | 0 | 430/408 |
+| 20261017-024038-procless-vs-PTN-Hyperion-655c9a93/4-monolith | procless | L | 365 | 746/1032 | 790/1032 | 0/0 | 154 | 1 (0) | 1 (0) | 0 | 600/688 |
+| 20261017-024038-procless-vs-PTN-Hyperion-655c9a93/5-lanes | procless | L | 462 | 984/1010 | 1094/1068 | 0/0 | 44 | 0 (0) | 1 (0) | 1 | 546/600 |
+| 20261017-130622-Mite-vs-PTN-Hyperion-1cd3404a/1-rushbait_v2 | Mite | L | 566 | 798/1016 | 922/1052 | 0/0 | 0 | 0 (0) | 0 (0) | 0 | 352/402 |
+| 20261017-130622-Mite-vs-PTN-Hyperion-1cd3404a/2-stampede | Mite | L | 456 | 0/1080 | 0/1080 | 0/0 | 0 | 2 (0) | 2 (0) | 0 | 0/360 |
+| 20261017-130622-Mite-vs-PTN-Hyperion-1cd3404a/3-contest | Mite | L | 2000 | 0/0 | 0/0 | 0/0 | 0 | 89 (0) | 2 (0) | 0 | 0/0 |
+| 20261017-130622-Mite-vs-PTN-Hyperion-1cd3404a/4-corners | Mite | L | 699 | 962/1066 | 918/1168 | 0/0 | 138 | 14 (304) | 6 (348) | 0 | 226/428 |
+| 20261017-154011-Mite-vs-PTN-Hyperion-6c90138d/1-packs | Mite | L | 464 | 728/1008 | 704/1032 | 0/0 | 192 | 4 (0) | 2 (24) | 0 | 476/660 |
+| 20261017-154011-Mite-vs-PTN-Hyperion-6c90138d/2-rows | Mite | L | 356 | 924/1012 | 990/1056 | 0/0 | 0 | 0 (0) | 0 (0) | 0 | 660/792 |
+| 20261017-154011-Mite-vs-PTN-Hyperion-6c90138d/3-rushbait_v2 | Mite | L | 611 | 930/1008 | 966/1110 | 0/0 | 0 | 1 (58) | 2 (102) | 0 | 374/344 |
+| 20261017-154011-Mite-vs-PTN-Hyperion-6c90138d/4-stampede | Mite | L | 451 | 0/1080 | 0/1080 | 0/0 | 0 | 5 (0) | 1 (0) | 0 | 0/360 |
+| 20261017-154011-Mite-vs-PTN-Hyperion-6c90138d/5-contest | Mite | L | 2000 | 0/0 | 0/0 | 0/0 | 0 | 90 (0) | 2 (0) | 0 | 0/0 |
+
+- vs Mite: 18 games, PTN won 2; per game captured 578 vs 864 gems (25.4 vs 44.5 captures); deaths 19.3 vs 2.2; bag gems lost 51 vs 33; camp deaths 0.28
+  our deaths to them: ownhalf 96%, recalling 60%, ambushed 46%, near_altar 18%, farming 12%, camp_hurt 5%, bag30 4%, enemyhalf 4%, on_capture_tile 2% (n=348)
+- vs procless: 13 games, PTN won 5; per game captured 868 vs 1019 gems (29.6 vs 32.8 captures); deaths 1.3 vs 2.8; bag gems lost 6 vs 8; camp deaths 0.15
+  our deaths to them: ownhalf 82%, camp_hurt 18%, recalling 18%, enemyhalf 18%, ambushed 12%, near_altar 12%, bag30 6% (n=17)

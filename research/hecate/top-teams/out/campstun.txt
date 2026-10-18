@@ -1,0 +1,10 @@
+| team | unit-target stun casts on camps per game: wolf / elk / monolith / clusters | casters |
+|---|---|---|
+| Fish | 20.9 / 13.0 / 2.1 / 12.2 | Cassi 21.0, Ren 19.3, Tavi 4.7, Prism 3.3 |
+| Nyxius | 20.3 / 4.7 / 0.2 / 5.6 | Ren 15.9, Cassi 13.2, Tavi 1.6 |
+| Mite | 7.7 / 10.4 / 0.0 / 6.3 | Ren 11.8, Tavi 7.4, Cassi 3.9, Prism 1.3 |
+| procless | 7.0 / 3.8 / 0.1 / 6.1 | Ren 15.4, Tavi 1.6, Prism 0.1 |
+| nt4 | 8.4 / 3.5 / 0.0 / 5.3 | Tavi 7.5, Cassi 6.9, Prism 2.8 |
+| SBC | 10.7 / 3.6 / 0.6 / 7.3 | Tavi 11.2, Ren 9.8, Prism 1.1 |
+| Univ | 22.7 / 9.9 / 0.5 / 17.2 | Tavi 21.2, Ren 14.8, Cassi 14.3 |
+| PTN | 3.3 / 8.5 / 0.0 / 1.0 | Ren 5.9, Cassi 4.3, Tavi 2.2, Prism 0.4 |

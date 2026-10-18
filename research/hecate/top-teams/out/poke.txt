@@ -1,0 +1,13 @@
+| team | wolf dmg from 4+ | elk dmg from 4+ | monolith dmg from 4+ |
+|---|---|---|---|
+| Fish | 18% | 25% | 69% |
+| Nyxius | 1% | 3% | 0% |
+| Mite | 1% | 10% | 100% |
+| procless | 15% | 16% | 26% |
+| nt4 | 6% | 3% | 0% |
+| SBC | 14% | 14% | 20% |
+| Univ | 30% | 20% | 22% |
+| PTN | 5% | 13% | 0% |
+- Fish 20261016-080003-Intercontinental-Fish-vs-Quantom-536e7550/1-elkring r1 Ryth AoE damage d5; 20261016-080003-Intercontinental-Fish-vs-Quantom-536e7550/1-elkring r2 Ryth AoE damage d4; 20261016-080003-Intercontinental-Fish-vs-Quantom-536e7550/1-elkring r2 Tavi CC d4
+- Nyxius 20261016-090004-Nyxius-vs-Univardisty-of-Shingtonw-c217c986/1-eight r95 Stellar AoE damage d5; 20261016-090004-Nyxius-vs-Univardisty-of-Shingtonw-c217c986/1-eight r314 Cassi Damage d4; 20261016-090004-Nyxius-vs-Univardisty-of-Shingtonw-c217c986/1-eight r382 Tavi CC d4
+- Mite 20261016-080003-Shawn-vs-Mite-508d7cff/2-eight r24 Stellar AoE damage d4; 20261016-080003-Shawn-vs-Mite-508d7cff/2-eight r32 Stellar AoE damage d4; 20261016-080003-Shawn-vs-Mite-508d7cff/2-eight r57 Stellar AoE damage d4

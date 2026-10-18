@@ -1,0 +1,10 @@
+| team | games (maps with a bush next to an altar) | tributes started from a bush | champion-rounds in bushes within 3 of an altar | ...of which with no bag, not channelling |
+|---|---|---|---|---|
+| Fish | 34 | 65% | 4.8% | 0.9% |
+| Nyxius | 10 | 62% | 4.1% | 1.4% |
+| Mite | 51 | 64% | 5.0% | 0.9% |
+| procless | 22 | 36% | 3.6% | 0.6% |
+| nt4 | 3 | 2% | 0.7% | 0.5% |
+| SBC | 21 | 54% | 4.3% | 1.0% |
+| Univ | 28 | 74% | 4.0% | 0.8% |
+| PTN | 14 | 30% | 2.6% | 0.0% |

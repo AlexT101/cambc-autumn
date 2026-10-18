@@ -1,0 +1,77 @@
+## Camp damage by attacker distance (camps hit only within 3)
+
+| team | dmg from d<=1 | d=2 | d=3 | d=4+ | camp dmg taken per 1000 dealt |
+|---|---|---|---|---|---|
+| Fish | 41% | 10% | 21% | 28% | 178 |
+| Nyxius | 60% | 9% | 29% | 2% | 116 |
+| Mite | 56% | 9% | 30% | 6% | 155 |
+| procless | 47% | 14% | 21% | 17% | 231 |
+| nt4 | 49% | 12% | 31% | 7% | 146 |
+| SBC | 43% | 15% | 26% | 16% | 200 |
+| Univ | 35% | 9% | 27% | 29% | 169 |
+| PTN | 58% | 10% | 24% | 8% | 184 |
+
+Per champion share of camp damage dealt from distance 4+ (team: champ share [total dmg]):
+- Stellar: Fish 51%, Nyxius 9%, Mite 21%, procless 41%, nt4 23%, SBC 37%, Univ 57%, PTN 22%
+- Prism: Fish 54%, Mite 35%, nt4 32%, SBC 43%, PTN 8%
+- Cassi: Fish 29%, Nyxius 0%, Mite 2%, procless 24%, nt4 10%, SBC 25%, Univ 37%, PTN 15%
+- Tavi: Fish 46%, Nyxius 0%, Mite 4%, procless 12%, nt4 11%, SBC 25%, Univ 42%, PTN 3%
+- Ren: Fish 20%, Nyxius 0%, Mite 0%, procless 15%, SBC 0%, Univ 25%, PTN 2%
+- Ryth: Fish 13%, Nyxius 1%, Mite 4%, procless 9%, nt4 0%, SBC 1%, PTN 2%
+- Marcella: 
+
+- Fish d>=4 damage by ability: Damage 38%, AoE damage 27%, CC 19%, AoE damage 16%
+- Mite d>=4 damage by ability: AoE damage 62%, AoE damage 26%, Damage 7%, CC 5%
+- procless d>=4 damage by ability: Damage 46%, AoE damage 31%, AoE damage 13%, CC 10%
+- PTN d>=4 damage by ability: Damage 50%, AoE damage 37%, AoE damage 10%, CC 2%
+
+## Victim activity at death (kills made by team)
+
+| team | kills | farming | camp_hurt | farm_any | on_capture_tile | recalling | tributing | near_altar | bag30 | ambushed | amb_bush | victim hp at first hit (median) | victim moved from first hit to death (median, mean) | attackers (mean) | first-hit to kill rounds (mean) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Fish | 2135 | 8% | 11% | 16% | 5% | 3% | 1% | 26% | 13% | 26% | 6% | 0.96 | 2, 2.6 | 2.15 | 5.6 |
+| Nyxius | 258 | 10% | 18% | 22% | 6% | 21% | 0% | 17% | 12% | 28% | 8% | 0.82 | 2.0, 2.9 | 1.85 | 6.1 |
+| Mite | 2397 | 8% | 10% | 16% | 5% | 11% | 1% | 29% | 11% | 31% | 10% | 0.98 | 1, 2.2 | 1.90 | 4.7 |
+| procless | 746 | 7% | 14% | 18% | 6% | 9% | 3% | 25% | 13% | 29% | 8% | 0.88 | 3, 3.1 | 1.73 | 6.3 |
+| nt4 | 98 | 10% | 9% | 15% | 5% | 12% | 0% | 40% | 8% | 35% | 13% | 0.74 | 2.0, 2.8 | 2.20 | 5.4 |
+| SBC | 1208 | 8% | 11% | 16% | 5% | 9% | 1% | 26% | 11% | 31% | 8% | 0.97 | 2.0, 2.5 | 1.83 | 5.4 |
+| Univ | 1426 | 9% | 13% | 18% | 5% | 5% | 0% | 19% | 8% | 28% | 10% | 0.98 | 2.0, 2.6 | 1.86 | 5.1 |
+| PTN | 251 | 4% | 13% | 14% | 5% | 4% | 1% | 20% | 13% | 19% | 4% | 0.86 | 3, 3.2 | 2.12 | 6.1 |
+
+- Fish kill on farmer: 20261016-080003-Intercontinental-Fish-vs-Quantom-536e7550/1-elkring r400-409 Varg
+- Fish kill on farmer: 20261016-080003-Intercontinental-Fish-vs-Quantom-536e7550/5-monolith r91-94 Issac
+- Nyxius kill on farmer: 20261016-093004-Mite-vs-Nyxius-2777111b/1-eight r112-117 Varg
+- Nyxius kill on farmer: 20261016-093004-Mite-vs-Nyxius-2777111b/1-eight r266-274 Ryth
+- Mite kill on farmer: 20261016-080003-Shawn-vs-Mite-508d7cff/2-eight r24-30 Issac
+- Mite kill on farmer: 20261016-080003-Shawn-vs-Mite-508d7cff/2-eight r112-123 Issac
+- procless kill on farmer: 20261016-080003-procless-vs-Univardisty-of-Shingtonw-2cf8c837/2-eight r65-68 Cassi
+- procless kill on farmer: 20261016-080003-procless-vs-Univardisty-of-Shingtonw-2cf8c837/2-eight r370-378 Tavi
+- nt4 kill on farmer: 20261017-040004-Mite-vs-new-team-4-4239e24e/3-pilgrimage r70-75 Tavi
+- nt4 kill on farmer: 20261017-040004-Mite-vs-new-team-4-4239e24e/3-pilgrimage r231-231 Varg
+
+## Wards
+
+| team | wards/g | games on bushless maps | wards on bushless maps | ward in bush | placer in bush | placed at distance 0/1/2 |
+|---|---|---|---|---|---|---|
+| Fish | 47 | 19 | 0 | 100% | 3% | 0%/21%/78% |
+| Nyxius | 80 | 0 | 0 | 100% | 9% | 0%/5%/95% |
+| Mite | 104 | 13 | 0 | 100% | 15% | 0%/22%/78% |
+| procless | 48 | 8 | 0 | 100% | 1% | 0%/18%/82% |
+| nt4 | 172 | 3 | 0 | 100% | 22% | 4%/40%/31% |
+| SBC | 88 | 9 | 0 | 100% | 21% | 0%/32%/36% |
+| Univ | 74 | 7 | 13 | 85% | 18% | 0%/25%/39% |
+| PTN | 202 | 0 | 0 | 32% | 3% | 0%/1%/99% |
+
+## Tribute cancels and recalls
+
+| team | manual tribute cancels/g | their mean bag | enemy within 6 | mean channel rounds before cancel | recalls/g | at <50% hp | at >95% hp | with >=60 gold | carrying gems | mean distance |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Fish | 0.08 | 160 | 85% | 3.4 | 28.5 | 54% | 11% | 47% | 45% | 21.4 |
+| Nyxius | 0.13 | 80 | 100% | 2.2 | 28.7 | 38% | 23% | 38% | 42% | 21.0 |
+| Mite | 1.36 | 161 | 88% | 1.6 | 33.5 | 40% | 25% | 45% | 28% | 22.6 |
+| procless | 0.23 | 121 | 90% | 2.8 | 32.5 | 56% | 7% | 22% | 52% | 22.0 |
+| nt4 | 0.53 | 67 | 100% | 2.2 | 27.0 | 45% | 26% | 45% | 24% | 24.0 |
+| SBC | 0.00 | 0 | 0% | 0.0 | 29.7 | 48% | 19% | 29% | 44% | 25.0 |
+| Univ | 1.60 | 77 | 100% | 2.0 | 30.3 | 56% | 12% | 37% | 41% | 23.3 |
+| PTN | 0.18 | 65 | 67% | 1.8 | 21.9 | 53% | 14% | 45% | 31% | 21.9 |
+
