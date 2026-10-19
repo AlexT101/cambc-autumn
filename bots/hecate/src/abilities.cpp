@@ -406,7 +406,9 @@ bool cast_chosen() {
 bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value) {
     world.throw_if_stale();
     try {
-        return camp_cast(world, group, attackers_only, any_value).execute();
+        const bool cast = camp_cast(world, group, attackers_only, any_value).execute();
+        camp_hits() += cast;
+        return cast;
     } catch (const cambc::error&) {
         return false;
     }

@@ -34,6 +34,13 @@ inline void note_shortcut(const char* what) {
     });
 }
 
+// Turns in which we damaged a camp (attack_camp, cast_at_camp, reset_and_attack_camp): the share of
+// time spent clearing, which emblems price.
+inline int& camp_hits() {
+    static int hits = 0;
+    return hits;
+}
+
 // The phase running, for locating out-of-fuel turns: set and read only inside debug_block.
 inline const char*& fuel_phase() {
     static const char* phase = "start";
