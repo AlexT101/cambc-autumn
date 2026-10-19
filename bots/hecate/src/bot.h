@@ -17,6 +17,8 @@ struct Memory {
     bool crew = false;    // joining an ally's claim rather than our own
     bool siege = false;   // our claim is a Monolith or big group the team attacks together
     int staged_since = -1; // round we started waiting near it for the others
+    int wait_altar = -1, wait_since = -1;   // the altar we wait at for a safe tribute, since when
+    int avoid_altar = -1, avoid_until = -1; // one we gave up waiting at, skipped until that round
     vec2 ward{-1, -1};    // our latest ward
     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
 };

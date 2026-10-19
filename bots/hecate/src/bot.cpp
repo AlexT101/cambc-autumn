@@ -429,8 +429,10 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& mem
         if (pathing.step_towards(pathing.to_any_altar(), zone)) submit_here(world, pathing, safety, memory);
         return;
     }
+    // One we gave up waiting at (carry_bag) counts as locked until we could reach another.
+    const auto avoided = [&](int a) { return a == memory.avoid_altar && world.round < memory.avoid_until; };
     bool any_locked = false;
-    for (const auto& a : world.altars) any_locked |= a.enemy_lock;
+    for (int a = 0; a < static_cast<int>(altars.size()); ++a) any_locked |= world.altars[a].enemy_lock || avoided(a);
     // One cached field covers every altar; per-altar fields are needed only to skip locked ones.
     // Breaking a lock takes a turn per hit left, about a step each. With no per-altar field
     // affordable yet, the nearest altar.
@@ -438,6 +440,7 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& mem
     if (any_locked) {
         int best_steps = unreachable;
         for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
+            if (avoided(a)) continue;
             const auto& belief = world.altars[a];
             const auto* field = pathing.to_altar(a, end_reserve);
             if (!field) continue;
@@ -2364,8 +2367,28 @@ void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& mem
             retreat_step(world, pathing, safety, pathing.to_ally_spawn());
             return;
         }
-        decision = 'W';
-        return; // until they leave or come
+        const vec2 here = cambc::self().position();
+        const auto& altars = world.map().altars;
+        int at = -1;
+        for (int a = 0; a < static_cast<int>(altars.size()) && at < 0; ++a)
+            if (!world.altars[a].enemy_lock && dist(here, altars[a].pos) <= cambc::constants::submit_gems_range) at = a;
+        if (at != memory.avoid_altar || world.round >= memory.avoid_until) {
+            if (memory.wait_altar != at) memory.wait_altar = at, memory.wait_since = world.round;
+            // How long they stay is unknown: wait as many rounds as the walk to the nearest other
+            // unlocked altar takes, then walk there.
+            int other_steps = unreachable;
+            for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
+                if (a == at || world.altars[a].enemy_lock || dist(here, altars[a].pos) - 1 >= other_steps) continue;
+                if (const auto* field = pathing.to_altar(a, end_reserve)) other_steps = std::min(other_steps, field->at(here));
+            }
+            if (other_steps == unreachable || world.round - memory.wait_since < other_steps) {
+                decision = 'W';
+                return;
+            }
+            memory.avoid_altar = at;
+            memory.avoid_until = world.round + other_steps;
+            memory.wait_altar = -1;
+        }
     }
     decision = 'B';
     const bool walked = attacked && !world.me().facts().walk_and_attack_independent();
@@ -2492,6 +2515,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     const vec2 start = world.me().pos;
     prepare_walk(world, pathing, memory, walk_first_floor);
     decide(world, pathing, safety, memory);
+    if (decision != 'W') memory.wait_altar = -1;
     if (!sieged) {
         memory.siege = false;
         memory.staged_since = -1;
