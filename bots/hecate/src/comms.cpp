@@ -102,6 +102,7 @@ int dated(int parity) {
 } // namespace
 
 void receive(World& world) {
+    state.fighting = -1;
     const auto bits = read_bits();
     const int round = world.round;
     state.fresh = changes(bits);

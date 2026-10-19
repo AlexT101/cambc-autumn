@@ -205,8 +205,11 @@ void offer_engaged(const ChampionBelief& self, const std::vector<Enemy>& enemies
 void set_turn_order(const World& world, Safety& safety) {
     auto& me = cambc::self();
     Wish wish;
-    if (world.me().alive && !fuel_ok(end_reserve)) note_shortcut("turn-order");
-    if (world.me().alive && fuel_ok(end_reserve)) {
+    if (world.me().alive && !fuel_ok(end_reserve)) {
+        note_shortcut("turn-order");
+        return;
+    }
+    if (world.me().alive) {
         const auto& self = live_self(world);
         const auto& enemies = live_enemies(world);
         offer_engaged(self, enemies, wish);

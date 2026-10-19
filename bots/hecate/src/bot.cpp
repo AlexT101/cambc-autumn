@@ -32,6 +32,7 @@ constexpr int siege_stage_radius = camp_attack_range + 2; // just out of a camp'
 // Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, Shopping trip,
 // holding (P), Delaying a stun, capture recall (Q), siege or kite of a big group (G), contest (X).
 char decision = '-';
+bool sieged = false; // siege() ran this turn
 
 // Read by tools/replay/fight_calibration.py.
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1) {
@@ -335,10 +336,11 @@ int gems_short(const World& world) {
 
 const ChampionBelief* partner(const World& world) { return linked_partner(world, world.me()); }
 
-// What a death would hand over: both bags for Cassi and Issac (the partner's as last seen).
+// What a death would hand over: both bags for Cassi and Issac (an unseen partner's as posted).
 int bag_at_stake(const World& world) {
     const auto* p = partner(world);
-    return static_cast<int>(cambc::self().gem_count()) + (p && p->alive ? p->gems : 0);
+    const int other = !p || !p->alive ? 0 : p->visible ? p->gems : std::max(p->gems, comms::bag_of(world, p->index));
+    return static_cast<int>(cambc::self().gem_count()) + other;
 }
 
 // Tributing the bag wins: more gems are worth nothing, only the tribute is.
@@ -411,8 +413,8 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& mem
     bool any_locked = false;
     for (const auto& a : world.altars) any_locked |= a.enemy_lock;
     // One cached field covers every altar; per-altar fields are needed only to skip locked ones.
-    // Breaking a lock takes a turn per hit left, about a step each. Fields not yet affordable
-    // wait for a later turn.
+    // Breaking a lock takes a turn per hit left, about a step each. With no per-altar field
+    // affordable yet, the nearest altar.
     int best = -1;
     if (any_locked) {
         int best_steps = unreachable;
@@ -425,7 +427,7 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& mem
             if (belief.enemy_lock) steps += belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
             if (steps < best_steps) best = a, best_steps = steps;
         }
-        if (best < 0) return;
+        any_locked = best >= 0;
     }
     const Field& field = any_locked ? pathing.to_altar(best) : pathing.to_any_altar();
     if (dash_towards(world, pathing, field) && submit_here(world, pathing, safety, memory)) return;
@@ -1300,7 +1302,7 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         }
         return out == unreachable ? 0.0f : damage / max_health * static_cast<float>(recall + out);
     };
-    const float spells = spell_output(world.me()), basic = std::max(1.0f, basic_output(world.me()));
+    const float spells = world.me().facts().ranged ? spell_output(world.me()) : 0.0f, basic = std::max(1.0f, basic_output(world.me()));
     int help_group = -1, help_steps = unreachable;
     // First readings of each group (clears, fields) can cost several times the estimate: stop with
     // enough left for the walk after it, and read last turn's choice first so that a cut-short loop
@@ -1614,6 +1616,7 @@ bool finishing_camp(const World& world) {
 // On a cleared group's tile worth contesting while the enemy holds it or stands on another:
 // leaving lets their hold pay.
 bool contesting(const World& world) {
+    if (winning_bag(world)) return false;
     const vec2 here = cambc::self().position();
     const int g = world.map().group_at(here);
     if (g < 0 || world.map().groups[g].gems < params::contest_gems || world.camps[g].state != CampState::cleared) return false;
@@ -2205,6 +2208,7 @@ bool siege_ready(const World& world, int g, const SiegeLoad& load, bool committe
 // Once the team is strong enough it goes together: melee adjacent, ranged at their range, the hurt
 // stepping out to 4, where casters still cast.
 bool siege(const World& world, Pathing& pathing, Memory& memory) {
+    sieged = true;
     auto& me = cambc::self();
     const auto& map = world.map();
     const int g = siege_candidate(world, memory);
@@ -2356,10 +2360,10 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     if (c.state == CampState::cleared) {
         const auto& tiles = G.tiles();
         if (enemy_on(world, tiles) || c.holder == team::enemy) {
+            if (!tiles.is_set(here) && dist(here, G.centre) > contest_left(g) + 1) return false;
             memory.claim = g;
             memory.crew = false;
             if (tiles.is_set(here)) return true; // our tile keeps their hold from counting
-            if (dist(here, G.centre) > contest_left(g) + 1) return false;
             const auto& free = free_tiles(tiles);
             if (!free.is_empty()) pathing.step_towards_funded(free, end_reserve);
             return true;
@@ -2720,11 +2724,16 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     const float health = world.me().alive ? cambc::self().health() : 0;
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
     decision = '-';
+    sieged = false;
     siege_group() = -1;
     spell_builds = shared_gems_map(world.map());
     const vec2 start = world.me().pos;
     prepare_walk(world, pathing, memory, walk_first_floor);
     decide(world, pathing, safety, memory);
+    if (!sieged) {
+        memory.siege = false;
+        memory.staged_since = -1;
+    }
     pathing.set_guard(nullptr);
     if constexpr (debug_fights)
         if (world.me().alive && !world.map().ally_spawn.is_set(start) && fuel_ok(end_reserve + 15000))

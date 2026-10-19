@@ -1332,8 +1332,8 @@ void World::update_scores(std::uint32_t tributing) {
         for (auto& b : enemies)
             if (b.alive && !b.visible && b.gems == enemy_delta) tributer = &b, ++candidates;
     }
-    if (candidates == 1) {
-        if (!tributer->visible) tributer->gems = 0;
+    if (candidates == 1 && !tributer->visible) {
+        tributer->gems = 0;
         tributer->channel = Channel::none;
     }
 }

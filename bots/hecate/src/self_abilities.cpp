@@ -6,6 +6,7 @@
 #include "champions.h"
 #include "params.h"
 #include "pathing.h"
+#include "safety.h"
 #include "world.h"
 
 namespace aph {
@@ -45,26 +46,19 @@ template <class... Target> bool cast(const cambc::ability& ability, const Target
 
 float health_fraction(const cambc::champion& c) { return c.health() / c.max_health(); }
 
-int threat_reach(const ChampionFacts& f) {
-    int r = f.attack_range();
-    for (const auto& a : f.abilities)
-        if (a.hits_enemies()) r = std::max(r, a.reach());
-    return r + (f.has_dash() ? dash_steps + 1 : 1);
-}
-
-struct Threat {
+struct Hazard {
     vec2 pos;
     int reach;
     bool camp;
 };
 
-// Enemies and awake monsters that could reach a tile within a dash of `here`.
-std::vector<Threat> threats_near(const World& world, vec2 here) {
-    std::vector<Threat> out;
+// Enemies and awake monsters that could reach a tile within a dash of `here` before our next turn.
+std::vector<Hazard> threats_near(const World& world, vec2 here) {
+    std::vector<Hazard> out;
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible) continue;
-        const int reach = threat_reach(e.facts());
-        if (dist(here, e.pos) <= reach + dash_steps) out.push_back({e.pos, reach, false});
+        const int reach = threat_strike(world, e).reach;
+        if (reach >= 0 && dist(here, e.pos) <= reach + dash_steps) out.push_back({e.pos, reach, false});
     }
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(here, camp_attack_range + dash_steps)) {
@@ -80,7 +74,7 @@ std::vector<Threat> threats_near(const World& world, vec2 here) {
 }
 
 // How deep a tile sits inside the threats' reach.
-int danger(const std::vector<Threat>& threats, vec2 p) {
+int danger(const std::vector<Hazard>& threats, vec2 p) {
     int d = 0;
     for (const auto& t : threats) {
         const int depth = t.reach - dist(p, t.pos) + 1;
@@ -326,7 +320,7 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     const auto& spawn = world.map().from_ally_spawn();
     const auto landings = ranked(
         within(pathing.dash_landings(), target->pos, range),
-        [&](vec2 p) { return danger(threats, p) * 1000 + spawn.at(p); }, [](vec2, int) { return true; });
+        [&](vec2 p) { return danger(threats, p) * 1000 + std::min<int>(spawn.at(p), 999); }, [](vec2, int) { return true; });
     return dash_to_first(*dash, pathing, landings);
 }
 
@@ -383,7 +377,7 @@ bool shield_if_needed(const World& world, int farmed) {
     if (world.map().ally_spawn.is_set(here)) return false;
     bool danger = false;
     for (const auto& e : world.enemies)
-        danger |= e.alive && e.visible && dist(here, e.pos) <= threat_reach(e.facts());
+        danger |= e.alive && e.visible && dist(here, e.pos) <= threat_strike(world, e).reach;
     if (danger) return cast(*shield);
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(here, camp_attack_range)) {
