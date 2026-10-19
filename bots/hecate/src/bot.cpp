@@ -1354,7 +1354,7 @@ bool contesting(const World& world) {
     if (winning_bag(world)) return false;
     const vec2 here = cambc::self().position();
     const int g = world.map().group_at(here);
-    if (g < 0 || world.map().groups[g].gems < params::contest_gems || world.camps[g].state != CampState::cleared) return false;
+    if (g < 0 || world.map().groups[g].gems == 0 || world.camps[g].state != CampState::cleared) return false;
     return world.camps[g].holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
 }
 
@@ -2260,8 +2260,9 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     return true;
 }
 
-// A cleared group in sight that the enemy holds or stands on, and that we can reach before the
-// hold pays: a body of ours on one of its tiles stops the count.
+// A cleared gem group in sight that the enemy holds or stands on, and that we can reach before the
+// hold pays: a body of ours on one of its tiles stops the count. Its gems, denied within a few
+// steps, beat any farm cycle's rate, however small the group.
 bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
     const auto& map = world.map();
     const vec2 here = cambc::self().position();
@@ -2269,7 +2270,7 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
     for (int g = 0; g < static_cast<int>(map.groups.size()); ++g) {
         const auto& G = map.groups[g];
         const auto& c = world.camps[g];
-        if (G.gems < params::contest_gems || c.state != CampState::cleared || dist(here, G.centre) > vision_radius + 2) continue;
+        if (G.gems == 0 || c.state != CampState::cleared || dist(here, G.centre) > vision_radius + 2) continue;
         if (!enemy_on(world, G.tiles()) && c.holder != team::enemy) continue;
         const int left = enemy_hold_left(world, c);
         int steps = unreachable;
