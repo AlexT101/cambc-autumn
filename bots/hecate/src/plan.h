@@ -18,7 +18,9 @@ struct ChampionBelief;
 struct Intent {
     bool walks = false;
     bool anchored = false; // must not leave this tile
-    const Field* field = nullptr;
+    // Where the walk goes, read only when a move is priced: to an altar, else to `group`.
+    bool to_altar = false;
+    int group = -1;
     float step_value = 0;
     bool keep_walk = false; // carrying: cast_at_enemies' own walk threshold prices the walk
 };

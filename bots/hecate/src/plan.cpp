@@ -190,6 +190,14 @@ struct Valued {
     bool any = false;
 } valued;
 
+const Field* goal_field(const World& world, Pathing& pathing, const Intent& intent) {
+    if (intent.to_altar) return &pathing.to_any_altar();
+    const int g = intent.group;
+    if (g < 0 || g >= static_cast<int>(world.camps.size())) return nullptr;
+    const int range = world.camps[g].state == CampState::cleared ? 0 : world.me().facts().attack_range();
+    return pathing.approach_ready(g, range) ? pathing.approach(g, range, end_reserve) : nullptr;
+}
+
 enum class Kind { stay, walk, dash, dash_walk };
 
 struct Plan {
@@ -362,10 +370,11 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
         const auto& blocked = pathing.blocked();
         const bitboard* guard = pathing.guard();
         const auto walkable = [&](vec2 p) { return in_bounds(p) && !blocked.is_set(p) && !(guard && guard->is_set(p)); };
-        const int here_steps = intent.field ? intent.field->at(b.here) : static_cast<int>(unreachable);
+        const Field* field = walks ? goal_field(world, pathing, intent) : nullptr;
+        const int here_steps = field ? field->at(b.here) : static_cast<int>(unreachable);
         const auto gain_to = [&](vec2 p) {
             if (here_steps == unreachable) return 0.0f;
-            const int c = intent.field->at(p);
+            const int c = field->at(p);
             return c == unreachable ? 0.0f : static_cast<float>(here_steps - c) * step;
         };
         // Expected damage as Safety prices it, from the camps and the enemies we see near us: the
@@ -418,7 +427,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
             std::printf("PLAN %d %u k%d v%.0f s%.0f w%d,%d d%d,%d f%d r%d c%d n%d step%.0f walks%d field%d\n", world.round,
                         static_cast<std::uint32_t>(world.me().handle), static_cast<int>(best.kind), best.value, stay_value,
                         best.walk.x, best.walk.y, best.dash.x, best.dash.y, best.attack_first, best.reset, best.enemy_cast, b.n,
-                        step, walks, intent.field != nullptr);
+                        step, walks, intent.group);
         });
     }
     // Carry it out; a move refused (a hidden unit) falls back to striking from here.

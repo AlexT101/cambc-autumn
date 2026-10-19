@@ -2535,14 +2535,6 @@ float farm_step_value(const World& world) {
     return output(world.me()) * density * params::gem_value;
 }
 
-// The field the turn's goal most likely walks: to an altar when carrying, else to the farm choice.
-const Field* intent_field(const World& world, Pathing& pathing, const Memory& memory) {
-    if (cambc::self().gem_count() > 0) return &pathing.to_any_altar();
-    const int g = memory.farm_group;
-    if (g < 0 || g >= static_cast<int>(world.camps.size())) return nullptr;
-    const int range = world.camps[g].state == CampState::cleared ? 0 : world.me().facts().attack_range();
-    return pathing.approach_ready(g, range) ? pathing.approach(g, range, end_reserve) : nullptr;
-}
 
 void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
@@ -2601,7 +2593,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         intent.step_value = my_gems() > 0 ? carried_step_value : farm_step_value(world);
         // An enemy already in attack range was not worth leaving (want_home): the fight is here.
         if (enemy_within(world, my_position(), world.me().facts().attack_range())) intent.walks = false;
-        if (intent.walks) intent.field = intent_field(world, pathing, memory);
+        // The goal most likely walks to an altar when carrying, else to the farm choice.
+        intent.to_altar = my_gems() > 0;
+        intent.group = memory.farm_group;
         attacked = plan_strikes(world, pathing, safety, intent, stun_later).attacked;
         // A cast the plan left unused: before farm's camp reset takes it.
         shield_if_needed(world, memory.claim);
