@@ -1,8 +1,0 @@
-[
-  {
-    "command": "C:\\Users\\alext\\AppData\\Local\\cambc\\wasi-sdk-33\\bin\\clang++.exe --target=wasm32-wasip1 --sysroot=C:/Users/alext/AppData/Local/cambc/wasi-sdk-33/share/wasi-sysroot -DCAMBC_DEBUG -IC:/Users/alext/Github/cambc-autumn/sdk/cpp -isystem C:/Users/alext/AppData/Local/cambc/wasi-sdk-33/share/cmake/../../share/wasi-sysroot/include/wasm32-wasip1/eh/c++/v1 -O3 -DNDEBUG -std=c++20 -msimd128 -mbulk-memory -mbulk-memory-opt -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false -o CMakeFiles\\bot.dir\\C_\\Users\\alext\\Github\\cambc-autumn\\rules-verification\\probes\\probe-denial-b\\src\\main.cpp.obj -c C:\\Users\\alext\\Github\\cambc-autumn\\rules-verification\\probes\\probe-denial-b\\src\\main.cpp --sysroot=\"C:/Users/alext/AppData/Local/cambc/wasi-sdk-33/share/wasi-sysroot\" -isystem \"C:/Users/alext/AppData/Local/cambc/wasi-sdk-33/share/wasi-sysroot/include/wasm32-wasip1/eh/c++/v1\"",
-    "directory": "C:/Users/alext/Github/cambc-autumn/rules-verification/probes/probe-denial-b/.cambc/build",
-    "file": "C:\\Users\\alext\\Github\\cambc-autumn\\rules-verification\\probes\\probe-denial-b\\src\\main.cpp",
-    "output": "CMakeFiles\\bot.dir\\C_\\Users\\alext\\Github\\cambc-autumn\\rules-verification\\probes\\probe-denial-b\\src\\main.cpp.obj"
-  }
-]

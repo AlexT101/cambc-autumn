@@ -9,3 +9,4 @@ tools/docs-sync/node_modules/
 __pycache__/
 bots/variants/
 research/**/*.pkl
+compile_commands.json
