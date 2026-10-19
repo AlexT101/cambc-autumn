@@ -26,7 +26,7 @@ namespace {
 //   [62, 64)  unused
 // The write count makes a sighting rewritten unchanged, with the same parity, still read as new.
 // A claim or a bag is a standing state, rewritten only when it changes or as a reminder.
-struct Field {
+struct BitField {
     int shift, width;
     constexpr std::uint64_t mask() const { return ((std::uint64_t{1} << width) - 1) << shift; }
     constexpr int get(std::uint64_t bits) const { return static_cast<int>((bits & mask()) >> shift); }
@@ -35,12 +35,12 @@ struct Field {
     }
 };
 
-constexpr Field sight_x{0, 7}, sight_y{7, 7}, sight_index{14, 3}, sight_health{17, 3}, sight_parity{20, 1};
-constexpr Field bag_fours{21, 7}, bag_body{28, 3};
-constexpr Field camp_group{36, 6}, camp_respawn{42, 8};
-constexpr Field claim_group{50, 6}, claim_body{56, 3};
-constexpr Field sight_count{59, 3};
-constexpr Field sight_fight{31, 1};
+constexpr BitField sight_x{0, 7}, sight_y{7, 7}, sight_index{14, 3}, sight_health{17, 3}, sight_parity{20, 1};
+constexpr BitField bag_fours{21, 7}, bag_body{28, 3};
+constexpr BitField camp_group{36, 6}, camp_respawn{42, 8};
+constexpr BitField claim_group{50, 6}, claim_body{56, 3};
+constexpr BitField sight_count{59, 3};
+constexpr BitField sight_fight{31, 1};
 constexpr std::uint64_t sighting_bits = sight_x.mask() | sight_y.mask() | sight_index.mask() | sight_health.mask() | sight_parity.mask()
                                         | sight_count.mask() | sight_fight.mask();
 constexpr std::uint64_t bag_bits = bag_fours.mask() | bag_body.mask();
@@ -49,7 +49,17 @@ constexpr std::uint64_t claim_bits = claim_group.mask() | claim_body.mask();
 static_assert((sighting_bits & bag_bits) == 0 && ((sighting_bits | bag_bits) & camp_bits) == 0
               && ((sighting_bits | bag_bits | camp_bits) & claim_bits) == 0);
 
-void count_write(std::uint64_t& bits, Field count) { count.set(bits, count.get(bits) + 1); }
+// The write count makes a sighting rewritten unchanged still read as new.
+void put_sighting(std::uint64_t& bits, const ChampionBelief& e, int round, bool fight) {
+    sight_x.set(bits, e.pos.x + 1);
+    sight_y.set(bits, e.pos.y);
+    sight_index.set(bits, e.index);
+    const float fraction = e.max_health > 0 ? e.health / e.max_health : 1.0f;
+    sight_health.set(bits, fraction >= 1.0f ? 7 : std::clamp(static_cast<int>(fraction * 7.0f), 0, 6));
+    sight_parity.set(bits, round & 1);
+    sight_fight.set(bits, fight ? 1 : 0);
+    sight_count.set(bits, sight_count.get(bits) + 1);
+}
 
 struct State {
     std::uint64_t last = 0; // the bits as we left them at the end of our previous turn
@@ -167,14 +177,7 @@ void send(World& world, bool refresh) {
     const auto* rally = state.fighting >= 0 && state.fighting < static_cast<int>(world.enemies.size()) ? &world.enemies[state.fighting] : nullptr;
     state.fighting = -1;
     if (rally && rally->alive && rally->visible && !(sighted && sight_fight.get(bits))) {
-        sight_x.set(bits, rally->pos.x + 1);
-        sight_y.set(bits, rally->pos.y);
-        sight_index.set(bits, rally->index);
-        const float fraction = rally->max_health > 0 ? rally->health / rally->max_health : 1.0f;
-        sight_health.set(bits, fraction >= 1.0f ? 7 : std::clamp(static_cast<int>(fraction * 7.0f), 0, 6));
-        sight_parity.set(bits, round & 1);
-        sight_fight.set(bits, 1);
-        count_write(bits, sight_count);
+        put_sighting(bits, *rally, round, true);
         dirty = true;
     } else if (!sighted) {
         if (refresh) world.observe();
@@ -183,14 +186,7 @@ void send(World& world, bool refresh) {
         for (int k = 0; k < n; ++k) {
             const auto& e = world.enemies[(start + k) % n];
             if (!e.visible) continue;
-            sight_x.set(bits, e.pos.x + 1);
-            sight_y.set(bits, e.pos.y);
-            sight_index.set(bits, e.index);
-            const float fraction = e.max_health > 0 ? e.health / e.max_health : 1.0f;
-            sight_health.set(bits, fraction >= 1.0f ? 7 : std::clamp(static_cast<int>(fraction * 7.0f), 0, 6));
-            sight_parity.set(bits, round & 1);
-            sight_fight.set(bits, 0);
-            count_write(bits, sight_count);
+            put_sighting(bits, e, round, false);
             dirty = true;
             break;
         }

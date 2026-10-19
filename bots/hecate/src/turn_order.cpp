@@ -43,12 +43,9 @@ const std::vector<Enemy>& live_enemies(const World& world) {
     out.clear();
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible) continue;
-        const auto h = static_cast<std::uint32_t>(e.handle);
-        std::int32_t alive{};
         cambc::detail::champion_info info{};
-        if (cambc::detail::sdk_champion_is_alive(h, &alive) != 0 || !alive || cambc::detail::sdk_champion(h, &info) != 0
-            || info.x < 0 || info.y < 0)
-            continue;
+        // A dead champion reads as off the map.
+        if (cambc::detail::sdk_champion(static_cast<std::uint32_t>(e.handle), &info) != 0 || info.x < 0 || info.y < 0) continue;
         out.push_back({&e, info.health});
     }
     return out;

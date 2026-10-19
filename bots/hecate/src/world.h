@@ -200,7 +200,6 @@ struct ChampionBelief {
     bool is_self = false;
 
     bool alive = true;
-    int died_round = -1;       // round we first saw it dead
     int respawn_earliest = -1; // window for its respawn round while dead
     int respawn_latest = -1;
     int respawned_round = -1; // its respawn turn's round, when known to be this round's
@@ -229,8 +228,8 @@ struct ChampionBelief {
     int channel_end_round = -1;
 
     // Enemies only: every tile it could be on, from what we have seen and how champions move.
-    // Teleport crystals are not modelled. Empty while dead; anywhere while !tracked. Left
-    // uninitialised until the first fix, so never set for allies.
+    // Unseen teleports are not modelled. Unread while dead or !tracked. Left uninitialised until
+    // the first fix, so never set for allies.
     bitboard possible{cambc::uninitialized};
     // Dashers only: the part of `possible` reached by walking alone since the fix. A dash moves
     // 2 more only once per cooldown, so the rest of `possible` is this widened by one dash.
@@ -292,20 +291,12 @@ struct CampBelief {
 
 struct AltarBelief {
     bool ally_lock = false, enemy_lock = false;
-    int ally_lock_hits = 0, enemy_lock_hits = 0;
+    int enemy_lock_hits = 0;
     int seen_round = -1;
 };
 
-struct WardSighting {
-    vec2 pos;
-    int round;
-};
-
 struct Scores {
-    int ally = 0, enemy = 0;             // tributed gems
-    int ally_delta = 0, enemy_delta = 0; // change since our previous turn
-    int enemy_tribute_round = -1;        // round we saw the enemy's latest tribute land
-    int enemy_tribute_amount = 0;
+    int ally = 0, enemy = 0; // tributed gems
 };
 
 class World {
@@ -324,7 +315,6 @@ public:
     void note_capture(int group, int respawn_round);
 
     void debug_output() const;
-    void dump_beliefs() const;
 
     bool ready() const { return static_ != nullptr && self_index < static_cast<int>(allies.size()) && allies[self_index].is_self; }
     const StaticMap& map() const { return *static_; }
@@ -335,9 +325,6 @@ public:
     // Index of the champion's turn in `round`, by its rank then: the current one for this round,
     // that of our previous update for earlier rounds.
     int slot(const ChampionBelief& c, int round) const;
-    Moment now() const { return {round, slot(me(), round)}; }
-    // Turns the champion takes strictly between two moments.
-    int turns_between(const ChampionBelief& c, Moment from, Moment to) const;
     int round = 0;
     int first_round = 0; // this instance's first play round
 
@@ -347,7 +334,6 @@ public:
 
     std::vector<CampBelief> camps; // parallel to map().groups
     std::vector<AltarBelief> altars; // parallel to map().altars
-    std::vector<WardSighting> enemy_wards;
     Scores score;
     bitboard visible; // this turn's vision (ours and our ward's)
     // An enemy was seen changing priority: its team's order for next round can change until each
@@ -355,6 +341,10 @@ public:
     bool enemy_priorities_change = false;
 
 private:
+    void dump_beliefs() const;
+    Moment now() const { return {round, slot(me(), round)}; }
+    // Turns the champion takes strictly between two moments.
+    int turns_between(const ChampionBelief& c, Moment from, Moment to) const;
     void init_beliefs();
     void rank_turns();
     // Also keeps each champion's rank of the previous round when a new one starts.
@@ -367,17 +357,13 @@ private:
     // Each overwrites `possible` in place: assigning a new board would allocate.
     static void fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when);
     static void fix(ChampionBelief& b, vec2 tile, Moment when);
-    static void fix_nowhere(ChampionBelief& b, Moment when);
     static void mark_fixed(ChampionBelief& b, Moment when);
-    void advance(ChampionBelief& b);
-    // advance() then prune(), with the prune folded into the growth.
-    void advance_and_prune(ChampionBelief& b);
     // Adds `turns` of movement to `possible`, ending on `land`; returns whether a dash widened it.
     bool grow(ChampionBelief& b, int turns, const bitboard& land);
     // Where a growth pruned straight after can end: open to them and out of sight.
     const bitboard& landing();
-    // advance and prune an enemy of a lineage, or copy the result of one of the same lineage and
-    // inputs tracked earlier in this pass.
+    // Advance `possible` to now and prune it to unseen tiles; for an enemy of a lineage, copy the
+    // result of one of the same lineage and inputs tracked earlier in this pass.
     void track(ChampionBelief& b);
     static void walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard& land);
     static void widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps, const bitboard& land);
@@ -386,7 +372,6 @@ private:
     void update_camps();
     int hold_start(const CampGroup& G, team holder, int earliest, bool cleared_by_us) const;
     void update_altars();
-    void update_wards();
     std::uint32_t tributing_enemies() const; // bit i: enemies[i] is believed to be tributing
     void update_scores(std::uint32_t tributing);
 
