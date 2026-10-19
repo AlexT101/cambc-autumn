@@ -268,6 +268,15 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     const auto walkable = [&](vec2 p) { return in_bounds(p) && !blocked.is_set(p) && !(guard && guard->is_set(p)); };
     int nearest = 1 << 20;
     for (int i = 0; i < b.n; ++i) nearest = std::min(nearest, dist(b.here, b.foes[i].pos));
+    // Tiles within 3 of us from which some enemy is in attack range: the only ones worth a hit's pricing.
+    std::array<bool, 49> in_reach{};
+    for (int i = 0; i < b.n; ++i)
+        for (int dy = -b.range; dy <= b.range; ++dy)
+            for (int dx = -b.range; dx <= b.range; ++dx) {
+                const int x = b.foes[i].pos.x + dx - b.here.x + 3, y = b.foes[i].pos.y + dy - b.here.y + 3;
+                if (x >= 0 && x < 7 && y >= 0 && y < 7) in_reach[y * 7 + x] = true;
+            }
+    const auto reachable = [&](vec2 p) { return in_reach[(p.y - b.here.y + 3) * 7 + (p.x - b.here.x + 3)]; };
     if (b.move && b.attack && nearest <= b.range + 1) {
         for (auto d : directions) {
             const vec2 n = b.here + d;
@@ -288,31 +297,35 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
             }
         }
     }
-    if (b.dash >= 0 && b.attack && nearest <= b.range + dash_steps + (b.melee && b.move ? 1 : 0)) {
-        // The dash's cooldown would otherwise carry us two steps.
-        const float dash_cost = dash_steps * step;
-        const auto landings = pathing.dash_landings();
-        for (int i = 0; i < b.n; ++i) {
-            for (auto l : positions_within(landings, b.foes[i].pos, b.range)) {
-                const Hit there = best_hit(b, l, h0);
-                const bool before = b.melee && first.value > there.value;
-                const float gain = static_cast<float>(progress(intent, b.here, l)) * step + (b.melee && walks ? step : 0.0f);
-                offer({Kind::dash, 0, l, {}, before, false, false}, (before ? first : there).value + gain - dash_cost, l);
-            }
-            if (!b.melee || !b.move || dist(b.here, b.foes[i].pos) > b.range + 1 + dash_steps) continue;
-            // Dash, then walk into range.
-            for (int dy = -b.range; dy <= b.range; ++dy)
-                for (int dx = -b.range; dx <= b.range; ++dx) {
-                    const vec2 n{b.foes[i].pos.x + dx, b.foes[i].pos.y + dy};
-                    if (n == b.here || !walkable(n) || dist(n, b.here) <= 1) continue;
-                    const Hit there = best_hit(b, n, h0);
-                    if (there.target < 0 || there.value - dash_cost + step <= best.value) continue;
-                    const auto& near = within(landings, n, 1);
-                    if (near.is_empty()) continue;
-                    const float gain = static_cast<float>(progress(intent, b.here, n)) * step;
-                    offer({Kind::dash_walk, 0, first_tile(near), n, false, false, false}, there.value + gain - dash_cost, n);
-                }
+    // The dash's cooldown would otherwise carry us two steps; a dash plan gains at most the best
+    // hit in reach and three steps.
+    const float dash_cost = dash_steps * step;
+    float best_hit_value = 0;
+    for (int i = 0; i < b.n; ++i) best_hit_value = std::max(best_hit_value, hit_worth(b.foes[i], b.strength, b.foes[i].health));
+    if (b.dash >= 0 && b.attack && nearest <= b.range + dash_steps + (b.melee && b.move ? 1 : 0)
+        && best_hit_value + (dash_steps + 1) * step - dash_cost > best.value) {
+        const Tiles<5 * 5> landings{pathing.dash_landings()};
+        for (const vec2 l : landings) {
+            if (!reachable(l)) continue;
+            const Hit there = best_hit(b, l, h0);
+            if (there.target < 0) continue;
+            const bool before = b.melee && first.value > there.value;
+            const float gain = static_cast<float>(progress(intent, b.here, l)) * step + (b.melee && walks ? step : 0.0f);
+            offer({Kind::dash, 0, l, {}, before, false, false}, (before ? first : there).value + gain - dash_cost, l);
         }
+        // Dash, then walk into range: tiles 2 and 3 steps out.
+        if (b.melee && b.move)
+            for (int dy = -dash_steps - 1; dy <= dash_steps + 1; ++dy)
+                for (int dx = -dash_steps - 1; dx <= dash_steps + 1; ++dx) {
+                    const vec2 n{b.here.x + dx, b.here.y + dy};
+                    if (dist(n, b.here) <= 1 || !reachable(n)) continue;
+                    const Hit there = best_hit(b, n, h0);
+                    if (there.target < 0 || there.value - dash_cost + step <= best.value || !walkable(n)) continue;
+                    const vec2* from = std::find_if(landings.begin(), landings.end(), [&](vec2 l) { return dist(l, n) <= 1; });
+                    if (from == landings.end()) continue;
+                    const float gain = static_cast<float>(progress(intent, b.here, n)) * step;
+                    offer({Kind::dash_walk, 0, *from, n, false, false, false}, there.value + gain - dash_cost, n);
+                }
     }
 
     if (count > 0) {
