@@ -272,19 +272,24 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     // Without splash a hit's worth does not depend on where it is struck from: priced once per
     // enemy and spread over the tiles within 3 of us that reach it.
     std::array<float, max_foes> worth{};
-    float most = 0;
+    // A move earns at most the best hit it brings into range, its steps and, for Varg, the
+    // shield; each kind is listed only if that can beat staying.
+    float walk_most = 0, dash_most = 0;
+    const int dash_reach = b.range + dash_steps + (b.melee && b.move ? 1 : 0);
     for (int i = 0; i < b.n; ++i) {
+        const int d = dist(b.here, b.foes[i].pos);
+        if (d > dash_reach && d > b.range + 1) continue;
         worth[i] = best_hit(b, b.foes[i].pos, h0, i).value;
-        most = b.splash ? most + std::max(0.0f, worth[i]) : std::max(most, worth[i]);
+        const float w = std::max(0.0f, worth[i]);
+        if (d <= b.range + 1) walk_most = b.splash ? walk_most + w : std::max(walk_most, w);
+        if (d <= dash_reach) dash_most = std::max(dash_most, w);
     }
-    // A move earns at most the best hit, its steps and, for Varg, the shield; each kind is
-    // listed only if that can beat staying.
     const float shield_most = b.shield >= 0 ? 1e6f : 0.0f; // not bounded cheaply
     const bool try_walk = b.move && b.attack && nearest <= b.range + 1
-                          && std::max(most + shield_most, first.value + most) + step > best.value;
+                          && std::max(walk_most + shield_most, first.value + walk_most) + step > best.value;
     const float dash_cost = dash_steps * step;
-    const bool try_dash = b.dash >= 0 && b.attack && nearest <= b.range + dash_steps + (b.melee && b.move ? 1 : 0)
-                          && std::max(most, first.value) + (dash_steps + 2) * step - dash_cost > best.value;
+    const bool try_dash = b.dash >= 0 && b.attack && nearest <= dash_reach
+                          && std::max(dash_most, first.value) + (dash_steps + 2) * step - dash_cost > best.value;
     const auto local = [&](vec2 p) { return (p.y - b.here.y + 3) * 7 + (p.x - b.here.x + 3); };
     std::array<Hit, 49> tile_hit{};
     std::array<vec2, 49> struck; // the tiles tile_hit reaches, in marking order
@@ -302,6 +307,21 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
         }
     const auto hit_at = [&](vec2 p) { return b.splash ? best_hit(b, p, h0) : tile_hit[local(p)]; };
     if (try_walk) {
+        // The reset's second hit after a walk, from each neighbour, marked enemy first as above.
+        std::array<Hit, 9> again{};
+        const bool resets = b.melee && first.target >= 0 && b.reset >= 0;
+        if (resets && !b.splash)
+            for (int i = 0; i < b.n; ++i) {
+                if (dist(b.here, b.foes[i].pos) > b.range + 1) continue;
+                const float w = best_hit(b, b.foes[i].pos, h1, i).value;
+                if (w <= 0) continue;
+                for (int k = 0; k < 9; ++k) {
+                    const vec2 n{b.here.x + k % 3 - 1, b.here.y + k / 3 - 1};
+                    auto& t = again[k];
+                    if (dist(n, b.foes[i].pos) <= b.range && (t.target < 0 || w > t.value || (w == t.value && h1[i] < h1[t.target])))
+                        t = {w, i};
+                }
+            }
         for (auto d : directions) {
             const vec2 n = b.here + d;
             const Hit there = hit_at(n);
@@ -309,8 +329,8 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
                 // Either attack here then the reset there, or the one attack there.
                 if (there.target >= 0 && there.value > first.value)
                     offer({Kind::walk, 0, {}, n, false, false, false}, there.value + shield, 1, n);
-                if (first.target >= 0 && b.reset >= 0)
-                    if (const Hit second = best_hit(b, n, h1); second.target >= 0)
+                if (resets)
+                    if (const Hit second = b.splash ? best_hit(b, n, h1) : again[(d.y + 1) * 3 + d.x + 1]; second.target >= 0)
                         offer({Kind::walk, 0, {}, n, true, true, false}, first.value + second.value, 1, n);
             } else if (b.reset >= 0 && there.target >= 0) {
                 // A ranged walk spends the attack; the reset restores it.
