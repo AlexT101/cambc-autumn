@@ -69,7 +69,7 @@ Fuel reads that do not change play and stay: the warm-up and cache fills (moved 
 
 ## Phases
 
-Each phase is its own commit and A/B. Baseline: `bots/baselines/hecate-v5` (hecate 4ba1865, after fuel round 3).
+Each phase is its own commit and A/B. Baseline: hecate 4ba1865 (after fuel round 3).
 
 ### 0. Measure (no play change)
 
