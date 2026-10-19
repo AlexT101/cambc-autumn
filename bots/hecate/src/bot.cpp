@@ -805,7 +805,7 @@ bool step_onto_cleared(const World& world, Pathing& pathing, int g) {
     return false;
 }
 
-// Fuel the farm evaluation and the walk after it need: fields from here unless the steps are
+// Fuel the farm evaluation and the walk after it need: a field from here unless the steps are
 // known, about 1000 a group, and the approach to last turn's choice.
 std::uint64_t farm_evaluation_reserve(const World& world, Pathing& pathing, const Memory& memory, vec2 here) {
     const auto& map = world.map();
@@ -813,7 +813,7 @@ std::uint64_t farm_evaluation_reserve(const World& world, Pathing& pathing, cons
     const int range = group >= 0 && group < static_cast<int>(map.groups.size())
         && world.camps[group].state != CampState::cleared ? world.me().facts().attack_range() : 0;
     const bool steps_free = pathing.centres_ready() || (map.ally_spawn.is_set(here) && map.spawn_steps_drafted());
-    const auto evaluation = (steps_free ? 0 : field_cost_estimate()) + 1000 * map.groups.size();
+    const auto evaluation = (steps_free ? 0 : full_field_cost_estimate()) + 1000 * map.groups.size();
     const auto walk = group < 0 || group >= static_cast<int>(map.groups.size()) ? std::uint64_t{0}
         : pathing.approach_cost(group, range);
     return evaluation + walk + end_reserve;
@@ -1125,8 +1125,9 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
             continue;
         auto& steps_known = centre_steps[g];
         if (steps_known < 0) {
-            if (steps_warm) {
-                steps_known = centre_field(g)->at(here);
+            // Walking is symmetric: a group's warm centre field gives our steps to it before all are.
+            if (const auto* centre = centre_field(g)) {
+                steps_known = centre->at(here);
             } else if (const auto drafted = map.drafted_spawn_steps(here, g)) {
                 steps_known = *drafted;
             } else {
@@ -1264,7 +1265,7 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         return outside;
     };
     if (world.camps[best].state == CampState::cleared) {
-        if (!zone) dash_towards(world, pathing, groups[best].tiles());
+        if (!zone) dash_towards(world, pathing, groups[best].tiles(), cap);
         if (search) pathing.step_towards(off_zone(groups[best].tiles()), zone, cap);
         else {
             note_shortcut("farm-no-route");
@@ -1294,7 +1295,7 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         if (melee) step_onto_cleared(world, pathing, best);
         return true;
     }
-    if (!zone && dash_towards(world, pathing, goals) && attack_camp(world, affordable) >= 0) return true;
+    if (!zone && dash_towards(world, pathing, goals, cap) && attack_camp(world, affordable) >= 0) return true;
     const bool walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
                             ? pathing.step_towards(off_zone(goals), zone, cap)
                                   || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap)
