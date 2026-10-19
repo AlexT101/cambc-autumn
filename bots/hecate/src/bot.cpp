@@ -688,6 +688,15 @@ bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family) {
     return owned[emblem_of(family, strength_stat)] + owned[emblem_of(family, focus_stat)] + owned[emblem_of(family, health_stat)] > 0;
 }
 
+// A Jungle, Power or Durability shard short of its emblem.
+bool emblem_begun() {
+    const auto& owned = my_items();
+    for (const int family : {jungle, power, durability})
+        for (int stat = strength_stat; stat <= health_stat; ++stat)
+            if (owned[shard_of(family, stat)] > 0) return true;
+    return false;
+}
+
 // Our stats and the share of camp damage (Jungle) and of all damage (Durability) we take.
 struct Build {
     float strength = 0, focus = 0, max_health = 0, camp_taken = 1, taken = 1;
@@ -2004,7 +2013,8 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
 // quicker.
 bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if (my_gems() > 0 || my_gold() < shard_price || memory.damage > 0 || !may_shop(world)) return false;
+    if (my_gems() > 0 || my_gold() < (emblem_begun() ? shard_price : emblem_price) || memory.damage > 0 || !may_shop(world))
+        return false;
     const vec2 here = my_position();
     if (world.map().ally_spawn.is_set(here) || safety.threatened(here)) return false;
     // The trip costs the recall and the walk back out; hurt, it also heals.
