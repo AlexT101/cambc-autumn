@@ -152,12 +152,14 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
                 if (x >= 0 && x < side && y >= 0 && y < side) value[y * side + x] += t.weight * t.worth;
             }
     }
-    static bitboard skipped{cambc::uninitialized};
-    and_into(centres, skip, skipped);
-    centres ^= skipped;
+    static bitboard box{cambc::uninitialized};
+    box.clear();
+    box.draw_chebyshev(here, static_cast<float>(range));
+    centres &= box;
+    and_into(centres, skip, box);
+    centres ^= box;
     // In board order, which breaks ties.
     for (auto c : Tiles<17 * 17>{centres}) {
-        if (dist(c, here) > range) continue;
         const float v = value[(c.y - here.y + range) * side + (c.x - here.x + range)];
         if (v > best.value && v >= min_weight_value) best.slot = slot, best.value = v, best.tile = c;
     }
