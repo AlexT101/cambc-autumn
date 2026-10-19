@@ -688,15 +688,62 @@ bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family) {
     return owned[emblem_of(family, strength_stat)] + owned[emblem_of(family, focus_stat)] + owned[emblem_of(family, health_stat)] > 0;
 }
 
+// A Jungle, Power or Durability shard short of its emblem.
+bool emblem_begun() {
+    const auto& owned = my_items();
+    for (const int family : {jungle, power, durability})
+        for (int stat = strength_stat; stat <= health_stat; ++stat)
+            if (owned[shard_of(family, stat)] > 0) return true;
+    return false;
+}
+
 // Our stats and the share of camp damage (Jungle) and of all damage (Durability) we take.
 struct Build {
-    float strength, focus, max_health, camp_taken, taken;
+    float strength = 0, focus = 0, max_health = 0, camp_taken = 1, taken = 1;
 };
 
-// Rounds a turn of ours costs in clearing and heal trips at our upkeep so far, with build b: the
-// clearing share shrinks with our output, as do the camps' hits taken meanwhile; health lost comes
-// back by a recall and the walk out, a trip per usable health (above the recall line).
-float upkeep_cost(const World& world, const Build& now, const Build& b) {
+void add_shards(Build& b, const ChampionFacts& f, int stat, float shards) {
+    if (stat == strength_stat) b.strength += shards * f.strength.growth;
+    if (stat == focus_stat) b.focus += shards * f.focus.growth;
+    if (stat == health_stat) {
+        b.max_health += shards * f.health.growth;
+        if (f.passive == Passive::health_strength) b.strength += 0.01f * shards * f.health.growth;
+    }
+}
+
+// Where every gem is behind a siege, our upkeep before a camp has hit us: every turn on the nearest
+// Monolith, alongside the others' output (`others`), its hits on the nearest of us (the melee while
+// any lives) split by max health, the walk out its distance from spawn.
+Upkeep siege_upkeep(const World& world, float& others) {
+    const auto& map = world.map();
+    Upkeep u;
+    others = 0;
+    int g = -1, steps = unreachable;
+    for (int h = 0; h < static_cast<int>(map.groups.size()); ++h)
+        if (map.groups[h].has_monolith && map.ally_steps(h) < steps) g = h, steps = map.ally_steps(h);
+    if (g < 0) return upkeep;
+    bool melee = false;
+    for (const auto& a : world.allies) melee |= (a.alive || a.is_self) && !a.facts().ranged;
+    float pool = 0;
+    for (const auto& a : world.allies) {
+        if (!a.alive && !a.is_self) continue;
+        if (!a.is_self) others += floored_output(a);
+        if (!melee || !a.facts().ranged) pool += a.max_health;
+    }
+    const auto& self = world.me();
+    u.turns = u.camp_turns = u.spawn_turns = std::max(1, upkeep.turns);
+    u.spawn_steps = static_cast<float>(steps * u.turns);
+    u.champ_taken = upkeep.champ_taken;
+    if (!melee || !self.facts().ranged)
+        u.camp_taken = map.groups[g].strength * params::siege_hit_share * camp_hit_factor() * self.max_health / pool * static_cast<float>(u.turns);
+    return u;
+}
+
+// Rounds a turn of ours costs in clearing and heal trips at upkeep u, with build b: the clearing
+// share shrinks with our output (beside the others' on the same camps), as do the camps' hits taken
+// meanwhile; health lost comes back by a recall and the walk out, a trip per usable health (above
+// the recall line).
+float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
     const auto out = [&](const Build& x) {
         float damage = x.strength;
         for (const auto& a : world.me().facts().abilities) {
@@ -707,7 +754,7 @@ float upkeep_cost(const World& world, const Build& now, const Build& b) {
     };
     const float turns = static_cast<float>(std::max(1, upkeep.turns));
     const float steps = upkeep.spawn_turns > 0 ? upkeep.spawn_steps / static_cast<float>(upkeep.spawn_turns) : 0.0f;
-    const float clear = out(now) / out(b);
+    const float clear = (others + out(now)) / (others + out(b));
     const float camp = upkeep.camp_taken / turns * clear * b.camp_taken / now.camp_taken;
     const float taken = (camp + upkeep.champ_taken / turns) * b.taken / now.taken;
     const float usable = b.max_health * (1.0f - params::recall_health_fraction);
@@ -716,45 +763,38 @@ float upkeep_cost(const World& world, const Build& now, const Build& b) {
 
 // The emblem to complete next and the share of a turn it saves (upkeep_cost): a Power emblem in
 // the main stat (6 shards' stats for 5), a Jungle one in it (-30% camp damage) or a Durability one
-// in Health (-10% damage taken), whichever saves most; one already begun is finished first. Where
-// every gem is behind a siege, the damage to come is not seen before the first: Jungle, Power,
-// Durability, then Power.
+// in Health (-10% damage taken), whichever saves most; one already begun is finished first, priced
+// by the shards left to buy (`cost` in gold).
 struct Emblem {
     int family, stat;
     float saved;
+    unsigned cost;
 };
-Emblem best_emblem(const World& world) {
+// `bought`: the stats of shards bought since the turn's start.
+Emblem best_emblem(const World& world, const Build& bought = {}) {
     const auto& f = world.me().facts();
     const auto& owned = my_items();
     const auto& self = world.me();
-    const Build now{self.strength, self.focus, self.max_health, has_family(owned, jungle) ? 0.7f : 1.0f,
-                    has_family(owned, durability) ? 0.9f : 1.0f};
-    const float base = upkeep_cost(world, now, now);
+    const Build now{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
+                    has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f};
+    float others = 0;
+    const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
+    const float base = upkeep_cost(world, u, others, now, now);
     const int main = main_stat(world);
-    const auto value = [&](int family, int stat) {
+    const auto value = [&](int family, int stat) -> Emblem {
+        const unsigned left = 5 - owned[shard_of(family, stat)];
         Build b = now;
-        const float shards = family == power ? 6.0f : 5.0f;
-        if (stat == strength_stat) b.strength += shards * f.strength.growth;
-        if (stat == focus_stat) b.focus += shards * f.focus.growth;
-        if (stat == health_stat) {
-            b.max_health += shards * f.health.growth;
-            if (f.passive == Passive::health_strength) b.strength += 0.01f * shards * f.health.growth;
-        }
+        add_shards(b, f, stat, static_cast<float>(left + (family == power)));
         if (family == jungle) b.camp_taken = 0.7f;
         if (family == durability) b.taken = 0.9f;
-        return base - upkeep_cost(world, now, b);
+        return {family, stat, base - upkeep_cost(world, u, others, now, b), left * shard_price};
     };
     const int options[3][2] = {{jungle, main}, {power, main}, {durability, health_stat}};
-    if (world.map().monolith_only) {
-        for (const auto& [family, stat] : options)
-            if (owned[shard_of(family, stat)] + 5 * owned[emblem_of(family, stat)] < 5) return {family, stat, value(family, stat)};
-        return {power, main, value(power, main)};
-    }
-    Emblem best{power, main, value(power, main)};
+    Emblem best = value(power, main);
     for (const auto& [family, stat] : options) {
-        if (owned[shard_of(family, stat)] > 0) return {family, stat, value(family, stat)};
+        if (owned[shard_of(family, stat)] > 0) return value(family, stat);
         if (family == power) continue;
-        if (const float v = value(family, stat); v > best.saved) best = {family, stat, v};
+        if (const auto e = value(family, stat); e.saved > best.saved) best = e;
     }
     return best;
 }
@@ -764,12 +804,14 @@ bool buy_shards(const World& world) {
     unsigned gold = my_gold();
     if (gold < shard_price) return false;
     const unsigned start = gold;
+    Build bought;
     while (gold >= shard_price) {
-        const auto [family, stat, saved] = best_emblem(world);
+        const auto [family, stat, saved, cost] = best_emblem(world, bought);
         const unsigned have = my_items()[shard_of(family, stat)];
         const unsigned count = std::min<unsigned>(5 - have, gold / shard_price);
         if (!buy(shard_of(family, stat), count)) break;
         gold -= shard_price * count;
+        add_shards(bought, world.me().facts(), stat, static_cast<float>(count + (family == power && have + count == 5)));
     }
     return gold < start;
 }
@@ -777,11 +819,11 @@ bool buy_shards(const World& world) {
 // Rounds the next emblem (best_emblem) saves us before the race ends: our share of the gems still
 // to farm takes about rounds_per_gem each.
 constexpr float rounds_per_gem = 2.3f;
-float emblem_gain_rounds(const World& world) {
+float emblem_gain_rounds(const World& world, const Emblem& next) {
     int alive = 0;
     for (const auto& a : world.allies) alive += a.alive;
     const int left = std::max(0, std::min(gems_short(world), static_cast<int>(cambc::constants::winning_gems) - world.score.enemy));
-    return best_emblem(world).saved * rounds_per_gem * static_cast<float>(left) / static_cast<float>(std::max(1, alive));
+    return next.saved * rounds_per_gem * static_cast<float>(left) / static_cast<float>(std::max(1, alive));
 }
 
 // Allies other than us in sight on `tiles`; with `below`, only those of a lower index.
@@ -1961,8 +2003,9 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     // at full health, and bank the bag on a later trip.
     if (!wins && lands - payout <= 1 && may_shop(world) && !closing(world)) {
         const int sharers = 1 + allies_on(world, world.map().groups[g].tiles());
-        if (my_gold() + world.map().groups[g].gold / sharers >= emblem_price
-            && emblem_gain_rounds(world) >= static_cast<float>(lands - payout + from_spawn - walk))
+        const auto next = best_emblem(world);
+        if (my_gold() + world.map().groups[g].gold / sharers >= next.cost
+            && emblem_gain_rounds(world, next) >= static_cast<float>(lands - payout + from_spawn - walk))
             return true;
     }
     // Healing is worth nothing once the bag wins: only the quicker way to an altar counts.
@@ -1970,16 +2013,19 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     return lands - payout + from_spawn < walk + (hurt ? params::recall_heal_bonus : 0);
 }
 
-// With an empty bag, a full emblem's gold goes home to shop, riding a recall unless walking is
+// With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
 // quicker.
 bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if (my_gems() > 0 || my_gold() < emblem_price || memory.damage > 0 || !may_shop(world)) return false;
+    if (my_gems() > 0 || my_gold() < (emblem_begun() ? shard_price : emblem_price) || memory.damage > 0 || !may_shop(world))
+        return false;
     const vec2 here = my_position();
     if (world.map().ally_spawn.is_set(here) || safety.threatened(here)) return false;
     // The trip costs the recall and the walk back out; hurt, it also heals.
+    const auto next = best_emblem(world);
+    if (my_gold() < next.cost) return false;
     const int back = pathing.to_ally_spawn().at(here);
     if (my_health() >= params::heal_trip_fraction * my_max_health() && back != unreachable
-        && emblem_gain_rounds(world) < static_cast<float>(std::min(back, recall_turns(world)) + back))
+        && emblem_gain_rounds(world, next) < static_cast<float>(std::min(back, recall_turns(world)) + back))
         return false;
     bool awake = false;
     world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });
@@ -2783,9 +2829,12 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage);
     prepare_walk(world, pathing, memory, walk_first_floor);
+    const int claim = memory.claim;
     decide(world, pathing, safety, memory);
     if (decision != 'W') memory.wait_altar = -1;
-    if (!sieged) {
+    // A turn without siege() (a fight, a stun, a heal) keeps the siege while our claim stays on it;
+    // a chase or a bag takes us away from it.
+    if (!sieged && (memory.claim != claim || decision == 'C' || my_gems() > 0)) {
         memory.siege = false;
         memory.staged_since = -1;
     }
