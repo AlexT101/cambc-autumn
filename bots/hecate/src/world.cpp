@@ -137,26 +137,16 @@ int fire_round(int round, int remaining, bool acted) {
     return round + std::max(remaining, 0) + (acted ? 1 : 0);
 }
 
-// The first of `tiles` nearest their mean; `region` holds just them.
-vec2 central_tile(const bitboard& region, const std::vector<vec2>& tiles) {
+// The first of the items' tiles (`pos` of each) nearest their mean.
+template <class Items, class Pos> vec2 central_tile(const Items& items, Pos pos) {
     long sx = 0, sy = 0;
-    for (auto p : tiles) sx += p.x, sy += p.y;
-    const vec2 mean{static_cast<int>(sx / static_cast<long>(tiles.size())), static_cast<int>(sy / static_cast<long>(tiles.size()))};
-    if (region.is_set(mean)) return mean; // the only tile at distance 0
-    return *std::min_element(tiles.begin(), tiles.end(), [&](vec2 a, vec2 b) {
-        return (a - mean).length_squared() < (b - mean).length_squared();
-    });
-}
-
-vec2 central_tile(const StaticVector<CampMember>& members) {
-    long sx = 0, sy = 0;
-    for (const auto& m : members) sx += m.pos.x, sy += m.pos.y;
-    const auto n = static_cast<long>(members.size());
+    for (const auto& x : items) sx += pos(x).x, sy += pos(x).y;
+    const auto n = static_cast<long>(items.size());
     const vec2 mean{static_cast<int>(sx / n), static_cast<int>(sy / n)};
-    vec2 best = members.front().pos;
+    vec2 best = pos(*items.begin());
     auto nearest = (best - mean).length_squared();
-    for (std::size_t i = 1; i < members.size(); ++i)
-        if (const auto d = (members[i].pos - mean).length_squared(); d < nearest) nearest = d, best = members[i].pos;
+    for (const auto& x : items)
+        if (const auto d = (pos(x) - mean).length_squared(); d < nearest) nearest = d, best = pos(x);
     return best;
 }
 
@@ -564,8 +554,9 @@ std::unique_ptr<StaticMap> StaticMap::build() {
 
     s->ally_spawn_tiles = s->ally_spawn.positions();
     s->enemy_spawn_tiles = s->enemy_spawn.positions();
-    s->ally_spawn_centre = central_tile(s->ally_spawn, s->ally_spawn_tiles);
-    s->enemy_spawn_centre = central_tile(s->enemy_spawn, s->enemy_spawn_tiles);
+    const auto tile = [](vec2 p) { return p; };
+    s->ally_spawn_centre = central_tile(s->ally_spawn_tiles, tile);
+    s->enemy_spawn_centre = central_tile(s->enemy_spawn_tiles, tile);
 
     or_into(s->walls, s->holes, s->impassable);
     s->impassable |= s->altar_tiles;
@@ -621,8 +612,16 @@ std::unique_ptr<StaticMap> StaticMap::build() {
             s->camp_tiles.set(pos);
             s->group_lookup_[tile_index(pos)] = static_cast<std::uint16_t>(gi + 1);
         }
-        g.centre = central_tile(g.members);
+        g.centre = central_tile(g.members, [](const CampMember& m) { return m.pos; });
     }
+    bool big = false, other = false;
+    s->monolith_only = true;
+    for (const auto& g : s->groups) {
+        s->monolith_only &= g.has_monolith || g.gems == 0;
+        if (!g.has_monolith && g.gems >= params::big_gems) big = true;
+        else if (!g.has_monolith && g.gems > 0) other = true;
+    }
+    s->shared_gems = big && !other;
     or_into(s->camp_tiles, s->blocked_for_us, s->standable);
     not_into(s->standable, s->standable);
 

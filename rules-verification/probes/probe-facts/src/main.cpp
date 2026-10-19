@@ -1,7 +1,13 @@
-#include "champions.h"
+// probe-facts: hecate's champion table (bots/hecate/src/champions.h, transcribed from cambc-rules.yaml)
+// against the engine's champion designs. On its first play turn it prints "facts mismatch <name>: ..."
+// for each champion that differs, then "facts checked: N mismatches". Its draft picks are left random.
+//   cambc run rules-verification/probes/probe-facts rules-verification/probes/probe-facts --map corners --rounds 1 -o <dir>
+#include <cambc.h>
 #include <cmath>
+#include <cstdio>
 #include <string>
 #include <variant>
+#include "../../../../bots/hecate/src/champions.h"
 
 namespace aph {
 
@@ -43,7 +49,7 @@ std::string compare_ability(const AbilityFacts& want, const cambc::ability& slot
 
 } // namespace
 
-int check_facts_against_engine() {
+int check_facts() {
     int mismatches = 0;
     for (const auto& design : cambc::champion_designs) {
         const auto& f = facts(design.champion_name());
@@ -66,3 +72,14 @@ int check_facts_against_engine() {
 }
 
 } // namespace aph
+
+int main() {
+    bool checked = false;
+    while (true) {
+        if (!cambc::is_draft() && !checked) {
+            checked = true;
+            std::printf("facts checked: %d mismatches\n", aph::check_facts());
+        }
+        cambc::end_turn();
+    }
+}

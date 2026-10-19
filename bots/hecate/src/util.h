@@ -14,7 +14,7 @@ using cambc::vec2;
 
 // A stdout line costs about 1.3k fuel and each team's output is capped at 1 MiB; indicator dots
 // and lines are cheaper.
-inline constexpr bool debug_log = false;    // map summary and fact check on the first turn
+inline constexpr bool debug_log = false;    // map summary on the first turn
 inline constexpr bool debug_draw = false;   // world beliefs as indicator dots and lines
 inline constexpr bool debug_fuel = false;   // fuel used by each phase of the turn
 // Belief dump for tools/replay/audit_beliefs.py: a "BD" stdout line per champion every period

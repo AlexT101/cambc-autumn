@@ -51,7 +51,6 @@ struct Instance {
                 std::printf("map %dx%d %s groups %zu altars %zu plan %s\n", m.width, m.height,
                             cambc::to_string(m.symmetry).c_str(), m.groups.size(), m.altars.size(),
                             m.drafted() ? "ok" : "missing");
-                aph::check_facts_against_engine();
             }
         });
         if (!updated || !world->ready()) return;

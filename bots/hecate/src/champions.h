@@ -1,4 +1,4 @@
-// Transcribed from cambc-rules.yaml; check_facts_against_engine() compares it with the engine.
+// Transcribed from cambc-rules.yaml; rules-verification/probes/probe-facts compares it with the engine.
 #pragma once
 #include <cambc.h>
 #include <array>
@@ -140,6 +140,4 @@ constexpr const ChampionFacts& facts(cambc::champion_type type) {
 
 // Compare the table with the engine's champion designs; returns the number of mismatches and
 // prints each one. Costs a few thousand fuel, so call it only when debugging.
-int check_facts_against_engine();
-
 } // namespace aph

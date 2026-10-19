@@ -84,6 +84,10 @@ struct StaticMap {
     int width = 0, height = 0;
     cambc::symmetry symmetry{};
     bool team_a = true; // team A starts odd rounds; B starts even rounds and wins a full tie
+    bool monolith_only = false; // every gem source is a Monolith
+    // Every gem source is a big group (params::big_gems) or a Monolith, and there is a big group:
+    // stampede's shared block.
+    bool shared_gems = false;
 
     // The SDK's own boards, read once at start-up.
     const bitboard& walls = cambc::map::walls();

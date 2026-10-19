@@ -50,8 +50,9 @@ inline constexpr float home_retreat_ratio = 2.0f;
 inline constexpr int pursuit_steps = 3;
 // A capture recall still pays when hurt if it costs at most this many more rounds to an altar.
 inline constexpr int recall_heal_bonus = 6;
-// Below this health a shopping trip also heals, and goes whatever the emblem is worth.
-inline constexpr float shop_heal_fraction = 0.6f;
+// Below this health a trip home also heals: a shopping trip goes whatever the emblem is worth, a
+// capture recall counts the heal, and a sieger out of the big group's reach recalls.
+inline constexpr float heal_trip_fraction = 0.6f;
 // Turns ahead a tribute's safety is judged over, each turn of the channel.
 inline constexpr int tribute_window = 6;
 // Most rounds to wait at a camp for it to return.
@@ -73,8 +74,6 @@ inline constexpr int siege_respawn_wait = 30;
 // Wait just out of reach until this share of the team's output has come, at most this long.
 inline constexpr float siege_gather_share = 0.6f;
 inline constexpr int siege_max_wait = 20;
-// Below this health a champion out of the Monolith's reach recalls to heal.
-inline constexpr float siege_heal_fraction = 0.6f;
 // Big groups (a shared block of elk and gem clusters) go the same way: at least this many gems,
 // cleared within this many rounds, waited for through a respawn this long, split over this many
 // holders.

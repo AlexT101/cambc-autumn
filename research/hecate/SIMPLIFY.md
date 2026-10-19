@@ -227,6 +227,7 @@ Six commits after 202345f (f01312a..4b52c5a), each checked with `bench.py compar
   - `Altar::lock_tiles`, `Safety::expected_damage` and the self `fast_recall` path, for the section 0 ideas.
   - `ChampionFacts::stun_reach` is now used, through `ChampionBelief::ready_stun_reach`.
 - **Tried and dropped:** a shared `Safety::considered()` enemy filter. It cost 72-102 fuel on most turns in the WASM build, even when forced inline, so the condition stays written out five times. Helpers that look free can cost fuel, so bench each one.
+- **Done later (2026-10-19, on main):** `capture_rounds()` from the engine's capture time; one `heal_trip_fraction`; `StaticMap::monolith_only`/`shared_gems` computed at build (the `spell_builds` global is gone); `siege_strongest` folded into `siege_load`; one `central_tile` template; `check_facts_against_engine` moved to `rules-verification/probes/probe-facts` (0 mismatches). 16/16 replays identical, fuel +0.05%.
 - **Not done:**
   - The v17 port's copies: `camp_cast_cost` in the spell branch, and the five non-fuel `note_shortcut` tags in 1.8. 4.1 may remove that code.
   - The one map kind in `StaticMap`, `capture_rounds` derived at run time, the `central_tile` template, and `siege_strongest` folded into `siege_load`.
