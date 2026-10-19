@@ -211,6 +211,34 @@ These are never called or never read:
   - `Memory::farm_spell` says it is "revalidated before ranged passing hits"; it is only read at bot.cpp:1059.
   - main.cpp says "only comms reads vision again".
 
+### 1.11 Bucket 1 done (2026-10-19)
+Six commits after 202345f (f01312a..4b52c5a), each checked with `bench.py compare` against the previous one with both v17 spend caps raised: 16/16 replays identical every time. `bots/hecate/src` went from 8970 to 8621 lines, and bench fuel fell 1.4% over the six (−0.6, −0.02, −0.33, −0.11, −0.37, 0).
+- **Done:**
+  - Most of 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 1.8 and 1.10.
+  - New finds from a second review:
+    - `camp_cast`'s dead `group < 0` path.
+    - `Trade::cut` and `Threat::weight`, which are write-only.
+    - A redundant `me.position() != here` in `collect_local_reward`.
+    - `has_stun`.
+    - Unneeded `friend class World` declarations.
+    - The comment on `pack_zone`'s radius, which said `max_reach + 2` where the code uses `+ 1` (the constant is now `pack_radius`).
+- **Kept on purpose:**
+  - Teleport code (`teleport_targets` and our own teleport-state checks), in case we buy crystals.
+  - `Altar::lock_tiles`, `Safety::expected_damage` and the self `fast_recall` path, for the section 0 ideas.
+  - `ChampionFacts::stun_reach` is now used, through `ChampionBelief::ready_stun_reach`.
+- **Tried and dropped:** a shared `Safety::considered()` enemy filter. It cost 72-102 fuel on most turns in the WASM build, even when forced inline, so the condition stays written out five times. Helpers that look free can cost fuel, so bench each one.
+- **Not done:**
+  - The v17 port's copies: `camp_cast_cost` in the spell branch, and the five non-fuel `note_shortcut` tags in 1.8. 4.1 may remove that code.
+  - The one map kind in `StaticMap`, `capture_rounds` derived at run time, the `central_tile` template, and `siege_strongest` folded into `siege_load`.
+  - `recall_saving`: `remaining_channel_time()` is unsigned, so `channel + heal < walk - from_spawn` would compare against a negative int wrongly.
+  - kite's on-tile contested branch, which a dash can reach (see 3.4).
+  - Moving `threat_strike`/`turns_before_ours` out of the header, and `enemy_spawn_tiles` into `build()`.
+- **Corrections to the list above:**
+  - `holders()` can't be `big_group(G) ? big_holders : 1`: that drops Monoliths' 2 holders.
+  - `and_into` is used (siege). `Moment` can't be private: `ChampionBelief` has public `Moment` fields.
+  - In section 0, `recall_outruns`, `recall_to_bank` and `capture_recall` read the live channel time. A Home emblem only needs `wants_shop` and farm's heal trip changed.
+  - The pair-gems copy in self_abilities.cpp (Cassi/Issac partner health by tile) is a different lookup and stays.
+
 ---
 
 ## 2. Bug fixes
@@ -437,7 +465,7 @@ These cost code but save fuel, so none of them are removal candidates:
 ---
 
 ## Suggested order
-1. **One bucket-1 commit,** checked byte-identical with `tools/fuel/bench.py compare`, plus the 1.9 fuel savings. It should be ~350-450 lines lighter and use less fuel per turn.
+1. **Bucket 1, checked byte-identical with `tools/fuel/bench.py compare`.** Done: 1.9 and 1.11, 349 lines lighter and 1.4% less fuel.
 2. **`--fuel 0` bench on the cleaned bot:** count `SHORTCUT` tags per gate after dropping the non-fuel tags in 1.8, and record lost turns. That count decides which rows of 3.1 can go.
 3. **Bug fixes 2.1-2.7, one A/B each.** They are small and independent. 2.1 and 2.3 affect the most games.
 4. **4.1 (v17 port), the largest single cut.** Then 4.3, 4.4 and 4.6-4.9, each A/B'd and kept out if the result is level.
