@@ -208,6 +208,8 @@ private:
         std::array<FightMemo, max_fights> fights_;
     };
     std::uint64_t costliest_fight_ = 0;
+    int champions_ = -1;            // in sight, for fight_cost_estimate(); beliefs are fixed for the turn
+    std::uint64_t build_cost_ = 0;  // build_cost_estimate() until built, refreshed or invalidated; 0: unknown
 };
 
 } // namespace aph

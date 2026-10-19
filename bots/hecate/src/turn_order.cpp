@@ -61,16 +61,17 @@ const ChampionBelief& live_self(const World& world) {
     b.alive = now.alive;
     b.visible = now.visible;
     b.max_health = now.max_health;
-    auto& me = cambc::self();
-    cambc::detail::champion_info info{};
-    cambc::detail::check(cambc::detail::sdk_champion(static_cast<std::uint32_t>(world.me().handle), &info));
+    const auto& info = my_record();
     b.pos = {info.x, info.y};
     b.health = info.health;
     b.strength = info.strength;
     b.focus = info.focus;
-    b.gems = static_cast<int>(me.gem_count());
-    const auto abilities = me.abilities();
-    for (int s = 0; s < 2; ++s) b.ready_round[s] = world.round + std::max(0, static_cast<int>(abilities[s].cooldown()));
+    b.gems = static_cast<int>(my_gems());
+    for (std::uint32_t s = 0; s < 2; ++s) {
+        std::int32_t cooldown{};
+        cambc::detail::check(cambc::detail::sdk_champion_cooldown(my_handle(), s, &cooldown));
+        b.ready_round[s] = world.round + std::max(0, static_cast<int>(cooldown));
+    }
     return b;
 }
 
@@ -133,16 +134,17 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
 // Our channel ends at our next turn's start, unless an enemy acting first cancels it: any damage
 // cancels a recall, only a stun a tribute or a teleport.
 void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
-    auto& me = cambc::self();
-    const bool recall = me.is_recalling();
-    if (!(recall || me.is_submitting_gems() || me.is_teleporting()) || me.remaining_channel_time() != 1) return;
+    using cambc::champion_state;
+    const auto state = my_state();
+    const bool recall = state.contains(champion_state::recalling), tribute = state.contains(champion_state::submitting_gems);
+    if (!(recall || tribute || state.contains(champion_state::teleporting)) || my_channel_time() != 1) return;
     std::array<Safety::ThreatAt, 16> threats;
     const int n = safety.threats_at(self.pos, threats);
     for (int i = 0; i < n; ++i) {
         const auto& t = threats[i];
         if (!t.strike->hits(t.distance) || !(recall || t.strike->stuns[t.distance])) continue;
         const float gems = params::gem_value * static_cast<float>(self.gems);
-        wish.offer(protect, (me.is_submitting_gems() ? params::tribute_value : params::recall_value) + gems);
+        wish.offer(protect, (tribute ? params::tribute_value : params::recall_value) + gems);
         return;
     }
 }

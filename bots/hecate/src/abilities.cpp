@@ -24,7 +24,7 @@ std::uint64_t enemy_cast_cost(int visible, int unseen) {
 }
 std::uint64_t camp_cast_cost(std::size_t members, bool ground) { return 2000 + 800 * members + (ground ? 8000 : 0); }
 
-bool walked(const World& world) { return cambc::self().position() != world.me().pos; }
+bool walked(const World& world) { return my_position() != world.me().pos; }
 
 bool castable(const World& world, int slot) {
     const auto& a = world.me().facts().abilities[slot];
@@ -170,8 +170,8 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
 Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) {
     auto& me = cambc::self();
     Cast best;
-    if (!me.can_cast()) return best;
-    const vec2 here = me.position();
+    if (!my_can_cast()) return best;
+    const vec2 here = my_position();
     const auto& f = world.me().facts();
     // Most turns no enemy is in reach: skip the engine reads below.
     int reach = -1;
@@ -190,7 +190,7 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
         return best;
     }
     const auto& enemy_spawn = world.map().enemy_spawn;
-    keep_walk = keep_walk && me.can_move();
+    keep_walk = keep_walk && my_can_move();
     // A stun takes its target's walk as the cast takes ours: with every visible enemy that could
     // reach us next turn stunned, keeping the walk gains nothing. `free_stun`: centres that do so.
     std::vector<const ChampionBelief*> reaching;
@@ -218,7 +218,7 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
         const auto& a = f.abilities[s];
         const float threshold = a.excludes_walking && keep_walk ? keep_walk_value : min_value;
         const float raw = raw_damage(s);
-        const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= me.health(); };
+        const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= my_health(); };
         const auto spared = [&](const ChampionBelief& e, float damage, float health) { return &e == hold && damage < health - 0.01f; };
         if (a.target == Targeting::unit) {
             for (const auto& e : world.enemies) {
@@ -292,12 +292,12 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
 
 Cast camp_cast(const World& world, int group, bool attackers_only, bool any_value) {
     auto& me = cambc::self();
-    if (!me.can_cast()) return {};
+    if (!my_can_cast()) return {};
     const auto& f = world.me().facts();
     const std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};
     if (!ready[0] && !ready[1]) return {};
     const bool stuns = (ready[0] && f.abilities[0].stuns) || (ready[1] && f.abilities[1].stuns);
-    const vec2 here = me.position();
+    const vec2 here = my_position();
     const auto& g = world.map().groups[group];
     if ((g.has_monolith && group != siege_group()) || world.camps[group].state != CampState::alive) return {};
     if (enemy_within(world, here, hold_range)) return {};

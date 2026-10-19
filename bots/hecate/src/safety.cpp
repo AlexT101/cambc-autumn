@@ -184,22 +184,24 @@ int attack(Fighter& f, int turn, Side& self, Side& other, float& damage) {
     return 1;
 }
 
-// One side's turn: stunned members (the strongest first) skip it.
+// One side's turn: stunned members (the strongest of those in reach first) skip it.
 float act(Side& self, Side& other) {
+    const int turn = self.turn++;
     unsigned skip = 0; // bit i: fighters[i]
     for (int k = 0; k < self.stunned; ++k) {
         int best = -1;
-        for (int i = 0; i < self.count; ++i)
-            if (!(skip >> i & 1) && self.fighters[i].health > 0 && self.fighters[i].facts->passive != Passive::stun_immune
-                && (best < 0 || self.fighters[i].strength > self.fighters[best].strength))
+        for (int i = 0; i < self.count; ++i) {
+            const auto& f = self.fighters[i];
+            if (!(skip >> i & 1) && f.health > 0 && !f.idle && f.arrives_at <= turn && f.facts->passive != Passive::stun_immune
+                && (best < 0 || f.strength > self.fighters[best].strength))
                 best = i;
+        }
         if (best < 0) break;
         skip |= 1u << best;
     }
     self.stunned = 0;
     float damage = 0;
     int hits = 0;
-    const int turn = self.turn++;
     for (int i = 0; i < self.count; ++i) {
         auto& f = self.fighters[i];
         if (f.shield_until >= 0 && f.shield_until <= turn) f.shield = 0, f.shield_until = -1;
@@ -229,14 +231,15 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             if (dealt && theirs < 5) (*dealt)[2] += d, (*dealt)[0] += theirs == 0 ? d : 0;
             if (us.camp > 0) us.hurt(us.camp);
             ++theirs;
-            if (self_falls && us.self >= 0 && us.fighters[us.self].health <= 0) *self_falls = true;
-            if (us.alive == 0) return {0, theirs};
         } else {
             const float d = act(us, them);
             if (dealt && ours < 5) (*dealt)[3] += d, (*dealt)[1] += ours == 0 ? d : 0;
             ++ours;
-            if (them.count > 0 && them.alive == 0) return {ours, 0};
         }
+        // Ren's reflection can fell the side whose turn it is.
+        if (self_falls && us.self >= 0 && us.fighters[us.self].health <= 0) *self_falls = true;
+        if (us.alive == 0) return {0, std::max(1, theirs)};
+        if (them.count > 0 && them.alive == 0) return {std::max(1, ours), 0};
     }
     return {0, 0};
 }
@@ -416,9 +419,8 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
         static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
         bool reread = false;
         const auto& groups = world_.map().groups;
-        for (std::size_t g = 0; g < groups.size(); ++g) {
+        world_.each_stirring([&](int g) {
             const auto& c = world_.camps[g];
-            if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
             if (n < 0) {
                 n = 0;
                 for (const auto* side : {&world_.allies, &world_.enemies})
@@ -440,7 +442,7 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
                     reach = std::min(reach, dist(others.at[k].pos, m.pos) - (others.at[k].first ? 1 : 0));
                 if (reach >= 0) members_.push_back({m.pos, m.strength, w, reach});
             }
-        }
+        });
     }
     return members_;
 }
@@ -459,6 +461,7 @@ bool Safety::gone(const ChampionBelief& c) {
 void Safety::invalidate() {
     built_ = false;
     refresh_ = true;
+    build_cost_ = 0;
     threat_count_ = 0;
     members_known_ = false;
     camp_area_.reset();
@@ -470,6 +473,7 @@ void Safety::invalidate() {
 void Safety::refresh() {
     refresh_ = true;
     gone_.fill(0);
+    build_cost_ = 0;
     if (!built_ && !members_known_) return;
     bool changed = false;
     for (const auto& e : world_.enemies) changed |= e.alive && gone(e);
@@ -756,21 +760,26 @@ Trade Safety::fight(vec2 p, int exclude) {
 }
 
 std::uint64_t Safety::fight_cost_estimate() {
-    std::uint64_t champions = 0;
-    for (const auto& a : world_.allies) champions += a.alive && (a.is_self || a.visible);
-    for (const auto& e : world_.enemies) champions += e.alive && e.visible;
+    if (champions_ < 0) {
+        champions_ = 0;
+        for (const auto& a : world_.allies) champions_ += a.alive && (a.is_self || a.visible);
+        for (const auto& e : world_.enemies) champions_ += e.alive && e.visible;
+    }
+    const auto champions = static_cast<std::uint64_t>(champions_);
     const auto simulation = std::max({std::uint64_t{10000}, 2000 + 2000 * champions, costliest_fight_ + costliest_fight_ / 4});
     return simulation + build_cost_estimate();
 }
 
 std::uint64_t Safety::build_cost_estimate() {
     if (built_) return 0;
+    if (build_cost_) return build_cost_;
     std::uint64_t cost = 2000;
     for (const auto& e : world_.enemies) {
         if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
         if (e.visible) cost += 1000;
         else cost += foe(e).weight > 0 ? 3000 + 25 * search_chunks() : 500;
     }
+    build_cost_ = cost;
     return cost;
 }
 
@@ -805,10 +814,9 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
         if (s.reach < 0) continue;
         const int walk = std::max(0, dist(p, e.pos) - s.reach);
         if (walk >= horizon) continue;
-        auto f = fighter(e, next_turn_round(world_, e));
-        f.arrives_at = walk;
-        f.health = e.health;
-        them.add(f);
+        const int k = them.count;
+        them.join(e, next_turn_round(world_, e));
+        if (them.count > k) them.fighters[k].arrives_at = walk;
     }
     if (them.count == 0 && us.camp <= 0) return 0;
     return simulate(us, them, true, nullptr, horizon).second;

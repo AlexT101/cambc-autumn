@@ -68,7 +68,7 @@ struct Instance {
         run("turn end", [&] { world->note_turn_end(); });
         if (world->is_stale()) return;
         // Vision changes only if we moved.
-        const bool moved = world->me().alive && cambc::self().position() != world->me().pos;
+        const bool moved = world->me().alive && aph::my_position() != world->me().pos;
         const bool refresh = moved && aph::fuel_ok(world->observe_cost_estimate() + end_reserve);
         run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
         run("debug", [&] { world->debug_output(); });
