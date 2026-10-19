@@ -819,7 +819,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     }
     // In observe() too, for a champion first seen after our move.
     b.gems = engine::gems(h);
-    if (b.side == team::enemy) b.fast_recall = engine::home_emblem(h);
+    if (b.side == team::enemy || b.is_self) b.fast_recall = engine::home_emblem(h);
 }
 
 void World::read_priorities(bool new_round) {
