@@ -991,12 +991,15 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
     const bool melee = world.me().facts().walk_and_attack_independent();
     // Cassi farms gold: the team's weakest body takes the harmless gold-only groups.
     const bool gold_farmer = world.me().facts().passive == Passive::linked_pair && !melee;
-    // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear.
+    // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear. A
+    // group that hits back and that we will not finish is only woken by it: hit one only while an
+    // ally clears it or, melee, once it is awake anyway.
     const auto passing = [&](int g) {
         if (!affordable(g)) return false;
         if (g == memory.farm_group) return true;
         if (taken(g)) return false;
-        return melee || groups[g].gems > 0 || (gold_farmer && groups[g].strength <= 0);
+        if (groups[g].strength > 0) return ally_engaged(world, g) || (melee && world.camps[g].awake == Awake::awake);
+        return melee || groups[g].gems > 0 || gold_farmer;
     };
     const auto attack_in_range = [&] {
         const int hit = attack_camp(world, passing);
@@ -1356,14 +1359,14 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         if (melee) step_onto_cleared(world, pathing, best);
         return true;
     }
-    if (!zone && dash_towards(world, pathing, goals, cap) && attack_camp(world, affordable) >= 0) return true;
+    if (!zone && dash_towards(world, pathing, goals, cap) && attack_camp(world, passing) >= 0) return true;
     const bool walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
                             ? pathing.step_towards(off_zone(goals), zone, cap)
                                   || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap)
                             : (note_shortcut("farm-no-route"), walk_on(best));
     if (walked) {
         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
-        if (!strike_enemy(world, strike_hold)) attack_camp(world, affordable);
+        if (!strike_enemy(world, strike_hold)) attack_camp(world, passing);
         cast_at_camp(world, best); // only casts that allow walking remain
         reset_and_attack_camp(world, best);
     }
@@ -2802,6 +2805,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     memory.round = world.round;
     memory.health = world.me().alive ? my_health() : 0;
     upkeep.camp_turns += camp_hits() != camp_hits_before;
+    debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), decision, memory.farm_group, memory.claim); });
 }
 
 } // namespace aph
