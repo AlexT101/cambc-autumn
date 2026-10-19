@@ -124,7 +124,7 @@ void receive(World& world) {
     state.last_round = round;
 }
 
-void send(World& world, bool refresh) {
+void send(World& world, bool moved, bool refresh) {
     auto bits = read_bits();
     const int round = world.round;
     const bool sighted = (state.fresh & sighting_bits) && sight_parity.get(bits) == (round & 1) && sight_x.get(bits) != 0;
@@ -182,6 +182,7 @@ void send(World& world, bool refresh) {
         dirty = true;
     } else if (!sighted) {
         if (refresh) world.observe();
+        else if (moved) note_shortcut("comms-stale-vision");
         const int n = static_cast<int>(world.enemies.size());
         const int start = sight_x.get(bits) != 0 ? sight_index.get(bits) + 1 : 0;
         for (int k = 0; k < n; ++k) {

@@ -252,6 +252,7 @@ Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first 
     if (them.count == 0) return t;
     const auto [we_kill, they_kill] = simulate(us, them, they_first, &t.self_falls, 24, debug_fights ? &t.dealt : nullptr, fuel_floor);
     if (we_kill < 0) {
+        note_shortcut("fight-cut");
         t.lost = t.self_falls = true;
         return t;
     }

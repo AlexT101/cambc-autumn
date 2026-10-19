@@ -420,7 +420,10 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& mem
         for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
             const auto& belief = world.altars[a];
             const auto* field = pathing.to_altar(a, end_reserve);
-            if (!field) continue;
+            if (!field) {
+                note_shortcut("bank-no-altar-field");
+                continue;
+            }
             int steps = field->at(here);
             if (steps == unreachable) continue;
             if (belief.enemy_lock) steps += belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
@@ -778,7 +781,11 @@ bool spell_clear(const World& world, Pathing& pathing, int g, const bitboard* zo
             attackers |= 1u << i;
             reach.draw_chebyshev(G.members[i].pos, static_cast<float>(camp_attack_range));
         }
-    if (!attackers || !pathing.prepare_member_tiles(g, ability_range, attackers, end_reserve)) return false;
+    if (!attackers) return false;
+    if (!pathing.prepare_member_tiles(g, ability_range, attackers, end_reserve)) {
+        note_shortcut("spell-clear-no-tiles");
+        return false;
+    }
     goals.clear();
     for (std::size_t i = 0; i < G.members.size() && i < 32; ++i)
         if (attackers >> i & 1) goals |= pathing.member_attack_tiles(g, static_cast<int>(i), ability_range);
@@ -927,6 +934,10 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
     const auto walk_reserve = [&](int g) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(g)); };
     if (!fuel_ok(farm_evaluation_reserve(world, pathing, memory, here))) {
         note_shortcut("farm-no-evaluation");
+        debug_block({
+            if (!pathing.centres_ready() && !(on_spawn && map.spawn_steps_drafted()))
+                std::printf("SHORTCUT %d %u farm-no-evaluation-cold\n", world.round, static_cast<unsigned>(world.me().handle));
+        });
         if (bag > 0) return false;
         // On large maps this can last hundreds of rounds, past the last choice's capture: once
         // that is gone, the nearest group, as the crow flies until fields are ready.
@@ -1260,12 +1271,12 @@ bool ward_bushes(const World& world, Memory& memory) {
     const auto floor = small_cost_estimate + end_reserve;
     if (here == memory.bushes_watched) return false;
     if (!fuel_ok(floor)) {
-        note_shortcut("ward-no-bushes");
+        note_shortcut("ward-no-bushes-fuel");
         return false;
     }
     if (!map.near_bushes().is_set(here)) return false;
     if (!map.find_bush_clusters(here, 2, floor)) {
-        note_shortcut("ward-no-bushes");
+        note_shortcut("ward-no-bushes-clusters");
         return false;
     }
     // Scratch boards: allocating one costs more than the host operations on it.
@@ -1540,7 +1551,10 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
         || (simulate && visible_threat(world, safety, here) && safety.fight(here, kill).lost))
         return true;
     if (kill >= 0) return false;
-    if (!simulate || !fuel_ok(2 * safety.fight_cost_estimate() + end_reserve)) return false;
+    if (!simulate || !fuel_ok(2 * safety.fight_cost_estimate() + end_reserve)) {
+        note_shortcut("home-no-pursuit");
+        return false;
+    }
     // Healthy on our own ground, they have no reason to come for us.
     if (paying_soon(world) || (own_ground(world, here) && health >= params::hurt_health_fraction * me.max_health())) return false;
     const auto t = safety.pursuit(here, params::pursuit_steps);
@@ -2003,10 +2017,11 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     const auto tiles = [&](int r, bitboard& out) {
         if (many) {
             if (pathing.prepare_attack_tiles(g, r, end_reserve)) pathing.attack_tiles(g, r, out);
-            else out.clear();
+            else note_shortcut("siege-no-tiles"), out.clear();
         } else if (pathing.prepare_member_tiles(g, r, 1u, end_reserve)) {
             and_into(pathing.member_attack_tiles(g, 0, r), map.standable, out);
         } else {
+            note_shortcut("siege-no-tiles");
             out.clear();
         }
     };
