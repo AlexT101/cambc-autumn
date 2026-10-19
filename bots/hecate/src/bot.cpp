@@ -1621,8 +1621,43 @@ bool covered(const bitboard& zone, vec2 p, int r) {
     return outside.is_empty();
 }
 
-// The visible enemy quickest to reach and kill among those whose local fight we win even when
-// they strike first; never one on or next to its spawn, where it heals.
+int carried_locks() { return static_cast<int>(cambc::self().consumables()[cambc::consumable_type::altar_lock].count()); }
+
+// The altar a tributer at p channels at.
+int tribute_altar(const World& world, vec2 p) {
+    const auto& altars = world.map().altars;
+    for (int a = 0; a < static_cast<int>(altars.size()); ++a)
+        if (dist(p, altars[a].pos) <= static_cast<int>(cambc::constants::submit_gems_range)) return a;
+    return -1;
+}
+
+// Our steps from `here` to stop a carrier's bag from scoring, unreachable if it scores first. A
+// tribute under way: a stun or a lock on its altar cancels it (a lock even Marcella's), a kill
+// takes the bag. Walking, it outpaces nobody but stops at an altar, the nearest as the crow
+// flies: we must reach that altar before its tribute there lands.
+int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
+    const auto& self = world.me();
+    const auto& altars = world.map().altars;
+    const int range = self.facts().attack_range();
+    int steps = std::max(0, dist(here, e.pos) - range);
+    if (e.channel == Channel::tribute) {
+        if (e.facts().passive != Passive::stun_immune)
+            if (const int reach = self.ready_stun_reach(e.channel_end_round - 1); reach >= 0)
+                steps = std::min(steps, std::max(0, dist(here, e.pos) - reach));
+        if (const int a = tribute_altar(world, e.pos); a >= 0 && carried_locks() > 0)
+            steps = std::min(steps, std::max(0, dist(here, altars[a].pos) - 2));
+        return steps < e.channel_end_round - world.round ? steps : unreachable;
+    }
+    int a = -1;
+    for (int k = 0; k < static_cast<int>(altars.size()); ++k)
+        if (a < 0 || dist(e.pos, altars[k].pos) < dist(e.pos, altars[a].pos)) a = k;
+    if (a < 0) return unreachable;
+    const int theirs = std::max(0, dist(e.pos, altars[a].pos) - 1) + tribute_turns(pair_gems(world, e));
+    return std::max(0, dist(here, altars[a].pos) - 1 - range) < theirs ? steps : unreachable;
+}
+
+// The visible enemy whose kill pays most a turn to reach and kill it, among those whose local
+// fight we win even when they strike first; never one on or next to its spawn, where it heals.
 const ChampionBelief* prey(const World& world, Safety& safety) {
     const auto& me = cambc::self();
     const vec2 here = me.position();
@@ -1632,23 +1667,28 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     const auto* zone = pack_zone(world);
     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
     const bool linked = partner(world) != nullptr;
-    // Quickest first (ties in index order), so fights are simulated only up to the first won.
+    // Best first (ties in index order), so fights are simulated only up to the first won.
     std::array<std::pair<float, const ChampionBelief*>, 8> order;
     int n = 0;
     for (const auto& e : world.enemies) {
         if (n == static_cast<int>(order.size()) || !e.alive || !e.visible || dist(here, e.pos) > vision_radius
             || near_enemy_spawn.is_set(e.pos))
             continue;
-        // Out of reach on its own ground only when hurt: fights at central altars straddle the
-        // line, and a beaten enemy otherwise escapes a step across it.
-        if (dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= 0.5f * e.max_health) continue;
+        // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
+        // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
+        // but a bag has to stop at an altar to score, and a kill takes it.
+        if (dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= 0.5f * e.max_health
+            && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
+            continue;
         // Every tile in reach of it would make us retreat at once.
         if (zone && covered(*zone, e.pos, range)) continue;
         if (!strength) strength = std::max(1.0f, me.strength());
         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + e.health / *strength;
+        // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
+        const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e)));
         int i = n++;
-        for (; i > 0 && order[i - 1].first > turns; --i) order[i] = order[i - 1];
-        order[i] = {turns, &e};
+        for (; i > 0 && order[i - 1].first > cost; --i) order[i] = order[i - 1];
+        order[i] = {cost, &e};
     }
     // Chasing is optional: leave enough for the walk after it and the turn's end.
     const auto reserve = search_cost_estimate(2 * vision_radius) + end_reserve;
