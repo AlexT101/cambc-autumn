@@ -457,6 +457,7 @@ bool Safety::gone(const ChampionBelief& c) {
 void Safety::invalidate() {
     built_ = false;
     refresh_ = true;
+    build_cost_ = 0;
     threat_count_ = 0;
     members_known_ = false;
     camp_area_.reset();
@@ -468,6 +469,7 @@ void Safety::invalidate() {
 void Safety::refresh() {
     refresh_ = true;
     gone_.fill(0);
+    build_cost_ = 0;
     if (!built_ && !members_known_) return;
     bool changed = false;
     for (const auto& e : world_.enemies) changed |= e.alive && gone(e);
@@ -729,21 +731,26 @@ Trade Safety::fight(vec2 p, int exclude) {
 }
 
 std::uint64_t Safety::fight_cost_estimate() {
-    std::uint64_t champions = 0;
-    for (const auto& a : world_.allies) champions += a.alive && (a.is_self || a.visible);
-    for (const auto& e : world_.enemies) champions += e.alive && e.visible;
+    if (champions_ < 0) {
+        champions_ = 0;
+        for (const auto& a : world_.allies) champions_ += a.alive && (a.is_self || a.visible);
+        for (const auto& e : world_.enemies) champions_ += e.alive && e.visible;
+    }
+    const auto champions = static_cast<std::uint64_t>(champions_);
     const auto simulation = std::max({std::uint64_t{10000}, 2000 + 2000 * champions, costliest_fight_ + costliest_fight_ / 4});
     return simulation + build_cost_estimate();
 }
 
 std::uint64_t Safety::build_cost_estimate() {
     if (built_) return 0;
+    if (build_cost_) return build_cost_;
     std::uint64_t cost = 2000;
     for (const auto& e : world_.enemies) {
         if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
         if (e.visible) cost += 1000;
         else cost += foe(e).weight > 0 ? 3000 + 25 * search_chunks() : 500;
     }
+    build_cost_ = cost;
     return cost;
 }
 
