@@ -106,6 +106,14 @@ public:
     bitboard avoid();
     // any_within(avoid(), p, r), without building the threats.
     bool avoid_within(vec2 p, int r);
+    // Each threat as threats() would list it, with its distance(p), without building them: an
+    // unseen threat's distance is searched out to its radius only. Returns the count.
+    struct ThreatAt {
+        int enemy;
+        const Strike* strike;
+        int distance;
+    };
+    int threats_at(vec2 p, std::array<ThreatAt, 16>& out);
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
@@ -191,7 +199,7 @@ private:
         std::uint32_t key;
         Trade trade;
     };
-    static constexpr int max_fights = 8;
+    static constexpr int max_fights = 32;
     static constexpr std::uint32_t no_fight = ~0u; // no threat hits the tile
     std::uint32_t fight_key(vec2 p, int exclude);
     const Trade* memo(std::uint32_t key) const;

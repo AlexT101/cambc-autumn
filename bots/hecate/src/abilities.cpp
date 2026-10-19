@@ -369,6 +369,7 @@ bool enemy_tribute_wins(const World& world, const ChampionBelief& e) {
 }
 
 bool cast_at_enemies(const World& world, bool keep_walk, const ChampionBelief* hold) {
+    world.throw_if_stale();
     try {
         return enemy_cast(world, keep_walk, hold).execute();
     } catch (const cambc::error&) {
@@ -377,6 +378,7 @@ bool cast_at_enemies(const World& world, bool keep_walk, const ChampionBelief* h
 }
 
 bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value) {
+    world.throw_if_stale();
     try {
         return camp_cast(world, group, attackers_only, any_value).execute();
     } catch (const cambc::error&) {

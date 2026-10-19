@@ -19,6 +19,7 @@ Pathing::Pathing(const World& world) : world_{world} {}
 const StaticMap& Pathing::map() const { return world_.map(); }
 
 void Pathing::begin_turn() {
+    guard_ = nullptr; // a turn abandoned as stale left its guard set
     blocked_fresh_ = false;
     pos_fresh_ = false;
     if (bumped_round_ != world_.round) {
@@ -42,11 +43,6 @@ Pathing::Slot& Pathing::altar_slot(int altar) { return entry(altar_fields_, map(
 const Field& Pathing::to_ally_spawn() { return map().from_ally_spawn(); }
 
 const Field& Pathing::to_altar(int altar) { return cached(altar_slot(altar), map().altars[altar].tribute_tiles()); }
-
-const Field* Pathing::to_altar(int altar, std::uint64_t fuel_floor) {
-    if (!altar_slot(altar) && !fuel_ok(fuel_floor + field_cost_estimate())) return nullptr;
-    return &to_altar(altar);
-}
 
 const Field& Pathing::to_any_altar() {
     if (any_altar_) return *any_altar_;
@@ -240,19 +236,20 @@ int& Pathing::centre_cap(int group) {
 
 bool Pathing::warm_centres(std::uint64_t fuel_floor) {
     if (centres_ready_) return true;
+    const auto round = cambc::round_number();
     const auto cost = field_cost_estimate();
     for (int g = 0; g < static_cast<int>(map().groups.size()); ++g) {
         if (!farmed(g)) continue;
         auto& slot = entry(centre_fields_, map().groups.size(), g);
         if (slot) continue;
         if (!centre_cap(g)) {
-            if (!fuel_ok(fuel_floor + cost)) return false;
+            if (cambc::round_number() != round || !fuel_ok(fuel_floor + cost)) return false;
             cached(slot, single(map().groups[g].centre));
             continue;
         }
         while (!slot) {
             auto& cap = centre_cap(g);
-            if (!fuel_ok(last_reserve + search_cost_estimate(cap))) return false;
+            if (cambc::round_number() != round || !fuel_ok(last_reserve + search_cost_estimate(cap))) return false;
             FuelMeter meter{"field"};
             slot = make_field(map().blocked_for_us, single(map().groups[g].centre), cap);
             if (!slot) cap *= 2;
@@ -264,13 +261,14 @@ bool Pathing::warm_centres(std::uint64_t fuel_floor) {
 
 bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
     const auto cost = field_cost_estimate();
-    const auto afford = [&](const Slot& slot) { return slot || fuel_ok(fuel_floor + cost); };
+    const auto round = cambc::round_number();
+    const auto afford = [&](const Slot& slot) { return slot || (cambc::round_number() == round && fuel_ok(fuel_floor + cost)); };
     if (!warm_centres(fuel_floor) || !afford(any_altar_)) return false;
     to_any_altar();
     for (; warm_group_ < static_cast<int>(map().groups.size()); ++warm_group_, warm_member_ = 0) {
         if (!farmed(warm_group_) || map().attack_tiles_drafted(warm_group_, attack_range)) continue;
         for (; warm_member_ < static_cast<int>(map().groups[warm_group_].members.size()); ++warm_member_)
-            if (!fuel_ok(fuel_floor + small_cost_estimate) || !prepare_member(warm_group_, warm_member_, attack_range, fuel_floor)) return false;
+            if (cambc::round_number() != round || !fuel_ok(fuel_floor + small_cost_estimate) || !prepare_member(warm_group_, warm_member_, attack_range, fuel_floor)) return false;
     }
     for (int a = 0; a < static_cast<int>(map().altars.size()); ++a) {
         if (!afford(altar_slot(a))) return false;
@@ -332,6 +330,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
 }
 
 Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps) {
+    world_.throw_if_stale();
     Route r;
     const vec2 me = my_pos();
     if (goals.is_set(me)) {

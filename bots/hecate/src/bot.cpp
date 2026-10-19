@@ -417,6 +417,7 @@ bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& m
 const bitboard* pack_zone(const World& world);
 
 void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    world.throw_if_stale();
     if (submit_here(world, pathing, safety, memory)) return;
     const vec2 here = my_position();
     const auto& altars = world.map().altars;
@@ -431,17 +432,14 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& mem
     bool any_locked = false;
     for (int a = 0; a < static_cast<int>(altars.size()); ++a) any_locked |= world.altars[a].enemy_lock || avoided(a);
     // One cached field covers every altar; per-altar fields are needed only to skip locked ones.
-    // Breaking a lock takes a turn per hit left, about a step each. With no per-altar field
-    // affordable yet, the nearest altar.
+    // Breaking a lock takes a turn per hit left, about a step each.
     int best = -1;
     if (any_locked) {
         int best_steps = unreachable;
         for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
             if (avoided(a)) continue;
             const auto& belief = world.altars[a];
-            const auto* field = pathing.to_altar(a, end_reserve);
-            if (!field) continue;
-            int steps = field->at(here);
+            int steps = pathing.to_altar(a).at(here);
             if (steps == unreachable) continue;
             if (belief.enemy_lock) steps += belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
             if (steps < best_steps) best = a, best_steps = steps;
@@ -832,7 +830,11 @@ bool spell_clear(const World& world, Pathing& pathing, int g, const bitboard* zo
             attackers |= 1u << i;
             reach.draw_chebyshev(G.members[i].pos, static_cast<float>(camp_attack_range));
         }
-    if (!attackers || !pathing.prepare_member_tiles(g, ability_range, attackers, end_reserve)) return false;
+    if (!attackers) return false;
+    if (!pathing.prepare_member_tiles(g, ability_range, attackers, end_reserve)) {
+        note_shortcut("spell-clear-no-tiles");
+        return false;
+    }
     goals.clear();
     for (std::size_t i = 0; i < G.members.size() && i < 32; ++i)
         if (attackers >> i & 1) goals |= pathing.member_attack_tiles(g, static_cast<int>(i), ability_range);
@@ -896,6 +898,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
 // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
 // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
 bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    world.throw_if_stale();
     if (pick_up(world, pathing, memory)) return true;
     auto& me = cambc::self();
     const auto& map = world.map();
@@ -985,6 +988,10 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
     const auto walk_reserve = [&](int g) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(g)); };
     if (!fuel_ok(farm_evaluation_reserve(world, pathing, memory, here))) {
         note_shortcut("farm-no-evaluation");
+        debug_block({
+            if (!pathing.centres_ready() && !(on_spawn && map.spawn_steps_drafted()))
+                std::printf("SHORTCUT %d %u farm-no-evaluation-cold\n", world.round, static_cast<unsigned>(world.me().handle));
+        });
         if (bag > 0) return false;
         // On large maps this can last hundreds of rounds, past the last choice's capture: once
         // that is gone, the nearest group, as the crow flies until fields are ready.
@@ -1108,6 +1115,7 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
     int k = 0;
     for (; k < n_groups && fuel_ok(small_cost_estimate + end_reserve + loop_reserve()); ++k) {
         const int g = (first + k) % n_groups;
+        world.throw_if_stale();
         const auto& group = groups[g];
         const auto& belief = world.camps[g];
         if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
@@ -1315,12 +1323,12 @@ bool ward_bushes(const World& world, Memory& memory) {
     const auto floor = small_cost_estimate + end_reserve;
     if (here == memory.bushes_watched) return false;
     if (!fuel_ok(floor)) {
-        note_shortcut("ward-no-bushes");
+        note_shortcut("ward-no-bushes-fuel");
         return false;
     }
     if (!map.near_bushes().is_set(here)) return false;
     if (!map.find_bush_clusters(here, 2, floor)) {
-        note_shortcut("ward-no-bushes");
+        note_shortcut("ward-no-bushes-clusters");
         return false;
     }
     // Scratch boards: allocating one costs more than the host operations on it.
@@ -1370,6 +1378,7 @@ bool ward_bushes(const World& world, Memory& memory) {
 }
 
 void place_ward(const World& world, Pathing& pathing, Memory& memory) {
+    world.throw_if_stale();
     if (!world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return;
     if (ward_bushes(world, memory) || world.round % params::ward_period != 0) return;
     const vec2 spawn = world.map().ally_spawn_centre;
@@ -1578,6 +1587,7 @@ int killable_now(const World& world, Safety& safety) {
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
 bool want_home(const World& world, Safety& safety, bool sieging) {
+    world.throw_if_stale();
     const vec2 here = my_position();
     if (world.map().ally_spawn.is_set(here)) return false;
     const float health = my_health();
@@ -1593,7 +1603,10 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
         || (simulate && visible_threat(world, safety, here) && safety.fight(here, kill).lost))
         return true;
     if (kill >= 0) return false;
-    if (!simulate || !fuel_ok(2 * safety.fight_cost_estimate() + end_reserve)) return false;
+    if (!simulate || !fuel_ok(2 * safety.fight_cost_estimate() + end_reserve)) {
+        note_shortcut("home-no-pursuit");
+        return false;
+    }
     // Healthy on our own ground, they have no reason to come for us.
     if (paying_soon(world) || (own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health())) return false;
     const auto t = safety.pursuit(here, params::pursuit_steps);
@@ -1603,6 +1616,7 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
 // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
 // there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
 const bitboard* step_guard(const World& world, Safety& safety) {
+    world.throw_if_stale();
     static bitboard guard{cambc::uninitialized};
     const auto& self = world.me();
     const vec2 here = my_position();
@@ -1676,6 +1690,7 @@ bool covered(const bitboard& zone, vec2 p, int r) {
 // The visible enemy quickest to reach and kill among those whose local fight we win even when
 // they strike first; never one on or next to its spawn, where it heals.
 const ChampionBelief* prey(const World& world, Safety& safety) {
+    world.throw_if_stale();
     const auto& me = cambc::self();
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
@@ -1726,17 +1741,12 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     if (dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
     if (dist(my_position(), target->pos) > range && my_can_move()) {
         const auto* zone = pack_zone(world);
-        if (fuel_ok(search_cost_estimate(2 * vision_radius) + end_reserve)) {
-            static bitboard goals{cambc::uninitialized};
-            goals.clear();
-            goals.draw_chebyshev(target->pos, static_cast<float>(range));
-            goals &= world.map().open_for_us;
-            if (zone) drop(goals, *zone);
-            pathing.step_towards(goals, zone);
-        } else {
-            note_shortcut("crow-flies-chase");
-            pathing.step_closer(target->pos);
-        }
+        static bitboard goals{cambc::uninitialized};
+        goals.clear();
+        goals.draw_chebyshev(target->pos, static_cast<float>(range));
+        goals &= world.map().open_for_us;
+        if (zone) drop(goals, *zone);
+        pathing.step_towards(goals, zone, 2 * vision_radius);
     }
     attack_enemy(world);
     reset_and_attack_enemy(world); // after an attack, or a ranged walk
@@ -1977,6 +1987,7 @@ bool siege_ready(const World& world, int g, const SiegeLoad& load, bool committe
 // Once the team is strong enough it goes together: melee adjacent, ranged at their range, the hurt
 // stepping out to 4, where casters still cast.
 bool siege(const World& world, Pathing& pathing, Memory& memory) {
+    world.throw_if_stale();
     sieged = true;
     auto& me = cambc::self();
     const auto& map = world.map();
@@ -2052,10 +2063,11 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     const auto tiles = [&](int r, bitboard& out) {
         if (many) {
             if (pathing.prepare_attack_tiles(g, r, end_reserve)) pathing.attack_tiles(g, r, out);
-            else out.clear();
+            else note_shortcut("siege-no-tiles"), out.clear();
         } else if (pathing.prepare_member_tiles(g, r, 1u, end_reserve)) {
             and_into(pathing.member_attack_tiles(g, 0, r), map.standable, out);
         } else {
+            note_shortcut("siege-no-tiles");
             out.clear();
         }
     };
@@ -2108,6 +2120,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
 // A big group cleared by spells from 4, out of its monsters' reach, so that nobody takes a hit;
 // harmless members fall to basic attacks from there, the rest once the monsters are dead.
 bool kite(const World& world, Pathing& pathing, Memory& memory) {
+    world.throw_if_stale();
     auto& me = cambc::self();
     const auto& map = world.map();
     const vec2 here = my_position();
@@ -2322,6 +2335,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
 }
 
 void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    world.throw_if_stale();
     auto& me = cambc::self();
     decision = 'R';
     memory.claim = -1;
@@ -2391,7 +2405,7 @@ void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& mem
             int other_steps = unreachable;
             for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
                 if (a == at || world.altars[a].enemy_lock || dist(here, altars[a].pos) - 1 >= other_steps) continue;
-                if (const auto* field = pathing.to_altar(a, end_reserve)) other_steps = std::min(other_steps, field->at(here));
+                other_steps = std::min<int>(other_steps, pathing.to_altar(a).at(here));
             }
             if (other_steps == unreachable || world.round - memory.wait_since < other_steps) {
                 decision = 'W';

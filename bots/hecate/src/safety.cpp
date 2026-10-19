@@ -255,6 +255,7 @@ Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first 
     if (them.count == 0) return t;
     const auto [we_kill, they_kill] = simulate(us, them, they_first, &t.self_falls, 24, debug_fights ? &t.dealt : nullptr, fuel_floor);
     if (we_kill < 0) {
+        note_shortcut("fight-cut");
         t.lost = t.self_falls = true;
         return t;
     }
@@ -511,6 +512,7 @@ Threat& next_threat(std::vector<Threat>& pool, int& count) {
 } // namespace
 
 void Safety::build() {
+    world_.throw_if_stale();
     if (built_) return;
     built_ = true;
     FuelMeter meter{"safety"};
@@ -575,6 +577,29 @@ template <class F> void Safety::each_threat(vec2 p, F&& f) {
             f(e, s, x.near ? 0 : s.reach + 1);
         }
     }
+}
+
+int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out) {
+    int n = 0;
+    if (built_) {
+        for (const auto& t : threats())
+            if (n < static_cast<int>(out.size())) out[n++] = {t.enemy, &t.strike, t.distance(p)};
+        return n;
+    }
+    for (const auto& e : world_.enemies) {
+        if (!e.alive || (!e.visible && !e.tracked) || gone(e) || n == static_cast<int>(out.size())) continue;
+        const auto& x = foe(e);
+        if (x.strike.reach < 0) continue;
+        if (e.visible) {
+            out[n++] = {e.index, &x.strike, dist(p, e.pos)};
+        } else if (x.weight > 0) {
+            const int radius = unseen_radius(x.strike.reach, x.tiles);
+            int d = any_within(e.possible, p, radius) ? 0 : radius + 1;
+            while (d < radius && !any_within(e.possible, p, d)) ++d;
+            out[n++] = {e.index, &x.strike, d <= radius ? d : static_cast<int>(unreachable)};
+        }
+    }
+    return n;
 }
 
 bool Safety::any_threat() {
@@ -717,6 +742,7 @@ const Trade* Safety::known_fight(vec2 p) {
 }
 
 Trade Safety::fight(vec2 p, int exclude) {
+    world_.throw_if_stale();
     const auto key = fight_key(p, exclude);
     if (key == no_fight) return {};
     if (const auto* t = memo(key)) return *t;
@@ -758,6 +784,7 @@ std::uint64_t Safety::build_cost_estimate() {
 }
 
 Trade Safety::pursuit(vec2 p, int approach) {
+    world_.throw_if_stale();
     Side us, them;
     const auto& spawn = world_.map().near_enemy_spawn;
     for (const auto& e : world_.enemies) {

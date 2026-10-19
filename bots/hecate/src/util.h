@@ -34,6 +34,12 @@ inline void note_shortcut(const char* what) {
     });
 }
 
+// The phase running, for locating out-of-fuel turns: set and read only inside debug_block.
+inline const char*& fuel_phase() {
+    static const char* phase = "start";
+    return phase;
+}
+
 // The Monolith or big group the team is besieging this turn, or -1: camp actions skip every other
 // Monolith.
 inline int& siege_group() {
