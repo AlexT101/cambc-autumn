@@ -7,6 +7,7 @@
 #include "comms.h"
 #include "draft.h"
 #include "pathing.h"
+#include "safety.h"
 #include "util.h"
 #include "world.h"
 
@@ -73,6 +74,7 @@ struct Instance {
         run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
         run("debug", [&] { world->debug_output(); });
         run("prepare", [&] { aph::prepare_next_turn(*world, *pathing, memory); });
+        if (!world->is_stale()) run("warm reach", [&] { aph::warm_reach(*world, end_reserve); });
         // Field costs are estimated from the deepest field so far; on the first turn none is
         // measured yet, so an estimate can miss by a whole field.
         if (!warmed_up && !world->is_stale())
