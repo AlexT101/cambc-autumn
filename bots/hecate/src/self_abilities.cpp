@@ -260,6 +260,7 @@ bool reset_and_attack_camp(const World& world, int group) {
         me.attack(*best);
     } catch (const cambc::error&) {
     }
+    ++camp_hits();
     return true;
 }
 
