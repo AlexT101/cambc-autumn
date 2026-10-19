@@ -189,6 +189,9 @@ These are never called or never read:
   - The mirror build loops and the `lock_tiles` warm-up are gone. The `lock_tiles()` function stays for the lock idea in section 0.
 - **Bench:** fuel −1.6% mean, −1.0% in round 1, 54,847 turns cheaper and 52 dearer.
 - **Byte-identity:** 16/16 replays identical once the v17 spend caps are lifted (see 3.1).
+- **Real-budget games: 47.5% vs the unchanged bot over 1,102 games** (maps won from both sides 48 vs 75, p ≈ 0.02). Neither half reproduces the drop alone (per-turn 49.1%, start-up 48.3%). A heap-layout control scores 49.9%.
+  - Logic is identical when fuel is plentiful, so the cost comes from what extra fuel unlocks: code that only runs when enough fuel is left, and is net harmful.
+  - That makes the fuel gates (3.1) and the v17 port (4.1) the next things to test. Re-test these savings on top of each removal.
 - **Dropped:** routing the direct `strike()` callers through `Safety::strike_of`. That cache holds `threat_strike`, which is widened for enemies that act twice before our next turn, so it is not the same value and would change play. The `strike()` memo already caches those callers.
 - **Not a fuel item:** `ensure_picked`/`all_champions`/`picked_round` (draft.cpp). The preference list already holds all 11 champions; wrap `write_plan` in try/catch instead.
 - **Rename farm's `static ... facts`,** which shadows `aph::facts()`.
