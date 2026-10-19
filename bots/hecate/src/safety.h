@@ -138,6 +138,15 @@ public:
     // Could the credible threats and camps kill us at p before our next turn?
     bool lethal(vec2 p);
 
+    // Live members of awake (or maybe awake) groups, with where they would attack us from.
+    struct CampHit {
+        vec2 pos;
+        float strength;
+        float weight;
+        int reach; // farthest distance at which it would pick us
+    };
+    const std::vector<CampHit>& awake_members();
+
     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
     void refresh();
 
@@ -154,14 +163,7 @@ private:
     // camp kill. Later queries recheck the engine for champions and monsters that died.
     void invalidate();
 
-    struct CampHit {
-        vec2 pos;
-        float strength;
-        float weight;
-        int reach; // farthest distance at which it would pick us
-    };
     static std::vector<CampHit>& member_pool();
-    const std::vector<CampHit>& awake_members();
     // An enemy's strike for its next turn and, unseen, its possible tiles and weight (0: not
     // credible), worked out on first use: beliefs are fixed for the turn.
     struct Foe {

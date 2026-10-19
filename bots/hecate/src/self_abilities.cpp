@@ -131,6 +131,15 @@ bool travel_dash(const World& world, Pathing& pathing, const cambc::ability& das
     return dash_to_first(dash, pathing, landings);
 }
 
+// Varg's shield, cast at the turn's end, absorbs more than a hit that does not kill.
+bool shield_wanted(const World& world) {
+    if (!ready(world, AbilityKind::shield)) return false;
+    const vec2 here = cambc::self().position();
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && dist(here, e.pos) <= threat_strike(world, e).reach) return true;
+    return false;
+}
+
 } // namespace
 
 std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only, const ChampionBelief* hold) {
@@ -195,7 +204,7 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only, const Champi
     const auto reset = ready(world, AbilityKind::attack_reset);
     if (!reset) return false;
     const auto target = attack_target(world, stunning_only, hold);
-    if (!target || !cast(*reset)) return false;
+    if (!target || (!(target->health() <= me.strength()) && shield_wanted(world)) || !cast(*reset)) return false;
     try {
         me.attack(*target);
     } catch (const cambc::error&) {
@@ -315,12 +324,16 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
         const bool finish = e.health <= strength || (fraction < chase_health && fraction < my_fraction && &e != hold);
         if (finish && (!target || e.health < target->health)) target = &e;
     }
-    if (!target || dist(here, target->pos) > range + dash_steps) return false;
+    // A melee walk is free of the attack: a landing a step short of range still strikes.
+    const int walk = target_given && world.me().facts().walk_and_attack_independent() && me.can_move() ? 1 : 0;
+    if (!target || dist(here, target->pos) > range + walk + dash_steps) return false;
     const auto threats = threats_near(world, here);
     const auto& spawn = world.map().from_ally_spawn();
+    const vec2 at = target->pos;
     const auto landings = ranked(
-        within(pathing.dash_landings(), target->pos, range),
-        [&](vec2 p) { return danger(threats, p) * 1000 + std::min<int>(spawn.at(p), 999); }, [](vec2, int) { return true; });
+        within(pathing.dash_landings(), at, range + walk),
+        [&](vec2 p) { return (dist(p, at) > range ? 1000000 : 0) + danger(threats, p) * 1000 + std::min<int>(spawn.at(p), 999); },
+        [](vec2, int) { return true; });
     return dash_to_first(*dash, pathing, landings);
 }
 
