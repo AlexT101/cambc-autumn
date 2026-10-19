@@ -255,7 +255,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
         float bound;
     };
     // The few with the highest bounds, highest first.
-    std::array<Candidate, 8> candidates;
+    std::array<Candidate, 3> candidates;
     int count = 0;
     // `value`: all but the steps saved and the danger; `steps`: the most the move could save.
     const auto offer = [&](Plan plan, float value, int steps, vec2 end) {
@@ -271,27 +271,44 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     for (int i = 0; i < b.n; ++i) nearest = std::min(nearest, dist(b.here, b.foes[i].pos));
     // Without splash a hit's worth does not depend on where it is struck from: priced once per
     // enemy and spread over the tiles within 3 of us that reach it.
+    std::array<float, max_foes> worth{};
+    float most = 0;
+    for (int i = 0; i < b.n; ++i) {
+        worth[i] = best_hit(b, b.foes[i].pos, h0, i).value;
+        most = b.splash ? most + std::max(0.0f, worth[i]) : std::max(most, worth[i]);
+    }
+    // A move earns at most the best hit, its steps and, for Varg, the shield; each kind is
+    // listed only if that can beat staying.
+    const float shield_most = b.shield >= 0 ? 1e6f : 0.0f; // not bounded cheaply
+    const bool try_walk = b.move && b.attack && nearest <= b.range + 1
+                          && std::max(most + shield_most, first.value + most) + step > best.value;
+    const float dash_cost = dash_steps * step;
+    const bool try_dash = b.dash >= 0 && b.attack && nearest <= b.range + dash_steps + (b.melee && b.move ? 1 : 0)
+                          && std::max(most, first.value) + (dash_steps + 2) * step - dash_cost > best.value;
     const auto local = [&](vec2 p) { return (p.y - b.here.y + 3) * 7 + (p.x - b.here.x + 3); };
     std::array<Hit, 49> tile_hit{};
-    if (!b.splash)
+    std::array<vec2, 49> struck; // the tiles tile_hit reaches, in marking order
+    int n_struck = 0;
+    if (!b.splash && (try_walk || try_dash))
         for (int i = 0; i < b.n; ++i) {
-            const float w = best_hit(b, b.foes[i].pos, h0, i).value;
+            const float w = worth[i];
             if (w <= 0) continue;
             for (int y = std::max(b.foes[i].pos.y - b.range, b.here.y - 3); y <= std::min(b.foes[i].pos.y + b.range, b.here.y + 3); ++y)
                 for (int x = std::max(b.foes[i].pos.x - b.range, b.here.x - 3); x <= std::min(b.foes[i].pos.x + b.range, b.here.x + 3); ++x) {
                     auto& t = tile_hit[local({x, y})];
+                    if (t.target < 0) struck[n_struck++] = {x, y};
                     if (t.target < 0 || w > t.value || (w == t.value && h0[i] < h0[t.target])) t = {w, i};
                 }
         }
     const auto hit_at = [&](vec2 p) { return b.splash ? best_hit(b, p, h0) : tile_hit[local(p)]; };
-    if (b.move && b.attack && nearest <= b.range + 1) {
+    if (try_walk) {
         for (auto d : directions) {
             const vec2 n = b.here + d;
             const Hit there = hit_at(n);
             if (b.melee) {
                 // Either attack here then the reset there, or the one attack there.
                 if (there.target >= 0 && there.value > first.value)
-                    offer({Kind::walk, 0, {}, n, false, false, false}, there.value + shield_worth(world, safety, b, n), 1, n);
+                    offer({Kind::walk, 0, {}, n, false, false, false}, there.value + shield, 1, n);
                 if (first.target >= 0 && b.reset >= 0)
                     if (const Hit second = best_hit(b, n, h1); second.target >= 0)
                         offer({Kind::walk, 0, {}, n, true, true, false}, first.value + second.value, 1, n);
@@ -302,25 +319,24 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
         }
     }
     // The dash's cooldown would otherwise carry us two steps.
-    const float dash_cost = dash_steps * step;
     std::optional<Tiles<5 * 5>> landings;
-    if (b.dash >= 0 && b.attack && nearest <= b.range + dash_steps + (b.melee && b.move ? 1 : 0)) {
+    if (try_dash) {
         const float walk_on = b.melee && walks ? step : 0.0f;
-        for (int dy = -dash_steps - 1; dy <= dash_steps + 1; ++dy)
-            for (int dx = -dash_steps - 1; dx <= dash_steps + 1; ++dx) {
-                const vec2 p{b.here.x + dx, b.here.y + dy};
-                const int d = dist(p, b.here);
-                if (d < 1) continue;
-                const Hit there = hit_at(p);
-                if (d <= dash_steps) {
-                    if (there.target < 0) continue;
-                    const bool before = b.melee && first.value > there.value;
-                    offer({Kind::dash, 0, p, {}, before, false, false}, (before ? first : there).value + walk_on - dash_cost, d, p);
-                } else if (b.melee && b.move && there.target >= 0) {
-                    // Dash, then walk into range: the landing is found when priced.
-                    offer({Kind::dash_walk, 0, {}, p, false, false, false}, there.value - dash_cost, d, p);
-                }
+        // Splash (Varg) has no dash: every tile here is one tile_hit reaches.
+        for (int k = 0; k < n_struck; ++k) {
+            const vec2 p = struck[k];
+            const int d = dist(p, b.here);
+            if (d < 1) continue;
+            const Hit there = hit_at(p);
+            if (d <= dash_steps) {
+                if (there.target < 0) continue;
+                const bool before = b.melee && first.value > there.value;
+                offer({Kind::dash, 0, p, {}, before, false, false}, (before ? first : there).value + walk_on - dash_cost, d, p);
+            } else if (b.melee && b.move && there.target >= 0) {
+                // Dash, then walk into range: the landing is found when priced.
+                offer({Kind::dash_walk, 0, {}, p, false, false, false}, there.value - dash_cost, d, p);
             }
+        }
     }
 
     if (count > 0) {
