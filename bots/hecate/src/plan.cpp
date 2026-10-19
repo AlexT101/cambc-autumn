@@ -58,9 +58,8 @@ int strike_reach(const ChampionFacts& f, bool dash) {
 
 // `live`: health read from the engine, after our own hits this turn; else this turn's beliefs.
 bool read_board(const World& world, const ChampionBelief* hold, Board& b, int reach, bool live) {
-    auto& me = cambc::self();
     const auto& f = world.me().facts();
-    b.here = me.position();
+    b.here = my_position();
     b.range = f.attack_range();
     b.melee = f.walk_and_attack_independent();
     b.splash = f.passive == Passive::splash_attack;
@@ -87,12 +86,12 @@ bool read_board(const World& world, const ChampionBelief* hold, Board& b, int re
                          params::gem_value * static_cast<float>(pair_gems(world, e)), enemy_spawn.is_set(e.pos), &e == hold};
     }
     if (b.n == 0) return false;
-    const auto state = me.state();
+    const auto state = my_state();
     b.move = state.contains(cambc::champion_state::can_move);
     b.attack = state.contains(cambc::champion_state::can_attack);
     b.cast = state.contains(cambc::champion_state::can_cast);
-    b.strength = me.strength();
-    b.health = me.health();
+    b.strength = my_strength();
+    b.health = my_health();
     b.reset = b.cast ? ready_slot(world, AbilityKind::attack_reset) : -1;
     b.dash = b.cast ? ready_slot(world, AbilityKind::dash) : -1;
     b.shield = b.cast ? ready_slot(world, AbilityKind::shield) : -1;
@@ -207,7 +206,7 @@ struct Plan {
 bool strike_possible(const World& world) {
     const auto& self = world.me();
     if (!self.alive) return false;
-    const vec2 here = cambc::self().position();
+    const vec2 here = my_position();
     return enemy_within(world, here, std::max(ability_range + 1, strike_reach(self.facts(), self.facts().has_dash())));
 }
 
@@ -425,12 +424,12 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     // Carry it out; a move refused (a hidden unit) falls back to striking from here.
     Healths h = h0;
     const auto strike_here = [&](bool reset) {
-        const Hit a = b.attack ? best_hit(b, cambc::self().position(), h) : Hit{};
+        const Hit a = b.attack ? best_hit(b, my_position(), h) : Hit{};
         if (attack(b, a)) {
             out.attacked = true;
             apply(b, a, h);
             if (reset && b.reset >= 0) {
-                const Hit again = best_hit(b, cambc::self().position(), h);
+                const Hit again = best_hit(b, my_position(), h);
                 if (again.target >= 0 && use_slot(b.reset) && attack(b, again)) apply(b, again, h);
             }
         }
@@ -473,8 +472,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
 
 void strike_after(const World& world, Safety& safety, const ChampionBelief* hold) {
     if (!world.me().alive || world.is_stale()) return;
-    auto& me = cambc::self();
-    const auto state = me.state();
+    const auto state = my_state();
     if (state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::recalling)
         || state.contains(cambc::champion_state::teleporting))
         return;
@@ -496,7 +494,7 @@ void strike_after(const World& world, Safety& safety, const ChampionBelief* hold
     }
     if (!state.contains(cambc::champion_state::can_cast)) return;
     // A cast the plan kept for a walk the goal did not take, or one a walk allows.
-    const vec2 here = cambc::self().position();
+    const vec2 here = my_position();
     if (valued.round == world.round && valued.at == here) {
         if (valued.any) cast_chosen();
         return;
@@ -509,7 +507,7 @@ void strike_after(const World& world, Safety& safety, const ChampionBelief* hold
 }
 
 bool strike_enemy(const World& world, const ChampionBelief* hold) {
-    if (!world.me().alive || !cambc::self().can_attack()) return false;
+    if (!world.me().alive || !my_can_attack()) return false;
     Board b;
     const auto& f = world.me().facts();
     if (!read_board(world, hold, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0), true)) return false;
