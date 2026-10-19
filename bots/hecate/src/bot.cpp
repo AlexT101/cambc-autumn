@@ -702,10 +702,39 @@ void add_shards(Build& b, const ChampionFacts& f, int stat, float shards) {
     }
 }
 
-// Rounds a turn of ours costs in clearing and heal trips at our upkeep so far, with build b: the
-// clearing share shrinks with our output, as do the camps' hits taken meanwhile; health lost comes
-// back by a recall and the walk out, a trip per usable health (above the recall line).
-float upkeep_cost(const World& world, const Build& now, const Build& b) {
+// Where every gem is behind a siege, our upkeep before a camp has hit us: every turn on the nearest
+// Monolith, alongside the others' output (`others`), its hits on the nearest of us (the melee while
+// any lives) split by max health, the walk out its distance from spawn.
+Upkeep siege_upkeep(const World& world, float& others) {
+    const auto& map = world.map();
+    Upkeep u;
+    others = 0;
+    int g = -1, steps = unreachable;
+    for (int h = 0; h < static_cast<int>(map.groups.size()); ++h)
+        if (map.groups[h].has_monolith && map.ally_steps(h) < steps) g = h, steps = map.ally_steps(h);
+    if (g < 0) return upkeep;
+    bool melee = false;
+    for (const auto& a : world.allies) melee |= (a.alive || a.is_self) && !a.facts().ranged;
+    float pool = 0;
+    for (const auto& a : world.allies) {
+        if (!a.alive && !a.is_self) continue;
+        if (!a.is_self) others += floored_output(a);
+        if (!melee || !a.facts().ranged) pool += a.max_health;
+    }
+    const auto& self = world.me();
+    u.turns = u.camp_turns = u.spawn_turns = std::max(1, upkeep.turns);
+    u.spawn_steps = static_cast<float>(steps * u.turns);
+    u.champ_taken = upkeep.champ_taken;
+    if (!melee || !self.facts().ranged)
+        u.camp_taken = map.groups[g].strength * params::siege_hit_share * camp_hit_factor() * self.max_health / pool * static_cast<float>(u.turns);
+    return u;
+}
+
+// Rounds a turn of ours costs in clearing and heal trips at upkeep u, with build b: the clearing
+// share shrinks with our output (beside the others' on the same camps), as do the camps' hits taken
+// meanwhile; health lost comes back by a recall and the walk out, a trip per usable health (above
+// the recall line).
+float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
     const auto out = [&](const Build& x) {
         float damage = x.strength;
         for (const auto& a : world.me().facts().abilities) {
@@ -716,7 +745,7 @@ float upkeep_cost(const World& world, const Build& now, const Build& b) {
     };
     const float turns = static_cast<float>(std::max(1, upkeep.turns));
     const float steps = upkeep.spawn_turns > 0 ? upkeep.spawn_steps / static_cast<float>(upkeep.spawn_turns) : 0.0f;
-    const float clear = out(now) / out(b);
+    const float clear = (others + out(now)) / (others + out(b));
     const float camp = upkeep.camp_taken / turns * clear * b.camp_taken / now.camp_taken;
     const float taken = (camp + upkeep.champ_taken / turns) * b.taken / now.taken;
     const float usable = b.max_health * (1.0f - params::recall_health_fraction);
@@ -725,9 +754,7 @@ float upkeep_cost(const World& world, const Build& now, const Build& b) {
 
 // The emblem to complete next and the share of a turn it saves (upkeep_cost): a Power emblem in
 // the main stat (6 shards' stats for 5), a Jungle one in it (-30% camp damage) or a Durability one
-// in Health (-10% damage taken), whichever saves most; one already begun is finished first. Where
-// every gem is behind a siege, the damage to come is not seen before the first: Jungle, Power,
-// Durability, then Power.
+// in Health (-10% damage taken), whichever saves most; one already begun is finished first.
 struct Emblem {
     int family, stat;
     float saved;
@@ -739,21 +766,18 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
     const auto& self = world.me();
     const Build now{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
                     has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f};
-    const float base = upkeep_cost(world, now, now);
+    float others = 0;
+    const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
+    const float base = upkeep_cost(world, u, others, now, now);
     const int main = main_stat(world);
     const auto value = [&](int family, int stat) {
         Build b = now;
         add_shards(b, f, stat, family == power ? 6.0f : 5.0f);
         if (family == jungle) b.camp_taken = 0.7f;
         if (family == durability) b.taken = 0.9f;
-        return base - upkeep_cost(world, now, b);
+        return base - upkeep_cost(world, u, others, now, b);
     };
     const int options[3][2] = {{jungle, main}, {power, main}, {durability, health_stat}};
-    if (world.map().monolith_only) {
-        for (const auto& [family, stat] : options)
-            if (owned[shard_of(family, stat)] + 5 * owned[emblem_of(family, stat)] < 5) return {family, stat, value(family, stat)};
-        return {power, main, value(power, main)};
-    }
     Emblem best{power, main, value(power, main)};
     for (const auto& [family, stat] : options) {
         if (owned[shard_of(family, stat)] > 0) return {family, stat, value(family, stat)};
