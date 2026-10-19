@@ -39,8 +39,6 @@ const Field& Pathing::cached(Slot& slot, const bitboard& goals) {
 
 Pathing::Slot& Pathing::altar_slot(int altar) { return entry(altar_fields_, map().altars.size(), altar); }
 
-Pathing::Slot& Pathing::group_slot(int group) { return entry(group_fields_, map().groups.size(), group); }
-
 const Field& Pathing::to_ally_spawn() { return map().from_ally_spawn(); }
 
 const Field& Pathing::to_altar(int altar) { return cached(altar_slot(altar), map().altars[altar].tribute_tiles()); }
@@ -64,8 +62,6 @@ int Pathing::centre_to_altar(int group) {
     return *steps;
 }
 
-const Field& Pathing::to_group(int group) { return cached(group_slot(group), map().groups[group].tiles()); }
-
 const bitboard& Pathing::live_camps() {
     if (live_camps_round_ != world_.round) {
         live_camps_round_ = world_.round;
@@ -75,7 +71,7 @@ const bitboard& Pathing::live_camps() {
             const auto& c = world_.camps[g];
             if (c.state != CampState::alive) continue;
             for (std::size_t i = 0; i < groups[g].members.size(); ++i)
-                if (i >= c.health.size() || c.health[i] > 0) live_camps_.set(groups[g].members[i].pos);
+                if (c.health[i] > 0) live_camps_.set(groups[g].members[i].pos);
         }
     }
     return live_camps_;
@@ -281,28 +277,6 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
     return true;
 }
 
-Pathing::Nearest Pathing::nearest(const bitboard& goals, int max_steps) {
-    Nearest n;
-    const vec2 me = my_pos();
-    auto walls = map().blocked_for_us;
-    walls.set(me, false);
-    const auto open_goals = goals & ~walls;
-    if (open_goals.is_empty()) return n;
-    FuelMeter meter{"nearest"};
-    cambc::distance_field field;
-    bitboard visited;
-    field.compute_to(walls, single(me), open_goals, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
-    static std::array<vec2, 100 * 100> tiles;
-    const auto count = (visited & open_goals).positions_into(tiles);
-    for (std::uint32_t i = 0; i < count; ++i) {
-        const vec2 p = tiles[i];
-        const int steps = field.get(p);
-        if (steps < n.steps) n.steps = steps, n.tiles.clear();
-        if (steps == n.steps) n.tiles.push_back(p);
-    }
-    return n;
-}
-
 const bitboard& Pathing::blocked() {
     if (!blocked_fresh_) {
         static bitboard t{cambc::uninitialized};
@@ -473,7 +447,7 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
     return false;
 }
 
-bool Pathing::step_towards(const Field& field, const bitboard* avoid, int max_detour) {
+bool Pathing::step_towards(const Field& field, const bitboard* avoid) {
     const int here = field.at(my_pos());
     if (here == 0 || !cambc::self().can_move()) return false;
     if (here != unreachable) {
@@ -504,8 +478,6 @@ bool Pathing::step_closer(vec2 target) {
     }
     return best && try_move(*best);
 }
-
-bool Pathing::step_towards(vec2 target, const bitboard* avoid) { return step_towards(single(target), avoid); }
 
 bitboard Pathing::dash_landings() {
     static bitboard camps{cambc::uninitialized}, excluded{cambc::uninitialized}, t{cambc::uninitialized};

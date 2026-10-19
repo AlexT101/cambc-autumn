@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <array>
 #include <optional>
-#include <utility>
 #include <vector>
 #include "champions.h"
 #include "pathing.h"
@@ -255,7 +254,7 @@ bool reset_and_attack_camp(const World& world, int group) {
     float best_health = 0;
     for (auto p : positions_within(live_camp_tiles(), here, range)) {
         const int g = map.group_at(p);
-        if (g < 0 || (map.groups[g].has_monolith && g != siege_group()) || (group >= 0 && g != group)) continue;
+        if (g < 0 || (map.groups[g].has_monolith && g != siege_group()) || g != group) continue;
         const auto& members = map.groups[g].members;
         for (int i = 0; i < static_cast<int>(members.size()); ++i) {
             if (members[i].pos != p) continue;

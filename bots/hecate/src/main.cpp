@@ -6,7 +6,6 @@
 #include "champions.h"
 #include "comms.h"
 #include "draft.h"
-#include "params.h"
 #include "pathing.h"
 #include "util.h"
 #include "world.h"

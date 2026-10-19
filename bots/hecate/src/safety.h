@@ -60,8 +60,6 @@ struct Threat {
     bool visible = false;
     vec2 pos{-1, -1}; // visible only
     int tiles = 1;    // possible tiles
-    // Best chance over tiles that it can reach one: 1 if visible, else min(1, reach area / tiles).
-    float weight = 1;
     Strike strike;
     // Tiles it can damage or stun; unseen, only those near or above `credible_weight`.
     bitboard area;
@@ -69,7 +67,6 @@ struct Threat {
     const cambc::distance_field* steps = nullptr;
 
     int distance(vec2 p) const;
-    bool credible() const { return visible || weight >= safety_params::credible_weight; }
 };
 
 // A fight with sides alternating turns, each side's damage focused on the other's weakest member
@@ -85,7 +82,6 @@ struct Trade {
     float our_health = 0, their_health = 0;
     int allies = 0, enemies = 0;
     std::array<float, 4> dealt{}; // debug_fights only: see simulate()
-    bool cut = false; // short of fuel, not played out: lost and self_falls are assumed
 };
 
 class Safety {
@@ -93,7 +89,6 @@ public:
     explicit Safety(const World& world);
 
     std::span<const Threat> threats();
-    const Threat* threat(int enemy);
     bool built() const { return built_; }
     bool any_threat(); // threats() is not empty, without building it
     // Without building the threats: at least worst_damage(p), and at least their sum with each
@@ -134,8 +129,6 @@ public:
     std::uint64_t fight_cost_estimate();
     // At most what building the threats costs, 0 once built.
     std::uint64_t build_cost_estimate();
-    // Us alone against one enemy.
-    Trade duel(int enemy);
     // Us and the allies we see near p, striking first, against every visible enemy within
     // `approach` steps of its reach, each joining once it has walked into reach, while the camps
     // in reach of p keep hitting us: lost means they win even if we stand and fight.
@@ -145,8 +138,6 @@ public:
     int turns_to_kill_idle(vec2 p, int horizon);
     // Could the credible threats and camps kill us at p before our next turn?
     bool lethal(vec2 p);
-    // Off spawn, and below the recall line, or somewhere lethal in a fight we lose.
-    bool should_retreat();
 
     // Drop everything cached, after something this turn changed the fight: a kill, a stun or a
     // camp kill. Later queries recheck the engine for champions and monsters that died.

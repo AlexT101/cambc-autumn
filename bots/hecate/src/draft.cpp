@@ -139,7 +139,6 @@ void analyse(DraftPlan& plan) {
 
 void write_plan(DraftState& state) {
     state.plan.version = DraftPlan::current_version;
-    state.plan.draft_round = static_cast<std::uint8_t>(draft_round());
     cambc::draft_memory = std::span<const std::byte>{reinterpret_cast<const std::byte*>(&state.plan), sizeof(DraftPlan)};
 }
 

@@ -46,7 +46,7 @@ void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, cons
         if (a.alive && !a.is_self && a.visible && dist(p, a.pos) <= safety_params::fight_ally_radius)
             std::printf(" a%u", static_cast<std::uint32_t>(a.handle));
     for (const auto& th : safety.threats())
-        if (th.credible() && th.strike.hits(th.distance(p)))
+        if (th.strike.hits(th.distance(p)))
             std::printf(" %u%c:%d:%d:%d", static_cast<std::uint32_t>(world.enemies[th.enemy].handle), th.visible ? 'v' : 'u',
                         th.distance(p), static_cast<int>(th.strike.at(th.distance(p))), world.round - world.enemies[th.enemy].pos_round);
     std::printf("\n");
@@ -394,7 +394,6 @@ bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& m
 }
 
 const bitboard* pack_zone(const World& world);
-bool monolith_only(const StaticMap& map);
 
 void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (submit_here(world, pathing, safety, memory)) return;
@@ -556,7 +555,6 @@ float home_ground(const StaticMap& map, int g) {
     if (cache.size() != map.groups.size()) cache.assign(map.groups.size(), -1.0f);
     auto& weight = cache[g];
     if (weight < 0) {
-        const vec2 centre = map.groups[g].centre;
         const int from_us = map.ally_steps(g);
         const int from_them = map.enemy_steps(g);
         weight = 1.0f;
@@ -627,7 +625,7 @@ float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, 
         else if (i < 32 && (safe >> i & 1)) reachable += hp;
         else rest += hp;
     }
-    if (attackers <= 0 || spells <= 0) return -1;
+    if (attackers <= 0) return -1;
     return std::max(attackers / spells, reachable / basic) + rest / (basic + spells);
 }
 
@@ -914,8 +912,7 @@ bool collect_local_reward(const World& world, Pathing& pathing, Safety& safety, 
         if (g < 0 || g >= static_cast<int>(map.groups.size())) return false;
         const auto& G = map.groups[g];
         const auto& c = world.camps[g];
-        const bool may_be_empty = c.state == CampState::cleared || c.state_round < world.round
-            || (memory.worked_group == g && memory.worked_round == world.round);
+        const bool may_be_empty = c.state == CampState::cleared || c.state_round < world.round;
         return may_be_empty && !G.has_monolith && G.gems + G.gold > 0 && G.members.size() <= 16 && dist(here, G.centre) <= vision_radius;
     };
     bool plausible = false;
@@ -1019,7 +1016,7 @@ bool collect_local_reward(const World& world, Pathing& pathing, Safety& safety, 
                 }
             }
             if (keeper != world.me().index) continue;
-            if (!funded() || me.position() != here) return false;
+            if (!funded()) return false;
             if (keeper_steps == 0 || pathing.try_move(our_first)) {
                 memory.farm_group = memory.claim = g; memory.crew = memory.farm_spell = false;
                 note_shortcut("farm-local-reward");
@@ -1103,7 +1100,7 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
                     }
                     if (!me.can_cast() || me.abilities()[spell_plan.slot].cooldown() > 0) {
                         // Waiting out the cooldown, chip at whatever in reach cannot hit back.
-                        if (!basic) attack_camp(world, [&](int h) { return groups[h].strength <= 0; });
+                        attack_camp(world, [&](int h) { return groups[h].strength <= 0; });
                         memory.farm_spell = true; memory.farm_station = spell_plan.station;
                         note_shortcut("farm-spell-cooldown");
                         return true; // a bounded native cooldown, at a revalidated safe station
@@ -1123,7 +1120,7 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
     };
     std::array<bool, 64> ally_claims{};
     for (const auto& a : world.allies)
-        if (const int c = comms::claim_of(world, a.index); !a.is_self && c >= 0 && c < 64) ally_claims[c] = true;
+        if (const int c = comms::claim_of(world, a.index); !a.is_self && c >= 0) ally_claims[c] = true;
     // An ally's claim makes us its crew rather than its rival, unless we claimed it first.
     const auto taken = [&](int g) { return g < 64 && ally_claims[g] && (memory.claim != g || memory.crew); };
     const bool melee = world.me().facts().walk_and_attack_independent();
@@ -1411,7 +1408,7 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         if (belief.state != CampState::cleared) {
             damage = soften * min_camp_damage(world, g, strength, &clear_rounds, reflect);
             // Clearing with spells from out of the camps' range is slower but costs no health.
-            if (group.strength > 0 && belief.state != CampState::cleared) {
+            if (group.strength > 0) {
                 const float kite = spell_clear_rounds(map, g, belief, range, spells, basic);
                 if (kite >= 0 && (damage > spare_health || kite < clear_rounds + heal_rounds(g, damage))) {
                     spell = true;
@@ -1782,7 +1779,7 @@ int killable_now(const World& world, Safety& safety) {
         const bool linked = e.facts().passive == Passive::linked_pair;
         float rest = safety.camp_damage(here);
         for (const auto& t : safety.threats())
-            if (t.credible() && t.enemy != e.index && !(linked && world.enemies[t.enemy].facts().passive == Passive::linked_pair))
+            if (t.enemy != e.index && !(linked && world.enemies[t.enemy].facts().passive == Passive::linked_pair))
                 rest += t.strike.at(t.distance(here));
         if (rest < health) return e.index;
     }
@@ -1975,7 +1972,7 @@ bool may_chain(const World& world, Safety& safety) {
 // the stop also heals and shops.
 bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     auto& me = cambc::self();
-    if (!memory.banking || me.gem_count() == 0) return false;
+    if (!memory.banking) return false;
     const vec2 here = me.position();
     if (safety.threatened(here)) return false;
     const auto& to_altar = pathing.to_any_altar();
@@ -2083,7 +2080,7 @@ const ChampionBelief* tribute_to_stun_later(const World& world, Safety& safety, 
     if (!target || safety.lethal(self.pos) || can_tribute_safely(world, safety, memory)) return nullptr;
     for (const auto& t : safety.threats()) {
         const int d = t.distance(self.pos);
-        if (&world.enemies[t.enemy] != target && t.credible() && t.strike.hits(d) && t.strike.stuns[d]) return nullptr;
+        if (&world.enemies[t.enemy] != target && t.strike.hits(d) && t.strike.stuns[d]) return nullptr;
     }
     return target;
 }
@@ -2196,7 +2193,6 @@ bool siege_ready(const World& world, int g, const SiegeLoad& load, bool committe
 bool siege(const World& world, Pathing& pathing, Memory& memory) {
     auto& me = cambc::self();
     const auto& map = world.map();
-    siege_group() = -1;
     const int g = siege_candidate(world, memory);
     bool ally_in = false;
     for (const auto& a : world.allies)
@@ -2253,9 +2249,6 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
                   || (memory.staged_since >= 0 && world.round - memory.staged_since >= params::siege_max_wait);
     }
 
-    int member = 0;
-    for (std::size_t i = 0; i < G.members.size(); ++i)
-        if (G.members[i].pos == m) member = static_cast<int>(i);
     const bool caster = spell_output(world.me()) > 0;
     bool tanked = false;
     for (const auto& a : world.allies)
@@ -2281,8 +2274,8 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         if (many) {
             if (pathing.prepare_attack_tiles(g, r, end_reserve)) pathing.attack_tiles(g, r, out);
             else out.clear();
-        } else if (pathing.prepare_member_tiles(g, r, 1u << member, end_reserve)) {
-            and_into(pathing.member_attack_tiles(g, member, r), map.standable, out);
+        } else if (pathing.prepare_member_tiles(g, r, 1u, end_reserve)) {
+            and_into(pathing.member_attack_tiles(g, 0, r), map.standable, out);
         } else {
             out.clear();
         }

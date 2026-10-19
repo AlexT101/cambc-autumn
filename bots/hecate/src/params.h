@@ -1,7 +1,5 @@
 #pragma once
 #include <cambc.h>
-#include <cstdint>
-#include "util.h"
 
 namespace aph::params {
 

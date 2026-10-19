@@ -5,7 +5,6 @@
 #include <vector>
 #include "safety.h"
 #include "world.h"
-#include "params.h"
 
 namespace aph {
 
@@ -323,18 +322,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     if (!ready[0] && !ready[1]) return {};
     const bool stuns = (ready[0] && f.abilities[0].stuns) || (ready[1] && f.abilities[1].stuns);
     const vec2 here = me.position();
-    const auto& map = world.map();
-    if (group < 0) {
-        for (auto p : positions_within(live_camp_tiles(), here, f.attack_range())) {
-            const int g = map.group_at(p);
-            if (g >= 0 && (!map.groups[g].has_monolith || g == siege_group())) {
-                group = g;
-                break;
-            }
-        }
-        if (group < 0) return {};
-    }
-    const auto& g = map.groups[group];
+    const auto& g = world.map().groups[group];
     if ((g.has_monolith && group != siege_group()) || world.camps[group].state != CampState::alive) return {};
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && dist(here, e.pos) <= hold_range) return {};

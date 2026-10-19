@@ -29,7 +29,6 @@ public:
     const Field* to_altar(int altar, std::uint64_t fuel_floor);
     const Field& to_any_altar();
     int centre_to_altar(int group); // to_any_altar() at the group's centre, kept once read
-    const Field& to_group(int group); // goals: the group's camp tiles, to stand on and capture
     // Static steps to tiles within `range` of the group's camp tiles, around the camps believed alive:
     // the walk to its attack tiles but for sight lines near the end. Range 0: onto its camp tiles, to
     // capture. Null if the search out to us would take the fuel below `fuel_floor`.
@@ -55,13 +54,6 @@ public:
     // A field capped at centre_cap() has a bounded cost, so it may go down to last_reserve.
     bool warm_centres(std::uint64_t fuel_floor);
 
-    struct Nearest {
-        int steps = unreachable;
-        std::vector<vec2> tiles;
-    };
-    // Static terrain only. Stops at the first goal, so it costs by distance, not goal count.
-    Nearest nearest(const bitboard& goals, int max_steps = unreachable);
-
     // Static walls, visible units and teleport reservations, and tiles bumped this round.
     const bitboard& blocked();
     void invalidate(); // after we move or dash
@@ -86,9 +78,8 @@ public:
     // then the route is replanned.
     bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable);
     bool step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor);
-    bool step_towards(vec2 target, const bitboard* avoid = nullptr);
     // A live route within `max_detour` of the static distance, else greedy descent of the field.
-    bool step_towards(const Field& field, const bitboard* avoid = nullptr, int max_detour = aph::max_detour);
+    bool step_towards(const Field& field, const bitboard* avoid = nullptr);
     // Cheap fallbacks without a search, when fuel is short: a step down the field, or one that
     // gets closer to the target as the crow flies.
     bool descend(const Field& field, const bitboard* avoid = nullptr);
@@ -108,7 +99,6 @@ private:
     using Slot = std::unique_ptr<Field>;
     const Field& cached(Slot& slot, const bitboard& goals);
     Slot& altar_slot(int altar);
-    Slot& group_slot(int group);
     struct Approach {
         Field field;
         bitboard camps; // the live camp tiles it walks around
@@ -133,7 +123,7 @@ private:
     const World& world_;
     Slot any_altar_;
     std::vector<std::optional<int>> centre_to_altar_;
-    std::vector<Slot> altar_fields_, group_fields_, centre_fields_;
+    std::vector<Slot> altar_fields_, centre_fields_;
     std::vector<int> centre_caps_;
     std::vector<std::vector<std::unique_ptr<Approach>>> approach_fields_; // by range, then group
     bitboard live_camps_;

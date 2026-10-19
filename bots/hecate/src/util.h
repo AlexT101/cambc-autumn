@@ -48,8 +48,6 @@ inline bool in_bounds(vec2 p) { return cambc::map::is_in_bounds(p); }
 
 inline int tile_index(vec2 p) { return p.x + p.y * cambc::map::width(); }
 
-inline vec2 tile_at(int index) { return {index % cambc::map::width(), index / cambc::map::width()}; }
-
 // The 8 king-step directions, north first and clockwise.
 inline constexpr vec2 directions[8] = {vec2::north, vec2::north_east, vec2::east, vec2::south_east,
                                        vec2::south, vec2::south_west, vec2::west, vec2::north_west};
@@ -73,9 +71,7 @@ public:
     explicit Tiles(const bitboard& b) : count_{std::min<std::uint32_t>(b.positions_into(std::span<vec2>{tiles_, N}), N)} {}
     const vec2* begin() const { return tiles_; }
     const vec2* end() const { return tiles_ + count_; }
-    std::size_t size() const { return count_; }
     bool empty() const { return count_ == 0; }
-    const vec2& operator[](std::size_t i) const { return tiles_[i]; }
 
 private:
     union {

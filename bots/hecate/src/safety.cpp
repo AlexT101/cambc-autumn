@@ -5,7 +5,6 @@
 #include <limits>
 #include <memory>
 #include <vector>
-#include "params.h"
 #include "world.h"
 
 namespace aph {
@@ -14,7 +13,6 @@ using namespace safety_params;
 
 namespace {
 
-constexpr int ability_cooldown = 8;
 constexpr int max_fighters = 6; // one team's bodies
 
 // What casting a slot adds to a turn's basic attack.
@@ -254,7 +252,7 @@ Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first 
     if (them.count == 0) return t;
     const auto [we_kill, they_kill] = simulate(us, them, they_first, &t.self_falls, 24, debug_fights ? &t.dealt : nullptr, fuel_floor);
     if (we_kill < 0) {
-        t.cut = t.lost = t.self_falls = true;
+        t.lost = t.self_falls = true;
         return t;
     }
     t.turns_to_kill_them = we_kill;
@@ -515,7 +513,6 @@ void Safety::build() {
             t.visible = true;
             t.pos = e.pos;
             t.tiles = 1;
-            t.weight = 1;
             t.steps = nullptr;
             t.area.clear();
             t.area.draw_chebyshev(e.pos, static_cast<float>(reach));
@@ -530,7 +527,6 @@ void Safety::build() {
         t.visible = false;
         t.pos = {-1, -1};
         t.tiles = tiles;
-        t.weight = weight;
         const int radius = unseen_radius(reach, tiles);
         if (fields.size() <= static_cast<std::size_t>(e.index)) fields.resize(e.index + 1);
         auto& field = fields[e.index];
@@ -588,12 +584,6 @@ bool Safety::may_be_hit(vec2 p) {
     return hit;
 }
 
-const Threat* Safety::threat(int enemy) {
-    for (const auto& t : threats())
-        if (t.enemy == enemy) return &t;
-    return nullptr;
-}
-
 float Safety::chance_in_reach(const Threat& t, vec2 p) {
     if (t.visible) return t.strike.hits(dist(p, t.pos)) ? 1.0f : 0.0f;
     if (!t.area.is_set(p)) return 0.0f;
@@ -612,7 +602,7 @@ float Safety::camp_damage(vec2 p, bool worst) {
 float Safety::worst_damage(vec2 p) {
     float total = camp_damage(p, true);
     for (const auto& t : threats())
-        if (t.credible()) total += t.strike.at(t.distance(p));
+        total += t.strike.at(t.distance(p));
     return total;
 }
 
@@ -652,7 +642,7 @@ const bitboard& Safety::enemy_area() {
     if (!enemy_area_) {
         bitboard any;
         for (const auto& t : threats())
-            if (t.credible()) any |= t.area;
+            any |= t.area;
         enemy_area_ = std::move(any);
     }
     return *enemy_area_;
@@ -686,7 +676,7 @@ std::uint32_t Safety::fight_key(vec2 p, int exclude) {
     for (const auto& t : threats()) {
         if (t.enemy == exclude || !t.strike.hits(t.distance(p))) continue;
         hit = true;
-        if (t.credible()) key |= 1u << (16 + t.enemy);
+        key |= 1u << (16 + t.enemy);
     }
     if (!hit) return no_fight;
     for (std::size_t i = 0; i < world_.allies.size(); ++i) {
@@ -752,14 +742,6 @@ std::uint64_t Safety::build_cost_estimate() {
     return cost;
 }
 
-Trade Safety::duel(int enemy) {
-    const auto& e = world_.enemies[enemy];
-    Side us, them;
-    us.join(world_.me(), world_.round);
-    them.join(e, next_turn_round(world_, e));
-    return trade(us, them);
-}
-
 Trade Safety::pursuit(vec2 p, int approach) {
     Side us, them;
     const auto& spawn = world_.map().near_enemy_spawn;
@@ -808,13 +790,6 @@ bool Safety::lethal(vec2 p) {
     // Most turns no enemy is near enough; skip the threat build then.
     if (!built_ && damage_bound(p) < health) return false;
     return worst_damage(p) >= health;
-}
-
-bool Safety::should_retreat() {
-    const auto& me = world_.me();
-    const vec2 here = cambc::self().position();
-    if (world_.map().ally_spawn.is_set(here)) return false;
-    return me.health < params::recall_health_fraction * me.max_health || (lethal(here) && fight(here).lost);
 }
 
 } // namespace aph

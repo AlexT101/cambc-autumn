@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <array>
 #include <vector>
-#include "params.h"
 #include "safety.h"
 #include "world.h"
 
@@ -166,7 +165,7 @@ void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
         return;
     for (const auto& t : safety.threats()) {
         const int d = t.distance(self.pos);
-        if (!t.credible() || !t.strike.hits(d) || !(recall || t.strike.stuns[d])) continue;
+        if (!t.strike.hits(d) || !(recall || t.strike.stuns[d])) continue;
         const float gems = gem_value * static_cast<float>(self.gems);
         wish.offer(protect, (me.is_submitting_gems() ? tribute_value : recall_value) + gems);
         return;
@@ -183,7 +182,7 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
     bool enemy = false;
     for (const auto& t : safety.threats()) {
         const int d = t.distance(self.pos);
-        if (!t.credible() || !t.strike.hits(d)) continue;
+        if (!t.strike.hits(d)) continue;
         enemy = true;
         damage += t.strike.at(d) * (t.visible && !world.enemies[t.enemy].acted ? 2.0f : 1.0f);
     }

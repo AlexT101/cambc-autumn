@@ -11,8 +11,7 @@ struct DraftPlan {
     static constexpr std::uint16_t current_version = 2;
 
     std::uint16_t version = current_version; // 0 means the draft bot never wrote a plan
-    std::uint8_t draft_round = 0;
-    std::uint8_t reserved = 0;
+    std::array<std::uint8_t, 2> reserved{};
 
     // Static map analysis, so that champions skip it. A champion whose map differs (size, group
     // count, first ally spawn tile) ignores it.

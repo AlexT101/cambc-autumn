@@ -83,15 +83,6 @@ struct ChampionFacts {
     }
     constexpr bool has_dash() const { return has(AbilityKind::dash); }
     constexpr bool has_attack_reset() const { return has(AbilityKind::attack_reset); }
-    constexpr bool has_heal() const { return has(AbilityKind::heal); }
-    constexpr bool has_shield() const { return has(AbilityKind::shield); }
-    // Any ability that stuns, including Marcella's enhanced attack.
-    constexpr bool has_stun() const { return abilities[0].stuns || abilities[1].stuns; }
-    constexpr bool has_ground_aoe() const {
-        for (const auto& a : abilities)
-            if (a.target == Targeting::ground && a.hits_enemies()) return true;
-        return false;
-    }
     constexpr int slot_of(AbilityKind kind) const {
         for (int s = 0; s < 2; ++s)
             if (abilities[s].kind == kind) return s;

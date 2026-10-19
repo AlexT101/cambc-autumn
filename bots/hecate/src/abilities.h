@@ -11,9 +11,8 @@ struct ChampionBelief;
 // reach us next turn. `hold`: a tributer hit only to kill it.
 bool cast_at_enemies(const World& world, bool keep_walk = false, const ChampionBelief* hold = nullptr);
 
-// A damage or stun cast on the group being farmed (-1: the group of a camp in attack range),
-// held while enemies are near. Call only when not walking this turn.
-// `attackers_only`: target only members with Strength.
+// A damage or stun cast on the group being farmed, held while enemies are near.
+// Call only when not walking this turn. `attackers_only`: target only members with Strength.
 // `any_value`: even a cast worth less than usual, as on a group's last hit points.
 bool cast_at_camp(const World& world, int group, bool attackers_only = false, bool any_value = false);
 

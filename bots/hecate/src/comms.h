@@ -3,8 +3,6 @@
 // bits change, which every teammate sees within a round of the write, so a round parity bit (or
 // none) dates it.
 #pragma once
-#include <optional>
-#include "util.h"
 
 namespace aph {
 

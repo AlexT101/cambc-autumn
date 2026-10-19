@@ -38,7 +38,6 @@ struct Altar {
     const bitboard& lock_tiles() const;    // walkable for us within 2: where a lock can be placed from
 
 private:
-    friend class World;
     friend struct StaticMap;
     const StaticMap* map_ = nullptr;
     mutable std::optional<bitboard> tribute_, lock_;
@@ -67,7 +66,6 @@ struct CampGroup {
     const bitboard& threat() const;   // tiles within 3 of a camp tile, where its monsters attack
 
 private:
-    friend class World;
     friend struct StaticMap;
     const StaticMap* map_ = nullptr;
     mutable std::optional<bitboard> tiles_, adjacent_, threat_;
@@ -77,7 +75,6 @@ private:
 // cluster it is see-through, within the usual vision square; from outside you see none of it.
 struct BushCluster {
     bitboard tiles;
-    int size = 0;
 };
 
 struct StaticMap {
@@ -99,7 +96,7 @@ struct StaticMap {
     std::vector<vec2> ally_spawn_tiles, enemy_spawn_tiles;
     vec2 ally_spawn_centre, enemy_spawn_centre;
 
-    // Written whole by World::build_static, so not cleared first.
+    // Written whole by StaticMap::build, so not cleared first.
     bitboard impassable{cambc::uninitialized};       // walls | holes | altars: nobody walks or lands there
     bitboard passable{cambc::uninitialized};         // ~impassable
     bitboard blocked_for_us{cambc::uninitialized};   // impassable | enemy spawn: static walls for our walking
@@ -113,11 +110,8 @@ struct StaticMap {
     std::vector<Altar> altars;
     std::vector<CampGroup> groups;
 
-    vec2 mirror(vec2 p) const;
-    bitboard mirror(const bitboard& b) const;
     int group_at(vec2 p) const; // group whose camp tile this is, or -1
     int altar_at(vec2 p) const; // altar on this tile, or -1
-    bool walkable(vec2 p) const { return in_bounds(p) && !blocked_for_us.is_set(p); }
 
     // Walking steps over static terrain (camps and units ignored).
     const Field& from_ally_spawn() const;
@@ -148,7 +142,6 @@ struct StaticMap {
     bitboard drafted_attack_tiles(int group, int member, int range) const;
 
 private:
-    friend class World;
     const DraftPlan* plan_ = nullptr; // matching this map
     mutable std::vector<int> attack_bit_; // per drafted group: its members' first bit in plan_->data
     int drafted_steps(int group, int which) const;
@@ -218,7 +211,6 @@ struct ChampionBelief {
     float health = 0, max_health = 0, strength = 0, focus = 0;
     int stats_round = -1;
     int gems = 0;
-    int gems_round = -1;
     bool fast_recall = false; // a Home emblem, when last seen (enemies; we never buy one): recall takes home_recall_time turn ends
     bool acted = false; // had completed its turn when last read this round
     // Turn-order priority for priority_round, and from the round after it.
@@ -230,7 +222,6 @@ struct ChampionBelief {
     // engine); through fog, projected with the cooldown rule assuming no unseen cast, so the real
     // round can be later, never earlier, except that a Vendetta kill readies both.
     std::array<int, 2> ready_round{0, 0};
-    std::array<int, 2> last_cast_round{-1, -1}; // inferred from the cooldown jumping up
 
     Channel channel = Channel::none;
     int channel_end_round = -1;

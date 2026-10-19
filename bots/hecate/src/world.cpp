@@ -294,17 +294,6 @@ void* static_alloc(std::size_t bytes, std::size_t align) {
     return pool + start;
 }
 
-vec2 StaticMap::mirror(vec2 p) const {
-    switch (symmetry) {
-    case cambc::symmetry::horizontal: return {width - 1 - p.x, p.y};
-    case cambc::symmetry::vertical: return {p.x, height - 1 - p.y};
-    case cambc::symmetry::rotational180: return {width - 1 - p.x, height - 1 - p.y};
-    }
-    return p;
-}
-
-bitboard StaticMap::mirror(const bitboard& b) const { return b.reflect(symmetry); }
-
 int StaticMap::group_at(vec2 p) const { return static_cast<int>(group_lookup_[tile_index(p)]) - 1; }
 
 int StaticMap::altar_at(vec2 p) const { return in_bounds(p) ? static_cast<int>(altar_lookup_[tile_index(p)]) - 1 : -1; }
@@ -351,7 +340,6 @@ const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) con
     BushCluster c;
     if (!g.diagonal) {
         for (int i = 0; i < n; ++i) cluster_of_[tile_index(flood[i])] = index;
-        c.size = n;
         c.tiles = std::move(g.tiles);
     } else {
         // Tiles of the flood in no cluster yet are marked pending; those of other clusters are
@@ -375,7 +363,6 @@ const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) con
             }
         for (int i = 0; i < n; ++i)
             if (auto& k = cluster_of_[tile_index(flood[i])]; k == pending) k = 0;
-        c.size = size;
     }
     clustered_ |= c.tiles;
     growth_.reset();
@@ -902,13 +889,10 @@ void World::update_champion(ChampionBelief& b, bool full) {
             std::printf("cdcheck %s%d %s slot%d last seen r%d projected r%d read r%d%s\n", cambc::to_string(b.side).c_str(),
                         b.index, b.facts().name, slot, last_seen, b.ready_round[slot], ready,
                         ready < b.ready_round[slot] ? " EARLIER" : " (cast while unseen)");
-        // A cooldown that restarted means a cast: the slot is ready again 8 rounds after it.
-        if (cd > 0 && b.ready_round[slot] <= round) b.last_cast_round[slot] = ready - ability_cooldown;
         b.ready_round[slot] = std::max(ready, b.respawned_round + 1);
     }
     // In observe() too, for a champion first seen after our move.
     b.gems = engine::gems(h);
-    b.gems_round = round;
     if (b.side == team::enemy) b.fast_recall = engine::home_emblem(h);
 }
 
@@ -1390,7 +1374,6 @@ void World::update_altars() {
     namespace raw = cambc::detail;
     const auto& s = map();
     const auto seen = [&](int a) {
-        if (a < 0) return;
         altars[a] = AltarBelief{};
         altars[a].seen_round = round;
     };

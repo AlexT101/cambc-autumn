@@ -23,9 +23,9 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
 // both abilities), held back while an enemy is close enough to want the reset for a fight.
 // `stunning_only`: only a reset whose attack stuns (Marcella), on an enemy it would stun; call it
 // before abilities.cpp's casts, which share the one cast per turn, and the plain one after.
-// `hold` as for attack_target. `group`: only that group's camps (-1: any).
+// `hold` as for attack_target. `group`: only that group's camps.
 bool reset_and_attack_enemy(const World& world, bool stunning_only = false, const ChampionBelief* hold = nullptr);
-bool reset_and_attack_camp(const World& world, int group = -1);
+bool reset_and_attack_camp(const World& world, int group);
 // A camp tile lies within `range` of p.
 bool camp_in_reach(const World& world, vec2 p, int range);
 
