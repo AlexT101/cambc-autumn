@@ -1348,7 +1348,12 @@ std::uint64_t Safety::fight_cost_estimate() {
     }
     const auto champions = static_cast<std::uint64_t>(champions_);
     const auto simulation = std::max({std::uint64_t{10000}, 2000 + 2000 * champions, costliest_fight_ + costliest_fight_ / 4});
-    return simulation + build_cost_estimate();
+    // Once listed, a visible threat's Reach is still built on its first query.
+    std::uint64_t reaches = 0;
+    if (built_)
+        for (const auto& e : world_.enemies)
+            if (e.alive && e.visible && !(reached_ >> e.index & 1) && !gone(e) && foe(e).strike.reach >= 0) reaches += 2000;
+    return simulation + reaches + build_cost_estimate();
 }
 
 std::uint64_t Safety::build_cost_estimate() {
