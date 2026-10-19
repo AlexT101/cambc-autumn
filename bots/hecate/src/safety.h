@@ -275,6 +275,7 @@ private:
     std::array<std::int8_t, 16> gone_{}; // by enemy index: 0 unknown, 1 alive, 2 dead
     // Left uninitialised: the engine charges for every byte written. Bit i: foes_[i] is set.
     std::uint16_t known_ = 0;
+    std::uint32_t made_ = 0; // fighters made for the fights this turn: bit i for allies[i], 16 + i for enemies[i]
     union {
         std::array<Foe, 16> foes_;
     };
