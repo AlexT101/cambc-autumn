@@ -85,3 +85,25 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    - v17 port replaced: farm carries out its own spell clears (`spell_clear`) and picks up cleared groups first
      (`pick_up`, one taker per group); `local_spell_plan`, `collect_local_reward` and both v17 spend caps gone.
      51.0% vs the bot before it; 8374 lines.
+15. Overnight orchestrated session (2026-10-19, 6a78b0c..4b5217e, not yet submitted). Parallel agents in worktrees, each
+   change A/B tested on ladder + maps/gen + maps/gen-central (regenerated, seeds 6401/6402) plus two fresh suites
+   (1102 games); details and every dropped attempt in [EXPERIMENTS.md](../EXPERIMENTS.md). Merged, in order:
+   - Logical bug fixes: fight sim (Ren reflection, stuns on arrived fighters, idle sim joins enemies fully), a
+     teammate's sighting fixes the enemy at its tile, comms group fields 8 bits, emblem pricing, siege candidates,
+     unified contest timing, our own Home emblem read, waiting at an unsafe altar bounded by the walk to the next.
+   - Fuel round 1 (byte-identical at 100M, -11% per turn) and fuel round 2 (measured-cost estimates, bush clusters in
+     the warm-up); gate work (turn order without a threat build, an out-of-fuel cascade breaker, fight memo 32).
+   - Strike planner (plan.cpp): every legal walk/dash/attack/reset/cast sequence priced in enemy health points,
+     replacing decide()'s fixed fight order: 54.4% vs its parent (frozen as bots/baselines/hecate-v3).
+   - Carrier chasing when the bag can be intercepted, a game-ender stop, contesting any gem capture.
+   - Reach (safety.cpp): enemy movement over open tiles and dashes, attacks needing sight; level in play, its fuel
+     cost cut by half in a second round.
+   - Siege heal trips no longer flip recall/cancel; siege membership persists across fight turns; emblems chosen
+     by measured value (forward-looking on Monolith-only maps); begun emblems priced by the shards left.
+   - Banking by our measured tribute rate instead of fixed margins; hits in passing only on groups that are
+     harmless, being cleared by an ally, or (melee) already awake; exact cheaper fight simulation; an ally
+     corridor deadlock resolved by the lighter bag yielding.
+   - Result (4b5217e): 58.0% vs hecate-v2 (639/1102, maps won from both sides 177 vs 89), 61.9% vs nemesis-v2
+     (hecate-v2 55.6%), 70.9% vs rival at 85047a7 (hecate-v2 64.1%). Out-of-fuel turns 56/49 per 16 bench games
+     vs rival/nemesis-v2, above hecate-v3's 28/21: Reach and the planner on fight turns. Unmerged: the retreat
+     planner (branch plan3), level but out-of-fuel turns ~2.5x main's.
