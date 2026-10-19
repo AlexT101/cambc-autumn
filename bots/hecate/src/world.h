@@ -364,6 +364,9 @@ public:
     }
     std::vector<AltarBelief> altars; // parallel to map().altars
     Scores score;
+    // Our tributed gems a round over the later half of the game so far: it follows the economy's
+    // growth, unlike the whole game's average.
+    float ally_rate() const;
     bitboard visible; // this turn's vision (ours and our ward's)
     // An enemy was seen changing priority: its team's order for next round can change until each
     // has acted, and unseen ones' ranks are guesses.
@@ -403,6 +406,7 @@ private:
     void update_altars();
     std::uint32_t tributing_enemies() const; // bit i: enemies[i] is believed to be tributing
     void update_scores(std::uint32_t tributing);
+    std::vector<int> ally_scores_; // by round
 
     std::unique_ptr<StaticMap> static_;
     bitboard unseen_; // ~visible

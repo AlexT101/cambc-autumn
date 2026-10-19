@@ -1332,6 +1332,8 @@ void World::update_scores(std::uint32_t tributing) {
     const int enemy_delta = round == first_round ? 0 : enemy - score.enemy;
     score.ally = ally;
     score.enemy = enemy;
+    if (ally_scores_.empty()) ally_scores_.reserve(cambc::constants::max_rounds + 1);
+    if (static_cast<int>(ally_scores_.size()) <= round) ally_scores_.resize(round + 1, ally);
     if (enemy_delta <= 0) return;
 
     // An enemy tribute just landed: empty the bag of whoever most plausibly made it. First choice:
@@ -1353,6 +1355,12 @@ void World::update_scores(std::uint32_t tributing) {
         tributer->gems = 0;
         tributer->channel = Channel::none;
     }
+}
+
+float World::ally_rate() const {
+    const int from = std::max(first_round, round / 2);
+    if (round <= from || from >= static_cast<int>(ally_scores_.size())) return 0;
+    return static_cast<float>(score.ally - ally_scores_[from]) / static_cast<float>(round - from);
 }
 
 void World::debug_output() const {
