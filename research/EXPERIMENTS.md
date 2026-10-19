@@ -77,6 +77,16 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   sight (one taker per group): 51.0%. Without the pickup 48.5% (clear-to-hold latency 5.1 vs 4.1 rounds).
 - Kept: passing hits skip damaging groups that aren't our choice unless an ally clears them or (melee) they are awake
   (level). Dropped: the pack zone for empty-handed farming too (48.1%; deaths up).
+- 2026-10-19 vs hecate-v6 (1a80ff8). Kept: a spellcaster draft (Stellar, Ryth, Prism, Ren, Cassi, Varg, ...) on
+  shared-gem maps, 63.3% on 120 shared-gem games (two fresh-seed sets of 30 maps plus the suites' own); the same
+  order on Monolith-only maps lost (45.1% of 122), so it is gated on `shared_gems` alone. Level: life_value 600 and
+  1000 (both 50.0%); away pack ratio 3.0 (50.5%); a chase catch test (beyond range + 1 only a carrier, a hurt enemy or
+  with a dash ready) plus a kill-per-turn floor at the farm step value (50.3%); a game-ending bag tracked out of sight
+  met at its nearest altar with a lock, plus locks on any altar from enemy score 700 (50.8%); following a teammate's
+  rally while the enemy is unseen (50.0%, ladder 11/34); a Monster emblem priced in best_emblem (49.5%). Lost: home
+  retreat ratio 3.0 with away 3.0 (46.7%); live Monolith sieges on mixed maps when nearer our spawn, 40-round limit
+  (48.2%); Monster, Home and Treasure priced together (44.6%); farm value halved for groups within 3 of a believed
+  enemy's reach (41.5%).
 - Emblems: the next one by measured value (Jungle, Power, Durability priced by the rounds they save) 52.0% full; on
   Monolith-only maps the coming siege priced before any camp has hit us (39/60 on extra Monolith-only maps against 30
   for the fixed order); a begun emblem priced by its remaining shards 51.6%. Dropped: the model over five families and

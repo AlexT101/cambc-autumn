@@ -111,3 +111,7 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    step_guard's fuel reserve and the late-turn skips (frozen with the rest as bots/baselines/hecate-v5); a stunned turn
    only sets the turn order; the cast, route-retry, kite and travel-dash fuel gates removed (level, 49.7% vs
    hecate-v5). Details in [../EXPERIMENTS.md](../EXPERIMENTS.md) and [FUEL-GATES.md](FUEL-GATES.md).
+17. 2026-10-19 (not yet submitted; baseline bots/baselines/hecate-v6 is hecate at 1a80ff8). On shared-gem maps the
+   draft picks from `draft_preference_spells` (Stellar, Ryth, Prism, Ren, Cassi and Issac, Varg, ...): 63.3% on 120
+   shared-gem games vs hecate-v6, byte-identical elsewhere. Ten other changes tried that day were level or lost; see
+   [../EXPERIMENTS.md](../EXPERIMENTS.md).

@@ -41,6 +41,8 @@ const DraftPlan* read_draft_plan();
 struct DraftState {
     DraftPlan plan;
     int picked_round = -1;
+    // Fixed once the map is built, so every draft round picks from the same order whatever the fuel.
+    enum class Order : std::uint8_t { undecided, basic, spells } order = Order::undecided;
 };
 
 void play_draft(DraftState& state);
