@@ -2518,15 +2518,15 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
     const auto& map = world.map();
     const vec2 here = my_position();
     int best = -1, best_steps = unreachable;
-    for (int g = 0; g < static_cast<int>(map.groups.size()); ++g) {
+    world.each_cleared([&](int g) {
         const auto& G = map.groups[g];
         const auto& c = world.camps[g];
-        if (G.gems == 0 || c.state != CampState::cleared || dist(here, G.centre) > vision_radius + 2) continue;
-        if (!enemy_on(world, G.tiles()) && c.holder != team::enemy) continue;
+        if (G.gems == 0 || dist(here, G.centre) > vision_radius + 2) return;
+        if (!enemy_on(world, G.tiles()) && c.holder != team::enemy) return;
         const int steps = steps_to(G, here);
-        if (steps > enemy_hold_left(world, c) || steps >= best_steps) continue;
+        if (steps > enemy_hold_left(world, c) || steps >= best_steps) return;
         best = g, best_steps = steps;
-    }
+    });
     if (best < 0) return false;
     const auto& free = free_tiles(map.groups[best].tiles());
     if (free.is_empty() || !pathing.step_towards(free, nullptr, best_steps + max_detour)) return false;

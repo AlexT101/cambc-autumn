@@ -362,6 +362,12 @@ public:
             for (std::uint64_t bits = stirring_[w]; bits; bits &= bits - 1)
                 f(static_cast<int>(64 * w) + __builtin_ctzll(bits));
     }
+    // f(g) for each group believed cleared, in group order.
+    template <class F> void each_cleared(F&& f) const {
+        for (std::size_t w = 0; w < cleared_.size(); ++w)
+            for (std::uint64_t bits = cleared_[w]; bits; bits &= bits - 1)
+                f(static_cast<int>(64 * w) + __builtin_ctzll(bits));
+    }
     std::vector<AltarBelief> altars; // parallel to map().altars
     Scores score;
     // Our tributed gems a round over the later half of the game so far: it follows the economy's
@@ -412,10 +418,10 @@ private:
     bitboard unseen_; // ~visible
     bitboard landing_{cambc::uninitialized}; // open_for_them & unseen_, once landing_ready_
     bool landing_ready_ = false;
-    std::vector<std::uint8_t> group_visible_; // update_camps() scratch
-    // Per group: unseen, update_camps() could still change it (a hold paying out, a return, an
+    std::vector<std::uint64_t> group_visible_; // update_camps() scratch, bit g
+    // Bit g: unseen, update_camps() could still change it (a hold paying out, a return, an
     // awake group's wakefulness going unknown).
-    std::vector<std::uint8_t> camps_pending_;
+    std::vector<std::uint64_t> camps_pending_;
     struct Tracked {
         std::uint32_t before, after;
         int leader, turns, tsf;
@@ -423,6 +429,7 @@ private:
         bool dasher, dash, fast_recall;
     };
     std::vector<std::uint64_t> stirring_; // bit g: each_stirring() visits group g
+    std::vector<std::uint64_t> cleared_;  // bit g: each_cleared() visits group g
     void note_stirring(int g);
     std::array<Tracked, 8> tracked_{}; // this pass's track() results
     int tracked_count_ = 0;
