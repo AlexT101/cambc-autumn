@@ -547,7 +547,65 @@ struct Terrain {
     }
     bool bush(vec2 p) const { return test(bushes, map->bushes, p); }
     bool inside(vec2 p) const { return p.x >= 0 && p.y >= 0 && p.x < width && p.y < height; }
+
+    // Board storage read in place, when probes confirm it: a word per 8x8 chunk, `across` chunks
+    // a row, bit 8 * (y % 8) + x % 8.
+    bool chunked = false;
+    int across = 0;
+    // The window around p (inside the map) of board `words`: it lies within 2x2 chunks.
+    Reach::Window chunk_window(const std::uint64_t* words, vec2 p) const {
+        const int x0 = p.x - 4, y0 = p.y - 4;
+        const int lo = std::max(0, -x0), hi = std::min(9, width - x0);
+        const std::uint32_t columns = ((1u << hi) - 1) & ~((1u << lo) - 1);
+        const int a = x0 >> 3, s = x0 - 8 * a, c = y0 >> 3;
+        const int down = (height + 7) / 8;
+        const auto word = [&](int cy, int cx) -> std::uint64_t {
+            return cy >= 0 && cy < down && cx >= 0 && cx < across ? words[static_cast<std::size_t>(cy * across + cx)] : 0;
+        };
+        const std::uint64_t w00 = word(c, a), w01 = word(c, a + 1), w10 = word(c + 1, a), w11 = word(c + 1, a + 1);
+        Reach::Window m;
+        for (int r = 0; r < 9; ++r) {
+            const int y = y0 + r;
+            if (y < 0 || y >= height) continue;
+            const bool second = (y >> 3) != c;
+            const int shift = 8 * (y & 7);
+            const auto seg = static_cast<std::uint32_t>(((second ? w10 : w00) >> shift) & 0xFF)
+                             | static_cast<std::uint32_t>(((second ? w11 : w01) >> shift) & 0xFF) << 8;
+            const std::uint64_t bits = (seg >> s) & columns;
+            const int b = 9 * r;
+            if (b < 64) {
+                m.lo |= bits << b;
+                if (b > 55) m.hi |= bits >> (64 - b);
+            } else {
+                m.hi |= bits << (b - 64);
+            }
+        }
+        return m;
+    }
 };
+
+void check_chunks(Terrain& t) {
+    const auto words = bitboard::raw_buffer_size() / 8;
+    bitboard b;
+    t.across = (t.width + 7) / 8;
+    if (t.height > 8) {
+        b.set({0, 8});
+        int found = -1;
+        for (std::size_t i = 0; i < words; ++i)
+            if (b.ptr()[i] != 0) found = found < 0 ? static_cast<int>(i) : -2;
+        if (found <= 0) return;
+        t.across = found;
+    }
+    if (static_cast<std::size_t>(t.across * ((t.height + 7) / 8)) > words) return;
+    const std::array<vec2, 8> probes{vec2{0, 0}, {1, 0}, {0, 1}, {7, 7}, {std::min(8, t.width - 1), 0}, {std::min(9, t.width - 1), std::min(10, t.height - 1)}, {t.width - 1, t.height - 1}, {t.width / 2 + 3, t.height / 2 + 5}};
+    for (const vec2 p : probes) {
+        b.clear();
+        b.set(p);
+        const auto at = static_cast<std::size_t>((p.y >> 3) * t.across + (p.x >> 3));
+        if (b.ptr()[at] != std::uint64_t{1} << (8 * (p.y & 7) + (p.x & 7))) return;
+    }
+    t.chunked = true;
+}
 
 const Terrain& terrain(const StaticMap& map) {
     static Terrain t;
@@ -556,6 +614,7 @@ const Terrain& terrain(const StaticMap& map) {
     t.map = &map;
     t.width = map.width;
     t.height = map.height;
+    check_chunks(t);
     const std::size_t size = bitboard::linear_buffer_size();
     if (size + 8 > Terrain::bytes) return t;
     map.walls.export_linear_buffer({t.walls.data(), size});
@@ -601,6 +660,9 @@ const bitboard* ward_sight(const World& world) {
     return any ? &seen : nullptr;
 }
 
+std::array<Window, 100 * 100> sight_masks;
+std::array<std::uint8_t, 100 * 100> sight_known;
+
 // Who sees p, laid out around p: within 1 (`far` false) or within win_r. Far masks depend only on
 // terrain, so they are kept for the game.
 Window sight(const World& world, vec2 p, bool far) {
@@ -618,8 +680,8 @@ Window sight(const World& world, vec2 p, bool far) {
         }
         return m;
     }
-    static std::array<Window, 100 * 100> masks;
-    static std::array<std::uint8_t, 100 * 100> known;
+    auto& masks = sight_masks;
+    auto& known = sight_known;
     const auto i = static_cast<std::size_t>(p.x + p.y * t.width);
     if (i < known.size() && known[i]) return masks[i];
     const auto& map = world.map();
@@ -634,8 +696,13 @@ Window sight(const World& world, vec2 p, bool far) {
         viewers |= outside;
     }
     Window m;
-    for (const vec2 q : Tiles<win_n * win_n>{within(viewers, p, win_r)})
-        m |= tables.bits[static_cast<std::size_t>((q.y - p.y + win_r) * win_n + q.x - p.x + win_r)];
+    // The shadowcast square keeps them within win_r.
+    if (t.chunked) {
+        m = t.chunk_window(viewers.ptr(), p);
+    } else {
+        for (const vec2 q : Tiles<win_n * win_n>{viewers})
+            m |= tables.bits[static_cast<std::size_t>((q.y - p.y + win_r) * win_n + q.x - p.x + win_r)];
+    }
     if (i < known.size()) masks[i] = m, known[i] = 1;
     return m;
 }
@@ -646,9 +713,11 @@ struct StaticWindow {
     Window pass, land, camps;
 };
 
+std::array<StaticWindow, 100 * 100> statics;
+std::array<std::uint8_t, 100 * 100> statics_scanned;
+
 const StaticWindow& static_window(const World& world, vec2 origin) {
-    static std::array<StaticWindow, 100 * 100> statics;
-    static std::array<std::uint8_t, 100 * 100> scanned;
+    auto& scanned = statics_scanned;
     const auto& t = terrain(world.map());
     const auto oi = static_cast<std::size_t>(origin.x + origin.y * t.width);
     auto& st = statics[oi];
@@ -657,6 +726,8 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
     const int x0 = origin.x - win_r;
     const int lo = std::max(0, -x0), hi = std::min(win_n, t.width - x0);
     const std::uint32_t columns = lo >= hi ? 0u : ((1u << hi) - 1) & ~((1u << lo) - 1);
+    const std::uint64_t width_mask = lo >= hi ? 0 : (std::uint64_t{1} << (hi - lo)) - 1;
+    Window pass, land, camps;
     // Unrolled, so that each row's place in the window is a constant shift.
     [&]<int... Row>(std::integer_sequence<int, Row...>) {
         (
@@ -664,10 +735,19 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
                 const int y = origin.y - win_r + Row;
                 std::uint32_t open = 0, through = 0, camp = 0;
                 if (t.packed) {
-                    const std::uint32_t valid = y < 0 || y >= t.height ? 0u : columns;
-                    through = valid & ~t.row(t.walls, x0, y);
-                    open = valid & ~t.row(t.blocked, x0, y);
-                    camp = t.row(t.camps, x0, y) & valid;
+                    if (columns != 0 && y >= 0 && y < t.height) {
+                        // Terrain::row() of each board, sharing the word offset.
+                        const int i = x0 + lo + y * t.width;
+                        const auto at = static_cast<std::size_t>(i >> 3);
+                        const int shift = i & 7;
+                        std::uint64_t walls, blocked, camps;
+                        std::memcpy(&walls, &t.walls[at], sizeof walls);
+                        std::memcpy(&blocked, &t.blocked[at], sizeof blocked);
+                        std::memcpy(&camps, &t.camps[at], sizeof camps);
+                        through = columns & ~(static_cast<std::uint32_t>((walls >> shift) & width_mask) << lo);
+                        open = columns & ~(static_cast<std::uint32_t>((blocked >> shift) & width_mask) << lo);
+                        camp = static_cast<std::uint32_t>((camps >> shift) & width_mask) << lo;
+                    }
                 } else {
                     for (int k = 0; k < win_n; ++k) {
                         const vec2 p{x0 + k, y};
@@ -677,12 +757,13 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
                         if (world.map().group_at(p) >= 0) camp |= 1u << k;
                     }
                 }
-                st.pass |= Window{through, 0}.shl(Row * win_n);
-                st.land |= Window{open, 0}.shl(Row * win_n);
-                st.camps |= Window{camp, 0}.shl(Row * win_n);
+                pass |= Window{through, 0}.shl(Row * win_n);
+                land |= Window{open, 0}.shl(Row * win_n);
+                camps |= Window{camp, 0}.shl(Row * win_n);
             }(),
             ...);
     }(std::make_integer_sequence<int, win_n>{});
+    st = {pass, land, camps};
     return st;
 }
 
@@ -698,7 +779,7 @@ void warm_reach(const World& world, std::uint64_t fuel_floor) {
         near = true;
         for (const vec2 d : directions) {
             const vec2 q = e.pos + d;
-            if (!t.inside(q)) continue;
+            if (!t.inside(q) || statics_scanned[static_cast<std::size_t>(q.x + q.y * t.width)]) continue;
             if (!fuel_ok(fuel_floor + 8000)) return;
             (void)static_window(world, q);
         }
@@ -707,7 +788,7 @@ void warm_reach(const World& world, std::uint64_t fuel_floor) {
     for (int dy = -2; dy <= 2; ++dy)
         for (int dx = -2; dx <= 2; ++dx) {
             const vec2 q{here.x + dx, here.y + dy};
-            if (!t.inside(q)) continue;
+            if (!t.inside(q) || sight_known[static_cast<std::size_t>(q.x + q.y * t.width)]) continue;
             if (!fuel_ok(fuel_floor + 15000)) return;
             (void)sight(world, q, true);
         }
