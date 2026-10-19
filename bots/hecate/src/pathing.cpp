@@ -63,15 +63,17 @@ int Pathing::centre_to_altar(int group) {
 }
 
 const bitboard& Pathing::live_camps() {
-    if (live_camps_round_ != world_.round) {
-        live_camps_round_ = world_.round;
-        live_camps_.clear();
+    if (live_camps_version_ != world_.camps_version) {
+        live_camps_version_ = world_.camps_version;
+        // Only the groups whose belief changed are rewritten.
         const auto& groups = map().groups;
+        if (live_versions_.size() != groups.size()) live_versions_.assign(groups.size(), ~0u);
         for (std::size_t g = 0; g < groups.size(); ++g) {
             const auto& c = world_.camps[g];
-            if (c.state != CampState::alive) continue;
+            if (live_versions_[g] == c.version) continue;
+            live_versions_[g] = c.version;
             for (std::size_t i = 0; i < groups[g].members.size(); ++i)
-                if (c.health[i] > 0) live_camps_.set(groups[g].members[i].pos);
+                live_camps_.set(groups[g].members[i].pos, c.state == CampState::alive && c.health[i] > 0);
         }
     }
     return live_camps_;

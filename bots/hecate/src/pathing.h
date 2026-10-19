@@ -111,7 +111,7 @@ private:
         bool ready = false;
     } ready_check_;
     std::unique_ptr<Approach> spare_approach_; // a replaced one, refilled by the next search
-    const bitboard& live_camps(); // members believed alive, as of this round
+    const bitboard& live_camps(); // members believed alive
     std::optional<bitboard>& attack_slot(int group, int member, int range);
     bool prepare_member(int group, int member, int range, std::uint64_t fuel_floor);
     const StaticMap& map() const;
@@ -126,7 +126,8 @@ private:
     std::vector<int> centre_caps_;
     std::vector<std::vector<std::unique_ptr<Approach>>> approach_fields_; // by range, then group
     bitboard live_camps_;
-    int live_camps_round_ = -1;
+    std::uint32_t live_camps_version_ = ~0u; // the World::camps_version it was built for
+    std::vector<std::uint32_t> live_versions_; // per group: the CampBelief::version written
     bool centres_ready_ = false;
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
     // By attack range, then group, then member.

@@ -340,6 +340,7 @@ public:
     int self_index = 0;
 
     std::vector<CampBelief> camps; // parallel to map().groups
+    std::uint32_t camps_version = 0; // changes whenever any group's version does
     std::vector<AltarBelief> altars; // parallel to map().altars
     Scores score;
     bitboard visible; // this turn's vision (ours and our ward's)

@@ -20,13 +20,14 @@ constexpr std::int32_t not_found = static_cast<std::int32_t>(cambc::error_code::
 
 std::uint32_t id(cambc::handle_champion_t h) { return static_cast<std::uint32_t>(h); }
 
-std::optional<champion_info> champion(std::uint32_t h) {
-    champion_info info{};
+// Null if hidden or dead; valid until the next call.
+const champion_info* champion(std::uint32_t h) {
+    static champion_info info;
     const auto code = sdk_champion(h, &info);
-    if (code == not_in_vision) return std::nullopt;
+    if (code == not_in_vision) return nullptr;
     check(code);
-    if (info.x < 0 || info.y < 0) return std::nullopt; // dead
-    return info;
+    if (info.x < 0 || info.y < 0) return nullptr; // dead
+    return &info;
 }
 
 // Readable for hidden and dead champions too.
@@ -56,7 +57,7 @@ int gems(std::uint32_t h) {
 
 // Summing every item count costs ~350 fuel; only a Home emblem matters.
 bool home_emblem(std::uint32_t h) {
-    cambc::enum_map<cambc::item_type> counts;
+    static cambc::enum_map<cambc::item_type> counts; // overwritten whole: not cleared first
     check(sdk_champion_items(h, counts.ptr()));
     return counts[cambc::item_type::home_emblem_of_strength] + counts[cambc::item_type::home_emblem_of_focus]
                + counts[cambc::item_type::home_emblem_of_health]
@@ -102,7 +103,7 @@ std::optional<int> channel_time(std::uint32_t h) {
 
 // Visible camp health, or nullopt if the engine has no live camp to show.
 std::optional<float> camp_health(std::uint32_t h) {
-    camp_state state{};
+    static camp_state state;
     const auto code = sdk_camp(h, &state);
     if (code == not_in_vision || code == not_found) return std::nullopt;
     check(code);
@@ -753,8 +754,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
         }
     }
 
-    const auto info = engine::champion(h);
-    b.visible = info.has_value();
+    const auto* info = engine::champion(h);
+    b.visible = info != nullptr;
     if (!info) {
         // A channel completes at its owner's turn start.
         const bool ended = round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < slot(me(), round));
@@ -880,6 +881,7 @@ void World::note_capture(int group, int respawn_round) {
     if (c.state_round == round) return; // in view: our own reading stands
     if (static_cast<std::size_t>(group) < camps_pending_.size()) camps_pending_[group] = 1;
     c.version += c.state != CampState::respawning;
+    camps_version += c.state != CampState::respawning;
     c.state = CampState::respawning;
     c.respawn_round = respawn_round;
     c.awake = Awake::asleep;
@@ -1129,6 +1131,7 @@ void World::update_camps() {
     camps_pending_.resize(s.groups.size());
     for (std::size_t g = 0; g < s.groups.size(); ++g) {
         if (!group_visible[g] && !camps_pending_[g]) continue;
+        const auto version = camps[g].version;
         guard("camp", [&] {
             const auto& G = s.groups[g];
             auto& c = camps[g];
@@ -1252,6 +1255,7 @@ void World::update_camps() {
         });
         const auto& c = camps[g];
         camps_pending_[g] = (c.state == CampState::cleared && c.holder) || c.state == CampState::respawning || c.awake == Awake::awake;
+        camps_version += c.version != version;
     }
 }
 
