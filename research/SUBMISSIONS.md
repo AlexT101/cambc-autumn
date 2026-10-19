@@ -26,5 +26,8 @@ The public API returns a null submission id and version, so `replays/mine` games
 | — | 2026-10-18 ~22:10 | version 20 made active again (ladder scrims: v20 28-47, v21 26-49, v22 24-51 on the same maps) | as #19 |
 | 24 | 2026-10-19 ~03:15 | hecate ed3b2ac: cleanup, bug fixes 2.1-2.6, v17 port replaced by farm-native spell clears and pickups (54.4% vs version 20 locally) | as #19 |
 | 25 | 2026-10-19 11:47 | hecate d21e894 (overnight session: strike planner, Reach danger model, carrier chasing, siege fixes, measured emblems and banking, fuel work; 58.0% vs version 24 locally) | as #19 |
+| 26 | 2026-10-19 18:32 | hecate 8e9aed7 (fuel round 3 and gate removals, spellcaster draft on shared-gem maps: 63.3% there vs hecate-v6 locally) | as #19; on shared-gem maps (stampede) stellar, ryth, prism, ren, cassi |
+| 27 | 2026-10-19 19:26 | hecate 4ba1865 (version 25 plus fuel round 3 and the stunned-turn change only, the hecate-v5 baseline), to isolate the fuel work on the ladder after v26 scrimmed 46-89 vs v25's 50-85 on the same nine teams. Scrims vs the top 5 on the same maps (seed 20261019): v25 31-44, v26 24-51, v27 26-49; Fish 3-12 / 0-15 / 1-14 | as #19 |
+| 28 | 2026-10-19 19:35 | hecate 6e3d387 (version 25 plus fuel round 3 and its out-of-fuel gates, without the two stunned-turn commits). Scrims vs the top 5, same maps: 30-45 (v25 31-44, v27 26-49, v26 24-51); 8 games differ from v27, 6 of them wins | as #19 |
 
 Add a row with each new submission.

@@ -2913,10 +2913,11 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
 }
 
 // Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a
-// turn shorter. Damage before then cancels it at no cost.
-void start_recall(const World& world) {
+// turn shorter. Damage before then cancels it at no cost. A stunned champion cannot start one:
+// the engine refuses it, and the thrown error costs ~3.9k fuel.
+void start_recall(const World& world, bool stunned) {
     auto& me = cambc::self();
-    if (!world.me().alive || channelling() || world.map().ally_spawn.is_set(my_position()))
+    if (stunned || !world.me().alive || channelling() || world.map().ally_spawn.is_set(my_position()))
         return;
     try {
         me.recall();
@@ -2940,7 +2941,7 @@ void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memor
 }
 
 // The turn's walk, hits and casts, and the free actions that end it.
-void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory, bool stunned) {
     const vec2 start = world.me().pos;
     prepare_walk(world, pathing, memory, walk_first_floor);
     const int claim = memory.claim;
@@ -2961,7 +2962,7 @@ void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     shield_if_needed(world, safety, memory.claim);
     place_ward(world, pathing, memory); // where we end the turn
     place_lock(world);
-    start_recall(world);
+    start_recall(world, stunned);
 }
 
 void play_turn(const World& world, Pathing& pathing, Memory& memory) {
@@ -2975,9 +2976,8 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     siege_group() = -1;
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage);
-    // A stun leaves only the turn order (cambc-rules: stun): the claim, siege and goals stand.
-    if (record && my_stunned(cambc::champion_state::from_bits_retain(record->state))) decision = 'Z';
-    else act(world, pathing, safety, memory);
+    const bool stunned = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
+    act(world, pathing, safety, memory, stunned);
     set_turn_order(world, safety);
     comms::claim(memory.claim);
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);

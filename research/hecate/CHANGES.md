@@ -115,3 +115,7 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    draft picks from `draft_preference_spells` (Stellar, Ryth, Prism, Ren, Cassi and Issac, Varg, ...): 63.3% on 120
    shared-gem games vs hecate-v6, byte-identical elsewhere. Ten other changes tried that day were level or lost; see
    [../EXPERIMENTS.md](../EXPERIMENTS.md).
+18. 2026-10-19 (not yet submitted). The stunned-turn skip from item 16 reverted: a stunned turn runs the whole
+   decision path again (its claim, banking and siege state move on as on any turn) and only the refused recall
+   attempt is skipped. Ladder scrims vs the top 5 on the same maps put the skip at 26-49 (version 27) against 30-45
+   without it (version 28) and 31-44 for version 25; see [../SUBMISSIONS.md](../SUBMISSIONS.md).

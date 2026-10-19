@@ -87,6 +87,10 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   retreat ratio 3.0 with away 3.0 (46.7%); live Monolith sieges on mixed maps when nearer our spawn, 40-round limit
   (48.2%); Monster, Home and Treasure priced together (44.6%); farm value halved for groups within 3 of a believed
   enemy's reach (41.5%).
+- Ladder, 2026-10-19, scrims vs the top 5 on the same maps (75 games each, ±5.5): version 25 31-44; plus fuel round
+  3 alone (v28) 30-45; plus the stunned-turn skip too (v27) 26-49; plus the gate removals and the shared-gem draft
+  (v26) 24-51. The stunned-turn skip was byte-identical in the local fuel A/Bs and only shows against real opponents;
+  reverted (the recall guard stays). Fish went 3-12, 2-13, 1-14, 0-15 across the four.
 - Emblems: the next one by measured value (Jungle, Power, Durability priced by the rounds they save) 52.0% full; on
   Monolith-only maps the coming siege priced before any camp has hit us (39/60 on extra Monolith-only maps against 30
   for the fixed order); a begun emblem priced by its remaining shards 51.6%. Dropped: the model over five families and
