@@ -2560,6 +2560,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
     memory.round = world.round;
     memory.health = world.me().alive ? my_health() : 0;
+    debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), decision, memory.farm_group, memory.claim); });
 }
 
 } // namespace aph
