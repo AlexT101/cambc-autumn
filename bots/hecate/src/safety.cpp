@@ -552,16 +552,35 @@ struct Terrain {
     // a row, bit 8 * (y % 8) + x % 8.
     bool chunked = false;
     int across = 0;
-    // Bit k: tile (x0 + k, y) of board `words`, for the window's width; `columns` masks the map.
-    std::uint32_t chunk_row(const std::uint64_t* words, int x0, int y, std::uint32_t columns) const {
-        if (y < 0 || y >= height) return 0;
-        const int a = x0 >> 3;
-        const auto base = static_cast<std::size_t>((y >> 3) * across);
-        const int shift = 8 * (y & 7);
-        std::uint32_t seg = 0;
-        if (a >= 0) seg = static_cast<std::uint32_t>(words[base + static_cast<std::size_t>(a)] >> shift) & 0xFF;
-        if (a + 1 < across) seg |= (static_cast<std::uint32_t>(words[base + static_cast<std::size_t>(a + 1)] >> shift) & 0xFF) << 8;
-        return (seg >> (x0 - 8 * a)) & columns;
+    // The window around p (inside the map) of board `words`: it lies within 2x2 chunks.
+    Reach::Window chunk_window(const std::uint64_t* words, vec2 p) const {
+        const int x0 = p.x - 4, y0 = p.y - 4;
+        const int lo = std::max(0, -x0), hi = std::min(9, width - x0);
+        const std::uint32_t columns = ((1u << hi) - 1) & ~((1u << lo) - 1);
+        const int a = x0 >> 3, s = x0 - 8 * a, c = y0 >> 3;
+        const int down = (height + 7) / 8;
+        const auto word = [&](int cy, int cx) -> std::uint64_t {
+            return cy >= 0 && cy < down && cx >= 0 && cx < across ? words[static_cast<std::size_t>(cy * across + cx)] : 0;
+        };
+        const std::uint64_t w00 = word(c, a), w01 = word(c, a + 1), w10 = word(c + 1, a), w11 = word(c + 1, a + 1);
+        Reach::Window m;
+        for (int r = 0; r < 9; ++r) {
+            const int y = y0 + r;
+            if (y < 0 || y >= height) continue;
+            const bool second = (y >> 3) != c;
+            const int shift = 8 * (y & 7);
+            const auto seg = static_cast<std::uint32_t>(((second ? w10 : w00) >> shift) & 0xFF)
+                             | static_cast<std::uint32_t>(((second ? w11 : w01) >> shift) & 0xFF) << 8;
+            const std::uint64_t bits = (seg >> s) & columns;
+            const int b = 9 * r;
+            if (b < 64) {
+                m.lo |= bits << b;
+                if (b > 55) m.hi |= bits >> (64 - b);
+            } else {
+                m.hi |= bits << (b - 64);
+            }
+        }
+        return m;
     }
 };
 
@@ -679,20 +698,7 @@ Window sight(const World& world, vec2 p, bool far) {
     Window m;
     // The shadowcast square keeps them within win_r.
     if (t.chunked) {
-        const int x0 = p.x - win_r;
-        const int lo = std::max(0, -x0), hi = std::min(win_n, t.width - x0);
-        const std::uint32_t columns = ((1u << hi) - 1) & ~((1u << lo) - 1);
-        const std::uint64_t* words = viewers.ptr();
-        for (int r = 0; r < win_n; ++r) {
-            const std::uint64_t bits = t.chunk_row(words, x0, p.y - win_r + r, columns);
-            const int b = r * win_n;
-            if (b < 64) {
-                m.lo |= bits << b;
-                if (b > 64 - win_n) m.hi |= bits >> (64 - b);
-            } else {
-                m.hi |= bits << (b - 64);
-            }
-        }
+        m = t.chunk_window(viewers.ptr(), p);
     } else {
         for (const vec2 q : Tiles<win_n * win_n>{viewers})
             m |= tables.bits[static_cast<std::size_t>((q.y - p.y + win_r) * win_n + q.x - p.x + win_r)];
