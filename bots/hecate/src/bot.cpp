@@ -1963,7 +1963,7 @@ bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory
 // Only a small bag, out of every credible enemy's reach, and never the gems that would win.
 // Cassi's and Issac's bags fall together.
 bool may_chain(const World& world, Safety& safety) {
-    if (bag_at_stake(world) >= params::chain_bag_limit || winning_bag(world) || can_tribute_here(world)) return false;
+    if (bag_at_stake(world) >= params::chain_bag_limit || winning_bag(world)) return false;
     return !safety.any_threat(); // all credible
 }
 
@@ -1993,11 +1993,10 @@ bool recall_outruns(const World& world) {
     return true;
 }
 
-// Recall from a capture we hold, timed to land home the turn it pays: the gems skip the walk when
-// an altar is nearer by way of home, and the stop heals and shops.
+// Recall from a capture we hold (holding_capture), timed to land home the turn it pays: the gems
+// skip the walk when an altar is nearer by way of home, and the stop heals and shops.
 bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     auto& me = cambc::self();
-    if (!holding_capture(world)) return false;
     const vec2 here = me.position();
     if (safety.threatened(here)) return false;
     const int g = world.map().group_at(here);
@@ -2479,10 +2478,132 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
 }
 
 // A sieger stepped out of the big group's reach goes home to heal before it is needed again.
-bool siege_heal_trip(const World& world, const Memory& memory, Safety& safety) {
+bool siege_heal_trip(const Memory& memory, Safety& safety) {
     const auto& me = cambc::self();
-    return memory.siege && me.health() < params::siege_heal_fraction * me.max_health() && !safety.threatened(me.position())
-           && !holding_capture(world);
+    return memory.siege && me.health() < params::siege_heal_fraction * me.max_health() && !safety.threatened(me.position());
+}
+
+// Our tribute channel goes on unless it is unsafe and fleeing or fighting back pays. True if the
+// turn ends with it.
+bool continue_tribute(const World& world, Safety& safety, Memory& memory) {
+    auto& me = cambc::self();
+    decision = 'T';
+    // The enemy's winning tribute in reach of a ready stun is the game: ours waits.
+    if (!winning_bag(world) && can_stop_winning_tribute(world)) {
+        try {
+            me.cancel_submit_gems();
+        } catch (const std::exception&) {
+        }
+        if (!me.is_submitting_gems()) return false;
+    }
+    if (tribute_ok(world, safety, memory, me.remaining_channel_time())) return true;
+    // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
+    if (memory.damage <= 0 && !want_home(world, safety, memory.siege) && !attack_target(world)
+        && (winning_bag(world) || !prey(world, safety)))
+        return true;
+    decision = 't';
+    try {
+        me.cancel_submit_gems();
+    } catch (const std::exception&) {
+        return true;
+    }
+    return false;
+}
+
+// Our recall (start_recall begins one every turn end) is kept to retreat, to bank a bag, to shop,
+// to land as a held capture pays or to heal from a siege, else cancelled. True if the turn ends
+// with it; `home` gets want_home's answer.
+bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
+    auto& me = cambc::self();
+    decision = 'K';
+    home = want_home(world, safety, memory.siege);
+    if (*home && !safety.threatened(me.position()) && !can_tribute_safely(world, safety, memory) && recall_outruns(world))
+        return true;
+    decision = 'k';
+    if (holding_capture(world)) {
+        if (capture_recall(world, pathing, safety)) {
+            decision = 'Q';
+            return true;
+        }
+    } else {
+        const auto shop = [&] {
+            return wants_shop(world, pathing, safety, memory) && me.remaining_channel_time() < pathing.to_ally_spawn().at(me.position());
+        };
+        if (recall_to_bank(world, pathing, safety, memory) || shop() || siege_heal_trip(memory, safety)) return true;
+    }
+    try {
+        me.cancel_recall();
+    } catch (const std::exception&) {
+        return true;
+    }
+    return false;
+}
+
+void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    auto& me = cambc::self();
+    decision = 'R';
+    memory.claim = -1;
+    memory.banking = me.gem_count() > 0; // a bag in retreat goes on to an altar, by a recall if quicker
+    if (world.me().facts().walk_and_attack_independent() && attack_enemy(world)) reset_and_attack_enemy(world, true);
+    cast_at_enemies(world, true);
+    if (!me.is_alive()) return;
+    if (!me.can_attack() || !me.can_cast()) safety.refresh();
+    // A tribute survives damage; a recall does not.
+    if (can_tribute_safely(world, safety, memory)) {
+        bank_gems(world, pathing, safety, memory);
+        return;
+    }
+    // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
+    dash_away(world, pathing, pathing.to_ally_spawn());
+    reset_and_attack_enemy(world);
+    if (!flee_camps(pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+    reset_and_attack_enemy(world);
+}
+
+// On a capture we hold or contest: the hold needs no turn, so hit another group in reach that
+// cannot hit back or already does.
+void hold_capture(const World& world, Memory& memory, bool attacked) {
+    const int held = world.map().group_at(cambc::self().position());
+    memory.claim = held;
+    memory.crew = false;
+    if (attacked) return;
+    const auto& groups = world.map().groups;
+    const auto free_hit = [&](int g) { return g != held && (groups[g].strength <= 0 || world.camps[g].awake != Awake::asleep); };
+    if (const int hit = attack_camp(world, free_hit); hit >= 0) {
+        cast_at_camp(world, hit);
+        reset_and_attack_camp(world, hit);
+    }
+}
+
+// Carrying: chase a kill worth the risk, bank, wait at an altar until it is safe, or chain another
+// capture on the way.
+void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked) {
+    const bool safe = can_tribute_safely(world, safety, memory);
+    const bool late = endgame(world, pathing);
+    const bool close = closing(world);
+    if (!safe && !late && !close && !winning_bag(world) && chase(world, pathing, safety)) return;
+    if (safe) {
+        decision = 'B';
+        memory.banking = true;
+        bank_gems(world, pathing, safety, memory);
+        return;
+    }
+    if (can_tribute_here(world)) {
+        // Hit with nothing to hit back: waiting here only takes more.
+        if (memory.damage > 0 && !attack_target(world)) {
+            decision = 'R';
+            pathing.set_guard(nullptr);
+            dash_away(world, pathing, pathing.to_ally_spawn());
+            retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+            return;
+        }
+        decision = 'W';
+        return; // until they leave or come
+    }
+    decision = 'B';
+    const bool walked = attacked && !world.me().facts().walk_and_attack_independent();
+    memory.banking = late || close || walked || !may_chain(world, safety) || !farm(world, pathing, safety, memory);
+    if (memory.banking) bank_gems(world, pathing, safety, memory); // a tribute can still start after a ranged attack
 }
 
 void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
@@ -2494,59 +2615,13 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         buy_lock();
         return;
     }
-    // One state read covers the channels until one is cancelled.
+    // One state read covers the channels until one is cancelled; a channel excludes the others.
     const auto state = me.state();
     if (state.contains(cambc::champion_state::teleporting)) return;
-    bool submitting = state.contains(cambc::champion_state::submitting_gems);
-    if (submitting) {
-        decision = 'T';
-        // The enemy's winning tribute in reach of a ready stun is the game: ours waits.
-        if (!winning_bag(world) && can_stop_winning_tribute(world)) {
-            try {
-                me.cancel_submit_gems();
-            } catch (const std::exception&) {
-            }
-            submitting = me.is_submitting_gems();
-        }
-    }
-    if (submitting) {
-        const int turns = me.remaining_channel_time();
-        if (tribute_ok(world, safety, memory, turns)) return;
-        // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
-        if (memory.damage <= 0 && !want_home(world, safety, memory.siege) && !attack_target(world)
-            && (winning_bag(world) || !prey(world, safety)))
-            return;
-        decision = 't';
-        try {
-            me.cancel_submit_gems();
-        } catch (const std::exception&) {
-            return;
-        }
-    }
+    if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, safety, memory)) return;
     // Read again only after shopping changes our stats.
     std::optional<bool> home;
-    if (state.contains(cambc::champion_state::submitting_gems) ? me.is_recalling() : state.contains(cambc::champion_state::recalling)) {
-        decision = 'K';
-        home = want_home(world, safety, memory.siege);
-        if (*home && !safety.threatened(me.position()) && !can_tribute_safely(world, safety, memory)
-            && recall_outruns(world))
-            return;
-        decision = 'k';
-        const auto shop = [&] {
-            return wants_shop(world, pathing, safety, memory) && me.remaining_channel_time() < pathing.to_ally_spawn().at(me.position());
-        };
-        if (!holding_capture(world) && (recall_to_bank(world, pathing, safety, memory) || shop())) return;
-        if (capture_recall(world, pathing, safety)) {
-            decision = 'Q';
-            return;
-        }
-        if (siege_heal_trip(world, memory, safety)) return;
-        try {
-            me.cancel_recall();
-        } catch (const std::exception&) {
-            return;
-        }
-    }
+    if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home)) return;
 
     // Shopping, heals and shields do not move us.
     const bool on_spawn = world.map().ally_spawn.is_set(me.position());
@@ -2565,23 +2640,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         return;
     }
     if (home ? *home : want_home(world, safety, memory.siege)) {
-        decision = 'R';
-        memory.claim = -1;
-        memory.banking = me.gem_count() > 0; // a bag in retreat goes on to an altar, by a recall if quicker
-        if (world.me().facts().walk_and_attack_independent() && attack_enemy(world)) reset_and_attack_enemy(world, true);
-        cast_at_enemies(world, true);
-        if (!me.is_alive()) return;
-        if (!me.can_attack() || !me.can_cast()) safety.refresh();
-        // A tribute survives damage; a recall does not.
-        if (can_tribute_safely(world, safety, memory)) {
-            bank_gems(world, pathing, safety, memory);
-            return;
-        }
-        // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
-        dash_away(world, pathing, pathing.to_ally_spawn());
-        reset_and_attack_enemy(world);
-        if (!flee_camps(pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
-        reset_and_attack_enemy(world);
+        retreat(world, pathing, safety, memory);
         return;
     }
 
@@ -2597,20 +2656,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (!me.is_alive()) return;
     if (!me.can_attack() || !me.can_cast()) safety.refresh();
     if (holding) {
-        const int held = world.map().group_at(me.position());
-        memory.claim = held;
-        memory.crew = false;
-        // The hold needs no turn: hit another group in reach that cannot hit back or already does.
-        if (!attacked) {
-            const auto& groups = world.map().groups;
-            const auto free_hit = [&](int g) {
-                return g != held && (groups[g].strength <= 0 || world.camps[g].awake != Awake::asleep);
-            };
-            if (const int hit = attack_camp(world, free_hit); hit >= 0) {
-                cast_at_camp(world, hit);
-                reset_and_attack_camp(world, hit);
-            }
-        }
+        hold_capture(world, memory, attacked);
         return;
     }
     // A tributer cannot walk out of the stun's reach.
@@ -2619,26 +2665,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         return;
     }
     if (me.gem_count() > 0) {
-        const bool safe = can_tribute_safely(world, safety, memory);
-        const bool late = endgame(world, pathing);
-        const bool close = closing(world);
-        if (!safe && !late && !close && !winning_bag(world) && chase(world, pathing, safety)) return;
-        if (!safe && can_tribute_here(world)) {
-            // Hit with nothing to hit back: waiting here only takes more.
-            if (memory.damage > 0 && !attack_target(world)) {
-                decision = 'R';
-                pathing.set_guard(nullptr);
-                dash_away(world, pathing, pathing.to_ally_spawn());
-                retreat_step(world, pathing, safety, pathing.to_ally_spawn());
-                return;
-            }
-            decision = 'W';
-            return; // until they leave or come
-        }
-        decision = 'B';
-        const bool walked = attacked && !world.me().facts().walk_and_attack_independent();
-        memory.banking = late || close || walked || !may_chain(world, safety) || !farm(world, pathing, safety, memory);
-        if (memory.banking) bank_gems(world, pathing, safety, memory); // a tribute can still start after a ranged attack
+        carry_bag(world, pathing, safety, memory, attacked);
         return;
     }
     if (attacked && !world.me().facts().walk_and_attack_independent()) return;
