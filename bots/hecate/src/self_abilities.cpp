@@ -315,12 +315,16 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
         const bool finish = e.health <= strength || (fraction < chase_health && fraction < my_fraction && &e != hold);
         if (finish && (!target || e.health < target->health)) target = &e;
     }
-    if (!target || dist(here, target->pos) > range + dash_steps) return false;
+    // A melee walk is free of the attack: a landing a step short of range still strikes.
+    const int walk = target_given && world.me().facts().walk_and_attack_independent() && me.can_move() ? 1 : 0;
+    if (!target || dist(here, target->pos) > range + walk + dash_steps) return false;
     const auto threats = threats_near(world, here);
     const auto& spawn = world.map().from_ally_spawn();
+    const vec2 at = target->pos;
     const auto landings = ranked(
-        within(pathing.dash_landings(), target->pos, range),
-        [&](vec2 p) { return danger(threats, p) * 1000 + std::min<int>(spawn.at(p), 999); }, [](vec2, int) { return true; });
+        within(pathing.dash_landings(), at, range + walk),
+        [&](vec2 p) { return (dist(p, at) > range ? 1000000 : 0) + danger(threats, p) * 1000 + std::min<int>(spawn.at(p), 999); },
+        [](vec2, int) { return true; });
     return dash_to_first(*dash, pathing, landings);
 }
 

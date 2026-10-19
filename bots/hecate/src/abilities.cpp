@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <optional>
+#include <utility>
 #include <vector>
 #include "safety.h"
 #include "params.h"
@@ -371,6 +372,31 @@ bool enemy_tribute_wins(const World& world, const ChampionBelief& e) {
 bool cast_at_enemies(const World& world, bool keep_walk, const ChampionBelief* hold) {
     try {
         return enemy_cast(world, keep_walk, hold).execute();
+    } catch (const cambc::error&) {
+        return false;
+    }
+}
+
+Cast& chosen_cast() {
+    static Cast chosen;
+    return chosen;
+}
+
+float enemy_cast_value(const World& world, bool keep_walk, const ChampionBelief* hold, bool& exclusive) {
+    auto& chosen = chosen_cast();
+    try {
+        chosen = enemy_cast(world, keep_walk, hold);
+    } catch (const cambc::error&) {
+        chosen = {};
+    }
+    exclusive = chosen.slot >= 0 && world.me().facts().abilities[chosen.slot].excludes_walking;
+    return chosen.slot >= 0 ? chosen.value : 0.0f;
+}
+
+bool cast_chosen() {
+    const Cast cast = std::exchange(chosen_cast(), Cast{});
+    try {
+        return cast.execute();
     } catch (const cambc::error&) {
         return false;
     }

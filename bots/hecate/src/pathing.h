@@ -71,6 +71,7 @@ public:
     bool try_move(vec2 tile);
     // Tiles no step or dash may end on until cleared: routes go around them.
     void set_guard(const bitboard* guard) { guard_ = guard; }
+    const bitboard* guard() const { return guard_; }
 
     // Unseen units can still block these.
     bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile, off the guard

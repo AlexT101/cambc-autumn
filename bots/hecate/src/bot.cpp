@@ -13,6 +13,7 @@
 #include "comms.h"
 #include "params.h"
 #include "pathing.h"
+#include "plan.h"
 #include "safety.h"
 #include "self_abilities.h"
 #include "turn_order.h"
@@ -33,6 +34,7 @@ constexpr int siege_stage_radius = camp_attack_range + 2; // just out of a camp'
 // holding (P), Delaying a stun, capture recall (Q), siege or kite of a big group (G), contest (X).
 char decision = '-';
 bool sieged = false; // siege() ran this turn
+const ChampionBelief* strike_hold = nullptr; // this turn's tributer to hit only for a kill
 
 // Read by tools/replay/fight_calibration.py.
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1) {
@@ -1670,7 +1672,7 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
     auto& me = cambc::self();
     const int range = world.me().facts().attack_range();
-    // A walk alone cannot reach range this turn.
+    // A walk alone cannot reach range this turn; a melee walk can follow the dash.
     if (dist(me.position(), target->pos) > range + 1 && me.can_move()) dash_to_attack(world, pathing, target);
     if (dist(me.position(), target->pos) > range && me.can_move()) {
         const auto* zone = pack_zone(world);
@@ -2330,6 +2332,15 @@ void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& mem
     if (memory.banking) bank_gems(world, pathing, safety, memory); // a tribute can still start after a ranged attack
 }
 
+// The field the turn's goal most likely walks: to an altar when carrying, else to the farm choice.
+const Field* intent_field(const World& world, Pathing& pathing, const Memory& memory) {
+    if (cambc::self().gem_count() > 0) return &pathing.to_any_altar();
+    const int g = memory.farm_group;
+    if (g < 0 || g >= static_cast<int>(world.camps.size())) return nullptr;
+    const int range = world.camps[g].state == CampState::cleared ? 0 : world.me().facts().attack_range();
+    return pathing.approach_ready(g, range) ? pathing.approach(g, range, end_reserve) : nullptr;
+}
+
 void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     if (me.gem_count() == 0 || !world.me().alive) memory.banking = false;
@@ -2353,7 +2364,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (on_spawn) buy_lock();
     if (!world.me().can_act(world.round)) return;
     heal_ally(world);
-    shield_if_needed(world, memory.farm_group);
+    // With an enemy in reach the plan weighs the shield against the other casts.
+    const bool strikes = strike_possible(world);
+    if (!strikes) shield_if_needed(world, memory.farm_group);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     if (on_spawn && me.health() < me.max_health()) {
         decision = 'H';
@@ -2371,11 +2384,17 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     pathing.set_guard(step_guard(world, safety));
     const bool holding = holding_capture(world) || contesting(world);
     const auto* stun_later = tribute_to_stun_later(world, safety, memory);
-    bool attacked = attack_enemy(world, stun_later);
-    if (attacked) reset_and_attack_enemy(world, true, stun_later);
-    cast_at_enemies(world, me.gem_count() > 0 && !holding, stun_later);
-    if (!attacked && !holding && dash_to_attack(world, pathing, nullptr, stun_later)) attacked = attack_enemy(world, stun_later);
-    if (attacked) reset_and_attack_enemy(world, false, stun_later);
+    strike_hold = stun_later;
+    bool attacked = false;
+    if (strikes) {
+        Intent intent;
+        intent.anchored = holding;
+        intent.walks = !holding && !(stun_later && alive_now(*stun_later)) && !can_tribute_here(world);
+        intent.keep_walk = me.gem_count() > 0 && !holding;
+        intent.step_value = output(world.me());
+        if (intent.walks) intent.field = intent_field(world, pathing, memory);
+        attacked = plan_strikes(world, pathing, safety, intent, stun_later).attacked;
+    }
     decision = holding ? 'P' : attacked ? 'A' : decision;
     if (!me.is_alive()) return;
     if (!me.can_attack() || !me.can_cast()) safety.refresh();
@@ -2445,6 +2464,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
     decision = '-';
     sieged = false;
+    strike_hold = nullptr;
     siege_group() = -1;
     const vec2 start = world.me().pos;
     prepare_walk(world, pathing, memory, walk_first_floor);
@@ -2453,6 +2473,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
         memory.siege = false;
         memory.staged_since = -1;
     }
+    strike_after(world, safety, strike_hold);
     pathing.set_guard(nullptr);
     if constexpr (debug_fights)
         if (world.me().alive && !world.map().ally_spawn.is_set(start) && fuel_ok(end_reserve + 15000))
