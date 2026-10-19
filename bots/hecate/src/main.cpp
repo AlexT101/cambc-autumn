@@ -47,6 +47,7 @@ struct Instance {
         const bool updated = run("world", [&] {
             if (!world) world = std::make_unique<aph::World>();
             const bool first = !world->ready();
+            if (!first) aph::comms::expect(*world);
             world->update();
             if (!pathing) pathing = std::make_unique<aph::Pathing>(*world);
             pathing->begin_turn();
@@ -74,7 +75,8 @@ struct Instance {
         run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
         run("debug", [&] { world->debug_output(); });
         run("prepare", [&] { aph::prepare_next_turn(*world, *pathing, memory); });
-        if (!world->is_stale()) run("warm reach", [&] { aph::warm_reach(*world, end_reserve); });
+        // Below its floor plus a static window warm_reach does nothing, but its loops still cost.
+        if (!world->is_stale() && aph::fuel_ok(end_reserve + 8000)) run("warm reach", [&] { aph::warm_reach(*world, end_reserve); });
         // Field costs are estimated from the deepest field so far; on the first turn none is
         // measured yet, so an estimate can miss by a whole field.
         if (!warmed_up && !world->is_stale())

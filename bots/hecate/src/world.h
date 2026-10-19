@@ -321,6 +321,13 @@ public:
     // Merge a teammate's sighting (from comms), with health as a share of max; ignored if not
     // fresher than ours.
     void note_sighting(int enemy_index, vec2 pos, int round, float health);
+    // The sighting comms::receive merges after the next update, if any: that enemy is fixed then,
+    // so the update does not track it first.
+    struct Sighting {
+        int enemy = -1;
+        vec2 pos{-1, -1};
+        int round = -1;
+    } expected_sighting;
     // A teammate saw the group captured, returning at `respawn_round`.
     void note_capture(int group, int respawn_round);
 
@@ -329,7 +336,7 @@ public:
     bool ready() const { return static_ != nullptr && self_index < static_cast<int>(allies.size()) && allies[self_index].is_self; }
     const StaticMap& map() const { return *static_; }
     // True if the bot ran out of fuel and resumed in a later round: beliefs are a round old.
-    bool is_stale() const { return cambc::round_number() != static_cast<std::uint32_t>(round); }
+    bool is_stale() const { return round_now() != static_cast<std::uint32_t>(round); }
     // Abandons a turn that ran out of fuel at the next costly step, so that the round's own turn,
     // played next with what is left of its fuel, does not run out in turn.
     void throw_if_stale() const {
@@ -367,6 +374,12 @@ public:
         for (std::size_t w = 0; w < cleared_.size(); ++w)
             for (std::uint64_t bits = cleared_[w]; bits; bits &= bits - 1)
                 f(static_cast<int>(64 * w) + __builtin_ctzll(bits));
+    }
+    // f(g) for each group believed respawning, in group order, until f returns true.
+    template <class F> void each_respawning(F&& f) const {
+        for (std::size_t w = 0; w < respawning_.size(); ++w)
+            for (std::uint64_t bits = respawning_[w]; bits; bits &= bits - 1)
+                if (f(static_cast<int>(64 * w) + __builtin_ctzll(bits))) return;
     }
     std::vector<AltarBelief> altars; // parallel to map().altars
     Scores score;
@@ -430,11 +443,13 @@ private:
     };
     std::vector<std::uint64_t> stirring_; // bit g: each_stirring() visits group g
     std::vector<std::uint64_t> cleared_;  // bit g: each_cleared() visits group g
+    std::vector<std::uint64_t> respawning_; // bit g: each_respawning() visits group g
     void note_stirring(int g);
     std::array<Tracked, 8> tracked_{}; // this pass's track() results
     int tracked_count_ = 0;
     std::uint32_t lineages_ = 0;
     bool ranks_stale_ = true;
+    std::array<std::array<std::uint8_t, 16>, 2> turn_order_; // allies', enemies' indices by rank
     int ranked_round_ = -1;
     int updated_round_ = -1;
 };
@@ -463,6 +478,12 @@ inline float linked_partner_health(const World& world, const ChampionBelief& e) 
 // through a turn is likely to complete.
 inline bool kept_recall(const cambc::champion& c, int full = static_cast<int>(cambc::constants::recall_time)) {
     return c.is_recalling() && static_cast<int>(c.remaining_channel_time()) < full - 1;
+}
+
+inline bool enemy_seen(const World& world) {
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible) return true;
+    return false;
 }
 
 inline bool enemy_within(const World& world, vec2 p, int r) {

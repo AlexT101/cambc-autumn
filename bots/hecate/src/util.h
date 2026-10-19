@@ -248,7 +248,13 @@ inline std::unique_ptr<Field> make_field(const bitboard& walls, const bitboard& 
     return f;
 }
 
-inline std::uint64_t fuel() { return cambc::fuel_remaining(); }
+// The imports read raw: the SDK's wrappers add checks for failures only an ABI mismatch could cause.
+inline std::uint64_t fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
+inline std::uint32_t round_now() {
+    std::uint32_t round = 0;
+    (void)cambc::detail::sdk_bc_round_number(&round);
+    return round;
+}
 
 inline std::uint64_t search_cost_estimate(int layers) {
     return 4000 + search_chunks() * (20 + static_cast<std::uint64_t>(layers));

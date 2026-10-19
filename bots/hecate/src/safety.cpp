@@ -453,6 +453,29 @@ int turns_before_ours(const World& world, const ChampionBelief& c) {
     return (now ? 1 : 0) + (world.slot(c, world.round + 1) < world.slot(me, world.round + 1) ? 1 : 0);
 }
 
+namespace {
+
+// threat_strike()'s damage at distance 0 with both slots ready and two turns: at least what it
+// can be on any turn. Kept per champion by what it depends on.
+float most_damage(const ChampionBelief& c) {
+    struct Memo {
+        cambc::champion_type type;
+        std::uint32_t strength, focus;
+        bool known = false;
+        float damage;
+    };
+    static std::array<Memo, 8> memo;
+    const auto s = std::bit_cast<std::uint32_t>(c.strength), focus = std::bit_cast<std::uint32_t>(c.focus);
+    auto& m = memo[static_cast<unsigned>(c.index) & 7u];
+    if (!m.known || m.type != c.type || m.strength != s || m.focus != focus) {
+        const auto k = compute_strike(c.facts(), c.strength, c.focus, 3u);
+        m = {c.type, s, focus, true, k.hits(0) ? k.at(0) + c.strength : 0.0f};
+    }
+    return m.damage;
+}
+
+} // namespace
+
 Strike threat_strike(const World& world, const ChampionBelief& c) {
     const auto s = strike(c, next_turn_round(world, c));
     if (s.reach < 0 || turns_before_ours(world, c) < 2) return s;
@@ -781,31 +804,27 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
     return st;
 }
 
+// Tiles whose 8 neighbours' static windows are all known.
+std::array<std::uint8_t, 100 * 100> statics_around;
+
 } // namespace
 
 void warm_reach(const World& world, std::uint64_t fuel_floor) {
-    if (!world.me().alive) return;
+    if (!world.me().alive || !fuel_ok(fuel_floor + 8000)) return;
     const vec2 here = my_position();
     const auto& t = terrain(world.map());
-    bool near = false;
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible || dist(here, e.pos) > vision_radius) continue;
-        near = true;
+        const auto ei = static_cast<std::size_t>(e.pos.x + e.pos.y * t.width);
+        if (statics_around[ei]) continue;
         for (const vec2 d : directions) {
             const vec2 q = e.pos + d;
             if (!t.inside(q) || statics_scanned[static_cast<std::size_t>(q.x + q.y * t.width)]) continue;
             if (!fuel_ok(fuel_floor + 8000)) return;
             (void)static_window(world, q);
         }
+        statics_around[ei] = 1;
     }
-    if (!near) return;
-    for (int dy = -2; dy <= 2; ++dy)
-        for (int dx = -2; dx <= 2; ++dx) {
-            const vec2 q{here.x + dx, here.y + dy};
-            if (!t.inside(q) || sight_known[static_cast<std::size_t>(q.x + q.y * t.width)]) continue;
-            if (!fuel_ok(fuel_floor + 15000)) return;
-            (void)sight(world, q, true);
-        }
 }
 
 int Reach::add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked) {
@@ -1128,14 +1147,22 @@ void Safety::refresh() {
     if (changed) invalidate();
 }
 
-Safety::Foe& Safety::foe(const ChampionBelief& e) {
+Safety::Foe& Safety::struck(const ChampionBelief& e) {
     auto& x = foes_[static_cast<std::size_t>(e.index)];
     if (!(known_ >> e.index & 1)) {
         known_ |= static_cast<std::uint16_t>(1u << e.index);
         x.strike = threat_strike(world_, e);
+        x.asked = {-1, -1};
+    }
+    return x;
+}
+
+Safety::Foe& Safety::foe(const ChampionBelief& e) {
+    auto& x = struck(e);
+    if (!(counted_ >> e.index & 1)) {
+        counted_ |= static_cast<std::uint16_t>(1u << e.index);
         x.tiles = 0;
         x.weight = 0;
-        x.asked = {-1, -1};
         if (!e.visible && x.strike.reach >= 0) {
             x.tiles = static_cast<int>(e.possible.count());
             x.weight = unseen_weight(x.strike.reach, x.tiles);
@@ -1237,13 +1264,13 @@ const Reach& Safety::reach_of(const ChampionBelief& e) {
 }
 
 Blow Safety::blow(const ChampionBelief& e, vec2 p) {
-    const auto& s = foe(e).strike;
+    const auto& s = struck(e).strike;
     if (s.reach < 0 || dist(p, e.pos) > s.reach) return {};
     return reach_of(e).at(p);
 }
 
 int Safety::approach(const ChampionBelief& e, vec2 p) {
-    const int reach = foe(e).strike.reach;
+    const int reach = struck(e).strike.reach;
     return blow(e, p).hits ? 0 : std::max(1, dist(p, e.pos) - reach);
 }
 
@@ -1261,9 +1288,19 @@ int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out) {
         if (e.visible) {
             out[n++] = {e.index, blow(e, p)};
         } else if (x.weight > 0) {
-            const int radius = unseen_radius(x.strike.reach, x.tiles);
-            int d = any_within(e.possible, p, radius) ? 0 : radius + 1;
-            while (d < radius && !any_within(e.possible, p, d)) ++d;
+            // The nearest possible tile within the radius, by bisection; past the reach every
+            // distance misses alike.
+            const int radius = unseen_radius(x.strike.reach, x.tiles), top = std::min(radius, x.strike.reach);
+            int d = radius + 1;
+            if (any_within(e.possible, p, top)) {
+                int lo = 0;
+                d = top;
+                while (lo < d) {
+                    const int mid = (lo + d) / 2;
+                    if (any_within(e.possible, p, mid)) d = mid;
+                    else lo = mid + 1;
+                }
+            }
             out[n++] = {e.index, x.strike.blow(d <= radius ? d : static_cast<int>(unreachable))};
         }
     }
@@ -1285,6 +1322,20 @@ float Safety::damage_bound(vec2 p, bool double_unacted) {
     each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
         total += b.damage * (double_unacted && e.visible && !e.acted ? 2.0f : 1.0f);
     });
+    return total;
+}
+
+float Safety::damage_ceiling(vec2 p, bool double_unacted) {
+    float total = camp_damage(p);
+    for (const auto& e : world_.enemies) {
+        if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
+        if (!e.visible) {
+            total += most_damage(e);
+            continue;
+        }
+        if (struck(e).strike.reach < 0) continue;
+        total += blow(e, p).damage * (double_unacted && !e.acted ? 2.0f : 1.0f);
+    }
     return total;
 }
 
@@ -1394,6 +1445,15 @@ std::uint32_t Safety::fight_key(vec2 p, int exclude) {
     return key;
 }
 
+std::uint32_t Safety::fight_key_with(vec2 p, std::uint32_t visible) {
+    std::uint32_t key = visible;
+    for (const auto& t : threats())
+        if (!t.visible && t.at(p).hits) key |= 1u << (16 + t.enemy);
+    for (std::size_t i = 0; i < world_.allies.size(); ++i)
+        if (fights_with(world_.allies[i], p)) key |= 1u << i;
+    return key;
+}
+
 const Trade* Safety::memo(std::uint32_t key) const {
     for (int i = 0; i < std::min(fight_count_, max_fights); ++i)
         if (fights_[i].key == key) return &fights_[i].trade;
@@ -1443,12 +1503,16 @@ std::uint64_t Safety::fight_cost_estimate() {
     }
     const auto champions = static_cast<std::uint64_t>(champions_);
     const auto simulation = std::max({std::uint64_t{10000}, 2000 + 2000 * champions, costliest_fight_ + costliest_fight_ / 4});
+    return simulation + query_cost_estimate();
+}
+
+std::uint64_t Safety::query_cost_estimate() {
     // Once listed, a visible threat's Reach is still built on its first query.
     std::uint64_t reaches = 0;
     if (built_)
         for (const auto& e : world_.enemies)
-            if (e.alive && e.visible && !(reached_ >> e.index & 1) && !gone(e) && foe(e).strike.reach >= 0) reaches += 2000;
-    return simulation + reaches + build_cost_estimate();
+            if (e.alive && e.visible && !(reached_ >> e.index & 1) && !gone(e) && struck(e).strike.reach >= 0) reaches += 2000;
+    return reaches + build_cost_estimate();
 }
 
 std::uint64_t Safety::build_cost_estimate() {
@@ -1470,7 +1534,7 @@ Trade Safety::pursuit(vec2 p, int approach) {
     const auto& spawn = world_.map().near_enemy_spawn;
     for (const auto& e : world_.enemies) {
         if (!e.alive || !e.visible || gone(e) || spawn.is_set(e.pos)) continue;
-        const auto& s = foe(e).strike;
+        const auto& s = struck(e).strike;
         if (s.reach < 0 || dist(p, e.pos) - s.reach > approach) continue;
         const int walk = this->approach(e, p);
         if (walk > approach) continue;
@@ -1491,7 +1555,7 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
     us.camp = camp_damage(p, false);
     for (const auto& e : world_.enemies) {
         if (!e.alive || !e.visible || gone(e)) continue;
-        const auto& s = foe(e).strike;
+        const auto& s = struck(e).strike;
         if (s.reach < 0 || dist(p, e.pos) - s.reach >= horizon) continue;
         const int walk = approach(e, p);
         if (walk >= horizon) continue;
@@ -1506,7 +1570,7 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
 bool Safety::lethal(vec2 p) {
     const float health = world_.me().health;
     // Most turns no enemy is near enough; skip the threat build then.
-    if (!built_ && damage_bound(p) < health) return false;
+    if (!built_ && (damage_ceiling(p) < health || damage_bound(p) < health)) return false;
     return worst_damage(p) >= health;
 }
 

@@ -131,6 +131,14 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
     }
 }
 
+bool channel_ending() {
+    using cambc::champion_state;
+    const auto state = my_state();
+    return (state.contains(champion_state::recalling) || state.contains(champion_state::submitting_gems)
+            || state.contains(champion_state::teleporting))
+           && my_channel_time() == 1;
+}
+
 // Our channel ends at our next turn's start, unless an enemy acting first cancels it: any damage
 // cancels a recall, only a stun a tribute or a teleport.
 void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
@@ -152,7 +160,9 @@ void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
 // Enemies yet to act this round strike before our next turn whatever the order; acting first
 // next round denies the second strike of those, and the only one of the others.
 void offer_escape(const World& world, const ChampionBelief& self, Safety& safety, Wish& wish) {
-    if (world.map().ally_spawn.is_set(self.pos) || safety.damage_bound(self.pos, true) < self.health) return;
+    if (world.map().ally_spawn.is_set(self.pos) || safety.damage_ceiling(self.pos, true) < self.health
+        || safety.damage_bound(self.pos, true) < self.health)
+        return;
     float damage = safety.camp_damage(self.pos);
     bool enemy = false;
     std::array<Safety::ThreatAt, 16> threats;
@@ -210,9 +220,14 @@ void set_turn_order(const World& world, Safety& safety) {
         const Strike ours = strike(self, world.round + 1);
         offer_kills(world, self, ours, enemies, wish);
         offer_heal(world, self, enemies, wish);
-        safety.refresh();
-        offer_channel(self, safety, wish);
-        offer_escape(world, self, safety, wish);
+        // With no enemy in sight our turn only removed camp members, so the threats before a refresh
+        // overstate those after: when they cannot kill us and no channel ends, nothing needs it.
+        if (channel_ending() || enemy_seen(world)
+            || !(world.map().ally_spawn.is_set(self.pos) || safety.damage_ceiling(self.pos, true) < self.health)) {
+            safety.refresh();
+            offer_channel(self, safety, wish);
+            offer_escape(world, self, safety, wish);
+        }
     }
     try {
         if (wish.priority() != me.priority()) me.set_priority(wish.priority());

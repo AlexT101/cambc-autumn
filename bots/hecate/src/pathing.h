@@ -33,6 +33,7 @@ public:
     const Field* approach(int group, int range, std::uint64_t fuel_floor);
     bool approach_ready(int group, int range); // usable from here without a search
     std::uint64_t approach_cost(int group, int range); // 0 when ready
+    static std::uint64_t max_approach_cost() { return search_cost_estimate(cambc::map::width() + cambc::map::height()); }
     // Walking steps from the centre of a group worth farming (a reward, no Monolith): by symmetry,
     // from anywhere to it. Null until warmed up; centres_ready() once all are.
     const Field* from_centre(int group);
@@ -53,6 +54,7 @@ public:
 
     // Static walls, visible units and teleport reservations, and tiles bumped this round.
     const bitboard& blocked();
+    void occupied_into(bitboard& out); // blocked() with our own tile set
     void invalidate(); // after we move or dash
 
     // A hidden blocker fails a move without spending the walk; the other first steps are tried,
