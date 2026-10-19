@@ -292,6 +292,8 @@ struct CampBelief {
     std::uint32_t occupants = 0;
     int told_respawn = -1; // the respawn round the team was told through comms
     int cleared_by_us = -1; // the round our own turn killed its last member while we stood on it
+    // Changes whenever `state` or `health` does: results computed from them keep while it holds.
+    std::uint32_t version = 0;
 };
 
 struct AltarBelief {
@@ -329,7 +331,14 @@ public:
     const ChampionBelief& me() const { return allies[self_index]; }
     // Index of the champion's turn in `round`, by its rank then: the current one for this round,
     // that of our previous update for earlier rounds.
-    int slot(const ChampionBelief& c, int round) const;
+    int slot(const ChampionBelief& c, int r) const {
+        // Teams alternate one turn at a time, A first in odd rounds; the larger team's extra
+        // champions go last.
+        const int others = static_cast<int>((c.side == team::ally ? enemies : allies).size());
+        const bool first = (c.side == team::ally) == (map().team_a == (r % 2 == 1));
+        const int rank = r < round ? c.prev_rank : c.rank;
+        return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
+    }
     int round = 0;
     int first_round = 0; // this instance's first play round
 
@@ -338,6 +347,13 @@ public:
     int self_index = 0;
 
     std::vector<CampBelief> camps; // parallel to map().groups
+    std::uint32_t camps_version = 0; // changes whenever any group's version does
+    // f(g) for each group believed alive and awake or maybe awake, in group order.
+    template <class F> void each_stirring(F&& f) const {
+        for (std::size_t w = 0; w < stirring_.size(); ++w)
+            for (std::uint64_t bits = stirring_[w]; bits; bits &= bits - 1)
+                f(static_cast<int>(64 * w) + __builtin_ctzll(bits));
+    }
     std::vector<AltarBelief> altars; // parallel to map().altars
     Scores score;
     bitboard visible; // this turn's vision (ours and our ward's)
@@ -394,6 +410,8 @@ private:
         Moment fixed, at;
         bool dasher, dash, fast_recall;
     };
+    std::vector<std::uint64_t> stirring_; // bit g: each_stirring() visits group g
+    void note_stirring(int g);
     std::array<Tracked, 8> tracked_{}; // this pass's track() results
     int tracked_count_ = 0;
     std::uint32_t lineages_ = 0;

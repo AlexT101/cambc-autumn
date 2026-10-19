@@ -20,13 +20,14 @@ constexpr std::int32_t not_found = static_cast<std::int32_t>(cambc::error_code::
 
 std::uint32_t id(cambc::handle_champion_t h) { return static_cast<std::uint32_t>(h); }
 
-std::optional<champion_info> champion(std::uint32_t h) {
-    champion_info info{};
+// Null if hidden or dead; valid until the next call.
+const champion_info* champion(std::uint32_t h) {
+    static champion_info info;
     const auto code = sdk_champion(h, &info);
-    if (code == not_in_vision) return std::nullopt;
+    if (code == not_in_vision) return nullptr;
     check(code);
-    if (info.x < 0 || info.y < 0) return std::nullopt; // dead
-    return info;
+    if (info.x < 0 || info.y < 0) return nullptr; // dead
+    return &info;
 }
 
 // Readable for hidden and dead champions too.
@@ -56,7 +57,7 @@ int gems(std::uint32_t h) {
 
 // Summing every item count costs ~350 fuel; only a Home emblem matters.
 bool home_emblem(std::uint32_t h) {
-    cambc::enum_map<cambc::item_type> counts;
+    static cambc::enum_map<cambc::item_type> counts; // overwritten whole: not cleared first
     check(sdk_champion_items(h, counts.ptr()));
     return counts[cambc::item_type::home_emblem_of_strength] + counts[cambc::item_type::home_emblem_of_focus]
                + counts[cambc::item_type::home_emblem_of_health]
@@ -102,7 +103,7 @@ std::optional<int> channel_time(std::uint32_t h) {
 
 // Visible camp health, or nullopt if the engine has no live camp to show.
 std::optional<float> camp_health(std::uint32_t h) {
-    camp_state state{};
+    static camp_state state;
     const auto code = sdk_camp(h, &state);
     if (code == not_in_vision || code == not_found) return std::nullopt;
     check(code);
@@ -672,6 +673,7 @@ void World::init_beliefs() {
         camps[g].health_round.assign(health.size(), 0);
     }
     altars.assign(s.altars.size(), AltarBelief{});
+    stirring_.assign((s.groups.size() + 63) / 64, 0);
 }
 
 void World::update() {
@@ -753,8 +755,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
         }
     }
 
-    const auto info = engine::champion(h);
-    b.visible = info.has_value();
+    const auto* info = engine::champion(h);
+    b.visible = info != nullptr;
     if (!info) {
         // A channel completes at its owner's turn start.
         const bool ended = round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < slot(me(), round));
@@ -876,11 +878,21 @@ void World::note_capture(int group, int respawn_round) {
     c.told_respawn = respawn_round;
     if (c.state_round == round) return; // in view: our own reading stands
     if (static_cast<std::size_t>(group) < camps_pending_.size()) camps_pending_[group] = 1;
+    c.version += c.state != CampState::respawning;
+    camps_version += c.state != CampState::respawning;
     c.state = CampState::respawning;
     c.respawn_round = respawn_round;
     c.awake = Awake::asleep;
     c.holder.reset();
     c.held_since = -1;
+    note_stirring(group);
+}
+
+void World::note_stirring(int g) {
+    const auto& c = camps[g];
+    const std::uint64_t bit = std::uint64_t{1} << (g % 64);
+    auto& word = stirring_[g / 64];
+    word = c.state == CampState::alive && c.awake != Awake::asleep ? word | bit : word & ~bit;
 }
 
 void World::read_vision() {
@@ -935,15 +947,6 @@ void World::rank_turns() {
             for (int j = i + 1; j < n; ++j) ++rank[priority[j] > priority[i] ? i : j];
         for (int i = 0; i < n; ++i) (*team)[i].rank = rank[i];
     }
-}
-
-int World::slot(const ChampionBelief& c, int r) const {
-    // Teams alternate one turn at a time, A first in odd rounds; the larger team's extra
-    // champions go last.
-    const int others = static_cast<int>((c.side == team::ally ? enemies : allies).size());
-    const bool first = (c.side == team::ally) == (map().team_a == (r % 2 == 1));
-    const int rank = r < round ? c.prev_rank : c.rank;
-    return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
 }
 
 int World::turns_between(const ChampionBelief& c, Moment from, Moment to) const {
@@ -1090,6 +1093,7 @@ void restore(CampBelief& c, const CampGroup& G, int since) {
     c.health_round.assign(G.members.size(), since);
     for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
     c.awake = Awake::asleep;
+    ++c.version;
 }
 } // namespace
 
@@ -1124,6 +1128,7 @@ void World::update_camps() {
     camps_pending_.resize(s.groups.size());
     for (std::size_t g = 0; g < s.groups.size(); ++g) {
         if (!group_visible[g] && !camps_pending_[g]) continue;
+        const auto version = camps[g].version;
         guard("camp", [&] {
             const auto& G = s.groups[g];
             auto& c = camps[g];
@@ -1131,12 +1136,13 @@ void World::update_camps() {
             if (!group_visible[g]) {
                 if (c.state == CampState::cleared && c.holder && round >= c.payout_round()) {
                     c.state = CampState::respawning;
+                    ++c.version;
                     c.respawn_round = c.payout_round() + G.respawn;
                     c.holder.reset();
                 }
                 if (c.state == CampState::respawning && round >= c.respawn_round) {
                     c.state = CampState::alive;
-                    restore(c, G, c.respawn_round - 1);
+                    restore(c, G, c.respawn_round - 1); // a new version
                 }
                 if (c.awake == Awake::awake && round - c.state_round > 2) c.awake = Awake::unknown;
                 return;
@@ -1153,6 +1159,7 @@ void World::update_camps() {
                 c.state = CampState::respawning;
                 c.respawn_round = round + timer;
             }
+            c.version += c.state != previous;
             c.state_round = round;
             // Not alive when last seen: it returned at full health after that, and after its timer.
             if (c.state == CampState::alive && previous != CampState::alive)
@@ -1176,6 +1183,7 @@ void World::update_camps() {
                         c.awake = Awake::unknown;
                     }
                 }
+                c.version += hp != c.health[i];
                 c.health[i] = hp;
                 c.health_round[i] = round;
                 if (hp > 0 && !seen_awake && c.state == CampState::alive) seen_awake = engine::camp_awake(m.handle);
@@ -1244,6 +1252,8 @@ void World::update_camps() {
         });
         const auto& c = camps[g];
         camps_pending_[g] = (c.state == CampState::cleared && c.holder) || c.state == CampState::respawning || c.awake == Awake::awake;
+        camps_version += c.version != version;
+        note_stirring(static_cast<int>(g));
     }
 }
 
@@ -1381,7 +1391,7 @@ void World::dump_beliefs() const {
         out.text("\n");
     }
     const auto& m = me();
-    const vec2 here = m.alive ? cambc::self().position() : vec2{-1, -1};
+    const vec2 here = m.alive ? my_position() : vec2{-1, -1};
     out.text("BD ");
     out.num(round);
     out.num(engine::id(m.handle));
