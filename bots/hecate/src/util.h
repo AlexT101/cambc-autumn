@@ -41,6 +41,49 @@ inline int& siege_group() {
     return g;
 }
 
+// Our own champion, read raw. The SDK's accessors build and copy a whole record for each field
+// (position() ~85 fuel, item_count() ~225); a raw read into static storage costs ~25. Each call
+// reads the engine again, as the SDK's do.
+inline std::uint32_t my_handle() { return static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(cambc::self())); }
+inline const cambc::detail::champion_info& my_record() {
+    static cambc::detail::champion_info record;
+    cambc::detail::check(cambc::detail::sdk_champion(my_handle(), &record));
+    return record;
+}
+inline vec2 my_position() {
+    const auto& r = my_record();
+    return {r.x, r.y};
+}
+inline float my_health() { return my_record().health; }
+inline float my_max_health() { return my_record().max_health; }
+inline float my_strength() { return my_record().strength; }
+inline cambc::champion_state my_state() { return cambc::champion_state::from_bits_retain(my_record().state); }
+inline bool my_can_move() { return my_state().contains(cambc::champion_state::can_move); }
+inline bool my_can_attack() { return my_state().contains(cambc::champion_state::can_attack); }
+inline bool my_can_cast() { return my_state().contains(cambc::champion_state::can_cast); }
+inline std::uint32_t my_gems() {
+    static std::uint32_t gems;
+    cambc::detail::check(cambc::detail::sdk_champion_gems(my_handle(), &gems));
+    return gems;
+}
+inline std::uint32_t my_gold() {
+    static std::uint32_t gold;
+    cambc::detail::check(cambc::detail::sdk_champion_gold(my_handle(), &gold));
+    return gold;
+}
+inline const cambc::enum_map<cambc::item_type>& my_items() {
+    static cambc::enum_map<cambc::item_type> items;
+    cambc::detail::check(cambc::detail::sdk_champion_items(my_handle(), items.ptr()));
+    return items;
+}
+// Turn ends left of our channel.
+inline std::int32_t my_channel_time() {
+    (void)my_record();
+    static std::int32_t turns;
+    cambc::detail::check(cambc::detail::sdk_champion_channel_time(my_handle(), &turns));
+    return turns;
+}
+
 inline int dist(vec2 a, vec2 b) { return static_cast<int>(a.chebyshev_distance(b)); }
 
 inline bool in_bounds(vec2 p) { return cambc::map::is_in_bounds(p); }

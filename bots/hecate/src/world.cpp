@@ -1389,7 +1389,7 @@ void World::dump_beliefs() const {
         out.text("\n");
     }
     const auto& m = me();
-    const vec2 here = m.alive ? cambc::self().position() : vec2{-1, -1};
+    const vec2 here = m.alive ? my_position() : vec2{-1, -1};
     out.text("BD ");
     out.num(round);
     out.num(engine::id(m.handle));
