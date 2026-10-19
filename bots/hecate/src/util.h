@@ -1,6 +1,7 @@
 #pragma once
 #include <cambc.h>
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <memory>
@@ -88,6 +89,21 @@ inline const cambc::enum_map<cambc::item_type>& my_items() {
     static cambc::enum_map<cambc::item_type> items;
     cambc::detail::check(cambc::detail::sdk_champion_items(my_handle(), items.ptr()));
     return items;
+}
+// From our state at turn start: later, a turn that has walked, attacked and cast shows the same bits.
+inline bool my_stunned(cambc::champion_state state) {
+    using cambc::champion_state;
+    // A stun cancels channels.
+    if (state.contains(champion_state::can_move) || state.contains(champion_state::can_attack) || state.contains(champion_state::can_cast)
+        || state.contains(champion_state::recalling) || state.contains(champion_state::submitting_gems)
+        || state.contains(champion_state::teleporting))
+        return false;
+    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+    std::uint32_t n = 0;
+    cambc::detail::check(cambc::detail::sdk_champion_buff_data(my_handle(), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
+    return false;
 }
 // Turn ends left of our channel.
 inline std::int32_t my_channel_time() {
