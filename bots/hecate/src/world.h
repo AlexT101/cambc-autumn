@@ -283,6 +283,7 @@ struct CampBelief {
     // (payout at held_since + capture_time + 1).
     std::optional<team> holder;
     int held_since = -1;
+    int payout_round() const { return held_since + cambc::constants::capture_time + 1; }
     // Who stood on its tiles when last fully seen: bit i for allies[i], 16 + i for enemies[i].
     std::uint32_t occupants = 0;
     int told_respawn = -1; // the respawn round the team was told through comms

@@ -1133,9 +1133,9 @@ void World::update_camps() {
             auto& c = camps[g];
 
             if (!group_visible[g]) {
-                if (c.state == CampState::cleared && c.holder && round >= c.held_since + cambc::constants::capture_time + 1) {
+                if (c.state == CampState::cleared && c.holder && round >= c.payout_round()) {
                     c.state = CampState::respawning;
-                    c.respawn_round = c.held_since + cambc::constants::capture_time + 1 + G.respawn;
+                    c.respawn_round = c.payout_round() + G.respawn;
                     c.holder.reset();
                 }
                 if (c.state == CampState::respawning && round >= c.respawn_round) {

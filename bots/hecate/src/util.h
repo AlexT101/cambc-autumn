@@ -101,6 +101,11 @@ inline void not_into(const bitboard& a, bitboard& out) {
     cambc::detail::check(cambc::detail::sdk_Bitboard_Not(a.ptr(), out.ptr()));
 }
 inline void copy_into(const bitboard& a, bitboard& out) { or_into(a, a, out); }
+// out &= ~tiles without a new board.
+inline void drop(bitboard& out, const bitboard& tiles) {
+    out |= tiles;
+    out ^= tiles;
+}
 
 // The helpers below work in scratch boards: allocating a board (~300 fuel) costs more than the
 // host operations on it (~120).

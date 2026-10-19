@@ -14,6 +14,9 @@ inline constexpr cambc::champion_draft draft_preference[] = {
 inline constexpr int track_horizon = 10;
 
 inline constexpr float recall_health_fraction = 0.35f;
+// Below this share of max health a champion is hurt: it retreats from smaller packs, and on its
+// own ground it still checks whether a pursuit would catch it.
+inline constexpr float hurt_health_fraction = 0.5f;
 // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
 inline constexpr float finish_camp_health_fraction = 0.6f;
 // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
