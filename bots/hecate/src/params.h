@@ -86,8 +86,6 @@ inline constexpr int monolith_holders = 2;
 // On maps whose only gems are big groups (bot.cpp kite): set out for one still respawning when
 // it returns within this many rounds of our arrival.
 inline constexpr int kite_early = 10;
-// Groups worth stepping onto to stop an enemy capture (bot.cpp contest_capture).
-inline constexpr int contest_gems = 40;
 // Keep the current siege target unless another is sooner by this many rounds (bot.cpp siege_candidate).
 inline constexpr int siege_stickiness = 20;
 
