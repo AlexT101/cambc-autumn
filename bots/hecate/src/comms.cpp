@@ -17,10 +17,9 @@ namespace {
 //   [21, 28)  bag in fours, rounded up
 //   [28, 31)  carrying ally's index
 //   [31, 32)  the sighting is an enemy its poster fights: a rally
-//   [32, 36)  unused
-//   [36, 42)  captured group + 1, 0 = none
-//   [42, 50)  its respawn round mod 256
-//   [50, 56)  claimed group + 1, 0 = none
+//   [32, 40)  captured group + 1, 0 = none
+//   [40, 48)  its respawn round mod 256
+//   [48, 56)  claimed group + 1, 0 = none
 //   [56, 59)  claiming ally's index
 //   [59, 62)  sighting write count
 //   [62, 64)  unused
@@ -37,10 +36,11 @@ struct BitField {
 
 constexpr BitField sight_x{0, 7}, sight_y{7, 7}, sight_index{14, 3}, sight_health{17, 3}, sight_parity{20, 1};
 constexpr BitField bag_fours{21, 7}, bag_body{28, 3};
-constexpr BitField camp_group{36, 6}, camp_respawn{42, 8};
-constexpr BitField claim_group{50, 6}, claim_body{56, 3};
+constexpr BitField camp_group{32, 8}, camp_respawn{40, 8};
+constexpr BitField claim_group{48, 8}, claim_body{56, 3};
 constexpr BitField sight_count{59, 3};
 constexpr BitField sight_fight{31, 1};
+constexpr int max_group = (1 << 8) - 1; // camp_group and claim_group hold the group + 1
 constexpr std::uint64_t sighting_bits = sight_x.mask() | sight_y.mask() | sight_index.mask() | sight_health.mask() | sight_parity.mask()
                                         | sight_count.mask() | sight_fight.mask();
 constexpr std::uint64_t bag_bits = bag_fours.mask() | bag_body.mask();
@@ -134,7 +134,7 @@ void send(World& world, bool refresh) {
 
     if (camp_free) {
         const auto& groups = world.map().groups;
-        for (std::size_t g = 0; g < groups.size() && g < 63; ++g) {
+        for (std::size_t g = 0; g < groups.size() && g < static_cast<std::size_t>(max_group); ++g) {
             auto& c = world.camps[g];
             if (c.state != CampState::respawning || c.respawn_round <= round || c.told_respawn == c.respawn_round) continue;
             // Seen respawning, not inferred from a hold out of sight.
@@ -205,7 +205,7 @@ int bag_of(const World& world, int ally) {
     return a.alive ? state.bags[ally] : 0;
 }
 
-void claim(int group) { state.mine = group < 63 ? group : -1; }
+void claim(int group) { state.mine = group < max_group ? group : -1; }
 
 int claim_of(const World& world, int ally) {
     const auto& a = world.allies[ally];

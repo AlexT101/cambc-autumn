@@ -889,11 +889,13 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         float rounds = 0;
         return soften * min_camp_damage(world, g, strength, &rounds, reflect) <= spare_health || ally_engaged(world, g);
     };
-    std::array<bool, 64> ally_claims{};
+    std::array<std::uint64_t, 4> ally_claims{}; // bit g: comms carries groups below 255
     for (const auto& a : world.allies)
-        if (const int c = comms::claim_of(world, a.index); !a.is_self && c >= 0) ally_claims[c] = true;
+        if (const int c = comms::claim_of(world, a.index); !a.is_self && c >= 0 && c < 256) ally_claims[c >> 6] |= std::uint64_t{1} << (c & 63);
     // An ally's claim makes us its crew rather than its rival, unless we claimed it first.
-    const auto taken = [&](int g) { return g < 64 && ally_claims[g] && (memory.claim != g || memory.crew); };
+    const auto taken = [&](int g) {
+        return g < 256 && (ally_claims[g >> 6] >> (g & 63) & 1) && (memory.claim != g || memory.crew);
+    };
     const bool melee = world.me().facts().walk_and_attack_independent();
     // Cassi farms gold: the team's weakest body takes the harmless gold-only groups.
     const bool gold_farmer = world.me().facts().passive == Passive::linked_pair && !melee;

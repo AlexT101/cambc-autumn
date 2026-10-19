@@ -865,11 +865,8 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float healt
     b.pos = pos;
     b.pos_round = seen_round;
     b.pos_source = Source::comms;
-    // The poster's turn in that round is unknown, and so is whether it saw a recall about to land.
-    fix_at_spawn(b, map().enemy_spawn, {seen_round, -1});
-    b.possible.set(pos);
-    if (b.facts().has_dash()) b.undashed.set(pos);
-    b.lineage = 0;
+    // The poster's turn in that round is unknown: from the round's start, its turns that round count.
+    fix(b, pos, {seen_round, -1});
     track(b);
 }
 
