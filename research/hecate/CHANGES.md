@@ -78,3 +78,10 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    down); against the top 10 version 22 went 55-95. The escort halved big bags lost locally but did not help on the
    ladder (contest still 1-9 vs the top 10), so hecate is back to version 20 (item 11), which is the active
    submission again. The escort code is in history: version 21 = 26e6920, version 22 = 33d61fd.
+14. Cleanup and fixes (2026-10-19, not yet submitted; details in [SIMPLIFY.md](SIMPLIFY.md) 1.9, 1.11 and sections 2 and 4).
+   - Fuel savings and dead-code cleanup, byte-identical at 100M fuel: 8970 to 8621 lines, fuel -1.4% beyond
+     0306608's -1.6%. Against main's hecate at the real budget 47.4% (unexplained; see EXPERIMENTS.md).
+   - Bug fixes 2.1-2.6 and five of 2.11: 51.3% for the bundle and for 2.3 alone, each vs the cleaned bot.
+   - v17 port replaced: farm carries out its own spell clears (`spell_clear`) and picks up cleared groups first
+     (`pick_up`, one taker per group); `local_spell_plan`, `collect_local_reward` and both v17 spend caps gone.
+     51.0% vs the bot before it; 8374 lines.

@@ -8,7 +8,7 @@ Line numbers are as of commit e32257b.
 
 How to test each bucket:
 - **1. Behaviour-preserving:** `tools/fuel/bench.py compare` must show 16/16 byte-identical replays at the 100M budget. No games are needed. Items marked *fuel-only* change only what happens when fuel is short.
-  - Until the v17 spend caps go (3.1), compare copies with both caps raised.
+  - The v17 spend caps are gone (4.1, 2026-10-19), so `bench.py compare` is exact on the bot as it is.
   - On Linux the champions' stdout in a bundle is mostly NUL bytes: the instances overwrite each other. `SHORTCUT` counts from it are therefore incomplete, so debug a single champion by filtering on its handle.
 - **2. Bug fixes:** A/B each fix against `bots/baselines/` on all maps (ladder + gen + central, both sides).
 - **3. Simplification/robustness:** A/B each change. For fuel gates, first count `SHORTCUT` tags with `py tools/fuel/bench.py run hecate --fuel 0`. A gate that never or rarely fires can go with little risk.
@@ -355,7 +355,7 @@ Measure first with `--fuel 0`, then remove each gate whose `SHORTCUT` count is n
 
 | Gate | Where | Falls back to | Proposal |
 |---|---|---|---|
-| **v17 spend caps** | bot.cpp:811 (`fuel() + 20000 >= started`), bot.cpp:928 (`+ 15000`) | `local_spell_plan`/`collect_local_reward` give up after spending 20k/15k this call | **Top priority.** These are the only gates relative to fuel *spent*, so they trip even with 100M fuel. Any fuel change upstream, even a different heap state, moves where they cut in. They broke 1/16 bench replays for the 1.9 savings: one tied step on pilgrimage. Remove them (or 4.1); until then, `bench.py compare` is only exact with both caps raised. |
+| **v17 spend caps** (gone with 4.1) | bot.cpp:811 (`fuel() + 20000 >= started`), bot.cpp:928 (`+ 15000`) | `local_spell_plan`/`collect_local_reward` give up after spending 20k/15k this call | **Top priority.** These are the only gates relative to fuel *spent*, so they trip even with 100M fuel. Any fuel change upstream, even a different heap state, moves where they cut in. They broke 1/16 bench replays for the 1.9 savings: one tied step on pilgrimage. Remove them (or 4.1); until then, `bench.py compare` is only exact with both caps raised. |
 | farm no-evaluation | bot.cpp:1200-1225 + `FarmEvaluationReserve` | nearest-group mini-farm with its own `worth` rule | In the loop, use cheap steps (`ally_steps`/`dist`) when a field is unaffordable, then delete the gate and the mini-farm (~30 lines). Check large maps, where it "can last hundreds of rounds". |
 | walk_on kept target | bot.cpp:1185-1191 | reverts `farm_group`/`claim` to last turn's choice | Drop it; the centre-field descent is always available, and `prepare_walk` usually has the new choice's approach ready. |
 | step_towards_funded | pathing.cpp:446-477 | no move (`siege-route-fuel`) | Fold into `step_towards(goals, nullptr, cap)` with an uncapped search. This keeps the item-11 swirl fix. |
@@ -423,7 +423,7 @@ Ordered by lines saved against evidence that the feature helps.
 
 | # | Feature | Lines | Evidence | Notes |
 |---|---|---|---|---|
-| 4.1 | **v17 port:** `local_spell_plan`, `collect_local_reward`, the spell branch in `farm()`, `FarmSpellPlan`/`FarmEvaluationReserve`, Memory `farm_spell`/`farm_station`/`worked_*` | ~335 | Item 10's bundle was level, and so was hecate vs v17 locally. It is the most fuel-gated code in the bot (~25 gates) and has its own hazard model, pathing and health floor. | A/B `collect_local_reward` first. If it goes, also try dropping spell pricing (`spell_clear_rounds`, `safe_targets`, `basic_output`, `best_spell`, ~50 lines), which also settles 2.2. Ladder-motivated, so also scrim. |
+| 4.1 | **Done 2026-10-19 (EXPERIMENTS.md): replaced by farm-native `spell_clear` and `pick_up`, 51.0%.** **v17 port:** `local_spell_plan`, `collect_local_reward`, the spell branch in `farm()`, `FarmSpellPlan`/`FarmEvaluationReserve`, Memory `farm_spell`/`farm_station`/`worked_*` | ~335 | Item 10's bundle was level, and so was hecate vs v17 locally. It is the most fuel-gated code in the bot (~25 gates) and has its own hazard model, pathing and health floor. | A/B `collect_local_reward` first. If it goes, also try dropping spell pricing (`spell_clear_rounds`, `safe_targets`, `basic_output`, `best_spell`, ~50 lines), which also settles 2.2. Ladder-motivated, so also scrim. |
 | 4.2 | *(withdrawn: DraftPlan is a fuel saving and stays; see section 5)* | | | |
 | 4.3 | **Delayed tribute stun:** `tribute_to_stun_later`, D branch, `alive_now`, the `hold` parameter through `attack_enemy`/`attack_target`/`reset_and_attack_enemy`/`cast_at_enemies`/`dash_to_attack` | ~55 | Never tested. A stun cancels a tribute whenever it lands; waiting only wastes the enemy's channel turns while ours idles. | Keep `can_stop_winning_tribute`. |
 | 4.4 | **`killable_now`** + `want_home`'s kill plumbing + `Safety::fight`'s `exclude`/`fight_key` handling | ~40 | Item 8: level, fires ~0.15 times a game. It also checks only our own Cassi/Issac body. | |

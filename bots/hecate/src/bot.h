@@ -13,8 +13,6 @@ struct Memory {
     bool banking = false; // our bag headed for an altar rather than another capture last turn
     int farm_group = -1;  // farm's latest choice: kept when near tied, walked to on short fuel
     bool farm_spell = false; // farm's choice is cleared by spells from out of the camps' reach
-    vec2 farm_station{-1, -1}; // the latest locally executable spell station
-    int worked_group = -1, worked_round = -1; // actual recent farm work, for an empty local reward
     int claim = -1;       // the group we told allies we work towards, or -1
     bool crew = false;    // joining an ally's claim rather than our own
     bool siege = false;   // our claim is a Monolith or big group the team attacks together
