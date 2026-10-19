@@ -1236,7 +1236,8 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
                                   || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap)
                             : (note_shortcut("farm-no-route"), walk_on(best));
     if (walked) {
-        attack_camp(world, affordable);
+        // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
+        if (!strike_enemy(world, strike_hold)) attack_camp(world, affordable);
         cast_at_camp(world, best); // only casts that allow walking remain
         reset_and_attack_camp(world, best);
     }
@@ -2408,19 +2409,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         intent.walks = !holding && !(stun_later && alive_now(*stun_later)) && !can_tribute_here(world);
         intent.keep_walk = me.gem_count() > 0 && !holding;
         intent.step_value = me.gem_count() > 0 ? carried_step_value : farm_step_value(world);
-        // The chase carry_bag or the empty-handed turn would take, as it would take it.
-        const ChampionBelief* target = nullptr;
-        if (intent.walks && (me.gem_count() == 0 || (!can_tribute_safely(world, safety, memory) && !endgame(world, pathing)
-                                                     && !closing(world) && !winning_bag(world))))
-            target = prey(world, safety);
-        const int range = world.me().facts().attack_range();
-        if (target) {
-            if (me.gem_count() == 0) intent.step_value = output(world.me());
-            intent.target = target->pos, intent.target_range = range;
-            intent.walks = dist(me.position(), target->pos) > range;
-        } else if (intent.walks) {
-            intent.field = intent_field(world, pathing, memory);
-        }
+        // An enemy already in attack range was not worth leaving (want_home): the fight is here.
+        if (enemy_within(world, me.position(), world.me().facts().attack_range())) intent.walks = false;
+        if (intent.walks) intent.field = intent_field(world, pathing, memory);
         attacked = plan_strikes(world, pathing, safety, intent, stun_later).attacked;
         // A cast the plan left unused: before farm's camp reset takes it.
         shield_if_needed(world, memory.farm_group);

@@ -48,20 +48,16 @@ struct Board {
 int ready_slot(const World& world, AbilityKind kind) {
     const auto& self = world.me();
     const int slot = self.facts().slot_of(kind);
-    if (slot < 0) return -1;
-    if (!self.ability_ready(slot, world.round) && self.facts().passive != Passive::reset_on_kill) return -1;
-    try {
-        return cambc::self().abilities()[slot].cooldown() > 0 ? -1 : slot;
-    } catch (const cambc::error&) {
-        return -1;
-    }
+    // The belief is exact for ourselves at turn start.
+    return slot >= 0 && self.ability_ready(slot, world.round) ? slot : -1;
 }
 
 int strike_reach(const ChampionFacts& f, bool dash) {
     return f.attack_range() + 1 + (dash ? dash_steps : 0) + (f.passive == Passive::splash_attack ? 1 : 0);
 }
 
-bool read_board(const World& world, const ChampionBelief* hold, Board& b, int reach) {
+// `live`: health read from the engine, after our own hits this turn; else this turn's beliefs.
+bool read_board(const World& world, const ChampionBelief* hold, Board& b, int reach, bool live) {
     auto& me = cambc::self();
     const auto& f = world.me().facts();
     b.here = me.position();
@@ -70,29 +66,25 @@ bool read_board(const World& world, const ChampionBelief* hold, Board& b, int re
     b.splash = f.passive == Passive::splash_attack;
     const auto& enemy_spawn = world.map().enemy_spawn;
     b.n = 0;
-    for (auto p : positions_within(live_champion_tiles(team::enemy), b.here, reach)) {
+    for (const auto& e : world.enemies) {
         if (b.n == max_foes) break;
-        const ChampionBelief* belief = nullptr;
-        for (const auto& e : world.enemies)
-            if (e.alive && e.visible && e.pos == p) belief = &e;
-        if (!belief) continue;
-        try {
-            auto c = cambc::vision::champion_at(p);
-            const auto passive = belief->facts().passive;
-            float partner = 1e9f;
-            if (passive == Passive::linked_pair)
-                for (const auto& e : world.enemies)
-                    if (e.alive && e.visible && e.pos != p && e.facts().passive == Passive::linked_pair) partner = e.health;
-            b.foes[b.n++] = {belief,
-                             p,
-                             c.health(),
-                             passive == Passive::retaliation ? retaliation_share * c.focus() : 0.0f,
-                             partner,
-                             params::gem_value * static_cast<float>(pair_gems(world, *belief)),
-                             enemy_spawn.is_set(p),
-                             belief == hold};
-        } catch (const cambc::error&) {
+        if (!e.alive || !e.visible || e.stats_round != world.round || dist(b.here, e.pos) > reach) continue;
+        float health = e.health;
+        if (live) {
+            try {
+                const auto c = e.live();
+                if (!c.is_alive()) continue;
+                health = c.health();
+            } catch (const cambc::error&) {
+                continue;
+            }
         }
+        float partner = 1e9f;
+        if (e.facts().passive == Passive::linked_pair)
+            for (const auto& o : world.enemies)
+                if (&o != &e && o.alive && o.visible && o.facts().passive == Passive::linked_pair) partner = o.health;
+        b.foes[b.n++] = {&e, e.pos, health, e.retaliation(), partner,
+                         params::gem_value * static_cast<float>(pair_gems(world, e)), enemy_spawn.is_set(e.pos), &e == hold};
     }
     if (b.n == 0) return false;
     const auto state = me.state();
@@ -191,15 +183,18 @@ float shield_worth(const World& world, Safety& safety, const Board& b, vec2 p) {
 }
 
 int progress(const Intent& intent, vec2 from, vec2 to) {
-    if (intent.target.x >= 0) {
-        const auto steps = [&](vec2 p) { return std::max(0, dist(p, intent.target) - intent.target_range); };
-        return steps(from) - steps(to);
-    }
     if (!intent.field) return 0;
     const int a = intent.field->at(from), c = intent.field->at(to);
     if (a == unreachable || c == unreachable) return 0;
     return a - c;
 }
+
+// The enemy cast valued this turn and where from: cast_chosen() still holds it unless cast.
+struct Valued {
+    int round = -1;
+    vec2 at{-1, -1};
+    bool any = false;
+} valued;
 
 enum class Kind { stay, walk, dash, dash_walk };
 
@@ -225,7 +220,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     Planned out;
     Board b;
     const auto& f = world.me().facts();
-    if (!read_board(world, hold, b, std::max(ability_range + 1, strike_reach(f, f.has_dash())))) return out;
+    if (!read_board(world, hold, b, std::max(ability_range + 1, strike_reach(f, f.has_dash())), false)) return out;
     const bool walks = intent.walks && b.move;
     const float step = intent.step_value;
     const Healths h0 = b.healths();
@@ -245,6 +240,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     if (b.cast) {
         bool exclusive = false;
         const float cast = enemy_cast_value(world, intent.keep_walk, hold, exclusive);
+        valued = {world.round, b.here, cast > 0};
         if (cast > 0) {
             const float walk = exclusive && !intent.keep_walk ? 0.0f : walk_after;
             if (const float v = first.value + cast - cast_cost + walk; v > best.value)
@@ -253,22 +249,26 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     }
 
     const float stay_value = best.value;
-    // Moving to strike: a walk, a dash or both, scored against staying.
-    std::optional<float> here_danger;
-    const auto danger_change = [&](vec2 p) {
-        if (!here_danger) here_danger = safety.expected_damage(b.here);
-        return safety.expected_damage(p) - *here_danger;
+    // Moving to strike: a walk, a dash or both, scored against staying. Danger is priced last,
+    // best first, and only while a candidate could still win: it can fall by at most ours here.
+    struct Candidate {
+        Plan plan;
+        vec2 end;
     };
+    static std::array<Candidate, 64> candidates;
+    int count = 0;
     const auto offer = [&](Plan plan, float before_danger, vec2 end) {
-        if (before_danger <= best.value) return;
-        plan.value = before_danger - danger_change(end);
-        if (plan.value > best.value) best = plan;
+        if (before_danger <= best.value || count == static_cast<int>(candidates.size())) return;
+        plan.value = before_danger;
+        candidates[count++] = {plan, end};
     };
     if (intent.anchored) b.move = false, b.dash = -1;
     const auto& blocked = pathing.blocked();
     const bitboard* guard = pathing.guard();
     const auto walkable = [&](vec2 p) { return in_bounds(p) && !blocked.is_set(p) && !(guard && guard->is_set(p)); };
-    if (b.move && b.attack) {
+    int nearest = 1 << 20;
+    for (int i = 0; i < b.n; ++i) nearest = std::min(nearest, dist(b.here, b.foes[i].pos));
+    if (b.move && b.attack && nearest <= b.range + 1) {
         for (auto d : directions) {
             const vec2 n = b.here + d;
             if (!walkable(n)) continue;
@@ -288,7 +288,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
             }
         }
     }
-    if (b.dash >= 0 && b.attack) {
+    if (b.dash >= 0 && b.attack && nearest <= b.range + dash_steps + (b.melee && b.move ? 1 : 0)) {
         // The dash's cooldown would otherwise carry us two steps.
         const float dash_cost = dash_steps * step;
         const auto landings = pathing.dash_landings();
@@ -312,6 +312,23 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
                     const float gain = static_cast<float>(progress(intent, b.here, n)) * step;
                     offer({Kind::dash_walk, 0, first_tile(near), n, false, false, false}, there.value + gain - dash_cost, n);
                 }
+        }
+    }
+
+    if (count > 0) {
+        std::sort(candidates.begin(), candidates.begin() + count,
+                  [](const Candidate& x, const Candidate& y) { return x.plan.value > y.plan.value; });
+        const float here_danger = safety.expected_damage(b.here);
+        std::array<float, 49> danger;
+        danger.fill(-1);
+        for (int i = 0; i < count && candidates[i].plan.value + here_danger > best.value; ++i) {
+            const vec2 p = candidates[i].end;
+            float& d = danger[(p.y - b.here.y + 3) * 7 + (p.x - b.here.x + 3)];
+            if (d < 0) d = safety.expected_damage(p);
+            if (const float v = candidates[i].plan.value - (d - here_danger); v > best.value) {
+                best = candidates[i].plan;
+                best.value = v;
+            }
         }
     }
 
@@ -339,10 +356,8 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     switch (best.kind) {
     case Kind::stay:
         strike_here(best.reset);
-        if (best.enemy_cast) {
-            bool exclusive = false;
-            if (enemy_cast_value(world, intent.keep_walk, hold, exclusive) > 0) cast_chosen();
-        }
+        // Our attack may have killed its target.
+        if (best.enemy_cast && !cast_chosen()) cast_at_enemies(world, intent.keep_walk, hold);
         break;
     case Kind::walk:
         if (best.attack_first) strike_here(false);
@@ -384,7 +399,7 @@ void strike_after(const World& world, Safety& safety, const ChampionBelief* hold
     if (!state.contains(cambc::champion_state::can_attack) && !state.contains(cambc::champion_state::can_cast)) return;
     Board b;
     const auto& f = world.me().facts();
-    if (read_board(world, hold, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0))) {
+    if (read_board(world, hold, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0), true)) {
         Healths h = b.healths();
         bool attacked = !b.attack;
         if (b.attack) {
@@ -397,8 +412,26 @@ void strike_after(const World& world, Safety& safety, const ChampionBelief* hold
             if (again.target >= 0 && again.value > shield_worth(world, safety, b, b.here) && use_slot(b.reset)) attack(b, again);
         }
     }
+    if (!state.contains(cambc::champion_state::can_cast)) return;
     // A cast the plan kept for a walk the goal did not take, or one a walk allows.
-    if (state.contains(cambc::champion_state::can_cast)) cast_at_enemies(world, false, hold);
+    const vec2 here = cambc::self().position();
+    if (valued.round == world.round && valued.at == here) {
+        if (valued.any) cast_chosen();
+        return;
+    }
+    if (here == world.me().pos) return;
+    bool walk_allows = false;
+    for (int s = 0; s < 2; ++s)
+        walk_allows |= f.abilities[s].hits_enemies() && !f.abilities[s].excludes_walking && world.me().ability_ready(s, world.round);
+    if (walk_allows) cast_at_enemies(world, false, hold);
+}
+
+bool strike_enemy(const World& world, const ChampionBelief* hold) {
+    if (!world.me().alive || !cambc::self().can_attack()) return false;
+    Board b;
+    const auto& f = world.me().facts();
+    if (!read_board(world, hold, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0), true)) return false;
+    return attack(b, best_hit(b, b.here, b.healths()));
 }
 
 bool reset_may_kill(const World& world) {

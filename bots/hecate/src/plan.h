@@ -21,9 +21,6 @@ struct Intent {
     const Field* field = nullptr;
     float step_value = 0;
     bool keep_walk = false; // carrying: cast_at_enemies' own walk threshold prices the walk
-    // Chasing: progress is the steps saved towards attack range of the target.
-    vec2 target{-1, -1};
-    int target_range = 0;
 };
 
 // A carrier's step, as cast_at_enemies prices it: its keep-walk threshold less a cast's cost.
@@ -43,6 +40,9 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
 
 // A reset's second attack could kill an enemy this turn: a cast worth keeping for the plan.
 bool reset_may_kill(const World& world);
+
+// The basic attack from here on the enemy it is worth most against, if any.
+bool strike_enemy(const World& world, const ChampionBelief* hold);
 
 // After the goal: the attack and cast still unspent, from where the walk ended.
 void strike_after(const World& world, Safety& safety, const ChampionBelief* hold);
