@@ -518,27 +518,16 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
     const auto& group = world.map().groups[g];
     const auto& belief = world.camps[g];
     struct Slots {
-        int checked = -1; // the round `health` was last compared with the belief
-        bool fresh = false;
-        std::array<float, 8> health{};
+        std::uint32_t version = ~0u;
         int count = 0, next = 0;
         std::array<float, 4> strength{}, reflect{}, damage{}, rounds{};
     };
     static std::vector<Slots> cache;
-    const auto& health = belief.health;
-    if (health.size() > Slots{}.health.size()) return min_camp_damage(group, belief, strength, rounds, reflect);
     if (cache.size() <= static_cast<std::size_t>(g)) cache.resize(std::max(world.map().groups.size(), static_cast<std::size_t>(g) + 1));
     auto& c = cache[g];
-    if (c.checked != world.round) {
-        c.checked = world.round;
-        const bool fresh = belief.state == CampState::respawning;
-        bool same = c.fresh == fresh;
-        for (std::size_t i = 0; same && i < health.size(); ++i) same = c.health[i] == health[i];
-        if (!same) {
-            c.fresh = fresh;
-            std::copy(health.begin(), health.end(), c.health.begin());
-            c.count = c.next = 0;
-        }
+    if (c.version != belief.version) {
+        c.version = belief.version;
+        c.count = c.next = 0;
     }
     for (int i = 0; i < c.count; ++i)
         if (c.strength[i] == strength && c.reflect[i] == reflect) {
@@ -634,6 +623,43 @@ float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, 
     }
     if (attackers <= 0) return -1;
     return std::max(attackers / spells, reachable / basic) + rest / (basic + spells);
+}
+
+// Kept per group while its belief and our output hold.
+float spell_clear_rounds(const World& world, int g, int range, float spells, float basic) {
+    struct Kept {
+        std::uint32_t version = ~0u;
+        int range = 0;
+        float spells = 0, basic = 0, rounds = 0;
+    };
+    static std::vector<Kept> kept;
+    if (kept.size() <= static_cast<std::size_t>(g)) kept.resize(world.map().groups.size());
+    auto& k = kept[g];
+    const auto& belief = world.camps[g];
+    if (k.version != belief.version || k.range != range || k.spells != spells || k.basic != basic)
+        k = {belief.version, range, spells, basic, spell_clear_rounds(world.map(), g, belief, range, spells, basic)};
+    return k.rounds;
+}
+
+// No clear is quicker than the group's health over our whole output. Kept per group while its
+// belief and our output hold.
+float fastest_clear(const World& world, int g, float strength) {
+    struct Kept {
+        std::uint32_t version = ~0u;
+        float strength = 0, rounds = 0;
+    };
+    static std::vector<Kept> kept;
+    if (kept.size() <= static_cast<std::size_t>(g)) kept.resize(world.map().groups.size());
+    auto& k = kept[g];
+    const auto& belief = world.camps[g];
+    if (k.version == belief.version && k.strength == strength) return k.rounds;
+    const auto& members = world.map().groups[g].members;
+    float rounds = 0;
+    if (belief.state != CampState::cleared)
+        for (std::size_t i = 0; i < members.size(); ++i)
+            rounds += (belief.state == CampState::respawning ? members[i].max_health : belief.health[i]) / strength;
+    k = {belief.version, strength, rounds};
+    return rounds;
 }
 
 // Gems one gold is worth to us: a shard (30 gold) adds its stat's growth, which speeds our share
@@ -1054,6 +1080,25 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         const auto& belief = world.camps[g];
         if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
             continue;
+        auto& known = group_facts[g];
+        // The spawn fields home_ground reads are warm once the centres are.
+        if (known.home < 0 && pathing.centres_ready()) known.home = home_ground(map, g);
+        float weight = pathing.centres_ready() ? known.home : 1.0f;
+        // Staying with last turn's choice keeps near ties from turning us back and forth.
+        if (g == memory.farm_group) weight *= stickiness;
+        const float gems = weight * static_cast<float>(std::min(group.gems, short_by));
+        const float gold = weight * per_gold * static_cast<float>(group.gold);
+        const bool claimed = taken(g);
+        const bool wins = group.gems >= short_by;
+        const float fastest = fastest_clear(world, g, strength);
+        // Empty-handed, the skip below can be settled before the steps are read: no walk is shorter
+        // than the Chebyshev distance.
+        if (bag == 0 && best >= 0 && !claimed && !wins) {
+            const int nearest = centre_steps[g] >= 0 ? centre_steps[g] : dist(here, group.centre);
+            const bool may_help = group.strength > 0 && belief.state == CampState::alive && nearest <= params::help_radius;
+            const int trip = belief.state == CampState::respawning ? std::max(nearest, belief.respawn_round - world.round) : nearest;
+            if (!may_help && (gems + gold) / (static_cast<float>(trip + capture_rounds()) + fastest) <= best_value) continue;
+        }
         auto& steps_known = centre_steps[g];
         if (steps_known < 0) {
             if (steps_warm) {
@@ -1073,14 +1118,11 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         if (bag == 0 && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
             && steps < help_steps && struggling(g))
             help_group = g, help_steps = steps;
-        const bool claimed = taken(g);
         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
         // it. Gems past the win are worth nothing.
-        const bool wins = group.gems >= short_by;
         const Field* to_bank = to_altar ? to_altar : wins ? &pathing.to_any_altar() : nullptr;
         // A recall only goes home: the way out from an altar is walked.
-        auto& known = group_facts[g];
         if (to_bank && known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
         const int walk = to_bank ? known.to_altar : unreachable;
         const int back = to_altar ? homeward(walk, true) : walk;
@@ -1089,20 +1131,8 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         const int bank = back == unreachable ? 0 : back + chained_tribute;
         const int cycle_bank = back == unreachable ? 0 : back + tribute_turns(group.gems);
         const int trip = steps + wait - bank_now + bank;
-        // The spawn fields home_ground reads are warm once the centres are.
-        if (known.home < 0 && pathing.centres_ready()) known.home = home_ground(map, g);
-        float weight = pathing.centres_ready() ? known.home : 1.0f;
-        // Staying with last turn's choice keeps near ties from turning us back and forth.
-        if (g == memory.farm_group) weight *= stickiness;
-        const float gems = weight * static_cast<float>(std::min(group.gems, short_by));
-        const float gold = weight * per_gold * static_cast<float>(group.gold);
         // Risky groups matter only while no affordable one is found; skip the costly clearing
         // estimate for groups that cannot beat it even with no clearing. A crew's share can.
-        // No clear is quicker than its health over our whole output.
-        float fastest = 0;
-        if (belief.state != CampState::cleared)
-            for (std::size_t i = 0; i < group.members.size(); ++i)
-                fastest += (belief.state == CampState::respawning ? group.members[i].max_health : belief.health[i]) / strength;
         if (!claimed && best >= 0 && (gems + gold) / (static_cast<float>(trip + capture_rounds()) + fastest) <= best_value
             && (bag == 0 || (gems + gold) / (static_cast<float>(walk + cycle_bank + capture_rounds()) + fastest) <= from_altar_value))
             continue;
@@ -1141,7 +1171,7 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
             damage = soften * min_camp_damage(world, g, strength, &clear_rounds, reflect);
             // Clearing with spells from out of the camps' range is slower but costs no health.
             if (group.strength > 0) {
-                const float kite = spell_clear_rounds(map, g, belief, range, spells, basic);
+                const float kite = spell_clear_rounds(world, g, range, spells, basic);
                 if (kite >= 0 && (damage > spare_health || kite < clear_rounds + heal_rounds(g, damage))) {
                     spell = true;
                     damage = 0;

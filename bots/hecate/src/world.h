@@ -292,6 +292,8 @@ struct CampBelief {
     std::uint32_t occupants = 0;
     int told_respawn = -1; // the respawn round the team was told through comms
     int cleared_by_us = -1; // the round our own turn killed its last member while we stood on it
+    // Changes whenever `state` or `health` does: results computed from them keep while it holds.
+    std::uint32_t version = 0;
 };
 
 struct AltarBelief {

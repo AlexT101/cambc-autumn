@@ -879,6 +879,7 @@ void World::note_capture(int group, int respawn_round) {
     c.told_respawn = respawn_round;
     if (c.state_round == round) return; // in view: our own reading stands
     if (static_cast<std::size_t>(group) < camps_pending_.size()) camps_pending_[group] = 1;
+    c.version += c.state != CampState::respawning;
     c.state = CampState::respawning;
     c.respawn_round = respawn_round;
     c.awake = Awake::asleep;
@@ -1093,6 +1094,7 @@ void restore(CampBelief& c, const CampGroup& G, int since) {
     c.health_round.assign(G.members.size(), since);
     for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
     c.awake = Awake::asleep;
+    ++c.version;
 }
 } // namespace
 
@@ -1134,12 +1136,13 @@ void World::update_camps() {
             if (!group_visible[g]) {
                 if (c.state == CampState::cleared && c.holder && round >= c.payout_round()) {
                     c.state = CampState::respawning;
+                    ++c.version;
                     c.respawn_round = c.payout_round() + G.respawn;
                     c.holder.reset();
                 }
                 if (c.state == CampState::respawning && round >= c.respawn_round) {
                     c.state = CampState::alive;
-                    restore(c, G, c.respawn_round - 1);
+                    restore(c, G, c.respawn_round - 1); // a new version
                 }
                 if (c.awake == Awake::awake && round - c.state_round > 2) c.awake = Awake::unknown;
                 return;
@@ -1156,6 +1159,7 @@ void World::update_camps() {
                 c.state = CampState::respawning;
                 c.respawn_round = round + timer;
             }
+            c.version += c.state != previous;
             c.state_round = round;
             // Not alive when last seen: it returned at full health after that, and after its timer.
             if (c.state == CampState::alive && previous != CampState::alive)
@@ -1179,6 +1183,7 @@ void World::update_camps() {
                         c.awake = Awake::unknown;
                     }
                 }
+                c.version += hp != c.health[i];
                 c.health[i] = hp;
                 c.health_round[i] = round;
                 if (hp > 0 && !seen_awake && c.state == CampState::alive) seen_awake = engine::camp_awake(m.handle);
