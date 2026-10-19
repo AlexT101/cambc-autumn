@@ -727,6 +727,7 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
     const int lo = std::max(0, -x0), hi = std::min(win_n, t.width - x0);
     const std::uint32_t columns = lo >= hi ? 0u : ((1u << hi) - 1) & ~((1u << lo) - 1);
     const std::uint64_t width_mask = lo >= hi ? 0 : (std::uint64_t{1} << (hi - lo)) - 1;
+    Window pass, land, camps;
     // Unrolled, so that each row's place in the window is a constant shift.
     [&]<int... Row>(std::integer_sequence<int, Row...>) {
         (
@@ -756,12 +757,13 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
                         if (world.map().group_at(p) >= 0) camp |= 1u << k;
                     }
                 }
-                st.pass |= Window{through, 0}.shl(Row * win_n);
-                st.land |= Window{open, 0}.shl(Row * win_n);
-                st.camps |= Window{camp, 0}.shl(Row * win_n);
+                pass |= Window{through, 0}.shl(Row * win_n);
+                land |= Window{open, 0}.shl(Row * win_n);
+                camps |= Window{camp, 0}.shl(Row * win_n);
             }(),
             ...);
     }(std::make_integer_sequence<int, win_n>{});
+    st = {pass, land, camps};
     return st;
 }
 
