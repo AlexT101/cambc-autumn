@@ -685,6 +685,7 @@ void World::init_beliefs() {
     }
     altars.assign(s.altars.size(), AltarBelief{});
     stirring_.assign((s.groups.size() + 63) / 64, 0);
+    cleared_.assign((s.groups.size() + 63) / 64, 0);
 }
 
 void World::update() {
@@ -904,6 +905,8 @@ void World::note_stirring(int g) {
     const std::uint64_t bit = std::uint64_t{1} << (g % 64);
     auto& word = stirring_[g / 64];
     word = c.state == CampState::alive && c.awake != Awake::asleep ? word | bit : word & ~bit;
+    auto& cleared = cleared_[g / 64];
+    cleared = c.state == CampState::cleared ? cleared | bit : cleared & ~bit;
 }
 
 void World::read_vision() {
