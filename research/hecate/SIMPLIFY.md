@@ -38,7 +38,7 @@ The open items from the 2026-10-18 review of `bots/hecate/src`, in the order to 
    - 2.9: `emblem_gain_rounds` keeps its +0.15 Jungle term on shared-gem maps, where we never buy Jungle, and prices the Durability step as main-stat growth.
    - 2.10: `siege_candidate()` lets an unready Monolith hide a ready 150+ gem group on normal maps. Skip alive Monoliths unless `map.monolith_only`.
    - 2.11: kite and `contest_capture` disagree on contest timing. Unify them on `enemy_hold_left`, with `contest_capture`'s rule.
-5. **The most frequent shortcuts** (`--fuel 0`, 16 games):
+5. **The most frequent shortcuts** (`--fuel 0`, 16 games). Status 2026-10-19 (EXPERIMENTS.md, branch gate-full-attempt): turn-order-sim is gone (threats_at); removing the rest raised out-of-fuel turns 8 -> 100-200, as the guarded work is expensive at the cold start on 100x100 maps (19-54 rounds of centre warm-up), in Monolith fights and in bush-cluster growth. Each needs cheaper work first, not a removal:
    - 3.3: `comms-stale-vision` fired 995 times. `observe()` is skipped when short of fuel or when a teammate posted. Call it from main whenever we moved and are alive.
    - `farm-no-evaluation` fired 255 times. Use cheap steps (`ally_steps`/`dist`) for groups whose field is unaffordable, then delete the mini-farm. Check big maps.
    - `turn-order-sim` and `turn-order` fired 293 and 60 times. Merge into one gate.
@@ -71,7 +71,7 @@ The open items from the 2026-10-18 review of `bots/hecate/src`, in the order to 
    - Don't extract `recall_saving`: `remaining_channel_time()` is unsigned.
 
 ## Open question
-The fuel-only savings cost about 2.5 points over 1,492 games (47.4–47.5% against the same bot without them), although play is identical when fuel is plentiful. So something that runs only when fuel is left over is net harmful. The v17 port was the prime suspect and is gone. Re-test once the gates in items 1 and 5 are settled.
+The fuel-only savings cost about 2.5 points over 1,492 games (47.4–47.5% against the same bot without them), although play is identical when fuel is plentiful. Answered 2026-10-19: the reverse control (burning 2k fuel a turn) also scores 48.4% over 1,102 games, so a costlier bot is not stronger either. Fuel changes reroute trajectories on fixed maps; there is no evidence that spare fuel hurts (EXPERIMENTS.md).
 
 ## Don't remove
 These have evidence behind them:
