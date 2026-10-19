@@ -17,6 +17,7 @@
 namespace aph {
 
 class World;
+class Safety;
 struct ChampionBelief;
 
 namespace safety_params {
@@ -91,18 +92,38 @@ public:
         }
     };
 private:
+    // Tiles it can act from: here, after a walk, after a dash; and each after a further walk.
+    enum Tiles : std::uint8_t { here, walked1, dashed, walked2, dashed_walked, tile_sets };
     struct Way {
-        Window from; // where it acts from
         float damage;
-        std::int8_t range, far; // far: its farthest tile's distance from the enemy
+        Tiles from;
+        std::int8_t range;
+        std::uint8_t key; // its tiles, range, sight and turn: ways with equal keys merge
         bool sight, stuns, walked;
     };
-    // Returns the way's index: one already there with the same tiles, range and sight takes the
-    // larger damage.
-    int add(Window from, int range, bool sight, float damage, bool stuns, bool walked);
+    // Returns the way's index: one already there with the same key takes the larger damage.
+    int add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked);
+    void set_reach();
+    // The ways from the tile sets, unless the recipe is unchanged.
+    void build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool twice);
+    std::array<Window, tile_sets> tiles_;
+    std::array<std::int8_t, tile_sets> extent_; // farthest tile of each from the enemy
     const World* world_ = nullptr;
-    const bitboard* wards_ = nullptr; // what visible enemy wards see this round, if any
     vec2 origin_{-1, -1};
+    // What tiles_ were worked out for: kept while it stays put, our champions around it stay put
+    // and no camp lies in its window.
+    vec2 sets_origin_{-1, -1};
+    Window sets_occupied_;
+    std::uint8_t sets_kind_ = 0;
+    bool sets_reusable_ = false;
+    // The ways depend only on what the recipe holds: kept between builds while it is unchanged.
+    struct Recipe {
+        cambc::champion_type type{};
+        std::uint32_t strength = 0, focus = 0;
+        std::uint8_t slots = 0;
+        bool twice = false, valid = false;
+        bool operator==(const Recipe&) const = default;
+    } recipe_;
     std::array<Way, 14> ways_;
     int count_ = 0;
     int basic_ = -1; // the plain basic attack's way
@@ -120,6 +141,10 @@ private:
     std::uint32_t stamp_ = 0;
 };
 
+// With fuel above `fuel_floor` at the turn's end: Reach's static terrain around the tiles visible
+// enemies may step to, and who sees each tile we may step to, so fights find them ready.
+void warm_reach(const World& world, std::uint64_t fuel_floor);
+
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
 Strike strike(const ChampionBelief& c, int turn_round);
 // The round of the enemy's next turn: later this round if it acts after us, else next round.
@@ -136,12 +161,14 @@ struct Threat {
     vec2 pos{-1, -1}; // visible only
     int tiles = 1;    // possible tiles
     Strike strike;
-    // Tiles it can damage or stun (visible: a superset); unseen, only those near or above
-    // `credible_weight`.
+    // Unseen: tiles it can damage or stun, only those near or above `credible_weight`. Visible
+    // threats' are drawn by enemy_area().
     bitboard area;
     // Unseen: distance from `possible` around walls, capped at the reach; reused by the next build.
     const cambc::distance_field* steps = nullptr;
-    const Reach* reach = nullptr; // visible
+    // Visible: whose blow() places it on the map, its Reach built on first need.
+    Safety* owner = nullptr;
+    const ChampionBelief* belief = nullptr;
 
     Blow at(vec2 p) const;
 };
@@ -208,6 +235,9 @@ public:
     const Strike& strike_of(const ChampionBelief& e) { return foe(e).strike; }
     // What a visible enemy could do to p before our next turn (threat_strike placed on the map).
     Blow blow(const ChampionBelief& e, vec2 p);
+    // A visible enemy's turns of walking before it can strike p: 0 if it can now, else at least 1
+    // and at least its Chebyshev distance past its reach.
+    int approach(const ChampionBelief& e, vec2 p);
     // Enough for most fights, by the champions in sight and this turn's costliest simulation;
     // plus build_cost_estimate().
     std::uint64_t fight_cost_estimate();
@@ -237,9 +267,6 @@ public:
 
 private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
-    // Its turns of walking before it can strike p: 0 if it can now, else at least 1 and at least
-    // its Chebyshev distance past its reach.
-    int approach(const ChampionBelief& e, vec2 p);
     const Reach& reach_of(const ChampionBelief& e);
     // Chance the threat could be within reach of p; uniform over its possible tiles.
     float chance_in_reach(const Threat& t, vec2 p);

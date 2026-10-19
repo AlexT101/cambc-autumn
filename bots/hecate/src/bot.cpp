@@ -1635,21 +1635,26 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     int radius = 1;
     for (int s = 0; s < 2; ++s)
         if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round)) radius = 2;
-    // Who can hit a tile, and how hard: a tile no worse than ours is as safe as ours.
-    const auto exposure = [&](vec2 p, float& damage) {
+    // Who can hit a tile, and how hard: a tile no worse than ours is as safe as ours. `bound`
+    // by distance alone, never below the exact exposure.
+    const auto exposure = [&](vec2 p, float& damage, bool bound) {
         unsigned mask = 0;
         damage = 0;
         for (int k = 0; k < n; ++k)
-            if (const auto b = safety.blow(*foes[k], p); b.hits) mask |= 1u << k, damage += b.damage;
+            if (const auto b = bound ? safety.strike_of(*foes[k]).blow(dist(p, foes[k]->pos)) : safety.blow(*foes[k], p); b.hits)
+                mask |= 1u << k, damage += b.damage;
         return mask;
     };
-    // Placing each tile costs a few hundred: give up as the fights would.
-    if (!fuel_ok(safety.fight_cost_estimate() + end_reserve)) {
+    // Placing the tiles costs up to tens of thousands: give up as the fights would, counting the
+    // costliest placing lately.
+    static std::uint64_t costliest = 0;
+    if (!fuel_ok(safety.fight_cost_estimate() + costliest + end_reserve)) {
         note_shortcut("step-guard");
         return nullptr;
     }
+    const auto placing = fuel();
     float here_damage = 0;
-    const unsigned here_mask = exposure(here, here_damage);
+    const unsigned here_mask = exposure(here, here_damage, false);
     const bool linked = partner(world) != nullptr;
     const auto& open = world.map().open_for_us;
     // The tiles more exposed than ours, and who would fight on each.
@@ -1661,14 +1666,15 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             const vec2 q{here.x + dx, here.y + dy};
             if ((dx == 0 && dy == 0) || !in_bounds(q) || !open.is_set(q)) continue;
             float damage = 0;
-            const unsigned mask = exposure(q, damage);
-            if (mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage)) continue;
+            const auto no_worse = [&](unsigned mask) { return mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage); };
+            if (no_worse(exposure(q, damage, true)) || no_worse(exposure(q, damage, false))) continue;
             const auto key = safety.fight_key(q);
             if (key == Safety::no_fight) continue;
             exposed[m++] = {q, key};
             enemies |= key & 0xFFFF0000u;
             allies &= key & 0xFFFFu;
         }
+    if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
     if (m == 0) return nullptr;
     // A fight only gets worse with more enemies or fewer allies: one we win settles those it
     // covers, one we lose those that cover it.
@@ -1875,7 +1881,9 @@ bool recall_outruns(const World& world, Safety& safety) {
     const vec2 here = my_position();
     const int turns = static_cast<int>(my_channel_time());
     for (const auto& e : world.enemies)
-        if (e.alive && e.age(world.round) <= 1 && dist(here, e.pos) - turns <= safety.strike_of(e).reach) return false;
+        if (e.alive && e.age(world.round) <= 1
+            && (e.visible ? safety.approach(e, here) : dist(here, e.pos) - safety.strike_of(e).reach) <= turns)
+            return false;
     return true;
 }
 

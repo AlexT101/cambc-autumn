@@ -539,32 +539,97 @@ Window sight(const World& world, vec2 p, bool far) {
     return m;
 }
 
+// Static terrain around each tile, kept for the game: enemies keep to a few tiles. pass: a dash
+// path may cross it; land: open to them; camps: camp tiles, whose monsters block while alive.
+struct StaticWindow {
+    Window pass, land, camps;
+};
+
+const StaticWindow& static_window(const World& world, vec2 origin) {
+    static std::array<StaticWindow, 100 * 100> statics;
+    static std::array<std::uint8_t, 100 * 100> scanned;
+    const auto& t = terrain(world.map());
+    const auto oi = static_cast<std::size_t>(origin.x + origin.y * t.width);
+    auto& st = statics[oi];
+    if (scanned[oi]) return st;
+    scanned[oi] = 1;
+    const int x0 = origin.x - win_r;
+    const int lo = std::max(0, -x0), hi = std::min(win_n, t.width - x0);
+    const std::uint32_t columns = lo >= hi ? 0u : ((1u << hi) - 1) & ~((1u << lo) - 1);
+    // Unrolled, so that each row's place in the window is a constant shift.
+    [&]<int... Row>(std::integer_sequence<int, Row...>) {
+        (
+            [&] {
+                const int y = origin.y - win_r + Row;
+                std::uint32_t open = 0, through = 0, camp = 0;
+                if (t.packed) {
+                    const std::uint32_t valid = y < 0 || y >= t.height ? 0u : columns;
+                    through = valid & ~t.row(t.walls, x0, y);
+                    open = valid & ~t.row(t.blocked, x0, y);
+                    camp = t.row(t.camps, x0, y) & valid;
+                } else {
+                    for (int k = 0; k < win_n; ++k) {
+                        const vec2 p{x0 + k, y};
+                        if (!t.inside(p) || world.map().walls.is_set(p)) continue;
+                        through |= 1u << k;
+                        if (!world.map().blocked_for_them.is_set(p)) open |= 1u << k;
+                        if (world.map().group_at(p) >= 0) camp |= 1u << k;
+                    }
+                }
+                st.pass |= Window{through, 0}.shl(Row * win_n);
+                st.land |= Window{open, 0}.shl(Row * win_n);
+                st.camps |= Window{camp, 0}.shl(Row * win_n);
+            }(),
+            ...);
+    }(std::make_integer_sequence<int, win_n>{});
+    return st;
+}
+
 } // namespace
 
-int Reach::add(Window from, int range, bool sight, float damage, bool stuns, bool walked) {
+void warm_reach(const World& world, std::uint64_t fuel_floor) {
+    if (!world.me().alive) return;
+    const vec2 here = my_position();
+    const auto& t = terrain(world.map());
+    bool near = false;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible || dist(here, e.pos) > vision_radius) continue;
+        near = true;
+        for (const vec2 d : directions) {
+            const vec2 q = e.pos + d;
+            if (!t.inside(q)) continue;
+            if (!fuel_ok(fuel_floor + 8000)) return;
+            (void)static_window(world, q);
+        }
+    }
+    if (!near) return;
+    for (int dy = -2; dy <= 2; ++dy)
+        for (int dx = -2; dx <= 2; ++dx) {
+            const vec2 q{here.x + dx, here.y + dy};
+            if (!t.inside(q)) continue;
+            if (!fuel_ok(fuel_floor + 15000)) return;
+            (void)sight(world, q, true);
+        }
+}
+
+int Reach::add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked) {
+    const auto key = static_cast<std::uint8_t>(((from * 8 + range) * 2 + sight) * 2 + walked);
     for (int i = 0; i < count_; ++i) {
         auto& w = ways_[static_cast<std::size_t>(i)];
-        if (w.range == range && w.sight == sight && w.walked == walked && w.from.lo == from.lo && w.from.hi == from.hi) {
+        if (w.key == key) {
             w.damage = std::max(w.damage, damage);
             w.stuns = w.stuns || stuns;
             return i;
         }
     }
     if (count_ == static_cast<int>(ways_.size())) return -1;
-    int extent = win_r;
-    while (extent > 0 && !(from & ~tables.square[static_cast<std::size_t>(extent - 1)])) --extent;
-    const int far = extent + range;
-    ways_[static_cast<std::size_t>(count_)] = {from, damage, static_cast<std::int8_t>(range), static_cast<std::int8_t>(far), sight, stuns, walked};
-    reach_ = std::max(reach_, far);
+    ways_[static_cast<std::size_t>(count_)] = {damage, from, static_cast<std::int8_t>(range), key, sight, stuns, walked};
     return count_++;
 }
 
 void Reach::build(const World& world, const ChampionBelief& e, int turn_round, bool twice) {
     world_ = &world;
-    wards_ = ward_sight(world);
     origin_ = e.pos;
-    count_ = 0;
-    basic_ = -1;
     static std::uint32_t builds = 0;
     stamp_ = ++builds;
     twice_ = twice;
@@ -575,56 +640,79 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     const std::array<bool, 2> ready{uncertain || e.ability_ready(0, turn_round), uncertain || e.ability_ready(1, turn_round)};
     const int dash_slot = f.slot_of(AbilityKind::dash);
     const bool dash = dash_slot >= 0 && ready[static_cast<std::size_t>(dash_slot)];
-    // The farthest its moves reach: terrain beyond it is never read.
-    const int radius = std::min(win_r, (twice ? 1 : 0) + (dash ? (f.ranged ? 2 : 3) : 1));
-    // land: a free tile open to it; pass: a dash path may cross it.
-    const auto& t = terrain(world.map());
-    Window land, pass, camps;
-    const int x0 = origin_.x - win_r;
-    for (int wy = win_r - radius; wy <= win_r + radius; ++wy) {
-        const int y = origin_.y - win_r + wy;
-        std::uint32_t open = 0, through = 0, camp = 0;
-        if (t.packed) {
-            const int lo = std::max(0, -x0), hi = std::min(win_n, t.width - x0);
-            const std::uint32_t valid = y < 0 || y >= t.height || lo >= hi ? 0u : ((1u << hi) - 1) & ~((1u << lo) - 1);
-            through = valid & ~t.row(t.walls, x0, y);
-            open = valid & ~t.row(t.blocked, x0, y);
-            camp = t.row(t.camps, x0, y) & valid;
-        } else {
-            for (int k = 0; k < win_n; ++k) {
-                const vec2 p{x0 + k, y};
-                if (!t.inside(p) || world.map().walls.is_set(p)) continue;
-                through |= 1u << k;
-                if (!world.map().blocked_for_them.is_set(p)) open |= 1u << k;
-                if (world.map().group_at(p) >= 0) camp |= 1u << k;
-            }
-        }
-        pass |= Window{through, 0}.shl(wy * win_n);
-        land |= Window{open, 0}.shl(wy * win_n);
-        if (camp) camps |= Window{camp, 0}.shl(wy * win_n);
+    // Our champions around it, which block its walks and landings; they stay put through our turn.
+    static int allies_round = -1;
+    static std::array<vec2, 8> allies;
+    static int ally_count = 0;
+    if (allies_round != world.round) {
+        allies_round = world.round;
+        ally_count = 0;
+        for (const auto& a : world.allies)
+            if (ally_count < static_cast<int>(allies.size()) && a.alive && a.visible && !a.is_self) allies[ally_count++] = a.pos;
     }
+    Window occupied;
+    for (int i = 0; i < ally_count; ++i)
+        if (dist(allies[i], origin_) <= win_r) occupied |= win_bit(allies[i].x - origin_.x + win_r, allies[i].y - origin_.y + win_r);
+    const auto kind = static_cast<std::uint8_t>(twice | dash << 1);
+    if (sets_reusable_ && sets_origin_ == origin_ && sets_kind_ == kind && sets_occupied_.lo == occupied.lo
+        && sets_occupied_.hi == occupied.hi) {
+        build_ways(e, ready, twice);
+        return;
+    }
+    sets_origin_ = origin_;
+    sets_kind_ = kind;
+    sets_occupied_ = occupied;
+    const auto& st = static_window(world, origin_);
+    Window pass = st.pass, land = st.land & ~occupied;
+    const Window& camps = st.camps;
+    sets_reusable_ = !camps;
     for (int word = 0; word < 2; ++word)
         for (std::uint64_t bits = word ? camps.hi : camps.lo; bits; bits &= bits - 1) {
             const int i = 64 * word + std::countr_zero(bits);
             if (live_camp(world, {origin_.x - win_r + i % win_n, origin_.y - win_r + i / win_n}))
                 pass &= ~tables.bits[static_cast<std::size_t>(i)], land &= ~tables.bits[static_cast<std::size_t>(i)];
         }
-    for (const auto& a : world.allies)
-        if (a.alive && a.visible && !a.is_self && dist(a.pos, origin_) <= win_r)
-            land &= ~win_bit(a.pos.x - origin_.x + win_r, a.pos.y - origin_.y + win_r);
-    const Window at = win_bit(win_r, win_r);
     const auto walk = [&](Window s) { return s | (dilate(s) & land); };
     const auto dash_from = [&](Window s) {
         const Window first = dilate(s) & pass;
         return s | ((first | (dilate(first) & pass)) & land);
     };
-    const Window walked1 = walk(at);
-    const Window basic_from = f.ranged ? at : walked1;
+    const auto extent = [](const Window& w) {
+        int k = win_r;
+        while (k > 0 && !(w & ~tables.square[static_cast<std::size_t>(k - 1)])) --k;
+        return static_cast<std::int8_t>(k);
+    };
+    tiles_[here] = win_bit(win_r, win_r);
+    extent_[here] = 0;
+    tiles_[walked1] = walk(tiles_[here]);
+    extent_[walked1] = extent(tiles_[walked1]);
+    if (twice) tiles_[walked2] = walk(tiles_[walked1]), extent_[walked2] = extent(tiles_[walked2]);
+    if (dash) {
+        tiles_[dashed] = f.ranged ? dash_from(tiles_[here]) : dash_from(tiles_[walked1]) | walk(dash_from(tiles_[here]));
+        extent_[dashed] = extent(tiles_[dashed]);
+        if (twice) tiles_[dashed_walked] = walk(tiles_[dashed]), extent_[dashed_walked] = extent(tiles_[dashed_walked]);
+    }
+    build_ways(e, ready, twice);
+}
+
+void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool twice) {
+    const auto& f = e.facts();
+    const Recipe recipe{e.type, std::bit_cast<std::uint32_t>(e.strength), std::bit_cast<std::uint32_t>(e.focus),
+                        static_cast<std::uint8_t>(ready[0] | ready[1] << 1), twice, true};
+    if (recipe == recipe_) {
+        set_reach();
+        return;
+    }
+    recipe_ = recipe;
+    count_ = 0;
+    basic_ = -1;
+    const Tiles basic_from = f.ranged ? here : walked1;
     const int range = f.attack_range();
     const float s = e.strength;
     for (int turn = 0; turn < (twice ? 2 : 1); ++turn) {
         const bool walked = turn == 1;
-        const auto from = [&](Window x) { return walked ? walk(x) : x; };
+        // A walk first, on the first of two turns.
+        const auto from = [&](Tiles x) { return !walked ? x : x == here ? walked1 : x == walked1 ? walked2 : dashed_walked; };
         const int basic = add(from(basic_from), range, true, s, false, walked);
         if (!walked) basic_ = basic;
         for (std::size_t slot = 0; slot < 2; ++slot) {
@@ -636,20 +724,34 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
                 add(from(basic_from), range, true, 2 * s, a.stuns, walked);
                 if (f.ranged) add(from(walked1), range, true, s, a.stuns, walked); // walk, reset, attack
                 break;
-            case AbilityKind::dash:
-                add(from(f.ranged ? dash_from(at) : dash_from(walked1) | walk(dash_from(at))), range, true, s, false, walked);
-                break;
+            case AbilityKind::dash: add(from(dashed), range, true, s, false, walked); break;
             case AbilityKind::damage:
                 // Excludes walking but not the basic attack.
-                add(from(at), a.reach(), a.target == Targeting::unit, spell, a.stuns, walked);
-                add(from(at), range, true, spell + s, a.stuns, walked);
+                add(from(here), a.reach(), a.target == Targeting::unit, spell, a.stuns, walked);
+                add(from(here), range, true, spell + s, a.stuns, walked);
                 break;
             case AbilityKind::stun:
-                add(from(a.excludes_walking ? at : walked1), a.reach(), a.target == Targeting::unit, 0, true, walked);
+                add(from(a.excludes_walking ? here : walked1), a.reach(), a.target == Targeting::unit, 0, true, walked);
                 break;
             default: break;
             }
         }
+    }
+    // Largest damage first: a query stops at the first way that reaches it.
+    for (int i = 1; i < count_; ++i)
+        for (int j = i; j > 0 && ways_[static_cast<std::size_t>(j)].damage > ways_[static_cast<std::size_t>(j - 1)].damage; --j) {
+            std::swap(ways_[static_cast<std::size_t>(j)], ways_[static_cast<std::size_t>(j - 1)]);
+            if (basic_ == j) basic_ = j - 1;
+            else if (basic_ == j - 1) basic_ = j;
+        }
+    set_reach();
+}
+
+void Reach::set_reach() {
+    reach_ = -1;
+    for (int i = 0; i < count_; ++i) {
+        const auto& w = ways_[static_cast<std::size_t>(i)];
+        reach_ = std::max(reach_, extent_[w.from] + w.range);
     }
 }
 
@@ -661,19 +763,22 @@ Blow Reach::at(vec2 p) const {
     if (std::max(std::abs(dx), std::abs(dy)) <= reach_ && terrain(world_->map()).inside(p)) {
         // Who sees p, in this window; worked out on first need. Whoever owns a ward that sees p
         // sees it from anywhere.
-        const bool warded = wards_ && wards_->is_set(p);
         Window near, far;
-        bool near_known = warded, far_known = warded;
-        if (warded) near = far = win_full;
+        bool near_known = false, far_known = false, warded = false;
         float single = -1, walked = -1;
         bool basic = false;
+        const int d = std::max(std::abs(dx), std::abs(dy));
         for (int i = 0; i < count_; ++i) {
             const auto& w = ways_[static_cast<std::size_t>(i)];
-            if (std::max(std::abs(dx), std::abs(dy)) > w.far) continue;
+            if (d > extent_[w.from] + w.range) continue;
             auto& best = w.walked ? walked : single;
             if (out.hits && w.damage <= best && (!w.stuns || out.stuns) && !(twice_ && i == basic_)) continue;
-            Window from = w.from & box(dx + win_r, dy + win_r, w.range);
+            Window from = tiles_[w.from] & box(dx + win_r, dy + win_r, w.range);
             if (!from) continue;
+            if (w.sight && !near_known && !far_known) {
+                const auto* wards = ward_sight(*world_);
+                if (wards && wards->is_set(p)) warded = near_known = far_known = true, near = far = win_full;
+            }
             if (w.sight) {
                 if (w.range <= 1) {
                     if (!near_known) near = shift(sight(*world_, p, false), dx, dy), near_known = true;
@@ -696,7 +801,7 @@ Blow Reach::at(vec2 p) const {
 }
 
 Blow Threat::at(vec2 p) const {
-    if (reach) return reach->at(p);
+    if (owner) return owner->blow(*belief, p);
     if (visible) return strike.blow(dist(p, pos));
     return strike.blow(steps ? steps->get(p) : unreachable);
 }
@@ -879,11 +984,8 @@ void Safety::build() {
             t.pos = e.pos;
             t.tiles = 1;
             t.steps = nullptr;
-            t.reach = nullptr;
-            t.area.clear();
-            // A superset: a walls field per enemy each turn would cost ~3k.
-            t.reach = &reach_of(e);
-            t.area.draw_chebyshev(e.pos, static_cast<float>(t.reach->reach()));
+            t.owner = this;
+            t.belief = &e;
             continue;
         }
         const int tiles = x.tiles;
@@ -896,7 +998,7 @@ void Safety::build() {
         t.visible = false;
         t.pos = {-1, -1};
         t.tiles = tiles;
-        t.reach = nullptr;
+        t.owner = nullptr;
         const int radius = unseen_radius(reach, tiles);
         auto& field = field_of(e.index);
         t.area.clear();
@@ -1051,8 +1153,10 @@ const bitboard& Safety::camp_area() {
 const bitboard& Safety::enemy_area() {
     if (!enemy_area_) {
         bitboard any;
+        // A visible threat's: a superset, as a walls field per enemy each turn would cost ~3k.
         for (const auto& t : threats())
-            any |= t.area;
+            if (!t.visible) any |= t.area;
+            else if (const int r = reach_of(*t.belief).reach(); r >= 0) any.draw_chebyshev(t.pos, static_cast<float>(r));
         enemy_area_ = std::move(any);
     }
     return *enemy_area_;
