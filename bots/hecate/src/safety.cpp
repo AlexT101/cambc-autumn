@@ -601,6 +601,9 @@ const bitboard* ward_sight(const World& world) {
     return any ? &seen : nullptr;
 }
 
+std::array<Window, 100 * 100> sight_masks;
+std::array<std::uint8_t, 100 * 100> sight_known;
+
 // Who sees p, laid out around p: within 1 (`far` false) or within win_r. Far masks depend only on
 // terrain, so they are kept for the game.
 Window sight(const World& world, vec2 p, bool far) {
@@ -618,8 +621,8 @@ Window sight(const World& world, vec2 p, bool far) {
         }
         return m;
     }
-    static std::array<Window, 100 * 100> masks;
-    static std::array<std::uint8_t, 100 * 100> known;
+    auto& masks = sight_masks;
+    auto& known = sight_known;
     const auto i = static_cast<std::size_t>(p.x + p.y * t.width);
     if (i < known.size() && known[i]) return masks[i];
     const auto& map = world.map();
@@ -634,7 +637,8 @@ Window sight(const World& world, vec2 p, bool far) {
         viewers |= outside;
     }
     Window m;
-    for (const vec2 q : Tiles<win_n * win_n>{within(viewers, p, win_r)})
+    // The shadowcast square keeps them within win_r.
+    for (const vec2 q : Tiles<win_n * win_n>{viewers})
         m |= tables.bits[static_cast<std::size_t>((q.y - p.y + win_r) * win_n + q.x - p.x + win_r)];
     if (i < known.size()) masks[i] = m, known[i] = 1;
     return m;
@@ -646,9 +650,11 @@ struct StaticWindow {
     Window pass, land, camps;
 };
 
+std::array<StaticWindow, 100 * 100> statics;
+std::array<std::uint8_t, 100 * 100> statics_scanned;
+
 const StaticWindow& static_window(const World& world, vec2 origin) {
-    static std::array<StaticWindow, 100 * 100> statics;
-    static std::array<std::uint8_t, 100 * 100> scanned;
+    auto& scanned = statics_scanned;
     const auto& t = terrain(world.map());
     const auto oi = static_cast<std::size_t>(origin.x + origin.y * t.width);
     auto& st = statics[oi];
@@ -698,7 +704,7 @@ void warm_reach(const World& world, std::uint64_t fuel_floor) {
         near = true;
         for (const vec2 d : directions) {
             const vec2 q = e.pos + d;
-            if (!t.inside(q)) continue;
+            if (!t.inside(q) || statics_scanned[static_cast<std::size_t>(q.x + q.y * t.width)]) continue;
             if (!fuel_ok(fuel_floor + 8000)) return;
             (void)static_window(world, q);
         }
@@ -707,7 +713,7 @@ void warm_reach(const World& world, std::uint64_t fuel_floor) {
     for (int dy = -2; dy <= 2; ++dy)
         for (int dx = -2; dx <= 2; ++dx) {
             const vec2 q{here.x + dx, here.y + dy};
-            if (!t.inside(q)) continue;
+            if (!t.inside(q) || sight_known[static_cast<std::size_t>(q.x + q.y * t.width)]) continue;
             if (!fuel_ok(fuel_floor + 15000)) return;
             (void)sight(world, q, true);
         }
