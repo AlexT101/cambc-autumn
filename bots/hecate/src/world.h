@@ -412,10 +412,10 @@ private:
     bitboard unseen_; // ~visible
     bitboard landing_{cambc::uninitialized}; // open_for_them & unseen_, once landing_ready_
     bool landing_ready_ = false;
-    std::vector<std::uint8_t> group_visible_; // update_camps() scratch
-    // Per group: unseen, update_camps() could still change it (a hold paying out, a return, an
+    std::vector<std::uint64_t> group_visible_; // update_camps() scratch, bit g
+    // Bit g: unseen, update_camps() could still change it (a hold paying out, a return, an
     // awake group's wakefulness going unknown).
-    std::vector<std::uint8_t> camps_pending_;
+    std::vector<std::uint64_t> camps_pending_;
     struct Tracked {
         std::uint32_t before, after;
         int leader, turns, tsf;
