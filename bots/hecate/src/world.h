@@ -130,6 +130,7 @@ struct StaticMap {
     // Find every cluster viewers(p, radius) needs while more than `fuel_floor` fuel remains; true
     // once all are. A large cluster can take ~100k, so the work carries over between calls.
     bool find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const;
+    bool find_all_bush_clusters(std::uint64_t fuel_floor) const; // the same for the whole map
     // Tiles from which p is in sight within Chebyshev `radius`: the engine's shadowcast, with
     // walls and every bush cluster but the viewer's own opaque.
     bitboard viewers(vec2 p, int radius) const;
