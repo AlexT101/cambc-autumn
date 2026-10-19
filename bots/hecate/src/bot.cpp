@@ -1353,15 +1353,14 @@ bool awake_over(const World& world, int g, vec2 p) {
 bool finishing_camp(const World& world) {
     if (winning_bag(world)) return false;
     const vec2 here = my_position();
-    const auto& groups = world.map().groups;
     bool any = false;
     float damage = 0;
-    for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
-        if (!awake_over(world, g, here)) continue;
+    world.each_stirring([&](int g) {
+        if (!awake_over(world, g, here)) return;
         float rounds = 0;
         damage += camp_hit_factor() * min_camp_damage(world, g, floored_output(world.me()), &rounds, world.me().retaliation());
         any = true;
-    }
+    });
     return any && damage < params::finish_camp_health_fraction * my_health();
 }
 
@@ -1784,9 +1783,9 @@ bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memo
     if (my_health() >= params::heal_trip_fraction * my_max_health() && back != unreachable
         && emblem_gain_rounds(world) < static_cast<float>(std::min<int>(back, cambc::constants::recall_time) + back))
         return false;
-    for (int g = 0; g < static_cast<int>(world.camps.size()); ++g)
-        if (awake_over(world, g, here)) return false;
-    return true;
+    bool awake = false;
+    world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });
+    return !awake;
 }
 
 bool alive_now(const ChampionBelief& b) {

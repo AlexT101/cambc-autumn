@@ -673,6 +673,7 @@ void World::init_beliefs() {
         camps[g].health_round.assign(health.size(), 0);
     }
     altars.assign(s.altars.size(), AltarBelief{});
+    stirring_.assign((s.groups.size() + 63) / 64, 0);
 }
 
 void World::update() {
@@ -887,6 +888,14 @@ void World::note_capture(int group, int respawn_round) {
     c.awake = Awake::asleep;
     c.holder.reset();
     c.held_since = -1;
+    note_stirring(group);
+}
+
+void World::note_stirring(int g) {
+    const auto& c = camps[g];
+    const std::uint64_t bit = std::uint64_t{1} << (g % 64);
+    auto& word = stirring_[g / 64];
+    word = c.state == CampState::alive && c.awake != Awake::asleep ? word | bit : word & ~bit;
 }
 
 void World::read_vision() {
@@ -1256,6 +1265,7 @@ void World::update_camps() {
         const auto& c = camps[g];
         camps_pending_[g] = (c.state == CampState::cleared && c.holder) || c.state == CampState::respawning || c.awake == Awake::awake;
         camps_version += c.version != version;
+        note_stirring(static_cast<int>(g));
     }
 }
 

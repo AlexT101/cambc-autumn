@@ -415,9 +415,8 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
         static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
         bool reread = false;
         const auto& groups = world_.map().groups;
-        for (std::size_t g = 0; g < groups.size(); ++g) {
+        world_.each_stirring([&](int g) {
             const auto& c = world_.camps[g];
-            if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
             if (n < 0) {
                 n = 0;
                 for (const auto* side : {&world_.allies, &world_.enemies})
@@ -439,7 +438,7 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
                     reach = std::min(reach, dist(others.at[k].pos, m.pos) - (others.at[k].first ? 1 : 0));
                 if (reach >= 0) members_.push_back({m.pos, m.strength, w, reach});
             }
-        }
+        });
     }
     return members_;
 }

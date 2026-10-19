@@ -341,6 +341,12 @@ public:
 
     std::vector<CampBelief> camps; // parallel to map().groups
     std::uint32_t camps_version = 0; // changes whenever any group's version does
+    // f(g) for each group believed alive and awake or maybe awake, in group order.
+    template <class F> void each_stirring(F&& f) const {
+        for (std::size_t w = 0; w < stirring_.size(); ++w)
+            for (std::uint64_t bits = stirring_[w]; bits; bits &= bits - 1)
+                f(static_cast<int>(64 * w) + __builtin_ctzll(bits));
+    }
     std::vector<AltarBelief> altars; // parallel to map().altars
     Scores score;
     bitboard visible; // this turn's vision (ours and our ward's)
@@ -397,6 +403,8 @@ private:
         Moment fixed, at;
         bool dasher, dash, fast_recall;
     };
+    std::vector<std::uint64_t> stirring_; // bit g: each_stirring() visits group g
+    void note_stirring(int g);
     std::array<Tracked, 8> tracked_{}; // this pass's track() results
     int tracked_count_ = 0;
     std::uint32_t lineages_ = 0;
