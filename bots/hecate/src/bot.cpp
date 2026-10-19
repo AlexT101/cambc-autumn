@@ -30,7 +30,8 @@ constexpr int siege_stage_radius = camp_attack_range + 2; // just out of a camp'
 
 // The turn's branch, for debug_fights: Chase, Attack, Retreat, Farm, Bank, Wait at an altar,
 // Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, Shopping trip,
-// holding (P), Delaying a stun, capture recall (Q), siege or kite of a big group (G), contest (X).
+// holding (P), Delaying a stun, capture recall (Q), siege or kite of a big group (G), contest (X),
+// stopping a game-ending bag (E).
 char decision = '-';
 bool sieged = false; // siege() ran this turn
 
@@ -1416,7 +1417,7 @@ bool contesting(const World& world) {
     if (winning_bag(world)) return false;
     const vec2 here = my_position();
     const int g = world.map().group_at(here);
-    if (g < 0 || world.map().groups[g].gems < params::contest_gems || world.camps[g].state != CampState::cleared) return false;
+    if (g < 0 || world.map().groups[g].gems == 0 || world.camps[g].state != CampState::cleared) return false;
     return world.camps[g].holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
 }
 
@@ -1687,8 +1688,43 @@ bool covered(const bitboard& zone, vec2 p, int r) {
     return outside.is_empty();
 }
 
-// The visible enemy quickest to reach and kill among those whose local fight we win even when
-// they strike first; never one on or next to its spawn, where it heals.
+int carried_locks() { return static_cast<int>(cambc::self().consumables()[cambc::consumable_type::altar_lock].count()); }
+
+// The altar a tributer at p channels at.
+int tribute_altar(const World& world, vec2 p) {
+    const auto& altars = world.map().altars;
+    for (int a = 0; a < static_cast<int>(altars.size()); ++a)
+        if (dist(p, altars[a].pos) <= static_cast<int>(cambc::constants::submit_gems_range)) return a;
+    return -1;
+}
+
+// Our steps from `here` to stop a carrier's bag from scoring, unreachable if it scores first. A
+// tribute under way: a stun or a lock on its altar cancels it (a lock even Marcella's), a kill
+// takes the bag. Walking, it outpaces nobody but stops at an altar, the nearest as the crow
+// flies: we must reach that altar before its tribute there lands.
+int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
+    const auto& self = world.me();
+    const auto& altars = world.map().altars;
+    const int range = self.facts().attack_range();
+    int steps = std::max(0, dist(here, e.pos) - range);
+    if (e.channel == Channel::tribute) {
+        if (e.facts().passive != Passive::stun_immune)
+            if (const int reach = self.ready_stun_reach(e.channel_end_round - 1); reach >= 0)
+                steps = std::min(steps, std::max(0, dist(here, e.pos) - reach));
+        if (const int a = tribute_altar(world, e.pos); a >= 0 && carried_locks() > 0)
+            steps = std::min(steps, std::max(0, dist(here, altars[a].pos) - 2));
+        return steps < e.channel_end_round - world.round ? steps : unreachable;
+    }
+    int a = -1;
+    for (int k = 0; k < static_cast<int>(altars.size()); ++k)
+        if (a < 0 || dist(e.pos, altars[k].pos) < dist(e.pos, altars[a].pos)) a = k;
+    if (a < 0) return unreachable;
+    const int theirs = std::max(0, dist(e.pos, altars[a].pos) - 1) + tribute_turns(pair_gems(world, e));
+    return std::max(0, dist(here, altars[a].pos) - 1 - range) < theirs ? steps : unreachable;
+}
+
+// The visible enemy whose kill pays most a turn to reach and kill it, among those whose local
+// fight we win even when they strike first; never one on or next to its spawn, where it heals.
 const ChampionBelief* prey(const World& world, Safety& safety) {
     world.throw_if_stale();
     const auto& me = cambc::self();
@@ -1699,23 +1735,28 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     const auto* zone = pack_zone(world);
     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
     const bool linked = partner(world) != nullptr;
-    // Quickest first (ties in index order), so fights are simulated only up to the first won.
+    // Best first (ties in index order), so fights are simulated only up to the first won.
     std::array<std::pair<float, const ChampionBelief*>, 8> order;
     int n = 0;
     for (const auto& e : world.enemies) {
         if (n == static_cast<int>(order.size()) || !e.alive || !e.visible || dist(here, e.pos) > vision_radius
             || near_enemy_spawn.is_set(e.pos))
             continue;
-        // Out of reach on its own ground only when hurt: fights at central altars straddle the
-        // line, and a beaten enemy otherwise escapes a step across it.
-        if (dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= 0.5f * e.max_health) continue;
+        // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
+        // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
+        // but a bag has to stop at an altar to score, and a kill takes it.
+        if (dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= 0.5f * e.max_health
+            && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
+            continue;
         // Every tile in reach of it would make us retreat at once.
         if (zone && covered(*zone, e.pos, range)) continue;
         if (!strength) strength = std::max(1.0f, my_strength());
         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + e.health / *strength;
+        // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
+        const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e)));
         int i = n++;
-        for (; i > 0 && order[i - 1].first > turns; --i) order[i] = order[i - 1];
-        order[i] = {turns, &e};
+        for (; i > 0 && order[i - 1].first > cost; --i) order[i] = order[i - 1];
+        order[i] = {cost, &e};
     }
     // Chasing is optional: leave enough for the walk after it and the turn's end.
     const auto reserve = search_cost_estimate(2 * vision_radius) + end_reserve;
@@ -1876,6 +1917,49 @@ bool can_stop_winning_tribute(const World& world) {
     return false;
 }
 
+// A visible enemy whose bag (both, for Cassi and Issac) ends the game once tributed and that we
+// can stop: nothing we gain meanwhile counts unless our own bag wins first. The nearest; null if none.
+const ChampionBelief* game_ender(const World& world) {
+    if (winning_bag(world)) return nullptr;
+    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
+    const vec2 here = cambc::self().position();
+    const ChampionBelief* best = nullptr;
+    int best_steps = unreachable;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible || pair_gems(world, e) < need || world.map().near_enemy_spawn.is_set(e.pos)) continue;
+        if (const int steps = intercept_steps(world, e, here); steps < best_steps) best = &e, best_steps = steps;
+    }
+    return best;
+}
+
+// Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
+// tributing, else attacks, followed until it stops at an altar.
+void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
+    auto& me = cambc::self();
+    decision = 'E';
+    memory.claim = -1;
+    pathing.set_guard(nullptr);
+    const bool tributing = e.channel == Channel::tribute;
+    const auto act = [&] {
+        place_lock(world);
+        cast_at_enemies(world, !tributing && dist(me.position(), e.pos) > world.me().facts().attack_range());
+        if (attack_enemy(world)) reset_and_attack_enemy(world);
+    };
+    act();
+    if (!me.can_move()) return;
+    const int range = world.me().facts().attack_range();
+    static bitboard goals{cambc::uninitialized};
+    goals.clear();
+    int reach = range;
+    if (tributing && e.facts().passive != Passive::stun_immune) reach = std::max(reach, world.me().ready_stun_reach(world.round + 1));
+    goals.draw_chebyshev(e.pos, static_cast<float>(reach));
+    if (const int a = tributing ? tribute_altar(world, e.pos) : -1; a >= 0 && carried_locks() > 0) goals |= world.map().altars[a].lock_tiles();
+    goals &= world.map().open_for_us;
+    if (goals.is_set(me.position())) return;
+    if (dist(me.position(), e.pos) > range + 1) dash_to_attack(world, pathing, &e);
+    if (!goals.is_set(me.position())) pathing.step_towards_funded(goals, end_reserve);
+    act();
+}
 // Rounds before an enemy hold pays: a body of ours on a camp tile by then stops it.
 int enemy_hold_left(const World& world, const CampBelief& c) {
     return c.holder == team::enemy && c.held_since >= 0 ? c.payout_round() - world.round : capture_rounds();
@@ -2250,8 +2334,9 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     return true;
 }
 
-// A cleared group in sight that the enemy holds or stands on, and that we can reach before the
-// hold pays: a body of ours on one of its tiles stops the count.
+// A cleared gem group in sight that the enemy holds or stands on, and that we can reach before the
+// hold pays: a body of ours on one of its tiles stops the count. Its gems, denied within a few
+// steps, beat any farm cycle's rate, however small the group.
 bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
     const auto& map = world.map();
     const vec2 here = my_position();
@@ -2259,7 +2344,7 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
     for (int g = 0; g < static_cast<int>(map.groups.size()); ++g) {
         const auto& G = map.groups[g];
         const auto& c = world.camps[g];
-        if (G.gems < params::contest_gems || c.state != CampState::cleared || dist(here, G.centre) > vision_radius + 2) continue;
+        if (G.gems == 0 || c.state != CampState::cleared || dist(here, G.centre) > vision_radius + 2) continue;
         if (!enemy_on(world, G.tiles()) && c.holder != team::enemy) continue;
         const int steps = steps_to(G, here);
         if (steps > enemy_hold_left(world, c) || steps >= best_steps) continue;
@@ -2283,8 +2368,9 @@ bool siege_heal_trip(const Memory& memory, Safety& safety) {
 bool continue_tribute(const World& world, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     decision = 'T';
-    // The enemy's winning tribute in reach of a ready stun is the game: ours waits.
-    if (!winning_bag(world) && can_stop_winning_tribute(world)) {
+    // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits.
+    const auto* ender = game_ender(world);
+    if (!winning_bag(world) && (can_stop_winning_tribute(world) || (ender && ender->channel == Channel::tribute))) {
         try {
             me.cancel_submit_gems();
         } catch (const std::exception&) {
@@ -2311,6 +2397,14 @@ bool continue_tribute(const World& world, Safety& safety, Memory& memory) {
 bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
     auto& me = cambc::self();
     decision = 'K';
+    if (game_ender(world)) {
+        try {
+            me.cancel_recall();
+        } catch (const std::exception&) {
+            return true;
+        }
+        return false;
+    }
     home = want_home(world, safety, memory.siege);
     if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, safety, memory) && recall_outruns(world, safety))
         return true;
@@ -2444,6 +2538,10 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if ((on_spawn || world.me().facts().passive == Passive::remote_shop) && buy_shards(world)) home.reset();
     if (on_spawn) buy_lock();
     if (!world.me().can_act(world.round)) return;
+    if (const auto* ender = game_ender(world)) {
+        stop_game_ender(world, pathing, memory, *ender);
+        return;
+    }
     heal_ally(world);
     shield_if_needed(world, memory.claim);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
