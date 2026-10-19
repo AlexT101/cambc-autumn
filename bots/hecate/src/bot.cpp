@@ -1720,13 +1720,11 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
 
 // No enemy seen this round or last could walk into reach before the recall lands: standing
 // still to channel while a pack closes in only gets it cancelled.
-bool recall_outruns(const World& world) {
+bool recall_outruns(const World& world, Safety& safety) {
     const vec2 here = cambc::self().position();
     const int turns = static_cast<int>(cambc::self().remaining_channel_time());
     for (const auto& e : world.enemies)
-        if (e.alive && e.age(world.round) <= 1 && dist(here, e.pos) - turns <= Strike::max_reach
-            && dist(here, e.pos) - turns <= strike(e, next_turn_round(world, e)).reach)
-            return false;
+        if (e.alive && e.age(world.round) <= 1 && dist(here, e.pos) - turns <= safety.strike_of(e).reach) return false;
     return true;
 }
 
@@ -2241,7 +2239,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
     auto& me = cambc::self();
     decision = 'K';
     home = want_home(world, safety, memory.siege);
-    if (*home && !safety.threatened(me.position()) && !can_tribute_safely(world, safety, memory) && recall_outruns(world))
+    if (*home && !safety.threatened(me.position()) && !can_tribute_safely(world, safety, memory) && recall_outruns(world, safety))
         return true;
     decision = 'k';
     if (holding_capture(world)) {
