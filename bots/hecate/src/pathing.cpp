@@ -329,7 +329,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     return out;
 }
 
-Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps) {
+Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through) {
     world_.throw_if_stale();
     Route r;
     const vec2 me = my_pos();
@@ -342,6 +342,7 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
     static vec2 origin_at{-1, -1};
     static cambc::distance_field field;
     copy_into(blocked(), walls);
+    if (in_bounds(through)) walls.set(through, false);
     if (avoid && avoid->is_set(me)) {
         // Inside danger every neighbour is in it too: free the connected region we stand in.
         auto danger = *avoid;
@@ -410,7 +411,33 @@ bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max
             if (try_move(r.first_steps[i])) return true;
             bumped |= bumped_.is_set(r.first_steps[i]);
         }
-        if (!bumped) return false;
+        if (!bumped) return r.steps == unreachable && make_way(goals, avoid, max_steps);
+    }
+    return false;
+}
+
+bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_steps) {
+    const vec2 me = my_pos();
+    static bitboard allies{cambc::uninitialized};
+    cambc::vision::champion_tiles_into(team::ally, allies);
+    for (auto d : directions) {
+        const vec2 a = me + d;
+        if (!in_bounds(a) || !allies.is_set(a)) continue;
+        const auto r = route(goals, avoid, max_steps, a);
+        if (r.steps == unreachable || r.steps < 2 || std::find(r.first_steps.begin(), r.first_steps.begin() + r.count, a) == r.first_steps.begin() + r.count) continue;
+        auto& self = cambc::self();
+        const auto ally = cambc::vision::champion_at(a);
+        const auto mine = self.gem_count(), theirs = ally.gem_count();
+        if (mine > theirs || (mine == theirs && self.champion_name() > ally.champion_name())) return false;
+        const auto& walls = blocked();
+        std::optional<vec2> best;
+        int best_dist = 0;
+        for (auto e : directions) {
+            const vec2 p = me + e;
+            if (!in_bounds(p) || walls.is_set(p) || (avoid && avoid->is_set(p)) || (guard_ && guard_->is_set(p))) continue;
+            if (const int d2 = dist(p, a); d2 > best_dist) best = p, best_dist = d2;
+        }
+        return best && try_move(*best);
     }
     return false;
 }
