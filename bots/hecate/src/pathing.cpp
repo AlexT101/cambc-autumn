@@ -115,19 +115,22 @@ std::uint64_t Pathing::approach_cost(int group, int range) {
     return search_cost_estimate(steps >= 0 ? steps : std::min(2 * dist(my_pos(), map().groups[group].centre), map().width + map().height));
 }
 
-const Field* Pathing::approach(int group, int range, std::uint64_t fuel_floor) {
+const Field* Pathing::prepare_approach(int group, int range, std::uint64_t fuel_floor) {
+    // With no distance known, the search may run to width + height layers.
+    const auto cost = approach_steps(group, range) >= 0 ? approach_cost(group, range) : max_approach_cost();
+    if (!approach_ready(group, range) && !fuel_ok(fuel_floor + cost)) return nullptr;
+    return approach(group, range);
+}
+
+const Field* Pathing::approach(int group, int range) {
     if (approach_ready(group, range)) return &approach_slot(group, range)->field;
     // Searched out to our tile only: it costs by our distance rather than the map's, and every
     // tile of a walk down it is labelled, so it lasts the whole way unless we leave it or a camp
     // dies or returns.
     const int steps = approach_steps(group, range);
-    if (!fuel_ok(fuel_floor + approach_cost(group, range))) return nullptr;
     const auto& s = map();
     const vec2 me = my_pos();
-    // Unbounded, the search goes as deep as the fuel above the floor allows.
-    const auto per_layer = static_cast<int>(search_chunks());
-    const int affordable = (static_cast<int>(fuel() - fuel_floor) - static_cast<int>(search_cost_estimate(0))) / per_layer;
-    const int layers = steps >= 0 ? steps + max_detour : std::clamp(affordable, 1, s.width + s.height);
+    const int layers = steps >= 0 ? steps + max_detour : s.width + s.height;
     FuelMeter meter{"approach"};
     if (!spare_approach_) spare_approach_ = std::make_unique<Approach>();
     auto& made = *spare_approach_;
@@ -403,13 +406,8 @@ bool Pathing::try_move(vec2 tile) {
 
 bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps) {
     if (!my_can_move()) return false;
-    // Each retry costs a search, and only a hidden blocker makes one worth it.
-    const auto retry_cost = search_cost_estimate(std::min(max_steps, map().width + map().height)) + end_reserve;
+    // Only a hidden blocker makes a retry worth its search.
     for (int attempt = 0; attempt < 3; ++attempt) {
-        if (attempt > 0 && !fuel_ok(retry_cost)) {
-            note_shortcut("route-retry");
-            return false;
-        }
         const auto r = route(goals, avoid, max_steps);
         bool bumped = false;
         for (int i = 0; i < r.count; ++i) {

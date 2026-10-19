@@ -20,10 +20,6 @@ constexpr float keep_walk_value = 250;
 constexpr float min_camp_value = 50;
 constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
 constexpr int hold_range = 6;       // camp casts wait while a visible enemy is this close
-std::uint64_t enemy_cast_cost(int visible, int unseen) {
-    return 12000 + 2500 * static_cast<std::uint64_t>(visible) + 1000 * static_cast<std::uint64_t>(unseen);
-}
-std::uint64_t camp_cast_cost(std::size_t members, bool ground) { return 2000 + 800 * members + (ground ? 8000 : 0); }
 
 bool walked(const World& world) { return my_position() != world.me().pos; }
 
@@ -184,10 +180,6 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
         else unseen += ground && e.tracked;
     }
     if (visible + unseen == 0) return best;
-    if (!fuel_ok(enemy_cast_cost(visible, unseen))) {
-        note_shortcut("enemy-cast");
-        return best;
-    }
     const auto& enemy_spawn = world.map().enemy_spawn;
     keep_walk = keep_walk && my_can_move();
     // A stun takes its target's walk as the cast takes ours: with every visible enemy that could
@@ -300,12 +292,6 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     const auto& g = world.map().groups[group];
     if ((g.has_monolith && group != siege_group()) || world.camps[group].state != CampState::alive) return {};
     if (enemy_within(world, here, hold_range)) return {};
-    const bool ground =
-        (ready[0] && f.abilities[0].target == Targeting::ground) || (ready[1] && f.abilities[1].target == Targeting::ground);
-    if (!fuel_ok(camp_cast_cost(g.members.size(), ground))) {
-        note_shortcut("camp-cast");
-        return {};
-    }
 
     struct Member {
         cambc::camp camp;

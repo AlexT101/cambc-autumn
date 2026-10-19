@@ -29,8 +29,10 @@ public:
     int centre_to_altar(int group); // to_any_altar() at the group's centre, kept once read
     // Static steps to tiles within `range` of the group's camp tiles, around the camps believed alive:
     // the walk to its attack tiles but for sight lines near the end. Range 0: onto its camp tiles, to
-    // capture. Null if the search out to us would take the fuel below `fuel_floor`.
-    const Field* approach(int group, int range, std::uint64_t fuel_floor);
+    // capture. Null if no walk reaches it within the search's cap.
+    const Field* approach(int group, int range);
+    // approach(), or null without searching if the search could take the fuel below `fuel_floor`.
+    const Field* prepare_approach(int group, int range, std::uint64_t fuel_floor);
     bool approach_ready(int group, int range); // usable from here without a search
     std::uint64_t approach_cost(int group, int range); // 0 when ready
     static std::uint64_t max_approach_cost() { return search_cost_estimate(cambc::map::width() + cambc::map::height()); }

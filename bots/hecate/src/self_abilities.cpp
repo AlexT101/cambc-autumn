@@ -279,11 +279,6 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, i
     const vec2 here = my_position();
     // A goal within a dash is a walk or two away: not worth the cooldown or the search.
     if (any_within(goals, here, dash_steps)) return false;
-    const int layers = max_steps != unreachable ? max_steps : std::max(world.map().width + world.map().height, max_field_layers()); // a maze runs deeper
-    if (!fuel_ok(search_cost_estimate(layers) + end_reserve)) {
-        note_shortcut("travel-dash");
-        return false;
-    }
     static bitboard open_goals{cambc::uninitialized}, origin, visited{cambc::uninitialized};
     static cambc::distance_field field;
     const auto& walls = pathing.blocked();

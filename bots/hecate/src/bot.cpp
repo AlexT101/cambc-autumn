@@ -1092,13 +1092,13 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         if (g < 0) return false;
         // Descending it walks around walls and live camps; a live route only helps past allies.
         const auto walk = [&](const Field& field) { return pathing.descend(field, zone) || pathing.step_towards(field, zone); };
-        if (const auto* field = pathing.approach(g, walk_range(g), end_reserve)) return walk(*field);
+        if (const auto* field = pathing.prepare_approach(g, walk_range(g), end_reserve)) return walk(*field);
         // Too short of fuel to search the way to a new choice: last turn's, whose way is known.
         if (previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(previous))) {
             note_shortcut("farm-kept-target");
             memory.farm_group = memory.claim = previous;
             memory.crew = false;
-            return walk(*pathing.approach(previous, walk_range(previous), end_reserve));
+            return walk(*pathing.approach(previous, walk_range(previous)));
         }
         if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone);
         note_shortcut("crow-flies-farm");
@@ -2586,39 +2586,20 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     }
     // Far off, the static walk to within reach; the live route around the monsters once near.
     if (dist(here, G.centre) > vision_radius + ability_range) {
-        if (const auto* field = pathing.approach(g, ability_range, end_reserve)) pathing.step_towards(*field);
-        else {
-            note_shortcut("crow-flies-kite");
-            pathing.step_closer(G.centre);
-        }
+        if (const auto* field = pathing.approach(g, ability_range)) pathing.step_towards(*field);
+        else pathing.step_closer(G.centre);
         return true;
     }
     // A short way to a basic attack's tile, else any safe one: the long way round to the far side
     // of the monsters costs more than the attacks pay.
     const int cap = 2 * (vision_radius + ability_range);
-    if (!fuel_ok(3 * search_cost_estimate(cap) + end_reserve)) {
-        note_shortcut("crow-flies-kite");
-        if (safe_here && goals.is_set(here)) return true;
-        // Towards the centre while out of the monsters' reach; inside it, the way out.
-        std::optional<vec2> best;
-        int best_score = 0;
-        const auto& blocked = pathing.blocked();
-        for (const auto d : directions) {
-            const vec2 p = here + d;
-            if (!in_bounds(p) || blocked.is_set(p)) continue;
-            const int score = threat.is_set(p) ? 1000 - dist(p, G.centre) : dist(p, G.centre);
-            if (!best || score < best_score) best = p, best_score = score;
-        }
-        if (best && (!safe_here || !threat.is_set(*best))) pathing.try_move(*best);
-        return true;
-    }
     bool moved = basic_first && pathing.step_towards(basic, &threat, vision_radius);
     if (!moved && !goals.is_set(here)) moved = pathing.step_towards(goals, &threat, cap);
     // A sleeping group hits nobody passing through its reach.
     if (!moved && !goals.is_set(here) && c.awake == Awake::asleep) moved = pathing.step_towards(goals, nullptr, cap);
     // No way within the cap (round a lake): the static walk.
     if (!moved && !goals.is_set(here))
-        if (const auto* field = pathing.approach(g, ability_range, end_reserve))
+        if (const auto* field = pathing.approach(g, ability_range))
             moved = pathing.step_towards(*field, c.awake == Awake::asleep ? nullptr : &threat);
     if (!moved && !safe_here) {
         static bitboard out{cambc::uninitialized};
@@ -2951,7 +2932,7 @@ void prepare_walk(const World& world, Pathing& pathing, const Memory& memory, st
     const int g = memory.farm_group;
     if (!world.me().alive || channelling() || g < 0 || g >= static_cast<int>(world.camps.size())) return;
     const int range = world.camps[g].state == CampState::cleared ? 0 : world.me().facts().attack_range();
-    pathing.approach(g, range, fuel_floor);
+    pathing.prepare_approach(g, range, fuel_floor);
 }
 
 void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory) {

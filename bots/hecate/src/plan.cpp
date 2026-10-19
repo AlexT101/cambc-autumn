@@ -201,7 +201,7 @@ const Field* goal_field(const World& world, Pathing& pathing, const Intent& inte
     const int g = intent.group;
     if (g < 0 || g >= static_cast<int>(world.camps.size())) return nullptr;
     const int range = world.camps[g].state == CampState::cleared ? 0 : world.me().facts().attack_range();
-    return pathing.approach_ready(g, range) ? pathing.approach(g, range, end_reserve) : nullptr;
+    return pathing.approach_ready(g, range) ? pathing.approach(g, range) : nullptr;
 }
 
 enum class Kind { stay, walk, dash, dash_walk };
