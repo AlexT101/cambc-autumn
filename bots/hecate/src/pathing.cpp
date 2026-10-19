@@ -186,10 +186,10 @@ const bitboard& Pathing::member_attack_tiles(int group, int member, int range) {
     return *slot;
 }
 
-bitboard Pathing::attack_tiles(int group, int range) {
+void Pathing::attack_tiles(int group, int range, bitboard& tiles) {
     const auto& health = world_.camps[group].health;
     static bitboard freed{cambc::uninitialized};
-    bitboard tiles;
+    tiles.clear();
     bool any_freed = false;
     for (int i = 0; i < static_cast<int>(health.size()); ++i) {
         if (health[i] > 0) {
@@ -201,7 +201,6 @@ bitboard Pathing::attack_tiles(int group, int range) {
         freed.set(map().groups[group].members[i].pos);
     }
     tiles &= any_freed ? freed : map().standable;
-    return tiles;
 }
 
 bool Pathing::prepare_member(int group, int member, int range, std::uint64_t fuel_floor) {
@@ -337,22 +336,20 @@ vec2 Pathing::my_pos() {
     return pos_;
 }
 
-std::vector<vec2> Pathing::closer_neighbours(const Field& field, const bitboard* avoid) {
+Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboard* avoid) {
     const vec2 me = my_pos();
     const int here = field.at(me);
     const auto& walls = blocked();
-    std::vector<vec2> out;
-    out.reserve(8);
+    Neighbours out;
     std::array<int, 8> steps_of{};
     for (auto d : directions) {
         const vec2 p = me + d;
         if (!in_bounds(p) || walls.is_set(p) || (avoid && avoid->is_set(p)) || (guard_ && guard_->is_set(p))) continue;
         const int steps = field.at(p);
         if (steps >= here) continue;
-        auto i = out.size();
-        out.push_back(p);
-        for (; i > 0 && steps_of[i - 1] > steps; --i) out[i] = out[i - 1], steps_of[i] = steps_of[i - 1];
-        out[i] = p;
+        auto i = out.count++;
+        for (; i > 0 && steps_of[i - 1] > steps; --i) out.tiles[i] = out.tiles[i - 1], steps_of[i] = steps_of[i - 1];
+        out.tiles[i] = p;
         steps_of[i] = steps;
     }
     return out;

@@ -49,9 +49,9 @@ struct Instance {
             pathing->begin_turn();
             if (first && aph::debug_log) {
                 const auto& m = world->map();
-                std::cout << "map " << m.width << 'x' << m.height << ' ' << cambc::to_string(m.symmetry) << " groups "
-                          << m.groups.size() << " altars " << m.altars.size()
-                          << " plan " << (m.drafted() ? "ok" : "missing") << '\n';
+                std::printf("map %dx%d %s groups %zu altars %zu plan %s\n", m.width, m.height,
+                            cambc::to_string(m.symmetry).c_str(), m.groups.size(), m.altars.size(),
+                            m.drafted() ? "ok" : "missing");
                 aph::check_facts_against_engine();
             }
         });
@@ -66,7 +66,7 @@ struct Instance {
         if (world->is_stale()) return;
         run("turn end", [&] { world->note_turn_end(); });
         // Only comms reads vision again, and it changes only if we moved.
-        const bool moved = cambc::self().position() != world->me().pos;
+        const bool moved = world->me().alive && cambc::self().position() != world->me().pos;
         const bool refresh = moved && aph::fuel_ok(world->observe_cost_estimate() + end_reserve);
         if (moved && !refresh) aph::note_shortcut("comms-stale-vision");
         run("comms send", [&] { aph::comms::send(*world, refresh); });

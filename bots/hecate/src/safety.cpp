@@ -566,9 +566,12 @@ template <class F> void Safety::each_threat(vec2 p, F&& f) {
 
 bool Safety::any_threat() {
     if (built_) return threat_count_ > 0;
-    bool any = false;
-    each_threat({0, 0}, [&](const ChampionBelief&, const Strike&, int) { any = true; });
-    return any;
+    for (const auto& e : world_.enemies) {
+        if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
+        const auto& x = foe(e);
+        if (x.strike.reach >= 0 && (e.visible || x.weight > 0)) return true;
+    }
+    return false;
 }
 
 float Safety::damage_bound(vec2 p, bool double_unacted) {

@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
-#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -255,24 +254,24 @@ private:
 inline void print_fuel_log() {
     if constexpr (debug_fuel) {
         debug_block({
-            std::cout << "fuel r" << cambc::round_number() << " c"
-                      << (cambc::is_draft() ? -1 : static_cast<int>(static_cast<cambc::handle_champion_t>(cambc::self())));
+            std::printf("fuel r%u c%d", cambc::round_number(),
+                        cambc::is_draft() ? -1 : static_cast<int>(static_cast<cambc::handle_champion_t>(cambc::self())));
             auto& log = fuel_log();
             for (std::size_t i = 0; i < log.size(); ++i) {
                 if (!log[i].label) continue;
-                std::cout << ' ' << log[i].label << '=';
+                std::printf(" %s=", log[i].label);
                 if (log[i].spilled) {
-                    std::cout << "SPILLED(r" << log[i].round << ')';
+                    std::printf("SPILLED(r%u)", log[i].round);
                     continue;
                 }
                 std::uint64_t total = log[i].used;
                 int count = 1;
                 for (std::size_t j = i + 1; j < log.size(); ++j)
                     if (log[j].label == log[i].label && !log[j].spilled) total += log[j].used, ++count, log[j].label = nullptr;
-                std::cout << total;
-                if (count > 1) std::cout << '/' << count;
+                std::printf("%llu", static_cast<unsigned long long>(total));
+                if (count > 1) std::printf("/%d", count);
             }
-            std::cout << " left=" << fuel() << '\n';
+            std::printf(" left=%llu\n", static_cast<unsigned long long>(fuel()));
         });
         fuel_log().clear();
     }

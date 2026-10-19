@@ -8,6 +8,8 @@ Line numbers are as of commit e32257b.
 
 How to test each bucket:
 - **1. Behaviour-preserving:** `tools/fuel/bench.py compare` must show 16/16 byte-identical replays at the 100M budget. No games are needed. Items marked *fuel-only* change only what happens when fuel is short.
+  - Until the v17 spend caps go (3.1), compare copies with both caps raised.
+  - On Linux the champions' stdout in a bundle is mostly NUL bytes: the instances overwrite each other. `SHORTCUT` counts from it are therefore incomplete, so debug a single champion by filtering on its handle.
 - **2. Bug fixes:** A/B each fix against `bots/baselines/` on all maps (ladder + gen + central, both sides).
 - **3. Simplification/robustness:** A/B each change. For fuel gates, first count `SHORTCUT` tags with `py tools/fuel/bench.py run hecate --fuel 0`. A gate that never or rarely fires can go with little risk.
 - **4. Feature removal:** A/B each removal. Keep it removed if the result is level within noise (±2.5 points on 390 games), since that is the point of removing it.
@@ -174,18 +176,21 @@ These are never called or never read:
   - They inflate the `--fuel 0` counts. Drop them or use another tag.
 - **`std::cout` → `printf`** in `check_facts_against_engine` and `print_fuel_log`, then drop `<iostream>` from util.h, which every file includes. *Fuel-only*: about 11k of static initialisation.
 
-### 1.9 Fuel savings to add (play unchanged, less fuel)
-- **siege():**
-  - It allocates `bitboard inner`, `goals` and the by-value `tiles()`/`square()` results every turn, about 400 fuel per board per siege turn. Use static scratch boards, as the rest of bot.cpp does.
-  - `siege_load` is computed twice per turn; pass it in.
-- **`closer_neighbours`** re-checks the guard that `try_move` already checks, and allocates a vector.
-- **`any_threat()`** runs a pointless `any_within` per unseen enemy and overwrites the `asked`/`near` memo.
-- **Dead champions run `observe()` every turn** (2.11).
-- **`std::cout` → `printf`, and remove the enemy-ward read, the mirror build loops and the `lock_tiles` warm-up** (1.1, 1.8).
-- **Route the direct `strike()` callers through Safety's per-turn `strike_of` cache.**
-  - The callers are abilities.cpp:225, bot.cpp:1996 (`recall_outruns`, also 3.4) and turn_order.cpp:120 and 229.
-  - Keep the `strike()` memo itself. Those callers and `threat_strike` rely on it, so it is not redundant.
-- **`ensure_picked`/`all_champions`/`picked_round`** (draft.cpp) is not a fuel item: the preference list already holds all 11 champions. Wrap `write_plan` in try/catch instead.
+### 1.9 Fuel savings (done, 2026-10-19)
+- **What was done:**
+  - siege() uses static scratch boards.
+  - `Pathing::attack_tiles` writes into the caller's board.
+  - `siege_load` is computed once per turn.
+  - `closer_neighbours` returns a fixed array instead of a vector.
+  - `any_threat()` skips its pointless search.
+  - Dead champions skip `observe()`.
+  - Every `std::cout` is now `printf`, so `DoIOSInit` and iostream are no longer linked.
+  - The enemy-ward read only happens in debug builds.
+  - The mirror build loops and the `lock_tiles` warm-up are gone. The `lock_tiles()` function stays for the lock idea in section 0.
+- **Bench:** fuel −1.6% mean, −1.0% in round 1, 54,847 turns cheaper and 52 dearer.
+- **Byte-identity:** 16/16 replays identical once the v17 spend caps are lifted (see 3.1).
+- **Dropped:** routing the direct `strike()` callers through `Safety::strike_of`. That cache holds `threat_strike`, which is widened for enemies that act twice before our next turn, so it is not the same value and would change play. The `strike()` memo already caches those callers.
+- **Not a fuel item:** `ensure_picked`/`all_champions`/`picked_round` (draft.cpp). The preference list already holds all 11 champions; wrap `write_plan` in try/catch instead.
 - **Rename farm's `static ... facts`,** which shadows `aph::facts()`.
   - Keep `GroupFacts` itself: it saves a few dozen fuel per group per turn over the underlying caches.
   - Also keep `prey()`'s lazy Strength read, which saves a host call.
@@ -310,6 +315,7 @@ Measure first with `--fuel 0`, then remove each gate whose `SHORTCUT` count is n
 
 | Gate | Where | Falls back to | Proposal |
 |---|---|---|---|
+| **v17 spend caps** | bot.cpp:811 (`fuel() + 20000 >= started`), bot.cpp:928 (`+ 15000`) | `local_spell_plan`/`collect_local_reward` give up after spending 20k/15k this call | **Top priority.** These are the only gates relative to fuel *spent*, so they trip even with 100M fuel. Any fuel change upstream, even a different heap state, moves where they cut in. They broke 1/16 bench replays for the 1.9 savings: one tied step on pilgrimage. Remove them (or 4.1); until then, `bench.py compare` is only exact with both caps raised. |
 | farm no-evaluation | bot.cpp:1200-1225 + `FarmEvaluationReserve` | nearest-group mini-farm with its own `worth` rule | In the loop, use cheap steps (`ally_steps`/`dist`) when a field is unaffordable, then delete the gate and the mini-farm (~30 lines). Check large maps, where it "can last hundreds of rounds". |
 | walk_on kept target | bot.cpp:1185-1191 | reverts `farm_group`/`claim` to last turn's choice | Drop it; the centre-field descent is always available, and `prepare_walk` usually has the new choice's approach ready. |
 | step_towards_funded | pathing.cpp:446-477 | no move (`siege-route-fuel`) | Fold into `step_towards(goals, nullptr, cap)` with an uncapped search. This keeps the item-11 swirl fix. |

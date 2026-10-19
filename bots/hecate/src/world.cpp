@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
-#include <iostream>
 #include <span>
 #include <string>
 
@@ -472,10 +471,6 @@ bool StaticMap::warm_up(std::uint64_t fuel_floor) const {
         g.adjacent();
         g.threat();
     }
-    for (const auto& a : altars) {
-        if (!afford(small_cost_estimate)) return false;
-        a.lock_tiles();
-    }
     return true;
 }
 
@@ -629,7 +624,6 @@ std::unique_ptr<StaticMap> StaticMap::build() {
         s->altars[i].map_ = s.get();
         s->altar_lookup_[tile_index(altar_positions[i])] = static_cast<std::uint16_t>(i + 1);
     }
-    for (auto& a : s->altars) a.mirror = s->altar_at(s->mirror(a.pos));
 
     // Camp groups, through the raw imports. Member stats come from the camp designs, read once
     // per camp type.
@@ -669,7 +663,6 @@ std::unique_ptr<StaticMap> StaticMap::build() {
         }
         g.centre = central_tile(g.members);
     }
-    for (auto& g : s->groups) g.mirror = s->group_at(s->mirror(g.centre));
     assign_or(s->standable, s->camp_tiles, s->blocked_for_us);
     assign_not(s->standable, s->standable);
 
@@ -769,7 +762,7 @@ void World::update() {
     update_champions(true);
     guard("camps", [&] { update_camps(); });
     guard("altars", [&] { update_altars(); });
-    guard("wards", [&] { update_wards(); });
+    if constexpr (debug_log || debug_draw) guard("wards", [&] { update_wards(); }); // read only by debug output
     guard("scores", [&] { update_scores(tributing); });
 }
 
@@ -868,8 +861,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
         if (debug_log && b.tracked) {
             advance(b);
             if (b.tracked && !b.possible.is_set(seen))
-                std::cout << "trackcheck r" << round << " E" << b.index << ' ' << b.facts().name << " at " << str(seen)
-                          << " outside its " << b.possible.count() << " possible tiles; fixed r" << b.fixed.round << '\n';
+                std::printf("trackcheck r%d E%d %s at %s outside its %u possible tiles; fixed r%d\n", round, b.index,
+                            b.facts().name, str(seen).c_str(), static_cast<unsigned>(b.possible.count()), b.fixed.round);
         }
         // Fixed there at this turn's update already, and nothing moves during our turn.
         if (full || last_seen != round || b.pos != seen) fix(b, seen, now());
@@ -906,9 +899,9 @@ void World::update_champion(ChampionBelief& b, bool full) {
         // later (a cast we missed) unless Vendetta reset it with a kill.
         if (debug_log && !b.is_self && last_seen >= 0 && ready != b.ready_round[slot]
             && (ready < b.ready_round[slot] || last_seen < round - 1))
-            std::cout << "cdcheck " << cambc::to_string(b.side) << b.index << ' ' << b.facts().name << " slot" << slot
-                      << " last seen r" << last_seen << " projected r" << b.ready_round[slot] << " read r" << ready
-                      << (ready < b.ready_round[slot] ? " EARLIER" : " (cast while unseen)") << '\n';
+            std::printf("cdcheck %s%d %s slot%d last seen r%d projected r%d read r%d%s\n", cambc::to_string(b.side).c_str(),
+                        b.index, b.facts().name, slot, last_seen, b.ready_round[slot], ready,
+                        ready < b.ready_round[slot] ? " EARLIER" : " (cast while unseen)");
         // A cooldown that restarted means a cast: the slot is ready again 8 rounds after it.
         if (cd > 0 && b.ready_round[slot] <= round) b.last_cast_round[slot] = ready - ability_cooldown;
         b.ready_round[slot] = std::max(ready, b.respawned_round + 1);
@@ -1279,8 +1272,8 @@ void World::update_camps() {
             }
             c.state_round = round;
             if (debug_log && c.state != previous)
-                std::cout << "world r" << round << " g" << g << str(G.centre) << ' ' << name(previous) << " -> " << name(c.state)
-                          << (c.state == CampState::respawning ? " until r" + std::to_string(c.respawn_round) : "") << '\n';
+                std::printf("world r%d g%d%s %s -> %s%s\n", round, static_cast<int>(g), str(G.centre).c_str(), name(previous),
+                            name(c.state), c.state == CampState::respawning ? (" until r" + std::to_string(c.respawn_round)).c_str() : "");
             // Not alive when last seen: it returned at full health after that, and after its timer.
             if (c.state == CampState::alive && previous != CampState::alive) {
                 c.health_round.assign(G.members.size(), std::max(previous_round, previous_respawn - 1));
@@ -1357,8 +1350,8 @@ void World::update_camps() {
                         c.held_since = round;
                     } else if (holder != c.holder) {
                         if (debug_log)
-                            std::cout << "world r" << round << " g" << g << str(G.centre) << " held by "
-                                      << (holder ? cambc::to_string(*holder) : std::string("nobody")) << '\n';
+                            std::printf("world r%d g%d%s held by %s\n", round, static_cast<int>(g), str(G.centre).c_str(),
+                                        holder ? cambc::to_string(*holder).c_str() : "nobody");
                         c.holder = holder;
                         // A group not seen cleared was cleared no earlier than when last seen, or than
                         // it returned.
@@ -1505,49 +1498,48 @@ void World::debug_output() const {
     const auto& s = map();
     if (debug_log && (round == first_round || round % debug_log_period == 0)) {
         const auto& m = me();
-        std::cout << "W r" << round << ' ' << m.facts().name << str(m.pos) << " hp " << static_cast<int>(m.health) << '/'
-                  << static_cast<int>(m.max_health) << " score " << score.ally << '-' << score.enemy << " (+"
-                  << score.ally_delta << ",+" << score.enemy_delta << ")";
+        std::printf("W r%d %s%s hp %d/%d score %d-%d (+%d,+%d)", round, m.facts().name, str(m.pos).c_str(),
+                    static_cast<int>(m.health), static_cast<int>(m.max_health), score.ally, score.enemy, score.ally_delta,
+                    score.enemy_delta);
         if (score.enemy_tribute_round >= 0)
-            std::cout << " last_enemy_tribute r" << score.enemy_tribute_round << " +" << score.enemy_tribute_amount;
-        std::cout << '\n';
+            std::printf(" last_enemy_tribute r%d +%d", score.enemy_tribute_round, score.enemy_tribute_amount);
+        std::printf("\n");
         for (const auto& b : enemies) {
-            std::cout << "  E" << b.index << ' ' << b.facts().name;
+            std::printf("  E%d %s", b.index, b.facts().name);
             if (!b.alive) {
-                std::cout << " dead since r" << b.died_round << " respawn r" << b.respawn_earliest << '-' << b.respawn_latest << '\n';
+                std::printf(" dead since r%d respawn r%d-%d\n", b.died_round, b.respawn_earliest, b.respawn_latest);
                 continue;
             }
-            std::cout << (b.visible ? " SEEN " : " last ") << str(b.pos) << " r" << b.pos_round
-                      << (b.pos_source == Source::comms ? " (comms)" : b.pos_source == Source::inferred ? " (inferred)" : "")
-                      << " hp " << static_cast<int>(b.health) << '/' << static_cast<int>(b.max_health) << " gems " << b.gems
-                      << " ready r" << b.ready_round[0] << ",r" << b.ready_round[1]
-                      << (b.cooldowns_uncertain() ? "?" : "") << name(b.channel);
-            if (b.channel != Channel::none) std::cout << " until r" << b.channel_end_round;
-            std::cout << '\n';
+            std::printf("%s%s r%d%s hp %d/%d gems %d ready r%d,r%d%s%s", b.visible ? " SEEN " : " last ", str(b.pos).c_str(),
+                        b.pos_round, b.pos_source == Source::comms ? " (comms)" : b.pos_source == Source::inferred ? " (inferred)" : "",
+                        static_cast<int>(b.health), static_cast<int>(b.max_health), b.gems, b.ready_round[0], b.ready_round[1],
+                        b.cooldowns_uncertain() ? "?" : "", name(b.channel));
+            if (b.channel != Channel::none) std::printf(" until r%d", b.channel_end_round);
+            std::printf("\n");
         }
         int counts[3] = {};
-        std::cout << "  camps:";
+        std::printf("  camps:");
         for (std::size_t g = 0; g < camps.size(); ++g) {
             const auto& c = camps[g];
             ++counts[static_cast<int>(c.state)];
             if (c.state == CampState::alive && c.awake == Awake::asleep) continue;
-            std::cout << " g" << g << str(s.groups[g].centre) << '=' << name(c.state);
-            if (c.state == CampState::respawning) std::cout << "->r" << c.respawn_round;
-            if (c.awake == Awake::awake) std::cout << "(awake, hit r" << c.last_damaged_round << ')';
-            if (c.awake == Awake::unknown) std::cout << "(awake?)";
-            if (c.holder) std::cout << "(held by " << cambc::to_string(*c.holder) << " since r" << c.held_since << ')';
+            std::printf(" g%zu%s=%s", g, str(s.groups[g].centre).c_str(), name(c.state));
+            if (c.state == CampState::respawning) std::printf("->r%d", c.respawn_round);
+            if (c.awake == Awake::awake) std::printf("(awake, hit r%d)", c.last_damaged_round);
+            if (c.awake == Awake::unknown) std::printf("(awake?)");
+            if (c.holder) std::printf("(held by %s since r%d)", cambc::to_string(*c.holder).c_str(), c.held_since);
         }
-        std::cout << " | " << counts[0] << " alive " << counts[1] << " cleared " << counts[2] << " respawning\n";
-        std::cout << "  altars:";
+        std::printf(" | %d alive %d cleared %d respawning\n", counts[0], counts[1], counts[2]);
+        std::printf("  altars:");
         for (std::size_t a = 0; a < altars.size(); ++a) {
             const auto& b = altars[a];
-            std::cout << ' ' << str(s.altars[a].pos) << (b.seen_round < 0 ? "?" : "");
-            if (b.ally_lock) std::cout << " ourlock" << b.ally_lock_hits;
-            if (b.enemy_lock) std::cout << " THEIRlock" << b.enemy_lock_hits;
+            std::printf(" %s%s", str(s.altars[a].pos).c_str(), b.seen_round < 0 ? "?" : "");
+            if (b.ally_lock) std::printf(" ourlock%d", b.ally_lock_hits);
+            if (b.enemy_lock) std::printf(" THEIRlock%d", b.enemy_lock_hits);
         }
-        std::cout << " | enemy wards:";
-        for (const auto& w : enemy_wards) std::cout << ' ' << str(w.pos) << " r" << w.round;
-        std::cout << '\n';
+        std::printf(" | enemy wards:");
+        for (const auto& w : enemy_wards) std::printf(" %s r%d", str(w.pos).c_str(), w.round);
+        std::printf("\n");
     }
 
     if constexpr (debug_draw) {

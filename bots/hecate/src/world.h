@@ -33,7 +33,6 @@ template <class T> using StaticVector = std::vector<T, StaticAlloc<T>>;
 
 struct Altar {
     vec2 pos;
-    int mirror = -1; // index of the symmetric altar (itself if on the axis)
 
     const bitboard& tribute_tiles() const; // walkable for us within tribute range (1)
     const bitboard& lock_tiles() const;    // walkable for us within 2: where a lock can be placed from
@@ -60,7 +59,6 @@ struct CampGroup {
     int gold = 0, gems = 0;
     int respawn = 0;    // rounds from capture payout to return
     float strength = 0; // damage per camp phase from all members while awake
-    int mirror = -1;
     bool has_monolith = false;
 
     cambc::camp camp(int member) const;

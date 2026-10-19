@@ -44,7 +44,7 @@ public:
     // Walkable tiles from which a basic attack reaches and sees the member, camp tiles included.
     const bitboard& member_attack_tiles(int group, int member, int range);
     // Over the members believed alive; off camp tiles, but for those of its dead members.
-    bitboard attack_tiles(int group, int range);
+    void attack_tiles(int group, int range, bitboard& out);
     // Compute attack_tiles' missing parts while more than `fuel_floor` remains; true once cached.
     bool prepare_attack_tiles(int group, int range, std::uint64_t fuel_floor);
     // The same for the members in `members` (bit i: member i), alive or not.
@@ -66,8 +66,14 @@ public:
     const bitboard& blocked();
     void invalidate(); // after we move or dash
     vec2 my_pos();     // our tile, read again after invalidate() or in a new round
+    struct Neighbours {
+        std::array<vec2, 8> tiles;
+        int count = 0;
+        const vec2* begin() const { return tiles.data(); }
+        const vec2* end() const { return tiles.data() + count; }
+    };
     // Free neighbours that get strictly closer on a static field, nearest first.
-    std::vector<vec2> closer_neighbours(const Field& field, const bitboard* avoid = nullptr);
+    Neighbours closer_neighbours(const Field& field, const bitboard* avoid = nullptr);
 
     struct Route {
         int steps = unreachable; // 0: already on a goal; unreachable: none within the cap

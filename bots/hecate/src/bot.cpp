@@ -36,21 +36,20 @@ char decision = '-';
 // Read by tools/replay/fight_calibration.py.
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1) {
     if (!debug_fights || !fuel_ok(end_reserve + 15000)) return;
-    std::cout << tag << ' ' << world.round << ' ' << static_cast<std::uint32_t>(world.me().handle) << ' ' << p.x << ' ' << p.y
-              << ' ' << static_cast<int>(world.me().health) << ' ' << decision << ' ' << t.lost << ' '
-              << t.turns_to_kill_us << ' ' << t.turns_to_kill_them << ' ' << t.allies << ' ' << t.enemies << ' '
-              << static_cast<int>(t.our_health) << ' ' << static_cast<int>(t.their_health) << ' ' << target << ' '
-              << static_cast<int>(safety.camp_damage(p)) << ' ' << safety.lethal(p);
-    for (const float d : t.dealt) std::cout << ' ' << static_cast<int>(d);
+    std::printf("%s %d %u %d %d %d %c %d %d %d %d %d %d %d %d %d %d", tag, world.round,
+                static_cast<std::uint32_t>(world.me().handle), p.x, p.y, static_cast<int>(world.me().health), decision,
+                static_cast<int>(t.lost), t.turns_to_kill_us, t.turns_to_kill_them, t.allies, t.enemies,
+                static_cast<int>(t.our_health), static_cast<int>(t.their_health), target, static_cast<int>(safety.camp_damage(p)),
+                static_cast<int>(safety.lethal(p)));
+    for (const float d : t.dealt) std::printf(" %d", static_cast<int>(d));
     for (const auto& a : world.allies)
         if (a.alive && !a.is_self && a.visible && dist(p, a.pos) <= safety_params::fight_ally_radius)
-            std::cout << " a" << static_cast<std::uint32_t>(a.handle);
+            std::printf(" a%u", static_cast<std::uint32_t>(a.handle));
     for (const auto& th : safety.threats())
         if (th.credible() && th.strike.hits(th.distance(p)))
-            std::cout << ' ' << static_cast<std::uint32_t>(world.enemies[th.enemy].handle) << (th.visible ? 'v' : 'u') << ':'
-                      << th.distance(p) << ':' << static_cast<int>(th.strike.at(th.distance(p))) << ':'
-                      << world.round - world.enemies[th.enemy].pos_round;
-    std::cout << std::endl;
+            std::printf(" %u%c:%d:%d:%d", static_cast<std::uint32_t>(world.enemies[th.enemy].handle), th.visible ? 'v' : 'u',
+                        th.distance(p), static_cast<int>(th.strike.at(th.distance(p))), world.round - world.enemies[th.enemy].pos_round);
+    std::printf("\n");
 }
 
 enum Family { monster, power, durability, treasure, jungle, home, bruiser };
@@ -734,7 +733,7 @@ template <class Floor>
         if (health[i] > 0) alive |= 1u << i;
     if (health.size() <= 32 && kept.group == group && kept.range == range && kept.alive == alive) return &kept.tiles;
     if (!pathing.prepare_attack_tiles(group, range, floor())) return nullptr;
-    kept.tiles = pathing.attack_tiles(group, range);
+    pathing.attack_tiles(group, range, kept.tiles);
     kept.group = health.size() <= 32 ? group : -1, kept.range = range, kept.alive = alive;
     return &kept.tiles;
 }
@@ -2178,8 +2177,7 @@ int siege_candidate(const World& world, const Memory& memory) {
 }
 
 // The team's clear, at its current output, costs no more health than it can take in turns.
-bool siege_ready(const World& world, int g, bool committed) {
-    const auto load = siege_load(world, g);
+bool siege_ready(const World& world, int g, const SiegeLoad& load, bool committed) {
     if (load.health <= 0) return true;
     float pool = 0;
     for (const auto& a : world.allies)
@@ -2203,7 +2201,8 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     bool ally_in = false;
     for (const auto& a : world.allies)
         ally_in |= !a.is_self && g >= 0 && comms::claim_of(world, a.index) == g;
-    if (g < 0 || !siege_ready(world, g, (memory.siege && memory.claim == g) || ally_in)) {
+    const auto load = g >= 0 ? siege_load(world, g) : SiegeLoad{};
+    if (g < 0 || !siege_ready(world, g, load, (memory.siege && memory.claim == g) || ally_in)) {
         memory.siege = false;
         memory.staged_since = -1;
         return false;
@@ -2234,7 +2233,6 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     memory.claim = g;
     memory.crew = ally_in;
     siege_group() = g;
-    const auto load = siege_load(world, g);
     const vec2 m = load.pos;
     const int d = dist(here, m);
     const auto& f = world.me().facts();
@@ -2264,7 +2262,10 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         tanked |= !a.is_self && a.alive && a.visible && !a.facts().ranged && dist(a.pos, m) <= 1;
     // The members that could hit us here; out of reach, the strongest.
     float hit = 0;
-    bitboard inner;
+    // Scratch boards: allocating one costs more than the host operations on it.
+    static bitboard inner{cambc::uninitialized}, goals{cambc::uninitialized}, all{cambc::uninitialized};
+    const auto drop = [](bitboard& from, const bitboard& tiles) { from |= tiles, from ^= tiles; }; // from &= ~tiles
+    inner.clear();
     for (std::size_t i = 0; i < G.members.size(); ++i) {
         if (c.health[i] <= 0 && !fresh) continue;
         if (G.members[i].strength > 0 && dist(here, G.members[i].pos) <= camp_attack_range) hit += G.members[i].strength;
@@ -2275,35 +2276,47 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     const int role = f.ranged ? range : 1;
     const bool low = me.health() < hit * static_cast<float>(camp_attack_range + 2 - role);
 
-    bitboard goals;
     const bool many = G.members.size() > 1;
-    const auto tiles = [&](int r) -> bitboard {
+    const auto tiles = [&](int r, bitboard& out) {
         if (many) {
-            if (!pathing.prepare_attack_tiles(g, r, end_reserve)) return {};
-            return pathing.attack_tiles(g, r);
+            if (pathing.prepare_attack_tiles(g, r, end_reserve)) pathing.attack_tiles(g, r, out);
+            else out.clear();
+        } else if (pathing.prepare_member_tiles(g, r, 1u << member, end_reserve)) {
+            and_into(pathing.member_attack_tiles(g, member, r), map.standable, out);
+        } else {
+            out.clear();
         }
-        if (!pathing.prepare_member_tiles(g, r, 1u << member, end_reserve)) return {};
-        return pathing.member_attack_tiles(g, member, r) & map.standable;
     };
     if (!engaged || fresh) {
-        goals = tiles(siege_stage_radius) & ~G.threat();
+        tiles(siege_stage_radius, goals);
+        drop(goals, G.threat());
     } else if (low) {
         // Out of reach, the turn's recall is kept for a heal trip (siege_heal_trip); a caster
         // healthy enough stays at 4 to cast.
-        goals = tiles(caster && me.health() >= params::siege_heal_fraction * me.max_health() ? ability_range
-                                                                                           : siege_stage_radius)
-                & ~G.threat();
+        tiles(caster && me.health() >= params::siege_heal_fraction * me.max_health() ? ability_range : siege_stage_radius,
+              goals);
+        drop(goals, G.threat());
     } else if (f.ranged && caster && !tanked && G.has_monolith) {
         // With no ally nearer the Monolith to take its hits, cast from out of its reach.
-        goals = tiles(ability_range) & ~G.threat();
-        if (goals.is_empty()) goals = tiles(range) & ~inner;
+        tiles(ability_range, goals);
+        drop(goals, G.threat());
+        if (goals.is_empty()) {
+            tiles(range, goals);
+            drop(goals, inner);
+        }
     } else if (f.ranged) {
-        goals = tiles(range) & ~inner;
-        if (goals.is_empty()) goals = tiles(range);
+        tiles(range, all);
+        copy_into(all, goals);
+        drop(goals, inner);
+        if (goals.is_empty()) goals.swap(all);
     } else {
-        goals = tiles(1);
+        tiles(1, goals);
     }
-    if (goals.is_empty()) goals = square(m, siege_stage_radius) & map.standable & ~G.threat();
+    if (goals.is_empty()) {
+        goals.draw_chebyshev(m, static_cast<float>(siege_stage_radius));
+        goals &= map.standable;
+        drop(goals, G.threat());
+    }
     if (!goals.is_set(here)) {
         pathing.step_towards_funded(goals, end_reserve);
         if (engaged && !low) attack_camp(world, [&](int h) { return h == g; });

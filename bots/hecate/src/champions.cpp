@@ -1,6 +1,5 @@
 #include "champions.h"
 #include <cmath>
-#include <iostream>
 #include <string>
 #include <variant>
 
@@ -60,7 +59,7 @@ int check_facts_against_engine() {
         }
         if (!why.empty()) {
             ++mismatches;
-            std::cout << "facts mismatch " << f.name << ':' << why << '\n';
+            std::printf("facts mismatch %s:%s\n", f.name, why.c_str());
         }
     }
     return mismatches;
