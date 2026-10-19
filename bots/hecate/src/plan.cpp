@@ -113,10 +113,12 @@ struct Hit {
 };
 
 // The basic attack from p worth most, never one whose retaliation would kill us.
-Hit best_hit(const Board& b, vec2 p, const Healths& h) {
+// `only`: that enemy alone.
+Hit best_hit(const Board& b, vec2 p, const Healths& h, int only = -1) {
     Hit best;
     float best_health = 0;
     for (int i = 0; i < b.n; ++i) {
+        if (only >= 0 && i != only) continue;
         const auto& f = b.foes[i];
         if (h[i] <= 0 || dist(p, f.pos) > b.range) continue;
         if (f.hold && b.strength < h[i] - 0.01f) continue;
@@ -182,13 +184,6 @@ float shield_worth(const World& world, Safety& safety, const Board& b, vec2 p) {
     return std::min(amount, static_cast<float>(a.duration) * safety.damage_bound(p));
 }
 
-int progress(const Intent& intent, vec2 from, vec2 to) {
-    if (!intent.field) return 0;
-    const int a = intent.field->at(from), c = intent.field->at(to);
-    if (a == unreachable || c == unreachable) return 0;
-    return a - c;
-}
-
 // The enemy cast valued this turn and where from: cast_chosen() still holds it unless cast.
 struct Valued {
     int round = -1;
@@ -249,97 +244,135 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     }
 
     const float stay_value = best.value;
-    // Moving to strike: a walk, a dash or both, scored against staying. Danger is priced last,
-    // best first, and only while a candidate could still win: it can fall by at most ours here.
+    // Moving to strike: a walk, a dash or both, scored against staying. Candidates are listed by
+    // their hits and the most progress their move could make, then priced best first (walkable,
+    // the steps saved, the danger there) while one could still win: the danger can fall by at
+    // most ours here.
+    if (intent.anchored) b.move = false, b.dash = -1;
     struct Candidate {
         Plan plan;
         vec2 end;
+        float bound;
     };
-    static std::array<Candidate, 64> candidates;
+    // The few with the highest bounds, highest first.
+    std::array<Candidate, 8> candidates;
     int count = 0;
-    const auto offer = [&](Plan plan, float before_danger, vec2 end) {
-        if (before_danger <= best.value || count == static_cast<int>(candidates.size())) return;
-        plan.value = before_danger;
-        candidates[count++] = {plan, end};
+    // `value`: all but the steps saved and the danger; `steps`: the most the move could save.
+    const auto offer = [&](Plan plan, float value, int steps, vec2 end) {
+        const float bound = value + static_cast<float>(steps) * step;
+        constexpr int keep = static_cast<int>(candidates.size());
+        if (bound <= best.value || (count == keep && bound <= candidates[keep - 1].bound)) return;
+        int i = count < keep ? count++ : keep - 1;
+        for (; i > 0 && candidates[i - 1].bound < bound; --i) candidates[i] = candidates[i - 1];
+        plan.value = value;
+        candidates[i] = {plan, end, bound};
     };
-    if (intent.anchored) b.move = false, b.dash = -1;
-    const auto& blocked = pathing.blocked();
-    const bitboard* guard = pathing.guard();
-    const auto walkable = [&](vec2 p) { return in_bounds(p) && !blocked.is_set(p) && !(guard && guard->is_set(p)); };
     int nearest = 1 << 20;
     for (int i = 0; i < b.n; ++i) nearest = std::min(nearest, dist(b.here, b.foes[i].pos));
-    // Tiles within 3 of us from which some enemy is in attack range: the only ones worth a hit's pricing.
-    std::array<bool, 49> in_reach{};
-    for (int i = 0; i < b.n; ++i)
-        for (int dy = -b.range; dy <= b.range; ++dy)
-            for (int dx = -b.range; dx <= b.range; ++dx) {
-                const int x = b.foes[i].pos.x + dx - b.here.x + 3, y = b.foes[i].pos.y + dy - b.here.y + 3;
-                if (x >= 0 && x < 7 && y >= 0 && y < 7) in_reach[y * 7 + x] = true;
-            }
-    const auto reachable = [&](vec2 p) { return in_reach[(p.y - b.here.y + 3) * 7 + (p.x - b.here.x + 3)]; };
+    // Without splash a hit's worth does not depend on where it is struck from: priced once per
+    // enemy and spread over the tiles within 3 of us that reach it.
+    const auto local = [&](vec2 p) { return (p.y - b.here.y + 3) * 7 + (p.x - b.here.x + 3); };
+    std::array<Hit, 49> tile_hit{};
+    if (!b.splash)
+        for (int i = 0; i < b.n; ++i) {
+            const float w = best_hit(b, b.foes[i].pos, h0, i).value;
+            if (w <= 0) continue;
+            for (int y = std::max(b.foes[i].pos.y - b.range, b.here.y - 3); y <= std::min(b.foes[i].pos.y + b.range, b.here.y + 3); ++y)
+                for (int x = std::max(b.foes[i].pos.x - b.range, b.here.x - 3); x <= std::min(b.foes[i].pos.x + b.range, b.here.x + 3); ++x) {
+                    auto& t = tile_hit[local({x, y})];
+                    if (t.target < 0 || w > t.value || (w == t.value && h0[i] < h0[t.target])) t = {w, i};
+                }
+        }
+    const auto hit_at = [&](vec2 p) { return b.splash ? best_hit(b, p, h0) : tile_hit[local(p)]; };
     if (b.move && b.attack && nearest <= b.range + 1) {
         for (auto d : directions) {
             const vec2 n = b.here + d;
-            if (!walkable(n)) continue;
-            const float gain = static_cast<float>(progress(intent, b.here, n)) * step;
+            const Hit there = hit_at(n);
             if (b.melee) {
                 // Either attack here then the reset there, or the one attack there.
-                const Hit there = best_hit(b, n, h0);
                 if (there.target >= 0 && there.value > first.value)
-                    offer({Kind::walk, 0, {}, n, false, false, false}, there.value + gain + shield_worth(world, safety, b, n), n);
+                    offer({Kind::walk, 0, {}, n, false, false, false}, there.value + shield_worth(world, safety, b, n), 1, n);
                 if (first.target >= 0 && b.reset >= 0)
                     if (const Hit second = best_hit(b, n, h1); second.target >= 0)
-                        offer({Kind::walk, 0, {}, n, true, true, false}, first.value + second.value + gain, n);
-            } else if (b.reset >= 0) {
+                        offer({Kind::walk, 0, {}, n, true, true, false}, first.value + second.value, 1, n);
+            } else if (b.reset >= 0 && there.target >= 0) {
                 // A ranged walk spends the attack; the reset restores it.
-                if (const Hit there = best_hit(b, n, h0); there.target >= 0)
-                    offer({Kind::walk, 0, {}, n, false, true, false}, there.value + gain, n);
+                offer({Kind::walk, 0, {}, n, false, true, false}, there.value, 1, n);
             }
         }
     }
-    // The dash's cooldown would otherwise carry us two steps; a dash plan gains at most the best
-    // hit in reach and three steps.
+    // The dash's cooldown would otherwise carry us two steps.
     const float dash_cost = dash_steps * step;
-    float best_hit_value = 0;
-    for (int i = 0; i < b.n; ++i) best_hit_value = std::max(best_hit_value, hit_worth(b.foes[i], b.strength, b.foes[i].health));
-    if (b.dash >= 0 && b.attack && nearest <= b.range + dash_steps + (b.melee && b.move ? 1 : 0)
-        && best_hit_value + (dash_steps + 1) * step - dash_cost > best.value) {
-        const Tiles<5 * 5> landings{pathing.dash_landings()};
-        for (const vec2 l : landings) {
-            if (!reachable(l)) continue;
-            const Hit there = best_hit(b, l, h0);
-            if (there.target < 0) continue;
-            const bool before = b.melee && first.value > there.value;
-            const float gain = static_cast<float>(progress(intent, b.here, l)) * step + (b.melee && walks ? step : 0.0f);
-            offer({Kind::dash, 0, l, {}, before, false, false}, (before ? first : there).value + gain - dash_cost, l);
-        }
-        // Dash, then walk into range: tiles 2 and 3 steps out.
-        if (b.melee && b.move)
-            for (int dy = -dash_steps - 1; dy <= dash_steps + 1; ++dy)
-                for (int dx = -dash_steps - 1; dx <= dash_steps + 1; ++dx) {
-                    const vec2 n{b.here.x + dx, b.here.y + dy};
-                    if (dist(n, b.here) <= 1 || !reachable(n)) continue;
-                    const Hit there = best_hit(b, n, h0);
-                    if (there.target < 0 || there.value - dash_cost + step <= best.value || !walkable(n)) continue;
-                    const vec2* from = std::find_if(landings.begin(), landings.end(), [&](vec2 l) { return dist(l, n) <= 1; });
-                    if (from == landings.end()) continue;
-                    const float gain = static_cast<float>(progress(intent, b.here, n)) * step;
-                    offer({Kind::dash_walk, 0, *from, n, false, false, false}, there.value + gain - dash_cost, n);
+    std::optional<Tiles<5 * 5>> landings;
+    if (b.dash >= 0 && b.attack && nearest <= b.range + dash_steps + (b.melee && b.move ? 1 : 0)) {
+        const float walk_on = b.melee && walks ? step : 0.0f;
+        for (int dy = -dash_steps - 1; dy <= dash_steps + 1; ++dy)
+            for (int dx = -dash_steps - 1; dx <= dash_steps + 1; ++dx) {
+                const vec2 p{b.here.x + dx, b.here.y + dy};
+                const int d = dist(p, b.here);
+                if (d < 1) continue;
+                const Hit there = hit_at(p);
+                if (d <= dash_steps) {
+                    if (there.target < 0) continue;
+                    const bool before = b.melee && first.value > there.value;
+                    offer({Kind::dash, 0, p, {}, before, false, false}, (before ? first : there).value + walk_on - dash_cost, d, p);
+                } else if (b.melee && b.move && there.target >= 0) {
+                    // Dash, then walk into range: the landing is found when priced.
+                    offer({Kind::dash_walk, 0, {}, p, false, false, false}, there.value - dash_cost, d, p);
                 }
+            }
     }
 
     if (count > 0) {
-        std::sort(candidates.begin(), candidates.begin() + count,
-                  [](const Candidate& x, const Candidate& y) { return x.plan.value > y.plan.value; });
-        const float here_danger = safety.expected_damage(b.here);
-        std::array<float, 49> danger;
-        danger.fill(-1);
-        for (int i = 0; i < count && candidates[i].plan.value + here_danger > best.value; ++i) {
+        const auto& blocked = pathing.blocked();
+        const bitboard* guard = pathing.guard();
+        const auto walkable = [&](vec2 p) { return in_bounds(p) && !blocked.is_set(p) && !(guard && guard->is_set(p)); };
+        const int here_steps = intent.field ? intent.field->at(b.here) : static_cast<int>(unreachable);
+        const auto gain_to = [&](vec2 p) {
+            if (here_steps == unreachable) return 0.0f;
+            const int c = intent.field->at(p);
+            return c == unreachable ? 0.0f : static_cast<float>(here_steps - c) * step;
+        };
+        // Expected damage as Safety prices it, from the camps and the enemies we see near us: the
+        // unseen differ little over three tiles.
+        struct Striker {
+            vec2 pos;
+            const Strike* strike;
+        };
+        std::array<Striker, 16> strikers;
+        int ns = 0;
+        for (const auto& e : world.enemies)
+            if (ns < 16 && e.alive && e.visible && dist(b.here, e.pos) <= Strike::max_reach + 3)
+                if (const auto& st = safety.strike_of(e); st.reach >= 0) strikers[ns++] = {e.pos, &st};
+        std::array<Safety::CampHit, 24> camps;
+        int nc = 0;
+        for (const auto& m : safety.awake_members())
+            if (nc < 24 && dist(b.here, m.pos) <= m.reach + 3) camps[nc++] = m;
+        const auto expected = [&](vec2 p) {
+            float total = 0;
+            for (int k = 0; k < nc; ++k)
+                if (dist(p, camps[k].pos) <= camps[k].reach) total += camps[k].strength * camps[k].weight;
+            for (int k = 0; k < ns; ++k) total += safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].pos));
+            return total;
+        };
+        const float here_danger = expected(b.here);
+        for (int i = 0; i < count && candidates[i].bound + here_danger > best.value; ++i) {
+            auto plan = candidates[i].plan;
             const vec2 p = candidates[i].end;
-            float& d = danger[(p.y - b.here.y + 3) * 7 + (p.x - b.here.x + 3)];
-            if (d < 0) d = safety.expected_damage(p);
-            if (const float v = candidates[i].plan.value - (d - here_danger); v > best.value) {
-                best = candidates[i].plan;
+            if (plan.kind == Kind::dash) {
+                if (!landings) landings.emplace(pathing.dash_landings());
+                if (std::find(landings->begin(), landings->end(), p) == landings->end()) continue;
+            } else {
+                if (!walkable(p)) continue;
+                if (plan.kind == Kind::dash_walk) {
+                    if (!landings) landings.emplace(pathing.dash_landings());
+                    const vec2* from = std::find_if(landings->begin(), landings->end(), [&](vec2 l) { return dist(l, p) <= 1; });
+                    if (from == landings->end()) continue;
+                    plan.dash = *from;
+                }
+            }
+            if (const float v = plan.value + gain_to(p) - (expected(p) - here_danger); v > best.value) {
+                best = plan;
                 best.value = v;
             }
         }

@@ -34,11 +34,60 @@ inline void note_shortcut(const char* what) {
     });
 }
 
+// The phase running, for locating out-of-fuel turns: set and read only inside debug_block.
+inline const char*& fuel_phase() {
+    static const char* phase = "start";
+    return phase;
+}
+
 // The Monolith or big group the team is besieging this turn, or -1: camp actions skip every other
 // Monolith.
 inline int& siege_group() {
     static int g = -1;
     return g;
+}
+
+// Our own champion, read raw. The SDK's accessors build and copy a whole record for each field
+// (position() ~85 fuel, item_count() ~225); a raw read into static storage costs ~25. Each call
+// reads the engine again, as the SDK's do.
+inline std::uint32_t my_handle() { return static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(cambc::self())); }
+inline const cambc::detail::champion_info& my_record() {
+    static cambc::detail::champion_info record;
+    cambc::detail::check(cambc::detail::sdk_champion(my_handle(), &record));
+    return record;
+}
+inline vec2 my_position() {
+    const auto& r = my_record();
+    return {r.x, r.y};
+}
+inline float my_health() { return my_record().health; }
+inline float my_max_health() { return my_record().max_health; }
+inline float my_strength() { return my_record().strength; }
+inline cambc::champion_state my_state() { return cambc::champion_state::from_bits_retain(my_record().state); }
+inline bool my_can_move() { return my_state().contains(cambc::champion_state::can_move); }
+inline bool my_can_attack() { return my_state().contains(cambc::champion_state::can_attack); }
+inline bool my_can_cast() { return my_state().contains(cambc::champion_state::can_cast); }
+inline std::uint32_t my_gems() {
+    static std::uint32_t gems;
+    cambc::detail::check(cambc::detail::sdk_champion_gems(my_handle(), &gems));
+    return gems;
+}
+inline std::uint32_t my_gold() {
+    static std::uint32_t gold;
+    cambc::detail::check(cambc::detail::sdk_champion_gold(my_handle(), &gold));
+    return gold;
+}
+inline const cambc::enum_map<cambc::item_type>& my_items() {
+    static cambc::enum_map<cambc::item_type> items;
+    cambc::detail::check(cambc::detail::sdk_champion_items(my_handle(), items.ptr()));
+    return items;
+}
+// Turn ends left of our channel.
+inline std::int32_t my_channel_time() {
+    (void)my_record();
+    static std::int32_t turns;
+    cambc::detail::check(cambc::detail::sdk_champion_channel_time(my_handle(), &turns));
+    return turns;
 }
 
 inline int dist(vec2 a, vec2 b) { return static_cast<int>(a.chebyshev_distance(b)); }
@@ -110,12 +159,18 @@ inline void drop(bitboard& out, const bitboard& tiles) {
 // The helpers below work in scratch boards: allocating a board (~300 fuel) costs more than the
 // host operations on it (~120).
 
-// `tiles` within Chebyshev r of p, in a scratch board valid until the next call.
+// `tiles` within Chebyshev r of p, in a scratch board valid until the next call. The square is
+// kept for the next call with the same p and r.
 inline const bitboard& within(const bitboard& tiles, vec2 p, int r) {
-    static bitboard box{cambc::uninitialized};
-    box.clear();
-    box.draw_chebyshev(p, static_cast<float>(r));
-    box &= tiles;
+    static bitboard square{cambc::uninitialized}, box{cambc::uninitialized};
+    static vec2 square_at{-1, -1};
+    static int square_r = -1;
+    if (p != square_at || r != square_r) {
+        square.clear();
+        square.draw_chebyshev(p, static_cast<float>(r));
+        square_at = p, square_r = r;
+    }
+    and_into(square, tiles, box);
     return box;
 }
 
