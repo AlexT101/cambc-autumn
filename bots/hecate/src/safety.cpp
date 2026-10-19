@@ -65,6 +65,7 @@ struct Side {
     // hits, while nobody is stunned and `alive` stays `quiet_alive`.
     int quiet_until = 0, quiet_alive = -1, quiet_hits = 0;
     float quiet_damage = 0;
+    int weak = -2; // weakest(), or -2 when it must be found again
 
     Side() {}
 
@@ -77,20 +78,23 @@ struct Side {
                 if (fighters[i].linked) g.link = i, fighters[i].link = count;
         alive += g.health > 0;
         ++count;
+        weak = -2;
     }
     float health() const {
         float total = 0;
         for (int i = 0; i < count; ++i) total += std::max(0.0f, fighters[i].health);
         return total;
     }
-    // The living member with the least health and shield, or -1.
-    int weakest() const {
+    // The living member with the least health and shield, or -1. Damage only lands on it, so it
+    // stays the weakest until it falls, or a heal or shield comes or goes.
+    int weakest() {
+        if (weak != -2) return weak;
         int best = -1;
         for (int i = 0; i < count; ++i)
             if (fighters[i].health > 0
                 && (best < 0 || fighters[i].health + fighters[i].shield < fighters[best].health + fighters[best].shield))
                 best = i;
-        return best;
+        return weak = best;
     }
     // A heal's target: the living member below max health with the least, other than `caster`.
     int weakest_hurt(int caster) const {
@@ -113,6 +117,7 @@ struct Side {
             f.health -= taken;
             damage -= taken;
             if (f.health > 0) continue;
+            weak = -2;
             --alive;
             if (f.link >= 0) {
                 alive -= fighters[f.link].health > 0;
@@ -201,8 +206,9 @@ int attack(Fighter& f, int turn, Side& self, Side& other, float& damage) {
         f.ready_at[s] = turn + ability_cooldown;
         f.next_cast = next_cast(f);
         if (c.stuns) ++other.stunned;
-        if (c.heals_self) f.shield = c.heal, f.shield_until = turn + c.duration;
+        if (c.heals_self) f.shield = c.heal, f.shield_until = turn + c.duration, self.weak = -2;
         if (heals_ally) {
+            self.weak = -2;
             auto& t = self.fighters[target];
             t.health = std::min(t.max_health, t.health + c.heal);
         }
@@ -238,7 +244,7 @@ float act(Side& self, Side& other) {
         float quiet = 0;
         for (int i = 0; i < self.count; ++i) {
             auto& f = self.fighters[i];
-            if (f.shield_until >= 0 && f.shield_until <= turn) f.shield = 0, f.shield_until = -1;
+            if (f.shield_until >= 0 && f.shield_until <= turn) f.shield = 0, f.shield_until = -1, self.weak = -2;
             if (f.health <= 0 || f.idle) continue;
             if (f.arrives_at <= turn && !(skip >> i & 1)) hits += attack(f, turn, self, other, damage);
             if (f.shield_until >= 0) until = std::min(until, f.shield_until);
@@ -262,6 +268,41 @@ float act(Side& self, Side& other) {
     return damage;
 }
 
+// The half-turns from `t` (to `end` at most) in which both sides only make their basic attacks
+// and nobody falls, each taken off the side's weakest as act() and hurt() would; returns the next.
+int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours, int& theirs) {
+    const int wu = us.weakest(), we = them.weakest();
+    if (wu < 0 || we < 0) return t;
+    auto& u = us.fighters[wu];
+    auto& e = them.fighters[we];
+    if (u.shield != 0 || e.shield != 0) return t;
+    const float onto_them = u.retaliation > 0 ? static_cast<float>(them.quiet_hits) * u.retaliation : 0.0f;
+    const float onto_us = e.retaliation > 0 ? static_cast<float>(us.quiet_hits) * e.retaliation : 0.0f;
+    const float camp = us.camp;
+    for (; t < end; ++t) {
+        if ((t % 2 == 0) == they_first) {
+            if (them.turn >= them.quiet_until || them.alive != them.quiet_alive || them.stunned != 0) break;
+            const float d = them.quiet_damage;
+            if (!(d < u.health) || !(onto_them < e.health)) break;
+            const float h = u.health - d;
+            if (camp > 0 && !(camp < h)) break;
+            u.health = camp > 0 ? h - camp : h;
+            if (onto_them > 0) e.health -= onto_them;
+            ++them.turn;
+            ++theirs;
+        } else {
+            if (us.turn >= us.quiet_until || us.alive != us.quiet_alive || us.stunned != 0) break;
+            const float d = us.quiet_damage;
+            if (!(d < e.health) || !(onto_us < u.health)) break;
+            e.health -= d;
+            if (onto_us > 0) u.health -= onto_us;
+            ++us.turn;
+            ++ours;
+        }
+    }
+    return t;
+}
+
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does.
 // `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
@@ -270,6 +311,10 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
                              std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0) {
     int ours = 0, theirs = 0;
     for (int t = 0; t < 2 * horizon; ++t) {
+        if (!dealt && us.turn < us.quiet_until && them.turn < them.quiet_until) {
+            t = play_quiet(us, them, t, 2 * horizon, they_first, ours, theirs);
+            if (t == 2 * horizon) break;
+        }
         if (fuel_floor && t % 8 == 7 && fuel() < fuel_floor) return {-1, -1};
         const bool their_turn = (t % 2 == 0) == they_first;
         if (their_turn) {
