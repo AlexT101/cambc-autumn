@@ -2324,7 +2324,9 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         const auto shop = [&] {
             return wants_shop(world, pathing, safety, memory) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
         };
-        if (recall_to_bank(world, pathing, safety, memory) || shop() || siege_heal_trip(memory, safety)) return true;
+        if (recall_to_bank(world, pathing, safety, memory) || shop()) return true;
+        // The sieger's role lasts the trip: dropping it here would cancel the recall next turn.
+        if (siege_heal_trip(memory, safety)) return sieged = true;
     }
     try {
         me.cancel_recall();
