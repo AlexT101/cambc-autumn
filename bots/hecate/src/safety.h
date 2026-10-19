@@ -94,21 +94,12 @@ public:
     // Without building the threats: at least worst_damage(p), and at least their sum with each
     // visible enemy yet to act counted twice when `double_unacted`.
     float damage_bound(vec2 p, bool double_unacted = false);
-    bool may_be_hit(vec2 p); // false only if no threat hits p
-
-    // Chance the threat could be within reach of p; uniform over its possible tiles.
-    float chance_in_reach(const Threat& t, vec2 p);
     float camp_damage(vec2 p, bool worst = true);
-    // Every credible threat at full damage, plus camps.
-    float worst_damage(vec2 p);
     // Each threat by chance in reach times `hit_given_reach`, plus camps.
     float expected_damage(vec2 p);
     // Chance of taking any damage or a stun at p before our next turn (cancelling a recall).
     bool threatened(vec2 p);
 
-    // Where a live member of an awake (or maybe awake) group would attack us: within 3, and no
-    // visible champion nearer it (or as near with a lower id).
-    const bitboard& camp_area();
     const bitboard& enemy_area(); // within a credible threat's reach
     // Tiles to keep off while routing: camps and credible enemies. Our own tile is included when
     // in danger, so routing can free the region we stand in.
@@ -139,13 +130,22 @@ public:
     // Could the credible threats and camps kill us at p before our next turn?
     bool lethal(vec2 p);
 
-    // Drop everything cached, after something this turn changed the fight: a kill, a stun or a
-    // camp kill. Later queries recheck the engine for champions and monsters that died.
-    void invalidate();
     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
     void refresh();
 
 private:
+    bool may_be_hit(vec2 p); // false only if no threat hits p
+    // Chance the threat could be within reach of p; uniform over its possible tiles.
+    float chance_in_reach(const Threat& t, vec2 p);
+    // Every credible threat at full damage, plus camps.
+    float worst_damage(vec2 p);
+    // Where a live member of an awake (or maybe awake) group would attack us: within 3, and no
+    // visible champion nearer it (or as near with a lower id).
+    const bitboard& camp_area();
+    // Drop everything cached, after something this turn changed the fight: a kill, a stun or a
+    // camp kill. Later queries recheck the engine for champions and monsters that died.
+    void invalidate();
+
     struct CampHit {
         vec2 pos;
         float strength;

@@ -35,7 +35,6 @@ public:
     const Field* approach(int group, int range, std::uint64_t fuel_floor);
     bool approach_ready(int group, int range); // usable from here without a search
     std::uint64_t approach_cost(int group, int range); // 0 when ready
-    int approach_steps(int group, int range);
     // Walking steps from the centre of a group worth farming (a reward, no Monolith): by symmetry,
     // from anywhere to it. Null until warmed up; centres_ready() once all are.
     const Field* from_centre(int group);
@@ -57,22 +56,6 @@ public:
     // Static walls, visible units and teleport reservations, and tiles bumped this round.
     const bitboard& blocked();
     void invalidate(); // after we move or dash
-    vec2 my_pos();     // our tile, read again after invalidate() or in a new round
-    struct Neighbours {
-        std::array<vec2, 8> tiles;
-        int count = 0;
-        const vec2* begin() const { return tiles.data(); }
-        const vec2* end() const { return tiles.data() + count; }
-    };
-    // Free neighbours that get strictly closer on a static field, nearest first.
-    Neighbours closer_neighbours(const Field& field, const bitboard* avoid = nullptr);
-
-    struct Route {
-        int steps = unreachable; // 0: already on a goal; unreachable: none within the cap
-        int count = 0;
-        std::array<vec2, 8> first_steps; // the first `count`: all equally short, in compass order
-    };
-    Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable);
 
     // A hidden blocker fails a move without spending the walk; the other first steps are tried,
     // then the route is replanned.
@@ -96,6 +79,22 @@ public:
     bitboard ward_targets();
 
 private:
+    vec2 my_pos(); // our tile, read again after invalidate() or in a new round
+    struct Neighbours {
+        std::array<vec2, 8> tiles;
+        int count = 0;
+        const vec2* begin() const { return tiles.data(); }
+        const vec2* end() const { return tiles.data() + count; }
+    };
+    // Free neighbours that get strictly closer on a static field, nearest first.
+    Neighbours closer_neighbours(const Field& field, const bitboard* avoid = nullptr);
+    struct Route {
+        int steps = unreachable; // 0: already on a goal; unreachable: none within the cap
+        int count = 0;
+        std::array<vec2, 8> first_steps; // the first `count`: all equally short, in compass order
+    };
+    Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable);
+    int approach_steps(int group, int range);
     using Slot = std::unique_ptr<Field>;
     const Field& cached(Slot& slot, const bitboard& goals);
     Slot& altar_slot(int altar);
