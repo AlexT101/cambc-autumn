@@ -112,6 +112,8 @@ struct StaticMap {
 
     int group_at(vec2 p) const; // group whose camp tile this is, or -1
     int altar_at(vec2 p) const; // altar on this tile, or -1
+    // Groups with a camp tile within `radius`, seen or not; a scratch vector, valid until the next call.
+    const std::vector<int>& groups_near(vec2 p, int radius) const;
 
     // Walking steps over static terrain (camps and units ignored).
     const Field& from_ally_spawn() const;
@@ -241,7 +243,16 @@ struct ChampionBelief {
     int turns_since_fixed = 0;
 
     const ChampionFacts& facts() const { return aph::facts(type); }
+    cambc::champion live() const { return cambc::detail::handle_access::make_champion(handle); }
     bool ability_ready(int slot, int round) const { return alive && round >= ready_round[slot]; }
+    // Farthest tile from which a slot ready in `round` can stun, or -1.
+    int ready_stun_reach(int round) const {
+        const auto& f = facts();
+        int r = -1;
+        for (int s = 0; s < 2; ++s)
+            if (const int reach = f.stun_reach(s); reach > r && ability_ready(s, round)) r = reach;
+        return r;
+    }
     // No walking, attacking or casting on the respawn turn.
     bool can_act(int round) const { return alive && round != respawned_round; }
     // Damage back to whoever hits it (Ren), even as it dies.
@@ -401,12 +412,36 @@ private:
     int updated_round_ = -1;
 };
 
+// Cassi or Issac: the other body on its side, whose death is its own; null for anyone else.
+inline const ChampionBelief* linked_partner(const World& world, const ChampionBelief& c) {
+    if (c.facts().passive != Passive::linked_pair) return nullptr;
+    for (const auto& o : c.side == team::ally ? world.allies : world.enemies)
+        if (&o != &c && o.facts().passive == Passive::linked_pair) return &o;
+    return nullptr;
+}
+
+// What its death hands over: both bags for Cassi and Issac.
+inline int pair_gems(const World& world, const ChampionBelief& c) {
+    const auto* p = linked_partner(world, c);
+    return c.gems + (p && p->alive ? p->gems : 0);
+}
+
 // Cassi and Issac die together: the visible partner's health, or a huge value.
 inline float linked_partner_health(const World& world, const ChampionBelief& e) {
-    if (e.facts().passive != Passive::linked_pair) return 1e9f;
-    for (const auto& o : world.enemies)
-        if (&o != &e && o.alive && o.visible && o.facts().passive == Passive::linked_pair) return o.health;
-    return 1e9f;
+    const auto* p = linked_partner(world, e);
+    return p && p->alive && p->visible ? p->health : 1e9f;
+}
+
+// Many bots start a recall at every turn end and cancel it next turn unless wanted: only one kept
+// through a turn is likely to complete.
+inline bool kept_recall(const cambc::champion& c, int full = static_cast<int>(cambc::constants::recall_time)) {
+    return c.is_recalling() && static_cast<int>(c.remaining_channel_time()) < full - 1;
+}
+
+inline bool enemy_within(const World& world, vec2 p, int r) {
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && dist(p, e.pos) <= r) return true;
+    return false;
 }
 
 // Of `damage` on a body at `health`, what brings its pair's death closer: only what takes it below

@@ -328,13 +328,7 @@ int gems_short(const World& world) {
            - pending;
 }
 
-// Cassi or Issac: the other body, whose death is ours too.
-const ChampionBelief* partner(const World& world) {
-    if (world.me().facts().passive != Passive::linked_pair) return nullptr;
-    for (const auto& a : world.allies)
-        if (!a.is_self && a.facts().passive == Passive::linked_pair) return &a;
-    return nullptr;
-}
+const ChampionBelief* partner(const World& world) { return linked_partner(world, world.me()); }
 
 // What a death would hand over: both bags for Cassi and Issac (the partner's as last seen).
 int bag_at_stake(const World& world) {
@@ -978,7 +972,7 @@ bool collect_local_reward(const World& world, Pathing& pathing, Safety& safety, 
                 if (!funded()) return false;
                 if (!a.alive || (!a.is_self && !a.visible)) continue;
                 if (!a.is_self && comms::claim_of(world, a.index) != g) continue;
-                const auto live = cambc::detail::handle_access::make_champion(a.handle);
+                const auto live = a.live();
                 const auto status = live.state();
                 if (status.is_dead() || status.contains(cambc::champion_state::teleporting)
                     || status.contains(cambc::champion_state::submitting_gems) || live.restrictions().contains(cambc::buff_restrictions::move)) continue;
@@ -2050,7 +2044,7 @@ bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memo
 
 bool alive_now(const ChampionBelief& b) {
     try {
-        return cambc::detail::handle_access::make_champion(b.handle).is_alive();
+        return b.live().is_alive();
     } catch (const cambc::error&) {
         return false;
     }
@@ -2062,11 +2056,7 @@ bool alive_now(const ChampionBelief& b) {
 // it, or our own bag can go in now.
 const ChampionBelief* tribute_to_stun_later(const World& world, Safety& safety, const Memory& memory) {
     const auto& self = world.me();
-    const auto& f = self.facts();
-    int reach = -1;
-    for (int s = 0; s < 2; ++s)
-        if (f.abilities[s].stuns && self.ability_ready(s, world.round))
-            reach = std::max(reach, f.abilities[s].kind == AbilityKind::attack_reset ? f.attack_range() : f.abilities[s].reach());
+    const int reach = self.ready_stun_reach(world.round);
     const ChampionBelief* target = nullptr;
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible || e.channel != Channel::tribute || e.facts().passive == Passive::stun_immune
@@ -2088,16 +2078,10 @@ const ChampionBelief* tribute_to_stun_later(const World& world, Safety& safety, 
 // A ready stun of ours reaches a visible enemy whose tribute wins them the game.
 bool can_stop_winning_tribute(const World& world) {
     const auto& self = world.me();
-    const auto& f = self.facts();
-    for (const auto& e : world.enemies) {
-        if (!enemy_tribute_wins(world, e) || e.facts().passive == Passive::stun_immune) continue;
-        for (int s = 0; s < 2; ++s) {
-            const auto& a = f.abilities[s];
-            if (!a.stuns || !self.ability_ready(s, world.round)) continue;
-            const int reach = a.kind == AbilityKind::attack_reset ? f.attack_range() : a.reach();
-            if (dist(self.pos, e.pos) <= reach) return true;
-        }
-    }
+    for (const auto& e : world.enemies)
+        if (enemy_tribute_wins(world, e) && e.facts().passive != Passive::stun_immune
+            && dist(self.pos, e.pos) <= self.ready_stun_reach(world.round))
+            return true;
     return false;
 }
 

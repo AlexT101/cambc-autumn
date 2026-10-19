@@ -89,4 +89,11 @@ inline constexpr int contest_gems = 40;
 // Keep the current siege target unless another is sooner by this many rounds (bot.cpp siege_candidate).
 inline constexpr int siege_stickiness = 20;
 
+// Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
+// tribute (besides its gems) and a cancelled recall.
+inline constexpr float life_value = 300;
+inline constexpr float gem_value = 15;
+inline constexpr float tribute_value = 100;
+inline constexpr float recall_value = 60;
+
 } // namespace aph::params

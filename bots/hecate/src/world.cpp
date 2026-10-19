@@ -298,6 +298,16 @@ int StaticMap::group_at(vec2 p) const { return static_cast<int>(group_lookup_[ti
 
 int StaticMap::altar_at(vec2 p) const { return in_bounds(p) ? static_cast<int>(altar_lookup_[tile_index(p)]) - 1 : -1; }
 
+const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const {
+    static std::vector<int> out;
+    out.clear();
+    for (auto tile : positions_within(camp_tiles, p, radius)) {
+        const int g = group_at(tile);
+        if (g >= 0 && std::find(out.begin(), out.end(), g) == out.end()) out.push_back(g);
+    }
+    return out;
+}
+
 const Field& StaticMap::from_ally_spawn() const {
     if (!ally_field_) {
         FuelMeter meter{"ally_spawn_field"};

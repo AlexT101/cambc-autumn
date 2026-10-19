@@ -1,7 +1,6 @@
 // Transcribed from cambc-rules.yaml; check_facts_against_engine() compares it with the engine.
 #pragma once
 #include <cambc.h>
-#include <algorithm>
 #include <array>
 #include <cstdint>
 
@@ -88,12 +87,12 @@ struct ChampionFacts {
             if (abilities[s].kind == kind) return s;
         return -1;
     }
-    // Farthest tile from which this champion can stun something this turn (basic attack for Marcella).
-    constexpr int stun_reach() const {
-        int r = -1;
-        for (const auto& a : abilities)
-            if (a.stuns) r = std::max(r, a.kind == AbilityKind::attack_reset ? attack_range() : a.reach());
-        return r;
+    // Farthest tile from which this slot can stun something this turn (the basic attack for
+    // Marcella); -1 if it never stuns.
+    constexpr int stun_reach(int slot) const {
+        const auto& a = abilities[slot];
+        if (!a.stuns) return -1;
+        return a.kind == AbilityKind::attack_reset ? attack_range() : a.reach();
     }
 };
 

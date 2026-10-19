@@ -261,6 +261,19 @@ Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first 
     return t;
 }
 
+// Us, and the allies we see within fight_ally_radius of p.
+bool fights_with(const ChampionBelief& a, vec2 p) {
+    return a.alive && (a.is_self || (a.visible && dist(p, a.pos) <= fight_ally_radius));
+}
+
+void join_allies(const World& world, Side& us, vec2 p) {
+    for (const auto& a : world.allies) {
+        if (!fights_with(a, p)) continue;
+        if (a.is_self) us.self = us.count;
+        us.join(a, a.is_self ? world.round : next_turn_round(world, a));
+    }
+}
+
 } // namespace
 
 int next_turn_round(const World& world, const ChampionBelief& c) {
@@ -344,7 +357,7 @@ Strike threat_strike(const World& world, const ChampionBelief& c) {
         const float walked = s.at(std::max(0, d - 1));
         const float twice = s.hits(d) ? s.at(d) + (d <= basic_reach ? c.strength : 0.0f) : 0.0f;
         out.damage[d] = std::max(walked, twice);
-        out.stuns[d] = (d <= s.reach + 1 && s.stuns[std::min(std::max(0, d - 1), Strike::max_reach)]) || (s.hits(d) && s.stuns[d]);
+        out.stuns[d] = s.stuns[std::max(0, d - 1)]; // s.stuns holds from 0 out to some distance
     }
     out.reach = std::min(Strike::max_reach, s.reach + 1);
     return out;
@@ -679,10 +692,8 @@ std::uint32_t Safety::fight_key(vec2 p, int exclude) {
         key |= 1u << (16 + t.enemy);
     }
     if (!hit) return no_fight;
-    for (std::size_t i = 0; i < world_.allies.size(); ++i) {
-        const auto& a = world_.allies[i];
-        if (a.alive && (a.is_self || (a.visible && dist(p, a.pos) <= fight_ally_radius))) key |= 1u << i;
-    }
+    for (std::size_t i = 0; i < world_.allies.size(); ++i)
+        if (fights_with(world_.allies[i], p)) key |= 1u << i;
     return key;
 }
 
@@ -706,12 +717,7 @@ Trade Safety::fight(vec2 p, int exclude) {
     if (key == no_fight) return {};
     if (const auto* t = memo(key)) return *t;
     Side us, them;
-    for (std::size_t i = 0; i < world_.allies.size(); ++i) {
-        const auto& a = world_.allies[i];
-        if (!(key >> i & 1)) continue;
-        if (a.is_self) us.self = us.count;
-        us.join(a, a.is_self ? world_.round : next_turn_round(world_, a));
-    }
+    join_allies(world_, us, p);
     for (const auto& t : threats()) {
         const auto& e = world_.enemies[t.enemy];
         if (key >> (16 + t.enemy) & 1) them.join(e, next_turn_round(world_, e));
@@ -756,11 +762,7 @@ Trade Safety::pursuit(vec2 p, int approach) {
         if (them.count > k) them.fighters[k].arrives_at = walk;
     }
     if (them.count == 0) return {};
-    for (const auto& a : world_.allies) {
-        if (!a.alive || !(a.is_self || (a.visible && dist(p, a.pos) <= fight_ally_radius))) continue;
-        if (a.is_self) us.self = us.count;
-        us.join(a, a.is_self ? world_.round : next_turn_round(world_, a));
-    }
+    join_allies(world_, us, p);
     us.camp = camp_damage(p, false);
     return trade(us, them, end_reserve, false);
 }

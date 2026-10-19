@@ -4,6 +4,7 @@
 #include <optional>
 #include <vector>
 #include "safety.h"
+#include "params.h"
 #include "world.h"
 
 namespace aph {
@@ -11,12 +12,8 @@ namespace aph {
 namespace {
 
 // Values are in enemy health points.
-constexpr float kill_bonus = 300;
-constexpr float gem_value = 15;
 constexpr float stun_value = 80;
-constexpr float tribute_stun_bonus = 100;
 constexpr float winning_tribute_value = 5000; // a stun that stops the enemy's game-winning tribute
-constexpr float recall_cancel_value = 60;
 constexpr float min_value = 40;
 constexpr float keep_walk_value = 250;
 constexpr float min_camp_value = 50;
@@ -26,8 +23,6 @@ std::uint64_t enemy_cast_cost(int visible, int unseen) {
     return 12000 + 2500 * static_cast<std::uint64_t>(visible) + 1000 * static_cast<std::uint64_t>(unseen);
 }
 std::uint64_t camp_cast_cost(std::size_t members, bool ground) { return 2000 + 800 * members + (ground ? 8000 : 0); }
-
-cambc::champion live(const ChampionBelief& b) { return cambc::detail::handle_access::make_champion(b.handle); }
 
 bool walked(const World& world) { return cambc::self().position() != world.me().pos; }
 
@@ -77,13 +72,9 @@ float damage_to(int slot, const cambc::champion& target, float raw) {
     }
 }
 
-// Many bots start a recall at every turn end and cancel it next turn unless wanted: only one kept
-// through a turn is likely to complete.
 bool kept_recall(const ChampionBelief& e) {
-    if (e.channel != Channel::recall || !e.visible) return false;
-    const auto c = live(e);
-    const int full = e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time);
-    return c.is_recalling() && c.remaining_channel_time() < full - 1;
+    return e.channel == Channel::recall && e.visible
+           && aph::kept_recall(e.live(), e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
 }
 
 // A kill takes the bag, both bags for Cassi and Issac, who die together. Other damage to an
@@ -91,23 +82,19 @@ bool kept_recall(const ChampionBelief& e) {
 // counts once it takes that body below the other.
 float hit_worth(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
     if (health > 0 && damage >= health - 0.01f) {
-        int gems = e.gems;
-        if (e.facts().passive == Passive::linked_pair)
-            for (const auto& o : world.enemies)
-                if (&o != &e && o.alive && o.facts().passive == Passive::linked_pair) gems += o.gems;
-        return health + kill_bonus + gem_value * static_cast<float>(gems);
+        return health + params::life_value + params::gem_value * static_cast<float>(pair_gems(world, e));
     }
     if (on_spawn || damage <= 0) return 0;
-    return useful_damage(damage, health, linked_partner_health(world, e)) + (kept_recall(e) ? recall_cancel_value : 0);
+    return useful_damage(damage, health, linked_partner_health(world, e)) + (kept_recall(e) ? params::recall_value : 0);
 }
 
 // `damaging`: the hit's worth already counts a cancelled recall.
 float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
     if (e.facts().passive == Passive::stun_immune) return 0;
     float v = stun_value;
-    if (e.channel == Channel::tribute) v += tribute_stun_bonus + gem_value * static_cast<float>(e.gems);
+    if (e.channel == Channel::tribute) v += params::tribute_value + params::gem_value * static_cast<float>(e.gems);
     if (e.channel == Channel::tribute && enemy_tribute_wins(world, e)) v += winning_tribute_value;
-    if (!damaging && kept_recall(e)) v += recall_cancel_value;
+    if (!damaging && kept_recall(e)) v += params::recall_value;
     return v;
 }
 
@@ -117,18 +104,7 @@ struct Target {
     float worth;  // if hit
 };
 
-// Groups with a camp tile within `radius`, by the map, seen or not. The scratch vectors and
-// boards here are kept across calls: allocating costs more than the work.
-const std::vector<int>& groups_near(const World& world, vec2 p, int radius) {
-    const auto& map = world.map();
-    static std::vector<int> out;
-    out.clear();
-    for (auto tile : positions_within(map.camp_tiles, p, radius)) {
-        const int g = map.group_at(tile);
-        if (g >= 0 && std::find(out.begin(), out.end(), g) == out.end()) out.push_back(g);
-    }
-    return out;
-}
+// The scratch vectors and boards here are kept across calls: allocating costs more than the work.
 
 void draw_alive_members(const World& world, int g, bitboard& out) {
     const auto& members = world.map().groups[g].members;
@@ -143,7 +119,7 @@ const bitboard& wake_risk(const World& world, vec2 here, int reach) {
     const auto& groups = world.map().groups;
     static bitboard risk{cambc::uninitialized};
     risk.clear();
-    for (int g : groups_near(world, here, reach)) {
+    for (int g : world.map().groups_near(here, reach)) {
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || c.awake == Awake::awake || groups[g].strength <= 0) continue;
         bool near = groups[g].has_monolith && g != siege_group();
@@ -222,7 +198,7 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
     if (keep_walk)
         for (const auto& e : world.enemies) {
             if (!e.alive || !e.visible || !strike(e, next_turn_round(world, e)).hits(dist(here, e.pos))) continue;
-            const auto c = live(e);
+            const auto c = e.live();
             if (!c.is_visible() || c.buffs().has_stun()) continue;
             unstoppable |= e.facts().passive == Passive::stun_immune;
             reaching.push_back(&e);
@@ -247,7 +223,7 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
         if (a.target == Targeting::unit) {
             for (const auto& e : world.enemies) {
                 if (!e.alive || !e.visible || dist(here, e.pos) > a.range() || suicidal(e)) continue;
-                const auto c = live(e);
+                const auto c = e.live();
                 if (!c.is_visible()) continue;
                 const float damage = damage_to(s, c, raw);
                 if (spared(e, damage, c.health())) continue;
@@ -271,7 +247,7 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
                         off.draw_chebyshev(e.pos, 1);
                         continue;
                     }
-                    const auto c = live(e);
+                    const auto c = e.live();
                     if (!c.is_visible()) continue;
                     const float damage = damage_to(s, c, raw);
                     if (spared(e, damage, c.health())) {
@@ -324,8 +300,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     const vec2 here = me.position();
     const auto& g = world.map().groups[group];
     if ((g.has_monolith && group != siege_group()) || world.camps[group].state != CampState::alive) return {};
-    for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(here, e.pos) <= hold_range) return {};
+    if (enemy_within(world, here, hold_range)) return {};
     const bool ground =
         (ready[0] && f.abilities[0].target == Targeting::ground) || (ready[1] && f.abilities[1].target == Targeting::ground);
     if (!fuel_ok(camp_cast_cost(g.members.size(), ground))) {
@@ -378,7 +353,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             for (const auto& m : members) targets.push_back({m.pos, 1, std::min(raw, m.health) + (a.stuns ? m.stun : 0)});
             static bitboard skip{cambc::uninitialized};
             skip.clear();
-            for (int other : groups_near(world, here, a.reach()))
+            for (int other : world.map().groups_near(here, a.reach()))
                 if (other != group && world.camps[other].state == CampState::alive) draw_alive_members(world, other, skip);
             best.offer(best_ground(s, any_value ? 1.0f : min_camp_value, targets, here, a.range(), skip));
         }

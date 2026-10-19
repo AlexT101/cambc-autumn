@@ -176,17 +176,16 @@ inline std::unique_ptr<Field> make_field(const bitboard& walls, const bitboard& 
 
 inline std::uint64_t fuel() { return cambc::fuel_remaining(); }
 
-// Layers: a quarter over the deepest full field so far, or width + height before the first.
-inline std::uint64_t field_cost_estimate() {
-    const int seen = max_field_layers();
-    const auto layers = static_cast<std::uint64_t>(seen ? seen + seen / 4 : cambc::map::width() + cambc::map::height());
-    return 3000 + search_chunks() * (20 + layers);
-}
-inline constexpr std::uint64_t small_cost_estimate = 5000;
-
 inline std::uint64_t search_cost_estimate(int layers) {
     return 4000 + search_chunks() * (20 + static_cast<std::uint64_t>(layers));
 }
+
+// Layers: a quarter over the deepest full field so far, or width + height before the first.
+inline std::uint64_t field_cost_estimate() {
+    const int seen = max_field_layers();
+    return search_cost_estimate(seen ? seen + seen / 4 : cambc::map::width() + cambc::map::height()) - 1000;
+}
+inline constexpr std::uint64_t small_cost_estimate = 5000;
 
 inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }
 

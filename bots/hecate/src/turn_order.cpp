@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <vector>
+#include "params.h"
 #include "safety.h"
 #include "world.h"
 
@@ -14,11 +15,6 @@ namespace {
 enum Band : int { idle, engaged, protect, kill };
 constexpr int band_width = 10000;
 
-// In enemy health points, as in abilities.cpp.
-constexpr float life_value = 300;
-constexpr float gem_value = 15;
-constexpr float tribute_value = 100;
-constexpr float recall_value = 60;
 // An enemy yet to act this round moves before our next turn anyway: acting before its turn next
 // round denies it only a second one.
 constexpr float unacted_share = 0.5f;
@@ -96,14 +92,6 @@ bool can_act_before(const World& world, const ChampionBelief& e) {
     return false;
 }
 
-int gems_lost(const World& world, const ChampionBelief& e) {
-    int gems = e.gems;
-    if (e.facts().passive == Passive::linked_pair)
-        for (const auto& o : world.enemies)
-            if (&o != &e && o.alive && o.facts().passive == Passive::linked_pair) gems += o.gems;
-    return gems;
-}
-
 // Strikes for next round, by index, each worked out on first use. Slots not used are left
 // unwritten: the engine charges for every byte.
 struct Strikes {
@@ -137,14 +125,14 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
         const int d = dist(self.pos, e->pos);
         if (!ours.hits(d) || enemy_spawn.is_set(e->pos) || !can_act_before(world, *e)) continue;
         if (side_damage(world, self, ours, e->pos, allies) >= health) {
-            const float value = life_value + gem_value * static_cast<float>(gems_lost(world, *e));
+            const float value = params::life_value + params::gem_value * static_cast<float>(pair_gems(world, *e));
             wish.offer(kill, e->acted ? value : unacted_share * value);
         }
         // A channel completes at its owner's turn start: here, its next.
         if (e->channel_end_round != world.round + 1) continue;
         if (e->channel == Channel::tribute && ours.stuns[d] && e->facts().passive != Passive::stun_immune)
-            wish.offer(kill, tribute_value + gem_value * static_cast<float>(e->gems));
-        if (e->channel == Channel::recall && ours.at(d) > 0) wish.offer(kill, recall_value);
+            wish.offer(kill, params::tribute_value + params::gem_value * static_cast<float>(e->gems));
+        if (e->channel == Channel::recall && ours.at(d) > 0) wish.offer(kill, params::recall_value);
     }
 }
 
@@ -166,8 +154,8 @@ void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
     for (const auto& t : safety.threats()) {
         const int d = t.distance(self.pos);
         if (!t.strike.hits(d) || !(recall || t.strike.stuns[d])) continue;
-        const float gems = gem_value * static_cast<float>(self.gems);
-        wish.offer(protect, (me.is_submitting_gems() ? tribute_value : recall_value) + gems);
+        const float gems = params::gem_value * static_cast<float>(self.gems);
+        wish.offer(protect, (me.is_submitting_gems() ? params::tribute_value : params::recall_value) + gems);
         return;
     }
 }
@@ -186,7 +174,7 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         enemy = true;
         damage += t.strike.at(d) * (t.visible && !world.enemies[t.enemy].acted ? 2.0f : 1.0f);
     }
-    if (enemy && damage >= self.health) wish.offer(protect, life_value + gem_value * static_cast<float>(self.gems));
+    if (enemy && damage >= self.health) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(self.gems));
 }
 
 // A heal before the enemies' turns keeps an ally alive whom they would otherwise kill.
@@ -203,7 +191,7 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
         float damage = 0;
         for (const auto& [e, health] : enemies) damage += next_strike(world, *e, strikes).at(dist(e->pos, ally.pos));
         if (damage >= ally.health && damage < ally.health + heal)
-            wish.offer(protect, life_value + gem_value * static_cast<float>(ally.gems));
+            wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(ally.gems));
     }
 }
 

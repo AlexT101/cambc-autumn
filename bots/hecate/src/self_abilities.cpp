@@ -4,6 +4,7 @@
 #include <optional>
 #include <vector>
 #include "champions.h"
+#include "params.h"
 #include "pathing.h"
 #include "world.h"
 
@@ -16,11 +17,9 @@ constexpr int reset_hold_margin = 2;      // an enemy this far beyond attack ran
 constexpr int travel_dash_clearance = 10; // no visible enemy this close for a travel dash
 constexpr float heal_min_share = 0.6f;    // of the heal amount restored
 constexpr float heal_low_health = 0.5f;
-constexpr int kept_recall_turns = 3; // channel left on a recall an ally has kept for a turn
 constexpr float dash_min_health = 0.5f;
 constexpr float chase_health = 0.4f;
 constexpr int failed_search_pause = 4; // rounds without a travel-dash search after one finds no gain
-constexpr float kill_value = 300;      // in enemy health points, over the health taken
 
 std::optional<cambc::ability> ready(const World& world, AbilityKind kind) {
     const auto& self = world.me();
@@ -53,23 +52,6 @@ int threat_reach(const ChampionFacts& f) {
     return r + (f.has_dash() ? dash_steps + 1 : 1);
 }
 
-bool enemy_within(const World& world, vec2 p, int r) {
-    for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(p, e.pos) <= r) return true;
-    return false;
-}
-
-// Groups with a camp tile within `radius`, found by bitboard so large maps cost no more.
-std::vector<int> groups_near(const World& world, vec2 p, int radius) {
-    const auto& map = world.map();
-    std::vector<int> out;
-    for (auto tile : positions_within(map.camp_tiles, p, radius)) {
-        const int g = map.group_at(tile);
-        if (g >= 0 && std::find(out.begin(), out.end(), g) == out.end()) out.push_back(g);
-    }
-    return out;
-}
-
 struct Threat {
     vec2 pos;
     int reach;
@@ -85,7 +67,7 @@ std::vector<Threat> threats_near(const World& world, vec2 here) {
         if (dist(here, e.pos) <= reach + dash_steps) out.push_back({e.pos, reach, false});
     }
     const auto& groups = world.map().groups;
-    for (int g : groups_near(world, here, camp_attack_range + dash_steps)) {
+    for (int g : world.map().groups_near(here, camp_attack_range + dash_steps)) {
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
         for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
@@ -190,7 +172,7 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     const float strength = me.strength(), health = me.health();
     // An enemy on its spawn heals to full at its turn end: only a kill or a stun is worth anything.
     const auto worth = [&](const Seen& s) {
-        if (s.health <= strength) return s.health + kill_value;
+        if (s.health <= strength) return s.health + params::life_value;
         return enemy_spawn.is_set(s.pos) ? 0.0f : useful_damage(strength, s.health, s.partner);
     };
     std::optional<cambc::champion> best;
@@ -380,7 +362,7 @@ bool heal_ally(const World& world) {
             if (!c.is_ally()) continue;
             // Allies start a recall at every turn end and cancel it unless wanted, so only one
             // they kept going will reach spawn and heal there.
-            if (c.is_recalling() && c.remaining_channel_time() <= kept_recall_turns) continue;
+            if (kept_recall(c)) continue;
             const float gain = std::min(amount, c.max_health() - c.health());
             const float fraction = health_fraction(c);
             if (gain <= 0 || (gain < heal_min_share * amount && fraction >= heal_low_health)) continue;
@@ -404,7 +386,7 @@ bool shield_if_needed(const World& world, int farmed) {
         danger |= e.alive && e.visible && dist(here, e.pos) <= threat_reach(e.facts());
     if (danger) return cast(*shield);
     const auto& groups = world.map().groups;
-    for (int g : groups_near(world, here, camp_attack_range)) {
+    for (int g : world.map().groups_near(here, camp_attack_range)) {
         if (danger) break;
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || groups[g].strength <= 0) continue;
