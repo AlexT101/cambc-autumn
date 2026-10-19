@@ -348,6 +348,16 @@ bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor)
     return true;
 }
 
+bool StaticMap::find_all_bush_clusters(std::uint64_t fuel_floor) const {
+    static bitboard left{cambc::uninitialized};
+    for (;;) {
+        not_into(clustered_, left);
+        left &= bushes;
+        if (left.is_empty()) return true;
+        if (!fuel_ok(fuel_floor + (growth_ ? 0 : 20000)) || !grow_cluster(first_tile(left), fuel_floor)) return false;
+    }
+}
+
 const bitboard& StaticMap::near_bushes() const {
     if (!near_bushes_) {
         auto rows = bushes;
