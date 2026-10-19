@@ -152,16 +152,12 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
                 if (x >= 0 && x < side && y >= 0 && y < side) value[y * side + x] += t.weight * t.worth;
             }
     }
-    static bitboard box{cambc::uninitialized};
-    box.clear();
-    box.draw_chebyshev(here, static_cast<float>(range));
-    centres &= box;
-    box.clear();
-    box |= centres;
-    box &= skip;
-    centres ^= box;
+    static bitboard skipped{cambc::uninitialized};
+    and_into(centres, skip, skipped);
+    centres ^= skipped;
     // In board order, which breaks ties.
     for (auto c : Tiles<17 * 17>{centres}) {
+        if (dist(c, here) > range) continue;
         const float v = value[(c.y - here.y + range) * side + (c.x - here.x + range)];
         if (v > best.value && v >= min_weight_value) best.slot = slot, best.value = v, best.tile = c;
     }
@@ -194,22 +190,24 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
     keep_walk = keep_walk && my_can_move();
     // A stun takes its target's walk as the cast takes ours: with every visible enemy that could
     // reach us next turn stunned, keeping the walk gains nothing. `free_stun`: centres that do so.
-    std::vector<const ChampionBelief*> reaching;
+    std::array<const ChampionBelief*, 16> reaching;
+    int n_reaching = 0;
     bool unstoppable = false;
     if (keep_walk)
         for (const auto& e : world.enemies) {
+            if (n_reaching == 16) break;
             if (!e.alive || !e.visible || !strike(e, next_turn_round(world, e)).hits(dist(here, e.pos))) continue;
             const auto c = e.live();
             if (!c.is_visible() || c.buffs().has_stun()) continue;
             unstoppable |= e.facts().passive == Passive::stun_immune;
-            reaching.push_back(&e);
+            reaching[n_reaching++] = &e;
         }
-    const bool walk_matters = reaching.empty() || unstoppable;
+    const bool walk_matters = n_reaching == 0 || unstoppable;
     static bitboard not_free{cambc::uninitialized}; // ~free_stun
     if (!walk_matters) {
         static bitboard free_stun{cambc::uninitialized};
         free_stun.fill();
-        for (const auto* e : reaching) free_stun &= square(e->pos, 1);
+        for (int i = 0; i < n_reaching; ++i) free_stun &= square(reaching[i]->pos, 1);
         not_free.fill();
         not_free ^= free_stun;
     }
@@ -230,7 +228,7 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
                 if (spared(e, damage, c.health())) continue;
                 float v = hit_worth(world, e, damage, c.health(), enemy_spawn.is_set(e.pos));
                 if (a.stuns && !c.buffs().has_stun()) v += stun_worth(world, e, raw > 0);
-                const bool free = a.stuns && !walk_matters && reaching.size() == 1 && reaching[0] == &e;
+                const bool free = a.stuns && !walk_matters && n_reaching == 1 && reaching[0] == &e;
                 if (v >= (free ? min_value : threshold) && v > best.value) best = Cast{s, v, c, std::nullopt, {}};
             }
         } else if (a.target == Targeting::ground) {
@@ -278,9 +276,7 @@ Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold) 
             if (targets.empty()) continue;
             if (!risk) risk = &wake_risk(world, here, a.reach());
             static bitboard skip{cambc::uninitialized};
-            skip.clear();
-            skip |= *risk;
-            skip |= off;
+            or_into(*risk, off, skip);
             best.offer(best_ground(s, threshold, targets, here, a.range(), skip));
             if (a.stuns && threshold > min_value && !walk_matters) {
                 skip |= not_free;

@@ -27,6 +27,12 @@ struct Foe {
 
 using Healths = std::array<float, max_foes>;
 
+// Storage left unwritten until used: vec2 and Hit initialise their members.
+template <typename T, std::size_t N> union Raw {
+    Raw() {}
+    T v[N];
+};
+
 // The turn's state, read once.
 struct Board {
     std::array<Foe, max_foes> foes;
@@ -298,21 +304,23 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     const bool try_dash = b.dash >= 0 && b.attack && nearest <= dash_reach
                           && std::max(dash_most, first.value) + (dash_steps + 2) * step - dash_cost > best.value;
     const auto local = [&](vec2 p) { return (p.y - b.here.y + 3) * 7 + (p.x - b.here.x + 3); };
-    std::array<Hit, 49> tile_hit{};
-    std::array<vec2, 49> struck; // the tiles tile_hit reaches, in marking order
+    Raw<Hit, 49> tile_hit;
+    Raw<vec2, 49> struck; // the tiles tile_hit reaches, in marking order
     int n_struck = 0;
-    if (!b.splash && (try_walk || try_dash))
+    if (!b.splash && (try_walk || try_dash)) {
+        std::fill_n(tile_hit.v, 49, Hit{});
         for (int i = 0; i < b.n; ++i) {
             const float w = worth[i];
             if (w <= 0) continue;
             for (int y = std::max(b.foes[i].pos.y - b.range, b.here.y - 3); y <= std::min(b.foes[i].pos.y + b.range, b.here.y + 3); ++y)
                 for (int x = std::max(b.foes[i].pos.x - b.range, b.here.x - 3); x <= std::min(b.foes[i].pos.x + b.range, b.here.x + 3); ++x) {
-                    auto& t = tile_hit[local({x, y})];
-                    if (t.target < 0) struck[n_struck++] = {x, y};
+                    auto& t = tile_hit.v[local({x, y})];
+                    if (t.target < 0) struck.v[n_struck++] = {x, y};
                     if (t.target < 0 || w > t.value || (w == t.value && h0[i] < h0[t.target])) t = {w, i};
                 }
         }
-    const auto hit_at = [&](vec2 p) { return b.splash ? best_hit(b, p, h0) : tile_hit[local(p)]; };
+    }
+    const auto hit_at = [&](vec2 p) { return b.splash ? best_hit(b, p, h0) : tile_hit.v[local(p)]; };
     if (try_walk) {
         // The reset's second hit after a walk, from each neighbour, marked enemy first as above.
         std::array<Hit, 9> again{};
@@ -351,7 +359,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
         const float walk_on = b.melee && walks ? step : 0.0f;
         // Splash (Varg) has no dash: every tile here is one tile_hit reaches.
         for (int k = 0; k < n_struck; ++k) {
-            const vec2 p = struck[k];
+            const vec2 p = struck.v[k];
             const int d = dist(p, b.here);
             if (d < 1) continue;
             const Hit there = hit_at(p);
@@ -384,14 +392,14 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
         for (const auto& e : world.enemies)
             if (ns < 16 && e.alive && e.visible && dist(b.here, e.pos) <= Strike::max_reach + 3 && safety.strike_of(e).reach >= 0)
                 strikers[ns++] = &e;
-        std::array<Safety::CampHit, 24> camps;
+        Raw<Safety::CampHit, 24> camps;
         int nc = 0;
         for (const auto& m : safety.awake_members())
-            if (nc < 24 && dist(b.here, m.pos) <= m.reach + 3) camps[nc++] = m;
+            if (nc < 24 && dist(b.here, m.pos) <= m.reach + 3) camps.v[nc++] = m;
         const auto expected = [&](vec2 p) {
             float total = 0;
             for (int k = 0; k < nc; ++k)
-                if (dist(p, camps[k].pos) <= camps[k].reach) total += camps[k].strength * camps[k].weight;
+                if (dist(p, camps.v[k].pos) <= camps.v[k].reach) total += camps.v[k].strength * camps.v[k].weight;
             for (int k = 0; k < ns; ++k) total += safety_params::hit_given_reach * safety.blow(*strikers[k], p).damage;
             return total;
         };
