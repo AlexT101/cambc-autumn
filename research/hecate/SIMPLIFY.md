@@ -12,11 +12,57 @@ How to test each bucket:
 - **3. Simplification/robustness:** A/B each change. For fuel gates, first count `SHORTCUT` tags with `py tools/fuel/bench.py run hecate --fuel 0`. A gate that never or rarely fires can go with little risk.
 - **4. Feature removal:** A/B each removal. Keep it removed if the result is level within noise (±2.5 points on 390 games), since that is the point of removing it.
 
+**Fuel rule.** Fuel savings stay. That covers caches, memos and precomputation, cheaper code paths chosen by map size, and work done with a turn's spare fuel.
+- **What stays:** DraftPlan, lineage sharing, `prepare_walk`/`prepare_next_turn`, the capped centre-field warm-up, the `strike()` memo, farm's `GroupFacts`, `prey`'s lazy Strength read and `update_altars`' two paths. Section 5 lists them all.
+- **What can still go:** fuel gates and fallbacks, which make a worse choice when fuel is short. Section 3.1 covers them.
+- **What to add:** changes that cut fuel use without changing play, such as the static scratch boards in siege.
+
+---
+
+## 0. Unused code: could it improve the bot?
+Every unused function and data structure was checked for whether using it would help, not just whether to delete it.
+
+### Worth trying as features
+| Unused code | Idea | Why it might pay |
+|---|---|---|
+| Self `fast_recall` (bot.cpp:1058, 1243), `home_recall_time`, `engine::home_emblem`, the Home shard item types | **Buy a Home emblem** (recall 5 → 3 turn ends) as the second or third emblem. Set `fast_recall` for ourselves from our items, and use one `my_recall_time()` wherever `cambc::constants::recall_time` is used for ourselves: `recall_outruns`, `recall_to_bank`, `capture_recall`, `wants_shop` (bot.cpp:2046) and farm's heal-trip cost. | Recall is the bot's main way home: banking, capture recalls, heal and shop trips. The pre-start alone is worth ~30 points (EXPERIMENTS). Two fewer turns per trip also means two fewer turns in which any damage cancels the recall. Home has never been tested; Durability as the second emblem lost 15 points, so the order matters. Try Home in place of Durability (third) first. |
+| `Altar::lock_tiles()` (world.cpp:559, warmed but never read) | **Walk to lock an altar where a visible enemy is tributing a big bag.** `place_lock` only fires when we already happen to be within 2 (bot.cpp:129). A lock cancels every tribute at that altar and keeps the gems carried. Use `lock_tiles()` as the walk goals when we carry a lock and the bag's tribute ends after we could arrive. | It counters big tributes without a ready stun. It works on stun-immune Marcella. It costs the enemy 3 attacks to clear. `can_stop_winning_tribute` and `tribute_to_stun_later` show the bot already values stopping tributes. Trigger on a bag over ~60 or one that would win. |
+| `Safety::expected_damage` | **Score `retreat_step`'s and dash landings' tiles by expected damage.** `retreat_step` sorts by `damage_bound` (unseen enemies at full weight). The `dash_away`/`dash_to_attack` landings use self_abilities' own `threats_near`/`danger` model (bug 2.3). | Choosing the least exposed homeward step won ~5 points (2dba924), so tile choice matters. Using Safety's model for the dash landings also removes the fourth threat model. Try `damage_bound` first (closest to today), then `expected_damage` as a tie-break. |
+| `ChampionFacts::stun_reach()` | **Reuse it, with a filter for ready slots** (`stun_reach(ready)`), in `tribute_to_stun_later` and `can_stop_winning_tribute`. Both compute the same per-slot reach by hand. | Behaviour-preserving, and replaces 1.4's proposed new helper. |
+| comms bag record (only `closing()` reads it) | **Partner bag for `bag_at_stake`** (bug 2.5). | Already listed. |
+| util.h `and_into` | **Replace world.cpp's `assign_and` and its siblings** (1.5). | Then it is used. |
+
+### Low value: delete unless someone wants to pursue it
+- **`StaticMap::mirror()`, `Altar::mirror`, `CampGroup::mirror`.**
+  - The only real use would be fuel: reflect the cached attack tiles or bush clusters of a group onto its mirror group with one host operation (`bitboard::reflect_into`), instead of recomputing viewers per member.
+  - `distance_field` has no reflect, so fields can't share. Member order would also need mapping, and the enemy-side groups that would benefit are discounted by `home_ground` and farmed less.
+  - Delete the build loops, which cost fuel every game. If attack-tile fuel turns out to matter on bushy maps, bring it back as that cache.
+- **`enemy_wards` / `update_wards`.**
+  - The possible uses are bag carriers routing around enemy ward vision, or skipping a bush the enemy already watches. Neither is likely to show up in results, and it costs a `sdk_wards` read every turn.
+  - Delete it (and save fuel).
+- **`Pathing::teleport_targets`, the teleport state checks.**
+  - A crystal moves ≤3 tiles over a 3-turn channel, which is no faster than walking except across walls and holes.
+  - Delete.
+- **`ChampionBelief::gems_round`.**
+  - It could discount a stale enemy bag in kill valuation, but kill valuation is not where games are decided.
+  - Delete.
+- **Duplicates of live code.** Delete all of these:
+  - `Pathing::nearest`, which duplicates `route()` and carries an 80 KB static array.
+  - `Pathing::to_group`, which `approach(g, 0)` covers around live camps.
+  - `step_towards(vec2, avoid)`, a one-line wrapper.
+  - `Safety::duel` (`fight()`), `Safety::should_retreat` (an older partial `want_home`) and `Safety::threat(int)`.
+  - `has_heal`, `has_shield`, `has_ground_aoe`.
+  - `tile_at`, `walkable` (no inline equivalents to replace).
+  - `BushCluster::size` (`ward_bushes` counts tiles near us instead).
+  - `last_cast_round` (`ready_round` is what's used).
+
 ---
 
 ## 1. Behaviour-preserving
 
 ### 1.1 Dead code (~170 lines) [checked]
+Section 0 says which of these are worth using instead. Only delete what is not taken up there. Deleting the world items also saves fuel: the mirror build loops, the `lock_tiles` warm-up and the ward reads.
+
 These are never called or never read:
 - **safety:** `Safety::threat(int)`, `expected_damage`, `duel`, `should_retreat`.
 - **pathing:**
@@ -31,7 +77,7 @@ These are never called or never read:
   - `StaticMap::walkable`.
   - `Altar::lock_tiles`/`lock_`, with its warm-up loop, which only spends fuel.
   - `BushCluster::size`, `ChampionBelief::gems_round` and `last_cast_round`.
-  - `DraftPlan::draft_round` and `reserved`.
+  - `DraftPlan::draft_round`. Keep `reserved`: it is padding in a layout `static_assert`ed to 1024 bytes. Replace `draft_round` with padding too.
 - **Self `fast_recall`** (bot.cpp:1058, 1243): it is only ever set for enemies (world.cpp:919), so `fast_recall ? home_recall_time : recall_time` is always `recall_time`.
 - **Teleport states** (bot.cpp:126, 2514): hecate never buys a teleport crystal, so these checks never fire.
 - **Unused include:** `#include <optional>` in bot.h.
@@ -51,7 +97,9 @@ These are never called or never read:
 ### 1.3 Restructure `decide()` (bot.cpp:2503-2677, 175 lines)
 - **Extract the stages:** `continue_tribute`, `continue_recall`, `retreat`, `hold_capture` and `carry_bag`. `decide` then reads as a ~40-line ladder.
 - **Fix the decision-code comment** at bot.cpp:31: it is missing `X` (contest).
-- **Recall branch (2544-2563):** all five reasons to keep a recall need `!safety.threatened(here)`. Test it once, then list the reasons. *Fuel-only.*
+- **Recall branch (2544-2563):** all five reasons to keep a recall need `!safety.threatened(here)`.
+  - Group them under one check, but test `threatened` *after* the cheap reason tests, as now.
+  - Testing it first would build the threats on turns that currently skip them, which costs fuel.
 - **Recall check (2543):** `contains(submitting_gems) ? is_recalling() : contains(recalling)` is always `contains(recalling)`.
 - **Bag branch:** when `safe` is true, `may_chain()` returns false only through `can_tribute_here`. Write it as `if (safe) { banking = true; bank_gems(); return; }` and drop that clause from `may_chain`, its only caller.
 
@@ -65,7 +113,7 @@ These are never called or never read:
 - **Approach range of g,** written three times: `farm_evaluation_reserve`, `walk_range` and `prepare_walk`.
 - **Copied verbatim** between `siege` and `kite`: `allies_ahead(world, G, here)` and `ally_claims(world, g)`.
 - **Other repeated computations:**
-  - `stun_reach(self, round)`, in `tribute_to_stun_later` and `can_stop_winning_tribute`.
+  - The stun reach in `tribute_to_stun_later` and `can_stop_winning_tribute`: use the existing, unused `ChampionFacts::stun_reach()` with a ready filter (section 0).
   - `spawn_route_saving(...)`, in `recall_to_bank` and `capture_recall`.
   - `under_awake_camp(world, p)`, in `finishing_camp` and `wants_shop`.
   - "May shop" (`!remote_shop && rounds_left > endgame_shop_rounds`), in `capture_recall` and `wants_shop`.
@@ -101,9 +149,11 @@ These are never called or never read:
 - **`capture_rounds = 6`** is `capture_time + 1`. Derive it.
 
 ### 1.7 Beliefs and tracking
-- **Delete the round-1 special case in `init_beliefs`** (world.cpp:714-742, ~28 lines). The lineage cache in `track()` produces the same `possible` sets. Confirm with the bench.
+- **Delete the round-1 special case in `init_beliefs`** (world.cpp:714-742, ~28 lines).
+  - The lineage cache in `track()` produces the same `possible` sets.
+  - Do it only if the bench shows round 1 costs no more fuel. It runs inside the 200k first turn alongside the warm-up.
 - **`fix_nowhere` → `b.tracked = false`** in the death branch (world.cpp:808, 1022). Every reader checks `alive` first.
-- **`update_altars`:** keep only the tile loop. The board path picked by fuel calls the same idempotent `seen()`.
+- **Keep `update_altars`' two paths.** It picks a board operation or tile tests by altar count against map size (world.cpp:1404), not by remaining fuel, so it is a cost optimisation.
 - **Make private:**
   - `World::turns_between`, `Moment`, `now`.
   - Safety's `chance_in_reach`, `may_be_hit`, `worst_damage`, `camp_area`, `invalidate`.
@@ -124,17 +174,21 @@ These are never called or never read:
   - They inflate the `--fuel 0` counts. Drop them or use another tag.
 - **`std::cout` → `printf`** in `check_facts_against_engine` and `print_fuel_log`, then drop `<iostream>` from util.h, which every file includes. *Fuel-only*: about 11k of static initialisation.
 
-### 1.9 Fuel-only caches and allocations that add code without saving much
-- **The `strike()` memo** (safety.cpp:313-331) duplicates `Safety::Foe::strike` and turn_order's `Strikes`.
-- **farm's `GroupFacts.centre`/`.home`/`.to_altar`** cache values that `from_centre`, `home_ground` and `centre_to_altar` already cache. The static is also named `facts`, which shadows `aph::facts()`.
-- **`local_spell_plan`'s static station memo** caches eight vector additions.
+### 1.9 Fuel savings to add (play unchanged, less fuel)
 - **siege():**
-  - It allocates `bitboard inner`, `goals` and by-value `tiles()`/`square()` results every turn; the rest of bot.cpp uses static scratch boards.
-  - `siege_load` is computed twice per turn.
-- **`prey()`'s lazy `std::optional<float> strength`.**
-- **`closer_neighbours`** re-checks the guard that `try_move` already checks and allocates a vector.
-- **`any_threat()`** runs a pointless `any_within` per unseen enemy.
-- **`ensure_picked`/`all_champions`/`picked_round`** (draft.cpp): the preference list already holds all 11 champions. Wrap `write_plan` in try/catch instead.
+  - It allocates `bitboard inner`, `goals` and the by-value `tiles()`/`square()` results every turn, about 400 fuel per board per siege turn. Use static scratch boards, as the rest of bot.cpp does.
+  - `siege_load` is computed twice per turn; pass it in.
+- **`closer_neighbours`** re-checks the guard that `try_move` already checks, and allocates a vector.
+- **`any_threat()`** runs a pointless `any_within` per unseen enemy and overwrites the `asked`/`near` memo.
+- **Dead champions run `observe()` every turn** (2.11).
+- **`std::cout` → `printf`, and remove the enemy-ward read, the mirror build loops and the `lock_tiles` warm-up** (1.1, 1.8).
+- **Route the direct `strike()` callers through Safety's per-turn `strike_of` cache.**
+  - The callers are abilities.cpp:225, bot.cpp:1996 (`recall_outruns`, also 3.4) and turn_order.cpp:120 and 229.
+  - Keep the `strike()` memo itself. Those callers and `threat_strike` rely on it, so it is not redundant.
+- **`ensure_picked`/`all_champions`/`picked_round`** (draft.cpp) is not a fuel item: the preference list already holds all 11 champions. Wrap `write_plan` in try/catch instead.
+- **Rename farm's `static ... facts`,** which shadows `aph::facts()`.
+  - Keep `GroupFacts` itself: it saves a few dozen fuel per group per turn over the underlying caches.
+  - Also keep `prey()`'s lazy Strength read, which saves a host call.
 
 ### 1.10 Names and comments
 - **Shadowed names:**
@@ -257,19 +311,21 @@ Measure first with `--fuel 0`, then remove each gate whose `SHORTCUT` count is n
 | Gate | Where | Falls back to | Proposal |
 |---|---|---|---|
 | farm no-evaluation | bot.cpp:1200-1225 + `FarmEvaluationReserve` | nearest-group mini-farm with its own `worth` rule | In the loop, use cheap steps (`ally_steps`/`dist`) when a field is unaffordable, then delete the gate and the mini-farm (~30 lines). Check large maps, where it "can last hundreds of rounds". |
-| walk_on kept target | bot.cpp:1185-1191 | reverts `farm_group`/`claim` to last turn's choice | Drop it; the centre-field descent is always available. |
-| prepare_walk / prepare_next_turn | bot.cpp:2693-2715, main.cpp | precomputed approach (40k floor at turn start) | Remove (~15 lines) if `farm-no-route`/`crow-flies-farm` counts don't rise. |
+| walk_on kept target | bot.cpp:1185-1191 | reverts `farm_group`/`claim` to last turn's choice | Drop it; the centre-field descent is always available, and `prepare_walk` usually has the new choice's approach ready. |
 | step_towards_funded | pathing.cpp:446-477 | no move (`siege-route-fuel`) | Fold into `step_towards(goals, nullptr, cap)` with an uncapped search. This keeps the item-11 swirl fix. |
 | simulate fuel cut | safety.cpp:220-258, `Trade::cut` | lost, self falls | Remove the `fuel_floor` parameter; every caller already gates. |
 | known_fight + step_guard gate | safety.cpp:702-709, bot.cpp:1857 | partial guard | Drop both; a cut fight is lost and guards the tile, which is safer. |
 | want_home simulate gate | bot.cpp:1804-1806 | skips the visible fight-lost check | Same reasoning. |
 | chase fallback | bot.cpp:1944 | `step_closer`, which ignores the pack zone | Remove; `prey` already reserved this fuel. |
-| approach layers from fuel | pathing.cpp:133-136 | depth depends on remaining fuel | Use `width + height`; `approach_steps`' four fallbacks can then shrink. |
-| capped centre-field warm-up | pathing.cpp:234-266, util.h:169-180 | doubling `centre_cap` | One `cached()` path behind one gate (~30 lines). |
+| approach layers from fuel | pathing.cpp:133-136 | depth depends on remaining fuel | Use `width + height` behind the existing gate; `approach_steps`' four fallbacks can then shrink. Check `--fuel 0` lost turns: a deeper search on a short turn costs more. |
 | failed_search_pause | self_abilities.cpp:23, 289, 319 | 4-round travel-dash pause, even with unlimited fuel | Remove; the search gate is enough. |
 | farm spell-branch layers | bot.cpp:1060-1097 | hand copy of `camp_cast_cost` | Rely on `cast_at_camp`'s own gate (or 4.1). |
 | turn-order gates | turn_order.cpp:153-157, 232 | no offers | One combined gate. |
 | cost estimates | util.h:185-194 | `field_cost_estimate` vs `search_cost_estimate` | One formula. |
+
+Two things that looked like fuel machinery are fuel savings and stay (section 5):
+- `prepare_walk`/`prepare_next_turn`: the farm walk paid from spare fuel.
+- The capped centre-field warm-up: it spreads the first fields' cost.
 
 Keep the gates that guard real per-turn work and fall back sensibly:
 - The farm loop's per-group gate.
@@ -322,10 +378,10 @@ Ordered by lines saved against evidence that the feature helps.
 | # | Feature | Lines | Evidence | Notes |
 |---|---|---|---|---|
 | 4.1 | **v17 port:** `local_spell_plan`, `collect_local_reward`, the spell branch in `farm()`, `FarmSpellPlan`/`FarmEvaluationReserve`, Memory `farm_spell`/`farm_station`/`worked_*` | ~335 | Item 10's bundle was level, and so was hecate vs v17 locally. It is the most fuel-gated code in the bot (~25 gates) and has its own hazard model, pathing and health floor. | A/B `collect_local_reward` first. If it goes, also try dropping spell pricing (`spell_clear_rounds`, `safe_targets`, `basic_output`, `best_spell`, ~50 lines), which also settles 2.2. Ladder-motivated, so also scrim. |
-| 4.2 | **DraftPlan** (draft.h/.cpp, world and pathing hooks) | ~230 | Pure fuel cache: every value equals what champions compute. Byte-identical at 100M. | Decide with `--fuel 0` on 100x100 and bushy maps (turn 1-5 shortcuts, lost turns). Cheapest partial cut: the per-spawn-tile offsets (~35 lines). Attack-tile packing (~75) saves the most real fuel. |
+| 4.2 | *(withdrawn: DraftPlan is a fuel saving and stays; see section 5)* | | | |
 | 4.3 | **Delayed tribute stun:** `tribute_to_stun_later`, D branch, `alive_now`, the `hold` parameter through `attack_enemy`/`attack_target`/`reset_and_attack_enemy`/`cast_at_enemies`/`dash_to_attack` | ~55 | Never tested. A stun cancels a tribute whenever it lands; waiting only wastes the enemy's channel turns while ours idles. | Keep `can_stop_winning_tribute`. |
 | 4.4 | **`killable_now`** + `want_home`'s kill plumbing + `Safety::fight`'s `exclude`/`fight_key` handling | ~40 | Item 8: level, fires ~0.15 times a game. It also checks only our own Cassi/Issac body. | |
-| 4.5 | **Lineage sharing** (`Tracked`, `tracked_`, `lineages_`, `track()`) | ~55 | Fuel only; byte-identical to always calling `advance_and_prune`. Saves 2-7k per extra enemy per turn while they share a lineage (rounds 2-10, joint respawns). | Bench first. If kept, still do 1.7's round-1 cut. |
+| 4.5 | *(withdrawn: lineage sharing saves 2-7k per extra enemy per turn; see section 5)* | | | |
 | 4.6 | **`keep_walk` free-stun logic** in `enemy_cast` (abilities.cpp:218-239, 257, 309-312) | ~30 | Never tested. | Compare against a plain `keep_walk_value` threshold. |
 | 4.7 | **Ground casts at unseen enemies** (abilities.cpp:285-300, `max_unseen_tiles`) | ~18 | Never tested. | |
 | 4.8 | **Probabilistic `threatened()`** (`hit_given_reach`, `recall_risk`, `unknown_camp_weight`) | ~25 | Never tested. | It gates recall, capture-recall and tribute, and recall behaviour differs between local games and the ladder (EXPERIMENTS), so this is riskier. |
@@ -347,9 +403,34 @@ Ordered by lines saved against evidence that the feature helps.
 
 ---
 
+## 5. Fuel savings that stay
+These cost code but save fuel, so none of them are removal candidates:
+- **DraftPlan:**
+  - Static map data the champions would otherwise compute on their first turns: walking steps from spawns and altars, attack tiles, and the per-spawn-tile offsets.
+  - Its attack-tile packing saves the most on bushy maps.
+- **Lineage sharing** (`Tracked`/`track()`): unseen enemies that share a history share one growth step, saving 2-7k per extra enemy per turn in rounds 2-10 and after joint respawns.
+- **`prepare_walk`/`prepare_next_turn`:** the farm walk is paid from the turn's spare fuel, so a costly next turn still walks well.
+- **The capped centre-field warm-up** (`centre_cap`): it spreads the first fields' cost so the farm evaluation can start early on 100x100 maps.
+- **Memos and caches:**
+  - The `strike()` memo (five direct callers), `Safety::Foe` strikes, `known_fight` and the fight memo.
+  - The `min_camp_damage` per-group cache, the `home_ground`, `safe_targets` and `shared_gems_map` statics.
+  - `farm_attack_tiles`' kept union, the `centre_steps` and `loop_reserve` memos, farm's `GroupFacts`.
+  - turn_order's `Strikes`, `StaticAlloc` and `undashed_all`.
+- **Cheaper paths:**
+  - `update_altars`' board-or-tiles choice.
+  - `avoid_within`'s path that skips building the threats.
+  - `lethal()`'s `damage_bound` pre-check.
+  - `threatened()`'s early exit.
+  - `prey()`'s lazy Strength read.
+  - Static scratch boards throughout.
+- **Debug instrumentation:** `FuelMeter`, `note_shortcut` and `debug_fuel` are free in release builds and are what measures all of the above.
+
+---
+
 ## Suggested order
-1. **One bucket-1 commit,** checked byte-identical with `tools/fuel/bench.py compare`. This is ~400-500 lines lighter and makes everything after it easier to read.
-2. **`--fuel 0` bench on the cleaned bot:** count `SHORTCUT` tags per gate after dropping the non-fuel tags in 1.8, and record lost turns. That count decides which rows of 3.1, 4.2 and 4.5 can go.
+1. **One bucket-1 commit,** checked byte-identical with `tools/fuel/bench.py compare`, plus the 1.9 fuel savings. It should be ~350-450 lines lighter and use less fuel per turn.
+2. **`--fuel 0` bench on the cleaned bot:** count `SHORTCUT` tags per gate after dropping the non-fuel tags in 1.8, and record lost turns. That count decides which rows of 3.1 can go.
 3. **Bug fixes 2.1-2.7, one A/B each.** They are small and independent. 2.1 and 2.3 affect the most games.
 4. **4.1 (v17 port), the largest single cut.** Then 4.3, 4.4 and 4.6-4.9, each A/B'd and kept out if the result is level.
-5. **The 3.x behaviour changes,** testing 3.2 and 3.4 first.
+5. **The section 0 features,** starting with the Home emblem and walking to lock an enemy's big tribute.
+6. **The 3.x behaviour changes,** testing 3.2 and 3.4 first.
