@@ -23,9 +23,6 @@ inline constexpr bool debug_beliefs = false;
 inline constexpr int debug_beliefs_period = 10;
 // Fight-model calibration: an "FF" stdout line per turn in reach of an enemy, "FC" per chase.
 inline constexpr bool debug_fights = false;
-// Reach against Chebyshev reach alone: a "DNG round champion what" line per decision it changes
-// and "DNGC round champion what evaluations changes" totals every 100 rounds.
-inline constexpr bool debug_danger = false;
 
 // A choice made worse to save fuel: one "SHORTCUT round champion what" stdout line. debug_block
 // spends no fuel in local (non-release) builds and is compiled out of release ones.

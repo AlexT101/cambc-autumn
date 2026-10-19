@@ -307,42 +307,12 @@ bool break_lock(const World& world, int altar) {
 // visible enemies could not kill us within the next few turns, nor damage at the rate of the last
 // round (attackers in bushes stay unseen). Judged again every turn of the channel, which is
 // cancelled once a threat comes that close: a long bag's whole channel would wait on any enemy in sight.
-bool tribute_safe_by(Safety& safety, const Memory& memory, int turns) {
+bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
     const int window = std::min(turns, params::tribute_window);
     const float health = cambc::self().health();
     if (memory.damage * static_cast<float>(window) >= health) return false;
     const int kill = safety.turns_to_kill_idle(cambc::self().position(), window + 1);
     return kill == 0 || kill > window;
-}
-
-struct DangerCount {
-    const char* what;
-    int evaluations = 0, changes = 0, printed = 0;
-};
-
-// debug_danger only: inside debug_block.
-void note_danger(const World& world, DangerCount& c, bool changed) {
-    ++c.evaluations;
-    c.changes += changed;
-    const auto handle = static_cast<std::uint32_t>(world.me().handle);
-    if (changed) std::printf("DNG %d %u %s\n", world.round, handle, c.what);
-    if (world.round / 100 != c.printed) {
-        c.printed = world.round / 100;
-        std::printf("DNGC %d %u %s %d %d\n", world.round, handle, c.what, c.evaluations, c.changes);
-    }
-}
-
-bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
-    const bool out = tribute_safe_by(safety, memory, turns);
-    if constexpr (debug_danger) {
-        debug_block({
-            static DangerCount count{"tribute"};
-            Safety old{safety.world(), true};
-            old.refresh();
-            note_danger(safety.world(), count, tribute_safe_by(old, memory, turns) != out);
-        });
-    }
-    return out;
 }
 
 int tribute_turns(int gems) { return std::max(1, (gems + 9) / 10); }
@@ -1553,8 +1523,7 @@ int killable_now(const World& world, Safety& safety) {
 }
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
-bool want_home_by(const World& world, Safety& safety, bool sieging) {
-    FuelMeter meter{"home"};
+bool want_home(const World& world, Safety& safety, bool sieging) {
     const auto& me = cambc::self();
     const vec2 here = me.position();
     if (world.map().ally_spawn.is_set(here)) return false;
@@ -1578,23 +1547,9 @@ bool want_home_by(const World& world, Safety& safety, bool sieging) {
     return t.lost || (partner(world) && t.self_falls);
 }
 
-bool want_home(const World& world, Safety& safety, bool sieging) {
-    const bool out = want_home_by(world, safety, sieging);
-    if constexpr (debug_danger) {
-        debug_block({
-            static DangerCount count{"home"};
-            Safety old{world, true};
-            old.refresh();
-            note_danger(world, count, want_home_by(world, old, sieging) != out);
-        });
-    }
-    return out;
-}
-
 // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
 // there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
-const bitboard* step_guard_by(const World& world, Safety& safety) {
-    FuelMeter meter{"guard"};
+const bitboard* step_guard(const World& world, Safety& safety) {
     static bitboard guard{cambc::uninitialized};
     const auto& self = world.me();
     const vec2 here = cambc::self().position();
@@ -1691,29 +1646,6 @@ const bitboard* step_guard_by(const World& world, Safety& safety) {
     return any ? &guard : nullptr;
 }
 
-const bitboard* step_guard(const World& world, Safety& safety) {
-    static bitboard* before = nullptr;
-    bool old_any = false;
-    if constexpr (debug_danger) {
-        debug_block({
-            Safety old{world, true};
-            old.refresh();
-            const auto* g = step_guard_by(world, old);
-            old_any = g != nullptr;
-            if (!before) before = new bitboard;
-            if (g) copy_into(*g, *before);
-        });
-    }
-    const auto* out = step_guard_by(world, safety);
-    if constexpr (debug_danger) {
-        debug_block({
-            static DangerCount count{"guard"};
-            note_danger(world, count, old_any != (out != nullptr) || (out && !(*out == *before)));
-        });
-    }
-    return out;
-}
-
 bool can_tribute_here(const World& world) {
     const auto& me = cambc::self();
     if (me.gem_count() == 0) return false;
@@ -1736,8 +1668,7 @@ bool covered(const bitboard& zone, vec2 p, int r) {
 
 // The visible enemy quickest to reach and kill among those whose local fight we win even when
 // they strike first; never one on or next to its spawn, where it heals.
-const ChampionBelief* prey_by(const World& world, Safety& safety) {
-    FuelMeter meter{"prey"};
+const ChampionBelief* prey(const World& world, Safety& safety) {
     const auto& me = cambc::self();
     const vec2 here = me.position();
     const int range = world.me().facts().attack_range();
@@ -1774,19 +1705,6 @@ const ChampionBelief* prey_by(const World& world, Safety& safety) {
         if (const auto t = safety.fight(order[i].second->pos); !t.lost && !(linked && t.self_falls)) return order[i].second;
     }
     return nullptr;
-}
-
-const ChampionBelief* prey(const World& world, Safety& safety) {
-    const auto* out = prey_by(world, safety);
-    if constexpr (debug_danger) {
-        debug_block({
-            static DangerCount count{"prey"};
-            Safety old{world, true};
-            old.refresh();
-            note_danger(world, count, prey_by(world, old) != out);
-        });
-    }
-    return out;
 }
 
 bool chase(const World& world, Pathing& pathing, Safety& safety) {

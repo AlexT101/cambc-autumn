@@ -65,8 +65,6 @@ public:
     void build(const World& world, const ChampionBelief& e, int turn_round, bool twice);
     Blow at(vec2 p) const;
     int reach() const { return reach_; } // Chebyshev bound on the tiles it can affect
-    int sight_reach() const { return sight_reach_; } // of the tiles needing sight; -1: none
-    int ground_reach() const { return ground_reach_; } // of the rest; -1: none
 
     // Bit 9 * (y + 4) + x + 4: the 9x9 tiles around the enemy, in two words (128-bit shifts are
     // library calls in WASM).
@@ -110,7 +108,7 @@ private:
     int basic_ = -1; // the plain basic attack's way
     float strength_ = 0;
     bool twice_ = false;
-    int reach_ = -1, sight_reach_ = -1, ground_reach_ = -1;
+    int reach_ = -1;
     // By the low 3 bits of x and y, so the tiles of any 8x8 square never collide; valid when its
     // stamp is this build's.
     struct Memo {
@@ -165,10 +163,8 @@ struct Trade {
 
 class Safety {
 public:
-    // `legacy`: every visible threat by Chebyshev distance alone, as before Reach (for comparison).
-    explicit Safety(const World& world, bool legacy = false);
+    explicit Safety(const World& world);
 
-    const World& world() const { return world_; }
     std::span<const Threat> threats();
     bool built() const { return built_; }
     bool any_threat(); // threats() is not empty, without building it
@@ -246,7 +242,7 @@ private:
         float weight;
         int reach; // farthest distance at which it would pick us
     };
-    static std::vector<CampHit>& member_pool(bool legacy);
+    static std::vector<CampHit>& member_pool();
     const std::vector<CampHit>& awake_members();
     // An enemy's strike for its next turn and, unseen, its possible tiles and weight (0: not
     // credible), worked out on first use: beliefs are fixed for the turn.
@@ -264,7 +260,6 @@ private:
     bool gone(const ChampionBelief& c);
 
     const World& world_;
-    bool legacy_ = false;
     std::uint16_t reached_ = 0; // bit i: reach_pool()[i] is built for enemies[i] this turn
     bool built_ = false;
     bool refresh_ = false;

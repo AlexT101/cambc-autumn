@@ -366,23 +366,8 @@ Strike threat_strike(const World& world, const ChampionBelief& c) {
 
 namespace {
 
-// Window arithmetic avoids loops and variable shifts where it can: on 128 bits in WASM they cost
-// tens of instructions each.
+// Window arithmetic by tables where it can: WASM loops and variable shifts cost fuel.
 using Window = Reach::Window;
-struct Prof {
-    std::uint64_t fuel = 0;
-    int n = 0;
-};
-std::array<Prof, 6> prof;
-constexpr bool profile = false;
-struct ProfScope {
-    int k;
-    std::uint64_t start;
-    explicit ProfScope(int k) : k{k}, start{profile ? fuel() : 0} {}
-    ~ProfScope() {
-        if (profile) prof[k].fuel += start - fuel(), ++prof[k].n;
-    }
-};
 constexpr int win_r = 4, win_n = 2 * win_r + 1;
 constexpr Window win_full = ~Window{};
 constexpr Window win_bit(int x, int y) { return Window::bit(y * win_n + x); }
@@ -533,8 +518,6 @@ Window sight(const World& world, vec2 p, bool far) {
     const auto i = static_cast<std::size_t>(p.x + p.y * t.width);
     if (i < known.size() && known[i]) return masks[i];
     const auto& map = world.map();
-    ProfScope ps{0};
-    FuelMeter meter{"sight"};
     // Viewers outside bushes exactly; those inside one by walls alone, as finding the clusters can
     // cost tens of thousands: a viewer in another cluster, or behind bushes, may be counted.
     static bitboard viewers{cambc::uninitialized}, outside{cambc::uninitialized};
@@ -569,23 +552,10 @@ int Reach::add(Window from, int range, bool sight, float damage, bool stuns, boo
     const int far = extent + range;
     ways_[static_cast<std::size_t>(count_)] = {from, damage, static_cast<std::int8_t>(range), static_cast<std::int8_t>(far), sight, stuns, walked};
     reach_ = std::max(reach_, far);
-    auto& r = sight ? sight_reach_ : ground_reach_;
-    r = std::max(r, far);
     return count_++;
 }
 
 void Reach::build(const World& world, const ChampionBelief& e, int turn_round, bool twice) {
-    debug_block({
-        static int last = 0;
-        if (world.round / 100 != last) {
-            last = world.round / 100;
-            std::printf("PROF %d", world.round);
-            for (const auto& x : prof) std::printf(" %d:%llu", x.n, static_cast<unsigned long long>(x.fuel));
-            std::printf("\n");
-        }
-    });
-    ProfScope ps{1};
-    FuelMeter meter{"reach"};
     world_ = &world;
     wards_ = ward_sight(world);
     origin_ = e.pos;
@@ -595,7 +565,7 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     stamp_ = ++builds;
     twice_ = twice;
     strength_ = e.strength;
-    reach_ = sight_reach_ = ground_reach_ = -1;
+    reach_ = -1;
     const auto& f = e.facts();
     const bool uncertain = e.cooldowns_uncertain();
     const std::array<bool, 2> ready{uncertain || e.ability_ready(0, turn_round), uncertain || e.ability_ready(1, turn_round)};
@@ -604,7 +574,6 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     // The farthest its moves reach: terrain beyond it is never read.
     const int radius = std::min(win_r, (twice ? 1 : 0) + (dash ? (f.ranged ? 2 : 3) : 1));
     // land: a free tile open to it; pass: a dash path may cross it.
-    std::optional<ProfScope> terrain_scope{std::in_place, 5};
     const auto& t = terrain(world.map());
     Window land, pass, camps;
     const int x0 = origin_.x - win_r;
@@ -639,7 +608,6 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     for (const auto& a : world.allies)
         if (a.alive && a.visible && !a.is_self && dist(a.pos, origin_) <= win_r)
             land &= ~win_bit(a.pos.x - origin_.x + win_r, a.pos.y - origin_.y + win_r);
-    terrain_scope.reset();
     const Window at = win_bit(win_r, win_r);
     const auto walk = [&](Window s) { return s | (dilate(s) & land); };
     const auto dash_from = [&](Window s) {
@@ -684,8 +652,6 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
 Blow Reach::at(vec2 p) const {
     auto& memo = memo_[static_cast<std::size_t>((p.x & 7) | (p.y & 7) << 3)];
     if (memo.stamp == stamp_ && memo.p == p) return memo.blow;
-    ProfScope ps{2};
-    FuelMeter meter{"blow"};
     Blow out;
     const int dx = p.x - origin_.x, dy = p.y - origin_.y;
     if (std::max(std::abs(dx), std::abs(dy)) <= reach_ && terrain(world_->map()).inside(p)) {
@@ -745,9 +711,9 @@ int unseen_radius(int reach, int tiles) {
 
 namespace {
 
-std::vector<Threat>& threat_pool(bool legacy) {
-    static std::array<std::vector<Threat>, 2> pool;
-    return pool[legacy];
+std::vector<Threat>& threat_pool() {
+    static std::vector<Threat> pool;
+    return pool;
 }
 
 std::array<Reach, 16>& reach_pool() {
@@ -757,13 +723,12 @@ std::array<Reach, 16>& reach_pool() {
 
 } // namespace
 
-std::vector<Safety::CampHit>& Safety::member_pool(bool legacy) {
-    static std::array<std::vector<CampHit>, 2> pool;
-    return pool[legacy];
+std::vector<Safety::CampHit>& Safety::member_pool() {
+    static std::vector<CampHit> pool;
+    return pool;
 }
 
-Safety::Safety(const World& world, bool legacy)
-    : world_{world}, legacy_{legacy}, threats_{threat_pool(legacy)}, members_{member_pool(legacy)} {}
+Safety::Safety(const World& world) : world_{world}, threats_{threat_pool()}, members_{member_pool()} {}
 
 const std::vector<Safety::CampHit>& Safety::awake_members() {
     if (!members_known_) {
@@ -880,10 +845,8 @@ void Safety::build() {
     if (built_) return;
     built_ = true;
     FuelMeter meter{"safety"};
-    static const bitboard no_walls;
     // One per enemy, reused between builds: a new field allocates and clears ~13k bytes.
-    static std::array<std::vector<std::unique_ptr<cambc::distance_field>>, 2> pools;
-    auto& fields = pools[legacy_];
+    static std::vector<std::unique_ptr<cambc::distance_field>> fields;
     const auto field_of = [&](int i) -> cambc::distance_field& {
         if (fields.size() <= static_cast<std::size_t>(i)) fields.resize(static_cast<std::size_t>(i) + 1);
         auto& field = fields[static_cast<std::size_t>(i)];
@@ -906,10 +869,6 @@ void Safety::build() {
             t.steps = nullptr;
             t.reach = nullptr;
             t.area.clear();
-            if (legacy_) {
-                t.area.draw_chebyshev(e.pos, static_cast<float>(reach));
-                continue;
-            }
             // A superset: a walls field per enemy each turn would cost ~3k.
             t.reach = &reach_of(e);
             t.area.draw_chebyshev(e.pos, static_cast<float>(t.reach->reach()));
@@ -928,7 +887,7 @@ void Safety::build() {
         const int radius = unseen_radius(reach, tiles);
         auto& field = field_of(e.index);
         t.area.clear();
-        field.compute(legacy_ ? no_walls : world_.map().walls, e.possible, t.area, static_cast<std::uint16_t>(radius));
+        field.compute(world_.map().walls, e.possible, t.area, static_cast<std::uint16_t>(radius));
         t.steps = &field;
     }
 }
@@ -968,31 +927,11 @@ const Reach& Safety::reach_of(const ChampionBelief& e) {
 Blow Safety::blow(const ChampionBelief& e, vec2 p) {
     const auto& s = foe(e).strike;
     if (s.reach < 0 || dist(p, e.pos) > s.reach) return {};
-    if (legacy_) return s.blow(dist(p, e.pos));
-    const auto b = reach_of(e).at(p);
-    debug_block({
-        const auto o = s.blow(dist(p, e.pos));
-        if (b.damage > o.damage + 0.01f || (b.hits && !o.hits) || (b.stuns && !o.stuns))
-            std::printf("DNGBAD %d %d,%d e%d %d,%d new %d %d %d old %d %d %d\n", world_.round, p.x, p.y, e.index, e.pos.x, e.pos.y, (int)b.damage, b.hits, b.stuns, (int)o.damage, o.hits, o.stuns);
-        if (b.damage + 0.01f < o.damage || b.hits != o.hits || b.stuns != o.stuns) {
-            bitboard box;
-            box.draw_chebyshev(e.pos, static_cast<float>(Strike::max_reach + 1));
-            box &= world_.map().blocked_for_them | world_.map().bushes | world_.map().camp_tiles;
-            bool units = false;
-            for (const auto& a : world_.allies) units |= a.alive && a.visible && !a.is_self && dist(a.pos, e.pos) <= Strike::max_reach;
-            static int misses = 0;
-            if (box.is_empty() && !units && misses++ < 50)
-                std::printf("DNGMISS %d %d,%d e%d %d,%d new %d %d %d old %d %d %d\n", world_.round, p.x, p.y, e.index, e.pos.x, e.pos.y, (int)b.damage, b.hits, b.stuns, (int)o.damage, o.hits, o.stuns);
-        }
-        static bool once = false;
-        if (!once) once = true, std::printf("DNGT packed %d\n", terrain(world_.map()).packed);
-    });
-    return b;
+    return reach_of(e).at(p);
 }
 
 int Safety::approach(const ChampionBelief& e, vec2 p) {
     const int reach = foe(e).strike.reach;
-    if (legacy_) return std::max(0, dist(p, e.pos) - reach);
     return blow(e, p).hits ? 0 : std::max(1, dist(p, e.pos) - reach);
 }
 
