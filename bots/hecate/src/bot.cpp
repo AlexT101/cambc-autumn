@@ -1167,7 +1167,8 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
             float joint_rounds = 0;
             const float hits = soften * min_camp_damage(world, g, strength + others, &joint_rounds) * (strength * rounds / health);
             if (hits > spare_health) continue;
-            const float value = worth * part / (static_cast<float>(trip) + rounds + capture_rounds());
+            // No capture rounds: the claimer holds it, and the crew moves on once it is cleared.
+            const float value = worth * part / (static_cast<float>(trip) + rounds);
             if (value > shared_value) shared = g, shared_value = value, shared_steps = steps;
             continue;
         }
@@ -1264,13 +1265,13 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         if (melee) step_onto_cleared(world, pathing, best);
         return true;
     }
-    if (!zone && dash_towards(world, pathing, goals) && attack_camp(world, passing) >= 0) return true;
+    if (!zone && dash_towards(world, pathing, goals) && attack_camp(world, affordable) >= 0) return true;
     const bool walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
                             ? pathing.step_towards(off_zone(goals), zone, cap)
                                   || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap)
                             : (note_shortcut("farm-no-route"), walk_on(best));
     if (walked) {
-        attack_camp(world, passing);
+        attack_camp(world, affordable);
         cast_at_camp(world, best); // only casts that allow walking remain
         reset_and_attack_camp(world, best);
     }
