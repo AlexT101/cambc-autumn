@@ -13,6 +13,7 @@
 #include "comms.h"
 #include "params.h"
 #include "pathing.h"
+#include "plan.h"
 #include "safety.h"
 #include "self_abilities.h"
 #include "turn_order.h"
@@ -34,6 +35,7 @@ constexpr int siege_stage_radius = camp_attack_range + 2; // just out of a camp'
 // stopping a game-ending bag (E).
 char decision = '-';
 bool sieged = false; // siege() ran this turn
+const ChampionBelief* strike_hold = nullptr; // this turn's tributer to hit only for a kill
 
 // Read by tools/replay/fight_calibration.py.
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1) {
@@ -1298,7 +1300,8 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
                                   || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap)
                             : (note_shortcut("farm-no-route"), walk_on(best));
     if (walked) {
-        attack_camp(world, affordable);
+        // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
+        if (!strike_enemy(world, strike_hold)) attack_camp(world, affordable);
         cast_at_camp(world, best); // only casts that allow walking remain
         reset_and_attack_camp(world, best);
     }
@@ -1778,7 +1781,7 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
     auto& me = cambc::self();
     const int range = world.me().facts().attack_range();
-    // A walk alone cannot reach range this turn.
+    // A walk alone cannot reach range this turn; a melee walk can follow the dash.
     if (dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
     if (dist(my_position(), target->pos) > range && my_can_move()) {
         const auto* zone = pack_zone(world);
@@ -2516,6 +2519,23 @@ void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& mem
     if (memory.banking) bank_gems(world, pathing, safety, memory); // a tribute can still start after a ranged attack
 }
 
+// A farming turn's output lands on camps: in enemy health points, the gems it earns at the map's
+// gems per camp health point.
+float farm_step_value(const World& world) {
+    static float density = -1;
+    if (density < 0) {
+        float gems = 0, health = 0;
+        for (const auto& g : world.map().groups) {
+            if (g.gems == 0 || (g.has_monolith && !world.map().monolith_only)) continue;
+            gems += static_cast<float>(g.gems);
+            for (const auto& m : g.members) health += m.max_health;
+        }
+        density = health > 0 ? gems / health : 0.0f;
+    }
+    return output(world.me()) * density * params::gem_value;
+}
+
+
 void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     if (my_gems() == 0 || !world.me().alive) memory.banking = false;
@@ -2543,7 +2563,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         return;
     }
     heal_ally(world);
-    shield_if_needed(world, memory.claim);
+    // A reset that may kill is weighed against the shield by the plan.
+    const bool strikes = strike_possible(world);
+    if (!strikes || !reset_may_kill(world)) shield_if_needed(world, memory.claim);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     if (on_spawn && my_health() < my_max_health()) {
         decision = 'H';
@@ -2561,11 +2583,23 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     pathing.set_guard(step_guard(world, safety));
     const bool holding = holding_capture(world) || contesting(world);
     const auto* stun_later = tribute_to_stun_later(world, safety, memory);
-    bool attacked = attack_enemy(world, stun_later);
-    if (attacked) reset_and_attack_enemy(world, true, stun_later);
-    cast_at_enemies(world, my_gems() > 0 && !holding, stun_later);
-    if (!attacked && !holding && dash_to_attack(world, pathing, nullptr, stun_later)) attacked = attack_enemy(world, stun_later);
-    if (attacked) reset_and_attack_enemy(world, false, stun_later);
+    strike_hold = stun_later;
+    bool attacked = false;
+    if (strikes) {
+        Intent intent;
+        intent.anchored = holding;
+        intent.walks = !holding && !(stun_later && alive_now(*stun_later)) && !can_tribute_here(world);
+        intent.keep_walk = my_gems() > 0 && !holding;
+        intent.step_value = my_gems() > 0 ? carried_step_value : farm_step_value(world);
+        // An enemy already in attack range was not worth leaving (want_home): the fight is here.
+        if (enemy_within(world, my_position(), world.me().facts().attack_range())) intent.walks = false;
+        // The goal most likely walks to an altar when carrying, else to the farm choice.
+        intent.to_altar = my_gems() > 0;
+        intent.group = memory.farm_group;
+        attacked = plan_strikes(world, pathing, safety, intent, stun_later).attacked;
+        // A cast the plan left unused: before farm's camp reset takes it.
+        shield_if_needed(world, memory.claim);
+    }
     decision = holding ? 'P' : attacked ? 'A' : decision;
     if (!me.is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) safety.refresh();
@@ -2635,6 +2669,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
     decision = '-';
     sieged = false;
+    strike_hold = nullptr;
     siege_group() = -1;
     const vec2 start = world.me().pos;
     prepare_walk(world, pathing, memory, walk_first_floor);
@@ -2644,6 +2679,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
         memory.siege = false;
         memory.staged_since = -1;
     }
+    strike_after(world, safety, strike_hold);
     pathing.set_guard(nullptr);
     if constexpr (debug_fights)
         if (world.me().alive && !world.map().ally_spawn.is_set(start) && fuel_ok(end_reserve + 15000))
