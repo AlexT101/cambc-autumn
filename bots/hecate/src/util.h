@@ -153,12 +153,18 @@ inline void drop(bitboard& out, const bitboard& tiles) {
 // The helpers below work in scratch boards: allocating a board (~300 fuel) costs more than the
 // host operations on it (~120).
 
-// `tiles` within Chebyshev r of p, in a scratch board valid until the next call.
+// `tiles` within Chebyshev r of p, in a scratch board valid until the next call. The square is
+// kept for the next call with the same p and r.
 inline const bitboard& within(const bitboard& tiles, vec2 p, int r) {
-    static bitboard box{cambc::uninitialized};
-    box.clear();
-    box.draw_chebyshev(p, static_cast<float>(r));
-    box &= tiles;
+    static bitboard square{cambc::uninitialized}, box{cambc::uninitialized};
+    static vec2 square_at{-1, -1};
+    static int square_r = -1;
+    if (p != square_at || r != square_r) {
+        square.clear();
+        square.draw_chebyshev(p, static_cast<float>(r));
+        square_at = p, square_r = r;
+    }
+    and_into(square, tiles, box);
     return box;
 }
 
