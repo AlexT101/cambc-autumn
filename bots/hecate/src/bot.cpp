@@ -2932,10 +2932,10 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
 }
 
 // Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a
-// turn shorter. Damage before then cancels it at no cost. A stunned champion cannot start one.
-void start_recall(const World& world, bool stunned) {
+// turn shorter. Damage before then cancels it at no cost.
+void start_recall(const World& world) {
     auto& me = cambc::self();
-    if (stunned || !world.me().alive || channelling() || world.map().ally_spawn.is_set(my_position()))
+    if (!world.me().alive || channelling() || world.map().ally_spawn.is_set(my_position()))
         return;
     try {
         me.recall();
@@ -2958,25 +2958,15 @@ void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memor
     prepare_walk(world, pathing, memory, end_reserve);
 }
 
-void play_turn(const World& world, Pathing& pathing, Memory& memory) {
-    Safety safety{world};
-    const auto* record = world.me().alive ? &my_record() : nullptr;
-    const float health = record ? record->health : 0;
-    const bool stunned = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
-    memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
-    decision = '-';
-    sieged = false;
-    strike_hold = nullptr;
-    siege_group() = -1;
+// The turn's walk, hits and casts, and the free actions that end it.
+void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const vec2 start = world.me().pos;
-    const int camp_hits_before = camp_hits();
-    if (world.me().alive) note_upkeep(world, safety, memory.damage);
     prepare_walk(world, pathing, memory, walk_first_floor);
     const int claim = memory.claim;
     decide(world, pathing, safety, memory);
     if (decision != 'W') memory.wait_altar = -1;
-    // A turn without siege() (a fight, a stun, a heal) keeps the siege while our claim stays on it;
-    // a chase or a bag takes us away from it.
+    // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
+    // or a bag takes us away from it.
     if (!sieged && (memory.claim != claim || decision == 'C' || my_gems() > 0)) {
         memory.siege = false;
         memory.staged_since = -1;
@@ -2990,7 +2980,23 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     shield_if_needed(world, safety, memory.claim);
     place_ward(world, pathing, memory); // where we end the turn
     place_lock(world);
-    start_recall(world, stunned);
+    start_recall(world);
+}
+
+void play_turn(const World& world, Pathing& pathing, Memory& memory) {
+    Safety safety{world};
+    const auto* record = world.me().alive ? &my_record() : nullptr;
+    const float health = record ? record->health : 0;
+    memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
+    decision = '-';
+    sieged = false;
+    strike_hold = nullptr;
+    siege_group() = -1;
+    const int camp_hits_before = camp_hits();
+    if (world.me().alive) note_upkeep(world, safety, memory.damage);
+    // A stun leaves only the turn order (cambc-rules: stun): the claim, siege and goals stand.
+    if (record && my_stunned(cambc::champion_state::from_bits_retain(record->state))) decision = 'Z';
+    else act(world, pathing, safety, memory);
     set_turn_order(world, safety);
     comms::claim(memory.claim);
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
