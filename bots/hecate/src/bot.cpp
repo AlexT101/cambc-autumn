@@ -331,17 +331,28 @@ int bag_at_stake(const World& world) {
 // Tributing the bag wins: more gems are worth nothing, only the tribute is.
 bool winning_bag(const World& world) { return gems_short(world) <= 0; }
 
-// The race's end: our score, the team's bags (posted through comms) and what the team tributes at
-// its recent rate while our bag walks to an altar and tributes reach the win. The bag then goes
-// straight to an altar: the rest of the win comes without it, and only its tribute counts.
-bool closing(const World& world, Pathing& pathing) {
-    int bags = static_cast<int>(my_gems());
+// Rounds until the team, at its recent tribute rate, has the rest of the win beyond our score and
+// the team's bags (posted through comms): our bag banked later than that only delays the win.
+int race_left(const World& world) {
+    int short_by = gems_short(world);
     for (const auto& a : world.allies)
-        if (!a.is_self && a.alive) bags += std::max(0, comms::bag_of(world, a.index));
+        if (!a.is_self && a.alive && !(a.visible && a.channel == Channel::tribute))
+            short_by -= std::max(0, comms::bag_of(world, a.index));
+    if (short_by <= 0) return 0;
+    const float rate = world.ally_rate();
+    return rate > 0 ? static_cast<int>(static_cast<float>(short_by) / rate) : rounds_left(world);
+}
+
+// The rounds left in the game for a bag: to the round limit, and for ours to the race's end.
+int bag_rounds_left(const World& world) {
+    return my_gems() > 0 ? std::min(rounds_left(world), race_left(world)) : rounds_left(world);
+}
+
+// The race's end: the rest of the win comes without our bag before it could bank, so it goes
+// straight to an altar.
+bool closing(const World& world, Pathing& pathing) {
     const int walk = pathing.to_any_altar().at(my_position());
-    const int bank = (walk == unreachable ? 0 : walk) + tribute_turns(my_gems());
-    return static_cast<float>(world.score.ally + bags) + world.ally_rate() * static_cast<float>(bank)
-           >= static_cast<float>(cambc::constants::winning_gems);
+    return race_left(world) <= (walk == unreachable ? 0 : walk) + tribute_turns(my_gems());
 }
 
 // A tribute started or kept now is the bag's last chance to score, or wins the game while fleeing
@@ -1097,7 +1108,7 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
     }
     std::optional<Field> from_here;
     const Field* to_altar = bag > 0 ? &pathing.to_any_altar() : nullptr; // trips matter only when carrying
-    const int left = rounds_left(world);
+    const int left = bag_rounds_left(world);
     const Field* deadline = left <= endgame_horizon ? &pathing.to_any_altar() : nullptr;
     // A bag rides a recall home when that reaches an altar sooner (recall_to_bank). Started during
     // a capture, the recall lands as it pays (capture_recall): only the recall's excess over the
