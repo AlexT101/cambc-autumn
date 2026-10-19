@@ -25,5 +25,6 @@ The public API returns a null submission id and version, so `replays/mine` games
 | 22 | 2026-10-18 21:34 | #21 with no escort on shared-gem maps (v21 lost both stampede scrims v20 had won) | as #19 |
 | — | 2026-10-18 ~22:10 | version 20 made active again (ladder scrims: v20 28-47, v21 26-49, v22 24-51 on the same maps) | as #19 |
 | 24 | 2026-10-19 ~03:15 | hecate ed3b2ac: cleanup, bug fixes 2.1-2.6, v17 port replaced by farm-native spell clears and pickups (54.4% vs version 20 locally) | as #19 |
+| 25 | 2026-10-19 11:47 | hecate d21e894 (overnight session: strike planner, Reach danger model, carrier chasing, siege fixes, measured emblems and banking, fuel work; 58.0% vs version 24 locally) | as #19 |
 
 Add a row with each new submission.
