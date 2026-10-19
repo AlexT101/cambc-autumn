@@ -50,7 +50,7 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    Safety::strike_of (per-turn strike cache) in step_guard and visible_threat, cheap tile tests first, known_fight
    memo lookup before the fuel gate, lethal() only when it decides, one-pass fight_key. 100M bench: 16/16 identical,
    mean -0.5%, p99 -1.9%.
-10. Ladder-driven changes from the Intercontinental Fish analysis ([../LADDER-FISH.md](../LADDER-FISH.md)); frozen
+10. Ladder-driven changes from the Intercontinental Fish analysis ([../FISH.md](../FISH.md)); frozen
    baseline before them: bots/baselines/hecate-v1. Submitted as version 19.
    - Draft copied from the top ladder teams: Ren, Stellar, Cassi, Ryth, Varg (Tavi last). Ren builds Focus (its
      stun and retaliation scale with it), and solo camp estimates count its retaliation on each monster that hits it.

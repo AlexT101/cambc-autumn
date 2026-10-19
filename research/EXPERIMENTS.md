@@ -64,7 +64,7 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
 - Ladder-motivated, lost locally: gold valued 3× in farm choice (46.9%), the top teams' draft (Ren, Stellar, Cassi,
   Ryth, Varg) with Focus Ren (42.3%), Cassi gold weight 10 instead of 4 (49.2%), gold front-loaded by gems left (47.2%,
   45.6%), a 100+ carrier going home from any visible threat (48.7%). These target gaps seen against Intercontinental Fish
-  ([LADDER-FISH.md](LADDER-FISH.md)) that our own bots don't exploit: judge them on the ladder.
+  ([FISH.md](FISH.md)) that our own bots don't exploit: judge them on the ladder.
 - Big bags: an escort (a 150+ carrier waits for 2 allies; empty-handed allies within 18 guard it) was level locally
   (51.3%) and halved big bags lost on Monolith-only maps, but lost on the ladder (scrims vs the top 5 on the same maps:
   28-47 -> 26-49 and 24-51; stampede 0-1080 once escorts left the shared block). Reverted. A 150+ bag treated like
