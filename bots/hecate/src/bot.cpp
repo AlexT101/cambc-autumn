@@ -1076,25 +1076,6 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         const auto& belief = world.camps[g];
         if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
             continue;
-        auto& known = group_facts[g];
-        // The spawn fields home_ground reads are warm once the centres are.
-        if (known.home < 0 && pathing.centres_ready()) known.home = home_ground(map, g);
-        float weight = pathing.centres_ready() ? known.home : 1.0f;
-        // Staying with last turn's choice keeps near ties from turning us back and forth.
-        if (g == memory.farm_group) weight *= stickiness;
-        const float gems = weight * static_cast<float>(std::min(group.gems, short_by));
-        const float gold = weight * per_gold * static_cast<float>(group.gold);
-        const bool claimed = taken(g);
-        const bool wins = group.gems >= short_by;
-        const float fastest = fastest_clear(world, g, strength);
-        // Empty-handed, the skip below can be settled before the steps are read: no walk is shorter
-        // than the Chebyshev distance.
-        if (bag == 0 && best >= 0 && !claimed && !wins) {
-            const int nearest = centre_steps[g] >= 0 ? centre_steps[g] : dist(here, group.centre);
-            const bool may_help = group.strength > 0 && belief.state == CampState::alive && nearest <= params::help_radius;
-            const int trip = belief.state == CampState::respawning ? std::max(nearest, belief.respawn_round - world.round) : nearest;
-            if (!may_help && (gems + gold) / (static_cast<float>(trip + capture_rounds()) + fastest) <= best_value) continue;
-        }
         auto& steps_known = centre_steps[g];
         if (steps_known < 0) {
             if (steps_warm) {
@@ -1114,11 +1095,14 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         if (bag == 0 && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
             && steps < help_steps && struggling(g))
             help_group = g, help_steps = steps;
+        const bool claimed = taken(g);
         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
         // it. Gems past the win are worth nothing.
+        const bool wins = group.gems >= short_by;
         const Field* to_bank = to_altar ? to_altar : wins ? &pathing.to_any_altar() : nullptr;
         // A recall only goes home: the way out from an altar is walked.
+        auto& known = group_facts[g];
         if (to_bank && known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
         const int walk = to_bank ? known.to_altar : unreachable;
         const int back = to_altar ? homeward(walk, true) : walk;
@@ -1127,8 +1111,16 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
         const int bank = back == unreachable ? 0 : back + chained_tribute;
         const int cycle_bank = back == unreachable ? 0 : back + tribute_turns(group.gems);
         const int trip = steps + wait - bank_now + bank;
+        // The spawn fields home_ground reads are warm once the centres are.
+        if (known.home < 0 && pathing.centres_ready()) known.home = home_ground(map, g);
+        float weight = pathing.centres_ready() ? known.home : 1.0f;
+        // Staying with last turn's choice keeps near ties from turning us back and forth.
+        if (g == memory.farm_group) weight *= stickiness;
+        const float gems = weight * static_cast<float>(std::min(group.gems, short_by));
+        const float gold = weight * per_gold * static_cast<float>(group.gold);
         // Risky groups matter only while no affordable one is found; skip the costly clearing
         // estimate for groups that cannot beat it even with no clearing. A crew's share can.
+        const float fastest = fastest_clear(world, g, strength);
         if (!claimed && best >= 0 && (gems + gold) / (static_cast<float>(trip + capture_rounds()) + fastest) <= best_value
             && (bag == 0 || (gems + gold) / (static_cast<float>(walk + cycle_bank + capture_rounds()) + fastest) <= from_altar_value))
             continue;
