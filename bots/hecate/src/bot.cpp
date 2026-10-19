@@ -2332,6 +2332,22 @@ void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& mem
     if (memory.banking) bank_gems(world, pathing, safety, memory); // a tribute can still start after a ranged attack
 }
 
+// A farming turn's output lands on camps: in enemy health points, the gems it earns at the map's
+// gems per camp health point.
+float farm_step_value(const World& world) {
+    static float density = -1;
+    if (density < 0) {
+        float gems = 0, health = 0;
+        for (const auto& g : world.map().groups) {
+            if (g.gems == 0 || (g.has_monolith && !world.map().monolith_only)) continue;
+            gems += static_cast<float>(g.gems);
+            for (const auto& m : g.members) health += m.max_health;
+        }
+        density = health > 0 ? gems / health : 0.0f;
+    }
+    return output(world.me()) * density * params::gem_value;
+}
+
 // The field the turn's goal most likely walks: to an altar when carrying, else to the farm choice.
 const Field* intent_field(const World& world, Pathing& pathing, const Memory& memory) {
     if (cambc::self().gem_count() > 0) return &pathing.to_any_altar();
@@ -2364,9 +2380,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (on_spawn) buy_lock();
     if (!world.me().can_act(world.round)) return;
     heal_ally(world);
-    // With an enemy in reach the plan weighs the shield against the other casts.
+    // A reset that may kill is weighed against the shield by the plan.
     const bool strikes = strike_possible(world);
-    if (!strikes) shield_if_needed(world, memory.farm_group);
+    if (!strikes || !reset_may_kill(world)) shield_if_needed(world, memory.farm_group);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     if (on_spawn && me.health() < me.max_health()) {
         decision = 'H';
@@ -2391,9 +2407,23 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         intent.anchored = holding;
         intent.walks = !holding && !(stun_later && alive_now(*stun_later)) && !can_tribute_here(world);
         intent.keep_walk = me.gem_count() > 0 && !holding;
-        intent.step_value = output(world.me());
-        if (intent.walks) intent.field = intent_field(world, pathing, memory);
+        intent.step_value = me.gem_count() > 0 ? carried_step_value : farm_step_value(world);
+        // The chase carry_bag or the empty-handed turn would take, as it would take it.
+        const ChampionBelief* target = nullptr;
+        if (intent.walks && (me.gem_count() == 0 || (!can_tribute_safely(world, safety, memory) && !endgame(world, pathing)
+                                                     && !closing(world) && !winning_bag(world))))
+            target = prey(world, safety);
+        const int range = world.me().facts().attack_range();
+        if (target) {
+            if (me.gem_count() == 0) intent.step_value = output(world.me());
+            intent.target = target->pos, intent.target_range = range;
+            intent.walks = dist(me.position(), target->pos) > range;
+        } else if (intent.walks) {
+            intent.field = intent_field(world, pathing, memory);
+        }
         attacked = plan_strikes(world, pathing, safety, intent, stun_later).attacked;
+        // A cast the plan left unused: before farm's camp reset takes it.
+        shield_if_needed(world, memory.farm_group);
     }
     decision = holding ? 'P' : attacked ? 'A' : decision;
     if (!me.is_alive()) return;

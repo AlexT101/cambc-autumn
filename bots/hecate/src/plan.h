@@ -21,7 +21,13 @@ struct Intent {
     const Field* field = nullptr;
     float step_value = 0;
     bool keep_walk = false; // carrying: cast_at_enemies' own walk threshold prices the walk
+    // Chasing: progress is the steps saved towards attack range of the target.
+    vec2 target{-1, -1};
+    int target_range = 0;
 };
+
+// A carrier's step, as cast_at_enemies prices it: its keep-walk threshold less a cast's cost.
+inline constexpr float carried_step_value = 210;
 
 // A visible enemy near enough to strike this turn, by walk, dash and attack range.
 bool strike_possible(const World& world);
@@ -34,6 +40,9 @@ struct Planned {
 // Before the goal acts. `hold`: a tributer hit only to kill it.
 Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent,
                      const ChampionBelief* hold);
+
+// A reset's second attack could kill an enemy this turn: a cast worth keeping for the plan.
+bool reset_may_kill(const World& world);
 
 // After the goal: the attack and cast still unspent, from where the walk ended.
 void strike_after(const World& world, Safety& safety, const ChampionBelief* hold);

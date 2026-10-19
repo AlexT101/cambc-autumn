@@ -131,6 +131,15 @@ bool travel_dash(const World& world, Pathing& pathing, const cambc::ability& das
     return dash_to_first(dash, pathing, landings);
 }
 
+// Varg's shield, cast at the turn's end, absorbs more than a hit that does not kill.
+bool shield_wanted(const World& world) {
+    if (!ready(world, AbilityKind::shield)) return false;
+    const vec2 here = cambc::self().position();
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && dist(here, e.pos) <= threat_strike(world, e).reach) return true;
+    return false;
+}
+
 } // namespace
 
 std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only, const ChampionBelief* hold) {
@@ -195,7 +204,7 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only, const Champi
     const auto reset = ready(world, AbilityKind::attack_reset);
     if (!reset) return false;
     const auto target = attack_target(world, stunning_only, hold);
-    if (!target || !cast(*reset)) return false;
+    if (!target || (!(target->health() <= me.strength()) && shield_wanted(world)) || !cast(*reset)) return false;
     try {
         me.attack(*target);
     } catch (const cambc::error&) {

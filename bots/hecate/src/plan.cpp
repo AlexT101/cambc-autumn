@@ -1,5 +1,6 @@
 #include "plan.h"
 #include <algorithm>
+#include <cstdio>
 #include <array>
 #include <optional>
 #include "abilities.h"
@@ -15,6 +16,7 @@ namespace {
 constexpr int dash_steps = 2;
 constexpr float cast_cost = 40; // a slot's next 8 rounds, as cast_at_enemies prices them
 constexpr int max_foes = 8;
+constexpr bool debug_plan = false; // a PLAN line per planned turn
 
 struct Foe {
     const ChampionBelief* belief;
@@ -131,7 +133,9 @@ Hit best_hit(const Board& b, vec2 p, const Healths& h) {
             for (int j = 0; j < b.n; ++j)
                 if (j != i && h[j] > 0 && dist(b.foes[j].pos, f.pos) <= 1)
                     value += hit_worth(b.foes[j], b.strength, h[j]), retaliation += b.foes[j].retaliation;
-        if (value <= 0 || retaliation >= b.health) continue;
+        if (retaliation >= b.health) continue;
+        value -= retaliation;
+        if (value <= 0) continue;
         if (best.target < 0 || value > best.value || (value == best.value && h[i] < best_health))
             best = {value, i}, best_health = h[i];
     }
@@ -187,6 +191,10 @@ float shield_worth(const World& world, Safety& safety, const Board& b, vec2 p) {
 }
 
 int progress(const Intent& intent, vec2 from, vec2 to) {
+    if (intent.target.x >= 0) {
+        const auto steps = [&](vec2 p) { return std::max(0, dist(p, intent.target) - intent.target_range); };
+        return steps(from) - steps(to);
+    }
     if (!intent.field) return 0;
     const int a = intent.field->at(from), c = intent.field->at(to);
     if (a == unreachable || c == unreachable) return 0;
@@ -229,7 +237,8 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     apply(b, first, h1);
     const bool ranged_attack = !b.melee && first.target >= 0;
     const float walk_after = walks && !ranged_attack ? step : 0.0f;
-    Plan best{Kind::stay, first.value + walk_after + shield_worth(world, safety, b, b.here)};
+    const float shield = shield_worth(world, safety, b, b.here);
+    Plan best{Kind::stay, first.value + walk_after + shield};
     if (first.target >= 0 && b.reset >= 0)
         if (const Hit second = best_hit(b, b.here, h1); second.target >= 0 && first.value + second.value + walk_after > best.value)
             best = {Kind::stay, first.value + second.value + walk_after, {}, {}, false, true};
@@ -243,6 +252,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
         }
     }
 
+    const float stay_value = best.value;
     // Moving to strike: a walk, a dash or both, scored against staying.
     std::optional<float> here_danger;
     const auto danger_change = [&](vec2 p) {
@@ -305,6 +315,14 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
         }
     }
 
+    if constexpr (debug_plan) {
+        debug_block({
+            std::printf("PLAN %d %u k%d v%.0f s%.0f w%d,%d d%d,%d f%d r%d c%d n%d step%.0f walks%d field%d\n", world.round,
+                        static_cast<std::uint32_t>(world.me().handle), static_cast<int>(best.kind), best.value, stay_value,
+                        best.walk.x, best.walk.y, best.dash.x, best.dash.y, best.attack_first, best.reset, best.enemy_cast, b.n,
+                        step, walks, intent.field != nullptr);
+        });
+    }
     // Carry it out; a move refused (a hidden unit) falls back to striking from here.
     Healths h = h0;
     const auto strike_here = [&](bool reset) {
@@ -365,17 +383,33 @@ void strike_after(const World& world, Safety& safety, const ChampionBelief* hold
         return;
     if (!state.contains(cambc::champion_state::can_attack) && !state.contains(cambc::champion_state::can_cast)) return;
     Board b;
-    if (!read_board(world, hold, b, world.me().facts().attack_range() + (world.me().facts().passive == Passive::splash_attack ? 1 : 0)))
-        return;
-    Healths h = b.healths();
-    if (b.attack) {
-        const Hit a = best_hit(b, b.here, h);
-        if (!attack(b, a)) return;
-        apply(b, a, h);
+    const auto& f = world.me().facts();
+    if (read_board(world, hold, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0))) {
+        Healths h = b.healths();
+        bool attacked = !b.attack;
+        if (b.attack) {
+            const Hit a = best_hit(b, b.here, h);
+            attacked = attack(b, a);
+            apply(b, a, h);
+        }
+        if (attacked && b.reset >= 0) {
+            const Hit again = best_hit(b, b.here, h);
+            if (again.target >= 0 && again.value > shield_worth(world, safety, b, b.here) && use_slot(b.reset)) attack(b, again);
+        }
     }
-    if (b.reset < 0) return;
-    const Hit again = best_hit(b, b.here, h);
-    if (again.target >= 0 && again.value > shield_worth(world, safety, b, b.here) && use_slot(b.reset)) attack(b, again);
+    // A cast the plan kept for a walk the goal did not take, or one a walk allows.
+    if (state.contains(cambc::champion_state::can_cast)) cast_at_enemies(world, false, hold);
+}
+
+bool reset_may_kill(const World& world) {
+    const auto& self = world.me();
+    const auto& f = self.facts();
+    const int slot = f.slot_of(AbilityKind::attack_reset);
+    if (slot < 0 || !self.ability_ready(slot, world.round)) return false;
+    const int reach = f.attack_range() + (f.walk_and_attack_independent() ? 1 : 0);
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && dist(self.pos, e.pos) <= reach && e.health <= 2 * self.strength) return true;
+    return false;
 }
 
 } // namespace aph
