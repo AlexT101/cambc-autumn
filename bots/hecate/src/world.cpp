@@ -168,7 +168,17 @@ bool disjoint(const bitboard& a, const bitboard& b) {
 // field capped at `steps` reaches, for less fuel at one or two steps.
 void dilate(bitboard& tiles, const bitboard& open, int steps, const bitboard& land) {
     static bitboard t1{cambc::uninitialized}, t2{cambc::uninitialized};
+    // A few tiles grow for less as a square drawn around each (~22 fuel) than by the 8 shifts and
+    // unions, at about 1 fuel per 8x8 chunk each.
+    static vec2 at[65];
+    const auto few = static_cast<std::uint32_t>(std::min<std::uint64_t>(64, (7 * (search_chunks() + 13) - 100) / 22));
     for (; steps > 0; --steps) {
+        if (const auto n = tiles.positions_into({at, few + 1}); n <= few) {
+            t1.clear();
+            for (std::uint32_t i = 0; i < n; ++i) t1.draw_chebyshev(at[i], 1.0f);
+            and_into(t1, steps == 1 ? land : open, tiles);
+            continue;
+        }
         tiles.shift_right_into(1, t1);
         tiles.shift_right_into(-1, t2);
         tiles |= t1;
@@ -675,6 +685,8 @@ void World::init_beliefs() {
         }
     }
 
+    for (auto& order : turn_order_)
+        for (int i = 0; i < 16; ++i) order[i] = static_cast<std::uint8_t>(i);
     rank_turns(); // the first update keeps these as last round's ranks
     camps.assign(s.groups.size(), CampBelief{});
     for (std::size_t g = 0; g < s.groups.size(); ++g) {
@@ -686,6 +698,7 @@ void World::init_beliefs() {
     altars.assign(s.altars.size(), AltarBelief{});
     stirring_.assign((s.groups.size() + 63) / 64, 0);
     cleared_.assign((s.groups.size() + 63) / 64, 0);
+    respawning_.assign((s.groups.size() + 63) / 64, 0);
 }
 
 void World::update() {
@@ -708,6 +721,7 @@ void World::update() {
     guard("camps", [&] { update_camps(); });
     guard("altars", [&] { update_altars(); });
     guard("scores", [&] { update_scores(tributing); });
+    expected_sighting.enemy = -1;
 }
 
 void World::observe() {
@@ -788,8 +802,11 @@ void World::update_champion(ChampionBelief& b, bool full) {
             }
             b.channel = Channel::none;
         }
-        // An untracked `possible` is unread until a fix overwrites it.
-        if (b.side == team::enemy && b.tracked) track(b);
+        // An untracked `possible` is unread until a fix overwrites it, as is one note_sighting is
+        // about to fix.
+        const auto& x = expected_sighting;
+        const bool refixed = full && x.enemy == b.index && in_bounds(x.pos) && x.round > b.pos_round;
+        if (b.side == team::enemy && b.tracked && !refixed) track(b);
         return;
     }
 
@@ -861,9 +878,8 @@ void World::read_priorities(bool new_round) {
 }
 
 void World::note_turn_end() {
-    auto& self = cambc::self();
-    if (!me().alive || !self.is_alive()) return;
-    const vec2 p = self.position();
+    if (!me().alive || !engine::alive(my_handle())) return;
+    const vec2 p = my_position();
     const int g = in_bounds(p) ? map().group_at(p) : -1;
     if (g < 0 || camps[g].state != CampState::alive) return;
     guard("turn end", [&] {
@@ -907,6 +923,8 @@ void World::note_stirring(int g) {
     word = c.state == CampState::alive && c.awake != Awake::asleep ? word | bit : word & ~bit;
     auto& cleared = cleared_[g / 64];
     cleared = c.state == CampState::cleared ? cleared | bit : cleared & ~bit;
+    auto& respawning = respawning_[g / 64];
+    respawning = c.state == CampState::respawning ? respawning | bit : respawning & ~bit;
 }
 
 void World::read_vision() {
@@ -948,18 +966,28 @@ void World::fix(ChampionBelief& b, vec2 tile, Moment when) {
 void World::rank_turns() {
     ranks_stale_ = false;
     ranked_round_ = round;
-    for (auto* team : {&allies, &enemies}) {
+    for (int t = 0; t < 2; ++t) {
+        auto& team = t == 0 ? allies : enemies;
         // Handles ascend with the index: a tie goes to the lower index.
-        const int n = std::min(static_cast<int>(team->size()), 16);
+        const int n = std::min(static_cast<int>(team.size()), 16);
         std::array<int, 16> priority;
         for (int i = 0; i < n; ++i) {
-            const auto& x = (*team)[i];
+            const auto& x = team[i];
             priority[i] = round > x.priority_round ? x.next_priority : x.priority;
         }
-        std::array<int, 16> rank{};
-        for (int i = 0; i < n; ++i)
-            for (int j = i + 1; j < n; ++j) ++rank[priority[j] > priority[i] ? i : j];
-        for (int i = 0; i < n; ++i) (*team)[i].rank = rank[i];
+        // Insertion sort from the last order, which mostly still holds.
+        auto& order = turn_order_[t];
+        for (int k = 1; k < n; ++k) {
+            const int i = order[k], p = priority[i];
+            int j = k;
+            for (; j > 0; --j) {
+                const int o = order[j - 1];
+                if (priority[o] > p || (priority[o] == p && o < i)) break;
+                order[j] = order[j - 1];
+            }
+            order[j] = static_cast<std::uint8_t>(i);
+        }
+        for (int k = 0; k < n; ++k) team[order[k]].rank = k;
     }
 }
 
@@ -1149,6 +1177,14 @@ void World::update_camps() {
             const std::size_t g = 64 * w + static_cast<std::size_t>(__builtin_ctzll(bits));
             const std::uint64_t bit = std::uint64_t{1} << (g & 63);
             const bool in_view = (group_visible[w] & bit) != 0;
+            if (!in_view) {
+                // Out of view, it changes only when a timer runs out.
+                const auto& c = camps[g];
+                if (!(c.state == CampState::cleared && c.holder && round >= c.payout_round())
+                    && !(c.state == CampState::respawning && round >= c.respawn_round)
+                    && !(c.awake == Awake::awake && round - c.state_round > 2))
+                    continue;
+            }
             const auto version = camps[g].version;
             guard("camp", [&] {
                 const auto& G = s.groups[g];

@@ -10,6 +10,8 @@ class World;
 
 namespace comms {
 
+// Before the world's update: note the sighting receive() will merge after it.
+void expect(World& world);
 // What teammates posted since our previous turn, merged into the world.
 void receive(World& world);
 // With `refresh`, re-read vision first, but only if there is a slot to fill.

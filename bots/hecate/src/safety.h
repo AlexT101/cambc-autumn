@@ -142,7 +142,8 @@ private:
 };
 
 // With fuel above `fuel_floor` at the turn's end: Reach's static terrain around the tiles visible
-// enemies may step to, and who sees each tile we may step to, so fights find them ready.
+// enemies may step to, so fights find it ready. Sight masks are not warmed: in bench games only 1
+// in 20 of those warmed was ever read.
 void warm_reach(const World& world, std::uint64_t fuel_floor);
 
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
@@ -198,6 +199,9 @@ public:
     // Without building the threats: at least worst_damage(p), and at least their sum with each
     // visible enemy yet to act counted twice when `double_unacted`.
     float damage_bound(vec2 p, bool double_unacted = false);
+    // At least damage_bound(p), counting every unseen threat at its most: no host queries or
+    // strikes for them.
+    float damage_ceiling(vec2 p, bool double_unacted = false);
     float camp_damage(vec2 p, bool worst = true);
     // Each threat by chance in reach times `hit_given_reach`, plus camps.
     float expected_damage(vec2 p);
@@ -226,21 +230,25 @@ public:
     // no_fight if no threat hits p.
     static constexpr std::uint32_t no_fight = ~0u;
     std::uint32_t fight_key(vec2 p, int exclude = -1);
+    // fight_key(p) given `visible`: the bits of every visible threat that hits p, at least one.
+    std::uint32_t fight_key_with(vec2 p, std::uint32_t visible);
     // The fight of a key, memoised.
     Trade fight_of(std::uint32_t key);
     bool known_fight_of(std::uint32_t key) const { return memo(key) != nullptr; }
     // fight(p) if it needs no simulation, else null.
     const Trade* known_fight(vec2 p);
     // threat_strike(), kept for the turn.
-    const Strike& strike_of(const ChampionBelief& e) { return foe(e).strike; }
+    const Strike& strike_of(const ChampionBelief& e) { return struck(e).strike; }
     // What a visible enemy could do to p before our next turn (threat_strike placed on the map).
     Blow blow(const ChampionBelief& e, vec2 p);
     // A visible enemy's turns of walking before it can strike p: 0 if it can now, else at least 1
     // and at least its Chebyshev distance past its reach.
     int approach(const ChampionBelief& e, vec2 p);
     // Enough for most fights, by the champions in sight and this turn's costliest simulation;
-    // plus build_cost_estimate().
+    // plus query_cost_estimate().
     std::uint64_t fight_cost_estimate();
+    // The threat build and the visible threats' Reach builds still pending.
+    std::uint64_t query_cost_estimate();
     // At most what building the threats costs, 0 once built.
     std::uint64_t build_cost_estimate();
     // Us and the allies we see near p, striking first, against every visible enemy within
@@ -290,6 +298,9 @@ private:
         bool near;
     };
     Foe& foe(const ChampionBelief& e);
+    // foe(e) with only its strike worked out: an unseen enemy's tiles and weight count its
+    // possible set, a whole-board host operation.
+    Foe& struck(const ChampionBelief& e);
     void build();
     template <class F> void each_threat(vec2 p, F&& f);
     // Seen alive at turn start but dead now, once refreshed.
@@ -302,6 +313,7 @@ private:
     std::array<std::int8_t, 16> gone_{}; // by enemy index: 0 unknown, 1 alive, 2 dead
     // Left uninitialised: the engine charges for every byte written. Bit i: foes_[i] is set.
     std::uint16_t known_ = 0;
+    std::uint16_t counted_ = 0; // bit i: foes_[i] has its tiles and weight
     std::uint32_t made_ = 0; // fighters made for the fights this turn: bit i for allies[i], 16 + i for enemies[i]
     union {
         std::array<Foe, 16> foes_;

@@ -219,7 +219,7 @@ struct Plan {
 
 bool strike_possible(const World& world) {
     const auto& self = world.me();
-    if (!self.alive) return false;
+    if (!self.alive || !enemy_seen(world)) return false;
     const vec2 here = my_position();
     return enemy_within(world, here, std::max(ability_range + 1, strike_reach(self.facts(), self.facts().has_dash())));
 }
@@ -492,7 +492,7 @@ void strike_after(const World& world, Safety& safety, const ChampionBelief* hold
     if (!state.contains(cambc::champion_state::can_attack) && !state.contains(cambc::champion_state::can_cast)) return;
     Board b;
     const auto& f = world.me().facts();
-    if (read_board(world, hold, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0), true)) {
+    if (enemy_seen(world) && read_board(world, hold, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0), true)) {
         Healths h = b.healths();
         bool attacked = !b.attack;
         if (b.attack) {

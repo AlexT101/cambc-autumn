@@ -73,14 +73,15 @@ struct State {
 };
 State state;
 
+// Raw reads and writes: the SDK's checked ones cost several times more.
 std::uint64_t read_bits() {
     std::uint64_t bits = 0;
-    cambc::shared_memory.read(0, std::span{&bits, 1});
+    cambc::detail::check(cambc::detail::sdk_read_shared_memory(0, &bits, sizeof bits));
     return bits;
 }
 
 void write_bits(std::uint64_t bits, int round) {
-    cambc::shared_memory.write(0, std::span{&bits, 1});
+    cambc::detail::check(cambc::detail::sdk_write_shared_memory(0, &bits, sizeof bits));
     state.last = bits;
     state.last_round = round;
 }
@@ -100,6 +101,13 @@ int dated(int parity) {
 }
 
 } // namespace
+
+void expect(World& world) {
+    world.expected_sighting = {};
+    const auto bits = read_bits();
+    if ((changes(bits) & sighting_bits) && sight_x.get(bits) != 0)
+        world.expected_sighting = {sight_index.get(bits), {sight_x.get(bits) - 1, sight_y.get(bits)}, dated(sight_parity.get(bits))};
+}
 
 void receive(World& world) {
     state.fighting = -1;
@@ -134,17 +142,18 @@ void send(World& world, bool moved, bool refresh) {
 
     if (camp_free) {
         const auto& groups = world.map().groups;
-        for (std::size_t g = 0; g < groups.size() && g < static_cast<std::size_t>(max_group); ++g) {
+        world.each_respawning([&](int g) {
+            if (g >= max_group) return true;
             auto& c = world.camps[g];
-            if (c.state != CampState::respawning || c.respawn_round <= round || c.told_respawn == c.respawn_round) continue;
+            if (c.respawn_round <= round || c.told_respawn == c.respawn_round) return false;
             // Seen respawning, not inferred from a hold out of sight.
-            if (c.state_round + groups[g].respawn < c.respawn_round) continue;
-            camp_group.set(bits, static_cast<int>(g) + 1);
+            if (c.state_round + groups[g].respawn < c.respawn_round) return false;
+            camp_group.set(bits, g + 1);
             camp_respawn.set(bits, c.respawn_round & 255);
             c.told_respawn = c.respawn_round;
             dirty = true;
-            break;
-        }
+            return true;
+        });
     }
 
     // A claim not yet read at our previous turn may not have reached every teammate: ours waits.

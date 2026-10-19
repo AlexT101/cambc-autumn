@@ -23,7 +23,7 @@ void Pathing::begin_turn() {
     blocked_fresh_ = false;
     pos_fresh_ = false;
     if (bumped_round_ != world_.round) {
-        bumped_.clear();
+        if (bumped_any_) bumped_.clear();
         bumped_any_ = false;
         bumped_round_ = world_.round;
     }
@@ -108,7 +108,7 @@ int Pathing::approach_steps(int group, int range) {
     return std::min(steps, s.width + s.height);
 }
 
-// Unbounded, walls seldom double the distance as the crow flies.
+// Unbounded, walls seldom double the distance as the crow flies. At most max_approach_cost().
 std::uint64_t Pathing::approach_cost(int group, int range) {
     if (approach_ready(group, range)) return 0;
     const int steps = approach_steps(group, range);
@@ -277,18 +277,22 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
     return true;
 }
 
+void Pathing::occupied_into(bitboard& out) {
+    static bitboard t{cambc::uninitialized};
+    cambc::vision::champion_tiles_into(team::ally, out);
+    out |= map().blocked_for_us;
+    cambc::vision::champion_tiles_into(team::enemy, t);
+    out |= t;
+    cambc::vision::camp_tiles_into(t);
+    out |= t;
+    cambc::vision::teleport_tiles_into(t);
+    out |= t;
+    if (bumped_any_) out |= bumped_;
+}
+
 const bitboard& Pathing::blocked() {
     if (!blocked_fresh_) {
-        static bitboard t{cambc::uninitialized};
-        cambc::vision::champion_tiles_into(team::ally, blocked_);
-        blocked_ |= map().blocked_for_us;
-        cambc::vision::champion_tiles_into(team::enemy, t);
-        blocked_ |= t;
-        cambc::vision::camp_tiles_into(t);
-        blocked_ |= t;
-        cambc::vision::teleport_tiles_into(t);
-        blocked_ |= t;
-        if (bumped_any_) blocked_ |= bumped_;
+        occupied_into(blocked_);
         blocked_.set(my_pos(), false);
         blocked_fresh_ = true;
     }
@@ -301,7 +305,7 @@ void Pathing::invalidate() {
 }
 
 vec2 Pathing::my_pos() {
-    const auto round = cambc::round_number();
+    const auto round = round_now();
     if (!pos_fresh_ || pos_round_ != round) {
         pos_ = my_position();
         pos_round_ = round;
@@ -338,10 +342,13 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
         return r;
     }
     // Scratch kept between calls: the host overwrites every output in full.
-    static bitboard walls{cambc::uninitialized}, open_goals{cambc::uninitialized}, origin, visited{cambc::uninitialized};
+    static bitboard walls{cambc::uninitialized}, origin, visited{cambc::uninitialized};
     static vec2 origin_at{-1, -1};
     static cambc::distance_field field;
-    copy_into(blocked(), walls);
+    // A route is mostly followed by a step, which makes blocked() stale: unless it is fresh, the
+    // walls are read straight into the route's board. Our tile is freed below.
+    if (blocked_fresh_) copy_into(blocked_, walls);
+    else occupied_into(walls);
     if (in_bounds(through)) walls.set(through, false);
     if (avoid && avoid->is_set(me)) {
         // Inside danger every neighbour is in it too: free the connected region we stand in.
@@ -353,16 +360,14 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
     }
     if (guard_) walls |= *guard_;
     walls.set(me, false);
-    not_into(walls, open_goals);
-    open_goals &= goals;
-    if (open_goals.is_empty()) return r;
     // Search outwards from the goals until it reaches us: every tile one layer nearer than ours
     // is then labelled, so each neighbour on a shortest route is known.
     FuelMeter meter{"route"};
     if (in_bounds(origin_at)) origin.set(origin_at, false);
     origin.set(me);
     origin_at = me;
-    field.compute_to(walls, open_goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
+    // Goals on walls are no roots; with none left we stay unreachable.
+    field.compute_to(walls, goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
     const int here = field.get(me);
     if (here == unreachable) return r;
     r.steps = here;

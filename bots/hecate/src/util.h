@@ -1,6 +1,7 @@
 #pragma once
 #include <cambc.h>
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <memory>
@@ -88,6 +89,21 @@ inline const cambc::enum_map<cambc::item_type>& my_items() {
     static cambc::enum_map<cambc::item_type> items;
     cambc::detail::check(cambc::detail::sdk_champion_items(my_handle(), items.ptr()));
     return items;
+}
+// From our state at turn start: later, a turn that has walked, attacked and cast shows the same bits.
+inline bool my_stunned(cambc::champion_state state) {
+    using cambc::champion_state;
+    // A stun cancels channels.
+    if (state.contains(champion_state::can_move) || state.contains(champion_state::can_attack) || state.contains(champion_state::can_cast)
+        || state.contains(champion_state::recalling) || state.contains(champion_state::submitting_gems)
+        || state.contains(champion_state::teleporting))
+        return false;
+    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+    std::uint32_t n = 0;
+    cambc::detail::check(cambc::detail::sdk_champion_buff_data(my_handle(), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
+    return false;
 }
 // Turn ends left of our channel.
 inline std::int32_t my_channel_time() {
@@ -248,7 +264,13 @@ inline std::unique_ptr<Field> make_field(const bitboard& walls, const bitboard& 
     return f;
 }
 
-inline std::uint64_t fuel() { return cambc::fuel_remaining(); }
+// The imports read raw: the SDK's wrappers add checks for failures only an ABI mismatch could cause.
+inline std::uint64_t fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
+inline std::uint32_t round_now() {
+    std::uint32_t round = 0;
+    (void)cambc::detail::sdk_bc_round_number(&round);
+    return round;
+}
 
 inline std::uint64_t search_cost_estimate(int layers) {
     return 4000 + search_chunks() * (20 + static_cast<std::uint64_t>(layers));
@@ -270,6 +292,8 @@ inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }
 
 // Left for the rest of the turn after optional work.
 inline constexpr std::uint64_t end_reserve = 10000;
+// Left by the fight evaluations before acting: the strikes, the goal's walk and the turn's end.
+inline constexpr std::uint64_t act_reserve = 2 * end_reserve;
 // Left after work whose cost is bounded, at the end of the turn: little runs after warm-up.
 inline constexpr std::uint64_t last_reserve = 2000;
 // Layers a capped centre field may run past the farther spawn's steps to it; a field cut short
