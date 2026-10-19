@@ -400,6 +400,7 @@ bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& m
 const bitboard* pack_zone(const World& world);
 
 void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    world.throw_if_stale();
     if (submit_here(world, pathing, safety, memory)) return;
     const vec2 here = cambc::self().position();
     const auto& altars = world.map().altars;
@@ -412,19 +413,13 @@ void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& mem
     bool any_locked = false;
     for (const auto& a : world.altars) any_locked |= a.enemy_lock;
     // One cached field covers every altar; per-altar fields are needed only to skip locked ones.
-    // Breaking a lock takes a turn per hit left, about a step each. With no per-altar field
-    // affordable yet, the nearest altar.
+    // Breaking a lock takes a turn per hit left, about a step each.
     int best = -1;
     if (any_locked) {
         int best_steps = unreachable;
         for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
             const auto& belief = world.altars[a];
-            const auto* field = pathing.to_altar(a, end_reserve);
-            if (!field) {
-                note_shortcut("bank-no-altar-field");
-                continue;
-            }
-            int steps = field->at(here);
+            int steps = pathing.to_altar(a).at(here);
             if (steps == unreachable) continue;
             if (belief.enemy_lock) steps += belief.enemy_lock_hits > 0 ? belief.enemy_lock_hits : static_cast<int>(cambc::constants::altar_lock_hits);
             if (steps < best_steps) best = a, best_steps = steps;
@@ -847,6 +842,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
 // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
 // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
 bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    world.throw_if_stale();
     if (pick_up(world, pathing, memory)) return true;
     auto& me = cambc::self();
     const auto& map = world.map();
@@ -1061,6 +1057,7 @@ bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) 
     int k = 0;
     for (; k < n_groups && fuel_ok(small_cost_estimate + end_reserve + loop_reserve()); ++k) {
         const int g = (first + k) % n_groups;
+        world.throw_if_stale();
         const auto& group = groups[g];
         const auto& belief = world.camps[g];
         if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
@@ -1326,6 +1323,7 @@ bool ward_bushes(const World& world, Memory& memory) {
 }
 
 void place_ward(const World& world, Pathing& pathing, Memory& memory) {
+    world.throw_if_stale();
     if (!world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return;
     if (ward_bushes(world, memory) || world.round % params::ward_period != 0) return;
     const vec2 spawn = world.map().ally_spawn_centre;
@@ -1535,6 +1533,7 @@ int killable_now(const World& world, Safety& safety) {
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
 bool want_home(const World& world, Safety& safety, bool sieging) {
+    world.throw_if_stale();
     const auto& me = cambc::self();
     const vec2 here = me.position();
     if (world.map().ally_spawn.is_set(here)) return false;
@@ -1564,6 +1563,7 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
 // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
 // there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
 const bitboard* step_guard(const World& world, Safety& safety) {
+    world.throw_if_stale();
     static bitboard guard{cambc::uninitialized};
     const auto& self = world.me();
     const vec2 here = cambc::self().position();
@@ -1638,6 +1638,7 @@ bool covered(const bitboard& zone, vec2 p, int r) {
 // The visible enemy quickest to reach and kill among those whose local fight we win even when
 // they strike first; never one on or next to its spawn, where it heals.
 const ChampionBelief* prey(const World& world, Safety& safety) {
+    world.throw_if_stale();
     const auto& me = cambc::self();
     const vec2 here = me.position();
     const int range = world.me().facts().attack_range();
@@ -1688,17 +1689,12 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     if (dist(me.position(), target->pos) > range + 1 && me.can_move()) dash_to_attack(world, pathing, target);
     if (dist(me.position(), target->pos) > range && me.can_move()) {
         const auto* zone = pack_zone(world);
-        if (fuel_ok(search_cost_estimate(2 * vision_radius) + end_reserve)) {
-            static bitboard goals{cambc::uninitialized};
-            goals.clear();
-            goals.draw_chebyshev(target->pos, static_cast<float>(range));
-            goals &= world.map().open_for_us;
-            if (zone) drop(goals, *zone);
-            pathing.step_towards(goals, zone);
-        } else {
-            note_shortcut("crow-flies-chase");
-            pathing.step_closer(target->pos);
-        }
+        static bitboard goals{cambc::uninitialized};
+        goals.clear();
+        goals.draw_chebyshev(target->pos, static_cast<float>(range));
+        goals &= world.map().open_for_us;
+        if (zone) drop(goals, *zone);
+        pathing.step_towards(goals, zone, 2 * vision_radius);
     }
     attack_enemy(world);
     reset_and_attack_enemy(world); // after an attack, or a ranged walk
@@ -1942,6 +1938,7 @@ bool siege_ready(const World& world, int g, const SiegeLoad& load, bool committe
 // Once the team is strong enough it goes together: melee adjacent, ranged at their range, the hurt
 // stepping out to 4, where casters still cast.
 bool siege(const World& world, Pathing& pathing, Memory& memory) {
+    world.throw_if_stale();
     sieged = true;
     auto& me = cambc::self();
     const auto& map = world.map();
@@ -2074,6 +2071,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
 // A big group cleared by spells from 4, out of its monsters' reach, so that nobody takes a hit;
 // harmless members fall to basic attacks from there, the rest once the monsters are dead.
 bool kite(const World& world, Pathing& pathing, Memory& memory) {
+    world.throw_if_stale();
     auto& me = cambc::self();
     const auto& map = world.map();
     const vec2 here = me.position();
@@ -2279,6 +2277,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
 }
 
 void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    world.throw_if_stale();
     auto& me = cambc::self();
     decision = 'R';
     memory.claim = -1;

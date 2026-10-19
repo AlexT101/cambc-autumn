@@ -402,7 +402,8 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
 }
 
 bool StaticMap::warm_up(std::uint64_t fuel_floor) const {
-    const auto afford = [&](std::uint64_t cost) { return fuel_ok(fuel_floor + cost); };
+    const auto round = cambc::round_number();
+    const auto afford = [&](std::uint64_t cost) { return cambc::round_number() == round && fuel_ok(fuel_floor + cost); };
     const auto field = field_cost_estimate();
     if (!ally_field_ && !afford(field)) return false;
     from_ally_spawn();

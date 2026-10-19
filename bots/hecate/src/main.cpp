@@ -19,6 +19,7 @@ template <class F> bool run(const char* phase, F&& f) {
     try {
         f();
         return true;
+    } catch (const aph::StaleTurn&) {
     } catch (const std::exception& e) {
         std::printf("r%u %s error: %s\n", cambc::round_number(), phase, e.what());
     } catch (...) {
@@ -65,6 +66,7 @@ struct Instance {
 
         if (world->is_stale()) return;
         run("turn end", [&] { world->note_turn_end(); });
+        if (world->is_stale()) return;
         // Vision changes only if we moved.
         const bool moved = world->me().alive && cambc::self().position() != world->me().pos;
         const bool refresh = moved && aph::fuel_ok(world->observe_cost_estimate() + end_reserve);
@@ -73,7 +75,7 @@ struct Instance {
         run("prepare", [&] { aph::prepare_next_turn(*world, *pathing, memory); });
         // Field costs are estimated from the deepest field so far; on the first turn none is
         // measured yet, so an estimate can miss by a whole field.
-        if (!warmed_up)
+        if (!warmed_up && !world->is_stale())
             run("warm up", [&] {
                 aph::FuelMeter meter{"warm_up"};
                 const auto reserve = end_reserve + (world->round == world->first_round ? aph::field_cost_estimate() : 0);

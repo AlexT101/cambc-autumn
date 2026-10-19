@@ -13,6 +13,8 @@
 
 namespace aph {
 
+struct StaleTurn {};
+
 // Derived static parts are built on first use: all at once costs too much fuel on large maps.
 // WASM loops, sorting and hashing are costly; host bitboard and field calls are cheap.
 
@@ -325,6 +327,11 @@ public:
     const StaticMap& map() const { return *static_; }
     // True if the bot ran out of fuel and resumed in a later round: beliefs are a round old.
     bool is_stale() const { return cambc::round_number() != static_cast<std::uint32_t>(round); }
+    // Abandons a turn that ran out of fuel at the next costly step, so that the round's own turn,
+    // played next with what is left of its fuel, does not run out in turn.
+    void throw_if_stale() const {
+        if (is_stale()) throw StaleTurn{};
+    }
 
     const ChampionBelief& me() const { return allies[self_index]; }
     // Index of the champion's turn in `round`, by its rank then: the current one for this round,

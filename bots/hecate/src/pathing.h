@@ -25,8 +25,6 @@ public:
 
     const Field& to_ally_spawn();
     const Field& to_altar(int altar); // goals: the altar's tribute tiles
-    // Null if not cached and computing it could take the fuel below `fuel_floor`.
-    const Field* to_altar(int altar, std::uint64_t fuel_floor);
     const Field& to_any_altar();
     int centre_to_altar(int group); // to_any_altar() at the group's centre, kept once read
     // Static steps to tiles within `range` of the group's camp tiles, around the camps believed alive:
