@@ -78,14 +78,14 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    down); against the top 10 version 22 went 55-95. The escort halved big bags lost locally but did not help on the
    ladder (contest still 1-9 vs the top 10), so hecate is back to version 20 (item 11), which is the active
    submission again. The escort code is in history: version 21 = 26e6920, version 22 = 33d61fd.
-14. Cleanup and fixes (2026-10-19, not yet submitted; details in [SIMPLIFY.md](SIMPLIFY.md) 1.9, 1.11 and sections 2 and 4).
+14. Cleanup and fixes (2026-10-19, in version 25).
    - Fuel savings and dead-code cleanup, byte-identical at 100M fuel: 8970 to 8621 lines, fuel -1.4% beyond
-     0306608's -1.6%. Against main's hecate at the real budget 47.4% (unexplained; see EXPERIMENTS.md).
-   - Bug fixes 2.1-2.6 and five of 2.11: 51.3% for the bundle and for 2.3 alone, each vs the cleaned bot.
+     0306608's -1.6%. Against main's hecate at the real budget 47.4% (fuel-only changes reroute games; EXPERIMENTS.md).
+   - Bug fixes from the 2026-10-18 review: 51.3% for the bundle and for the dash-landing fix alone, each vs the cleaned bot.
    - v17 port replaced: farm carries out its own spell clears (`spell_clear`) and picks up cleared groups first
      (`pick_up`, one taker per group); `local_spell_plan`, `collect_local_reward` and both v17 spend caps gone.
      51.0% vs the bot before it; 8374 lines.
-15. Overnight orchestrated session (2026-10-19, 6a78b0c..4b5217e, not yet submitted). Parallel agents in worktrees, each
+15. Overnight orchestrated session (2026-10-19, 6a78b0c..4b5217e, version 25 = hecate-v4). Parallel agents in worktrees, each
    change A/B tested on ladder + maps/gen + maps/gen-central (regenerated, seeds 6401/6402) plus two fresh suites
    (1102 games); details and every dropped attempt in [EXPERIMENTS.md](../EXPERIMENTS.md). Merged, in order:
    - Logical bug fixes: fight sim (Ren reflection, stuns on arrived fighters, idle sim joins enemies fully), a
@@ -107,3 +107,7 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
      (hecate-v2 55.6%), 70.9% vs rival at 85047a7 (hecate-v2 64.1%). Out-of-fuel turns 56/49 per 16 bench games
      vs rival/nemesis-v2, above hecate-v3's 28/21: Reach and the planner on fight turns. Unmerged: the retreat
      planner (branch plan3), level but out-of-fuel turns ~2.5x main's.
+16. After version 25 (2026-10-19, not yet submitted). Fuel round 3 (-17.7% a turn, byte-identical at 100M) with
+   step_guard's fuel reserve and the late-turn skips (frozen with the rest as bots/baselines/hecate-v5); a stunned turn
+   only sets the turn order; the cast, route-retry, kite and travel-dash fuel gates removed (level, 49.7% vs
+   hecate-v5). Details in [../EXPERIMENTS.md](../EXPERIMENTS.md) and [FUEL-GATES.md](FUEL-GATES.md).

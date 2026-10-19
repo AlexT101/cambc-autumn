@@ -3,8 +3,7 @@
 909 distinct ladder games since 2026-10-16 08:00 with the top-5 teams, Sneaky Bush Campers (SBC) or Univardisty
 (Univ), incl. 100 of ours against them. Nemesis era (since 10-17 13:00): only 10 games, all vs Mite (won 9):
 replays/mine/20261017-130622-Mite-vs-PTN-Hyperion-1cd3404a, replays/mine/20261017-154011-Mite-vs-PTN-Hyperion-6c90138d.
-Tables in out/*.txt; scripts in this folder (common, features, deep, moves, agg_*, builds, stats_at, altar_bush,
-locks, poke, monolith, shared, openers, campstun, spells, ptn_losses, timeline, fetch_ptn_top).
+The scripts and out/*.txt tables behind it are in git history, deleted in the 2026-10-19 research cleanup.
 
 ## Ranked behaviours
 1. **Contest-like maps: lock every altar, hold the centre as a pack, win the tiebreak.** Mite locks both central
