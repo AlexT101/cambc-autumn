@@ -8,6 +8,7 @@ namespace aph {
 
 class World;
 class Pathing;
+class Safety;
 struct ChampionBelief;
 
 // The enemy a basic attack from here should hit, read live as vision changes when we move: the
@@ -30,8 +31,8 @@ bool reset_and_attack_camp(const World& world, int group);
 bool camp_in_reach(const World& world, vec2 p, int range);
 
 // Travel: dash to the landing nearest the goals if it gains at least 2 steps and no enemy is near
-// enough to want the dash for a fight or an escape.
-bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals);
+// enough to want the dash for a fight or an escape. Goals more than `max_steps` away are not searched for.
+bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps = unreachable);
 bool dash_towards(const World& world, Pathing& pathing, const Field& field);
 // Into attack range of `target`, else of a visible enemy we can finish or are beating (`hold` only
 // if we can finish it); attack after it.
@@ -45,6 +46,6 @@ bool heal_ally(const World& world);
 // Varg: before damage from an awake camp, a camp we are hitting or an enemy in reach. `farmed`:
 // the group farm chose, which we hit from attack range; another group's camp in attack range is
 // hit only if our attack is spent.
-bool shield_if_needed(const World& world, int farmed);
+bool shield_if_needed(const World& world, Safety& safety, int farmed);
 
 } // namespace aph

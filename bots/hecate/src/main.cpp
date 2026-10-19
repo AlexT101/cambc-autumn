@@ -81,7 +81,8 @@ struct Instance {
                 const auto reserve = end_reserve + (world->round == world->first_round ? aph::field_cost_estimate() : 0);
                 const bool centres = pathing->warm_centres(reserve);
                 map_warmed_up = map_warmed_up || (centres && world->map().warm_up(reserve));
-                warmed_up = map_warmed_up && pathing->warm_up(world->me().facts().attack_range(), reserve);
+                warmed_up = map_warmed_up && pathing->warm_up(world->me().facts().attack_range(), reserve)
+                            && world->map().find_all_bush_clusters(reserve);
                 debug_block({
                     if (centres && !logged_centres) std::printf("WARM %u centres\n", cambc::round_number()), logged_centres = true;
                     if (warmed_up) std::printf("WARM %u done\n", cambc::round_number());

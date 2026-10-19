@@ -379,15 +379,11 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
         };
         // Expected damage as Safety prices it, from the camps and the enemies we see near us: the
         // unseen differ little over three tiles.
-        struct Striker {
-            vec2 pos;
-            const Strike* strike;
-        };
-        std::array<Striker, 16> strikers;
+        std::array<const ChampionBelief*, 16> strikers;
         int ns = 0;
         for (const auto& e : world.enemies)
-            if (ns < 16 && e.alive && e.visible && dist(b.here, e.pos) <= Strike::max_reach + 3)
-                if (const auto& st = safety.strike_of(e); st.reach >= 0) strikers[ns++] = {e.pos, &st};
+            if (ns < 16 && e.alive && e.visible && dist(b.here, e.pos) <= Strike::max_reach + 3 && safety.strike_of(e).reach >= 0)
+                strikers[ns++] = &e;
         std::array<Safety::CampHit, 24> camps;
         int nc = 0;
         for (const auto& m : safety.awake_members())
@@ -396,7 +392,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
             float total = 0;
             for (int k = 0; k < nc; ++k)
                 if (dist(p, camps[k].pos) <= camps[k].reach) total += camps[k].strength * camps[k].weight;
-            for (int k = 0; k < ns; ++k) total += safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].pos));
+            for (int k = 0; k < ns; ++k) total += safety_params::hit_given_reach * safety.blow(*strikers[k], p).damage;
             return total;
         };
         const float here_danger = expected(b.here);

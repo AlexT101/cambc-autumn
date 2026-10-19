@@ -270,7 +270,7 @@ bool dash_towards(const World& world, Pathing& pathing, const Field& field) {
            && travel_dash(world, pathing, *dash, field.at(my_position()), [&](vec2 p) { return field.at(p); });
 }
 
-bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
+bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps) {
     static int paused_until = -1;
     if (world.round < paused_until) return false;
     // Most champions have no dash: check before anything costly.
@@ -279,7 +279,7 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
     const vec2 here = my_position();
     // A goal within a dash is a walk or two away: not worth the cooldown or the search.
     if (any_within(goals, here, dash_steps)) return false;
-    const int layers = std::max(world.map().width + world.map().height, max_field_layers()); // a maze runs deeper
+    const int layers = max_steps != unreachable ? max_steps : std::max(world.map().width + world.map().height, max_field_layers()); // a maze runs deeper
     if (!fuel_ok(search_cost_estimate(layers) + end_reserve)) {
         note_shortcut("travel-dash");
         return false;
@@ -296,7 +296,7 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals) {
     // Searching out from the goals until it reaches us labels every tile nearer than ours.
     origin.clear();
     origin.set(here);
-    field.compute_to(walls, open_goals, origin, visited);
+    field.compute_to(walls, open_goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
     if (visited.is_set(here)
         && travel_dash(world, pathing, *dash, field.get(here),
                        [&](vec2 p) { return visited.is_set(p) ? static_cast<int>(field.get(p)) : unreachable; }))
@@ -382,7 +382,7 @@ bool heal_ally(const World& world) {
     return best && cast(*heal, *best);
 }
 
-bool shield_if_needed(const World& world, int farmed) {
+bool shield_if_needed(const World& world, Safety& safety, int farmed) {
     const auto& f = world.me().facts();
     const auto shield = ready(world, AbilityKind::shield);
     if (!shield) return false;
@@ -390,7 +390,7 @@ bool shield_if_needed(const World& world, int farmed) {
     if (world.map().ally_spawn.is_set(here)) return false;
     bool danger = false;
     for (const auto& e : world.enemies)
-        danger |= e.alive && e.visible && dist(here, e.pos) <= threat_strike(world, e).reach;
+        danger |= e.alive && e.visible && safety.blow(e, here).hits;
     if (danger) return cast(*shield);
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(here, camp_attack_range)) {

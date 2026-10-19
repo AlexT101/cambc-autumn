@@ -141,8 +141,8 @@ void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
     std::array<Safety::ThreatAt, 16> threats;
     const int n = safety.threats_at(self.pos, threats);
     for (int i = 0; i < n; ++i) {
-        const auto& t = threats[i];
-        if (!t.strike->hits(t.distance) || !(recall || t.strike->stuns[t.distance])) continue;
+        const auto& b = threats[i].blow;
+        if (!b.hits || !(recall || b.stuns)) continue;
         const float gems = params::gem_value * static_cast<float>(self.gems);
         wish.offer(protect, (tribute ? params::tribute_value : params::recall_value) + gems);
         return;
@@ -159,10 +159,10 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
     const int n = safety.threats_at(self.pos, threats);
     for (int i = 0; i < n; ++i) {
         const auto& t = threats[i];
-        if (!t.strike->hits(t.distance)) continue;
+        if (!t.blow.hits) continue;
         enemy = true;
         const auto& e = world.enemies[t.enemy];
-        damage += t.strike->at(t.distance) * (e.visible && !e.acted ? 2.0f : 1.0f);
+        damage += t.blow.damage * (e.visible && !e.acted ? 2.0f : 1.0f);
     }
     if (enemy && damage >= self.health) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(self.gems));
 }

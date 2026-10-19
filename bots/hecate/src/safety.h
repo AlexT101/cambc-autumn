@@ -32,9 +32,17 @@ inline constexpr float unknown_camp_weight = 0.5f;
 inline constexpr int fight_ally_radius = 4;
 } // namespace safety_params
 
+// What an enemy could do to one tile before our next turn.
+struct Blow {
+    float damage = 0;
+    bool hits = false; // damage or a stun
+    bool stuns = false;
+};
+
 // The most an enemy can do on its next turn to a tile at each Chebyshev distance from where it
 // stands: walk, dash, attack, reset and damage spells, by the rules' action allowances. Walls,
-// line of sight and items (Durability, shields) are ignored, so this is an upper bound.
+// line of sight and items (Durability, shields) are ignored, so this is an upper bound; Reach
+// places the same actions on the map.
 struct Strike {
     static constexpr int max_reach = 6; // a dash, or a walk on the first of two turns
     std::array<float, max_reach + 1> damage{};
@@ -43,6 +51,73 @@ struct Strike {
 
     float at(int d) const { return d >= 0 && d <= reach ? damage[d] : 0.0f; }
     bool hits(int d) const { return d >= 0 && d <= reach; }
+    Blow blow(int d) const { return hits(d) ? Blow{damage[d], true, stuns[d]} : Blow{}; }
+};
+
+// A visible enemy's actions before our next turn on the map: the tiles it can walk to (over tiles
+// open to it, past visible allies of ours) or dash to (2 king steps over anything but walls and
+// live camps, onto a free tile), and from there a basic attack or unit spell at a target in its
+// sight (walls and bushes block it; a bush tile is seen only from its own cluster, or by a visible
+// enemy ward), or a ground spell at any tile within 5. Damage as Strike's.
+class Reach {
+public:
+    // Its next turn, or with `twice` its next two: a walk first, or a second basic attack.
+    void build(const World& world, const ChampionBelief& e, int turn_round, bool twice);
+    Blow at(vec2 p) const;
+    int reach() const { return reach_; } // Chebyshev bound on the tiles it can affect
+
+    // Bit 9 * (y + 4) + x + 4: the 9x9 tiles around the enemy, in two words (128-bit shifts are
+    // library calls in WASM).
+    struct Window {
+        static constexpr std::uint64_t hi_mask = (std::uint64_t{1} << 17) - 1;
+        std::uint64_t lo = 0, hi = 0;
+        static constexpr Window bit(int i) { return i < 64 ? Window{std::uint64_t{1} << i, 0} : Window{0, std::uint64_t{1} << (i - 64)}; }
+        friend constexpr Window operator&(Window a, Window b) { return {a.lo & b.lo, a.hi & b.hi}; }
+        friend constexpr Window operator|(Window a, Window b) { return {a.lo | b.lo, a.hi | b.hi}; }
+        constexpr Window operator~() const { return {~lo, ~hi & hi_mask}; }
+        constexpr Window& operator&=(Window b) { return *this = *this & b; }
+        constexpr Window& operator|=(Window b) { return *this = *this | b; }
+        constexpr explicit operator bool() const { return (lo | hi) != 0; }
+        // 0 <= k < 81
+        constexpr Window shl(int k) const {
+            if (k == 0) return *this;
+            if (k < 64) return {lo << k, ((hi << k) | (lo >> (64 - k))) & hi_mask};
+            return {0, (lo << (k - 64)) & hi_mask};
+        }
+        constexpr Window shr(int k) const {
+            if (k == 0) return *this;
+            if (k < 64) return {(lo >> k) | (hi << (64 - k)), hi >> k};
+            return {hi >> (k - 64), 0};
+        }
+    };
+private:
+    struct Way {
+        Window from; // where it acts from
+        float damage;
+        std::int8_t range, far; // far: its farthest tile's distance from the enemy
+        bool sight, stuns, walked;
+    };
+    // Returns the way's index: one already there with the same tiles, range and sight takes the
+    // larger damage.
+    int add(Window from, int range, bool sight, float damage, bool stuns, bool walked);
+    const World* world_ = nullptr;
+    const bitboard* wards_ = nullptr; // what visible enemy wards see this round, if any
+    vec2 origin_{-1, -1};
+    std::array<Way, 14> ways_;
+    int count_ = 0;
+    int basic_ = -1; // the plain basic attack's way
+    float strength_ = 0;
+    bool twice_ = false;
+    int reach_ = -1;
+    // By the low 3 bits of x and y, so the tiles of any 8x8 square never collide; valid when its
+    // stamp is this build's.
+    struct Memo {
+        vec2 p;
+        Blow blow;
+        std::uint32_t stamp = 0;
+    };
+    mutable std::array<Memo, 64> memo_;
+    std::uint32_t stamp_ = 0;
 };
 
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
@@ -61,12 +136,14 @@ struct Threat {
     vec2 pos{-1, -1}; // visible only
     int tiles = 1;    // possible tiles
     Strike strike;
-    // Tiles it can damage or stun; unseen, only those near or above `credible_weight`.
+    // Tiles it can damage or stun (visible: a superset); unseen, only those near or above
+    // `credible_weight`.
     bitboard area;
-    // Unseen: distance from `possible`, capped at the reach; reused by the next build.
+    // Unseen: distance from `possible` around walls, capped at the reach; reused by the next build.
     const cambc::distance_field* steps = nullptr;
+    const Reach* reach = nullptr; // visible
 
-    int distance(vec2 p) const;
+    Blow at(vec2 p) const;
 };
 
 // A fight with sides alternating turns, each side's damage focused on the other's weakest member
@@ -106,12 +183,11 @@ public:
     bitboard avoid();
     // any_within(avoid(), p, r), without building the threats.
     bool avoid_within(vec2 p, int r);
-    // Each threat as threats() would list it, with its distance(p), without building them: an
+    // Each threat as threats() would list it, with its blow at p, without building them: an
     // unseen threat's distance is searched out to its radius only. Returns the count.
     struct ThreatAt {
         int enemy;
-        const Strike* strike;
-        int distance;
+        Blow blow;
     };
     int threats_at(vec2 p, std::array<ThreatAt, 16>& out);
 
@@ -119,10 +195,19 @@ public:
     // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
     // `exclude`: an enemy (by index) left out, as when our hit kills it first.
     Trade fight(vec2 p, int exclude = -1);
+    // Who would fight at p: bit i of the low half for allies[i], of the high half for enemies[i];
+    // no_fight if no threat hits p.
+    static constexpr std::uint32_t no_fight = ~0u;
+    std::uint32_t fight_key(vec2 p, int exclude = -1);
+    // The fight of a key, memoised.
+    Trade fight_of(std::uint32_t key);
+    bool known_fight_of(std::uint32_t key) const { return memo(key) != nullptr; }
     // fight(p) if it needs no simulation, else null.
     const Trade* known_fight(vec2 p);
     // threat_strike(), kept for the turn.
     const Strike& strike_of(const ChampionBelief& e) { return foe(e).strike; }
+    // What a visible enemy could do to p before our next turn (threat_strike placed on the map).
+    Blow blow(const ChampionBelief& e, vec2 p);
     // Enough for most fights, by the champions in sight and this turn's costliest simulation;
     // plus build_cost_estimate().
     std::uint64_t fight_cost_estimate();
@@ -152,6 +237,10 @@ public:
 
 private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
+    // Its turns of walking before it can strike p: 0 if it can now, else at least 1 and at least
+    // its Chebyshev distance past its reach.
+    int approach(const ChampionBelief& e, vec2 p);
+    const Reach& reach_of(const ChampionBelief& e);
     // Chance the threat could be within reach of p; uniform over its possible tiles.
     float chance_in_reach(const Threat& t, vec2 p);
     // Every credible threat at full damage, plus camps.
@@ -180,6 +269,7 @@ private:
     bool gone(const ChampionBelief& c);
 
     const World& world_;
+    std::uint16_t reached_ = 0; // bit i: reach_pool()[i] is built for enemies[i] this turn
     bool built_ = false;
     bool refresh_ = false;
     std::array<std::int8_t, 16> gone_{}; // by enemy index: 0 unknown, 1 alive, 2 dead
@@ -195,15 +285,12 @@ private:
     std::vector<CampHit>& members_; // likewise; valid once `members_known_`
     bool members_known_ = false;
     std::optional<bitboard> camp_area_, enemy_area_;
-    // By who fights: bit i of the low half for allies[i], of the high half for enemies[i]. A memo:
-    // past `max_fights` the oldest is replaced.
+    // By fight_key(). A memo: past `max_fights` the oldest is replaced.
     struct FightMemo {
         std::uint32_t key;
         Trade trade;
     };
     static constexpr int max_fights = 32;
-    static constexpr std::uint32_t no_fight = ~0u; // no threat hits the tile
-    std::uint32_t fight_key(vec2 p, int exclude);
     const Trade* memo(std::uint32_t key) const;
     int fight_count_ = 0;
     union {
