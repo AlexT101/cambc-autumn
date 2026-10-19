@@ -690,8 +690,17 @@ bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family) {
 
 // Our stats and the share of camp damage (Jungle) and of all damage (Durability) we take.
 struct Build {
-    float strength, focus, max_health, camp_taken, taken;
+    float strength = 0, focus = 0, max_health = 0, camp_taken = 1, taken = 1;
 };
+
+void add_shards(Build& b, const ChampionFacts& f, int stat, float shards) {
+    if (stat == strength_stat) b.strength += shards * f.strength.growth;
+    if (stat == focus_stat) b.focus += shards * f.focus.growth;
+    if (stat == health_stat) {
+        b.max_health += shards * f.health.growth;
+        if (f.passive == Passive::health_strength) b.strength += 0.01f * shards * f.health.growth;
+    }
+}
 
 // Rounds a turn of ours costs in clearing and heal trips at our upkeep so far, with build b: the
 // clearing share shrinks with our output, as do the camps' hits taken meanwhile; health lost comes
@@ -723,23 +732,18 @@ struct Emblem {
     int family, stat;
     float saved;
 };
-Emblem best_emblem(const World& world) {
+// `bought`: the stats of shards bought since the turn's start.
+Emblem best_emblem(const World& world, const Build& bought = {}) {
     const auto& f = world.me().facts();
     const auto& owned = my_items();
     const auto& self = world.me();
-    const Build now{self.strength, self.focus, self.max_health, has_family(owned, jungle) ? 0.7f : 1.0f,
-                    has_family(owned, durability) ? 0.9f : 1.0f};
+    const Build now{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
+                    has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f};
     const float base = upkeep_cost(world, now, now);
     const int main = main_stat(world);
     const auto value = [&](int family, int stat) {
         Build b = now;
-        const float shards = family == power ? 6.0f : 5.0f;
-        if (stat == strength_stat) b.strength += shards * f.strength.growth;
-        if (stat == focus_stat) b.focus += shards * f.focus.growth;
-        if (stat == health_stat) {
-            b.max_health += shards * f.health.growth;
-            if (f.passive == Passive::health_strength) b.strength += 0.01f * shards * f.health.growth;
-        }
+        add_shards(b, f, stat, family == power ? 6.0f : 5.0f);
         if (family == jungle) b.camp_taken = 0.7f;
         if (family == durability) b.taken = 0.9f;
         return base - upkeep_cost(world, now, b);
@@ -764,12 +768,14 @@ bool buy_shards(const World& world) {
     unsigned gold = my_gold();
     if (gold < shard_price) return false;
     const unsigned start = gold;
+    Build bought;
     while (gold >= shard_price) {
-        const auto [family, stat, saved] = best_emblem(world);
+        const auto [family, stat, saved] = best_emblem(world, bought);
         const unsigned have = my_items()[shard_of(family, stat)];
         const unsigned count = std::min<unsigned>(5 - have, gold / shard_price);
         if (!buy(shard_of(family, stat), count)) break;
         gold -= shard_price * count;
+        add_shards(bought, world.me().facts(), stat, static_cast<float>(count + (family == power && have + count == 5)));
     }
     return gold < start;
 }
@@ -2780,9 +2786,12 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage);
     prepare_walk(world, pathing, memory, walk_first_floor);
+    const int claim = memory.claim;
     decide(world, pathing, safety, memory);
     if (decision != 'W') memory.wait_altar = -1;
-    if (!sieged) {
+    // A turn without siege() (a fight, a stun, a heal) keeps the siege while our claim stays on it;
+    // a chase or a bag takes us away from it.
+    if (!sieged && (memory.claim != claim || decision == 'C' || my_gems() > 0)) {
         memory.siege = false;
         memory.staged_since = -1;
     }
