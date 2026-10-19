@@ -14,6 +14,8 @@
 namespace {
 
 using aph::end_reserve;
+// What the turn's last phases need on their cheap paths.
+constexpr std::uint64_t late_floor = 1500;
 
 template <class F> bool run(const char* phase, F&& f) {
     debug_block({ aph::fuel_phase() = phase; });
@@ -66,20 +68,22 @@ struct Instance {
             aph::play_turn(*world, *pathing, memory);
         });
 
-        if (world->is_stale()) return;
+        // A turn that runs out of fuel costs the next one: the rest is skipped when short.
+        if (world->is_stale() || !aph::fuel_ok(late_floor)) return;
         run("turn end", [&] { world->note_turn_end(); });
-        if (world->is_stale()) return;
+        if (world->is_stale() || !aph::fuel_ok(late_floor)) return;
         // Vision changes only if we moved.
         const bool moved = world->me().alive && aph::my_position() != world->me().pos;
         const bool refresh = moved && aph::fuel_ok(world->observe_cost_estimate() + end_reserve);
         run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
         run("debug", [&] { world->debug_output(); });
+        if (!aph::fuel_ok(late_floor)) return;
         run("prepare", [&] { aph::prepare_next_turn(*world, *pathing, memory); });
         // Below its floor plus a static window warm_reach does nothing, but its loops still cost.
         if (!world->is_stale() && aph::fuel_ok(end_reserve + 8000)) run("warm reach", [&] { aph::warm_reach(*world, end_reserve); });
         // Field costs are estimated from the deepest field so far; on the first turn none is
         // measured yet, so an estimate can miss by a whole field.
-        if (!warmed_up && !world->is_stale())
+        if (!warmed_up && !world->is_stale() && aph::fuel_ok(end_reserve))
             run("warm up", [&] {
                 aph::FuelMeter meter{"warm_up"};
                 const auto reserve = end_reserve + (world->round == world->first_round ? aph::field_cost_estimate() : 0);

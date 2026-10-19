@@ -1871,7 +1871,8 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     // Placing the tiles costs up to tens of thousands: give up as the fights would, counting the
     // costliest placing lately.
     static std::uint64_t costliest = 0;
-    if (!fuel_ok(safety.fight_cost_estimate() + costliest + end_reserve)) {
+    const auto floor = safety.fight_cost_estimate() + act_reserve;
+    if (!fuel_ok(floor + costliest)) {
         note_shortcut("step-guard");
         return nullptr;
     }
@@ -1891,6 +1892,11 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             float damage = 0;
             const auto no_worse = [&](unsigned mask) { return mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage); };
             if (no_worse(exposure(q, damage, true))) continue;
+            // An exact look can query Reach on a new tile, ~1000 a foe.
+            if (!fuel_ok(floor + 1000 * static_cast<std::uint64_t>(n))) {
+                note_shortcut("step-guard");
+                return nullptr;
+            }
             const unsigned mask = exposure(q, damage, false);
             if (no_worse(mask)) continue;
             // Every visible threat that could hit q is a foe, as q is within 2 of us.
@@ -1922,7 +1928,7 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             if (settled[i].won && covers(settled[i].key, key)) return lost = falls = false, true;
             if (settled[i].lost && covers(key, settled[i].key)) return lost = falls = true, true;
         }
-        if (!safety.known_fight_of(key) && !fuel_ok(safety.fight_cost_estimate() + end_reserve)) {
+        if (!safety.known_fight_of(key) && !fuel_ok(safety.fight_cost_estimate() + act_reserve)) {
             note_shortcut("step-guard");
             return false;
         }
