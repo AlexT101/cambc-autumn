@@ -30,7 +30,8 @@ constexpr int siege_stage_radius = camp_attack_range + 2; // just out of a camp'
 
 // The turn's branch, for debug_fights: Chase, Attack, Retreat, Farm, Bank, Wait at an altar,
 // Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, Shopping trip,
-// holding (P), Delaying a stun, capture recall (Q), siege or kite of a big group (G), contest (X).
+// holding (P), Delaying a stun, capture recall (Q), siege or kite of a big group (G), contest (X),
+// stopping a game-ending bag (E).
 char decision = '-';
 bool sieged = false; // siege() ran this turn
 
@@ -1859,6 +1860,49 @@ bool can_stop_winning_tribute(const World& world) {
     return false;
 }
 
+// A visible enemy whose bag (both, for Cassi and Issac) ends the game once tributed and that we
+// can stop: nothing we gain meanwhile counts unless our own bag wins first. The nearest; null if none.
+const ChampionBelief* game_ender(const World& world) {
+    if (winning_bag(world)) return nullptr;
+    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
+    const vec2 here = cambc::self().position();
+    const ChampionBelief* best = nullptr;
+    int best_steps = unreachable;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible || pair_gems(world, e) < need || world.map().near_enemy_spawn.is_set(e.pos)) continue;
+        if (const int steps = intercept_steps(world, e, here); steps < best_steps) best = &e, best_steps = steps;
+    }
+    return best;
+}
+
+// Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
+// tributing, else attacks, followed until it stops at an altar.
+void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
+    auto& me = cambc::self();
+    decision = 'E';
+    memory.claim = -1;
+    pathing.set_guard(nullptr);
+    const bool tributing = e.channel == Channel::tribute;
+    const auto act = [&] {
+        place_lock(world);
+        cast_at_enemies(world, !tributing && dist(me.position(), e.pos) > world.me().facts().attack_range());
+        if (attack_enemy(world)) reset_and_attack_enemy(world);
+    };
+    act();
+    if (!me.can_move()) return;
+    const int range = world.me().facts().attack_range();
+    static bitboard goals{cambc::uninitialized};
+    goals.clear();
+    int reach = range;
+    if (tributing && e.facts().passive != Passive::stun_immune) reach = std::max(reach, world.me().ready_stun_reach(world.round + 1));
+    goals.draw_chebyshev(e.pos, static_cast<float>(reach));
+    if (const int a = tributing ? tribute_altar(world, e.pos) : -1; a >= 0 && carried_locks() > 0) goals |= world.map().altars[a].lock_tiles();
+    goals &= world.map().open_for_us;
+    if (goals.is_set(me.position())) return;
+    if (dist(me.position(), e.pos) > range + 1) dash_to_attack(world, pathing, &e);
+    if (!goals.is_set(me.position())) pathing.step_towards_funded(goals, end_reserve);
+    act();
+}
 // Rounds before an enemy hold pays: a body of ours on a camp tile by then stops it.
 int enemy_hold_left(const World& world, const CampBelief& c) {
     return c.holder == team::enemy && c.held_since >= 0 ? c.payout_round() - world.round : capture_rounds();
@@ -2252,8 +2296,9 @@ bool siege_heal_trip(const Memory& memory, Safety& safety) {
 bool continue_tribute(const World& world, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     decision = 'T';
-    // The enemy's winning tribute in reach of a ready stun is the game: ours waits.
-    if (!winning_bag(world) && can_stop_winning_tribute(world)) {
+    // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits.
+    const auto* ender = game_ender(world);
+    if (!winning_bag(world) && (can_stop_winning_tribute(world) || (ender && ender->channel == Channel::tribute))) {
         try {
             me.cancel_submit_gems();
         } catch (const std::exception&) {
@@ -2280,6 +2325,14 @@ bool continue_tribute(const World& world, Safety& safety, Memory& memory) {
 bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
     auto& me = cambc::self();
     decision = 'K';
+    if (game_ender(world)) {
+        try {
+            me.cancel_recall();
+        } catch (const std::exception&) {
+            return true;
+        }
+        return false;
+    }
     home = want_home(world, safety, memory.siege);
     if (*home && !safety.threatened(me.position()) && !can_tribute_safely(world, safety, memory) && recall_outruns(world))
         return true;
@@ -2392,6 +2445,10 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if ((on_spawn || world.me().facts().passive == Passive::remote_shop) && buy_shards(world)) home.reset();
     if (on_spawn) buy_lock();
     if (!world.me().can_act(world.round)) return;
+    if (const auto* ender = game_ender(world)) {
+        stop_game_ender(world, pathing, memory, *ender);
+        return;
+    }
     heal_ally(world);
     shield_if_needed(world, memory.farm_group);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
