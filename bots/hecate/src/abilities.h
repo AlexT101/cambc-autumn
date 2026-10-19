@@ -10,6 +10,10 @@ struct ChampionBelief;
 // must be worth the walk (a kill or a cancelled tribute) or stun every visible enemy that could
 // reach us next turn. `hold`: a tributer hit only to kill it.
 bool cast_at_enemies(const World& world, bool keep_walk = false, const ChampionBelief* hold = nullptr);
+// cast_at_enemies' choice from here, kept unexecuted for cast_chosen(): its value (0: none worth
+// casting), and whether it excludes walking.
+float enemy_cast_value(const World& world, bool keep_walk, const ChampionBelief* hold, bool& exclusive);
+bool cast_chosen();
 
 // A damage or stun cast on the group being farmed, held while enemies are near.
 // Call only when not walking this turn. `attackers_only`: target only members with Strength.

@@ -25,8 +25,6 @@ public:
 
     const Field& to_ally_spawn();
     const Field& to_altar(int altar); // goals: the altar's tribute tiles
-    // Null if not cached and computing it could take the fuel below `fuel_floor`.
-    const Field* to_altar(int altar, std::uint64_t fuel_floor);
     const Field& to_any_altar();
     int centre_to_altar(int group); // to_any_altar() at the group's centre, kept once read
     // Static steps to tiles within `range` of the group's camp tiles, around the camps believed alive:
@@ -71,6 +69,7 @@ public:
     bool try_move(vec2 tile);
     // Tiles no step or dash may end on until cleared: routes go around them.
     void set_guard(const bitboard* guard) { guard_ = guard; }
+    const bitboard* guard() const { return guard_; }
 
     // Unseen units can still block these.
     bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile, off the guard
@@ -111,7 +110,7 @@ private:
         bool ready = false;
     } ready_check_;
     std::unique_ptr<Approach> spare_approach_; // a replaced one, refilled by the next search
-    const bitboard& live_camps(); // members believed alive, as of this round
+    const bitboard& live_camps(); // members believed alive
     std::optional<bitboard>& attack_slot(int group, int member, int range);
     bool prepare_member(int group, int member, int range, std::uint64_t fuel_floor);
     const StaticMap& map() const;
@@ -126,7 +125,8 @@ private:
     std::vector<int> centre_caps_;
     std::vector<std::vector<std::unique_ptr<Approach>>> approach_fields_; // by range, then group
     bitboard live_camps_;
-    int live_camps_round_ = -1;
+    std::uint32_t live_camps_version_ = ~0u; // the World::camps_version it was built for
+    std::vector<std::uint32_t> live_versions_; // per group: the CampBelief::version written
     bool centres_ready_ = false;
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
     // By attack range, then group, then member.

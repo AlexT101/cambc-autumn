@@ -13,7 +13,7 @@ namespace comms {
 // What teammates posted since our previous turn, merged into the world.
 void receive(World& world);
 // With `refresh`, re-read vision first, but only if there is a slot to fill.
-void send(World& world, bool refresh);
+void send(World& world, bool moved, bool refresh);
 // The gems we carry, posted when it changes.
 void bag(int gems);
 // The gems an ally (by index) carries as it last posted, -1 if never, 0 while dead.

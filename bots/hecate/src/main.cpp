@@ -15,9 +15,11 @@ namespace {
 using aph::end_reserve;
 
 template <class F> bool run(const char* phase, F&& f) {
+    debug_block({ aph::fuel_phase() = phase; });
     try {
         f();
         return true;
+    } catch (const aph::StaleTurn&) {
     } catch (const std::exception& e) {
         std::printf("r%u %s error: %s\n", cambc::round_number(), phase, e.what());
     } catch (...) {
@@ -32,6 +34,7 @@ struct Instance {
     std::unique_ptr<aph::Pathing> pathing;
     aph::Memory memory;
     bool map_warmed_up = false, warmed_up = false;
+    bool logged_centres = false; // debug_block only
 
     void draft_turn() {
         run("draft", [&] { aph::play_draft(draft); });
@@ -63,22 +66,26 @@ struct Instance {
 
         if (world->is_stale()) return;
         run("turn end", [&] { world->note_turn_end(); });
+        if (world->is_stale()) return;
         // Vision changes only if we moved.
-        const bool moved = world->me().alive && cambc::self().position() != world->me().pos;
+        const bool moved = world->me().alive && aph::my_position() != world->me().pos;
         const bool refresh = moved && aph::fuel_ok(world->observe_cost_estimate() + end_reserve);
-        if (moved && !refresh) aph::note_shortcut("comms-stale-vision");
-        run("comms send", [&] { aph::comms::send(*world, refresh); });
+        run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
         run("debug", [&] { world->debug_output(); });
         run("prepare", [&] { aph::prepare_next_turn(*world, *pathing, memory); });
         // Field costs are estimated from the deepest field so far; on the first turn none is
         // measured yet, so an estimate can miss by a whole field.
-        if (!warmed_up)
+        if (!warmed_up && !world->is_stale())
             run("warm up", [&] {
                 aph::FuelMeter meter{"warm_up"};
                 const auto reserve = end_reserve + (world->round == world->first_round ? aph::field_cost_estimate() : 0);
                 const bool centres = pathing->warm_centres(reserve);
                 map_warmed_up = map_warmed_up || (centres && world->map().warm_up(reserve));
                 warmed_up = map_warmed_up && pathing->warm_up(world->me().facts().attack_range(), reserve);
+                debug_block({
+                    if (centres && !logged_centres) std::printf("WARM %u centres\n", cambc::round_number()), logged_centres = true;
+                    if (warmed_up) std::printf("WARM %u done\n", cambc::round_number());
+                });
             });
         aph::print_fuel_log();
     }
@@ -97,6 +104,7 @@ int main() {
         // Out of fuel, we resumed as this round's turn with a fresh budget: play it rather than end it.
         if (const auto now = cambc::round_number(); now != round) {
             std::printf("r%u turn ran out of fuel, finished in r%u\n", round, now);
+            debug_block({ std::printf("OOF %u %s\n", round, aph::fuel_phase()); });
             aph::note_shortcut("out-of-fuel");
             continue;
         }
