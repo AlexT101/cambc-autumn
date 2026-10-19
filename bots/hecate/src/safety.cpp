@@ -547,7 +547,46 @@ struct Terrain {
     }
     bool bush(vec2 p) const { return test(bushes, map->bushes, p); }
     bool inside(vec2 p) const { return p.x >= 0 && p.y >= 0 && p.x < width && p.y < height; }
+
+    // Board storage read in place, when probes confirm it: a word per 8x8 chunk, `across` chunks
+    // a row, bit 8 * (y % 8) + x % 8.
+    bool chunked = false;
+    int across = 0;
+    // Bit k: tile (x0 + k, y) of board `words`, for the window's width; `columns` masks the map.
+    std::uint32_t chunk_row(const std::uint64_t* words, int x0, int y, std::uint32_t columns) const {
+        if (y < 0 || y >= height) return 0;
+        const int a = x0 >> 3;
+        const auto base = static_cast<std::size_t>((y >> 3) * across);
+        const int shift = 8 * (y & 7);
+        std::uint32_t seg = 0;
+        if (a >= 0) seg = static_cast<std::uint32_t>(words[base + static_cast<std::size_t>(a)] >> shift) & 0xFF;
+        if (a + 1 < across) seg |= (static_cast<std::uint32_t>(words[base + static_cast<std::size_t>(a + 1)] >> shift) & 0xFF) << 8;
+        return (seg >> (x0 - 8 * a)) & columns;
+    }
 };
+
+void check_chunks(Terrain& t) {
+    const auto words = bitboard::raw_buffer_size() / 8;
+    bitboard b;
+    t.across = (t.width + 7) / 8;
+    if (t.height > 8) {
+        b.set({0, 8});
+        int found = -1;
+        for (std::size_t i = 0; i < words; ++i)
+            if (b.ptr()[i] != 0) found = found < 0 ? static_cast<int>(i) : -2;
+        if (found <= 0) return;
+        t.across = found;
+    }
+    if (static_cast<std::size_t>(t.across * ((t.height + 7) / 8)) > words) return;
+    const std::array<vec2, 8> probes{vec2{0, 0}, {1, 0}, {0, 1}, {7, 7}, {std::min(8, t.width - 1), 0}, {std::min(9, t.width - 1), std::min(10, t.height - 1)}, {t.width - 1, t.height - 1}, {t.width / 2 + 3, t.height / 2 + 5}};
+    for (const vec2 p : probes) {
+        b.clear();
+        b.set(p);
+        const auto at = static_cast<std::size_t>((p.y >> 3) * t.across + (p.x >> 3));
+        if (b.ptr()[at] != std::uint64_t{1} << (8 * (p.y & 7) + (p.x & 7))) return;
+    }
+    t.chunked = true;
+}
 
 const Terrain& terrain(const StaticMap& map) {
     static Terrain t;
@@ -556,6 +595,7 @@ const Terrain& terrain(const StaticMap& map) {
     t.map = &map;
     t.width = map.width;
     t.height = map.height;
+    check_chunks(t);
     const std::size_t size = bitboard::linear_buffer_size();
     if (size + 8 > Terrain::bytes) return t;
     map.walls.export_linear_buffer({t.walls.data(), size});
@@ -638,8 +678,25 @@ Window sight(const World& world, vec2 p, bool far) {
     }
     Window m;
     // The shadowcast square keeps them within win_r.
-    for (const vec2 q : Tiles<win_n * win_n>{viewers})
-        m |= tables.bits[static_cast<std::size_t>((q.y - p.y + win_r) * win_n + q.x - p.x + win_r)];
+    if (t.chunked) {
+        const int x0 = p.x - win_r;
+        const int lo = std::max(0, -x0), hi = std::min(win_n, t.width - x0);
+        const std::uint32_t columns = ((1u << hi) - 1) & ~((1u << lo) - 1);
+        const std::uint64_t* words = viewers.ptr();
+        for (int r = 0; r < win_n; ++r) {
+            const std::uint64_t bits = t.chunk_row(words, x0, p.y - win_r + r, columns);
+            const int b = r * win_n;
+            if (b < 64) {
+                m.lo |= bits << b;
+                if (b > 64 - win_n) m.hi |= bits >> (64 - b);
+            } else {
+                m.hi |= bits << (b - 64);
+            }
+        }
+    } else {
+        for (const vec2 q : Tiles<win_n * win_n>{viewers})
+            m |= tables.bits[static_cast<std::size_t>((q.y - p.y + win_r) * win_n + q.x - p.x + win_r)];
+    }
     if (i < known.size()) masks[i] = m, known[i] = 1;
     return m;
 }
