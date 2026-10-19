@@ -6,6 +6,7 @@
 #include "bot.h"
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <optional>
 #include <vector>
@@ -47,9 +48,9 @@ void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, cons
         if (a.alive && !a.is_self && a.visible && dist(p, a.pos) <= safety_params::fight_ally_radius)
             std::printf(" a%u", static_cast<std::uint32_t>(a.handle));
     for (const auto& th : safety.threats())
-        if (th.strike.hits(th.distance(p)))
+        if (const auto b = th.at(p); b.hits)
             std::printf(" %u%c:%d:%d:%d", static_cast<std::uint32_t>(world.enemies[th.enemy].handle), th.visible ? 'v' : 'u',
-                        th.distance(p), static_cast<int>(th.strike.at(th.distance(p))), world.round - world.enemies[th.enemy].pos_round);
+                        th.visible ? dist(p, th.pos) : -1, static_cast<int>(b.damage), world.round - world.enemies[th.enemy].pos_round);
     std::printf("\n");
 }
 
@@ -306,12 +307,42 @@ bool break_lock(const World& world, int altar) {
 // visible enemies could not kill us within the next few turns, nor damage at the rate of the last
 // round (attackers in bushes stay unseen). Judged again every turn of the channel, which is
 // cancelled once a threat comes that close: a long bag's whole channel would wait on any enemy in sight.
-bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
+bool tribute_safe_by(Safety& safety, const Memory& memory, int turns) {
     const int window = std::min(turns, params::tribute_window);
     const float health = cambc::self().health();
     if (memory.damage * static_cast<float>(window) >= health) return false;
     const int kill = safety.turns_to_kill_idle(cambc::self().position(), window + 1);
     return kill == 0 || kill > window;
+}
+
+struct DangerCount {
+    const char* what;
+    int evaluations = 0, changes = 0, printed = 0;
+};
+
+// debug_danger only: inside debug_block.
+void note_danger(const World& world, DangerCount& c, bool changed) {
+    ++c.evaluations;
+    c.changes += changed;
+    const auto handle = static_cast<std::uint32_t>(world.me().handle);
+    if (changed) std::printf("DNG %d %u %s\n", world.round, handle, c.what);
+    if (world.round / 100 != c.printed) {
+        c.printed = world.round / 100;
+        std::printf("DNGC %d %u %s %d %d\n", world.round, handle, c.what, c.evaluations, c.changes);
+    }
+}
+
+bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
+    const bool out = tribute_safe_by(safety, memory, turns);
+    if constexpr (debug_danger) {
+        debug_block({
+            static DangerCount count{"tribute"};
+            Safety old{safety.world(), true};
+            old.refresh();
+            note_danger(safety.world(), count, tribute_safe_by(old, memory, turns) != out);
+        });
+    }
+    return out;
 }
 
 int tribute_turns(int gems) { return std::max(1, (gems + 9) / 10); }
@@ -1360,8 +1391,7 @@ bool contesting(const World& world) {
 // The threats' visible part, without building the unseen ones' fields.
 bool visible_threat(const World& world, Safety& safety, vec2 p) {
     for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(p, e.pos) <= Strike::max_reach && safety.strike_of(e).hits(dist(p, e.pos)))
-            return true;
+        if (e.alive && e.visible && dist(p, e.pos) <= Strike::max_reach && safety.blow(e, p).hits) return true;
     return false;
 }
 
@@ -1516,14 +1546,15 @@ int killable_now(const World& world, Safety& safety) {
         float rest = safety.camp_damage(here);
         for (const auto& t : safety.threats())
             if (t.enemy != e.index && !(linked && world.enemies[t.enemy].facts().passive == Passive::linked_pair))
-                rest += t.strike.at(t.distance(here));
+                rest += t.at(here).damage;
         if (rest < health) return e.index;
     }
     return -1;
 }
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
-bool want_home(const World& world, Safety& safety, bool sieging) {
+bool want_home_by(const World& world, Safety& safety, bool sieging) {
+    FuelMeter meter{"home"};
     const auto& me = cambc::self();
     const vec2 here = me.position();
     if (world.map().ally_spawn.is_set(here)) return false;
@@ -1547,21 +1578,32 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
     return t.lost || (partner(world) && t.self_falls);
 }
 
+bool want_home(const World& world, Safety& safety, bool sieging) {
+    const bool out = want_home_by(world, safety, sieging);
+    if constexpr (debug_danger) {
+        debug_block({
+            static DangerCount count{"home"};
+            Safety old{world, true};
+            old.refresh();
+            note_danger(world, count, want_home_by(world, old, sieging) != out);
+        });
+    }
+    return out;
+}
+
 // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
 // there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
-const bitboard* step_guard(const World& world, Safety& safety) {
+const bitboard* step_guard_by(const World& world, Safety& safety) {
+    FuelMeter meter{"guard"};
     static bitboard guard{cambc::uninitialized};
     const auto& self = world.me();
     const vec2 here = cambc::self().position();
-    struct Foe {
-        vec2 pos;
-        Strike strike;
-    };
-    std::array<Foe, 8> foes;
+    std::array<const ChampionBelief*, 8> foes;
     int n = 0;
     for (const auto& e : world.enemies)
-        if (n < static_cast<int>(foes.size()) && e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + 2)
-            if (const auto& s = safety.strike_of(e); s.reach >= 0) foes[n++] = {e.pos, s};
+        if (n < static_cast<int>(foes.size()) && e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + 2
+            && safety.strike_of(e).reach >= 0)
+            foes[n++] = &e;
     if (n == 0) return nullptr;
     int radius = 1;
     for (int s = 0; s < 2; ++s)
@@ -1571,34 +1613,105 @@ const bitboard* step_guard(const World& world, Safety& safety) {
         unsigned mask = 0;
         damage = 0;
         for (int k = 0; k < n; ++k)
-            if (const int d = dist(p, foes[k].pos); foes[k].strike.hits(d)) mask |= 1u << k, damage += foes[k].strike.at(d);
+            if (const auto b = safety.blow(*foes[k], p); b.hits) mask |= 1u << k, damage += b.damage;
         return mask;
     };
+    // Placing each tile costs a few hundred: give up as the fights would.
+    if (!fuel_ok(safety.fight_cost_estimate() + end_reserve)) {
+        note_shortcut("step-guard");
+        return nullptr;
+    }
     float here_damage = 0;
     const unsigned here_mask = exposure(here, here_damage);
     const bool linked = partner(world) != nullptr;
     const auto& open = world.map().open_for_us;
-    bool any = false;
+    // The tiles more exposed than ours, and who would fight on each.
+    std::array<std::pair<vec2, std::uint32_t>, 24> exposed;
+    int m = 0;
+    std::uint32_t enemies = 0, allies = ~0u;
     for (int dy = -radius; dy <= radius; ++dy)
         for (int dx = -radius; dx <= radius; ++dx) {
-            if (dx == 0 && dy == 0) continue;
             const vec2 q{here.x + dx, here.y + dy};
+            if ((dx == 0 && dy == 0) || !in_bounds(q) || !open.is_set(q)) continue;
             float damage = 0;
             const unsigned mask = exposure(q, damage);
-            if (mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage) || !in_bounds(q) || !open.is_set(q)) continue;
-            const Trade* known = safety.known_fight(q);
-            if (!known && !fuel_ok(safety.fight_cost_estimate() + end_reserve)) {
-                note_shortcut("step-guard");
-                return any ? &guard : nullptr;
-            }
-            const auto t = known ? *known : safety.fight(q);
-            if (t.lost || (t.self_falls && (linked || safety.lethal(q)))) {
-                if (!any) guard.clear();
-                guard.set(q);
-                any = true;
-            }
+            if (mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage)) continue;
+            const auto key = safety.fight_key(q);
+            if (key == Safety::no_fight) continue;
+            exposed[m++] = {q, key};
+            enemies |= key & 0xFFFF0000u;
+            allies &= key & 0xFFFFu;
         }
+    if (m == 0) return nullptr;
+    // A fight only gets worse with more enemies or fewer allies: one we win settles those it
+    // covers, one we lose those that cover it.
+    const auto covers = [](std::uint32_t worse, std::uint32_t key) {
+        return (key & ~worse & 0xFFFF0000u) == 0 && (worse & ~key & 0xFFFFu) == 0;
+    };
+    struct Settled {
+        std::uint32_t key;
+        bool won, lost; // won: neither lost nor do we fall
+    };
+    std::array<Settled, 25> settled;
+    int s = 0;
+    // False if fuel ran short.
+    const auto outcome = [&](std::uint32_t key, bool& lost, bool& falls) {
+        for (int i = 0; i < s; ++i) {
+            if (settled[i].won && covers(settled[i].key, key)) return lost = falls = false, true;
+            if (settled[i].lost && covers(key, settled[i].key)) return lost = falls = true, true;
+        }
+        if (!safety.known_fight_of(key) && !fuel_ok(safety.fight_cost_estimate() + end_reserve)) {
+            note_shortcut("step-guard");
+            return false;
+        }
+        const auto t = safety.fight_of(key);
+        lost = t.lost;
+        falls = t.self_falls;
+        if (s < static_cast<int>(settled.size())) settled[s++] = {key, !t.lost && !t.self_falls, t.lost};
+        return true;
+    };
+    bool lost = false, falls = false;
+    // Every enemy that could hit any of them against the allies at all of them first: if we win
+    // even that, no tile needs guarding.
+    if (m > 1 && (!outcome(enemies | allies, lost, falls) || (!lost && !falls))) return nullptr;
+    // Then the fewest enemies first, so that lost fights settle the larger ones.
+    std::sort(exposed.begin(), exposed.begin() + m, [](const auto& a, const auto& b) {
+        return std::popcount(a.second >> 16) < std::popcount(b.second >> 16);
+    });
+    bool any = false;
+    for (int i = 0; i < m; ++i) {
+        const auto [q, key] = exposed[i];
+        if (!outcome(key, lost, falls)) return any ? &guard : nullptr;
+        if (lost || (falls && (linked || safety.lethal(q)))) {
+            if (!any) guard.clear();
+            guard.set(q);
+            any = true;
+        }
+    }
     return any ? &guard : nullptr;
+}
+
+const bitboard* step_guard(const World& world, Safety& safety) {
+    static bitboard* before = nullptr;
+    bool old_any = false;
+    if constexpr (debug_danger) {
+        debug_block({
+            Safety old{world, true};
+            old.refresh();
+            const auto* g = step_guard_by(world, old);
+            old_any = g != nullptr;
+            if (!before) before = new bitboard;
+            if (g) copy_into(*g, *before);
+        });
+    }
+    const auto* out = step_guard_by(world, safety);
+    if constexpr (debug_danger) {
+        debug_block({
+            static DangerCount count{"guard"};
+            note_danger(world, count, old_any != (out != nullptr) || (out && !(*out == *before)));
+        });
+    }
+    return out;
 }
 
 bool can_tribute_here(const World& world) {
@@ -1623,7 +1736,8 @@ bool covered(const bitboard& zone, vec2 p, int r) {
 
 // The visible enemy quickest to reach and kill among those whose local fight we win even when
 // they strike first; never one on or next to its spawn, where it heals.
-const ChampionBelief* prey(const World& world, Safety& safety) {
+const ChampionBelief* prey_by(const World& world, Safety& safety) {
+    FuelMeter meter{"prey"};
     const auto& me = cambc::self();
     const vec2 here = me.position();
     const int range = world.me().facts().attack_range();
@@ -1660,6 +1774,19 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         if (const auto t = safety.fight(order[i].second->pos); !t.lost && !(linked && t.self_falls)) return order[i].second;
     }
     return nullptr;
+}
+
+const ChampionBelief* prey(const World& world, Safety& safety) {
+    const auto* out = prey_by(world, safety);
+    if constexpr (debug_danger) {
+        debug_block({
+            static DangerCount count{"prey"};
+            Safety old{world, true};
+            old.refresh();
+            note_danger(world, count, prey_by(world, old) != out);
+        });
+    }
+    return out;
 }
 
 bool chase(const World& world, Pathing& pathing, Safety& safety) {
@@ -1802,10 +1929,8 @@ const ChampionBelief* tribute_to_stun_later(const World& world, Safety& safety, 
         target = &e;
     }
     if (!target || safety.lethal(self.pos) || can_tribute_safely(world, safety, memory)) return nullptr;
-    for (const auto& t : safety.threats()) {
-        const int d = t.distance(self.pos);
-        if (&world.enemies[t.enemy] != target && t.strike.hits(d) && t.strike.stuns[d]) return nullptr;
-    }
+    for (const auto& t : safety.threats())
+        if (&world.enemies[t.enemy] != target && t.at(self.pos).stuns) return nullptr;
     return target;
 }
 
@@ -2353,7 +2478,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (on_spawn) buy_lock();
     if (!world.me().can_act(world.round)) return;
     heal_ally(world);
-    shield_if_needed(world, memory.farm_group);
+    shield_if_needed(world, safety, memory.farm_group);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     if (on_spawn && me.health() < me.max_health()) {
         decision = 'H';
@@ -2458,7 +2583,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
         if (world.me().alive && !world.map().ally_spawn.is_set(start) && fuel_ok(end_reserve + 15000))
             if (const auto t = safety.fight(start); t.enemies > 0) log_fight("FF", world, safety, start, t);
     heal_ally(world); // allies in reach after walking
-    shield_if_needed(world, memory.farm_group);
+    shield_if_needed(world, safety, memory.farm_group);
     place_ward(world, pathing, memory); // where we end the turn
     place_lock(world);
     start_recall(world);

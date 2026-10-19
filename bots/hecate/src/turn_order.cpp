@@ -149,8 +149,8 @@ void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
         || !threats_affordable(safety))
         return;
     for (const auto& t : safety.threats()) {
-        const int d = t.distance(self.pos);
-        if (!t.strike.hits(d) || !(recall || t.strike.stuns[d])) continue;
+        const auto b = t.at(self.pos);
+        if (!b.hits || !(recall || b.stuns)) continue;
         const float gems = params::gem_value * static_cast<float>(self.gems);
         wish.offer(protect, (me.is_submitting_gems() ? params::tribute_value : params::recall_value) + gems);
         return;
@@ -166,10 +166,10 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
     float damage = safety.camp_damage(self.pos);
     bool enemy = false;
     for (const auto& t : safety.threats()) {
-        const int d = t.distance(self.pos);
-        if (!t.strike.hits(d)) continue;
+        const auto b = t.at(self.pos);
+        if (!b.hits) continue;
         enemy = true;
-        damage += t.strike.at(d) * (t.visible && !world.enemies[t.enemy].acted ? 2.0f : 1.0f);
+        damage += b.damage * (t.visible && !world.enemies[t.enemy].acted ? 2.0f : 1.0f);
     }
     if (enemy && damage >= self.health) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(self.gems));
 }

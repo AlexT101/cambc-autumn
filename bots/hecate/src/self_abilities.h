@@ -8,6 +8,7 @@ namespace aph {
 
 class World;
 class Pathing;
+class Safety;
 struct ChampionBelief;
 
 // The enemy a basic attack from here should hit, read live as vision changes when we move: the
@@ -45,6 +46,6 @@ bool heal_ally(const World& world);
 // Varg: before damage from an awake camp, a camp we are hitting or an enemy in reach. `farmed`:
 // the group farm chose, which we hit from attack range; another group's camp in attack range is
 // hit only if our attack is spent.
-bool shield_if_needed(const World& world, int farmed);
+bool shield_if_needed(const World& world, Safety& safety, int farmed);
 
 } // namespace aph

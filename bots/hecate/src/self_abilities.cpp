@@ -368,7 +368,7 @@ bool heal_ally(const World& world) {
     return best && cast(*heal, *best);
 }
 
-bool shield_if_needed(const World& world, int farmed) {
+bool shield_if_needed(const World& world, Safety& safety, int farmed) {
     const auto& f = world.me().facts();
     const auto shield = ready(world, AbilityKind::shield);
     if (!shield) return false;
@@ -377,7 +377,7 @@ bool shield_if_needed(const World& world, int farmed) {
     if (world.map().ally_spawn.is_set(here)) return false;
     bool danger = false;
     for (const auto& e : world.enemies)
-        danger |= e.alive && e.visible && dist(here, e.pos) <= threat_strike(world, e).reach;
+        danger |= e.alive && e.visible && safety.blow(e, here).hits;
     if (danger) return cast(*shield);
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(here, camp_attack_range)) {
