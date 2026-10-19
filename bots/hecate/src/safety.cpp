@@ -663,6 +663,7 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
     const int x0 = origin.x - win_r;
     const int lo = std::max(0, -x0), hi = std::min(win_n, t.width - x0);
     const std::uint32_t columns = lo >= hi ? 0u : ((1u << hi) - 1) & ~((1u << lo) - 1);
+    const std::uint64_t width_mask = lo >= hi ? 0 : (std::uint64_t{1} << (hi - lo)) - 1;
     // Unrolled, so that each row's place in the window is a constant shift.
     [&]<int... Row>(std::integer_sequence<int, Row...>) {
         (
@@ -670,10 +671,19 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
                 const int y = origin.y - win_r + Row;
                 std::uint32_t open = 0, through = 0, camp = 0;
                 if (t.packed) {
-                    const std::uint32_t valid = y < 0 || y >= t.height ? 0u : columns;
-                    through = valid & ~t.row(t.walls, x0, y);
-                    open = valid & ~t.row(t.blocked, x0, y);
-                    camp = t.row(t.camps, x0, y) & valid;
+                    if (columns != 0 && y >= 0 && y < t.height) {
+                        // Terrain::row() of each board, sharing the word offset.
+                        const int i = x0 + lo + y * t.width;
+                        const auto at = static_cast<std::size_t>(i >> 3);
+                        const int shift = i & 7;
+                        std::uint64_t walls, blocked, camps;
+                        std::memcpy(&walls, &t.walls[at], sizeof walls);
+                        std::memcpy(&blocked, &t.blocked[at], sizeof blocked);
+                        std::memcpy(&camps, &t.camps[at], sizeof camps);
+                        through = columns & ~(static_cast<std::uint32_t>((walls >> shift) & width_mask) << lo);
+                        open = columns & ~(static_cast<std::uint32_t>((blocked >> shift) & width_mask) << lo);
+                        camp = static_cast<std::uint32_t>((camps >> shift) & width_mask) << lo;
+                    }
                 } else {
                     for (int k = 0; k < win_n; ++k) {
                         const vec2 p{x0 + k, y};
