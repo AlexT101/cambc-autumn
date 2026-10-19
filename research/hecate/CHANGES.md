@@ -119,3 +119,6 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    decision path again (its claim, banking and siege state move on as on any turn) and only the refused recall
    attempt is skipped. Ladder scrims vs the top 5 on the same maps put the skip at 26-49 (version 27) against 30-45
    without it (version 28) and 31-44 for version 25; see [../SUBMISSIONS.md](../SUBMISSIONS.md).
+19. 2026-10-19 (not yet submitted). The shared-gem caster draft of item 17 reverted: on the ladder version 29 (with
+   it) was level with version 28 (without it), 29-46 vs 30-45, and 2-3 on stampede against 3-2. The 63% local
+   result stands in EXPERIMENTS.md for anyone who wants to retry it with ladder evidence.

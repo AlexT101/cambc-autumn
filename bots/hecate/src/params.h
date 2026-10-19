@@ -9,15 +9,6 @@ inline constexpr cambc::champion_draft draft_preference[] = {
     cambc::champion_draft::vesper_vale, cambc::champion_draft::vendetta, cambc::champion_draft::marcella,
     cambc::champion_draft::willow, cambc::champion_draft::tavi,
 };
-// On shared-gem maps the gems are cleared by damage spells from range 4, so the draft moves
-// spellcasters up (63% there; the same order lost on Monolith-only maps, where sieges want tanks).
-inline constexpr bool draft_adapts = true;
-inline constexpr cambc::champion_draft draft_preference_spells[] = {
-    cambc::champion_draft::stellar, cambc::champion_draft::ryth, cambc::champion_draft::prism,
-    cambc::champion_draft::ren, cambc::champion_draft::cassi_and_issac, cambc::champion_draft::varg,
-    cambc::champion_draft::tavi, cambc::champion_draft::marcella, cambc::champion_draft::vesper_vale,
-    cambc::champion_draft::vendetta, cambc::champion_draft::willow,
-};
 
 // Rounds out of sight after which an enemy could be anywhere.
 inline constexpr int track_horizon = 10;

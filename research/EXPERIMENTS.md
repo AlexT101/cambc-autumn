@@ -90,7 +90,9 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
 - Ladder, 2026-10-19, scrims vs the top 5 on the same maps (75 games each, ±5.5): version 25 31-44; plus fuel round
   3 alone (v28) 30-45; plus the stunned-turn skip too (v27) 26-49; plus the gate removals and the shared-gem draft
   (v26) 24-51. The stunned-turn skip was byte-identical in the local fuel A/Bs and only shows against real opponents;
-  reverted (the recall guard stays). Fish went 3-12, 2-13, 1-14, 0-15 across the four.
+  reverted (the recall guard stays). Fish went 3-12, 2-13, 1-14, 0-15 across the four. Version 29 (v26 without the
+  stun skip) 29-46: level with v28, so the gate removals plus the shared-gem draft are a wash on the ladder; the draft
+  went 2-3 on stampede against v28's 3-2 and was reverted too, as a local-only gain.
 - Emblems: the next one by measured value (Jungle, Power, Durability priced by the rounds they save) 52.0% full; on
   Monolith-only maps the coming siege priced before any camp has hit us (39/60 on extra Monolith-only maps against 30
   for the fixed order); a begun emblem priced by its remaining shards 51.6%. Dropped: the model over five families and

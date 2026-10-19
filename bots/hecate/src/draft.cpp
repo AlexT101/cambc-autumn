@@ -162,11 +162,7 @@ void play_draft(DraftState& state) {
     }
     state.plan.field_layers = static_cast<std::uint16_t>(max_field_layers());
     write_plan(state);
-    if (state.order == DraftState::Order::undecided && analysis().map)
-        state.order = params::draft_adapts && analysis().map->shared_gems ? DraftState::Order::spells : DraftState::Order::basic;
-    pick_first_available(state, state.order == DraftState::Order::spells
-                                    ? std::span<const cambc::champion_draft>{params::draft_preference_spells}
-                                    : std::span<const cambc::champion_draft>{params::draft_preference});
+    pick_first_available(state, params::draft_preference);
 }
 
 void ensure_picked(DraftState& state) {
