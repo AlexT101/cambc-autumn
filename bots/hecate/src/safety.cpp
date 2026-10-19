@@ -546,6 +546,11 @@ struct Terrain {
         return packed ? bit(b, p.x + p.y * width) : board.is_set(p);
     }
     bool bush(vec2 p) const { return test(bushes, map->bushes, p); }
+    bool any_near(const std::array<std::uint8_t, bytes>& b, vec2 p) const {
+        for (int y = p.y - win_r; y <= p.y + win_r; ++y)
+            if (row(b, p.x - win_r, y)) return true;
+        return false;
+    }
     bool inside(vec2 p) const { return p.x >= 0 && p.y >= 0 && p.x < width && p.y < height; }
 
     // Board storage read in place, when probes confirm it: a word per 8x8 chunk, `across` chunks
@@ -688,20 +693,29 @@ Window sight(const World& world, vec2 p, bool far) {
     // Viewers outside bushes exactly; those inside one by walls alone, as finding the clusters can
     // cost tens of thousands: a viewer in another cluster, or behind bushes, may be counted.
     static bitboard viewers{cambc::uninitialized}, outside{cambc::uninitialized};
-    map.walls.shadow_cast_into(p, static_cast<std::uint16_t>(win_r), viewers);
-    viewers &= map.bushes;
-    if (!t.bush(p)) {
-        map.walls_and_bushes.shadow_cast_into(p, static_cast<std::uint16_t>(win_r), outside);
-        drop(outside, map.bushes);
-        viewers |= outside;
-    }
     Window m;
-    // The shadowcast square keeps them within win_r.
-    if (t.chunked) {
-        m = t.chunk_window(viewers.ptr(), p);
+    // Without bushes in the square, walls alone decide; without walls too, all of it sees p.
+    const bool plain = t.packed && !t.any_near(t.bushes, p);
+    if (plain && !t.any_near(t.walls, p)) {
+        m = tables.columns[std::max(0, win_r - p.x)][std::min(win_n - 1, win_r + t.width - 1 - p.x)]
+            & tables.rows[std::max(0, win_r - p.y)][std::min(win_n - 1, win_r + t.height - 1 - p.y)];
     } else {
-        for (const vec2 q : Tiles<win_n * win_n>{viewers})
-            m |= tables.bits[static_cast<std::size_t>((q.y - p.y + win_r) * win_n + q.x - p.x + win_r)];
+        map.walls.shadow_cast_into(p, static_cast<std::uint16_t>(win_r), viewers);
+        if (!plain) {
+            viewers &= map.bushes;
+            if (!t.bush(p)) {
+                map.walls_and_bushes.shadow_cast_into(p, static_cast<std::uint16_t>(win_r), outside);
+                drop(outside, map.bushes);
+                viewers |= outside;
+            }
+        }
+        // The shadowcast square keeps them within win_r.
+        if (t.chunked) {
+            m = t.chunk_window(viewers.ptr(), p);
+        } else {
+            for (const vec2 q : Tiles<win_n * win_n>{viewers})
+                m |= tables.bits[static_cast<std::size_t>((q.y - p.y + win_r) * win_n + q.x - p.x + win_r)];
+        }
     }
     if (i < known.size()) masks[i] = m, known[i] = 1;
     return m;
