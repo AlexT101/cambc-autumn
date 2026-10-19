@@ -92,7 +92,9 @@ private:
         int count = 0;
         std::array<vec2, 8> first_steps; // the first `count`: all equally short, in compass order
     };
-    Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable);
+    Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, vec2 through = {-1, -1});
+    // Two allies head-on with no way past: the one with fewer gems (ties: lower champion) backs off.
+    bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps);
     int approach_steps(int group, int range);
     using Slot = std::unique_ptr<Field>;
     const Field& cached(Slot& slot, const bitboard& goals);
