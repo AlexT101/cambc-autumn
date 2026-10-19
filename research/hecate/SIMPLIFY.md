@@ -243,6 +243,15 @@ Six commits after 202345f (f01312a..4b52c5a), each checked with `bench.py compar
 
 ## 2. Bug fixes
 
+**Done (0990bc9, 2026-10-19):**
+- 2.1 to 2.6.
+- Five items from 2.11: the rally, the priority, the `dash_to_attack` overflow, kite's claim and the `bank_gems` fallback.
+- Results are in EXPERIMENTS.md: the bundle and 2.3 each scored 51.3%.
+
+**Still open:**
+- 2.7 to 2.10.
+- From 2.11: the fight sim's stun on an enemy that hasn't arrived, `collect_local_reward`'s radius, and the kite vs `contest_capture` timing.
+
 ### 2.1 `memory.siege`/`staged_since` are only cleared inside `siege()` [checked]
 - **Where:** bot.cpp:2207/2223.
 - **What happens:**
