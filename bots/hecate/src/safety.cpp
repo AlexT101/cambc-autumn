@@ -386,6 +386,12 @@ int Threat::distance(vec2 p) const {
 
 namespace {
 
+// The most an unseen enemy's threat has cost to build so far, 0 before the first.
+std::uint64_t& costliest_unseen() {
+    static std::uint64_t cost = 0;
+    return cost;
+}
+
 std::vector<Threat>& threat_pool() {
     static std::vector<Threat> pool;
     return pool;
@@ -540,6 +546,7 @@ void Safety::build() {
         const int tiles = x.tiles;
         const float weight = x.weight;
         if (weight == 0) continue;
+        const auto before = fuel();
         auto& t = next_threat(threats_, threat_count_);
         t.enemy = e.index;
         t.strike = s;
@@ -553,6 +560,7 @@ void Safety::build() {
         t.area.clear();
         field->compute(no_walls, e.possible, t.area, static_cast<std::uint16_t>(radius));
         t.steps = field.get();
+        if (const auto after = fuel(); after < before) costliest_unseen() = std::max(costliest_unseen(), before - after);
     }
 }
 
@@ -777,7 +785,7 @@ std::uint64_t Safety::build_cost_estimate() {
     for (const auto& e : world_.enemies) {
         if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
         if (e.visible) cost += 1000;
-        else cost += foe(e).weight > 0 ? 3000 + 25 * search_chunks() : 500;
+        else cost += foe(e).weight > 0 ? (costliest_unseen() ? costliest_unseen() + costliest_unseen() / 4 : 3000 + 25 * search_chunks()) : 500;
     }
     build_cost_ = cost;
     return cost;

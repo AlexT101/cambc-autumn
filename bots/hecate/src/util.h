@@ -211,12 +211,20 @@ inline int& max_field_layers() {
     return layers;
 }
 
+// The most an uncapped field has cost so far, 0 before the first.
+inline std::uint64_t& costliest_field() {
+    static std::uint64_t cost = 0;
+    return cost;
+}
+
 inline Field make_field(const bitboard& walls, const bitboard& goals) {
     static bitboard visited{cambc::uninitialized};
+    const auto before = cambc::fuel_remaining();
     Field f;
     not_into(walls, f.goals);
     f.goals &= goals;
     max_field_layers() = std::max<int>(max_field_layers(), f.steps.compute_with_expansion_count(walls, f.goals, visited));
+    if (const auto after = cambc::fuel_remaining(); after < before) costliest_field() = std::max(costliest_field(), before - after);
     return f;
 }
 
@@ -243,6 +251,11 @@ inline std::uint64_t search_cost_estimate(int layers) {
 inline std::uint64_t field_cost_estimate() {
     const int seen = max_field_layers();
     return search_cost_estimate(seen ? seen + seen / 4 : cambc::map::width() + cambc::map::height()) - 1000;
+}
+// An uncapped field from anywhere: a quarter over the costliest so far, once one is measured.
+inline std::uint64_t full_field_cost_estimate() {
+    const auto seen = costliest_field();
+    return seen ? seen + seen / 4 : field_cost_estimate();
 }
 inline constexpr std::uint64_t small_cost_estimate = 5000;
 
