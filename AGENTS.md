@@ -114,6 +114,8 @@ node tools/replay/extract.mjs --update-engine                          # refresh
 
 [tools/replay/analyze.py](tools/replay/analyze.py) turns them into Markdown reports and CSVs under `replays/.analysis/reports/<timestamp>/` (tempo, fights, audits, draft, economy (camp DPS, camp damage, time budget, captures, bags), a camp table, and a gap report for `--team` against `--vs`; `--reports economy,camps` for a quick subset): `py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team aphelios`.
 
+[tools/replay/ab_compare.py](tools/replay/ab_compare.py) compares the two bots of a local A/B within the same games (captures, gems, camp damage, deaths, clear-to-hold latency): `py tools/replay/ab_compare.py <variant name> batch-A batch-B batch-C`, after extracting the batches.
+
 Schema and units: [tools/replay/README.md](tools/replay/README.md).
 
 ## Docs
