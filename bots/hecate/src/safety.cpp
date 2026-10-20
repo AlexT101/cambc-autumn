@@ -995,9 +995,16 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
                         if (world.map().group_at(p) >= 0) camp |= 1u << k;
                     }
                 }
-                pass |= Window{through, 0}.shl(Row * win_n);
-                land |= Window{open, 0}.shl(Row * win_n);
-                camps |= Window{camp, 0}.shl(Row * win_n);
+                // A row's 9 bits straddle the words only on row 7.
+                constexpr int at = Row * win_n;
+                const auto place = [](Window& w, std::uint64_t row) __attribute__((always_inline)) {
+                    if constexpr (at < 64) w.lo |= row << at;
+                    if constexpr (at > 64 - win_n && at < 64) w.hi |= row >> (64 - at);
+                    if constexpr (at >= 64) w.hi |= row << (at - 64);
+                };
+                place(pass, through);
+                place(land, open);
+                place(camps, camp);
             }(),
             ...);
     }(std::make_integer_sequence<int, win_n>{});
