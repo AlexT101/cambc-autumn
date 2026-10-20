@@ -53,8 +53,10 @@ struct Hazard {
 };
 
 // Enemies and awake monsters that could reach a tile within a dash of `here` before our next turn.
-std::vector<Hazard> threats_near(const World& world, vec2 here) {
-    std::vector<Hazard> out;
+// A scratch vector, valid until the next call: allocating costs more than the work.
+const std::vector<Hazard>& threats_near(const World& world, vec2 here) {
+    static std::vector<Hazard> out;
+    out.clear();
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible) continue;
         const int reach = threat_strike(world, e).reach;
@@ -123,7 +125,7 @@ std::optional<cambc::ability> travel_dash_ready(const World& world) {
 bool travel_dash(const World& world, Pathing& pathing, const cambc::ability& dash, int here_steps, auto steps_at) {
     if (here_steps == 0 || here_steps == unreachable) return false;
     const vec2 here = my_position();
-    const auto threats = threats_near(world, here);
+    const auto& threats = threats_near(world, here);
     const int here_danger = danger(threats, here);
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return steps_at(p); },
@@ -155,7 +157,8 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
         bool stunnable;
         float partner; // Cassi or Issac: the visible other body's health
     };
-    std::vector<Seen> seen;
+    static std::vector<Seen> seen; // kept across calls: allocating costs more than the work
+    seen.clear();
     for (auto p : positions_within(live_champion_tiles(team::enemy), here, range + (splash ? 1 : 0))) {
         try {
             auto c = cambc::vision::champion_at(p);
@@ -323,7 +326,7 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     // A melee walk is free of the attack: a landing a step short of range still strikes.
     const int walk = target_given && world.me().facts().walk_and_attack_independent() && me.can_move() ? 1 : 0;
     if (!target || dist(here, target->pos) > range + walk + dash_steps) return false;
-    const auto threats = threats_near(world, here);
+    const auto& threats = threats_near(world, here);
     const auto& spawn = world.map().from_ally_spawn();
     const vec2 at = target->pos;
     const auto landings = ranked(
@@ -338,7 +341,7 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home) {
     const auto dash = ready(world, AbilityKind::dash);
     if (!dash) return false;
     const vec2 here = my_position();
-    const auto threats = threats_near(world, here);
+    const auto& threats = threats_near(world, here);
     const int here_danger = danger(threats, here);
     if (here_danger == 0) return false;
     const auto landings = ranked(
