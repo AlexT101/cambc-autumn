@@ -2029,7 +2029,7 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             lost = known->lost;
             falls = known->self_falls;
         } else {
-            const auto t = safety.fight_of(key);
+            const auto t = safety.new_fight(key);
             lost = t.lost;
             falls = t.self_falls;
         }

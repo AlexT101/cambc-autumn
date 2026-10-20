@@ -1748,6 +1748,10 @@ Trade Safety::fight(vec2 p, int exclude) {
 
 Trade Safety::fight_of(std::uint32_t key) {
     if (const auto* t = memo(key)) return *t;
+    return new_fight(key);
+}
+
+Trade Safety::new_fight(std::uint32_t key) {
     Side us, them;
     fill(us, world_, world_.allies, key & 0xFFFFu, made_);
     build();

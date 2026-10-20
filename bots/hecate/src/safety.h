@@ -243,6 +243,8 @@ public:
     Trade fight_of(std::uint32_t key);
     // fight_of(key) if memoised, else null.
     const Trade* known_fight_of(std::uint32_t key) const { return memo(key); }
+    // fight_of(key) when known_fight_of(key) is null.
+    Trade new_fight(std::uint32_t key);
     // fight(p) if it needs no simulation, else null.
     const Trade* known_fight(vec2 p);
     // threat_strike(), kept for the turn.
