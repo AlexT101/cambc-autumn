@@ -1245,14 +1245,24 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
         // the round of the next camp phase.
         struct Other {
             vec2 pos;
-            bool first;
+            const ChampionBelief* belief;
+            std::int8_t first; // acts before us next round; -1 until needed
         };
         union Others { // the first n only: the engine charges for every byte written
             std::array<Other, 2 * max_fighters> at;
             Others() {}
         } others;
         int n = -1;
-        const int next = world_.round + 1, self_slot = world_.slot(world_.me(), next);
+        const int next = world_.round + 1;
+        int self_slot = -1;
+        // Turn order matters only to an other a step nearer than a member's reach so far.
+        const auto first = [&](Other& o) {
+            if (o.first < 0) {
+                if (self_slot < 0) self_slot = world_.slot(world_.me(), next);
+                o.first = world_.slot(*o.belief, next) < self_slot ? 1 : 0;
+            }
+            return static_cast<int>(o.first);
+        };
         static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
         bool reread = false;
         const auto& groups = world_.map().groups;
@@ -1263,7 +1273,7 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
                 for (const auto* side : {&world_.allies, &world_.enemies})
                     for (const auto& o : *side)
                         if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o))
-                            others.at[n++] = {o.pos, world_.slot(o, next) < self_slot};
+                            others.at[n++] = {o.pos, &o, -1};
                 if (refresh_) {
                     reread = true;
                     cambc::vision::visible_tiles_into(seen);
@@ -1273,25 +1283,26 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
             const float w = c.awake == Awake::awake ? 1.0f : unknown_camp_weight;
             // Only others this near a group's box can bring a member's reach below camp_attack_range:
             // a big group leaves out the rest.
-            const Others* near = &others;
-            int k_near = n;
-            Others kept;
+            std::array<std::uint8_t, 2 * max_fighters> near;
+            int k_near = 0;
             if (groups[g].members.size() >= 8) {
                 const auto& box = member_boxes(world_.map())[static_cast<std::size_t>(g)];
-                near = &kept;
-                k_near = 0;
                 for (int k = 0; k < n; ++k) {
-                    const vec2 o = others.at[k].pos;
-                    const int out = std::max({box[0] - o.x, o.x - box[1], box[2] - o.y, o.y - box[3], 0});
-                    if (out - (others.at[k].first ? 1 : 0) < camp_attack_range) kept.at[k_near++] = others.at[k];
+                    auto& o = others.at[k];
+                    const int out = std::max({box[0] - o.pos.x, o.pos.x - box[1], box[2] - o.pos.y, o.pos.y - box[3], 0});
+                    if (out - 1 < camp_attack_range && out - first(o) < camp_attack_range) near[k_near++] = static_cast<std::uint8_t>(k);
                 }
+            } else {
+                for (int k = 0; k < n; ++k) near[k_near++] = static_cast<std::uint8_t>(k);
             }
             for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
                 const auto& m = groups[g].members[i];
                 if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen.is_set(m.pos) && !camps.is_set(m.pos))) continue;
                 int reach = camp_attack_range;
-                for (int k = 0; k < k_near; ++k)
-                    reach = std::min(reach, dist(near->at[k].pos, m.pos) - (near->at[k].first ? 1 : 0));
+                for (int k = 0; k < k_near; ++k) {
+                    auto& o = others.at[near[k]];
+                    if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o));
+                }
                 if (reach >= 0) members_.push_back({m.pos, m.strength, w, reach});
             }
         });
