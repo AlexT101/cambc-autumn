@@ -61,7 +61,7 @@ abilities:
   exclusive: "An excludes-walking spell cannot be cast after walking this turn, and walking is forbidden after it. No ability spends the walk or the basic attack."
   attack_reset: "Self-cast. Restores a spent basic attack, never the walk, and fails while the attack is unspent. A ranged champion can walk, reset, then attack."
   dash: "Move to a free tile by a path of at most 2 king steps. The path may cross holes, altars and champions, but not walls or camps."
-  stun: "Removes the target's next turn (no walking, attacking, casting, shopping, consumables, wards or recall start; priority can still be set) and cancels its recall, tribute or teleport. A stunned camp skips its next attack."
+  stun: "Removes the target's next turn (no walking, attacking, casting, shopping, consumables, wards or recall start; priority can still be set) and cancels its recall, tribute or teleport. Stuns do not stack: extra stuns before that turn are wasted; one landing after it removes the following turn. A stunned camp skips its next attack."
 
 combat:
   modifiers: "Damage modifiers multiply and are never rounded. Health, damage and Strength are fractional."
@@ -76,7 +76,7 @@ camps:
     gold_cluster: {health: 500, strength: 0, gold: 35, gems: 0, respawn: 50}
     monolith: {health: 20000, strength: 200, gold: 300, gems: 200, respawn: 150}
   groups: "Cardinally connected monsters form a group. A group wakes together and shares one reward, the sum of its members'. Its camp tiles (SDK: spawn tiles) are its monsters' spawn positions."
-  wake: "A sleeping group wakes when any member takes damage."
+  wake: "A sleeping group wakes when any member takes damage or is stunned."
   sleep: "An awake group sleeps after 2 consecutive camp phases with no champion within range 3. Damage does not keep it awake. Camps never regenerate."
   attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within range 3; ties go to the champion that acts first in that round's turn order (rounds.champion_order, rounds.team_order), not the lowest id. Bushes do not hide champions from camps. Monsters never move."
   state: "Bots can read whether a camp is dead, awake or asleep while its tile (its last tile, if dead) is in vision. They cannot read how far a capture has progressed."
