@@ -1756,6 +1756,27 @@ const bitboard* pack_zone(const World& world) {
     return &zone;
 }
 
+// pack_zone() holds every tile within r of p, worked out from its boxes.
+bool pack_covers(const World& world, vec2 p, int r) {
+    const auto& pz = pack_boxes(world);
+    if (pz.boxes == 0) return false;
+    const int x0 = std::max(0, p.x - r), x1 = std::min(world.map().width - 1, p.x + r);
+    const int y0 = std::max(0, p.y - r), y1 = std::min(world.map().height - 1, p.y + r);
+    for (int i = 0; i < pz.boxes; ++i)
+        if (const auto& b = pz.box[i]; b.x0 <= x0 && x1 <= b.x1 && b.y0 <= y0 && y1 <= b.y1) return true;
+    // Row by row, the boxes that hold the row's first tile not yet held.
+    for (int y = y0; y <= y1; ++y) {
+        int x = x0;
+        for (bool grew = true; grew && x <= x1;) {
+            grew = false;
+            for (int i = 0; i < pz.boxes; ++i)
+                if (const auto& b = pz.box[i]; b.y0 <= y && y <= b.y1 && b.x0 <= x && x <= b.x1) x = b.x1 + 1, grew = true;
+        }
+        if (x <= x1) return false;
+    }
+    return true;
+}
+
 // A capture about to pay is worth finishing while they are still a walk away.
 bool paying_soon(const World& world) {
     if (!holding_capture(world)) return false;
@@ -2026,16 +2047,6 @@ bool can_tribute_here(const World& world) {
     return false;
 }
 
-// Every tile within r of p lies in `zone`.
-bool covered(const bitboard& zone, vec2 p, int r) {
-    static bitboard outside{cambc::uninitialized};
-    outside.clear();
-    outside.draw_chebyshev(p, static_cast<float>(r));
-    outside |= zone;
-    outside ^= zone;
-    return outside.is_empty();
-}
-
 int carried_locks() { return static_cast<int>(cambc::self().consumables()[cambc::consumable_type::altar_lock].count()); }
 
 // The altar a tributer at p channels at.
@@ -2097,7 +2108,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
             && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
             continue;
         // Every tile in reach of it would make us retreat at once.
-        if (const auto* zone = pack_zone(world); zone && covered(*zone, e.pos, range)) continue;
+        if (pack_covers(world, e.pos, range)) continue;
         if (!strength) strength = std::max(1.0f, my_strength());
         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + e.health / *strength;
         // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
