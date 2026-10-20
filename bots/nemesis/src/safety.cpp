@@ -401,7 +401,7 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
             for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
                 const auto& m = groups[g].members[i];
                 if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen.is_set(m.pos) && !camps.is_set(m.pos))) continue;
-                int reach = camp_attack_range;
+                int reach = m.reach;
                 for (int k = 0; k < n; ++k)
                     reach = std::min(reach, dist(others.at[k].pos, m.pos) - (others.at[k].first ? 1 : 0));
                 if (reach >= 0) members_.push_back({m.pos, m.strength, w, reach});

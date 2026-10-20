@@ -39,6 +39,7 @@ struct CampMember {
     cambc::camp_type type;
     float max_health;
     float strength;
+    int reach; // attack range
 };
 
 struct CampGroup {
@@ -48,13 +49,14 @@ struct CampGroup {
     int gold = 0, gems = 0;
     int respawn = 0;    // rounds from capture payout to return
     float strength = 0; // damage per camp phase from all members while awake
+    int reach = 0;      // longest member reach
     int mirror = -1;
     bool has_monolith = false;
 
     cambc::camp camp(int member) const;
     const bitboard& tiles() const;    // camp tiles: stand on one, with no enemy on any, to capture
     const bitboard& adjacent() const; // walkable tiles within 1 of a camp tile, camp tiles excluded
-    const bitboard& threat() const;   // tiles within 3 of a camp tile, where its monsters attack
+    const bitboard& threat() const;   // tiles within a member's reach of it, where its monsters attack
 
 private:
     friend class World;
@@ -74,6 +76,7 @@ struct StaticMap {
     int width = 0, height = 0;
     cambc::symmetry symmetry{};
     bool team_a = true; // team A starts odd rounds; B starts even rounds and wins a full tie
+    int max_camp_reach = 0; // longest reach of any camp member on the map
 
     bitboard walls, holes, bushes, altar_tiles, camp_tiles;
     bitboard ally_spawn, enemy_spawn;

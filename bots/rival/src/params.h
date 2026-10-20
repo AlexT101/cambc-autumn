@@ -79,8 +79,7 @@ inline constexpr float siege_hit_share = 0.75f;
 inline constexpr float siege_pool_share = 0.6f;
 inline constexpr float siege_commit_slack = 1.3f;
 inline constexpr int siege_respawn_wait = 30;
-// Wait this near (out of its reach) until this share of the team's output has come, at most this long.
-inline constexpr int siege_stage_radius = 5;
+// Wait out of its reach until this share of the team's output has come, at most this long.
 inline constexpr float siege_gather_share = 0.6f;
 inline constexpr int siege_max_wait = 20;
 // Below this health a champion out of the Monolith's reach recalls to heal.

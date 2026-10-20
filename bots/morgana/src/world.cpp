@@ -454,7 +454,7 @@ const bitboard& CampGroup::adjacent() const {
 const bitboard& CampGroup::threat() const {
     if (!threat_) {
         bitboard b;
-        for (const auto& m : members) b.draw_chebyshev(m.pos, 3);
+        for (const auto& m : members) b.draw_chebyshev(m.pos, m.reach);
         threat_ = std::move(b);
     }
     return *threat_;
@@ -528,8 +528,10 @@ void World::build_static() {
                 stats = d.base_stats;
             }
             const vec2 pos{static_cast<std::int32_t>(layout[i + 2]), static_cast<std::int32_t>(layout[i + 3])};
-            g.members.push_back({id, pos, type, stats->base_health, stats->base_strength});
+            g.members.push_back({id, pos, type, stats->base_health, stats->base_strength, stats->base_attack_range});
             g.strength += stats->base_strength;
+            g.reach = std::max(g.reach, stats->base_attack_range);
+            s->max_camp_reach = std::max(s->max_camp_reach, stats->base_attack_range);
             g.has_monolith |= type == cambc::camp_type::monolith;
             s->camp_tiles.set(pos);
             s->group_lookup_[tile_index(pos)] = static_cast<std::uint16_t>(gi + 1);

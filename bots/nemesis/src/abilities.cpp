@@ -149,7 +149,7 @@ const bitboard& wake_risk(const World& world, vec2 here, int reach) {
         bool near = groups[g].has_monolith && g != siege_group();
         for (std::size_t i = 0; i < groups[g].members.size() && !near; ++i)
             near = c.health[i] > 0 && groups[g].members[i].strength > 0
-                   && dist(here, groups[g].members[i].pos) <= camp_attack_range;
+                   && dist(here, groups[g].members[i].pos) <= groups[g].members[i].reach;
         if (near) draw_alive_members(world, g, risk);
     }
     return risk;
@@ -360,7 +360,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only) {
         const float health = c.health();
         if (health <= 0) continue;
         // A stunned monster skips its next attack, which goes to the nearest champion: likely us.
-        const float stun = stuns && dist(here, g.members[i].pos) <= camp_attack_range && !c.buffs().has_stun() ? g.members[i].strength : 0;
+        const float stun = stuns && dist(here, g.members[i].pos) <= g.members[i].reach && !c.buffs().has_stun() ? g.members[i].strength : 0;
         members.push_back({c, g.members[i].pos, health, stun});
     }
     if (members.empty()) return {};

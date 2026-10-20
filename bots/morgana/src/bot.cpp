@@ -506,7 +506,7 @@ std::uint32_t safe_targets(const StaticMap& map, int g, int range) {
             for (const auto& m : members) {
                 if (m.strength <= 0) continue;
                 reach.clear();
-                reach.draw_chebyshev(m.pos, safety_params::camp_attack_range);
+                reach.draw_chebyshev(m.pos, m.reach);
                 open |= reach;
                 open ^= reach; // open & ~reach
             }
@@ -517,9 +517,11 @@ std::uint32_t safe_targets(const StaticMap& map, int g, int range) {
     return static_cast<std::uint32_t>(bits);
 }
 
+constexpr int spell_range = 4;
+
 // Rounds to clear a group alone without taking a hit: damage spells from 4 on the members that
 // attack, basic attacks on the others from out of the attackers' range, or once they are dead.
-// Negative if no spell can reach an attacker.
+// Negative if no spell can reach an attacker, or one reaches as far as our spells.
 // No tile in sight of an attacker within 4 lies out of every attacker's range: walls are static.
 char& spell_blocked(const StaticMap& map, int g) {
     static std::vector<char> blocked;
@@ -538,6 +540,7 @@ float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, 
     for (std::size_t i = 0; i < members.size(); ++i) {
         const float hp = fresh ? members[i].max_health : belief.health[i];
         if (hp <= 0) continue;
+        if (members[i].strength > 0 && members[i].reach >= spell_range) return -1;
         if (members[i].strength > 0) attackers += hp, ++live;
         else if (i < 32 && (safe >> i & 1)) reachable += hp;
         else rest += hp;
@@ -600,7 +603,6 @@ bool spell_clear(const World& world, Pathing& pathing, int g, int cap, const bit
     const auto& group = map.groups[g];
     const auto& belief = world.camps[g];
     const int range = world.me().facts().attack_range();
-    constexpr int spell_range = 4;
     std::uint32_t attackers = 0, others = 0;
     for (int i = 0; i < static_cast<int>(group.members.size()) && i < 32; ++i)
         if (belief.health[i] > 0) (group.members[i].strength > 0 ? attackers : others) |= 1u << i;
@@ -611,7 +613,7 @@ bool spell_clear(const World& world, Pathing& pathing, int g, int cap, const bit
     bitboard danger, basic, spell;
     for (int i = 0; i < static_cast<int>(group.members.size()) && i < 32; ++i) {
         if (attackers >> i & 1) {
-            danger.draw_chebyshev(group.members[i].pos, safety_params::camp_attack_range);
+            danger.draw_chebyshev(group.members[i].pos, group.members[i].reach);
             spell |= pathing.member_attack_tiles(g, i, spell_range);
         } else if (others >> i & 1) {
             basic |= pathing.member_attack_tiles(g, i, range);
@@ -917,7 +919,7 @@ bool farm(const World& world, Pathing& pathing, Memory& memory) {
             float present = 0, dps = 0;
             bool shielded = false;
             for (const auto& a : world.allies)
-                if (!a.is_self && a.alive && a.visible && dist(a.pos, group.centre) <= facts.reach + safety_params::camp_attack_range
+                if (!a.is_self && a.alive && a.visible && dist(a.pos, group.centre) <= facts.reach + group.reach
                     && group.threat().is_set(a.pos)) {
                     present += std::max(1.0f, output(a));
                     shielded |= !melee && a.facts().walk_and_attack_independent();
