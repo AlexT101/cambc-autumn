@@ -31,5 +31,6 @@ The public API returns a null submission id and version, so `replays/mine` games
 | 28 | 2026-10-19 19:35 | hecate 6e3d387 (version 25 plus fuel round 3 and its out-of-fuel gates, without the two stunned-turn commits). Scrims vs the top 5, same maps: 30-45 (v25 31-44, v27 26-49, v26 24-51); 8 games differ from v27, 6 of them wins | as #19 |
 | 29 | 2026-10-19 19:42 | hecate d72c1c2 (version 26 with the stunned-turn skip reverted: a stunned turn runs the whole turn, only the refused recall is skipped). Scrims vs the top 5, same maps: 29-46 (v28 30-45, v25 31-44, v26 24-51); 9 games differ from v28, 4-5 | as #26 |
 | 30 | 2026-10-19 19:49 | hecate 65d5605 (version 29 with the shared-gem draft reverted: fuel round 3, gate removals, stun-aware recall guard) | as #19 |
+| 31 | 2026-10-20 16:28 | hecate 284eb73 (SDK 3.0.1 / week 2 patch: new stats, Heart of Ruin and golem out-of-bounds fixes, camp reach per monster type 54.3% vs hecate-v7, gem limits rescaled 52.8% on top) | as #19 |
 
 Add a row with each new submission.
