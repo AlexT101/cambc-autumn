@@ -996,18 +996,19 @@ void warm_reach(const World& world, std::uint64_t fuel_floor) {
 }
 
 int Reach::add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked) {
+    auto& ws = *ways_;
     const auto key = static_cast<std::uint8_t>(((from * 8 + range) * 2 + sight) * 2 + walked);
-    for (int i = 0; i < count_; ++i) {
-        auto& w = ways_[static_cast<std::size_t>(i)];
+    for (int i = 0; i < ws.count; ++i) {
+        auto& w = ws.way[static_cast<std::size_t>(i)];
         if (w.key == key) {
             w.damage = std::max(w.damage, damage);
             w.stuns = w.stuns || stuns;
             return i;
         }
     }
-    if (count_ == static_cast<int>(ways_.size())) return -1;
-    ways_[static_cast<std::size_t>(count_)] = {damage, from, static_cast<std::int8_t>(range), key, sight, stuns, walked};
-    return count_++;
+    if (ws.count == static_cast<int>(ws.way.size())) return -1;
+    ws.way[static_cast<std::size_t>(ws.count)] = {damage, from, static_cast<std::int8_t>(range), key, sight, stuns, walked};
+    return ws.count++;
 }
 
 void Reach::build(const World& world, const ChampionBelief& e, int turn_round, bool twice) {
@@ -1082,13 +1083,15 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool 
     const auto& f = e.facts();
     const Recipe recipe{e.type, std::bit_cast<std::uint32_t>(e.strength), std::bit_cast<std::uint32_t>(e.focus),
                         static_cast<std::uint8_t>(ready[0] | ready[1] << 1), twice, true};
-    if (recipe == recipe_) {
+    ways_ = &ways_by_[static_cast<std::size_t>(recipe.slots | recipe.twice << 2)];
+    auto& ws = *ways_;
+    if (recipe == ws.recipe) {
         set_reach();
         return;
     }
-    recipe_ = recipe;
-    count_ = 0;
-    basic_ = -1;
+    ws.recipe = recipe;
+    ws.count = 0;
+    ws.basic = -1;
     const Tiles basic_from = f.ranged ? here : walked1;
     const int range = f.attack_range();
     const float s = e.strength;
@@ -1097,7 +1100,7 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool 
         // A walk first, on the first of two turns.
         const auto from = [&](Tiles x) { return !walked ? x : x == here ? walked1 : x == walked1 ? walked2 : dashed_walked; };
         const int basic = add(from(basic_from), range, true, s, false, walked);
-        if (!walked) basic_ = basic;
+        if (!walked) ws.basic = basic;
         for (std::size_t slot = 0; slot < 2; ++slot) {
             if (!ready[slot]) continue;
             const auto& a = f.abilities[slot];
@@ -1121,19 +1124,20 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool 
         }
     }
     // Largest damage first: a query stops at the first way that reaches it.
-    for (int i = 1; i < count_; ++i)
-        for (int j = i; j > 0 && ways_[static_cast<std::size_t>(j)].damage > ways_[static_cast<std::size_t>(j - 1)].damage; --j) {
-            std::swap(ways_[static_cast<std::size_t>(j)], ways_[static_cast<std::size_t>(j - 1)]);
-            if (basic_ == j) basic_ = j - 1;
-            else if (basic_ == j - 1) basic_ = j;
+    for (int i = 1; i < ws.count; ++i)
+        for (int j = i; j > 0 && ws.way[static_cast<std::size_t>(j)].damage > ws.way[static_cast<std::size_t>(j - 1)].damage; --j) {
+            std::swap(ws.way[static_cast<std::size_t>(j)], ws.way[static_cast<std::size_t>(j - 1)]);
+            if (ws.basic == j) ws.basic = j - 1;
+            else if (ws.basic == j - 1) ws.basic = j;
         }
     set_reach();
 }
 
 void Reach::set_reach() {
     reach_ = -1;
-    for (int i = 0; i < count_; ++i) {
-        auto& w = ways_[static_cast<std::size_t>(i)];
+    auto& ws = *ways_;
+    for (int i = 0; i < ws.count; ++i) {
+        auto& w = ws.way[static_cast<std::size_t>(i)];
         w.bound = static_cast<std::int8_t>(extent_[w.from] + w.range);
         reach_ = std::max(reach_, static_cast<int>(w.bound));
     }
@@ -1157,10 +1161,11 @@ Blow Reach::at(vec2 p) const {
         float single = -1, walked = -1;
         bool basic = false;
         const int d = std::max(std::abs(dx), std::abs(dy));
-        for (int i = 0; i < count_; ++i) {
-            const auto& w = ways_[static_cast<std::size_t>(i)];
+        const auto& ws = *ways_;
+        for (int i = 0; i < ws.count; ++i) {
+            const auto& w = ws.way[static_cast<std::size_t>(i)];
             if (d > w.bound) continue;
-            if (out.hits && w.damage <= (w.walked ? walked : single) && (!w.stuns || out.stuns) && !(twice_ && i == basic_)) continue;
+            if (out.hits && w.damage <= (w.walked ? walked : single) && (!w.stuns || out.stuns) && !(twice_ && i == ws.basic)) continue;
             Window from = tiles_[w.from] & box(dx + win_r, dy + win_r, w.range);
             if (!from) continue;
             if (w.sight && !near_known && !far_known && warded(*world_, p)) near_known = far_known = true, near = far = win_full;
@@ -1176,7 +1181,7 @@ Blow Reach::at(vec2 p) const {
             }
             if (w.walked) walked = std::max(walked, w.damage);
             else single = std::max(single, w.damage);
-            basic |= i == basic_;
+            basic |= i == ws.basic;
             out.stuns |= w.stuns;
             out.hits = true;
         }
