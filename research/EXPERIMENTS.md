@@ -246,3 +246,18 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   Leads unchanged: the general simulation path for shields, Reach::at, step_guard's bound loop (dist ~800 a heavy turn),
   static_window misses (~640 each, ~6 a heavy turn); World-level enemy masks would let the loops in abilities.cpp and
   self_abilities.cpp (no Safety there) and the age-based loops (in_pack_zone, pack_boxes, recall_outruns) skip beliefs too.
+- World and economy round 3 on hecate c3c874c (not merged: it raises p99 and leaves heavy maps flat, against the
+  aim of cutting the tail), byte-identical at 100M (46 bench games): −1.16% a turn on the default
+  maps vs rival, −1.27% vs nemesis, 0.0% heavy; p99 +0.2-0.3%, p999 +0.1-0.2%, turns over 100k unchanged; real budget
+  (an earlier setting) unchanged: out-of-fuel 0/0/1 as before, shortcuts 751/913/874 -> 762/914/883 (noise).
+  Measured: a simple host call costs 3 + its arguments (sdk_champion 8, round 7, cooldown 9), so caching `my_record()`
+  cannot beat the round read its invalidation needs; a field search costs chunks × (16 + layers) + ~30 over the whole
+  map (100x100: 169 chunks, 2.9k for 1 layer), whatever region it touches, and `route` was 7% of all fuel (3.8k a
+  call, 0.6 a turn; inclusive meters: farm 8.7k a turn with its walk, world update 7.1k). Win: `route` keeps its last
+  field, walls and goals and, for the same goals, reuses it while every tile its walls changed at is at least our best
+  neighbour's layer (newly blocked) or has no neighbour below it (newly freed, not a goal); the layers below the one
+  that reached us are complete, so the neighbours and steps are exact. Checks that fail back off (up to 3 calls),
+  guarded searches are neither checked nor kept, at most 4 changed tiles (2: -0.1%, 6-12: +0.05-0.3%). Hits ~40% of unguarded calls; each check costs
+  3 board operations and reads (~700 with the freed tiles' neighbours), which leaves heavy maps (100x100, crowded)
+  slightly dearer. Not done: farm's loop has no cheap exact pre-rejection (its ~180 ops a group are spread over 25
+  lines); a cheaper reuse check (field values in WASM memory, a host min over a mask) would make heavy maps gain too.
