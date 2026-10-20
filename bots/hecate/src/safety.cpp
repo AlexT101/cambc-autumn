@@ -1303,6 +1303,16 @@ std::vector<Safety::CampHit>& Safety::member_pool() {
 
 Safety::Safety(const World& world) : world_{world}, threats_{threat_pool()}, members_{member_pool()} {}
 
+namespace {
+
+// dist(p, c) <= r for r >= 0, without the distance.
+[[gnu::always_inline]] inline bool in_square(vec2 p, vec2 c, int r) {
+    const auto side = 2 * static_cast<unsigned>(r);
+    return (static_cast<unsigned>(p.x - c.x + r) <= side) & (static_cast<unsigned>(p.y - c.y + r) <= side);
+}
+
+} // namespace
+
 std::span<const Safety::CampHit> Safety::awake_members() {
     if (!members_known_) find_members();
     return {members_.data(), static_cast<std::size_t>(member_count_)};
@@ -1672,7 +1682,7 @@ float Safety::camp_damage(vec2 p, bool worst) {
     if (memo.valid && memo.p == p) return memo.damage;
     float total = 0;
     for (const auto& m : members)
-        if (dist(p, m.pos) <= m.reach) total += worst ? m.strength : m.strength * m.weight;
+        if (in_square(p, m.pos, m.reach)) total += worst ? m.strength : m.strength * m.weight;
     memo = {p, total, true};
     return total;
 }
@@ -1696,7 +1706,7 @@ float Safety::expected_damage(vec2 p) {
 bool Safety::threatened(vec2 p) {
     float safe = 1;
     for (const auto& m : awake_members())
-        if (dist(p, m.pos) <= m.reach && 1 - (safe *= 1 - m.weight) >= recall_risk) return true;
+        if (in_square(p, m.pos, m.reach) && 1 - (safe *= 1 - m.weight) >= recall_risk) return true;
     if (!built_ && !may_be_hit(p)) return false;
     for (const auto& t : threats())
         if (t.at(p).hits && 1 - (safe *= 1 - chance_in_reach(t, p) * hit_given_reach) >= recall_risk)
