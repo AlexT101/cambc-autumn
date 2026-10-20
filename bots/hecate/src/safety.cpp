@@ -104,6 +104,16 @@ struct Side {
                 best = i;
         return weak = best;
     }
+    // Member i gained health or shield: only if it was the weakest can another be weaker now.
+    void lifted(int i) {
+        if (weak == i) weak = -2;
+    }
+    // Member i lost its shield: it is the weakest now if below the weakest, or as low and first.
+    void lowered(int i) {
+        if (weak < 0 || i == weak || fighters[i].health <= 0) return;
+        const float a = fighters[i].health + fighters[i].shield, b = fighters[weak].health + fighters[weak].shield;
+        if (a < b || (a == b && i < weak)) weak = i;
+    }
     // A heal's target: the living member below max health with the least, other than `caster`.
     int weakest_hurt(int caster) const {
         int best = -1;
@@ -232,11 +242,12 @@ Fighters& made_fighters() {
         f.next_cast = next_cast(f);
         other.stunned += c.stuns;
         if (c.heals_self) {
-            f.shield = c.heal, f.shield_until = turn + c.duration, self.weak = -2;
+            f.shield = c.heal, f.shield_until = turn + c.duration;
+            self.lifted(static_cast<int>(&f - self.fighters.data()));
         } else if (target >= 0) {
-            self.weak = -2;
             auto& t = self.fighters[target];
             t.health = std::min(t.max_health, t.health + c.heal);
+            self.lifted(target);
         }
         damage += c.damage;
         return c.hits;
@@ -308,7 +319,7 @@ float act(Side& self, Side& other) {
         const int count = self.count;
         for (int i = 0; i < count; ++i) {
             auto& f = self.fighters[i];
-            if (f.shield_until <= turn) f.shield = 0, f.shield_until = never, self.weak = -2;
+            if (f.shield_until <= turn) f.shield = 0, f.shield_until = never, self.lowered(i);
             if (f.health <= 0) continue;
             if (f.arrives_at <= turn && !(skip >> i & 1)) hits += attack(f, turn, self, other, damage);
             until = std::min(until, f.shield_until);
