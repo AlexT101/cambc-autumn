@@ -698,21 +698,42 @@ const Terrain& terrain(const StaticMap& map) {
     return t;
 }
 
-// By tile: 1 + the index of the group member on it, once looked up; 0 before.
-std::array<std::uint8_t, 100 * 100> member_on;
+// By group: the box around its members, as x0, x1, y0, y1.
+const std::vector<std::array<int, 4>>& member_boxes(const StaticMap& map) {
+    static std::vector<std::array<int, 4>> boxes;
+    if (boxes.empty())
+        for (const auto& g : map.groups) {
+            std::array<int, 4> b{1 << 20, -(1 << 20), 1 << 20, -(1 << 20)};
+            for (const auto& m : g.members)
+                b = {std::min(b[0], m.pos.x), std::max(b[1], m.pos.x), std::min(b[2], m.pos.y), std::max(b[3], m.pos.y)};
+            boxes.push_back(b);
+        }
+    return boxes;
+}
+
+// By tile, once looked up: its camp group (-1 if none) and the index of the member on it.
+struct CampTile {
+    std::int16_t group;
+    std::uint8_t member;
+    bool known;
+};
+std::array<CampTile, 100 * 100> camp_tiles;
 
 bool live_camp(const World& world, vec2 p) {
-    const int g = world.map().group_at(p);
-    if (g < 0 || world.camps[g].state != CampState::alive) return false;
-    const auto& members = world.map().groups[g].members;
-    auto& known = member_on[static_cast<std::size_t>(p.x + p.y * world.map().width)];
-    if (known) return world.camps[g].health[known - 1u] > 0;
-    for (std::size_t i = 0; i < members.size(); ++i)
-        if (members[i].pos == p) {
-            if (i < 255) known = static_cast<std::uint8_t>(i + 1);
-            return world.camps[g].health[i] > 0;
+    auto& t = camp_tiles[static_cast<std::size_t>(p.x + p.y * world.map().width)];
+    if (!t.known) {
+        t.known = true;
+        t.group = static_cast<std::int16_t>(world.map().group_at(p));
+        t.member = 255;
+        if (t.group >= 0) {
+            const auto& members = world.map().groups[t.group].members;
+            for (std::size_t i = 0; i < members.size() && i < 255 && t.member == 255; ++i)
+                if (members[i].pos == p) t.member = static_cast<std::uint8_t>(i);
         }
-    return false;
+    }
+    if (t.group < 0 || t.member == 255) return false;
+    const auto& c = world.camps[t.group];
+    return c.state == CampState::alive && c.health[t.member] > 0;
 }
 
 // Whether a visible enemy ward sees p this round: a target there is in sight of whoever owns it.
@@ -1158,12 +1179,27 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
                 }
             }
             const float w = c.awake == Awake::awake ? 1.0f : unknown_camp_weight;
+            // Only others this near a group's box can bring a member's reach below camp_attack_range:
+            // a big group leaves out the rest.
+            const Others* near = &others;
+            int k_near = n;
+            Others kept;
+            if (groups[g].members.size() >= 8) {
+                const auto& box = member_boxes(world_.map())[static_cast<std::size_t>(g)];
+                near = &kept;
+                k_near = 0;
+                for (int k = 0; k < n; ++k) {
+                    const vec2 o = others.at[k].pos;
+                    const int out = std::max({box[0] - o.x, o.x - box[1], box[2] - o.y, o.y - box[3], 0});
+                    if (out - (others.at[k].first ? 1 : 0) < camp_attack_range) kept.at[k_near++] = others.at[k];
+                }
+            }
             for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
                 const auto& m = groups[g].members[i];
                 if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen.is_set(m.pos) && !camps.is_set(m.pos))) continue;
                 int reach = camp_attack_range;
-                for (int k = 0; k < n; ++k)
-                    reach = std::min(reach, dist(others.at[k].pos, m.pos) - (others.at[k].first ? 1 : 0));
+                for (int k = 0; k < k_near; ++k)
+                    reach = std::min(reach, dist(near->at[k].pos, m.pos) - (near->at[k].first ? 1 : 0));
                 if (reach >= 0) members_.push_back({m.pos, m.strength, w, reach});
             }
         });

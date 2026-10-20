@@ -1670,10 +1670,9 @@ PackZone& pack_boxes(const World& world) {
             // members in index order, as a loop over them would.
             struct Subset {
                 float health, damage;
-                int x0, x1, y0, y1; // the box within r of every member
             };
             static std::array<Subset, (1u << std::tuple_size_v<decltype(members)>)> subsets;
-            subsets[0] = {0, 0, -1 << 20, 1 << 20, -1 << 20, 1 << 20};
+            subsets[0] = {0, 0};
             for (unsigned mask = 1; mask < (1u << n); ++mask) {
                 // A covered mask's supersets are covered too, so its sums are never read.
                 bool covered = false;
@@ -1683,12 +1682,17 @@ PackZone& pack_boxes(const World& world) {
                 const auto& e = members[top];
                 const auto& rest = subsets[mask ^ (1u << top)];
                 auto& sub = subsets[mask];
-                sub = {rest.health + e.health, rest.damage + e.damage, std::max(rest.x0, e.pos.x - r), std::min(rest.x1, e.pos.x + r),
-                       std::max(rest.y0, e.pos.y - r), std::min(rest.y1, e.pos.y + r)};
+                sub = {rest.health + e.health, rest.damage + e.damage};
                 if (sub.health * sub.damage <= ours) continue;
                 if (m < static_cast<int>(minimal.size())) minimal[m++] = mask;
-                if (sub.x0 > sub.x1 || sub.y0 > sub.y1) continue;
-                pz.box[pz.boxes++] = {sub.x0, sub.x1, sub.y0, sub.y1};
+                // The box within r of every member.
+                int x0 = -1 << 20, x1 = 1 << 20, y0 = -1 << 20, y1 = 1 << 20;
+                for (unsigned left = mask; left; left &= left - 1) {
+                    const vec2 p = members[static_cast<std::size_t>(__builtin_ctz(left))].pos;
+                    x0 = std::max(x0, p.x - r), x1 = std::min(x1, p.x + r), y0 = std::max(y0, p.y - r), y1 = std::min(y1, p.y + r);
+                }
+                if (x0 > x1 || y0 > y1) continue;
+                pz.box[pz.boxes++] = {x0, x1, y0, y1};
             }
         }
     }
