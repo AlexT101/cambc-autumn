@@ -157,3 +157,14 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
 - Measuring out-of-fuel turns: the 16-game bench (`tools/fuel/bench.py --fuel 0`) swings by about ±20 and has no
   shared-gem maps. Over all maps, hecate-v5 runs out ~170 times in 390 games (14% of games), a third of them on two
   shared-gem maps (gen-shared-gems-640105705 alone ~50), then contest and stampede. Count them on the full suite.
+- Fight-path round on hecate 110e338, byte-identical at 100M (46 bench games: the default maps vs rival and nemesis,
+  heavy maps vs rival): turns over 100k −23/−36/−23%, p999 −6/−7/−6.5%, all turns −1.1/−2.1/−1.2%. Reach::at boxes from
+  span tables, its sight shift out of line and per-way bounds (−14% a query); step_guard bounds only foes that can
+  reach a step, asks Reach only of foes in bound reach, reads open tiles packed and memoised fights in place; kits kept
+  across turns; threat_strike's widening memoised; camp_damage memo; ward sight cast again only when the wards change,
+  read packed; live camps by a per-tile member index; big camp groups skip far champions; pack boxes worked out only
+  for outmatching subsets. Tried and slower or no gain: act or hurt inlined into simulate, a loop for plain sides in act
+  (−1%), cast split out of attack (+13% a simulation), a cast-only fast path when sums are exact (its checks cost more
+  than it saves), ward checks by distance to each ward (+7% a query), a second recipe kept in Reach (recipes rarely
+  flip back), the far-champion filter on small groups, a cross-turn simulation memo (2-10% hit rate). On the turns over
+  95k at 100M the fight cost is simulations ~30k (a 5v5 fight 8-12k), Reach ~25k and step_guard's own loop ~9k.
