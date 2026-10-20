@@ -620,6 +620,36 @@ const bitboard& CampGroup::threat() const {
 }
 
 
+namespace {
+
+// Host floods from our spawn: no altar's tribute tile is walkable past live camps, but one is once
+// a single group is cleared. Then its members that open one alone.
+void find_gate(StaticMap& s) {
+    if (s.ally_spawn_tiles.empty() || s.altars.empty()) return;
+    bitboard tributes, walls{cambc::uninitialized}, reach{cambc::uninitialized};
+    for (const auto& a : s.altars) tributes |= a.tribute_tiles();
+    const auto reaches_altar = [&] {
+        walls.reachable_tiles_into(s.ally_spawn_tiles[0], unreachable, reach);
+        reach &= tributes;
+        return !reach.is_empty();
+    };
+    or_into(s.blocked_for_us, s.camp_tiles, walls);
+    if (reaches_altar()) return;
+    for (int g = 0; g < static_cast<int>(s.groups.size()) && s.gate < 0; ++g) {
+        or_into(s.blocked_for_us, s.camp_tiles, walls);
+        drop(walls, s.groups[g].tiles());
+        if (reaches_altar()) s.gate = g;
+    }
+    if (s.gate < 0) return;
+    for (const auto& m : s.groups[s.gate].members) {
+        or_into(s.blocked_for_us, s.camp_tiles, walls);
+        walls.set(m.pos, false);
+        if (reaches_altar()) s.gate_keys.set(m.pos);
+    }
+}
+
+} // namespace
+
 [[gnu::flatten]] std::unique_ptr<StaticMap> StaticMap::build() {
     FuelMeter meter{"build_static"};
     auto s = std::make_unique<StaticMap>();
@@ -703,6 +733,8 @@ const bitboard& CampGroup::threat() const {
     s->shared_gems = big && !other;
     or_into(s->camp_tiles, s->blocked_for_us, s->standable);
     not_into(s->standable, s->standable);
+    find_gate(*s);
+    debug_block({ std::printf("GATE %d\n", s->gate); });
 
     const auto* plan = read_draft_plan();
     if (plan && plan->steps && plan->width == s->width && plan->height == s->height && plan->groups == s->groups.size()

@@ -93,6 +93,10 @@ struct StaticMap {
     // stampede's shared block.
     bool shared_gems = false;
     int max_camp_reach = 0; // longest reach of any camp member on the map
+    // A group standing between our spawn and every altar (boss-battle's Monoliths, whose tile is the
+    // only one within tribute range), or -1: until it is cleared nothing can be tributed.
+    int gate = -1;
+    bitboard gate_keys; // the gate's members whose death alone opens a way to an altar
 
     // The SDK's own boards, read once at start-up.
     const bitboard& walls = cambc::map::walls();
