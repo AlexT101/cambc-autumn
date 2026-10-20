@@ -91,7 +91,7 @@ To trace decisions, wrap the output in the SDK's `debug_block({ ... });` and run
 ```
 py fetch_replays.py --list                          # ladder: rank, rating, record, team id, name
 py fetch_replays.py --top 10 --team "Mite"          # newest 20 ranked groups per team
-py fetch_replays.py --mine                          # all our groups (PTN Hyperion), ranked and unranked, into replays/mine/
+py fetch_replays.py --mine                          # all our groups (Pantheon), ranked and unranked, into replays/mine/
 ```
 
 Options: `--kind ranked|unranked|all`, `--since 2026-10-13`, `--max-groups N` (0 for all), `--out` (default `replays/ladder/`), `--threads`; `--mine` changes the defaults to `all`, 0 and `replays/mine/`, and explicit options still override them. Each five-game group gets a folder `<time>-<teamA>-vs-<teamB>-<id>/` with `<n>-<map>.repl26a` and `group.json` (per-game outcome, sides, draft, gem and champion stats). Groups already downloaded are skipped. [research/SUBMISSIONS.md](research/SUBMISSIONS.md) lists our submissions, for telling our versions apart in `replays/mine/`.
