@@ -1457,8 +1457,13 @@ std::uint32_t World::tributing_enemies() const {
 }
 
 [[gnu::flatten]] void World::update_scores(std::uint32_t tributing) {
-    const int ally = static_cast<int>(cambc::global_submitted_gems(team::ally));
-    const int enemy = static_cast<int>(cambc::global_submitted_gems(team::enemy));
+    // cambc::global_submitted_gems, with our absolute team read once.
+    static std::uint32_t submitted;
+    const std::int32_t own = cambc::detail::sdk_my_team();
+    ok(cambc::detail::sdk_bc_submitted_gems(own, &submitted));
+    const int ally = static_cast<int>(submitted);
+    ok(cambc::detail::sdk_bc_submitted_gems(1 - own, &submitted));
+    const int enemy = static_cast<int>(submitted);
     const int enemy_delta = round == first_round ? 0 : enemy - score.enemy;
     score.ally = ally;
     score.enemy = enemy;
