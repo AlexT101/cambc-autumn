@@ -1021,17 +1021,20 @@ void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when) 
 void World::rank_turns() {
     ranks_stale_ = false;
     ranked_round_ = round;
+    const int now = round;
     for (int t = 0; t < 2; ++t) {
         auto& team = t == 0 ? allies : enemies;
+        ChampionBelief* const members = team.data();
         // Handles ascend with the index: a tie goes to the lower index.
         const int n = std::min(static_cast<int>(team.size()), 16);
         std::array<int, 16> priority;
         for (int i = 0; i < n; ++i) {
-            const auto& x = team[i];
-            priority[i] = round > x.priority_round ? x.next_priority : x.priority;
+            const auto& x = members[i];
+            priority[i] = now > x.priority_round ? x.next_priority : x.priority;
         }
-        // Insertion sort from the last order, which mostly still holds.
-        auto& order = turn_order_[t];
+        // Insertion sort from the last order, which mostly still holds; in a local copy, which no
+        // store to a belief can alias.
+        auto order = turn_order_[t];
         for (int k = 1; k < n; ++k) {
             const int i = order[k], p = priority[i];
             int j = k;
@@ -1042,7 +1045,8 @@ void World::rank_turns() {
             }
             order[j] = static_cast<std::uint8_t>(i);
         }
-        for (int k = 0; k < n; ++k) team[order[k]].rank = k;
+        turn_order_[t] = order;
+        for (int k = 0; k < n; ++k) members[order[k]].rank = k;
     }
 }
 
