@@ -751,7 +751,7 @@ const bitboard& CampGroup::threat() const {
 }
 
 void World::update() {
-    round = static_cast<int>(cambc::round_number());
+    round = static_cast<int>(checked_round());
     // First turn; a failure part-way is retried next turn from scratch.
     if (!ready()) {
         first_round = round;
@@ -848,7 +848,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
                 b.health = b.max_health;
                 // Damage or a stun could have cancelled it, so add the spawn, not replace.
                 if (enemy) {
-                    b.possible |= s.enemy_spawn;
+                    or_into(b.possible, s.enemy_spawn, b.possible);
                     also_undashed(b, s.enemy_spawn);
                     b.lineage = 0;
                 }
@@ -993,7 +993,7 @@ void World::read_vision() {
 // `undashed` is read only while turns_since_fixed <= ability_cooldown, in advance(), which first
 // adds the turns; the next fix resets it. Once no later advance can read it, it is left stale.
 void World::also_undashed(ChampionBelief& b, const bitboard& tiles) {
-    if (b.facts().has_dash() && b.turns_since_fixed < ability_cooldown) b.undashed |= tiles;
+    if (b.facts().has_dash() && b.turns_since_fixed < ability_cooldown) or_into(b.undashed, tiles, b.undashed);
 }
 
 void World::mark_fixed(ChampionBelief& b, Moment when) {
@@ -1014,8 +1014,8 @@ void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when) 
 }
 
 void World::fix(ChampionBelief& b, vec2 tile, Moment when) {
-    b.possible.clear();
-    b.possible.set(tile);
+    clear_board(b.possible);
+    set_tile(b.possible, tile);
     mark_fixed(b, when);
     b.lineage = 0;
 }
@@ -1075,8 +1075,8 @@ bool World::grow(ChampionBelief& b, int turns, const bitboard& land) {
     // A recall started on any turn after the fix lands at the start of the turn after its last
     // turn end, which is a full turn: from turn recall_time + 1 on, add the spawn before growing.
     if (b.turns_since_fixed > (b.fast_recall ? home_recall_time : cambc::constants::recall_time)) {
-        b.possible |= s.enemy_spawn;
-        if (undashed_read) b.undashed |= s.enemy_spawn;
+        or_into(b.possible, s.enemy_spawn, b.possible);
+        if (undashed_read) or_into(b.undashed, s.enemy_spawn, b.undashed);
     }
     FuelMeter meter{"track"};
     if (!dasher) {
@@ -1090,7 +1090,7 @@ bool World::grow(ChampionBelief& b, int turns, const bitboard& land) {
         static bitboard dashed{cambc::uninitialized};
         widen_by_dash(b.undashed, dashed, s, turns, land);
         walk(b.possible, s, turns, land);
-        b.possible |= dashed;
+        or_into(b.possible, dashed, b.possible);
         if (undashed_kept) walk(b.undashed, s, turns, land);
     } else if (dash) {
         // undashed lies within possible (equal to it, or read no more): dashing from possible
@@ -1111,7 +1111,7 @@ bool World::grow(ChampionBelief& b, int turns, const bitboard& land) {
 [[gnu::flatten]] void World::track(ChampionBelief& b) {
     if (round - b.fixed.round > params::track_horizon) {
         b.tracked = false;
-        b.possible.clear();
+        clear_board(b.possible);
         return;
     }
     const auto to = now();
@@ -1162,7 +1162,7 @@ void World::walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard&
     static bitboard grown{cambc::uninitialized};
     field.compute(s.blocked_for_them, tiles, grown, static_cast<std::uint16_t>(steps));
     tiles.swap(grown);
-    if (&land != &s.open_for_them) tiles &= land;
+    if (&land != &s.open_for_them) and_into(tiles, land, tiles);
 }
 
 // `steps` turns with one dash (2 king steps, with that turn's walk): it crosses holes, altars and
@@ -1171,19 +1171,19 @@ void World::widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& 
     static cambc::distance_field field;
     static bitboard grown{cambc::uninitialized};
     field.compute(s.walls, from, grown, static_cast<std::uint16_t>(steps + 2));
-    grown &= land;
+    and_into(grown, land, grown);
     out.swap(grown);
 }
 
 void World::prune(ChampionBelief& b) const {
-    b.possible &= unseen_;
-    if (b.facts().has_dash() && b.turns_since_fixed < ability_cooldown) b.undashed &= unseen_;
+    and_into(b.possible, unseen_, b.possible);
+    if (b.facts().has_dash() && b.turns_since_fixed < ability_cooldown) and_into(b.undashed, unseen_, b.undashed);
     note_emptied(b);
 }
 
 // Emptied by something unmodelled (a teleport crystal, say): it could be anywhere.
 void World::note_emptied(ChampionBelief& b) {
-    if (b.tracked && b.possible.is_empty()) b.tracked = false;
+    if (b.tracked && board_empty(b.possible)) b.tracked = false;
 }
 
 namespace {

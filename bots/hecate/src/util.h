@@ -317,6 +317,12 @@ inline std::unique_ptr<Field> make_field(const bitboard& walls, const bitboard& 
 
 // The imports read raw: the SDK's wrappers add checks for failures only an ABI mismatch could cause.
 inline std::uint64_t fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
+// cambc::round_number() without check()'s call and a stack slot.
+inline std::uint32_t checked_round() {
+    static std::uint32_t round;
+    ok(cambc::detail::sdk_bc_round_number(&round));
+    return round;
+}
 inline std::uint32_t round_now() {
     static std::uint32_t round;
     round = 0;

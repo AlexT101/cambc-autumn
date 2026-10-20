@@ -143,14 +143,14 @@ const Field* Pathing::approach(int group, int range) {
     if (range == 0) {
         copy_into(s.groups[group].tiles(), goals);
     } else {
-        goals.clear();
-        for (const auto& m : s.groups[group].members) goals.draw_chebyshev(m.pos, static_cast<float>(range));
+        clear_board(goals);
+        for (const auto& m : s.groups[group].members) draw_square(goals, m.pos, static_cast<float>(range));
         not_into(walls, open);
-        goals &= open;
+        and_into(goals, open, goals);
     }
-    walls.set(me, false);
-    origin.clear();
-    origin.set(me);
+    set_tile(walls, me, false);
+    clear_board(origin);
+    set_tile(origin, me);
     made.field.steps.compute_to(walls, goals, origin, visited, static_cast<std::uint16_t>(layers));
     if (made.field.at(me) == unreachable) return nullptr;
     auto& slot = approach_slot(group, range);
@@ -284,20 +284,20 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
 void Pathing::occupied_into(bitboard& out) {
     static bitboard t{cambc::uninitialized};
     cambc::vision::champion_tiles_into(team::ally, out);
-    out |= map().blocked_for_us;
+    or_into(out, map().blocked_for_us, out);
     cambc::vision::champion_tiles_into(team::enemy, t);
-    out |= t;
+    or_into(out, t, out);
     cambc::vision::camp_tiles_into(t);
-    out |= t;
+    or_into(out, t, out);
     cambc::vision::teleport_tiles_into(t);
-    out |= t;
-    if (bumped_any_) out |= bumped_;
+    or_into(out, t, out);
+    if (bumped_any_) or_into(out, bumped_, out);
 }
 
 const bitboard& Pathing::blocked() {
     if (!blocked_fresh_) {
         occupied_into(blocked_);
-        blocked_.set(my_pos(), false);
+        set_tile(blocked_, my_pos(), false);
         blocked_fresh_ = true;
     }
     return blocked_;
@@ -353,7 +353,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     // walls are read straight into the route's board. Our tile is freed below.
     if (blocked_fresh_) copy_into(blocked_, walls);
     else occupied_into(walls);
-    if (in_bounds(through)) walls.set(through, false);
+    if (in_bounds(through)) set_tile(walls, through, false);
     if (avoid && test(*avoid, me)) {
         // Inside danger every neighbour is in it too: free the connected region we stand in.
         static bitboard outside{cambc::uninitialized}, region{cambc::uninitialized}, danger{cambc::uninitialized};
@@ -361,17 +361,17 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
         outside.reachable_tiles_into(me, static_cast<std::uint16_t>(map().width + map().height), region);
         copy_into(*avoid, danger);
         drop(danger, region);
-        walls |= danger;
+        or_into(walls, danger, walls);
     } else if (avoid) {
-        walls |= *avoid;
+        or_into(walls, *avoid, walls);
     }
-    if (guard_) walls |= *guard_;
-    walls.set(me, false);
+    if (guard_) or_into(walls, *guard_, walls);
+    set_tile(walls, me, false);
     // Search outwards from the goals until it reaches us: every tile one layer nearer than ours
     // is then labelled, so each neighbour on a shortest route is known.
     FuelMeter meter{"route"};
-    if (in_bounds(origin_at)) origin.set(origin_at, false);
-    origin.set(me);
+    if (in_bounds(origin_at)) set_tile(origin, origin_at, false);
+    set_tile(origin, me);
     origin_at = me;
     // Goals on walls are no roots; with none left we stay unreachable.
     field.compute_to(walls, goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
@@ -401,7 +401,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
             return true;
         }
         // A hidden unit was there: the tile is now revealed to us for the rest of the round.
-        bumped_.set(tile);
+        set_tile(bumped_, tile);
         bumped_any_ = true;
         invalidate();
     } catch (const cambc::error&) {
