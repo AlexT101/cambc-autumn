@@ -355,9 +355,10 @@ private:
         std::array<FightMemo, max_fights> fights_;
     };
     std::uint64_t costliest_fight_ = 0;
-    // query_cost_estimate()'s Reaches pending, for `reaches_for_` as reached_; -1 once refreshed.
-    std::uint64_t reaches_ = 0;
-    int reaches_for_ = -1;
+    // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
+    // once refreshed: reached_ only gains bits meanwhile, and gone() keeps its answers.
+    std::uint16_t reachable_ = 0;
+    bool reachable_known_ = false;
     int champions_ = -1;            // in sight, for fight_cost_estimate(); beliefs are fixed for the turn
     std::uint64_t build_cost_ = 0;  // build_cost_estimate() until built, refreshed or invalidated; 0: unknown
 };

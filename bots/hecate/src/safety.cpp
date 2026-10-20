@@ -1363,14 +1363,14 @@ void Safety::invalidate() {
     enemy_area_.reset();
     fight_count_ = 0;
     gone_.fill(0);
-    reaches_for_ = -1;
+    reachable_known_ = false;
 }
 
 void Safety::refresh() {
     refresh_ = true;
     gone_.fill(0);
     build_cost_ = 0;
-    reaches_for_ = -1;
+    reachable_known_ = false;
     if (!built_ && !members_known_) return;
     bool changed = false;
     for (const auto& e : world_.enemies) changed |= e.alive && gone(e);
@@ -1745,13 +1745,14 @@ std::uint64_t Safety::fight_cost_estimate() {
 
 std::uint64_t Safety::query_cost_estimate() {
     // Once listed, a visible threat's Reach is still built on its first query.
-    if (built_ && reaches_for_ != reached_) {
-        reaches_for_ = reached_;
-        reaches_ = 0;
+    if (built_ && !reachable_known_) {
+        reachable_known_ = true;
+        reachable_ = 0;
         for (const auto& e : world_.enemies)
-            if (e.alive && e.visible && !(reached_ >> e.index & 1) && !gone(e) && struck(e).strike.reach >= 0) reaches_ += 2000;
+            if (e.alive && e.visible && !(reached_ >> e.index & 1) && !gone(e) && struck(e).strike.reach >= 0)
+                reachable_ |= static_cast<std::uint16_t>(1u << e.index);
     }
-    return (built_ ? reaches_ : 0) + build_cost_estimate();
+    return (built_ ? 2000 * static_cast<std::uint64_t>(std::popcount(static_cast<unsigned>(reachable_ & ~reached_))) : 0) + build_cost_estimate();
 }
 
 std::uint64_t Safety::build_cost_estimate() {
