@@ -442,20 +442,26 @@ Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first 
 std::uint32_t fighting_allies(const World& world, vec2 p) {
     static int round = -1;
     static std::uint32_t self = 0, seen = 0;
-    static std::array<vec2, 16> at;
+    // The corner of each one's square within fight_ally_radius: p is in it when both offsets from
+    // the corner, unsigned, are at most its side.
+    static std::array<int, 16> x0, y0;
     if (round != world.round) {
         round = world.round;
         self = seen = 0;
-        for (std::size_t i = 0; i < world.allies.size() && i < at.size(); ++i) {
+        for (std::size_t i = 0; i < world.allies.size() && i < x0.size(); ++i) {
             const auto& a = world.allies[i];
             if (!a.alive) continue;
             if (a.is_self) self |= 1u << i;
-            else if (a.visible) seen |= 1u << i, at[i] = a.pos;
+            else if (a.visible) seen |= 1u << i, x0[i] = a.pos.x - fight_ally_radius, y0[i] = a.pos.y - fight_ally_radius;
         }
     }
     std::uint32_t out = self;
-    for (unsigned left = seen; left; left &= left - 1)
-        if (const int i = std::countr_zero(left); dist(p, at[static_cast<std::size_t>(i)]) <= fight_ally_radius) out |= 1u << i;
+    constexpr unsigned side = 2 * fight_ally_radius;
+    for (unsigned left = seen; left; left &= left - 1) {
+        const int i = std::countr_zero(left);
+        const bool in = static_cast<unsigned>(p.x - x0[static_cast<std::size_t>(i)]) <= side;
+        if (in & (static_cast<unsigned>(p.y - y0[static_cast<std::size_t>(i)]) <= side)) out |= 1u << i;
+    }
     return out;
 }
 
