@@ -623,13 +623,23 @@ function mergeSources(hash, files) {
   return m;
 }
 
-function writeIndex() {
-  const games = [];
-  for (const d of fs.readdirSync(OUT_ROOT)) {
-    const f = path.join(OUT_ROOT, d, 'meta.json');
-    if (!fs.existsSync(f)) continue;
-    const m = JSON.parse(fs.readFileSync(f, 'utf8'));
-    for (const src of m.sources ?? []) games.push({ dir: d, source: src.source, kind: src.kind, map: m.map.name, mapHash: m.map.hash, teams: src.teams.map(t => t.name), winner: m.result.winner, rounds: m.result.rounds, gems: m.result.gems, ok: m.validation.ok && !src.problems, copies: m.sources.length });
+function indexRows(d) {
+  const f = path.join(OUT_ROOT, d, 'meta.json');
+  if (!fs.existsSync(f)) return [];
+  const m = JSON.parse(fs.readFileSync(f, 'utf8'));
+  return (m.sources ?? []).map(src => ({ dir: d, source: src.source, kind: src.kind, map: m.map.name, mapHash: m.map.hash, teams: src.teams.map(t => t.name), winner: m.result.winner, rounds: m.result.rounds, gems: m.result.gems, ok: m.validation.ok && !src.problems, copies: m.sources.length }));
+}
+
+// With `touched` (analysis dirs this run wrote or added sources to), only their rows are replaced: rescanning every meta.json takes minutes on a large cache.
+function writeIndex(touched) {
+  const file = path.join(OUT_ROOT, 'index.json');
+  const old = touched && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null;
+  let games;
+  if (old?.v === EXTRACTOR_VERSION) {
+    games = old.games.filter(g => !touched.has(g.dir));
+    for (const d of touched) games.push(...indexRows(d));
+  } else {
+    games = fs.readdirSync(OUT_ROOT).flatMap(indexRows);
   }
   games.sort((a, b) => a.source.localeCompare(b.source));
   writeJson(path.join(OUT_ROOT, 'index.json'), { v: EXTRACTOR_VERSION, games });
@@ -687,16 +697,18 @@ async function updateEngine() {
 
 async function main() {
   const args = process.argv.slice(2);
-  const opts = { threads: Math.max(1, Math.min(16, os.availableParallelism() - 1)), force: false, update: false, inputs: [] };
+  const opts = { threads: Math.max(1, Math.min(16, os.availableParallelism() - 1)), force: false, update: false, reindex: false, inputs: [] };
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--threads') opts.threads = Math.max(1, +args[++i]);
     else if (a === '--force') opts.force = true;
     else if (a === '--update-engine') opts.update = true;
-    else if (a === '-h' || a === '--help') { console.log('usage: node tools/replay/extract.mjs <dirs or .repl26a files...> [--threads N] [--force] [--update-engine]'); return 0; }
+    else if (a === '--reindex') opts.reindex = true;
+    else if (a === '-h' || a === '--help') { console.log('usage: node tools/replay/extract.mjs <dirs or .repl26a files...> [--threads N] [--force] [--reindex] [--update-engine]'); return 0; }
     else opts.inputs.push(a);
   }
   if (opts.update) await updateEngine();
+  if (opts.reindex && !opts.inputs.length) { fs.mkdirSync(OUT_ROOT, { recursive: true }); writeIndex(null); return 0; }
   if (!opts.inputs.length) { if (!opts.update) console.error('no inputs; see --help'); return opts.update ? 0 : 2; }
   const versions = engineVersions();
   if (!versions.length) throw new Error('no engines in tools/replay/engine; run with --update-engine');
@@ -732,7 +744,7 @@ async function main() {
   const secs = (performance.now() - t0) / 1000;
   const dupProblems = [];
   for (const [h, fs2] of byHash) if (fs.existsSync(path.join(OUT_ROOT, h, 'meta.json'))) for (const q of mergeSources(h, fs2).sources ?? []) if (q.problems) dupProblems.push(`${q.source}: ${q.problems.join('; ')}`);
-  writeIndex();
+  writeIndex(opts.reindex ? null : new Set(byHash.keys()));
   const failed = results.filter(r => !r.ok);
   const soft = results.reduce((a, r) => a + (r.soft ?? 0), 0);
   console.log(`extracted ${results.length - failed.length}/${results.length} in ${secs.toFixed(1)} s (${todo.length ? (secs * 1000 / todo.length).toFixed(0) : 0} ms/replay wall, ${nThreads} threads); ${soft} soft validation notes`);

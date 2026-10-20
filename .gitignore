@@ -10,3 +10,5 @@ __pycache__/
 bots/variants/
 research/**/*.pkl
 compile_commands.json
+replay-bulk/
+replay-bulk-zip/

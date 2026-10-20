@@ -4,12 +4,13 @@ Decodes `.repl26a` replays (ladder downloads and local `cambc run` / `run_batche
 
 ```
 node tools/replay/extract.mjs replays/ladder replays/batch-20261013-185810-654911
-node tools/replay/extract.mjs <dirs or .repl26a files...> [--threads N] [--force]
+node tools/replay/extract.mjs <dirs or .repl26a files...> [--threads N] [--force] [--reindex]
 node tools/replay/extract.mjs --update-engine
 ```
 
 - Inputs are searched recursively. Each distinct replay (by sha256) is decoded once, in parallel worker threads, into `replays/.analysis/<first 16 hex of sha256>/`. Cached games are skipped unless `--force`, the extractor version changes, their engine's copy changes or their validation failed.
 - Identical replays do occur: the bots and engine are deterministic, so a rematch on the same map can be byte-identical. All copies are listed in `meta.sources`; `index.json` has one row per source file. A shared game's `meta.teams` names come from whichever batch extracted it first, so take a batch's team names from its `index.json` rows (`teams`), not from `meta.json`.
+- `index.json` is updated in place, re-reading only the games given on the command line. `--reindex` (with or without inputs) rebuilds it from every `meta.json`, which takes minutes on a large cache; use it after deleting analysis folders by hand.
 - Exit code 1 if any replay fails to decode or fails a hard validation check.
 - A replay's header names the engine that played it (`v0_0_1` until the ladder's 0.0.2 patch on 2026-10-16 about 08:00Z, `v0_0_2` since, for ladder and local `cambc run` alike), and only that engine loads it. Each replay is decoded with its own engine from `engine/`; `tools/mapgen` uses the newest.
 - `--update-engine` starts `cambc view`, downloads every `v*_*_*-*.wasm` the viewer ships into `engine/<version>.wasm`, and rewrites `engine/version.json`. If the snapshot layout changed (`Game_Visualiser_SnapshotSize() != 184696`), loading fails and the decoder in `engine.mjs` has to be re-ported from the viewer's `PanelChrome-*.js` (functions `xr`/`br`/`Sr` and table constant `Q`).
