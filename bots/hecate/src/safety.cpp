@@ -1387,13 +1387,15 @@ void Safety::refresh() {
     if (changed) invalidate();
 }
 
+[[gnu::noinline]] void Safety::strike_foe(const ChampionBelief& e, Foe& x) {
+    known_ |= static_cast<std::uint16_t>(1u << e.index);
+    x.strike = threat_strike(world_, e);
+    x.asked = {-1, -1};
+}
+
 Safety::Foe& Safety::struck(const ChampionBelief& e) {
     auto& x = foes_[static_cast<std::size_t>(e.index)];
-    if (!(known_ >> e.index & 1)) {
-        known_ |= static_cast<std::uint16_t>(1u << e.index);
-        x.strike = threat_strike(world_, e);
-        x.asked = {-1, -1};
-    }
+    if (!(known_ >> e.index & 1)) strike_foe(e, x);
     return x;
 }
 
@@ -1496,12 +1498,14 @@ template <class F> void Safety::each_threat(vec2 p, F&& f) {
     }
 }
 
+[[gnu::noinline]] void Safety::build_reach(const ChampionBelief& e, Reach& r) {
+    reached_ |= static_cast<std::uint16_t>(1u << e.index);
+    r.build(world_, e, next_turn_round(world_, e), turns_before_ours(world_, e) >= 2);
+}
+
 const Reach& Safety::reach_of(const ChampionBelief& e) {
     auto& r = reach_pool()[static_cast<std::size_t>(e.index)];
-    if (!(reached_ >> e.index & 1)) {
-        reached_ |= static_cast<std::uint16_t>(1u << e.index);
-        r.build(world_, e, next_turn_round(world_, e), turns_before_ours(world_, e) >= 2);
-    }
+    if (!(reached_ >> e.index & 1)) build_reach(e, r);
     return r;
 }
 

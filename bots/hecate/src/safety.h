@@ -311,6 +311,8 @@ private:
     // foe(e) with only its strike worked out: an unseen enemy's tiles and weight count its
     // possible set, a whole-board host operation.
     Foe& struck(const ChampionBelief& e);
+    void strike_foe(const ChampionBelief& e, Foe& x);
+    void build_reach(const ChampionBelief& e, Reach& r);
     void build();
     template <class F> void each_threat(vec2 p, F&& f);
     // Seen alive at turn start but dead now, once refreshed.
