@@ -436,7 +436,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     }
     // Carry it out; a move refused (a hidden unit) falls back to striking from here.
     Healths h = h0;
-    const auto strike_here = [&](bool reset) {
+    const auto strike_here = [&](bool reset) __attribute__((always_inline)) {
         const Hit a = b.attack ? best_hit(b, my_position(), h) : Hit{};
         if (attack(b, a)) {
             out.attacked = true;

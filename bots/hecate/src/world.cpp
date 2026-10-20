@@ -1139,6 +1139,31 @@ void restore(CampBelief& c, const CampGroup& G, int since) {
 }
 } // namespace
 
+// update_camps' boards, read on first use: most turns no visible group is awake or cleared.
+struct World::CampViews {
+    const World& world;
+    bool champs_read = false, hidden_made = false;
+    const bitboard& champs() {
+        static bitboard ally{cambc::uninitialized}, enemy{cambc::uninitialized}, both{cambc::uninitialized};
+        if (!champs_read) {
+            champs_read = true;
+            cambc::vision::champion_tiles_into(team::ally, ally);
+            cambc::vision::champion_tiles_into(team::enemy, enemy);
+            or_into(ally, enemy, both);
+        }
+        return both;
+    }
+    // Where a champion could stand unseen: ~(visible | impassable).
+    const bitboard& hidden() {
+        static bitboard b{cambc::uninitialized};
+        if (!hidden_made) {
+            hidden_made = true;
+            and_into(world.unseen_, world.map().passable, b);
+        }
+        return b;
+    }
+};
+
 void World::update_camps() {
     const auto& s = map();
     const std::size_t words = (s.groups.size() + 63) / 64;
@@ -1150,26 +1175,7 @@ void World::update_camps() {
         group_visible_[g >> 6] |= std::uint64_t{1} << (g & 63);
     }
     const auto& group_visible = group_visible_;
-    // Read only for a visible group that is awake or cleared: most turns none is.
-    static bitboard ally_champs_b{cambc::uninitialized}, enemy_champs_b{cambc::uninitialized},
-        champs_b{cambc::uninitialized}, hidden_b{cambc::uninitialized};
-    bool champs_read = false, hidden_made = false;
-    const auto read_champs = [&] {
-        if (champs_read) return;
-        champs_read = true;
-        cambc::vision::champion_tiles_into(team::ally, ally_champs_b);
-        cambc::vision::champion_tiles_into(team::enemy, enemy_champs_b);
-        or_into(ally_champs_b, enemy_champs_b, champs_b);
-    };
-    const auto champs = [&]() -> const bitboard& { return read_champs(), champs_b; };
-    // Where a champion could stand unseen: ~(visible | impassable).
-    const auto hidden = [&]() -> const bitboard& {
-        if (!hidden_made) {
-            hidden_made = true;
-            and_into(unseen_, s.passable, hidden_b);
-        }
-        return hidden_b;
-    };
+    CampViews views{*this};
 
     camps_pending_.resize(words);
     for (std::size_t w = 0; w < words; ++w) {
@@ -1186,133 +1192,135 @@ void World::update_camps() {
                     continue;
             }
             const auto version = camps[g].version;
-            guard("camp", [&] {
-                const auto& G = s.groups[g];
-                auto& c = camps[g];
-
-                if (!in_view) {
-                    if (c.state == CampState::cleared && c.holder && round >= c.payout_round()) {
-                        c.state = CampState::respawning;
-                        ++c.version;
-                        c.respawn_round = c.payout_round() + G.respawn;
-                        c.holder.reset();
-                    }
-                    if (c.state == CampState::respawning && round >= c.respawn_round) {
-                        c.state = CampState::alive;
-                        restore(c, G, c.respawn_round - 1); // a new version
-                    }
-                    if (c.awake == Awake::awake && round - c.state_round > 2) c.awake = Awake::unknown;
-                    return;
-                }
-
-                const auto [code, timer] = engine::group_state(G.handle);
-                const auto previous = c.state;
-                const int previous_round = c.state_round;
-                const int previous_respawn = c.respawn_round;
-                if (previous_round != round - 1) c.quiet_rounds = 0;
-                if (code == 1) c.state = CampState::alive;
-                else if (code == 2) c.state = CampState::cleared;
-                else if (code == 3) {
-                    c.state = CampState::respawning;
-                    c.respawn_round = round + timer;
-                }
-                c.version += c.state != previous;
-                c.state_round = round;
-                // Not alive when last seen: it returned at full health after that, and after its timer.
-                if (c.state == CampState::alive && previous != CampState::alive)
-                    restore(c, G, std::max(previous_round, previous_respawn - 1));
-
-                // Member health; a visible camp tile with no live camp on it is a dead member. Any drop,
-                // a kill included, is damage, which wakes the group, but if the health is older than a
-                // sleep it may have fallen asleep again since. A visible live member shows the group's
-                // wakefulness outright.
-                std::optional<Awake> seen_awake;
-                for (std::size_t i = 0; i < G.members.size(); ++i) {
-                    const auto& m = G.members[i];
-                    if (!visible.is_set(m.pos)) continue;
-                    const float hp = engine::camp_health(m.handle).value_or(0.0f);
-                    if (hp < c.health[i] - 1e-3f) {
-                        c.quiet_rounds = 0;
-                        if (round - c.health_round[i] < cambc::constants::camp_sleep_time) {
-                            c.last_damaged_round = round;
-                            c.awake = Awake::awake;
-                        } else if (c.awake == Awake::asleep) {
-                            c.awake = Awake::unknown;
-                        }
-                    }
-                    c.version += hp != c.health[i];
-                    c.health[i] = hp;
-                    c.health_round[i] = round;
-                    if (hp > 0 && !seen_awake && c.state == CampState::alive) seen_awake = engine::camp_awake(m.handle);
-                }
-
-                if (c.state != CampState::alive) {
-                    c.awake = Awake::asleep;
-                } else if (seen_awake) {
-                    c.awake = *seen_awake;
-                    c.quiet_rounds = 0;
-                } else if (c.awake != Awake::asleep) {
-                    // Asleep after 2 camp phases with no champion within 3: count rounds where the whole
-                    // threat area is visible and empty. Anything unseen there could be a champion.
-                    const bool fully_seen = disjoint(G.threat(), hidden());
-                    if (fully_seen && disjoint(G.threat(), champs())) {
-                        if (++c.quiet_rounds >= 2) c.awake = Awake::asleep;
-                    } else {
-                        c.quiet_rounds = 0;
-                    }
-                }
-
-                if (c.state == CampState::cleared) {
-                    if (disjoint(G.tiles(), hidden())) {
-                        std::uint32_t occupants = 0;
-                        if (!disjoint(G.tiles(), champs())) {
-                            for (const auto& b : allies)
-                                if (b.alive && (b.visible || b.is_self) && G.tiles().is_set(b.pos)) occupants |= 1u << b.index;
-                            for (const auto& b : enemies)
-                                if (b.alive && b.visible && G.tiles().is_set(b.pos)) occupants |= 1u << (16 + b.index);
-                        }
-                        const bool a = (occupants & 0xFFFF) != 0, e = (occupants >> 16) != 0;
-                        const std::optional<team> holder = a && !e ? std::optional{team::ally}
-                                                           : e && !a ? std::optional{team::enemy}
-                                                                     : std::nullopt;
-                        // Progress resets the moment the tiles empty or are contested, mid-turn included.
-                        // A hold seen last round by other occupants than now may have lapsed between
-                        // them; one that follows a contest or the other side's hold began once that
-                        // ended, which can be this round before our turn. Late costs a round, early
-                        // the capture.
-                        const std::uint32_t before = c.occupants;
-                        c.occupants = occupants;
-                        const std::uint32_t side_mask = holder == team::ally ? 0xFFFFu : 0xFFFF0000u;
-                        const bool watched = previous_round == round - 1 && previous == CampState::cleared;
-                        const bool handed_over = holder && holder == c.holder && watched && !(before & occupants & side_mask);
-                        if (handed_over) {
-                            c.held_since = std::max(c.held_since, hold_start(G, *holder, -1, false));
-                        } else if (holder && holder != c.holder && watched && (before & ~side_mask)) {
-                            c.holder = holder;
-                            c.held_since = round;
-                        } else if (holder != c.holder) {
-                            c.holder = holder;
-                            // A group not seen cleared was cleared no earlier than when last seen, or than
-                            // it returned.
-                            const int earliest = previous == CampState::cleared ? -1
-                                                 : previous == CampState::respawning
-                                                     ? std::max(previous_round + 1, previous_respawn)
-                                                     : std::max(previous_round, previous_respawn);
-                            c.held_since = holder ? hold_start(G, *holder, earliest, c.cleared_by_us >= previous_round) : -1;
-                        }
-                    }
-                } else {
-                    c.holder.reset();
-                    c.held_since = -1;
-                    c.occupants = 0;
-                }
-            });
+            guard("camp", [&] { update_camp(g, in_view, views); });
             const auto& c = camps[g];
             const bool pending = (c.state == CampState::cleared && c.holder) || c.state == CampState::respawning || c.awake == Awake::awake;
             camps_pending_[w] = pending ? camps_pending_[w] | bit : camps_pending_[w] & ~bit;
             camps_version += c.version != version;
             note_stirring(static_cast<int>(g));
         }
+    }
+}
+
+void World::update_camp(std::size_t g, bool in_view, CampViews& views) {
+    const auto& G = map().groups[g];
+    auto& c = camps[g];
+
+    if (!in_view) {
+        if (c.state == CampState::cleared && c.holder && round >= c.payout_round()) {
+            c.state = CampState::respawning;
+            ++c.version;
+            c.respawn_round = c.payout_round() + G.respawn;
+            c.holder.reset();
+        }
+        if (c.state == CampState::respawning && round >= c.respawn_round) {
+            c.state = CampState::alive;
+            restore(c, G, c.respawn_round - 1); // a new version
+        }
+        if (c.awake == Awake::awake && round - c.state_round > 2) c.awake = Awake::unknown;
+        return;
+    }
+
+    const auto [code, timer] = engine::group_state(G.handle);
+    const auto previous = c.state;
+    const int previous_round = c.state_round;
+    const int previous_respawn = c.respawn_round;
+    if (previous_round != round - 1) c.quiet_rounds = 0;
+    if (code == 1) c.state = CampState::alive;
+    else if (code == 2) c.state = CampState::cleared;
+    else if (code == 3) {
+        c.state = CampState::respawning;
+        c.respawn_round = round + timer;
+    }
+    c.version += c.state != previous;
+    c.state_round = round;
+    // Not alive when last seen: it returned at full health after that, and after its timer.
+    if (c.state == CampState::alive && previous != CampState::alive)
+        restore(c, G, std::max(previous_round, previous_respawn - 1));
+
+    // Member health; a visible camp tile with no live camp on it is a dead member. Any drop,
+    // a kill included, is damage, which wakes the group, but if the health is older than a
+    // sleep it may have fallen asleep again since. A visible live member shows the group's
+    // wakefulness outright.
+    std::optional<Awake> seen_awake;
+    for (std::size_t i = 0; i < G.members.size(); ++i) {
+        const auto& m = G.members[i];
+        if (!visible.is_set(m.pos)) continue;
+        const float hp = engine::camp_health(m.handle).value_or(0.0f);
+        if (hp < c.health[i] - 1e-3f) {
+            c.quiet_rounds = 0;
+            if (round - c.health_round[i] < cambc::constants::camp_sleep_time) {
+                c.last_damaged_round = round;
+                c.awake = Awake::awake;
+            } else if (c.awake == Awake::asleep) {
+                c.awake = Awake::unknown;
+            }
+        }
+        c.version += hp != c.health[i];
+        c.health[i] = hp;
+        c.health_round[i] = round;
+        if (hp > 0 && !seen_awake && c.state == CampState::alive) seen_awake = engine::camp_awake(m.handle);
+    }
+
+    if (c.state != CampState::alive) {
+        c.awake = Awake::asleep;
+    } else if (seen_awake) {
+        c.awake = *seen_awake;
+        c.quiet_rounds = 0;
+    } else if (c.awake != Awake::asleep) {
+        // Asleep after 2 camp phases with no champion within 3: count rounds where the whole
+        // threat area is visible and empty. Anything unseen there could be a champion.
+        const bool fully_seen = disjoint(G.threat(), views.hidden());
+        if (fully_seen && disjoint(G.threat(), views.champs())) {
+            if (++c.quiet_rounds >= 2) c.awake = Awake::asleep;
+        } else {
+            c.quiet_rounds = 0;
+        }
+    }
+
+    if (c.state == CampState::cleared) {
+        if (disjoint(G.tiles(), views.hidden())) {
+            std::uint32_t occupants = 0;
+            if (!disjoint(G.tiles(), views.champs())) {
+                for (const auto& b : allies)
+                    if (b.alive && (b.visible || b.is_self) && G.tiles().is_set(b.pos)) occupants |= 1u << b.index;
+                for (const auto& b : enemies)
+                    if (b.alive && b.visible && G.tiles().is_set(b.pos)) occupants |= 1u << (16 + b.index);
+            }
+            const bool a = (occupants & 0xFFFF) != 0, e = (occupants >> 16) != 0;
+            const std::optional<team> holder = a && !e ? std::optional{team::ally}
+                                               : e && !a ? std::optional{team::enemy}
+                                                         : std::nullopt;
+            // Progress resets the moment the tiles empty or are contested, mid-turn included.
+            // A hold seen last round by other occupants than now may have lapsed between
+            // them; one that follows a contest or the other side's hold began once that
+            // ended, which can be this round before our turn. Late costs a round, early
+            // the capture.
+            const std::uint32_t before = c.occupants;
+            c.occupants = occupants;
+            const std::uint32_t side_mask = holder == team::ally ? 0xFFFFu : 0xFFFF0000u;
+            const bool watched = previous_round == round - 1 && previous == CampState::cleared;
+            const bool handed_over = holder && holder == c.holder && watched && !(before & occupants & side_mask);
+            if (handed_over) {
+                c.held_since = std::max(c.held_since, hold_start(G, *holder, -1, false));
+            } else if (holder && holder != c.holder && watched && (before & ~side_mask)) {
+                c.holder = holder;
+                c.held_since = round;
+            } else if (holder != c.holder) {
+                c.holder = holder;
+                // A group not seen cleared was cleared no earlier than when last seen, or than
+                // it returned.
+                const int earliest = previous == CampState::cleared ? -1
+                                     : previous == CampState::respawning
+                                         ? std::max(previous_round + 1, previous_respawn)
+                                         : std::max(previous_round, previous_respawn);
+                c.held_since = holder ? hold_start(G, *holder, earliest, c.cleared_by_us >= previous_round) : -1;
+            }
+        }
+    } else {
+        c.holder.reset();
+        c.held_since = -1;
+        c.occupants = 0;
     }
 }
 

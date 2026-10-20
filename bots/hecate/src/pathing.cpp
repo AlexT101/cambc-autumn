@@ -116,9 +116,10 @@ std::uint64_t Pathing::approach_cost(int group, int range) {
 }
 
 const Field* Pathing::prepare_approach(int group, int range, std::uint64_t fuel_floor) {
+    if (approach_ready(group, range)) return &approach_slot(group, range)->field;
     // With no distance known, the search may run to width + height layers.
     const auto cost = approach_steps(group, range) >= 0 ? approach_cost(group, range) : max_approach_cost();
-    if (!approach_ready(group, range) && !fuel_ok(fuel_floor + cost)) return nullptr;
+    if (!fuel_ok(fuel_floor + cost)) return nullptr;
     return approach(group, range);
 }
 

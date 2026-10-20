@@ -421,6 +421,8 @@ private:
     // Every change to `possible` but growth goes to `undashed` too.
     static void also_undashed(ChampionBelief& b, const bitboard& tiles);
     void update_camps();
+    struct CampViews;
+    void update_camp(std::size_t g, bool in_view, CampViews& views);
     int hold_start(const CampGroup& G, team holder, int earliest, bool cleared_by_us) const;
     void update_altars();
     std::uint32_t tributing_enemies() const; // bit i: enemies[i] is believed to be tributing
