@@ -102,9 +102,9 @@ void buy_lock() {
 
 bool carries_crystal() { return cambc::self().consumables()[cambc::consumable_type::tp_crystal].count() > 0; }
 
-// Where an altar is reached only by a teleport crystal (StaticMap::hops), every champion carries one.
-void buy_crystal(const World& world) {
-    if (world.map().hops.empty()) return;
+// Once a hop to an altar only a crystal reaches (StaticMap::hops) would have beaten walking to bank.
+void buy_crystal(const Memory& memory) {
+    if (!memory.wants_crystal) return;
     auto& me = cambc::self();
     try {
         if (me.can_buy(cambc::consumable_type::tp_crystal)) me.buy(cambc::consumable_type::tp_crystal);
@@ -434,7 +434,7 @@ bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& m
 
 const bitboard* pack_zone(const World& world);
 
-// The quickest bank by a crystal (StaticMap::hops) while we carry one and stand on foot: the walk to
+// The quickest bank by a crystal (StaticMap::hops) from where we stand on foot: the walk to
 // a source, the channel, the walk from the nearest landing and the recall out, as no walk leaves the
 // pocket. Locked and avoided altars are skipped.
 struct HopRoute {
@@ -445,7 +445,7 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory) {
     HopRoute best;
     const auto& map = world.map();
     const vec2 here = my_position();
-    if (map.hops.empty() || !test(map.foot, here) || !carries_crystal()) return best;
+    if (map.hops.empty() || !test(map.foot, here)) return best;
     for (int h = 0; h < static_cast<int>(map.hops.size()); ++h) {
         const int a = map.hops[h].altar;
         if (world.altars[a].enemy_lock || (a == memory.avoid_altar && world.round < memory.avoid_until)) continue;
@@ -496,6 +496,7 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
     // One cached field covers every altar; per-altar fields are needed only to skip locked ones.
     // Breaking a lock takes a turn per hit left, about a step each.
     int best = -1, best_steps = unreachable;
+    const bool skipping = any_locked;
     if (any_locked) {
         for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
             if (avoided(a)) continue;
@@ -507,10 +508,14 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
         }
         any_locked = best >= 0;
     }
-    if (const auto hop = hop_route(world, pathing, memory);
-        hop.hop >= 0 && hop.steps < (any_locked ? best_steps : pathing.to_any_altar().at(here))) {
-        take_hop(world, pathing, safety, hop.hop);
-        return;
+    // Every altar a walk reaches avoided: only a hop is left.
+    const int walk_steps = any_locked ? best_steps : skipping ? unreachable : pathing.to_any_altar().at(here);
+    if (const auto hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
+        memory.wants_crystal = true;
+        if (carries_crystal()) {
+            take_hop(world, pathing, safety, hop.hop);
+            return;
+        }
     }
     const Field& field = any_locked ? pathing.to_altar(best) : pathing.to_any_altar();
     if (dash_towards(world, pathing, field) && submit_here(world, pathing, safety, memory)) return;
@@ -2987,7 +2992,7 @@ void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& mem
             if (memory.wait_altar != at) memory.wait_altar = at, memory.wait_since = world.round;
             // How long they stay is unknown: wait as many rounds as the walk to the nearest other
             // unlocked altar takes, then walk there.
-            int other_steps = hop_route(world, pathing, memory).steps;
+            int other_steps = carries_crystal() ? hop_route(world, pathing, memory).steps : unreachable;
             for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
                 if (a == at || world.altars[a].enemy_lock || dist(here, altars[a].pos) - 1 >= other_steps) continue;
                 other_steps = std::min<int>(other_steps, pathing.to_altar(a).at(here));
@@ -3031,7 +3036,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         memory.claim = -1;
         buy_shards(world); // the dead can only shop
         buy_lock();
-        buy_crystal(world);
+        buy_crystal(memory);
         return;
     }
     // One state read covers the channels until one is cancelled; a channel excludes the others.
@@ -3045,7 +3050,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     // Shopping, heals and shields do not move us.
     const bool on_spawn = test(world.map().ally_spawn, my_position());
     if ((on_spawn || world.me().facts().passive == Passive::remote_shop) && buy_shards(world)) home.reset();
-    if (on_spawn) buy_lock(), buy_crystal(world);
+    if (on_spawn) buy_lock(), buy_crystal(memory);
     if (!world.me().can_act(world.round)) return;
     if (const auto* ender = game_ender(world)) {
         stop_game_ender(world, pathing, memory, *ender);
