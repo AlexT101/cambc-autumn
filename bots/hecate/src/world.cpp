@@ -1221,11 +1221,12 @@ struct World::CampViews {
     group_visible_.assign(words, 0);
     static bitboard seen{cambc::uninitialized};
     and_into(visible, s.camp_tiles, seen);
+    auto* const visible_bits = group_visible_.data();
     for (auto p : Tiles<17 * 17 + 13 * 13>{seen}) {
         const int g = s.group_at(p);
-        group_visible_[g >> 6] |= std::uint64_t{1} << (g & 63);
+        visible_bits[g >> 6] |= std::uint64_t{1} << (g & 63);
     }
-    const auto& group_visible = group_visible_;
+    const auto* group_visible = group_visible_.data();
     CampViews views{*this};
 
     camps_pending_.resize(words);
@@ -1294,23 +1295,37 @@ struct World::CampViews {
     // sleep it may have fallen asleep again since. A visible live member shows the group's
     // wakefulness outright.
     std::optional<Awake> seen_awake;
-    for (std::size_t i = 0; i < G.members.size(); ++i) {
-        const auto& m = G.members[i];
-        if (!test(visible, m.pos)) continue;
-        const float hp = engine::camp_health(m.handle).value_or(0.0f);
-        if (hp < c.health[i] - 1e-3f) {
-            c.quiet_rounds = 0;
-            if (round - c.health_round[i] < cambc::constants::camp_sleep_time) {
-                c.last_damaged_round = round;
-                c.awake = Awake::awake;
-            } else if (c.awake == Awake::asleep) {
-                c.awake = Awake::unknown;
+    {
+        const int now = round;
+        const bool alive = c.state == CampState::alive;
+        float* health = c.health.data();
+        int* health_round = c.health_round.data();
+        const CampMember* members = G.members.data();
+        const std::size_t n = G.members.size();
+        Awake awake = c.awake;
+        int quiet_rounds = c.quiet_rounds;
+        std::uint32_t version = c.version;
+        for (std::size_t i = 0; i < n; ++i) {
+            const auto& m = members[i];
+            if (!test(visible, m.pos)) continue;
+            const float hp = engine::camp_health(m.handle).value_or(0.0f);
+            if (hp < health[i] - 1e-3f) {
+                quiet_rounds = 0;
+                if (now - health_round[i] < cambc::constants::camp_sleep_time) {
+                    c.last_damaged_round = now;
+                    awake = Awake::awake;
+                } else if (awake == Awake::asleep) {
+                    awake = Awake::unknown;
+                }
             }
+            version += hp != health[i];
+            health[i] = hp;
+            health_round[i] = now;
+            if (hp > 0 && !seen_awake && alive) seen_awake = engine::camp_awake(m.handle);
         }
-        c.version += hp != c.health[i];
-        c.health[i] = hp;
-        c.health_round[i] = round;
-        if (hp > 0 && !seen_awake && c.state == CampState::alive) seen_awake = engine::camp_awake(m.handle);
+        c.awake = awake;
+        c.quiet_rounds = quiet_rounds;
+        c.version = version;
     }
 
     if (c.state != CampState::alive) {
