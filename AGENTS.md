@@ -15,8 +15,7 @@ The bots are **C++ only**. Each bot's draft is a fixed preference order compiled
 
 | Bot | Built from | Role |
 |---|---|---|
-| [aphelios](bots/aphelios/) | starter | first bot; sparring partner |
-| [morgana](bots/morgana/) | aphelios | out-farms rather than out-fights: one-price farm valuation, crews, capture recalls |
+| [morgana](bots/morgana/) | aphelios (removed; in git history) | out-farms rather than out-fights: one-price farm valuation, crews, capture recalls |
 | [rival](bots/rival/) | morgana-v5 | plays like the top five ladder teams: gold camps, team sieges of Monoliths and big shared groups, retreats only when hurt or carrying |
 | [nemesis](bots/nemesis/) | rival | rival plus fixes from top-team replays and turn audits |
 | [hecate](bots/hecate/) | nemesis 2dba924 | the bot we work on, strongest locally; shipped changes in [research/hecate/CHANGES.md](research/hecate/CHANGES.md), direction and open work in [research/hecate/TODO.md](research/hecate/TODO.md) |
@@ -67,7 +66,7 @@ py tools/variants/matrix.py --focus --cols nemesis@      # each champion first p
 py tools/variants/matrix.py --resume replays/matrix-TIMESTAMP # finish unfinished pairs (--report: rewrite reports only)
 ```
 
-Rows use `--bot` (default aphelios), columns default to the row drafts on `--vs-bot`; run_batched options pass through. Identical row and column entries play mirror matches, reported as team A's win rate: with both sides played, each map should go to the same team twice.
+Rows use `--bot` (default hecate), columns default to the row drafts on `--vs-bot`; run_batched options pass through. Identical row and column entries play mirror matches, reported as team A's win rate: with both sides played, each map should go to the same team twice.
 
 ## Fuel
 
@@ -116,7 +115,7 @@ node tools/replay/extract.mjs replays/ladder replays/batch-TIMESTAMP   # skips g
 node tools/replay/extract.mjs --update-engine                          # refresh engine/ from `cambc view` after a cambc update
 ```
 
-[tools/replay/analyze.py](tools/replay/analyze.py) turns them into Markdown reports and CSVs under `replays/.analysis/reports/<timestamp>/` (tempo, fights, audits, draft, economy (camp DPS, camp damage, time budget, captures, bags), a camp table, and a gap report for `--team` against `--vs`; `--reports economy,camps` for a quick subset): `py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team aphelios`.
+[tools/replay/analyze.py](tools/replay/analyze.py) turns them into Markdown reports and CSVs under `replays/.analysis/reports/<timestamp>/` (tempo, fights, audits, draft, economy (camp DPS, camp damage, time budget, captures, bags), a camp table, and a gap report for `--team` against `--vs`; `--reports economy,camps` for a quick subset): `py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team hecate`.
 
 [tools/replay/ab_compare.py](tools/replay/ab_compare.py) compares the two bots of a local A/B within the same games (captures, gems, camp damage, deaths, clear-to-hold latency): `py tools/replay/ab_compare.py <variant name> batch-A batch-B batch-C`, after extracting the batches.
 

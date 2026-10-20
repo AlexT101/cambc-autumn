@@ -1,6 +1,6 @@
-"""Audit aphelios' world beliefs against replay ground truth.
+"""Audit a bot's world beliefs against replay ground truth.
 
-Build the bot with `debug_beliefs = true` (bots/aphelios/src/util.h); each champion then prints a
+Build the bot with `debug_beliefs = true` (bots/<bot>/src/util.h); each champion then prints a
 "BD" line every `debug_beliefs_period` rounds (and in rounds 1-3), which local replays keep in
 team-a.stdout / team-b.stdout inside the .repl26a zip. Extract the replays first, then audit:
 

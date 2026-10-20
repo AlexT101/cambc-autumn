@@ -126,7 +126,7 @@ Offline reports over the extracted tables: Markdown plus CSVs, no viewer. Python
 
 ```
 py tools/replay/analyze.py                                    # ladder (replays/ladder), default reports
-py tools/replay/analyze.py replays/batch-X --vs replays/ladder --team aphelios   # adds the gap report
+py tools/replay/analyze.py replays/batch-X --vs replays/ladder --team hecate   # adds the gap report
 py tools/replay/analyze.py [SOURCES...] [--vs SOURCES...] [--team NAME] [--map NAME] [--since ISO] [--out DIR] [--reports tempo,fights,audits,draft,economy,camps,gap,sensitivity] [--threads N]
 ```
 
@@ -159,10 +159,10 @@ For ad-hoc scripts, `tools/replay/analysis/data.py` has the loaders: `resolve(so
 
 ## Belief audit (audit_beliefs.py)
 
-Checks aphelios' world beliefs against the replay's ground truth. Build the bot with `debug_beliefs = true` in `bots/aphelios/src/util.h`; each champion then prints a `BD` line (varint-encoded, with every unseen enemy's `possible` set as raw 8x8 chunks) in rounds 1-3 and every `debug_beliefs_period` rounds, kept in `team-a.stdout` / `team-b.stdout` inside local `.repl26a` zips. The dump costs about 5-20k fuel (it skips itself below 25k left) and limits itself to a share of the team's 1 MiB of output.
+Checks a bot's world beliefs against the replay's ground truth. Build the bot with `debug_beliefs = true` in `bots/<bot>/src/util.h`; each champion then prints a `BD` line (varint-encoded, with every unseen enemy's `possible` set as raw 8x8 chunks) in rounds 1-3 and every `debug_beliefs_period` rounds, kept in `team-a.stdout` / `team-b.stdout` inside local `.repl26a` zips. The dump costs about 5-20k fuel (it skips itself below 25k left) and limits itself to a share of the team's 1 MiB of output.
 
 ```
-py run_batched.py aphelios <opponent>                  # with the flag on
+py run_batched.py <bot> <opponent>                     # with the flag on
 node tools/replay/extract.mjs replays/batch-X
 py tools/replay/audit_beliefs.py replays/batch-X [--examples 8] [--out report.md]
 ```
@@ -171,4 +171,4 @@ Beliefs (dumped at the end of the turn) are compared with the truth at the start
 
 ## Fight calibration (fight_calibration.py)
 
-Checks aphelios' fight predictions (`Safety::fight`) against outcomes. Build the bot with `debug_fights = true` in `bots/aphelios/src/util.h`; each champion then prints an `FF` line for every turn that starts in reach of a credible enemy and an `FC` line per chase, with the turn's branch, the prediction and the enemies in reach. Play a batch with replays, extract it, then `py tools/replay/fight_calibration.py replays/batch-X`: death rates within 10 rounds by branch and prediction, by our share of the pooled health, and our deaths by the last prediction before them. Logging shifts fuel use, so games diverge from an unlogged build; compare logged builds with each other.
+Checks a bot's fight predictions (`Safety::fight`) against outcomes. Build the bot with `debug_fights = true` in `bots/<bot>/src/util.h`; each champion then prints an `FF` line for every turn that starts in reach of a credible enemy and an `FC` line per chase, with the turn's branch, the prediction and the enemies in reach. Play a batch with replays, extract it, then `py tools/replay/fight_calibration.py replays/batch-X`: death rates within 10 rounds by branch and prediction, by our share of the pooled health, and our deaths by the last prediction before them. Logging shifts fuel use, so games diverge from an unlogged build; compare logged builds with each other.
