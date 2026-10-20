@@ -375,15 +375,16 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     origin_at = me;
     // Goals on walls are no roots; with none left we stay unreachable.
     field.compute_to(walls, goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
-    const int here = field.get(me);
+    const int here = steps_at(field, me);
     if (here == unreachable) return r;
     r.steps = here;
     // As distance_field::next_moves_from, without its vector: the nearest neighbours, north first.
     std::array<std::uint16_t, 8> around{};
     std::uint16_t best = unreachable;
+    const bool inside = me.x > 0 && me.y > 0 && me.x < map().width - 1 && me.y < map().height - 1;
     for (int i = 0; i < 8; ++i) {
         const vec2 p = me + directions[i];
-        around[i] = in_bounds(p) ? field.get(p) : unreachable;
+        around[i] = inside || in_bounds(p) ? static_cast<std::uint16_t>(steps_at(field, p)) : unreachable;
         best = std::min(best, around[i]);
     }
     if (best < here)

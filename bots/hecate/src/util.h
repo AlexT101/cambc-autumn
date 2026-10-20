@@ -238,15 +238,17 @@ inline const bitboard& live_camp_tiles() {
 
 inline constexpr std::uint16_t unreachable = cambc::distance_field::unreachable;
 
+// field.get(p) without check()'s call and a stack slot.
+[[gnu::always_inline]] inline int steps_at(const cambc::distance_field& field, vec2 p) {
+    static std::uint16_t result;
+    ok(cambc::detail::sdk_DistanceField_Get(field.ptr(), p.x, p.y, &result));
+    return result;
+}
+
 struct Field {
     cambc::distance_field steps;
     bitboard goals;
-    // `unreachable` if cut off. steps.get(p) without check()'s call and a stack slot.
-    int at(vec2 p) const {
-        static std::uint16_t result;
-        ok(cambc::detail::sdk_DistanceField_Get(steps.ptr(), p.x, p.y, &result));
-        return result;
-    }
+    int at(vec2 p) const { return steps_at(steps, p); } // `unreachable` if cut off
 };
 
 // A host search costs about 1.5k + (20 + layers) per 8x8 chunk of the map.
