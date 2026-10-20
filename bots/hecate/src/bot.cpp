@@ -1642,7 +1642,7 @@ PackZone& pack_boxes(const World& world) {
             vec2 pos;
             float health, damage;
         };
-        std::array<Member, 8> members{};
+        std::array<Member, 8> members;
         int n = 0;
         for (const auto& e : world.enemies)
             if (n < static_cast<int>(members.size()) && e.alive && e.age(world.round) <= 1 && !map.near_enemy_spawn.is_set(e.pos))
@@ -1663,7 +1663,7 @@ PackZone& pack_boxes(const World& world) {
             const float healthy = home ? params::home_retreat_ratio : params::retreat_ratio;
             const float ours = (hurt ? std::min(healthy, params::hurt_retreat_ratio) : healthy) * our_health * our_damage;
             // Only minimal outmatching subsets: a superset's tiles lie within its subsets'.
-            std::array<unsigned, 32> minimal{};
+            std::array<unsigned, 32> minimal;
             int m = 0;
             const int r = pack_radius;
             // By mask, each built from the mask without its highest member, so that sums add the
@@ -1720,6 +1720,25 @@ bool in_pack_zone(const World& world, vec2 p) {
     return false;
 }
 
+// Adds the tiles of a box inside the map as a few squares: a host square costs about what a
+// single tile does, a whole-board operation far more.
+void draw_box(bitboard& b, int x0, int x1, int y0, int y1) {
+    const int side = std::min(x1 - x0, y1 - y0) / 2 * 2 + 1;
+    if (side == 1) {
+        for (int y = y0; y <= y1; ++y)
+            for (int x = x0; x <= x1; ++x) b.set({x, y});
+        return;
+    }
+    const int r = side / 2;
+    for (int cy = y0 + r;; cy = std::min(cy + side, y1 - r)) {
+        for (int cx = x0 + r;; cx = std::min(cx + side, x1 - r)) {
+            b.draw_chebyshev({cx, cy}, static_cast<float>(r));
+            if (cx == x1 - r) break;
+        }
+        if (cy == y1 - r) break;
+    }
+}
+
 const bitboard* pack_zone(const World& world) {
     static bitboard zone;
     auto& pz = pack_boxes(world);
@@ -1727,18 +1746,11 @@ const bitboard* pack_zone(const World& world) {
     if (!pz.drawn) {
         pz.drawn = true;
         zone.clear();
-        // The members' squares meet in the box, as do the two squares around the largest and the
-        // smallest member coordinates: (x0 + r, y0 + r) and (x1 - r, y1 - r).
-        static bitboard tiles{cambc::uninitialized}, other{cambc::uninitialized};
-        const int r = pack_radius;
+        const int width = world.map().width, height = world.map().height;
         for (int i = 0; i < pz.boxes; ++i) {
             const auto& b = pz.box[i];
-            tiles.clear();
-            tiles.draw_chebyshev({b.x0 + r, b.y0 + r}, static_cast<float>(r));
-            other.clear();
-            other.draw_chebyshev({b.x1 - r, b.y1 - r}, static_cast<float>(r));
-            tiles &= other;
-            zone |= tiles;
+            const int x0 = std::max(b.x0, 0), x1 = std::min(b.x1, width - 1), y0 = std::max(b.y0, 0), y1 = std::min(b.y1, height - 1);
+            if (x0 <= x1 && y0 <= y1) draw_box(zone, x0, x1, y0, y1);
         }
     }
     return &zone;
