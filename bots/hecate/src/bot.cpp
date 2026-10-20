@@ -522,8 +522,9 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
         int count = 0, next = 0;
         std::array<float, 4> strength{}, reflect{}, damage{}, rounds{};
     };
-    static std::vector<Slots> cache;
-    if (cache.size() <= static_cast<std::size_t>(g)) cache.resize(std::max(world.map().groups.size(), static_cast<std::size_t>(g) + 1));
+    // Static storage starts filled for free, where a vector pays to fill its slots.
+    static std::array<Slots, 256> cache;
+    if (static_cast<std::size_t>(g) >= cache.size()) return min_camp_damage(group, belief, strength, rounds, reflect);
     auto& c = cache[g];
     if (c.version != belief.version) {
         c.version = belief.version;
@@ -547,9 +548,12 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
 // A group's weight by its side of the map: 1 in our half, falling towards the enemy spawn. Kept
 // per group.
 float home_ground(const StaticMap& map, int g) {
-    static std::vector<float> cache; // -1 until read
-    if (cache.size() != map.groups.size()) cache.assign(map.groups.size(), -1.0f);
-    auto& weight = cache[g];
+    struct Kept {
+        float weight = -1; // until read
+    };
+    static std::array<Kept, 256> cache;
+    float uncached = -1;
+    auto& weight = static_cast<std::size_t>(g) < cache.size() ? cache[g].weight : uncached;
     if (weight < 0) {
         const int from_us = map.ally_steps(g);
         const int from_them = map.enemy_steps(g);
@@ -578,9 +582,12 @@ float basic_output(const ChampionBelief& c) {
 // Bit i: member i deals no damage and a basic attack of `range` reaches it from a tile more than 3
 // from every member that does. Static, so kept per group.
 std::uint32_t safe_targets(const StaticMap& map, int g, int range) {
-    static std::vector<std::array<std::int64_t, 2>> cache; // -1 until read
-    if (cache.size() != map.groups.size()) cache.assign(map.groups.size(), {-1, -1});
-    auto& bits = cache[g][range > 1];
+    struct Kept {
+        std::array<std::int64_t, 2> bits{-1, -1}; // until read
+    };
+    static std::array<Kept, 256> cache;
+    std::int64_t uncached = -1;
+    auto& bits = static_cast<std::size_t>(g) < cache.size() ? cache[g].bits[range > 1] : uncached;
     if (bits < 0) {
         bits = 0;
         const auto& members = map.groups[g].members;
@@ -628,9 +635,9 @@ float spell_clear_rounds(const World& world, int g, int range, float spells, flo
         int range = 0;
         float spells = 0, basic = 0, rounds = 0;
     };
-    static std::vector<Kept> kept;
-    if (kept.size() <= static_cast<std::size_t>(g)) kept.resize(world.map().groups.size());
-    auto& k = kept[g];
+    static std::array<Kept, 256> kept;
+    Kept uncached;
+    auto& k = static_cast<std::size_t>(g) < kept.size() ? kept[g] : uncached;
     const auto& belief = world.camps[g];
     if (k.version != belief.version || k.range != range || k.spells != spells || k.basic != basic)
         k = {belief.version, range, spells, basic, spell_clear_rounds(world.map(), g, belief, range, spells, basic)};
@@ -644,9 +651,9 @@ float fastest_clear(const World& world, int g, float strength) {
         std::uint32_t version = ~0u;
         float strength = 0, rounds = 0;
     };
-    static std::vector<Kept> kept;
-    if (kept.size() <= static_cast<std::size_t>(g)) kept.resize(world.map().groups.size());
-    auto& k = kept[g];
+    static std::array<Kept, 256> kept;
+    Kept uncached;
+    auto& k = static_cast<std::size_t>(g) < kept.size() ? kept[g] : uncached;
     const auto& belief = world.camps[g];
     if (k.version == belief.version && k.strength == strength) return k.rounds;
     const auto& members = world.map().groups[g].members;
@@ -1206,8 +1213,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         std::uint32_t clearing = 0, clear_version = ~0u;
         float damage = 0, rounds = 0, kite = -1;
     };
-    static std::vector<GroupFacts> group_facts;
-    if (static_cast<int>(group_facts.size()) != n_groups) group_facts.assign(n_groups, {});
+    static std::array<GroupFacts, 256> few_facts;
+    static std::vector<GroupFacts> many_facts;
+    if (n_groups > static_cast<int>(few_facts.size()) && static_cast<int>(many_facts.size()) != n_groups) many_facts.assign(n_groups, {});
+    GroupFacts* const group_facts = n_groups > static_cast<int>(few_facts.size()) ? many_facts.data() : few_facts.data();
     struct Context {
         int bag, short_by, farm_group, spawn_to_altar, recall;
         float per_gold, strength;

@@ -44,7 +44,7 @@ struct Instance {
         run("draft fallback", [&] { aph::ensure_picked(draft); });
     }
 
-    void play_turn() {
+    [[gnu::flatten]] void play_turn() {
         aph::FuelMeter meter{"turn"};
         const bool updated = run("world", [&] {
             if (!world) world = std::make_unique<aph::World>();

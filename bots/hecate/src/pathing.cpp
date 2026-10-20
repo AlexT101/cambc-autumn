@@ -392,7 +392,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     return r;
 }
 
-bool Pathing::try_move(vec2 tile) {
+[[gnu::flatten]] bool Pathing::try_move(vec2 tile) {
     if (guard_ && guard_->is_set(tile)) return false;
     try {
         if (cambc::self().move_absolute(tile)) {
