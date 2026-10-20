@@ -30,7 +30,7 @@ inline constexpr int rally_radius = 12;
 inline constexpr int help_radius = 8;
 
 // Chain another capture onto a bag (Cassi's and Issac's together) only below this.
-inline constexpr int chain_bag_limit = 80;
+inline constexpr int chain_bag_limit = 30;
 
 // Early retreat (outmatched): enemies within two steps of their reach against allies this near;
 // leave when their health times damage beats ours by this ratio. Above half health and carrying
@@ -38,7 +38,7 @@ inline constexpr int chain_bag_limit = 80;
 inline constexpr int pack_ally_radius = 5;
 inline constexpr float retreat_ratio = 100.0f;
 inline constexpr float hurt_retreat_ratio = 2.5f;
-inline constexpr int brake_bag = 30;
+inline constexpr int brake_bag = 11;
 // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
 inline constexpr float home_retreat_ratio = 2.0f;
 // Leave before contact when the visible enemies within this many steps of their reach would win
@@ -70,10 +70,10 @@ inline constexpr int siege_respawn_wait = 30;
 // Wait just out of reach until this share of the team's output has come, at most this long.
 inline constexpr float siege_gather_share = 0.6f;
 inline constexpr int siege_max_wait = 20;
-// Big groups (a shared block of elk and gem clusters) go the same way: at least this many gems,
-// cleared within this many rounds, waited for through a respawn this long, split over this many
-// holders.
-inline constexpr int big_gems = 150;
+// Big groups (a shared block of elk and gem clusters; stampede's six elk and six gem clusters pay 132)
+// go the same way: at least this many gems, cleared within this many rounds, waited for through a
+// respawn this long, split over this many holders.
+inline constexpr int big_gems = 55;
 inline constexpr int big_rounds = 50;
 inline constexpr int big_respawn_wait = 60;
 inline constexpr int big_holders = 3;

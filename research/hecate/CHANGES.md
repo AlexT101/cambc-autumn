@@ -146,4 +146,14 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
      the engine at start-up instead, it played identically but cost ~11k fuel in round 1 and ~110 a turn (+0.4%), all
      from lost constant folding (a mutable copy of the constexpr table costs the same), so it stays compiled in.
    - world.cpp: the camp-design cache grows to fit the camp type (it had 5 slots; golem is type 5 and wrote past it).
-   - draft.cpp: Heart of Ruin is in the fallback order. No other behaviour change: camp reach is still 3 everywhere.
+   - draft.cpp: Heart of Ruin is in the fallback order.
+23. 2026-10-20 (not yet submitted). Camp reach from the camp designs (wolf 3, elk and golem 4, monolith 5) instead of 3
+   for every monster: CampMember::reach, CampGroup::reach and StaticMap::max_camp_reach feed threat(), Safety's camp
+   members, wake risk, camp stun value, dash threats, the shield trigger, spell clears (none while an attacker reaches
+   as far as our spells), kiting, siege staging (group reach + 2) and its low-health rule, and the camp exit search.
+   54.3% vs hecate-v7 (398 games: ladder 57.1, gen 51.9, central 59.8).
+24. 2026-10-20 (not yet submitted). Gem limits rescaled to the new rewards by stampede's block (360 -> 132 gems):
+   big_gems 150 -> 55 (no ladder group reached 150, which turned the big-group and shared-gem code off; 55 keeps the
+   old big/not-big split of every ladder group but one), chain_bag_limit 80 -> 30, brake_bag 30 -> 11. 52.8% vs 23
+   (ladder 42.9, gen 56.1, central 47.8), 52.3% on a fresh suite (seed 7101). gem_value 15 -> 40 on top: 50.8%;
+   life_value 300 -> 400: no game changed.

@@ -28,7 +28,6 @@ constexpr int endgame_horizon = 400; // rounds left before the endgame checks st
 constexpr int endgame_margin = 20;   // rounds to spare on the last trip to an altar
 constexpr int endgame_shop_rounds = 100; // no shop trips this late: spent gold scores nothing
 constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
-constexpr int siege_stage_radius = camp_attack_range + 2; // just out of a camp's reach
 
 // The turn's branch, for debug_fights: Chase, Attack, Retreat, Farm, Bank, Wait at an altar,
 // Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, Shopping trip,
@@ -600,8 +599,8 @@ float basic_output(const ChampionBelief& c) {
     return c.strength * (c.facts().has_attack_reset() ? 1.0f + 1.0f / static_cast<float>(ability_cooldown) : 1.0f);
 }
 
-// Bit i: member i deals no damage and a basic attack of `range` reaches it from a tile more than 3
-// from every member that does. Static, so kept per group.
+// Bit i: member i deals no damage and a basic attack of `range` reaches it from a tile out of the
+// reach of every member that does. Static, so kept per group.
 std::uint32_t safe_targets(const StaticMap& map, int g, int range) {
     struct Kept {
         std::array<std::int64_t, 2> bits{-1, -1}; // until read
@@ -618,7 +617,7 @@ std::uint32_t safe_targets(const StaticMap& map, int g, int range) {
             static bitboard open{cambc::uninitialized}, reach{cambc::uninitialized};
             reach.clear();
             for (const auto& m : members)
-                if (m.strength > 0) reach.draw_chebyshev(m.pos, camp_attack_range);
+                if (m.strength > 0) reach.draw_chebyshev(m.pos, m.reach);
             or_into(map.standable, reach, open);
             open ^= reach; // standable & ~reach
             for (std::size_t i = 0; i < members.size() && i < 32; ++i)
@@ -630,7 +629,7 @@ std::uint32_t safe_targets(const StaticMap& map, int g, int range) {
 
 // Rounds to clear a group alone without taking a hit: damage spells from 4 on the members that
 // attack, basic attacks on the others from out of the attackers' range, or once they are dead.
-// Negative if no spell can reach an attacker. `spells` and `basic`: our spell_output and
+// Negative if no spell can reach an attacker, or one reaches as far as our spells. `spells` and `basic`: our spell_output and
 // basic_output (at least 1), with `range` our attack range.
 float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, int range, float spells, float basic) {
     if (spells <= 0) return -1;
@@ -641,6 +640,7 @@ float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, 
     for (std::size_t i = 0; i < members.size(); ++i) {
         const float hp = fresh ? members[i].max_health : belief.health[i];
         if (hp <= 0) continue;
+        if (members[i].strength > 0 && members[i].reach >= ability_range) return -1;
         if (members[i].strength > 0) attackers += hp;
         else if (i < 32 && (safe >> i & 1)) reachable += hp;
         else rest += hp;
@@ -971,7 +971,7 @@ bool spell_clear(const World& world, Pathing& pathing, int g, const bitboard* zo
     for (std::size_t i = 0; i < G.members.size() && i < 32; ++i)
         if (c.health[i] > 0 && G.members[i].strength > 0) {
             attackers |= 1u << i;
-            reach.draw_chebyshev(G.members[i].pos, static_cast<float>(camp_attack_range));
+            reach.draw_chebyshev(G.members[i].pos, static_cast<float>(G.members[i].reach));
         }
     if (!attackers) return false;
     if (!pathing.prepare_member_tiles(g, ability_range, attackers, end_reserve)) {
@@ -1831,17 +1831,18 @@ bool paying_soon(const World& world) {
 
 bool outmatched(const World& world) { return in_pack_zone(world, world.me().pos) && !paying_soon(world); }
 
-// Rounds of walking until no awake monster can pick us, at most 4.
+// Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
 int camp_exit_rounds(const World& world, Safety& safety, vec2 here) {
     const auto& open = world.map().standable;
-    for (int r = 1; r <= 3; ++r)
+    const int longest = world.map().max_camp_reach;
+    for (int r = 1; r <= longest; ++r)
         for (int dy = -r; dy <= r; ++dy)
             for (int dx = -r; dx <= r; ++dx) {
                 if (std::max(std::abs(dx), std::abs(dy)) != r) continue;
                 const vec2 p{here.x + dx, here.y + dy};
                 if (in_bounds(p) && test(open, p) && safety.camp_damage(p) <= 0) return r;
             }
-    return 4;
+    return longest + 1;
 }
 
 // Camps keep hitting while we walk out of their reach: leave while the health still covers that.
@@ -1851,8 +1852,8 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
     const float dps = safety.camp_damage(here);
     if (dps <= 0) return false;
     const auto exit_cost = [&](int rounds) { return dps * (1.5f * static_cast<float>(rounds) + 1.0f); };
-    // The exit takes 1 to 4 rounds: the bounds settle most cases without the search.
-    if (health > exit_cost(4)) return false;
+    // The exit takes 1 to max_camp_reach + 1 rounds: the bounds settle most cases without the search.
+    if (health > exit_cost(world.map().max_camp_reach + 1)) return false;
     if (health <= exit_cost(1)) return true;
     return health <= exit_cost(camp_exit_rounds(world, safety, here));
 }
@@ -2530,17 +2531,18 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     const auto& f = world.me().facts();
     const int range = f.attack_range();
     const bool fresh = c.state == CampState::respawning;
+    const int stage = G.reach + 2; // just out of the group's reach
 
     bool engaged = false;
     float staged = floored_output(world.me());
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible) continue;
         if (test(G.threat(), a.pos) && c.awake != Awake::asleep) engaged = true;
-        if (dist(a.pos, m) <= siege_stage_radius + 1) staged += floored_output(a);
+        if (dist(a.pos, m) <= stage + 1) staged += floored_output(a);
     }
     if (!fresh && test(G.threat(), here) && c.awake != Awake::asleep) engaged = true;
     if (!engaged && !fresh) {
-        if (memory.staged_since < 0 && d <= siege_stage_radius + 1) memory.staged_since = world.round;
+        if (memory.staged_since < 0 && d <= stage + 1) memory.staged_since = world.round;
         engaged = staged >= params::siege_gather_share * team_power(world)
                   || (memory.staged_since >= 0 && world.round - memory.staged_since >= params::siege_max_wait);
     }
@@ -2556,13 +2558,13 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     inner.clear();
     for (std::size_t i = 0; i < G.members.size(); ++i) {
         if (c.health[i] <= 0 && !fresh) continue;
-        if (G.members[i].strength > 0 && dist(here, G.members[i].pos) <= camp_attack_range) hit += G.members[i].strength;
+        if (G.members[i].strength > 0 && dist(here, G.members[i].pos) <= G.members[i].reach) hit += G.members[i].strength;
         if (range > 1) inner.draw_chebyshev(G.members[i].pos, static_cast<float>(range - 1));
     }
     hit = std::max(hit, load.strongest) * camp_hit_factor();
-    // Leave while we can still walk out of reach: a hit a step until 4 away.
+    // Leave while we can still walk out of reach: a hit a step until out of the group's reach.
     const int role = f.ranged ? range : 1;
-    const bool low = my_health() < hit * static_cast<float>(camp_attack_range + 2 - role);
+    const bool low = my_health() < hit * static_cast<float>(G.reach + 2 - role);
 
     const bool many = G.members.size() > 1;
     const auto tiles = [&](int r, bitboard& out) __attribute__((always_inline)) {
@@ -2577,12 +2579,12 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         }
     };
     if (!engaged || fresh) {
-        tiles(siege_stage_radius, goals);
+        tiles(stage, goals);
         drop(goals, G.threat());
     } else if (low) {
         // Out of reach, the turn's recall is kept for a heal trip (siege_heal_trip); a caster
-        // healthy enough stays at 4 to cast.
-        tiles(caster && my_health() >= params::heal_trip_fraction * my_max_health() ? ability_range : siege_stage_radius,
+        // healthy enough stays at spell range to cast.
+        tiles(caster && my_health() >= params::heal_trip_fraction * my_max_health() ? ability_range : stage,
               goals);
         drop(goals, G.threat());
     } else if (f.ranged && caster && !tanked && G.has_monolith) {
@@ -2602,7 +2604,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         tiles(1, goals);
     }
     if (goals.is_empty()) {
-        goals.draw_chebyshev(m, static_cast<float>(siege_stage_radius));
+        goals.draw_chebyshev(m, static_cast<float>(stage));
         goals &= map.standable;
         drop(goals, G.threat());
     }
@@ -2675,7 +2677,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
         const vec2 p = G.members[i].pos;
         if (G.members[i].strength > 0) {
             attackers = true;
-            draw_square(threat, p, static_cast<float>(camp_attack_range));
+            draw_square(threat, p, static_cast<float>(G.members[i].reach));
             draw_square(near, p, static_cast<float>(ability_range));
         } else {
             draw_square(basic, p, static_cast<float>(range));
@@ -2730,7 +2732,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
         clear_board(out);
         out |= map.standable;
         drop(out, threat);
-        pathing.step_towards(out, nullptr, 2 * camp_attack_range);
+        pathing.step_towards(out, nullptr, 2 * G.reach);
     }
     if (!test(threat, my_position())) hit();
     return true;

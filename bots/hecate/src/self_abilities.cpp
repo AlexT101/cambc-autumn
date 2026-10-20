@@ -63,13 +63,13 @@ const std::vector<Hazard>& threats_near(const World& world, vec2 here) {
         if (reach >= 0 && dist(here, e.pos) <= reach + dash_steps) out.push_back({e.pos, reach, false});
     }
     const auto& groups = world.map().groups;
-    for (int g : world.map().groups_near(here, camp_attack_range + dash_steps)) {
+    for (int g : world.map().groups_near(here, world.map().max_camp_reach + dash_steps)) {
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
         for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
             const auto& m = groups[g].members[i];
-            if (c.health[i] > 0 && m.strength > 0 && dist(here, m.pos) <= camp_attack_range + dash_steps)
-                out.push_back({m.pos, camp_attack_range, true});
+            if (c.health[i] > 0 && m.strength > 0 && dist(here, m.pos) <= m.reach + dash_steps)
+                out.push_back({m.pos, m.reach, true});
         }
     }
     return out;
@@ -389,7 +389,7 @@ bool shield_if_needed(const World& world, Safety& safety, int farmed) {
         danger |= safety.blow(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], here).hits;
     if (danger) return cast(*shield);
     const auto& groups = world.map().groups;
-    for (int g : world.map().groups_near(here, camp_attack_range)) {
+    for (int g : world.map().groups_near(here, world.map().max_camp_reach)) {
         if (danger) break;
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || groups[g].strength <= 0) continue;
@@ -398,7 +398,7 @@ bool shield_if_needed(const World& world, Safety& safety, int farmed) {
         for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
             if (c.health[i] <= 0) continue;
             const int d = dist(here, groups[g].members[i].pos);
-            in_reach |= d <= camp_attack_range && groups[g].members[i].strength > 0;
+            in_reach |= d <= groups[g].members[i].reach && groups[g].members[i].strength > 0;
             hitting |= hit && d <= f.attack_range();
         }
         danger = in_reach && (c.awake != Awake::asleep || hitting);

@@ -309,3 +309,9 @@ Against hecate 3e8dfa0 (`bots/baselines/hecate-v7`), both sides; fresh suites ar
   74.4 (70.5), nemesis 63.6 (65.1); against koi 48.7.
 - The gain is the group choice (nearer, faster cycles), not earlier banking: the koi version's undiscounted bank side
   made carriers bank early, which was level to negative on its own and cost central-altar maps.
+
+## hecate: week 2 patch (2026-10-20)
+
+- Camp reach per monster type from the camp designs, instead of 3 for all: 54.3% vs hecate-v7 (398 games). Kept.
+- Gem limits rescaled by stampede's block (big_gems 55, chain_bag_limit 30, brake_bag 11): 52.8% on top (398), 52.3% on
+  a fresh suite (264). Kept. With gem_value 40 as well: 50.8%. With life_value 400 as well: identical games (no effect).

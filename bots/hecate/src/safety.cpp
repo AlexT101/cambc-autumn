@@ -1355,7 +1355,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             }
         }
         const float w = c.awake == Awake::awake ? 1.0f : unknown_camp_weight;
-        // Only others this near a group's box can bring a member's reach below camp_attack_range:
+        // Only others this near a group's box can bring a member's reach below the group's:
         // a big group leaves out the rest.
         std::array<std::uint8_t, 2 * max_fighters> near;
         int k_near = 0;
@@ -1364,7 +1364,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             for (int k = 0; k < n; ++k) {
                 auto& o = others.at[k];
                 const int out = std::max({box[0] - o.pos.x, o.pos.x - box[1], box[2] - o.pos.y, o.pos.y - box[3], 0});
-                if (out - 1 < camp_attack_range && out - first(o) < camp_attack_range) near[k_near++] = static_cast<std::uint8_t>(k);
+                if (out - 1 < groups[g].reach && out - first(o) < groups[g].reach) near[k_near++] = static_cast<std::uint8_t>(k);
             }
         } else {
             for (int k = 0; k < n; ++k) near[k_near++] = static_cast<std::uint8_t>(k);
@@ -1375,7 +1375,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
         for (std::size_t i = 0; i < size; ++i) {
             const auto& m = groups[g].members[i];
             if (c.health[i] <= 0 || m.strength <= 0 || (reread && test(seen, m.pos) && !test(camps, m.pos))) continue;
-            int reach = camp_attack_range;
+            int reach = m.reach;
             for (int k = 0; k < k_near; ++k) {
                 auto& o = others.at[near[k]];
                 if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o));
