@@ -25,7 +25,7 @@ const champion_info* champion(std::uint32_t h) {
     static champion_info info;
     const auto code = sdk_champion(h, &info);
     if (code == not_in_vision) return nullptr;
-    check(code);
+    ok(code);
     if (info.x < 0 || info.y < 0) return nullptr; // dead
     return &info;
 }
@@ -33,32 +33,32 @@ const champion_info* champion(std::uint32_t h) {
 // Readable for hidden and dead champions too.
 cambc::champion_type type(std::uint32_t h) {
     champion_identity identity{};
-    check(sdk_champion_identity(h, &identity));
+    ok(sdk_champion_identity(h, &identity));
     return static_cast<cambc::champion_type>(identity.type);
 }
 
 bool alive(std::uint32_t h) {
     std::int32_t value{};
-    check(sdk_champion_is_alive(h, &value));
+    ok(sdk_champion_is_alive(h, &value));
     return value != 0;
 }
 
 int cooldown(std::uint32_t h, std::uint32_t slot) {
     std::int32_t value{};
-    check(sdk_champion_cooldown(h, slot, &value));
+    ok(sdk_champion_cooldown(h, slot, &value));
     return value;
 }
 
 int gems(std::uint32_t h) {
     std::uint32_t value{};
-    check(sdk_champion_gems(h, &value));
+    ok(sdk_champion_gems(h, &value));
     return static_cast<int>(value);
 }
 
 // Summing every item count costs ~350 fuel; only a Home emblem matters.
 bool home_emblem(std::uint32_t h) {
     static cambc::enum_map<cambc::item_type> counts; // overwritten whole: not cleared first
-    check(sdk_champion_items(h, counts.ptr()));
+    ok(sdk_champion_items(h, counts.ptr()));
     return counts[cambc::item_type::home_emblem_of_strength] + counts[cambc::item_type::home_emblem_of_focus]
                + counts[cambc::item_type::home_emblem_of_health]
            > 0;
@@ -71,10 +71,10 @@ std::span<const std::uint32_t> camp_layout() {
     static std::array<std::uint32_t, 4096> words;
     static std::vector<std::uint32_t> more;
     std::uint32_t count{};
-    check(sdk_map_camp_layout(words.data(), static_cast<std::uint32_t>(words.size()), &count));
+    ok(sdk_map_camp_layout(words.data(), static_cast<std::uint32_t>(words.size()), &count));
     if (count <= words.size()) return {words.data(), count};
     more.resize(count);
-    check(sdk_map_camp_layout(more.data(), count, &count));
+    ok(sdk_map_camp_layout(more.data(), count, &count));
     return {more.data(), std::min<std::size_t>(count, more.size())};
 }
 
@@ -84,9 +84,9 @@ using Handles = std::array<cambc::handle_champion_t, 16>;
 int handles(team side, Handles& out) {
     std::array<std::uint32_t, 16> raw;
     std::uint32_t count{};
-    check(side == team::ally ? sdk_num_allies(&count) : sdk_num_enemies(&count));
+    ok(side == team::ally ? sdk_num_allies(&count) : sdk_num_enemies(&count));
     count = std::min<std::uint32_t>(count, raw.size());
-    check(side == team::ally ? sdk_allies(raw.data(), count, &count) : sdk_enemies(raw.data(), count, &count));
+    ok(side == team::ally ? sdk_allies(raw.data(), count, &count) : sdk_enemies(raw.data(), count, &count));
     const int n = static_cast<int>(std::min<std::uint32_t>(count, raw.size()));
     for (int i = 1; i < n; ++i)
         for (int j = i; j > 0 && raw[j] < raw[j - 1]; --j) std::swap(raw[j], raw[j - 1]);
@@ -106,7 +106,7 @@ std::optional<float> camp_health(std::uint32_t h) {
     static camp_state state;
     const auto code = sdk_camp(h, &state);
     if (code == not_in_vision || code == not_found) return std::nullopt;
-    check(code);
+    ok(code);
     return state.health;
 }
 
@@ -115,7 +115,7 @@ std::optional<Awake> camp_awake(std::uint32_t h) {
     std::uint32_t value{};
     const auto code = sdk_camp_state(h, &value);
     if (code == not_in_vision || code == not_found) return std::nullopt;
-    check(code);
+    ok(code);
     if (value == 1) return Awake::awake;
     if (value == 2) return Awake::asleep;
     return std::nullopt;
@@ -124,9 +124,9 @@ std::optional<Awake> camp_awake(std::uint32_t h) {
 // Camp-group state code (1 alive, 2 reward available, 3 respawning) and the respawn timer.
 std::pair<std::uint32_t, int> group_state(std::uint32_t h) {
     std::uint32_t state{};
-    check(sdk_camp_group_state(h, &state));
+    ok(sdk_camp_group_state(h, &state));
     std::int32_t timer = 0;
-    if (state == 3) check(sdk_camp_group_cooldown(h, &timer));
+    if (state == 3) ok(sdk_camp_group_cooldown(h, &timer));
     return {state, timer};
 }
 } // namespace engine
@@ -1398,11 +1398,11 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
             if (visible.is_set(s.altars[a].pos)) seen(static_cast<int>(a));
     }
     std::uint32_t count{};
-    raw::check(raw::sdk_altar_locks(nullptr, 0, &count));
+    ok(raw::sdk_altar_locks(nullptr, 0, &count));
     if (count == 0) return;
     static std::vector<raw::altar_lock_info> locks; // kept across turns: allocating costs more than the read
     if (locks.size() < count) locks.resize(count);
-    raw::check(raw::sdk_altar_locks(locks.data(), count, &count));
+    ok(raw::sdk_altar_locks(locks.data(), count, &count));
     const auto own = static_cast<std::uint32_t>(raw::sdk_my_team());
     for (std::uint32_t i = 0; i < count && i < locks.size(); ++i) {
         const auto& lock = locks[i];

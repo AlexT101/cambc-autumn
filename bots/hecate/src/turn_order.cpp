@@ -69,7 +69,7 @@ const ChampionBelief& live_self(const World& world) {
     b.gems = static_cast<int>(my_gems());
     for (std::uint32_t s = 0; s < 2; ++s) {
         std::int32_t cooldown{};
-        cambc::detail::check(cambc::detail::sdk_champion_cooldown(my_handle(), s, &cooldown));
+        ok(cambc::detail::sdk_champion_cooldown(my_handle(), s, &cooldown));
         b.ready_round[s] = world.round + std::max(0, static_cast<int>(cooldown));
     }
     return b;

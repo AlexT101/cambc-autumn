@@ -55,13 +55,19 @@ inline int& siege_group() {
     return g;
 }
 
+// cambc::detail::check() out of line costs a call and a stack frame per host call; it throws only for
+// a nonzero code.
+[[gnu::always_inline]] inline void ok(std::int32_t code) {
+    if (code != 0) [[unlikely]] cambc::detail::check(code);
+}
+
 // Our own champion, read raw. The SDK's accessors build and copy a whole record for each field
 // (position() ~85 fuel, item_count() ~225); a raw read into static storage costs ~25. Each call
 // reads the engine again, as the SDK's do.
 inline std::uint32_t my_handle() { return static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(cambc::self())); }
 inline const cambc::detail::champion_info& my_record() {
     static cambc::detail::champion_info record;
-    cambc::detail::check(cambc::detail::sdk_champion(my_handle(), &record));
+    ok(cambc::detail::sdk_champion(my_handle(), &record));
     return record;
 }
 inline vec2 my_position() {
@@ -77,17 +83,17 @@ inline bool my_can_attack() { return my_state().contains(cambc::champion_state::
 inline bool my_can_cast() { return my_state().contains(cambc::champion_state::can_cast); }
 inline std::uint32_t my_gems() {
     static std::uint32_t gems;
-    cambc::detail::check(cambc::detail::sdk_champion_gems(my_handle(), &gems));
+    ok(cambc::detail::sdk_champion_gems(my_handle(), &gems));
     return gems;
 }
 inline std::uint32_t my_gold() {
     static std::uint32_t gold;
-    cambc::detail::check(cambc::detail::sdk_champion_gold(my_handle(), &gold));
+    ok(cambc::detail::sdk_champion_gold(my_handle(), &gold));
     return gold;
 }
 inline const cambc::enum_map<cambc::item_type>& my_items() {
     static cambc::enum_map<cambc::item_type> items;
-    cambc::detail::check(cambc::detail::sdk_champion_items(my_handle(), items.ptr()));
+    ok(cambc::detail::sdk_champion_items(my_handle(), items.ptr()));
     return items;
 }
 // From our state at turn start: later, a turn that has walked, attacked and cast shows the same bits.
@@ -100,7 +106,7 @@ inline bool my_stunned(cambc::champion_state state) {
         return false;
     static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
     std::uint32_t n = 0;
-    cambc::detail::check(cambc::detail::sdk_champion_buff_data(my_handle(), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    ok(cambc::detail::sdk_champion_buff_data(my_handle(), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
     return false;
@@ -109,7 +115,7 @@ inline bool my_stunned(cambc::champion_state state) {
 inline std::int32_t my_channel_time() {
     (void)my_record();
     static std::int32_t turns;
-    cambc::detail::check(cambc::detail::sdk_champion_channel_time(my_handle(), &turns));
+    ok(cambc::detail::sdk_champion_channel_time(my_handle(), &turns));
     return turns;
 }
 
@@ -161,16 +167,16 @@ inline vec2 first_tile(const bitboard& b) {
 // out = a | b, a & b, a ^ b, ~a: one host call each, where the operators allocate a result (~130) or
 // take two calls to copy (clear and |=). out may be a or b.
 inline void or_into(const bitboard& a, const bitboard& b, bitboard& out) {
-    cambc::detail::check(cambc::detail::sdk_Bitboard_Union(a.ptr(), b.ptr(), out.ptr()));
+    ok(cambc::detail::sdk_Bitboard_Union(a.ptr(), b.ptr(), out.ptr()));
 }
 inline void and_into(const bitboard& a, const bitboard& b, bitboard& out) {
-    cambc::detail::check(cambc::detail::sdk_Bitboard_Intersect(a.ptr(), b.ptr(), out.ptr()));
+    ok(cambc::detail::sdk_Bitboard_Intersect(a.ptr(), b.ptr(), out.ptr()));
 }
 inline void xor_into(const bitboard& a, const bitboard& b, bitboard& out) {
-    cambc::detail::check(cambc::detail::sdk_Bitboard_Xor(a.ptr(), b.ptr(), out.ptr()));
+    ok(cambc::detail::sdk_Bitboard_Xor(a.ptr(), b.ptr(), out.ptr()));
 }
 inline void not_into(const bitboard& a, bitboard& out) {
-    cambc::detail::check(cambc::detail::sdk_Bitboard_Not(a.ptr(), out.ptr()));
+    ok(cambc::detail::sdk_Bitboard_Not(a.ptr(), out.ptr()));
 }
 inline void copy_into(const bitboard& a, bitboard& out) { or_into(a, a, out); }
 // out &= ~tiles without a new board.
