@@ -864,7 +864,7 @@ struct Wards {
     }
 };
 
-bool warded(const World& world, const Terrain& t, vec2 p) {
+[[gnu::always_inline]] inline bool warded(const World& world, const Terrain& t, vec2 p) {
     static Wards w;
     if (w.round != world.round) w.refresh(world, t);
     return w.any && (t.packed ? Terrain::bit(w.bits, p.x + p.y * t.width) : w.seen.is_set(p));
@@ -1749,32 +1749,40 @@ Trade Safety::fight_of(std::uint32_t key) {
     return slot.trade;
 }
 
+[[gnu::noinline]] void Safety::count_champions() {
+    champions_ = 0;
+    for (const auto& a : world_.allies) champions_ += a.alive && (a.is_self || a.visible);
+    for (const auto& e : world_.enemies) champions_ += e.alive && e.visible;
+}
+
 std::uint64_t Safety::fight_cost_estimate() {
-    if (champions_ < 0) {
-        champions_ = 0;
-        for (const auto& a : world_.allies) champions_ += a.alive && (a.is_self || a.visible);
-        for (const auto& e : world_.enemies) champions_ += e.alive && e.visible;
-    }
+    if (champions_ < 0) count_champions();
     const auto champions = static_cast<std::uint64_t>(champions_);
-    const auto simulation = std::max({std::uint64_t{10000}, 2000 + 2000 * champions, costliest_fight_ + costliest_fight_ / 4});
+    const auto simulation = std::max(std::max(std::uint64_t{10000}, 2000 + 2000 * champions), costliest_fight_ + costliest_fight_ / 4);
     return simulation + query_cost_estimate();
+}
+
+[[gnu::noinline]] void Safety::list_reachable() {
+    reachable_known_ = true;
+    reachable_ = 0;
+    for (const auto& e : world_.enemies)
+        if (e.alive && e.visible && !(reached_ >> e.index & 1) && !gone(e) && struck(e).strike.reach >= 0)
+            reachable_ |= static_cast<std::uint16_t>(1u << e.index);
 }
 
 std::uint64_t Safety::query_cost_estimate() {
     // Once listed, a visible threat's Reach is still built on its first query.
-    if (built_ && !reachable_known_) {
-        reachable_known_ = true;
-        reachable_ = 0;
-        for (const auto& e : world_.enemies)
-            if (e.alive && e.visible && !(reached_ >> e.index & 1) && !gone(e) && struck(e).strike.reach >= 0)
-                reachable_ |= static_cast<std::uint16_t>(1u << e.index);
-    }
+    if (built_ && !reachable_known_) list_reachable();
     return (built_ ? 2000 * static_cast<std::uint64_t>(std::popcount(static_cast<unsigned>(reachable_ & ~reached_))) : 0) + build_cost_estimate();
 }
 
 std::uint64_t Safety::build_cost_estimate() {
     if (built_) return 0;
     if (build_cost_) return build_cost_;
+    return estimate_build();
+}
+
+[[gnu::noinline]] std::uint64_t Safety::estimate_build() {
     std::uint64_t cost = 2000;
     for (const auto& e : world_.enemies) {
         if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;

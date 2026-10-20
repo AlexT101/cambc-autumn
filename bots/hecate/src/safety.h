@@ -315,6 +315,9 @@ private:
     void count_foe(const ChampionBelief& e, Foe& x);
     void build_threats();
     void find_members();
+    void count_champions();
+    void list_reachable();
+    std::uint64_t estimate_build();
     bool still_alive(const ChampionBelief& c);
     void build_reach(const ChampionBelief& e, Reach& r);
     void build();
