@@ -1675,15 +1675,16 @@ PackZone& pack_boxes(const World& world) {
             static std::array<Subset, (1u << std::tuple_size_v<decltype(members)>)> subsets;
             subsets[0] = {0, 0, -1 << 20, 1 << 20, -1 << 20, 1 << 20};
             for (unsigned mask = 1; mask < (1u << n); ++mask) {
+                // A covered mask's supersets are covered too, so its sums are never read.
+                bool covered = false;
+                for (int k = 0; k < m && !covered; ++k) covered = (minimal[k] & mask) == minimal[k];
+                if (covered) continue;
                 const int top = 31 - __builtin_clz(mask);
                 const auto& e = members[top];
                 const auto& rest = subsets[mask ^ (1u << top)];
                 auto& sub = subsets[mask];
                 sub = {rest.health + e.health, rest.damage + e.damage, std::max(rest.x0, e.pos.x - r), std::min(rest.x1, e.pos.x + r),
                        std::max(rest.y0, e.pos.y - r), std::min(rest.y1, e.pos.y + r)};
-                bool covered = false;
-                for (int k = 0; k < m && !covered; ++k) covered = (minimal[k] & mask) == minimal[k];
-                if (covered) continue;
                 if (sub.health * sub.damage <= ours) continue;
                 if (m < static_cast<int>(minimal.size())) minimal[m++] = mask;
                 if (sub.x0 > sub.x1 || sub.y0 > sub.y1) continue;
@@ -1839,6 +1840,24 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
     return t.lost || (partner(world) && t.self_falls);
 }
 
+// open_for_us as packed row-major bits, read without host calls; null if the export's layout is
+// not the one expected.
+const std::uint8_t* open_bits(const World& world) {
+    static std::array<std::uint8_t, 100 * 100 / 8 + 8> bits;
+    static int state = 0; // 1 packed, 2 not
+    if (state == 0) {
+        state = 2;
+        const auto& map = world.map();
+        const std::size_t size = bitboard::linear_buffer_size();
+        if (size + 8 > bits.size() || map.open_for_us.is_empty()) return nullptr;
+        map.open_for_us.export_linear_buffer({bits.data(), size});
+        const vec2 probe = first_tile(map.open_for_us);
+        const int i = probe.x + probe.y * map.width;
+        if (bits[static_cast<std::size_t>(i >> 3)] >> (i & 7) & 1) state = 1;
+    }
+    return state == 1 ? bits.data() : nullptr;
+}
+
 // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
 // there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
 const bitboard* step_guard(const World& world, Safety& safety) {
@@ -1849,23 +1868,32 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     const vec2 here = my_position();
     std::array<const ChampionBelief*, 8> foes;
     std::array<const Strike*, 8> strikes;
+    std::array<vec2, 8> at;
     int n = 0;
     for (const auto& e : world.enemies)
         if (n < static_cast<int>(foes.size()) && e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + 2
             && safety.strike_of(e).reach >= 0)
-            strikes[n] = &safety.strike_of(e), foes[n++] = &e;
+            strikes[n] = &safety.strike_of(e), at[n] = e.pos, foes[n++] = &e;
     if (n == 0) return nullptr;
     int radius = 1;
     for (int s = 0; s < 2; ++s)
         if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round)) radius = 2;
     // Who can hit a tile, and how hard: a tile no worse than ours is as safe as ours. `bound`
-    // by distance alone, never below the exact exposure.
-    const auto exposure = [&](vec2 p, float& damage, bool bound) {
+    // by distance alone, never below the exact exposure, which only the foes in it can add to.
+    const auto bound = [&](vec2 p, float& damage) {
         unsigned mask = 0;
         damage = 0;
         for (int k = 0; k < n; ++k)
-            if (const auto b = bound ? strikes[k]->blow(dist(p, foes[k]->pos)) : safety.blow(*foes[k], p); b.hits)
-                mask |= 1u << k, damage += b.damage;
+            if (const int d = dist(p, at[k]); d <= strikes[k]->reach) mask |= 1u << k, damage += strikes[k]->damage[d];
+        return mask;
+    };
+    const auto exposure = [&](vec2 p, float& damage, unsigned near) {
+        unsigned mask = 0;
+        damage = 0;
+        for (; near; near &= near - 1) {
+            const int k = std::countr_zero(near);
+            if (const auto b = safety.blow(*foes[k], p); b.hits) mask |= 1u << k, damage += b.damage;
+        }
         return mask;
     };
     // Placing the tiles costs up to tens of thousands: give up as the fights would, counting the
@@ -1878,9 +1906,11 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     }
     const auto placing = fuel();
     float here_damage = 0;
-    const unsigned here_mask = exposure(here, here_damage, false);
+    const unsigned here_mask = exposure(here, here_damage, bound(here, here_damage));
     const bool linked = partner(world) != nullptr;
     const auto& open = world.map().open_for_us;
+    const auto* open_packed = open_bits(world);
+    const int width = world.map().width;
     // The tiles more exposed than ours, and who would fight on each.
     std::array<std::pair<vec2, std::uint32_t>, 24> exposed;
     int m = 0;
@@ -1888,16 +1918,18 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     for (int dy = -radius; dy <= radius; ++dy)
         for (int dx = -radius; dx <= radius; ++dx) {
             const vec2 q{here.x + dx, here.y + dy};
-            if ((dx == 0 && dy == 0) || !in_bounds(q) || !open.is_set(q)) continue;
+            if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
+            if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !open.is_set(q)) continue;
             float damage = 0;
             const auto no_worse = [&](unsigned mask) { return mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage); };
-            if (no_worse(exposure(q, damage, true))) continue;
+            const unsigned near = bound(q, damage);
+            if (no_worse(near)) continue;
             // An exact look can query Reach on a new tile, ~1000 a foe.
             if (!fuel_ok(floor + 1000 * static_cast<std::uint64_t>(n))) {
                 note_shortcut("step-guard");
                 return nullptr;
             }
-            const unsigned mask = exposure(q, damage, false);
+            const unsigned mask = exposure(q, damage, near);
             if (no_worse(mask)) continue;
             // Every visible threat that could hit q is a foe, as q is within 2 of us.
             std::uint32_t visible = 0;

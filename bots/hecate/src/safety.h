@@ -328,9 +328,12 @@ private:
     struct CampMemo {
         vec2 p;
         float damage;
-        bool valid = false;
+        bool valid;
     };
-    std::array<CampMemo, 2> camp_memo_{}; // camp_damage() by `worst`, the last tile asked
+    // camp_damage() by `worst`: the last tile asked. Reset whenever the members are found.
+    union {
+        std::array<CampMemo, 2> camp_memo_;
+    };
     std::optional<bitboard> camp_area_, enemy_area_;
     // By fight_key(). A memo: past `max_fights` the oldest is replaced.
     struct FightMemo {

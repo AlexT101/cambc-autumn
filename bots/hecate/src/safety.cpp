@@ -690,23 +690,34 @@ const Terrain& terrain(const StaticMap& map) {
     return t;
 }
 
+// By tile: 1 + the index of the group member on it, once looked up; 0 before.
+std::array<std::uint8_t, 100 * 100> member_on;
+
 bool live_camp(const World& world, vec2 p) {
     const int g = world.map().group_at(p);
     if (g < 0 || world.camps[g].state != CampState::alive) return false;
     const auto& members = world.map().groups[g].members;
+    auto& known = member_on[static_cast<std::size_t>(p.x + p.y * world.map().width)];
+    if (known) return world.camps[g].health[known - 1u] > 0;
     for (std::size_t i = 0; i < members.size(); ++i)
-        if (members[i].pos == p) return world.camps[g].health[i] > 0;
+        if (members[i].pos == p) {
+            if (i < 255) known = static_cast<std::uint8_t>(i + 1);
+            return world.camps[g].health[i] > 0;
+        }
     return false;
 }
 
-// Tiles a visible enemy ward sees this round: a target there is in sight of whoever owns it. Cast
-// again only when the wards change.
-const bitboard* ward_sight(const World& world) {
+// Whether a visible enemy ward sees p this round: a target there is in sight of whoever owns it.
+// What the wards see is cast again only when they change, and read as packed bits when the
+// terrain's are.
+bool warded(const World& world, vec2 p) {
     static int round = -1;
     static bool any = false;
     static std::array<vec2, 64> cast_from; // the wards `seen` holds
     static std::uint32_t cast_count = 0;
+    static std::array<std::uint8_t, Terrain::bytes> bits;
     static bitboard seen{cambc::uninitialized}, wards{cambc::uninitialized}, cast{cambc::uninitialized};
+    const auto& t = terrain(world.map());
     if (round != world.round) {
         round = world.round;
         cambc::vision::ward_tiles_into(team::enemy, wards);
@@ -723,10 +734,11 @@ const bitboard* ward_sight(const World& world) {
                     world.map().walls.shadow_cast_into(w, r, cast);
                     seen |= cast;
                 }
+                if (t.packed) seen.export_linear_buffer({bits.data(), bitboard::linear_buffer_size()});
             }
         }
     }
-    return any ? &seen : nullptr;
+    return any && (t.packed ? Terrain::bit(bits, p.x + p.y * t.width) : seen.is_set(p));
 }
 
 std::array<Window, 100 * 100> sight_masks;
@@ -1021,7 +1033,7 @@ Blow Reach::at(vec2 p) const {
         // Who sees p, in this window; worked out on first need. Whoever owns a ward that sees p
         // sees it from anywhere.
         Window near, far;
-        bool near_known = false, far_known = false, warded = false;
+        bool near_known = false, far_known = false;
         // Out of line: inlined, its shift's constants were worked out on every call.
         const auto seen = [this, p, dx, dy](bool wide) __attribute__((noinline)) { return shift(sight(*world_, p, wide), dx, dy); };
         float single = -1, walked = -1;
@@ -1034,10 +1046,7 @@ Blow Reach::at(vec2 p) const {
             if (out.hits && w.damage <= best && (!w.stuns || out.stuns) && !(twice_ && i == basic_)) continue;
             Window from = tiles_[w.from] & box(dx + win_r, dy + win_r, w.range);
             if (!from) continue;
-            if (w.sight && !near_known && !far_known) {
-                const auto* wards = ward_sight(*world_);
-                if (wards && wards->is_set(p)) warded = near_known = far_known = true, near = far = win_full;
-            }
+            if (w.sight && !near_known && !far_known && warded(*world_, p)) near_known = far_known = true, near = far = win_full;
             if (w.sight) {
                 if (w.range <= 1) {
                     if (!near_known) near = seen(false), near_known = true;
