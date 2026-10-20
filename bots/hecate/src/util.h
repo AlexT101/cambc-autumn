@@ -68,28 +68,28 @@ inline int& siege_group() {
 inline const std::uint32_t my_handle_value =
     cambc::detail::cached_self ? static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(*cambc::detail::cached_self)) : 0;
 inline std::uint32_t my_handle() { return my_handle_value; }
-inline const cambc::detail::champion_info& my_record() {
+[[gnu::always_inline]] inline const cambc::detail::champion_info& my_record() {
     static cambc::detail::champion_info record;
     ok(cambc::detail::sdk_champion(my_handle(), &record));
     return record;
 }
-inline vec2 my_position() {
+[[gnu::always_inline]] inline vec2 my_position() {
     const auto& r = my_record();
     return {r.x, r.y};
 }
-inline float my_health() { return my_record().health; }
-inline float my_max_health() { return my_record().max_health; }
-inline float my_strength() { return my_record().strength; }
-inline cambc::champion_state my_state() { return cambc::champion_state::from_bits_retain(my_record().state); }
-inline bool my_can_move() { return my_state().contains(cambc::champion_state::can_move); }
-inline bool my_can_attack() { return my_state().contains(cambc::champion_state::can_attack); }
-inline bool my_can_cast() { return my_state().contains(cambc::champion_state::can_cast); }
-inline std::uint32_t my_gems() {
+[[gnu::always_inline]] inline float my_health() { return my_record().health; }
+[[gnu::always_inline]] inline float my_max_health() { return my_record().max_health; }
+[[gnu::always_inline]] inline float my_strength() { return my_record().strength; }
+[[gnu::always_inline]] inline cambc::champion_state my_state() { return cambc::champion_state::from_bits_retain(my_record().state); }
+[[gnu::always_inline]] inline bool my_can_move() { return my_state().contains(cambc::champion_state::can_move); }
+[[gnu::always_inline]] inline bool my_can_attack() { return my_state().contains(cambc::champion_state::can_attack); }
+[[gnu::always_inline]] inline bool my_can_cast() { return my_state().contains(cambc::champion_state::can_cast); }
+[[gnu::always_inline]] inline std::uint32_t my_gems() {
     static std::uint32_t gems;
     ok(cambc::detail::sdk_champion_gems(my_handle(), &gems));
     return gems;
 }
-inline std::uint32_t my_gold() {
+[[gnu::always_inline]] inline std::uint32_t my_gold() {
     static std::uint32_t gold;
     ok(cambc::detail::sdk_champion_gold(my_handle(), &gold));
     return gold;
