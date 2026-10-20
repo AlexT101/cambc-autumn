@@ -1407,12 +1407,15 @@ bool Safety::gone(const ChampionBelief& c) {
     listed_ = true;
     const auto& enemies = world_.enemies;
     const int n = std::min(static_cast<int>(enemies.size()), 32);
+    std::uint32_t seen = 0, unseen = 0;
     for (int i = 0; i < n; ++i) {
         const auto& e = enemies[static_cast<std::size_t>(i)];
         if (!e.alive) continue;
-        if (e.visible) seen_ |= 1u << i;
-        else if (e.tracked) unseen_ |= 1u << i;
+        if (e.visible) seen |= 1u << i;
+        else if (e.tracked) unseen |= 1u << i;
     }
+    seen_ = seen;
+    unseen_ = unseen;
 }
 
 [[gnu::noinline]] bool Safety::still_alive(const ChampionBelief& c) {
