@@ -38,6 +38,7 @@ struct Enemy {
 const std::vector<Enemy>& live_enemies(const World& world) {
     static std::vector<Enemy> out; // kept across turns: growing it reallocates
     out.clear();
+    if (!world.enemy_seen()) return out;
     static cambc::detail::champion_info info;
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible) continue;

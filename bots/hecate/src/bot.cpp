@@ -851,6 +851,7 @@ int allies_on(const World& world, const bitboard& tiles, int below = 1 << 30) {
 }
 
 bool enemy_on(const World& world, const bitboard& tiles) {
+    if (!enemy_seen(world)) return false;
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && test(tiles, e.pos)) return true;
     return false;
@@ -2244,6 +2245,7 @@ bool alive_now(const ChampionBelief& b) {
 // a tribute in reach could land before our next turn, another enemy could stun or kill us before
 // it, or our own bag can go in now.
 const ChampionBelief* tribute_to_stun_later(const World& world, Safety& safety, const Memory& memory) {
+    if (!enemy_seen(world)) return nullptr;
     const auto& self = world.me();
     const int reach = self.ready_stun_reach(world.round);
     const ChampionBelief* target = nullptr;
@@ -2264,6 +2266,7 @@ const ChampionBelief* tribute_to_stun_later(const World& world, Safety& safety, 
 
 // A ready stun of ours reaches a visible enemy whose tribute wins them the game.
 bool can_stop_winning_tribute(const World& world) {
+    if (!enemy_seen(world)) return false;
     const auto& self = world.me();
     for (const auto& e : world.enemies)
         if (enemy_tribute_wins(world, e) && e.facts().passive != Passive::stun_immune

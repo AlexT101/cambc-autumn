@@ -531,7 +531,7 @@ bool reset_may_kill(const World& world) {
     const auto& self = world.me();
     const auto& f = self.facts();
     const int slot = f.slot_of(AbilityKind::attack_reset);
-    if (slot < 0 || !self.ability_ready(slot, world.round)) return false;
+    if (slot < 0 || !self.ability_ready(slot, world.round) || !enemy_seen(world)) return false;
     const int reach = f.attack_range() + (f.walk_and_attack_independent() ? 1 : 0);
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && dist(self.pos, e.pos) <= reach && e.health <= 2 * self.strength) return true;
