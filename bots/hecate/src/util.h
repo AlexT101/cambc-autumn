@@ -143,15 +143,39 @@ inline constexpr vec2 directions[8] = {vec2::north, vec2::north_east, vec2::east
     return value != 0;
 }
 
+// The SDK's bitboard calls without check()'s call and a stack slot for the result.
+[[gnu::always_inline]] inline void clear_board(bitboard& b) { ok(cambc::detail::sdk_Bitboard_Zero(b.ptr())); }
+[[gnu::always_inline]] inline void set_tile(bitboard& b, vec2 p, bool value = true) {
+    ok(cambc::detail::sdk_Bitboard_Set(b.ptr(), p.x, p.y, value));
+}
+[[gnu::always_inline]] inline void draw_square(bitboard& b, vec2 centre, float radius) {
+    ok(cambc::detail::sdk_Bitboard_DrawChebyshev(b.ptr(), centre.x, centre.y, radius));
+}
+[[gnu::always_inline]] inline bool board_empty(const bitboard& b) {
+    static std::int32_t value;
+    ok(cambc::detail::sdk_Bitboard_IsZero(b.ptr(), &value));
+    return value != 0;
+}
+[[gnu::always_inline]] inline std::uint32_t board_count(const bitboard& b) {
+    static std::uint32_t value;
+    ok(cambc::detail::sdk_Bitboard_NumSetBits(b.ptr(), &value));
+    return value;
+}
+[[gnu::always_inline]] inline std::uint32_t positions_into(const bitboard& b, vec2* out, std::uint32_t size) {
+    static std::uint32_t count;
+    ok(cambc::detail::sdk_Bitboard_GetSetBits(b.ptr(), out, size, &count));
+    return count;
+}
+
 inline bitboard single(vec2 p) {
     bitboard b;
-    b.set(p);
+    set_tile(b, p);
     return b;
 }
 
 inline bitboard square(vec2 p, int r) {
     bitboard b;
-    b.draw_chebyshev(p, static_cast<float>(r));
+    draw_square(b, p, static_cast<float>(r));
     return b;
 }
 
@@ -159,7 +183,7 @@ inline bitboard square(vec2 p, int r) {
 // fuel). The caller bounds the set to N tiles.
 template <std::size_t N> class Tiles {
 public:
-    explicit Tiles(const bitboard& b) : count_{std::min<std::uint32_t>(b.positions_into(std::span<vec2>{tiles_, N}), N)} {}
+    explicit Tiles(const bitboard& b) : count_{std::min<std::uint32_t>(positions_into(b, tiles_, N), N)} {}
     const vec2* begin() const { return tiles_; }
     const vec2* end() const { return tiles_ + count_; }
     bool empty() const { return count_ == 0; }
@@ -174,7 +198,7 @@ private:
 // The first set tile in board order; b must not be empty.
 inline vec2 first_tile(const bitboard& b) {
     vec2 p;
-    (void)b.positions_into({&p, 1});
+    (void)positions_into(b, &p, 1);
     return p;
 }
 
@@ -195,8 +219,8 @@ inline void not_into(const bitboard& a, bitboard& out) {
 inline void copy_into(const bitboard& a, bitboard& out) { or_into(a, a, out); }
 // out &= ~tiles without a new board.
 inline void drop(bitboard& out, const bitboard& tiles) {
-    out |= tiles;
-    out ^= tiles;
+    or_into(out, tiles, out);
+    xor_into(out, tiles, out);
 }
 
 // The helpers below work in scratch boards: allocating a board (~300 fuel) costs more than the
@@ -209,8 +233,8 @@ inline const bitboard& within(const bitboard& tiles, vec2 p, int r) {
     static vec2 square_at{-1, -1};
     static int square_r = -1;
     if (p != square_at || r != square_r) {
-        square.clear();
-        square.draw_chebyshev(p, static_cast<float>(r));
+        clear_board(square);
+        draw_square(square, p, static_cast<float>(r));
         square_at = p, square_r = r;
     }
     and_into(square, tiles, box);
@@ -219,8 +243,8 @@ inline const bitboard& within(const bitboard& tiles, vec2 p, int r) {
 
 // r <= 8.
 inline Tiles<17 * 17> positions_within(const bitboard& tiles, vec2 p, int r) { return Tiles<17 * 17>{within(tiles, p, r)}; }
-inline bool any_within(const bitboard& tiles, vec2 p, int r) { return !within(tiles, p, r).is_empty(); }
-inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return within(tiles, p, r).count(); }
+inline bool any_within(const bitboard& tiles, vec2 p, int r) { return !board_empty(within(tiles, p, r)); }
+inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return board_count(within(tiles, p, r)); }
 
 // Live occupancy, each in its own scratch board, valid until its next read.
 inline const bitboard& live_champion_tiles(team side) {

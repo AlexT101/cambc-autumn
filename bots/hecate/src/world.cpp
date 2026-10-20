@@ -174,22 +174,23 @@ void dilate(bitboard& tiles, const bitboard& open, int steps, const bitboard& la
     // unions, at about 1 fuel per 8x8 chunk each.
     static vec2 at[65];
     const auto few = static_cast<std::uint32_t>(std::min<std::uint64_t>(64, (7 * (search_chunks() + 13) - 100) / 22));
+    namespace raw = cambc::detail;
     for (; steps > 0; --steps) {
-        if (const auto n = tiles.positions_into({at, few + 1}); n <= few) {
-            t1.clear();
-            for (std::uint32_t i = 0; i < n; ++i) t1.draw_chebyshev(at[i], 1.0f);
+        if (const auto n = positions_into(tiles, at, few + 1); n <= few) {
+            clear_board(t1);
+            for (std::uint32_t i = 0; i < n; ++i) draw_square(t1, at[i], 1.0f);
             and_into(t1, steps == 1 ? land : open, tiles);
             continue;
         }
-        tiles.shift_right_into(1, t1);
-        tiles.shift_right_into(-1, t2);
-        tiles |= t1;
-        tiles |= t2;
-        tiles.shift_up_into(1, t1);
-        tiles.shift_up_into(-1, t2);
-        tiles |= t1;
-        tiles |= t2;
-        tiles &= steps == 1 ? land : open;
+        ok(raw::sdk_Bitboard_ShiftRight(tiles.ptr(), t1.ptr(), 1));
+        ok(raw::sdk_Bitboard_ShiftRight(tiles.ptr(), t2.ptr(), -1));
+        or_into(tiles, t1, tiles);
+        or_into(tiles, t2, tiles);
+        ok(raw::sdk_Bitboard_ShiftUp(tiles.ptr(), t1.ptr(), 1));
+        ok(raw::sdk_Bitboard_ShiftUp(tiles.ptr(), t2.ptr(), -1));
+        or_into(tiles, t1, tiles);
+        or_into(tiles, t2, tiles);
+        and_into(tiles, steps == 1 ? land : open, tiles);
     }
 }
 
