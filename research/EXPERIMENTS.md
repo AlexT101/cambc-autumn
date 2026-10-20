@@ -217,3 +217,17 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   teleport branch out of update_champion (identical fuel); Moment comparisons field by field (+0.02%); vector resize
   instead of reserve+push_back for camp health (round 1 +840). farm's loop (~280 ops a group, ~10 groups a turn) is
   now ~17% of WASM ops and at its floor for local changes.
+- Fight-path round 3 on hecate bbd10a9 (merged with the world round 2), byte-identical at 100M (46 bench games):
+  before the merge −0.81/−0.95/−0.85% a turn, p999 −5.3/−4.5/−4.5%, turns over 100k 210/67/200 -> 168/56/160; after it
+  (raw SDK helpers in the fight path, step_guard's visible key) a further −0.26/−0.26/−0.27%, p99 −0.5/−0.7/−0.6%,
+  turns over 100k 125/44/121 -> 123/39/117. Mostly "known case inline, work out of line": struck(), reach_of(),
+  terrain(), the threat build, gone(), foe counts, camp members, cost estimates and fighter slots each test their ready
+  state inline and call a noinline builder, so callers keep their locals in registers. Also Reach::at settles a near way
+  outside bushes from its box and tests wards once a query; enemy ward sight refreshed from one raw occupancy read and
+  compared in place; step_guard asks each foe's Reach directly and simulates an unknown fight without a second memo
+  search; the Reach cost estimate counts a pending mask built once a refresh; fight sides filled in one pass with
+  tallies in locals; simulate's debug tallies compile-time; static windows place rows by constexpr shifts. Real budget
+  (games diverge, so noisy): out-of-fuel turns 1/5/3 -> 0/0/1 before the merge, 0/0/0 with both rounds; step-guard
+  shortcuts 117/421/186 -> 114/175/108 before the merge, 87/327/78 with both. Slower or no gain: per-round static caches in small inlined helpers (+0.1-0.5%: codegen around them grows), a
+  turns_before_ours cache (+0.1%). Leads: the general simulation path for Varg shields (~5k a heavy turn), Reach::at's
+  fixed cost (~10k a heavy turn), step_guard's own loop (~8.5k) and pack_boxes (~3k).
