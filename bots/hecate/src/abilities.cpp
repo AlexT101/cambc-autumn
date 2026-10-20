@@ -137,16 +137,23 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
     range = std::min(range, max_range);
     const int side = 2 * range + 1;
     std::array<float, (2 * max_range + 1) * (2 * max_range + 1)> value;
-    std::fill_n(value.begin(), side * side, 0.0f);
+    // Only the cells around a target are read: clear those alone when fewer.
+    const auto around = [&](const Target& t, auto&& f) {
+        for (int dy = -1; dy <= 1; ++dy)
+            for (int dx = -1; dx <= 1; ++dx) {
+                const int x = t.pos.x + dx - here.x + range, y = t.pos.y + dy - here.y + range;
+                if (x >= 0 && x < side && y >= 0 && y < side) f(value[static_cast<std::size_t>(y * side + x)]);
+            }
+    };
+    if (9 * targets.size() < static_cast<std::size_t>(side * side))
+        for (const auto& t : targets) around(t, [](float& v) { v = 0; });
+    else
+        std::fill_n(value.begin(), side * side, 0.0f);
     static bitboard centres{cambc::uninitialized};
     centres.clear();
     for (const auto& t : targets) {
         centres.draw_chebyshev(t.pos, 1);
-        for (int dy = -1; dy <= 1; ++dy)
-            for (int dx = -1; dx <= 1; ++dx) {
-                const int x = t.pos.x + dx - here.x + range, y = t.pos.y + dy - here.y + range;
-                if (x >= 0 && x < side && y >= 0 && y < side) value[y * side + x] += t.weight * t.worth;
-            }
+        around(t, [&](float& v) { v += t.weight * t.worth; });
     }
     static bitboard box{cambc::uninitialized};
     box.clear();

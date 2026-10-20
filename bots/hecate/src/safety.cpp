@@ -431,9 +431,26 @@ Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first 
     return t;
 }
 
-// Us, and the allies we see within fight_ally_radius of p.
-bool fights_with(const ChampionBelief& a, vec2 p) {
-    return a.alive && (a.is_self || (a.visible && dist(p, a.pos) <= fight_ally_radius));
+// Us, and the allies we see within fight_ally_radius of p: bit i for allies[i]. Beliefs are fixed
+// for the turn, so who could join is read once.
+std::uint32_t fighting_allies(const World& world, vec2 p) {
+    static int round = -1;
+    static std::uint32_t self = 0, seen = 0;
+    static std::array<vec2, 16> at;
+    if (round != world.round) {
+        round = world.round;
+        self = seen = 0;
+        for (std::size_t i = 0; i < world.allies.size() && i < at.size(); ++i) {
+            const auto& a = world.allies[i];
+            if (!a.alive) continue;
+            if (a.is_self) self |= 1u << i;
+            else if (a.visible) seen |= 1u << i, at[i] = a.pos;
+        }
+    }
+    std::uint32_t out = self;
+    for (unsigned left = seen; left; left &= left - 1)
+        if (const int i = std::countr_zero(left); dist(p, at[static_cast<std::size_t>(i)]) <= fight_ally_radius) out |= 1u << i;
+    return out;
 }
 
 // `made`: bit i, Fighters::fighter[i] is this turn's.
@@ -455,8 +472,8 @@ const Fighter& fighter(const World& world, const ChampionBelief& c, std::uint32_
 }
 
 void join_allies(const World& world, Side& us, vec2 p, std::uint32_t& made) {
-    for (const auto& a : world.allies) {
-        if (!fights_with(a, p)) continue;
+    for (unsigned left = fighting_allies(world, p); left; left &= left - 1) {
+        const auto& a = world.allies[static_cast<std::size_t>(std::countr_zero(left))];
         if (a.is_self) us.self = us.count;
         us.add(fighter(world, a, made));
     }
@@ -1619,18 +1636,14 @@ std::uint32_t Safety::fight_key(vec2 p, int exclude) {
         key |= 1u << (16 + t.enemy);
     }
     if (!hit) return no_fight;
-    for (std::size_t i = 0; i < world_.allies.size(); ++i)
-        if (fights_with(world_.allies[i], p)) key |= 1u << i;
-    return key;
+    return key | fighting_allies(world_, p);
 }
 
 std::uint32_t Safety::fight_key_with(vec2 p, std::uint32_t visible) {
     std::uint32_t key = visible;
     for (const auto& t : threats())
         if (!t.visible && t.at(p).hits) key |= 1u << (16 + t.enemy);
-    for (std::size_t i = 0; i < world_.allies.size(); ++i)
-        if (fights_with(world_.allies[i], p)) key |= 1u << i;
-    return key;
+    return key | fighting_allies(world_, p);
 }
 
 const Trade* Safety::memo(std::uint32_t key) const {
