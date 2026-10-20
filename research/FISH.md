@@ -149,4 +149,4 @@ Analysis of 2026-10-19, from our ladder scrims against Intercontinental Fish (#1
 5. **Crew mid-sized gem groups.** Lower `big_gems`, or form crews for elk groups too big to solo. Avoid long solo range-casting while nearby small camps sit idle.
 6. **Contest.** Open as one group with no single-cluster detours before about r80. Chip Monoliths with spells from range 4. Split Monolith bags across holders.
 
-Judge each with the usual A/B (ladder + `--gen` + `--central`, both sides). Our local bots don't burst or contest the way Fish does, so confirm on ladder scrims too.
+Judge each with the usual A/B (ladder + `--gen`, both sides). Our local bots don't burst or contest the way Fish does, so confirm on ladder scrims too.

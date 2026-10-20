@@ -22,7 +22,7 @@ def kind_of(name):
 
 def suite_of(src):
     b = os.path.basename(src)
-    return "central" if "-5302" in b else "gen" if "gen-" in b or "-5301" in b else "ladder"
+    return "gen" if b.split("-", 1)[-1].startswith(("gen-", "mut-")) or "-5301" in b or "-5302" in b else "ladder"
 
 agg = collections.defaultdict(lambda: collections.defaultdict(list))  # suite -> metric -> [(v0, v1)]
 seen = set()
@@ -84,7 +84,7 @@ for row in rows:
 
 ORDER = ["clears", "captures", "capture_gems", "capture_gold", "shared_captures", "capture_resets", "tributed",
          "camp_dmg", "camp_dmg_ranged", "camp_dmg_melee", "camp_casts", "deaths", "camp_deaths", "gems_lost_to_camps"]
-for s in ["ladder", "gen", "central", "all"]:
+for s in ["ladder", "gen", "all"]:
     if s not in agg: continue
     a = agg[s]
     n = len(a["captures"]) if "captures" in a else 0

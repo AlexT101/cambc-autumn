@@ -108,7 +108,12 @@ export class Grid {
 
   allCamps() {
     const out = [];
-    for (const c of this.camps) { out.push({ ...c, team: 0 }); const [x, y] = this.mirrorXY(c.x, c.y); out.push({ ...c, x, y, team: 1 }); }
+    // A camp on a self-mirrored tile (on the symmetry axis, or the centre under rotation) is its own mirror.
+    for (const c of this.camps) {
+      const [x, y] = this.mirrorXY(c.x, c.y);
+      if (x === c.x && y === c.y) { out.push({ ...c, team: 2 }); continue; }
+      out.push({ ...c, team: 0 }, { ...c, x, y, team: 1 });
+    }
     return out;
   }
 
@@ -153,13 +158,20 @@ export class Grid {
   }
 
   components(pass) {
-    const comp = new Int32Array(this.t.length).fill(-1), sizes = [];
-    for (let i = 0; i < comp.length; i++) {
-      if (!pass[i] || comp[i] >= 0) continue;
-      const d = this.bfs([i], pass), id = sizes.length;
-      let n = 0;
-      for (let j = 0; j < d.length; j++) if (d[j] >= 0) { comp[j] = id; n++; }
-      sizes.push(n);
+    const { W, H } = this, comp = new Int32Array(this.t.length).fill(-1), sizes = [], q = new Int32Array(W * H);
+    for (let s = 0; s < comp.length; s++) {
+      if (!pass[s] || comp[s] >= 0) continue;
+      const id = sizes.length;
+      let head = 0, tail = 0;
+      comp[s] = id; q[tail++] = s;
+      while (head < tail) {
+        const i = q[head++], x = i % W, y = (i - x) / W;
+        for (const [dx, dy] of N8) {
+          const nx = x + dx, ny = y + dy, j = ny * W + nx;
+          if (nx >= 0 && ny >= 0 && nx < W && ny < H && pass[j] && comp[j] < 0) { comp[j] = id; q[tail++] = j; }
+        }
+      }
+      sizes.push(tail);
     }
     return { comp, sizes };
   }
@@ -223,9 +235,9 @@ export class Grid {
   }
 
   render() {
-    const ch = { wolf: 'w', elk: 'e', gem_cluster: 'g', gold_cluster: '$', monolith: 'm', golem: 'G' }, rows = [];
+    const ch = { wolf: 'w', elk: 'e', gem_cluster: 'g', gold_cluster: '$', monolith: 'm', golem: 'k' }, rows = [];
     const glyph = ['.', '#', 'o', '"', 'A'], cells = Array.from(this.t, k => glyph[k]);
-    for (const c of this.allCamps()) cells[c.y * this.W + c.x] = c.team ? ch[c.type].toUpperCase() : ch[c.type];
+    for (const c of this.allCamps()) cells[c.y * this.W + c.x] = c.team === 1 ? ch[c.type].toUpperCase() : ch[c.type];
     for (const team of [0, 1]) for (const i of this.spawnTiles(team)) cells[i] = String(team + 1);
     for (let y = this.H - 1; y >= 0; y--) rows.push(cells.slice(y * this.W, (y + 1) * this.W).join(''));
     return rows.join('\n');

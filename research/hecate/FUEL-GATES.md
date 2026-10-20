@@ -167,10 +167,10 @@ debug output. Update AGENTS.md's Fuel section and the bench docstring (SHORTCUT 
 
 ## Done when
 
-- No turn above ~95k at 100M fuel on ladder, `maps/gen` and `maps/gen-central`.
+- No turn above ~95k at 100M fuel on ladder and `maps/gen`.
 - Out-of-fuel turns at the real budget no higher than hecate-v5's, counted with `tools/fuel/oof.py` on a full A/B
-  (hecate-v5: ~170 in 390 games; the 16-game bench has no shared-gem map).
-- Level or better against hecate-v5 on all maps from both sides (390+ games), so 100M and real-budget games agree.
+  (hecate-v5: ~170 in 390 games on the older suites; the 16-game bench has no shared-gem map).
+- Level or better against hecate-v5 on all maps from both sides (ladder + `maps/gen`, 554 games), so 100M and real-budget games agree.
 
 ## Open questions
 

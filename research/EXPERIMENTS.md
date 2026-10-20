@@ -1,9 +1,10 @@
 # Experiments
 
 What has been tried on our bots, so it isn't repeated. Win rates are against the bot's own previous version on all maps
-(ladder + `maps/gen` + `maps/gen-central`, 390 games) from both sides at the real fuel budget, unless noted; `all` adds
-two fresh-seed suites (746 games), `full` one more (1102). Noise is about ±2.5 points on 390 games; "level" means within
-noise. Don't retry a lost or level idea as is: it needs a new mechanism or ladder evidence. Results on older bots are
+from both sides at the real fuel budget, unless noted. Until 2026-10-20 "all maps" was ladder + the old `maps/gen` (132)
++ `maps/gen-central` (46), 390 games; `all` added two fresh-seed suites (746 games), `full` one more (1102). Since then
+it is ladder + the unified `maps/gen` (256 maps, 554 games; noise about ±2.1 points). Noise is about ±2.5 points on 390
+games; "level" means within noise. Don't retry a lost or level idea as is: it needs a new mechanism or ladder evidence. Results on older bots are
 hints, not rules. Git history has the branches, commits and per-suite numbers behind each line.
 
 ## General
