@@ -102,14 +102,14 @@ int dated(int parity) {
 
 } // namespace
 
-void expect(World& world) {
+[[gnu::flatten]] void expect(World& world) {
     world.expected_sighting = {};
     const auto bits = read_bits();
     if ((changes(bits) & sighting_bits) && sight_x.get(bits) != 0)
         world.expected_sighting = {sight_index.get(bits), {sight_x.get(bits) - 1, sight_y.get(bits)}, dated(sight_parity.get(bits))};
 }
 
-void receive(World& world) {
+[[gnu::flatten]] void receive(World& world) {
     state.fighting = -1;
     const auto bits = read_bits();
     const int round = world.round;

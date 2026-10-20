@@ -765,7 +765,7 @@ void World::update() {
     expected_sighting.enemy = -1;
 }
 
-void World::observe() {
+[[gnu::flatten]] void World::observe() {
     FuelMeter meter{"observe"};
     read_vision();
     update_champions(false);
@@ -1092,7 +1092,7 @@ bool World::grow(ChampionBelief& b, int turns, const bitboard& land) {
     return dash;
 }
 
-void World::track(ChampionBelief& b) {
+[[gnu::flatten]] void World::track(ChampionBelief& b) {
     if (round - b.fixed.round > params::track_horizon) {
         b.tracked = false;
         b.possible.clear();
@@ -1243,7 +1243,7 @@ void World::update_camps() {
     }
 }
 
-void World::update_camp(std::size_t g, bool in_view, CampViews& views) {
+[[gnu::flatten]] void World::update_camp(std::size_t g, bool in_view, CampViews& views) {
     const auto& G = map().groups[g];
     auto& c = camps[g];
 
@@ -1378,7 +1378,7 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
     return round;
 }
 
-void World::update_altars() {
+[[gnu::flatten]] void World::update_altars() {
     namespace raw = cambc::detail;
     const auto& s = map();
     const auto seen = [&](int a) {
@@ -1423,7 +1423,7 @@ std::uint32_t World::tributing_enemies() const {
     return mask;
 }
 
-void World::update_scores(std::uint32_t tributing) {
+[[gnu::flatten]] void World::update_scores(std::uint32_t tributing) {
     const int ally = static_cast<int>(cambc::global_submitted_gems(team::ally));
     const int enemy = static_cast<int>(cambc::global_submitted_gems(team::enemy));
     const int enemy_delta = round == first_round ? 0 : enemy - score.enemy;

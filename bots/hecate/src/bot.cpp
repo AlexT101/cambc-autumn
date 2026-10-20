@@ -108,7 +108,7 @@ bool channelling() {
            || state.contains(champion_state::teleporting);
 }
 
-void place_lock(const World& world) {
+[[gnu::flatten]] void place_lock(const World& world) {
     auto& me = cambc::self();
     if (!world.me().alive) return;
     const auto& lock = me.consumables()[cambc::consumable_type::altar_lock];
@@ -398,7 +398,7 @@ bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& m
 
 const bitboard* pack_zone(const World& world);
 
-void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+[[gnu::flatten]] void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     if (submit_here(world, pathing, safety, memory)) return;
     const vec2 here = my_position();
@@ -1011,7 +1011,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
 // Carrying gems, farming on chains a capture onto the bag: it saves the walk to the altar and
 // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
 // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
-bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+[[gnu::flatten]] bool farm(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     if (pick_up(world, pathing, memory)) return true;
     auto& me = cambc::self();
@@ -2150,7 +2150,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
 
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
 // quicker.
-bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     if (my_gems() > 0 || my_gold() < (emblem_begun() ? shard_price : emblem_price) || memory.damage > 0 || !may_shop(world))
         return false;
     const vec2 here = my_position();
