@@ -89,7 +89,7 @@ bool read_board(const World& world, const ChampionBelief* hold, Board& b, int re
             for (const auto& o : world.enemies)
                 if (&o != &e && o.alive && o.visible && o.facts().passive == Passive::linked_pair) partner = o.health;
         b.foes[b.n++] = {&e, e.pos, health, e.retaliation(), partner,
-                         params::gem_value * static_cast<float>(pair_gems(world, e)), enemy_spawn.is_set(e.pos), &e == hold};
+                         params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), &e == hold};
     }
     if (b.n == 0) return false;
     const auto state = my_state();
@@ -377,7 +377,7 @@ bool strike_possible(const World& world) {
     if (count > 0) {
         const auto& blocked = pathing.blocked();
         const bitboard* guard = pathing.guard();
-        const auto walkable = [&](vec2 p) { return in_bounds(p) && !blocked.is_set(p) && !(guard && guard->is_set(p)); };
+        const auto walkable = [&](vec2 p) { return in_bounds(p) && !test(blocked, p) && !(guard && test(*guard, p)); };
         const Field* field = walks ? goal_field(world, pathing, intent) : nullptr;
         const int here_steps = field ? field->at(b.here) : static_cast<int>(unreachable);
         const auto gain_to = [&](vec2 p) {
@@ -531,7 +531,7 @@ bool reset_may_kill(const World& world) {
     const auto& self = world.me();
     const auto& f = self.facts();
     const int slot = f.slot_of(AbilityKind::attack_reset);
-    if (slot < 0 || !self.ability_ready(slot, world.round)) return false;
+    if (slot < 0 || !self.ability_ready(slot, world.round) || !enemy_seen(world)) return false;
     const int reach = f.attack_range() + (f.walk_and_attack_independent() ? 1 : 0);
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && dist(self.pos, e.pos) <= reach && e.health <= 2 * self.strength) return true;

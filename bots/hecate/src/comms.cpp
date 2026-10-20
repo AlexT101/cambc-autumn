@@ -74,12 +74,12 @@ State state;
 // Raw reads and writes: the SDK's checked ones cost several times more.
 std::uint64_t read_bits() {
     std::uint64_t bits = 0;
-    cambc::detail::check(cambc::detail::sdk_read_shared_memory(0, &bits, sizeof bits));
+    ok(cambc::detail::sdk_read_shared_memory(0, &bits, sizeof bits));
     return bits;
 }
 
 void write_bits(std::uint64_t bits, int round) {
-    cambc::detail::check(cambc::detail::sdk_write_shared_memory(0, &bits, sizeof bits));
+    ok(cambc::detail::sdk_write_shared_memory(0, &bits, sizeof bits));
     state.last = bits;
     state.last_round = round;
 }
