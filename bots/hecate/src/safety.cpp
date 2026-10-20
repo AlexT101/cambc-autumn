@@ -1243,7 +1243,7 @@ void Safety::refresh() {
         static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
         cambc::vision::visible_tiles_into(seen);
         cambc::vision::camp_tiles_into(camps);
-        for (const auto& m : members_) changed |= seen.is_set(m.pos) && !camps.is_set(m.pos);
+        for (std::size_t i = 0; i < members_.size() && !changed; ++i) changed = seen.is_set(members_[i].pos) && !camps.is_set(members_[i].pos);
     }
     if (changed) invalidate();
 }
