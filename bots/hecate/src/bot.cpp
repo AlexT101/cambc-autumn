@@ -2003,8 +2003,7 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             if (no_worse(mask)) continue;
             // Every visible threat that could hit q is a foe, as q is within 2 of us.
             std::uint32_t visible = 0;
-            for (int k = 0; k < n; ++k)
-                if (mask >> k & 1) visible |= 1u << (16 + foes[k]->index);
+            for (unsigned left = mask; left; left &= left - 1) visible |= 1u << (16 + foes[std::countr_zero(left)]->index);
             const auto key = n < static_cast<int>(foes.size()) ? safety.fight_key_with(q, visible) : safety.fight_key(q);
             if (key == Safety::no_fight) continue;
             exposed[m++] = {q, key};
