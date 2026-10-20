@@ -195,6 +195,12 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
     return -1;
 }
 
+// Storage left unwritten until used: vec2 and std::pair initialise their members.
+template <typename T, std::size_t N> union Unwritten {
+    Unwritten() {}
+    std::array<T, N> a;
+};
+
 // Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
 // every turn, so only danger near us is worth the extra search.
 void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
@@ -246,7 +252,8 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         float damage;
         int steps, gap;
     };
-    std::array<Option, 8> options;
+    Unwritten<Option, 8> scratch;
+    auto& options = scratch.a;
     int n = 0;
     for (auto d : directions) {
         const vec2 p = here + d;
@@ -1642,7 +1649,8 @@ PackZone& pack_boxes(const World& world) {
             vec2 pos;
             float health, damage;
         };
-        std::array<Member, 8> members;
+        Unwritten<Member, 8> scratch;
+        auto& members = scratch.a;
         int n = 0;
         for (const auto& e : world.enemies)
             if (n < static_cast<int>(members.size()) && e.alive && e.age(world.round) <= 1 && !map.near_enemy_spawn.is_set(e.pos))
@@ -1671,7 +1679,7 @@ PackZone& pack_boxes(const World& world) {
             struct Subset {
                 float health, damage;
             };
-            static std::array<Subset, (1u << std::tuple_size_v<decltype(members)>)> subsets;
+            static std::array<Subset, (1u << std::tuple_size_v<std::remove_reference_t<decltype(members)>>)> subsets;
             subsets[0] = {0, 0};
             for (unsigned mask = 1; mask < (1u << n); ++mask) {
                 // A covered mask's supersets are covered too, so its sums are never read.
@@ -1905,7 +1913,8 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     const vec2 here = my_position();
     std::array<const ChampionBelief*, 8> foes;
     std::array<const Strike*, 8> strikes;
-    std::array<vec2, 8> at;
+    Unwritten<vec2, 8> positions;
+    auto& at = positions.a;
     int n = 0;
     for (const auto& e : world.enemies)
         if (n < static_cast<int>(foes.size()) && e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + 2
@@ -1953,7 +1962,8 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     const auto* open_packed = open_bits(world);
     const int width = world.map().width;
     // The tiles more exposed than ours, and who would fight on each.
-    std::array<std::pair<vec2, std::uint32_t>, 24> exposed;
+    Unwritten<std::pair<vec2, std::uint32_t>, 24> tiles;
+    auto& exposed = tiles.a;
     int m = 0;
     std::uint32_t enemies = 0, allies = ~0u;
     for (int dy = -radius; dy <= radius; ++dy)
@@ -2095,7 +2105,8 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
     const bool linked = partner(world) != nullptr;
     // Best first (ties in index order), so fights are simulated only up to the first won.
-    std::array<std::pair<float, const ChampionBelief*>, 8> order;
+    Unwritten<std::pair<float, const ChampionBelief*>, 8> candidates;
+    auto& order = candidates.a;
     int n = 0;
     for (const auto& e : world.enemies) {
         if (n == static_cast<int>(order.size()) || !e.alive || !e.visible || dist(here, e.pos) > vision_radius
