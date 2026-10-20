@@ -1268,15 +1268,21 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     };
     // With the costliest approach to spare, the reserve need not be read.
     const auto loop_floor = small_cost_estimate + end_reserve, ample = loop_floor + pathing.max_approach_cost();
+    // Nothing in the loop changes memory, the round or the warm-up.
+    const int round = world.round, farm_group = memory.farm_group, claim = memory.claim;
+    const bool crew = memory.crew, centres_ready = pathing.centres_ready();
+    const CampGroup* const group_data = groups.data();
+    const CampBelief* const camp_data = world.camps.data();
+    int* const steps_data = centre_steps.data();
     int k = 0;
     for (; k < n_groups && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
         const int g = (first + k) % n_groups;
         world.throw_if_stale();
-        const auto& group = groups[g];
-        const auto& belief = world.camps[g];
+        const auto& group = group_data[g];
+        const auto& belief = camp_data[g];
         if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
             continue;
-        auto& steps_known = centre_steps[g];
+        auto& steps_known = steps_data[g];
         if (steps_known < 0) {
             // Walking is symmetric: a group's warm centre field gives our steps to it before all are.
             if (const auto* centre = centre_field(g)) {
@@ -1291,12 +1297,12 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const int steps = steps_known;
         if (steps == unreachable) continue;
         // A group still respawning when we would arrive costs the wait there.
-        const int wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - world.round - steps) : 0;
+        const int wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - steps) : 0;
         if (wait > params::max_wait) continue;
         if (bag == 0 && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
             && steps < help_steps && struggling(g))
             help_group = g, help_steps = steps;
-        const bool claimed = taken(g);
+        const bool claimed = g < 256 && (ally_claims[g >> 6] >> (g & 63) & 1) && (claim != g || crew);
         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
         // it. Gems past the win are worth nothing.
@@ -1313,10 +1319,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             known.bank = back == unreachable ? 0 : back + chained_tribute;
             known.cycle_bank = back == unreachable ? 0 : back + tribute_turns(group.gems);
             // The spawn fields home_ground reads are warm once the centres are.
-            if (known.home < 0 && pathing.centres_ready()) known.home = home_ground(map, g);
-            float weight = pathing.centres_ready() ? known.home : 1.0f;
+            if (known.home < 0 && centres_ready) known.home = home_ground(map, g);
+            float weight = centres_ready ? known.home : 1.0f;
             // Staying with last turn's choice keeps near ties from turning us back and forth.
-            if (g == memory.farm_group) weight *= stickiness;
+            if (g == farm_group) weight *= stickiness;
             known.gems = weight * static_cast<float>(std::min(group.gems, short_by));
             known.gold = weight * per_gold * static_cast<float>(group.gold);
             known.context = context;
@@ -1347,7 +1353,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             float health = 0;
             for (std::size_t i = 0; i < group.members.size(); ++i) health += fresh ? group.members[i].max_health : belief.health[i];
             const float others = crew_strength(g);
-            const int working = std::max(0, steps - (fresh ? std::max(0, belief.respawn_round - world.round) : 0));
+            const int working = std::max(0, steps - (fresh ? std::max(0, belief.respawn_round - round) : 0));
             const float health_left = health - others * static_cast<float>(working);
             if (health <= 0 || health_left <= 0) continue;
             // A capture that wins the game is the team's, not a share: what counts is how soon.
@@ -1403,7 +1409,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         } else {
             if (value > best_value) best = g, best_value = value, best_steps = steps, best_spell = spell;
             if (bag > 0 && walk != unreachable) {
-                const int via_altar = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - world.round - bank_now - walk) : 0;
+                const int via_altar = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - bank_now - walk) : 0;
                 const float from_altar = static_cast<float>(walk + cycle_bank + via_altar) + clear_rounds + capture_rounds();
                 from_altar_value = std::max(from_altar_value, worth / from_altar);
             }
