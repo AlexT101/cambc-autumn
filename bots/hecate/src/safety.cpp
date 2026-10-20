@@ -1129,7 +1129,12 @@ Blow Reach::at(vec2 p) const {
     if (std::max(std::abs(dx), std::abs(dy)) <= reach_ && terrain(world_->map()).inside(p)) {
         // Who sees p, in this window; worked out on first need. Whoever owns a ward that sees p
         // sees it from anywhere.
-        Window near, far;
+        union Sight {
+            Sight() {}
+            Window w;
+        } near_sight, far_sight;
+        auto& near = near_sight.w;
+        auto& far = far_sight.w;
         bool near_known = false, far_known = false;
         float single = -1, walked = -1;
         bool basic = false;
