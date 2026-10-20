@@ -227,3 +227,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    A/B 52.0% vs the pre-dash bot (554: ladder 47.6, gen 52.3); on islands, big-world, fracture, gold-rush,
    concentrated-wealth and ambush dashers cross dozens to hundreds of times a game. Two crossings within 8 turns
    still wait out the cooldown. Fuel at the real budget: +1.2% a play turn on the bench, out-of-fuel turns 1 -> 1.
+30. 2026-10-20 (not yet submitted). Draft for the week 2 patch and the Heart of Ruin nerf (SDK 3.0.2): Heart of
+   Ruin, Marcella, Vesper, Ryth, Stellar, then Willow, Cassi and Issac, Varg, Ren, Vendetta, Tavi, Prism (was Ren,
+   Stellar, Cassi, Ryth, Varg, ...). Each pick chosen on maps of its size, hecate vs hecate with only the draft
+   changed ([DRAFT.md](DRAFT.md)): the trio beats Ren/Stellar/Cassi 72.5% on all 3-pick maps; Ryth as 4th 53.2%
+   over Cassi on 4-pick maps; Stellar as 5th 57.9% over Cassi on 5-pick maps.

@@ -392,3 +392,16 @@ on hecate 1251236 and rebased onto d70138d (Heart of Ruin) afterwards.
   banked 1987 in one channel (won round 1531); OneTap killed both twice and banked 190, 320, 49 and 200.
 - Live camps lengthen or cut a walk to an altar on 14 of 277 maps (ladder + gen): only boss-battle cuts it; spiral
   (30 groups, +28 steps each) and cross (10, +15) are the only real detours, the rest under 10 steps.
+
+## hecate: draft search after the Heart of Ruin nerf (2026-10-20)
+
+Details in [hecate/DRAFT.md](hecate/DRAFT.md). Each pick scored on maps of its pick count (ladder + gen), screened on
+45% of them and confirmed on the rest. Kept: Heart of Ruin, Marcella, Vesper, Ryth, Stellar, ...
+
+- Heart of Ruin is the core: replacing it in HoR/Stellar/Cassi lost 12-48% (80 games each). Marcella (62.5% in
+  Stellar's slot) and Ryth were the best additions; Prism, Tavi and Willow lost in every slot of a trio.
+- Trios: HoR/Marcella/Cassi and HoR/Marcella/Vesper level (50.0%, 178), both ~61% against the field; the old trio
+  Ren/Stellar/Cassi lost 69.7-72.5% to them, and HoR/Stellar/Ren (a common ladder trio) 64-73% to the top three.
+- 4th: Ryth (53-60% over Vesper or Cassi); Vendetta, Willow, Varg, Stellar and Ren lost as 4th (42-49% screen).
+- 5th: Stellar 57.9% and Willow 52.8% over Cassi (216), level with each other (49.2%, 118); Varg 47.7%, Ren and
+  Vendetta lost (42%, 39%).

@@ -4,10 +4,10 @@
 namespace aph::params {
 
 inline constexpr cambc::champion_draft draft_preference[] = {
-    cambc::champion_draft::ren, cambc::champion_draft::stellar, cambc::champion_draft::cassi_and_issac,
-    cambc::champion_draft::ryth, cambc::champion_draft::varg, cambc::champion_draft::prism,
-    cambc::champion_draft::vesper_vale, cambc::champion_draft::vendetta, cambc::champion_draft::marcella,
-    cambc::champion_draft::willow, cambc::champion_draft::tavi,
+    cambc::champion_draft::heart_of_ruin, cambc::champion_draft::marcella, cambc::champion_draft::vesper_vale,
+    cambc::champion_draft::ryth, cambc::champion_draft::stellar, cambc::champion_draft::willow,
+    cambc::champion_draft::cassi_and_issac, cambc::champion_draft::varg, cambc::champion_draft::ren,
+    cambc::champion_draft::vendetta, cambc::champion_draft::tavi, cambc::champion_draft::prism,
 };
 
 // Rounds out of sight after which an enemy could be anywhere.
