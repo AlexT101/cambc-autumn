@@ -194,3 +194,26 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   Reach::at when the rest is dominated, packed bits instead of is_set for near_enemy_spawn (the host test is cheaper),
   lethal settled by strike bounds first (the Reach builds only move elsewhere). Top turns (shared-gem maps, ~270k) are
   still step_guard's 6v6 simulations (~10k each, ~11 a turn), Reach (~35k) and fight setup (~1.5k a simulation).
+- World, economy and SDK-call round 2 on hecate 85a648a, byte-identical at 100M (46 bench games): −11.2% a turn on the
+  default maps vs rival, −13.1% heavy, −11.0% vs nemesis; p99 −5.5/−6.4/−5.4%, p999 −3.6/−5.2/−4.0%, turns over 100k
+  284/90/278 -> 220/69/213; round 1 without the warm-up mean 143k -> 139k (max 180k -> 175k). Real budget: shortcuts on
+  the default maps 1665 -> 1018 and vs nemesis 1700 -> 1062, out-of-fuel turns 1/2/0 -> 0/3/0 (noise). Found with a
+  line profiler that counts every WASM op per source line and function (assembly instrumented, counters dumped inside
+  debug_block). Simple host calls cost only ~3-5 fuel; the waste was the WASM around them. Wins: hecate's own host reads
+  test the result inline (`ok()`) instead of calling the SDK's out-of-line `check()` (−1.2%), with raw helpers for tile
+  tests, field steps, bitboard clear/set/square/empty/count/positions, occupancy and scores, outputs in static storage
+  rather than stack slots (−0.4% each batch); `World::me()` through a kept pointer and `enemy_seen()` cached until a
+  champion update (−2.1%); loops over visible enemies return at once when none is seen (game_ender −0.6%, five more
+  −0.7%); our handle read once at start-up and round_now into static storage (−0.9%); read_priorities and
+  update_champion in locals, out of reach of aliasing stores (−1.4%, −0.3%); World::fix inlined so update_champion
+  passes no struct through memory (−0.4%: vec2 and Moment are passed by pointer to a stack copy when not inlined);
+  group_at/altar_at and the spawn fields inline in the header (−0.35%, −0.1%); dist() and central tiles in 32 bits;
+  slot() from kept team sizes; update_camps reuses last turn's visible groups while the camp tiles in view are the
+  same (one IsEqual host call; −0.3% to −1%); route's neighbour scan raw and bounds-free off the edge (−0.4%); no ward
+  attempt on a stunned turn (every one threw error 63, ~3.9k). Slower or no gain: `always_inline` on the SDK's check()
+  through a pre-declaration (+2%: inlined throw paths bloat every wrapper); an ally_seen() cache (allies are usually in
+  view, +0.2%); farm's loop index without modulo and its claim test as one mask (0%); a precomputed crew list (costs
+  more than the claimed groups it serves); CampGroup tile/threat accessors inline (round 1 +640, no gain); moving the
+  teleport branch out of update_champion (identical fuel); Moment comparisons field by field (+0.02%); vector resize
+  instead of reserve+push_back for camp health (round 1 +840). farm's loop (~280 ops a group, ~10 groups a turn) is
+  now ~17% of WASM ops and at its floor for local changes.

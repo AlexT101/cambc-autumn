@@ -105,13 +105,13 @@ struct Instance {
 int main() {
     Instance instance;
     while (true) {
-        const auto round = cambc::round_number();
+        const auto round = aph::checked_round();
         if (cambc::is_draft())
             instance.draft_turn();
         else
             instance.play_turn();
         // Out of fuel, we resumed as this round's turn with a fresh budget: play it rather than end it.
-        if (const auto now = cambc::round_number(); now != round) {
+        if (const auto now = aph::checked_round(); now != round) {
             std::printf("r%u turn ran out of fuel, finished in r%u\n", round, now);
             debug_block({ std::printf("OOF %u %s\n", round, aph::fuel_phase()); });
             aph::note_shortcut("out-of-fuel");
