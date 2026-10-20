@@ -100,6 +100,15 @@ fail in practice, so these only matter if a pick is ever refused.
 
 ## Validation
 
-Fresh-seed suite (`mapgen suite --seed 8101`, 256 maps, both sides), new draft vs the old draft: pending.
+Fresh-seed suite (`mapgen suite --seed 8101`, 256 maps, both sides), new draft vs the old draft, same bot:
+
+| maps | win rate |
+|---|---|
+| 3-pick (90) | 71.1 (180) |
+| 4-pick (84) | 63.1 (168) |
+| 5-pick (82) | 73.8 (164) |
+| all | **69.3** (512) |
+
+Submitted as version 32 (hecate cb5b461).
 
 Raw results: `replays/matrix-20261020-1724*` to `-1818*` (local, gitignored), map split in `replays/draftmaps/`.

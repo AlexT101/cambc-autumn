@@ -231,4 +231,5 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    Ruin, Marcella, Vesper, Ryth, Stellar, then Willow, Cassi and Issac, Varg, Ren, Vendetta, Tavi, Prism (was Ren,
    Stellar, Cassi, Ryth, Varg, ...). Each pick chosen on maps of its size, hecate vs hecate with only the draft
    changed ([DRAFT.md](DRAFT.md)): the trio beats Ren/Stellar/Cassi 72.5% on all 3-pick maps; Ryth as 4th 53.2%
-   over Cassi on 4-pick maps; Stellar as 5th 57.9% over Cassi on 5-pick maps.
+   over Cassi on 4-pick maps; Stellar as 5th 57.9% over Cassi on 5-pick maps. On a fresh-seed suite (8101, 512
+   games) the new draft beats the old 69.3% (3-pick 71.1, 4-pick 63.1, 5-pick 73.8). Submitted as version 32.

@@ -396,7 +396,8 @@ on hecate 1251236 and rebased onto d70138d (Heart of Ruin) afterwards.
 ## hecate: draft search after the Heart of Ruin nerf (2026-10-20)
 
 Details in [hecate/DRAFT.md](hecate/DRAFT.md). Each pick scored on maps of its pick count (ladder + gen), screened on
-45% of them and confirmed on the rest. Kept: Heart of Ruin, Marcella, Vesper, Ryth, Stellar, ...
+45% of them and confirmed on the rest. Kept: Heart of Ruin, Marcella, Vesper, Ryth, Stellar, ...: 69.3% vs the old
+draft on a fresh-seed suite (512 games; 3/4/5-pick 71.1/63.1/73.8).
 
 - Heart of Ruin is the core: replacing it in HoR/Stellar/Cassi lost 12-48% (80 games each). Marcella (62.5% in
   Stellar's slot) and Ryth were the best additions; Prism, Tavi and Willow lost in every slot of a trio.
