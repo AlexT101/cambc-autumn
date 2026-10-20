@@ -154,14 +154,14 @@ private:
 void warm_reach(const World& world, std::uint64_t fuel_floor);
 
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
-Strike strike(const ChampionBelief& c, int turn_round);
+const Strike& strike(const ChampionBelief& c, int turn_round);
 // The round of the enemy's next turn: later this round if it acts after us, else next round.
 int next_turn_round(const World& world, const ChampionBelief& c);
 // Its turns before our next one: later this round, and next round before us.
 int turns_before_ours(const World& world, const ChampionBelief& c);
 // strike(), widened when it has two turns before our next: a walk then the strike, or the strike
 // and a second basic attack.
-Strike threat_strike(const World& world, const ChampionBelief& c);
+const Strike& threat_strike(const World& world, const ChampionBelief& c);
 
 struct Threat {
     int enemy = -1; // index into World::enemies

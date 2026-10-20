@@ -585,7 +585,7 @@ StrikeMemo& strike_memo(const ChampionBelief& c, int turn_round) {
 
 } // namespace
 
-Strike strike(const ChampionBelief& c, int turn_round) { return strike_memo(c, turn_round).value; }
+const Strike& strike(const ChampionBelief& c, int turn_round) { return strike_memo(c, turn_round).value; }
 
 int turns_before_ours(const World& world, const ChampionBelief& c) {
     const auto& me = world.me();
@@ -616,7 +616,7 @@ float most_damage(const ChampionBelief& c) {
 
 } // namespace
 
-Strike threat_strike(const World& world, const ChampionBelief& c) {
+const Strike& threat_strike(const World& world, const ChampionBelief& c) {
     auto& m = strike_memo(c, next_turn_round(world, c));
     const auto& s = m.value;
     if (s.reach < 0 || turns_before_ours(world, c) < 2) return s;
