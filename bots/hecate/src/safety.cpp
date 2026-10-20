@@ -1271,88 +1271,92 @@ std::vector<Safety::CampHit>& Safety::member_pool() {
 Safety::Safety(const World& world) : world_{world}, threats_{threat_pool()}, members_{member_pool()} {}
 
 const std::vector<Safety::CampHit>& Safety::awake_members() {
-    if (!members_known_) {
-        members_known_ = true;
-        members_.clear();
-        camp_memo_[0].valid = camp_memo_[1].valid = false;
-        // Each monster attacks the nearest champion within range, ties to the one acting first in
-        // the round of the next camp phase.
-        struct Other {
-            vec2 pos;
-            const ChampionBelief* belief;
-            std::int8_t first; // acts before us next round; -1 until needed
-        };
-        union Others { // the first n only: the engine charges for every byte written
-            std::array<Other, 2 * max_fighters> at;
-            Others() {}
-        } others;
-        int n = -1;
-        const int next = world_.round + 1;
-        int self_slot = -1;
-        // Turn order matters only to an other a step nearer than a member's reach so far.
-        const auto first = [&](Other& o) {
-            if (o.first < 0) {
-                if (self_slot < 0) self_slot = world_.slot(world_.me(), next);
-                o.first = world_.slot(*o.belief, next) < self_slot ? 1 : 0;
-            }
-            return static_cast<int>(o.first);
-        };
-        static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
-        bool reread = false;
-        const auto& groups = world_.map().groups;
-        world_.each_stirring([&](int g) {
-            const auto& c = world_.camps[g];
-            if (n < 0) {
-                n = 0;
-                for (const auto* side : {&world_.allies, &world_.enemies})
-                    for (const auto& o : *side)
-                        if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o))
-                            others.at[n++] = {o.pos, &o, -1};
-                if (refresh_) {
-                    reread = true;
-                    cambc::vision::visible_tiles_into(seen);
-                    cambc::vision::camp_tiles_into(camps);
-                }
-            }
-            const float w = c.awake == Awake::awake ? 1.0f : unknown_camp_weight;
-            // Only others this near a group's box can bring a member's reach below camp_attack_range:
-            // a big group leaves out the rest.
-            std::array<std::uint8_t, 2 * max_fighters> near;
-            int k_near = 0;
-            if (groups[g].members.size() >= 8) {
-                const auto& box = member_boxes(world_.map())[static_cast<std::size_t>(g)];
-                for (int k = 0; k < n; ++k) {
-                    auto& o = others.at[k];
-                    const int out = std::max({box[0] - o.pos.x, o.pos.x - box[1], box[2] - o.pos.y, o.pos.y - box[3], 0});
-                    if (out - 1 < camp_attack_range && out - first(o) < camp_attack_range) near[k_near++] = static_cast<std::uint8_t>(k);
-                }
-            } else {
-                for (int k = 0; k < n; ++k) near[k_near++] = static_cast<std::uint8_t>(k);
-            }
-            for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
-                const auto& m = groups[g].members[i];
-                if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen.is_set(m.pos) && !camps.is_set(m.pos))) continue;
-                int reach = camp_attack_range;
-                for (int k = 0; k < k_near; ++k) {
-                    auto& o = others.at[near[k]];
-                    if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o));
-                }
-                if (reach >= 0) members_.push_back({m.pos, m.strength, w, reach});
-            }
-        });
-    }
+    if (!members_known_) find_members();
     return members_;
+}
+
+[[gnu::noinline]] void Safety::find_members() {
+    members_known_ = true;
+    members_.clear();
+    camp_memo_[0].valid = camp_memo_[1].valid = false;
+    // Each monster attacks the nearest champion within range, ties to the one acting first in
+    // the round of the next camp phase.
+    struct Other {
+        vec2 pos;
+        const ChampionBelief* belief;
+        std::int8_t first; // acts before us next round; -1 until needed
+    };
+    union Others { // the first n only: the engine charges for every byte written
+        std::array<Other, 2 * max_fighters> at;
+        Others() {}
+    } others;
+    int n = -1;
+    const int next = world_.round + 1;
+    int self_slot = -1;
+    // Turn order matters only to an other a step nearer than a member's reach so far.
+    const auto first = [&](Other& o) {
+        if (o.first < 0) {
+            if (self_slot < 0) self_slot = world_.slot(world_.me(), next);
+            o.first = world_.slot(*o.belief, next) < self_slot ? 1 : 0;
+        }
+        return static_cast<int>(o.first);
+    };
+    static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
+    bool reread = false;
+    const auto& groups = world_.map().groups;
+    world_.each_stirring([&](int g) {
+        const auto& c = world_.camps[g];
+        if (n < 0) {
+            n = 0;
+            for (const auto* side : {&world_.allies, &world_.enemies})
+                for (const auto& o : *side)
+                    if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o))
+                        others.at[n++] = {o.pos, &o, -1};
+            if (refresh_) {
+                reread = true;
+                cambc::vision::visible_tiles_into(seen);
+                cambc::vision::camp_tiles_into(camps);
+            }
+        }
+        const float w = c.awake == Awake::awake ? 1.0f : unknown_camp_weight;
+        // Only others this near a group's box can bring a member's reach below camp_attack_range:
+        // a big group leaves out the rest.
+        std::array<std::uint8_t, 2 * max_fighters> near;
+        int k_near = 0;
+        if (groups[g].members.size() >= 8) {
+            const auto& box = member_boxes(world_.map())[static_cast<std::size_t>(g)];
+            for (int k = 0; k < n; ++k) {
+                auto& o = others.at[k];
+                const int out = std::max({box[0] - o.pos.x, o.pos.x - box[1], box[2] - o.pos.y, o.pos.y - box[3], 0});
+                if (out - 1 < camp_attack_range && out - first(o) < camp_attack_range) near[k_near++] = static_cast<std::uint8_t>(k);
+            }
+        } else {
+            for (int k = 0; k < n; ++k) near[k_near++] = static_cast<std::uint8_t>(k);
+        }
+        for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
+            const auto& m = groups[g].members[i];
+            if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen.is_set(m.pos) && !camps.is_set(m.pos))) continue;
+            int reach = camp_attack_range;
+            for (int k = 0; k < k_near; ++k) {
+                auto& o = others.at[near[k]];
+                if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o));
+            }
+            if (reach >= 0) members_.push_back({m.pos, m.strength, w, reach});
+        }
+    });
 }
 
 bool Safety::gone(const ChampionBelief& c) {
     if (!refresh_ || c.side != team::enemy || !c.visible || c.index >= static_cast<int>(gone_.size())) return false;
     auto& known = gone_[static_cast<std::size_t>(c.index)];
-    if (known == 0) {
-        std::int32_t alive{};
-        cambc::detail::check(cambc::detail::sdk_champion_is_alive(static_cast<std::uint32_t>(c.handle), &alive));
-        known = alive != 0 ? 1 : 2;
-    }
+    if (known == 0) known = still_alive(c) ? 1 : 2;
     return known == 2;
+}
+
+[[gnu::noinline]] bool Safety::still_alive(const ChampionBelief& c) {
+    std::int32_t alive{};
+    cambc::detail::check(cambc::detail::sdk_champion_is_alive(static_cast<std::uint32_t>(c.handle), &alive));
+    return alive != 0;
 }
 
 void Safety::invalidate() {
@@ -1401,16 +1405,18 @@ Safety::Foe& Safety::struck(const ChampionBelief& e) {
 
 Safety::Foe& Safety::foe(const ChampionBelief& e) {
     auto& x = struck(e);
-    if (!(counted_ >> e.index & 1)) {
-        counted_ |= static_cast<std::uint16_t>(1u << e.index);
-        x.tiles = 0;
-        x.weight = 0;
-        if (!e.visible && x.strike.reach >= 0) {
-            x.tiles = static_cast<int>(e.possible.count());
-            x.weight = unseen_weight(x.strike.reach, x.tiles);
-        }
-    }
+    if (!(counted_ >> e.index & 1)) count_foe(e, x);
     return x;
+}
+
+[[gnu::noinline]] void Safety::count_foe(const ChampionBelief& e, Foe& x) {
+    counted_ |= static_cast<std::uint16_t>(1u << e.index);
+    x.tiles = 0;
+    x.weight = 0;
+    if (!e.visible && x.strike.reach >= 0) {
+        x.tiles = static_cast<int>(e.possible.count());
+        x.weight = unseen_weight(x.strike.reach, x.tiles);
+    }
 }
 
 namespace {
@@ -1424,7 +1430,10 @@ Threat& next_threat(std::vector<Threat>& pool, int& count) {
 
 void Safety::build() {
     world_.throw_if_stale();
-    if (built_) return;
+    if (!built_) build_threats();
+}
+
+[[gnu::noinline]] void Safety::build_threats() {
     built_ = true;
     FuelMeter meter{"safety"};
     // One per enemy, reused between builds: a new field allocates and clears ~13k bytes.

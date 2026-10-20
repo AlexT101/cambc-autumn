@@ -312,6 +312,10 @@ private:
     // possible set, a whole-board host operation.
     Foe& struck(const ChampionBelief& e);
     void strike_foe(const ChampionBelief& e, Foe& x);
+    void count_foe(const ChampionBelief& e, Foe& x);
+    void build_threats();
+    void find_members();
+    bool still_alive(const ChampionBelief& c);
     void build_reach(const ChampionBelief& e, Reach& r);
     void build();
     template <class F> void each_threat(vec2 p, F&& f);
