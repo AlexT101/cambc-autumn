@@ -157,3 +157,11 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
 - Measuring out-of-fuel turns: the 16-game bench (`tools/fuel/bench.py --fuel 0`) swings by about ±20 and has no
   shared-gem maps. Over all maps, hecate-v5 runs out ~170 times in 390 games (14% of games), a third of them on two
   shared-gem maps (gen-shared-gems-640105705 alone ~50), then contest and stampede. Count them on the full suite.
+- World and economy round on hecate 110e338, byte-identical at 100M (46 bench games vs rival and nemesis): −3.2% a turn
+  (−2.2% on heavy maps), p99 −1.4%, turns over 100k −5%, round 1 without the warm-up −8% (lanes ~208k -> ~180k). Wins:
+  `always_inline` on farm's lambdas, whose captured locals otherwise live in memory (−0.8% alone); `[[gnu::flatten]]` on
+  farm, update_camp(s), track, observe, comms receive, route, plan_strikes and the warm-up; camp updates in a member
+  function; liveness read only out of view; first-use caches in static arrays, not vectors; scratch boards for warm-up
+  temporaries. Slower: flatten on decide (+0.7%), update_champion or continue_recall; refixing a seen enemy by moving
+  its one tile; camp member visibility from the tile list; a Chebyshev bound before farm's steps; by-value captures;
+  dash widening by dilation and walks by capped fields (+0.4-1.5%). Fuel is ~1 per WASM instruction, loads included.
