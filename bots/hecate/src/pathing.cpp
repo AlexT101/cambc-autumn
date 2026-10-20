@@ -81,7 +81,7 @@ std::unique_ptr<Pathing::Approach>& Pathing::approach_slot(int group, int range)
     return entry(approach_fields_[r], map().groups.size(), group);
 }
 
-bool Pathing::approach_ready(int group, int range) {
+[[gnu::flatten]] bool Pathing::approach_ready(int group, int range) {
     const auto& slot = approach_slot(group, range);
     if (!slot) return false;
     const vec2 me = my_pos();
@@ -115,10 +115,11 @@ std::uint64_t Pathing::approach_cost(int group, int range) {
     return search_cost_estimate(steps >= 0 ? steps : std::min(2 * dist(my_pos(), map().groups[group].centre), map().width + map().height));
 }
 
-const Field* Pathing::prepare_approach(int group, int range, std::uint64_t fuel_floor) {
+[[gnu::flatten]] const Field* Pathing::prepare_approach(int group, int range, std::uint64_t fuel_floor) {
+    if (approach_ready(group, range)) return &approach_slot(group, range)->field;
     // With no distance known, the search may run to width + height layers.
     const auto cost = approach_steps(group, range) >= 0 ? approach_cost(group, range) : max_approach_cost();
-    if (!approach_ready(group, range) && !fuel_ok(fuel_floor + cost)) return nullptr;
+    if (!fuel_ok(fuel_floor + cost)) return nullptr;
     return approach(group, range);
 }
 
@@ -237,7 +238,7 @@ int& Pathing::centre_cap(int group) {
     return cap;
 }
 
-bool Pathing::warm_centres(std::uint64_t fuel_floor) {
+[[gnu::flatten]] bool Pathing::warm_centres(std::uint64_t fuel_floor) {
     if (centres_ready_) return true;
     const auto round = cambc::round_number();
     const auto cost = field_cost_estimate();
@@ -336,7 +337,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     return out;
 }
 
-Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through) {
+[[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through) {
     world_.throw_if_stale();
     Route r;
     const vec2 me = my_pos();
@@ -355,8 +356,11 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
     if (in_bounds(through)) walls.set(through, false);
     if (avoid && avoid->is_set(me)) {
         // Inside danger every neighbour is in it too: free the connected region we stand in.
-        auto danger = *avoid;
-        danger &= ~(~danger).reachable_tiles(me, static_cast<std::uint16_t>(map().width + map().height));
+        static bitboard outside{cambc::uninitialized}, region{cambc::uninitialized}, danger{cambc::uninitialized};
+        not_into(*avoid, outside);
+        outside.reachable_tiles_into(me, static_cast<std::uint16_t>(map().width + map().height), region);
+        copy_into(*avoid, danger);
+        drop(danger, region);
         walls |= danger;
     } else if (avoid) {
         walls |= *avoid;
@@ -388,7 +392,7 @@ Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int 
     return r;
 }
 
-bool Pathing::try_move(vec2 tile) {
+[[gnu::flatten]] bool Pathing::try_move(vec2 tile) {
     if (guard_ && guard_->is_set(tile)) return false;
     try {
         if (cambc::self().move_absolute(tile)) {
@@ -404,7 +408,7 @@ bool Pathing::try_move(vec2 tile) {
     return false;
 }
 
-bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps) {
+[[gnu::flatten]] bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps) {
     if (!my_can_move()) return false;
     // Only a hidden blocker makes a retry worth its search.
     for (int attempt = 0; attempt < 3; ++attempt) {
