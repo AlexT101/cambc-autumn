@@ -226,7 +226,7 @@ bool flee_camps(Pathing& pathing, Safety& safety, const Field& home) {
     int best_home = home.at(here);
     for (auto d : directions) {
         const vec2 p = here + d;
-        if (!in_bounds(p) || blocked.is_set(p)) continue;
+        if (!in_bounds(p) || test(blocked, p)) continue;
         const float damage = safety.damage_bound(p);
         const int steps = home.at(p);
         if (damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
@@ -245,7 +245,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         return;
     }
     const auto avoid = safety.avoid();
-    if (!avoid.is_set(here) && pathing.step_towards(home, &avoid)) return;
+    if (!test(avoid, here) && pathing.step_towards(home, &avoid)) return;
     const int steps = home.at(here);
     const auto& blocked = pathing.blocked();
     struct Option {
@@ -258,7 +258,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
     int n = 0;
     for (auto d : directions) {
         const vec2 p = here + d;
-        if (!in_bounds(p) || blocked.is_set(p)) continue;
+        if (!in_bounds(p) || test(blocked, p)) continue;
         const int s = home.at(p);
         if (s == unreachable || s > steps) continue;
         int gap = unreachable;
@@ -1669,7 +1669,7 @@ PackZone& pack_boxes(const World& world) {
         auto& members = scratch.a;
         int n = 0;
         for (const auto& e : world.enemies)
-            if (n < static_cast<int>(members.size()) && e.alive && e.age(world.round) <= 1 && !map.near_enemy_spawn.is_set(e.pos))
+            if (n < static_cast<int>(members.size()) && e.alive && e.age(world.round) <= 1 && !test(map.near_enemy_spawn, e.pos))
                 members[n++] = {e.pos, e.health, output(e)};
         if (n > 0) {
             const bool frozen = pz.frozen == world.round;
@@ -1750,13 +1750,13 @@ void draw_box(bitboard& b, int x0, int x1, int y0, int y1) {
     const int side = std::min(x1 - x0, y1 - y0) / 2 * 2 + 1;
     if (side == 1) {
         for (int y = y0; y <= y1; ++y)
-            for (int x = x0; x <= x1; ++x) b.set({x, y});
+            for (int x = x0; x <= x1; ++x) set_tile(b, {x, y});
         return;
     }
     const int r = side / 2;
     for (int cy = y0 + r;; cy = std::min(cy + side, y1 - r)) {
         for (int cx = x0 + r;; cx = std::min(cx + side, x1 - r)) {
-            b.draw_chebyshev({cx, cy}, static_cast<float>(r));
+            draw_square(b, {cx, cy}, static_cast<float>(r));
             if (cx == x1 - r) break;
         }
         if (cy == y1 - r) break;
@@ -1769,7 +1769,7 @@ const bitboard* pack_zone(const World& world) {
     if (pz.boxes == 0) return nullptr;
     if (!pz.drawn) {
         pz.drawn = true;
-        zone.clear();
+        clear_board(zone);
         const int width = world.map().width, height = world.map().height;
         for (int i = 0; i < pz.boxes; ++i) {
             const auto& b = pz.box[i];
@@ -1822,7 +1822,7 @@ int camp_exit_rounds(const World& world, Safety& safety, vec2 here) {
             for (int dx = -r; dx <= r; ++dx) {
                 if (std::max(std::abs(dx), std::abs(dy)) != r) continue;
                 const vec2 p{here.x + dx, here.y + dy};
-                if (in_bounds(p) && open.is_set(p) && safety.camp_damage(p) <= 0) return r;
+                if (in_bounds(p) && test(open, p) && safety.camp_damage(p) <= 0) return r;
             }
     return 4;
 }
@@ -1859,7 +1859,7 @@ int killable_now(const World& world, Safety& safety) {
             if (a.kind == AbilityKind::attack_reset && d <= range) cast = std::max(cast, self.strength);
             if (a.kind == AbilityKind::damage && d <= a.range()) cast = std::max(cast, a.multiplier * self.focus);
         }
-        if ((d <= range ? self.strength : 0.0f) + cast < e.health || world.map().enemy_spawn.is_set(e.pos)) continue;
+        if ((d <= range ? self.strength : 0.0f) + cast < e.health || test(world.map().enemy_spawn, e.pos)) continue;
         const bool linked = e.facts().passive == Passive::linked_pair;
         float rest = safety.camp_damage(here);
         for (const auto& t : safety.threats())
@@ -1874,7 +1874,7 @@ int killable_now(const World& world, Safety& safety) {
 bool want_home(const World& world, Safety& safety, bool sieging) {
     world.throw_if_stale();
     const vec2 here = my_position();
-    if (world.map().ally_spawn.is_set(here)) return false;
+    if (test(world.map().ally_spawn, here)) return false;
     const float health = my_health();
     const int kill = killable_now(world, safety);
     const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world);
@@ -1953,12 +1953,15 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             if (const int k = std::countr_zero(left), d = dist(p, at[k]); d <= strikes[k]->reach) mask |= 1u << k, damage += strikes[k]->damage[d];
         return mask;
     };
+    // blow() for the foes whose strike reaches p.
+    std::array<const Reach*, 8> reaches{};
     const auto exposure = [&](vec2 p, float& damage, unsigned near) {
         unsigned mask = 0;
         damage = 0;
         for (; near; near &= near - 1) {
             const int k = std::countr_zero(near);
-            if (const auto b = safety.blow(*foes[k], p); b.hits) mask |= 1u << k, damage += b.damage;
+            if (!reaches[k]) reaches[k] = &safety.reach_of(*foes[k]);
+            if (const auto b = reaches[k]->at(p); b.hits) mask |= 1u << k, damage += b.damage;
         }
         return mask;
     };
@@ -1986,7 +1989,7 @@ const bitboard* step_guard(const World& world, Safety& safety) {
         for (int dx = -radius; dx <= radius; ++dx) {
             const vec2 q{here.x + dx, here.y + dy};
             if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
-            if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !open.is_set(q)) continue;
+            if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !test(open, q)) continue;
             float damage = 0;
             const auto no_worse = [&](unsigned mask) { return mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage); };
             const unsigned near = bound(q, damage);
@@ -2000,8 +2003,7 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             if (no_worse(mask)) continue;
             // Every visible threat that could hit q is a foe, as q is within 2 of us.
             std::uint32_t visible = 0;
-            for (int k = 0; k < n; ++k)
-                if (mask >> k & 1) visible |= 1u << (16 + foes[k]->index);
+            for (unsigned left = mask; left; left &= left - 1) visible |= 1u << (16 + foes[std::countr_zero(left)]->index);
             const auto key = n < static_cast<int>(foes.size()) ? safety.fight_key_with(q, visible) : safety.fight_key(q);
             if (key == Safety::no_fight) continue;
             exposed[m++] = {q, key};
@@ -2036,7 +2038,7 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             lost = known->lost;
             falls = known->self_falls;
         } else {
-            const auto t = safety.fight_of(key);
+            const auto t = safety.new_fight(key);
             lost = t.lost;
             falls = t.self_falls;
         }
@@ -2056,8 +2058,8 @@ const bitboard* step_guard(const World& world, Safety& safety) {
         const auto [q, key] = exposed[i];
         if (!outcome(key, lost, falls)) return any ? &guard : nullptr;
         if (lost || (falls && (linked || safety.lethal(q)))) {
-            if (!any) guard.clear();
-            guard.set(q);
+            if (!any) clear_board(guard);
+            set_tile(guard, q);
             any = true;
         }
     }
@@ -2126,7 +2128,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     int n = 0;
     for (const auto& e : world.enemies) {
         if (n == static_cast<int>(order.size()) || !e.alive || !e.visible || dist(here, e.pos) > vision_radius
-            || near_enemy_spawn.is_set(e.pos))
+            || test(near_enemy_spawn, e.pos))
             continue;
         // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
         // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
@@ -2169,9 +2171,9 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     if (dist(my_position(), target->pos) > range && my_can_move()) {
         const auto* zone = pack_zone(world);
         static bitboard goals{cambc::uninitialized};
-        goals.clear();
-        goals.draw_chebyshev(target->pos, static_cast<float>(range));
-        goals &= world.map().open_for_us;
+        clear_board(goals);
+        draw_square(goals, target->pos, static_cast<float>(range));
+        and_into(goals, world.map().open_for_us, goals);
         if (zone) drop(goals, *zone);
         pathing.step_towards(goals, zone, 2 * vision_radius);
     }

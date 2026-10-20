@@ -243,6 +243,8 @@ public:
     Trade fight_of(std::uint32_t key);
     // fight_of(key) if memoised, else null.
     const Trade* known_fight_of(std::uint32_t key) const { return memo(key); }
+    // fight_of(key) when known_fight_of(key) is null.
+    Trade new_fight(std::uint32_t key);
     // fight(p) if it needs no simulation, else null.
     const Trade* known_fight(vec2 p);
     // threat_strike(), kept for the turn.
@@ -281,9 +283,11 @@ public:
     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
     void refresh();
 
+    // A visible enemy's Reach, built on first use this turn: blow(e, p) where its strike reaches p.
+    const Reach& reach_of(const ChampionBelief& e);
+
 private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
-    const Reach& reach_of(const ChampionBelief& e);
     // Chance the threat could be within reach of p; uniform over its possible tiles.
     float chance_in_reach(const Threat& t, vec2 p);
     // Every credible threat at full damage, plus camps.
@@ -309,6 +313,15 @@ private:
     // foe(e) with only its strike worked out: an unseen enemy's tiles and weight count its
     // possible set, a whole-board host operation.
     Foe& struck(const ChampionBelief& e);
+    void strike_foe(const ChampionBelief& e, Foe& x);
+    void count_foe(const ChampionBelief& e, Foe& x);
+    void build_threats();
+    void find_members();
+    void count_champions();
+    void list_reachable();
+    std::uint64_t estimate_build();
+    bool still_alive(const ChampionBelief& c);
+    void build_reach(const ChampionBelief& e, Reach& r);
     void build();
     template <class F> void each_threat(vec2 p, F&& f);
     // Seen alive at turn start but dead now, once refreshed.
@@ -355,9 +368,10 @@ private:
         std::array<FightMemo, max_fights> fights_;
     };
     std::uint64_t costliest_fight_ = 0;
-    // query_cost_estimate()'s Reaches pending, for `reaches_for_` as reached_; -1 once refreshed.
-    std::uint64_t reaches_ = 0;
-    int reaches_for_ = -1;
+    // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
+    // once refreshed: reached_ only gains bits meanwhile, and gone() keeps its answers.
+    std::uint16_t reachable_ = 0;
+    bool reachable_known_ = false;
     int champions_ = -1;            // in sight, for fight_cost_estimate(); beliefs are fixed for the turn
     std::uint64_t build_cost_ = 0;  // build_cost_estimate() until built, refreshed or invalidated; 0: unknown
 };
