@@ -442,20 +442,26 @@ Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first 
 std::uint32_t fighting_allies(const World& world, vec2 p) {
     static int round = -1;
     static std::uint32_t self = 0, seen = 0;
-    static std::array<vec2, 16> at;
+    // The corner of each one's square within fight_ally_radius: p is in it when both offsets from
+    // the corner, unsigned, are at most its side.
+    static std::array<int, 16> x0, y0;
     if (round != world.round) {
         round = world.round;
         self = seen = 0;
-        for (std::size_t i = 0; i < world.allies.size() && i < at.size(); ++i) {
+        for (std::size_t i = 0; i < world.allies.size() && i < x0.size(); ++i) {
             const auto& a = world.allies[i];
             if (!a.alive) continue;
             if (a.is_self) self |= 1u << i;
-            else if (a.visible) seen |= 1u << i, at[i] = a.pos;
+            else if (a.visible) seen |= 1u << i, x0[i] = a.pos.x - fight_ally_radius, y0[i] = a.pos.y - fight_ally_radius;
         }
     }
     std::uint32_t out = self;
-    for (unsigned left = seen; left; left &= left - 1)
-        if (const int i = std::countr_zero(left); dist(p, at[static_cast<std::size_t>(i)]) <= fight_ally_radius) out |= 1u << i;
+    constexpr unsigned side = 2 * fight_ally_radius;
+    for (unsigned left = seen; left; left &= left - 1) {
+        const int i = std::countr_zero(left);
+        const bool in = static_cast<unsigned>(p.x - x0[static_cast<std::size_t>(i)]) <= side;
+        if (in & (static_cast<unsigned>(p.y - y0[static_cast<std::size_t>(i)]) <= side)) out |= 1u << i;
+    }
     return out;
 }
 
@@ -585,7 +591,7 @@ StrikeMemo& strike_memo(const ChampionBelief& c, int turn_round) {
 
 } // namespace
 
-Strike strike(const ChampionBelief& c, int turn_round) { return strike_memo(c, turn_round).value; }
+const Strike& strike(const ChampionBelief& c, int turn_round) { return strike_memo(c, turn_round).value; }
 
 int turns_before_ours(const World& world, const ChampionBelief& c) {
     const auto& me = world.me();
@@ -616,7 +622,7 @@ float most_damage(const ChampionBelief& c) {
 
 } // namespace
 
-Strike threat_strike(const World& world, const ChampionBelief& c) {
+const Strike& threat_strike(const World& world, const ChampionBelief& c) {
     auto& m = strike_memo(c, next_turn_round(world, c));
     const auto& s = m.value;
     if (s.reach < 0 || turns_before_ours(world, c) < 2) return s;
@@ -1297,14 +1303,14 @@ std::vector<Safety::CampHit>& Safety::member_pool() {
 
 Safety::Safety(const World& world) : world_{world}, threats_{threat_pool()}, members_{member_pool()} {}
 
-const std::vector<Safety::CampHit>& Safety::awake_members() {
+std::span<const Safety::CampHit> Safety::awake_members() {
     if (!members_known_) find_members();
-    return members_;
+    return {members_.data(), static_cast<std::size_t>(member_count_)};
 }
 
 [[gnu::noinline]] void Safety::find_members() {
     members_known_ = true;
-    members_.clear();
+    int count = 0;
     camp_memo_[0].valid = camp_memo_[1].valid = false;
     // Each monster attacks the nearest champion within range, ties to the one acting first in
     // the round of the next camp phase.
@@ -1335,10 +1341,13 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
         const auto& c = world_.camps[g];
         if (n < 0) {
             n = 0;
-            for (const auto* side : {&world_.allies, &world_.enemies})
-                for (const auto& o : *side)
-                    if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o))
-                        others.at[n++] = {o.pos, &o, -1};
+            for (const auto& o : world_.allies)
+                if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o))
+                    others.at[n++] = {o.pos, &o, -1};
+            for (auto left = seen_enemies(); left; left &= left - 1)
+                if (const auto& o = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+                    n < static_cast<int>(others.at.size()) && !o.is_self && !gone(o))
+                    others.at[n++] = {o.pos, &o, -1};
             if (refresh_) {
                 reread = true;
                 vision_into(seen);
@@ -1360,7 +1369,10 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
         } else {
             for (int k = 0; k < n; ++k) near[k_near++] = static_cast<std::uint8_t>(k);
         }
-        for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
+        const auto size = groups[g].members.size();
+        if (static_cast<std::size_t>(count) + size > members_.size()) members_.resize(static_cast<std::size_t>(count) + size);
+        auto* const out = members_.data();
+        for (std::size_t i = 0; i < size; ++i) {
             const auto& m = groups[g].members[i];
             if (c.health[i] <= 0 || m.strength <= 0 || (reread && test(seen, m.pos) && !test(camps, m.pos))) continue;
             int reach = camp_attack_range;
@@ -1368,9 +1380,10 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
                 auto& o = others.at[near[k]];
                 if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o));
             }
-            if (reach >= 0) members_.push_back({m.pos, m.strength, w, reach});
+            if (reach >= 0) out[count++] = {m.pos, m.strength, w, reach};
         }
     });
+    member_count_ = count;
 }
 
 bool Safety::gone(const ChampionBelief& c) {
@@ -1378,6 +1391,21 @@ bool Safety::gone(const ChampionBelief& c) {
     auto& known = gone_[static_cast<std::size_t>(c.index)];
     if (known == 0) known = still_alive(c) ? 1 : 2;
     return known == 2;
+}
+
+[[gnu::noinline]] void Safety::list_enemies() {
+    listed_ = true;
+    const auto& enemies = world_.enemies;
+    const int n = std::min(static_cast<int>(enemies.size()), 32);
+    std::uint32_t seen = 0, unseen = 0;
+    for (int i = 0; i < n; ++i) {
+        const auto& e = enemies[static_cast<std::size_t>(i)];
+        if (!e.alive) continue;
+        if (e.visible) seen |= 1u << i;
+        else if (e.tracked) unseen |= 1u << i;
+    }
+    seen_ = seen;
+    unseen_ = unseen;
 }
 
 [[gnu::noinline]] bool Safety::still_alive(const ChampionBelief& c) {
@@ -1408,12 +1436,12 @@ void Safety::refresh() {
     reachable_known_ = false;
     if (!built_ && !members_known_) return;
     bool changed = false;
-    for (const auto& e : world_.enemies) changed |= e.alive && gone(e);
-    if (!changed && members_known_ && !members_.empty()) {
+    for (auto left = seen_enemies(); left; left &= left - 1) changed |= gone(world_.enemies[static_cast<std::size_t>(std::countr_zero(left))]);
+    if (!changed && members_known_ && member_count_ > 0) {
         static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
         vision_into(seen);
         camps_into(camps);
-        for (std::size_t i = 0; i < members_.size() && !changed; ++i) changed = test(seen, members_[i].pos) && !test(camps, members_[i].pos);
+        for (int i = 0; i < member_count_ && !changed; ++i) changed = test(seen, members_[static_cast<std::size_t>(i)].pos) && !test(camps, members_[static_cast<std::size_t>(i)].pos);
     }
     if (changed) invalidate();
 }
@@ -1471,8 +1499,9 @@ void Safety::build() {
         if (!field) field = std::make_unique<cambc::distance_field>();
         return *field;
     };
-    for (const auto& e : world_.enemies) {
-        if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e)) continue;
         const auto& x = foe(e);
         const auto& s = x.strike;
         const int reach = s.reach;
@@ -1521,8 +1550,9 @@ std::span<const Threat> Safety::threats() {
 // p, else none, as its field is capped within the reach. Strikes only weaken with distance, so
 // this bounds the threats' damage and hits at p without building them.
 template <class F> void Safety::each_threat(vec2 p, F&& f) {
-    for (const auto& e : world_.enemies) {
-        if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e)) continue;
         auto& x = foe(e);
         const auto& s = x.strike;
         if (s.reach < 0) continue;
@@ -1547,7 +1577,7 @@ const Reach& Safety::reach_of(const ChampionBelief& e) {
 
 Blow Safety::blow(const ChampionBelief& e, vec2 p) {
     const auto& s = struck(e).strike;
-    if (s.reach < 0 || dist(p, e.pos) > s.reach) return {};
+    if (s.reach < 0 || !in_square(p, e.pos, s.reach)) return {};
     return reach_of(e).at(p);
 }
 
@@ -1563,8 +1593,9 @@ int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out) {
             if (n < static_cast<int>(out.size())) out[n++] = {t.enemy, t.at(p)};
         return n;
     }
-    for (const auto& e : world_.enemies) {
-        if (!e.alive || (!e.visible && !e.tracked) || gone(e) || n == static_cast<int>(out.size())) continue;
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e) || n == static_cast<int>(out.size())) continue;
         const auto& x = foe(e);
         if (x.strike.reach < 0) continue;
         if (e.visible) {
@@ -1591,8 +1622,9 @@ int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out) {
 
 bool Safety::any_threat() {
     if (built_) return threat_count_ > 0;
-    for (const auto& e : world_.enemies) {
-        if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e)) continue;
         const auto& x = foe(e);
         if (x.strike.reach >= 0 && (e.visible || x.weight > 0)) return true;
     }
@@ -1609,8 +1641,9 @@ float Safety::damage_bound(vec2 p, bool double_unacted) {
 
 float Safety::damage_ceiling(vec2 p, bool double_unacted) {
     float total = camp_damage(p);
-    for (const auto& e : world_.enemies) {
-        if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e)) continue;
         if (!e.visible) {
             total += most_damage(e);
             continue;
@@ -1642,7 +1675,7 @@ float Safety::camp_damage(vec2 p, bool worst) {
     if (memo.valid && memo.p == p) return memo.damage;
     float total = 0;
     for (const auto& m : members)
-        if (dist(p, m.pos) <= m.reach) total += worst ? m.strength : m.strength * m.weight;
+        if (in_square(p, m.pos, m.reach)) total += worst ? m.strength : m.strength * m.weight;
     memo = {p, total, true};
     return total;
 }
@@ -1666,7 +1699,7 @@ float Safety::expected_damage(vec2 p) {
 bool Safety::threatened(vec2 p) {
     float safe = 1;
     for (const auto& m : awake_members())
-        if (dist(p, m.pos) <= m.reach && 1 - (safe *= 1 - m.weight) >= recall_risk) return true;
+        if (in_square(p, m.pos, m.reach) && 1 - (safe *= 1 - m.weight) >= recall_risk) return true;
     if (!built_ && !may_be_hit(p)) return false;
     for (const auto& t : threats())
         if (t.at(p).hits && 1 - (safe *= 1 - chance_in_reach(t, p) * hit_given_reach) >= recall_risk)
@@ -1704,8 +1737,9 @@ bool Safety::avoid_within(vec2 p, int r) {
     for (const auto& m : awake_members())
         if (m.reach > 0 && dist(p, m.pos) <= m.reach + r) return true;
     if (built_) return any_within(enemy_area(), p, r);
-    for (const auto& e : world_.enemies) {
-        if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e)) continue;
         const auto& x = foe(e);
         const int reach = x.strike.reach;
         if (reach < 0) continue;
@@ -1778,7 +1812,7 @@ Trade Safety::new_fight(std::uint32_t key) {
 [[gnu::noinline]] void Safety::count_champions() {
     champions_ = 0;
     for (const auto& a : world_.allies) champions_ += a.alive && (a.is_self || a.visible);
-    for (const auto& e : world_.enemies) champions_ += e.alive && e.visible;
+    champions_ += std::popcount(seen_enemies());
 }
 
 std::uint64_t Safety::fight_cost_estimate() {
@@ -1791,8 +1825,9 @@ std::uint64_t Safety::fight_cost_estimate() {
 [[gnu::noinline]] void Safety::list_reachable() {
     reachable_known_ = true;
     reachable_ = 0;
-    for (const auto& e : world_.enemies)
-        if (e.alive && e.visible && !(reached_ >> e.index & 1) && !gone(e) && struck(e).strike.reach >= 0)
+    for (auto left = seen_enemies(); left; left &= left - 1)
+        if (const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+            !(reached_ >> e.index & 1) && !gone(e) && struck(e).strike.reach >= 0)
             reachable_ |= static_cast<std::uint16_t>(1u << e.index);
 }
 
@@ -1810,8 +1845,9 @@ std::uint64_t Safety::build_cost_estimate() {
 
 [[gnu::noinline]] std::uint64_t Safety::estimate_build() {
     std::uint64_t cost = 2000;
-    for (const auto& e : world_.enemies) {
-        if (!e.alive || (!e.visible && !e.tracked) || gone(e)) continue;
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e)) continue;
         if (e.visible) cost += 4000; // with its Reach
         else cost += foe(e).weight > 0 ? (costliest_unseen() ? costliest_unseen() + costliest_unseen() / 4 : 3000 + 25 * search_chunks()) : 500;
     }
@@ -1823,8 +1859,9 @@ Trade Safety::pursuit(vec2 p, int approach) {
     world_.throw_if_stale();
     Side us, them;
     const auto& spawn = world_.map().near_enemy_spawn;
-    for (const auto& e : world_.enemies) {
-        if (!e.alive || !e.visible || gone(e) || test(spawn, e.pos)) continue;
+    for (auto left = seen_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e) || test(spawn, e.pos)) continue;
         const auto& s = struck(e).strike;
         if (s.reach < 0 || dist(p, e.pos) - s.reach > approach) continue;
         const int walk = this->approach(e, p);
@@ -1845,8 +1882,9 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
     us.fighters[0].arrives_at = never;
     us.plain = false;
     us.camp = camp_damage(p, false);
-    for (const auto& e : world_.enemies) {
-        if (!e.alive || !e.visible || gone(e)) continue;
+    for (auto left = seen_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e)) continue;
         const auto& s = struck(e).strike;
         if (s.reach < 0 || dist(p, e.pos) - s.reach >= horizon) continue;
         const int walk = approach(e, p);

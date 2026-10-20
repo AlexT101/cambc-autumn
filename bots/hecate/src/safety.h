@@ -154,14 +154,20 @@ private:
 void warm_reach(const World& world, std::uint64_t fuel_floor);
 
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
-Strike strike(const ChampionBelief& c, int turn_round);
+const Strike& strike(const ChampionBelief& c, int turn_round);
 // The round of the enemy's next turn: later this round if it acts after us, else next round.
 int next_turn_round(const World& world, const ChampionBelief& c);
 // Its turns before our next one: later this round, and next round before us.
 int turns_before_ours(const World& world, const ChampionBelief& c);
 // strike(), widened when it has two turns before our next: a walk then the strike, or the strike
 // and a second basic attack.
-Strike threat_strike(const World& world, const ChampionBelief& c);
+const Strike& threat_strike(const World& world, const ChampionBelief& c);
+
+// dist(p, c) <= r for r >= 0, without the distance.
+[[gnu::always_inline]] inline bool in_square(vec2 p, vec2 c, int r) {
+    const auto side = 2 * static_cast<unsigned>(r);
+    return (static_cast<unsigned>(p.x - c.x + r) <= side) & (static_cast<unsigned>(p.y - c.y + r) <= side);
+}
 
 struct Threat {
     int enemy = -1; // index into World::enemies
@@ -202,6 +208,17 @@ public:
 
     std::span<const Threat> threats();
     bool built() const { return built_; }
+    // Bit i: enemies[i] is alive and visible (seen) or alive, unseen and tracked (unseen).
+    // Beliefs are fixed for the turn, so these are listed once.
+    std::uint32_t seen_enemies() {
+        if (!listed_) list_enemies();
+        return seen_;
+    }
+    std::uint32_t live_enemies() {
+        if (!listed_) list_enemies();
+        return seen_ | unseen_;
+    }
+    void list_enemies();
     bool any_threat(); // threats() is not empty, without building it
     // Without building the threats: at least worst_damage(p), and at least their sum with each
     // visible enemy yet to act counted twice when `double_unacted`.
@@ -278,7 +295,7 @@ public:
         float weight;
         int reach; // farthest distance at which it would pick us
     };
-    const std::vector<CampHit>& awake_members();
+    std::span<const CampHit> awake_members();
 
     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
     void refresh();
@@ -332,6 +349,8 @@ private:
     bool built_ = false;
     bool refresh_ = false;
     std::array<std::int8_t, 16> gone_{}; // by enemy index: 0 unknown, 1 alive, 2 dead
+    bool listed_ = false;
+    std::uint32_t seen_ = 0, unseen_ = 0;
     // Left uninitialised: the engine charges for every byte written. Bit i: foes_[i] is set.
     std::uint16_t known_ = 0;
     std::uint16_t counted_ = 0; // bit i: foes_[i] has its tiles and weight
@@ -344,7 +363,8 @@ private:
     std::vector<Threat>& threats_;
     int threat_count_ = 0;
     std::uint16_t threat_mask_ = 0; // bit i: enemies[i] is one of them
-    std::vector<CampHit>& members_; // likewise; valid once `members_known_`
+    std::vector<CampHit>& members_; // likewise, the first `member_count_`; valid once `members_known_`
+    int member_count_ = 0;
     bool members_known_ = false;
     struct CampMemo {
         vec2 p;

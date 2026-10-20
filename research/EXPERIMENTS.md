@@ -231,3 +231,18 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   shortcuts 117/421/186 -> 114/175/108 before the merge, 87/327/78 with both. Slower or no gain: per-round static caches in small inlined helpers (+0.1-0.5%: codegen around them grows), a
   turns_before_ours cache (+0.1%). Leads: the general simulation path for Varg shields (~5k a heavy turn), Reach::at's
   fixed cost (~10k a heavy turn), step_guard's own loop (~8.5k) and pack_boxes (~3k).
+- Fight-path round 4 on hecate 98706e5, byte-identical at 100M (46 bench games): −1.53/−2.40/−1.59% a turn (default
+  vs rival, heavy, vs nemesis), p99 −2.1/−2.6/−2.1%, p999 −2.1/−2.3/−1.9%, max −1.5/−1.8/−1.6%, turns over 100k
+  123/39/117 -> 112/31/101. Wins: Safety lists its enemies once a turn as masks (alive and visible; alive, unseen and
+  tracked), and every enemy loop in Safety and in step_guard, prey, killable_now, visible_threat and shield_if_needed
+  walks the mask instead of testing each belief (−0.6/−0.8/−0.65%, then −0.24/−0.39/−0.27%: a loop over the 152-byte
+  beliefs costs ~25 ops an enemy); camp members written into pre-sized storage rather than push_back (−0.26/−0.43%);
+  strike()/threat_strike() return their memo by reference (−0.09%); kite's bitboard calls through the raw helpers
+  (heavy −0.24%); distance thresholds whose distance is unused tested as a square by unsigned offsets (`in_square`:
+  camp members' reach −0.1/−0.18%, blow() −0.1%, fighting_allies' ally squares p999 −0.5 to −0.95%, in_pack_zone and
+  step_guard's filters −0.06%). Slower or no gain: most_damage cached per turn (+0.02%: called about once a turn),
+  Reach::at's memo hit inline with the miss out of line (+0.12-0.15%: the memo rarely hits, and callers grow), hoisted
+  member and health pointers in find_members (−0.01%), a square pre-test before find_members' distance (tail +0.3%).
+  Leads unchanged: the general simulation path for shields, Reach::at, step_guard's bound loop (dist ~800 a heavy turn),
+  static_window misses (~640 each, ~6 a heavy turn); World-level enemy masks would let the loops in abilities.cpp and
+  self_abilities.cpp (no Safety there) and the age-based loops (in_pack_zone, pack_boxes, recall_outruns) skip beliefs too.
