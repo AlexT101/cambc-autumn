@@ -727,6 +727,7 @@ const bitboard& CampGroup::threat() const {
             if (b.is_self) self_index = i;
         }
     }
+    me_ = allies.data() + self_index;
 
     for (auto& order : turn_order_)
         for (int i = 0; i < 16; ++i) order[i] = static_cast<std::uint8_t>(i);
@@ -786,6 +787,7 @@ void World::update_champions(bool full) {
 // `full` reads liveness, priorities and bags too; observe() refreshes positions, health and
 // channels, and cooldowns only of champions not yet seen this turn.
 void World::update_champion(ChampionBelief& b, bool full) {
+    enemy_seen_known_ = false;
     const auto& s = map();
     const auto h = engine::id(b.handle);
     const int round = this->round;

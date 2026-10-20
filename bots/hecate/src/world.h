@@ -343,7 +343,20 @@ public:
         if (is_stale()) throw StaleTurn{};
     }
 
-    const ChampionBelief& me() const { return allies[self_index]; }
+    const ChampionBelief& me() const { return *me_; }
+    // An enemy alive and in view, as of the last update or observe.
+    bool enemy_seen() const {
+        if (!enemy_seen_known_) {
+            enemy_seen_ = false;
+            for (const auto& e : enemies)
+                if (e.alive && e.visible) {
+                    enemy_seen_ = true;
+                    break;
+                }
+            enemy_seen_known_ = true;
+        }
+        return enemy_seen_;
+    }
     // Index of the champion's turn in `round`, by its rank then: the current one for this round,
     // that of our previous update for earlier rounds.
     int slot(const ChampionBelief& c, int r) const {
@@ -430,6 +443,8 @@ private:
     std::vector<int> ally_scores_; // by round
 
     std::unique_ptr<StaticMap> static_;
+    const ChampionBelief* me_ = nullptr; // &allies[self_index], set with the beliefs
+    mutable bool enemy_seen_known_ = false, enemy_seen_ = false;
     bitboard unseen_; // ~visible
     bitboard landing_{cambc::uninitialized}; // open_for_them & unseen_, once landing_ready_
     bool landing_ready_ = false;
@@ -482,11 +497,7 @@ inline bool kept_recall(const cambc::champion& c, int full = static_cast<int>(ca
     return c.is_recalling() && static_cast<int>(c.remaining_channel_time()) < full - 1;
 }
 
-inline bool enemy_seen(const World& world) {
-    for (const auto& e : world.enemies)
-        if (e.alive && e.visible) return true;
-    return false;
-}
+inline bool enemy_seen(const World& world) { return world.enemy_seen(); }
 
 inline bool enemy_within(const World& world, vec2 p, int r) {
     for (const auto& e : world.enemies)
