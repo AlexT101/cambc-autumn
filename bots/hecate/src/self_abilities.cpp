@@ -179,7 +179,7 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     // An enemy on its spawn heals to full at its turn end: only a kill or a stun is worth anything.
     const auto worth = [&](const Seen& s) {
         if (s.health <= strength) return s.health + params::life_value;
-        return enemy_spawn.is_set(s.pos) ? 0.0f : useful_damage(strength, s.health, s.partner);
+        return test(enemy_spawn, s.pos) ? 0.0f : useful_damage(strength, s.health, s.partner);
     };
     std::optional<cambc::champion> best;
     float best_value = 0, best_health = 0, best_pair = 0;
@@ -286,18 +286,16 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, i
     static cambc::distance_field field;
     const auto& walls = pathing.blocked();
     // goals & ~walls
-    open_goals.clear();
-    open_goals |= goals;
-    open_goals &= walls;
-    open_goals ^= goals;
-    if (open_goals.is_empty()) return false;
+    and_into(goals, walls, open_goals);
+    xor_into(open_goals, goals, open_goals);
+    if (board_empty(open_goals)) return false;
     // Searching out from the goals until it reaches us labels every tile nearer than ours.
-    origin.clear();
-    origin.set(here);
+    clear_board(origin);
+    set_tile(origin, here);
     field.compute_to(walls, open_goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
-    if (visited.is_set(here)
-        && travel_dash(world, pathing, *dash, field.get(here),
-                       [&](vec2 p) { return visited.is_set(p) ? static_cast<int>(field.get(p)) : unreachable; }))
+    if (test(visited, here)
+        && travel_dash(world, pathing, *dash, steps_at(field, here),
+                       [&](vec2 p) { return test(visited, p) ? steps_at(field, p) : unreachable; }))
         return true;
     paused_until = world.round + failed_search_pause;
     return false;
@@ -317,7 +315,7 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     const float my_fraction = health_fraction(me);
     for (const auto& e : world.enemies) {
         if (target_given) break;
-        if (!e.alive || !e.visible || dist(here, e.pos) > range + dash_steps || world.map().enemy_spawn.is_set(e.pos))
+        if (!e.alive || !e.visible || dist(here, e.pos) > range + dash_steps || test(world.map().enemy_spawn, e.pos))
             continue;
         const float fraction = e.health / e.max_health;
         const bool finish = e.health <= strength || (fraction < chase_health && fraction < my_fraction && &e != hold);
@@ -362,7 +360,7 @@ bool heal_ally(const World& world) {
     float best_gain = 0, best_fraction = 0;
     // Read live: allies come into sight as we move.
     for (auto p : positions_within(live_champion_tiles(team::ally), here, range)) {
-        if (p == here || world.map().ally_spawn.is_set(p)) continue;
+        if (p == here || test(world.map().ally_spawn, p)) continue;
         try {
             auto c = cambc::vision::champion_at(p);
             if (!c.is_ally()) continue;
@@ -385,7 +383,7 @@ bool shield_if_needed(const World& world, Safety& safety, int farmed) {
     const auto shield = ready(world, AbilityKind::shield);
     if (!shield) return false;
     const vec2 here = my_position();
-    if (world.map().ally_spawn.is_set(here)) return false;
+    if (test(world.map().ally_spawn, here)) return false;
     bool danger = false;
     for (const auto& e : world.enemies)
         danger |= e.alive && e.visible && safety.blow(e, here).hits;
