@@ -278,7 +278,7 @@ public:
         float weight;
         int reach; // farthest distance at which it would pick us
     };
-    const std::vector<CampHit>& awake_members();
+    std::span<const CampHit> awake_members();
 
     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
     void refresh();
@@ -357,7 +357,8 @@ private:
     std::vector<Threat>& threats_;
     int threat_count_ = 0;
     std::uint16_t threat_mask_ = 0; // bit i: enemies[i] is one of them
-    std::vector<CampHit>& members_; // likewise; valid once `members_known_`
+    std::vector<CampHit>& members_; // likewise, the first `member_count_`; valid once `members_known_`
+    int member_count_ = 0;
     bool members_known_ = false;
     struct CampMemo {
         vec2 p;

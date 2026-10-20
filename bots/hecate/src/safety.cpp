@@ -1297,14 +1297,14 @@ std::vector<Safety::CampHit>& Safety::member_pool() {
 
 Safety::Safety(const World& world) : world_{world}, threats_{threat_pool()}, members_{member_pool()} {}
 
-const std::vector<Safety::CampHit>& Safety::awake_members() {
+std::span<const Safety::CampHit> Safety::awake_members() {
     if (!members_known_) find_members();
-    return members_;
+    return {members_.data(), static_cast<std::size_t>(member_count_)};
 }
 
 [[gnu::noinline]] void Safety::find_members() {
     members_known_ = true;
-    members_.clear();
+    int count = 0;
     camp_memo_[0].valid = camp_memo_[1].valid = false;
     // Each monster attacks the nearest champion within range, ties to the one acting first in
     // the round of the next camp phase.
@@ -1335,10 +1335,13 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
         const auto& c = world_.camps[g];
         if (n < 0) {
             n = 0;
-            for (const auto* side : {&world_.allies, &world_.enemies})
-                for (const auto& o : *side)
-                    if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o))
-                        others.at[n++] = {o.pos, &o, -1};
+            for (const auto& o : world_.allies)
+                if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o))
+                    others.at[n++] = {o.pos, &o, -1};
+            for (auto left = seen_enemies(); left; left &= left - 1)
+                if (const auto& o = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+                    n < static_cast<int>(others.at.size()) && !o.is_self && !gone(o))
+                    others.at[n++] = {o.pos, &o, -1};
             if (refresh_) {
                 reread = true;
                 vision_into(seen);
@@ -1360,7 +1363,10 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
         } else {
             for (int k = 0; k < n; ++k) near[k_near++] = static_cast<std::uint8_t>(k);
         }
-        for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
+        const auto size = groups[g].members.size();
+        if (static_cast<std::size_t>(count) + size > members_.size()) members_.resize(static_cast<std::size_t>(count) + size);
+        auto* const out = members_.data();
+        for (std::size_t i = 0; i < size; ++i) {
             const auto& m = groups[g].members[i];
             if (c.health[i] <= 0 || m.strength <= 0 || (reread && test(seen, m.pos) && !test(camps, m.pos))) continue;
             int reach = camp_attack_range;
@@ -1368,9 +1374,10 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
                 auto& o = others.at[near[k]];
                 if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o));
             }
-            if (reach >= 0) members_.push_back({m.pos, m.strength, w, reach});
+            if (reach >= 0) out[count++] = {m.pos, m.strength, w, reach};
         }
     });
+    member_count_ = count;
 }
 
 bool Safety::gone(const ChampionBelief& c) {
@@ -1421,11 +1428,11 @@ void Safety::refresh() {
     if (!built_ && !members_known_) return;
     bool changed = false;
     for (auto left = seen_enemies(); left; left &= left - 1) changed |= gone(world_.enemies[static_cast<std::size_t>(std::countr_zero(left))]);
-    if (!changed && members_known_ && !members_.empty()) {
+    if (!changed && members_known_ && member_count_ > 0) {
         static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
         vision_into(seen);
         camps_into(camps);
-        for (std::size_t i = 0; i < members_.size() && !changed; ++i) changed = test(seen, members_[i].pos) && !test(camps, members_[i].pos);
+        for (int i = 0; i < member_count_ && !changed; ++i) changed = test(seen, members_[static_cast<std::size_t>(i)].pos) && !test(camps, members_[static_cast<std::size_t>(i)].pos);
     }
     if (changed) invalidate();
 }
