@@ -372,3 +372,23 @@ on hecate 1251236 and rebased onto d70138d (Heart of Ruin) afterwards.
   once in a crew 40.5% ladder, 44.9% gen; seniority for contested claims made corridors flips worse. All dropped.
 - A crystal shortcut over open ground (a crystal landing more than twice the channel's turns nearer on foot, for
   corridors' lanes) was left unfinished and dropped: ladder opponents used 9 crystals in 9 corridors games.
+
+## hecate 7515f8e against submission 31: per map, and boss-battle (2026-10-20)
+
+- 53.2% (554; ladder 22/42, gen 273/512). The maps items 26-29 aimed at all won 2/2: corridors 1028-124 and
+  1007-210, collision, fracture, islands, eight (and their gen mutations: collision 4/4, corridors, fracture 2/2).
+  `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
+- 0/2 maps: contest from d70138d on (every commit since lost both; hecate died 41 and 35 times to 5 and 12; the
+  gen monolith-only and shared-gems maps went 3/4 each, so it does not carry over). elk-arena, expanse and interlock
+  flip between commits: noise at two games a map.
+- boss-battle per commit against v31: d70138d and 96f90c7 0/2, ff50c99 and a599469 2/2, 7515f8e 1/2 (0-0 won on
+  gold, 90-334 lost). In the loss the key Monolith fell at round 1059 and its tile, the only tribute tile, stayed
+  in reach of the other Monolith (200 a turn) until 1303: tributes of 53-158 cancelled after a turn, bags of 87,
+  53, 385, 105 and 125 lost there. Bags held back while the gate stood reached 400-875 (40-88 turn channels),
+  cancelled by tribute safety, stuns and locks; one holder took the pair's 400. v31 banked 19-49 gem bags at the
+  altar we opened.
+- Ladder boss-battle (13 games, v30/v31): 2-11. 8 ended 0-0 and we lost all 8 on lifetime gold. Teams that opened it
+  killed both Monoliths in a burst, captured and held the tile: :3 dealt 39.8k in rounds 1200-1250, captured 400 and
+  banked 1987 in one channel (won round 1531); OneTap killed both twice and banked 190, 320, 49 and 200.
+- Live camps lengthen or cut a walk to an altar on 14 of 277 maps (ladder + gen): only boss-battle cuts it; spiral
+  (30 groups, +28 steps each) and cross (10, +15) are the only real detours, the rest under 10 steps.
