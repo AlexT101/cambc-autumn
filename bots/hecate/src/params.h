@@ -70,12 +70,10 @@ inline constexpr int siege_respawn_wait = 30;
 // Wait just out of reach until this share of the team's output has come, at most this long.
 inline constexpr float siege_gather_share = 0.6f;
 inline constexpr int siege_max_wait = 20;
-// Big groups (a shared block of elk and gem clusters; stampede's six elk and six gem clusters pay 132)
-// go the same way: at least this many gems, cleared within this many rounds, waited for through a
-// respawn this long, split over this many holders.
+// Big groups (a shared block of elk and gem clusters; stampede's six elk and six gem clusters pay 132):
+// at least this many gems. Maps whose only gems are big groups and Monoliths are kited (bot.cpp kite).
 inline constexpr int big_gems = 55;
-inline constexpr int big_rounds = 50;
-inline constexpr int big_respawn_wait = 60;
+// Most holders a capture is split over (bot.cpp holders).
 inline constexpr int big_holders = 3;
 // A Monolith's 200 gems split over this many holders: one bag takes a 20-turn tribute.
 inline constexpr int monolith_holders = 2;

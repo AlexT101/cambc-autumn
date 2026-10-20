@@ -1,4 +1,4 @@
-// Crews on camps, gold-only camps, team sieges of Monoliths and big shared groups, capture recalls
+// Crews on camps, gold-only camps, team sieges of Monoliths, kites of big shared groups, capture recalls
 // that also go shopping, banking every bag once the race is close, and altar locks. Fights are
 // taken whatever the numbers, except when hurt or carrying, or against a pack in our own half.
 // Champions never stand under camps they cannot outlast, wait at most a few rounds for a camp to
@@ -890,9 +890,13 @@ int capture_share(const World& world, int g) {
 // of elk and gem clusters.
 bool big_group(const CampGroup& G) { return !G.has_monolith && G.gems >= params::big_gems; }
 
+// A capture is split until each share's tribute fits the window its safety is judged over
+// (tribute_safe): gems are worth the same however rich the camps, and a long channel is a bag at risk.
 int holders(const CampGroup& G) {
     if (G.has_monolith) return params::monolith_holders;
-    return G.gems >= params::big_gems ? params::big_holders : 1;
+    int n = 1;
+    while (n < params::big_holders && tribute_turns((G.gems + n - 1) / n) > params::tribute_window) ++n;
+    return n;
 }
 
 // On a cleared group's tile that no lower-id ally also holds, with no enemy on any of its tiles:
@@ -2448,25 +2452,25 @@ SiegeLoad siege_load(const World& world, int g) {
     return load;
 }
 
-// The Monolith or big group to siege; one the enemy holds or that returns too late is skipped.
+// The Monolith to siege; one the enemy holds or that returns too late is skipped. Big groups off
+// shared-gem maps are farmed by crews like any other group.
 int siege_candidate(const World& world, const Memory& memory) {
     const auto& map = world.map();
-    static std::vector<int> sieged; // the Monoliths and big groups, in group order
+    static std::vector<int> sieged; // the Monoliths, in group order
     static bool listed = false;
     if (!listed) {
         listed = true;
         for (int g = 0; g < static_cast<int>(map.groups.size()); ++g)
-            if (map.groups[g].has_monolith || big_group(map.groups[g])) sieged.push_back(g);
+            if (map.groups[g].has_monolith) sieged.push_back(g);
     }
     int best = -1;
     float best_cost = 0;
     for (const int g : sieged) {
-        const bool big = big_group(map.groups[g]);
         const auto& c = world.camps[g];
         // siege_ready never passes a live Monolith off Monolith-only maps: only a cleared one counts.
-        if (!big && !map.monolith_only && c.state != CampState::cleared) continue;
+        if (!map.monolith_only && c.state != CampState::cleared) continue;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
-        if (wait > (big ? params::big_respawn_wait : params::siege_respawn_wait)) continue;
+        if (wait > params::siege_respawn_wait) continue;
         if (c.state == CampState::cleared && c.holder == team::enemy) continue;
         const int steps = map.ally_steps(g);
         if (steps == unreachable) continue;
@@ -2488,9 +2492,7 @@ bool siege_ready(const World& world, int g, const SiegeLoad& load, bool committe
     const float rounds = load.health / team_power(world);
     const float taken = rounds * load.hit * camp_hit_factor() * params::siege_hit_share;
     const float slack = committed ? params::siege_commit_slack : 1.0f;
-    const float limit = big_group(world.map().groups[g]) ? params::big_rounds
-                        : world.map().monolith_only      ? params::siege_rounds
-                                                         : 0;
+    const float limit = world.map().monolith_only ? params::siege_rounds : 0;
     return rounds <= limit * slack && taken <= params::siege_pool_share * pool * slack;
 }
 
@@ -2513,8 +2515,8 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     const auto& c = world.camps[g];
     const vec2 here = my_position();
     if (c.state == CampState::cleared) {
-        // The nearest of us take the capture, a big group's split to shorten the tributes; the
-        // rest go back to farming.
+        // The nearest of us take the capture, split to shorten the tributes; the rest go back to
+        // farming.
         if (capture_taken(world, G, here)) {
             memory.siege = false;
             return false;
@@ -2766,7 +2768,7 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
     return true;
 }
 
-// A sieger stepped out of the big group's reach goes home to heal before it is needed again.
+// A sieger stepped out of the Monolith's reach goes home to heal before it is needed again.
 bool siege_heal_trip(const Memory& memory, Safety& safety) {
     return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !safety.threatened(my_position());
 }
