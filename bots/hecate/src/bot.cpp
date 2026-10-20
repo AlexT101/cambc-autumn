@@ -483,7 +483,7 @@ float min_camp_damage(const CampGroup& group, const CampBelief& belief, float st
         const float hp = fresh ? group.members[i].max_health : belief.health[i];
         if (hp > 0) left[n++] = {hp, group.members[i].strength};
     }
-    std::sort(left, left + n, [](const Left& a, const Left& b) { return a.strength * b.health > b.strength * a.health; });
+    if (n > 1) std::sort(left, left + n, [](const Left& a, const Left& b) { return a.strength * b.health > b.strength * a.health; });
     float damage = 0, elapsed = 0;
     if (reflect <= 0) {
         for (int i = 0; i < n; ++i) {
@@ -973,7 +973,7 @@ bool spell_clear(const World& world, Pathing& pathing, int g, const bitboard* zo
 // Chebyshev steps from p to the group's nearest camp tile.
 int steps_to(const CampGroup& G, vec2 p) {
     int steps = unreachable;
-    for (auto t : G.tiles().positions()) steps = std::min(steps, dist(p, t));
+    for (const auto& m : G.members) steps = std::min(steps, dist(p, m.pos));
     return steps;
 }
 

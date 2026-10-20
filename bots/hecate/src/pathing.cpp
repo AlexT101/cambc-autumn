@@ -356,8 +356,11 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     if (in_bounds(through)) walls.set(through, false);
     if (avoid && avoid->is_set(me)) {
         // Inside danger every neighbour is in it too: free the connected region we stand in.
-        auto danger = *avoid;
-        danger &= ~(~danger).reachable_tiles(me, static_cast<std::uint16_t>(map().width + map().height));
+        static bitboard outside{cambc::uninitialized}, region{cambc::uninitialized}, danger{cambc::uninitialized};
+        not_into(*avoid, outside);
+        outside.reachable_tiles_into(me, static_cast<std::uint16_t>(map().width + map().height), region);
+        copy_into(*avoid, danger);
+        drop(danger, region);
         walls |= danger;
     } else if (avoid) {
         walls |= *avoid;

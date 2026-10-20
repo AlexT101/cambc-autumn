@@ -140,6 +140,7 @@ int fire_round(int round, int remaining, bool acted) {
 
 // The first of the items' tiles (`pos` of each) nearest their mean.
 template <class Items, class Pos> vec2 central_tile(const Items& items, Pos pos) {
+    if (items.size() == 1) return pos(*items.begin());
     long sx = 0, sy = 0;
     for (const auto& x : items) sx += pos(x).x, sy += pos(x).y;
     const auto n = static_cast<long>(items.size());
