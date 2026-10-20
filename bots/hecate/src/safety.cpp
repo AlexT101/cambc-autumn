@@ -828,35 +828,40 @@ bool live_camp(const World& world, vec2 p) {
 // Whether a visible enemy ward sees p this round: a target there is in sight of whoever owns it.
 // What the wards see is cast again only when they change, and read as packed bits when the
 // terrain's are.
-bool warded(const World& world, vec2 p) {
-    static int round = -1;
-    static bool any = false;
-    static std::array<vec2, 64> cast_from; // the wards `seen` holds
-    static std::uint32_t cast_count = 0;
-    static std::array<std::uint8_t, Terrain::bytes> bits;
-    static bitboard seen{cambc::uninitialized}, wards{cambc::uninitialized}, cast{cambc::uninitialized};
-    const auto& t = terrain(world.map());
-    if (round != world.round) {
+struct Wards {
+    int round = -1;
+    bool any = false;
+    std::array<vec2, 64> cast_from; // the wards `seen` holds
+    std::uint32_t cast_count = 0;
+    std::array<std::uint8_t, Terrain::bytes> bits;
+    bitboard seen{cambc::uninitialized}, wards{cambc::uninitialized}, cast{cambc::uninitialized};
+
+    [[gnu::noinline]] void refresh(const World& world, const Terrain& t) {
         round = world.round;
-        cambc::vision::ward_tiles_into(team::enemy, wards);
-        any = !wards.is_empty();
-        if (any) {
-            const Tiles<64> tiles{wards};
-            const auto count = static_cast<std::uint32_t>(tiles.end() - tiles.begin());
-            if (count != cast_count || !std::equal(tiles.begin(), tiles.end(), cast_from.begin())) {
-                cast_count = count;
-                std::copy(tiles.begin(), tiles.end(), cast_from.begin());
-                seen.clear();
-                const auto r = static_cast<std::uint16_t>(cambc::constants::ward_vision_radius);
-                for (const vec2 w : tiles) {
-                    world.map().walls.shadow_cast_into(w, r, cast);
-                    seen |= cast;
-                }
-                if (t.packed) seen.export_linear_buffer({bits.data(), bitboard::linear_buffer_size()});
-            }
+        cambc::detail::check(cambc::detail::sdk_enemy_ward_occupancy(wards.ptr()));
+        const Tiles<64> tiles{wards};
+        const auto count = static_cast<std::uint32_t>(tiles.end() - tiles.begin());
+        any = count > 0;
+        if (!any) return;
+        bool same = count == cast_count;
+        for (std::uint32_t i = 0; i < count && same; ++i) same = tiles.begin()[i] == cast_from[i];
+        if (same) return;
+        cast_count = count;
+        std::copy(tiles.begin(), tiles.end(), cast_from.begin());
+        const auto r = static_cast<std::uint16_t>(cambc::constants::ward_vision_radius);
+        world.map().walls.shadow_cast_into(*tiles.begin(), r, seen);
+        for (const vec2* w = tiles.begin() + 1; w != tiles.end(); ++w) {
+            world.map().walls.shadow_cast_into(*w, r, cast);
+            seen |= cast;
         }
+        if (t.packed) seen.export_linear_buffer({bits.data(), bitboard::linear_buffer_size()});
     }
-    return any && (t.packed ? Terrain::bit(bits, p.x + p.y * t.width) : seen.is_set(p));
+};
+
+bool warded(const World& world, const Terrain& t, vec2 p) {
+    static Wards w;
+    if (w.round != world.round) w.refresh(world, t);
+    return w.any && (t.packed ? Terrain::bit(w.bits, p.x + p.y * t.width) : w.seen.is_set(p));
 }
 
 std::array<Window, 100 * 100> sight_masks;
@@ -1155,7 +1160,7 @@ Blow Reach::at(vec2 p) const {
     if (memo.stamp == stamp_ && memo.p == p) return memo.blow;
     Blow out;
     const int dx = p.x - origin_.x, dy = p.y - origin_.y;
-    if (std::max(std::abs(dx), std::abs(dy)) <= reach_ && terrain(world_->map()).inside(p)) {
+    if (const auto& t = terrain(world_->map()); std::max(std::abs(dx), std::abs(dy)) <= reach_ && t.inside(p)) {
         // Who sees p, in this window; worked out on first need. Whoever owns a ward that sees p
         // sees it from anywhere.
         union Sight {
@@ -1171,7 +1176,7 @@ Blow Reach::at(vec2 p) const {
         const auto& ws = *ways_;
         int ward = -1;
         const auto seen = [&](bool far, Window& m) __attribute__((always_inline)) {
-            if (ward < 0) ward = warded(*world_, p);
+            if (ward < 0) ward = warded(*world_, t, p);
             m = ward ? win_full : sight_from(*world_, p, far, dx, dy);
         };
         for (int i = 0; i < ws.count; ++i) {
@@ -1184,7 +1189,7 @@ Blow Reach::at(vec2 p) const {
                 if (w.range <= 1) {
                     if (!near_known) {
                         // Outside bushes, all within 1 of p sees it: the box alone settles it.
-                        if (terrain(world_->map()).bush(p)) seen(false, near);
+                        if (t.bush(p)) seen(false, near);
                         else near = win_full;
                         near_known = true;
                     }
