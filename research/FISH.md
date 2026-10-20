@@ -8,7 +8,8 @@ Analysis of 2026-10-19, from our ladder scrims against Intercontinental Fish (#1
 - **Record.** We went **9-81**. In the same runs we went roughly level with Mite and Sneaky Bush Campers, and 5-7 of 15 against the rest.
 - **Sides.** We are always team A (the requester). The scrim runs share map seeds, so many games are byte-identical across runs.
 - **No traces.** Ladder builds are release builds, so `team-a.stdout` and `.debug` are empty. Every instance below was read from the replay events and rounds. Code links come from reading the code, not from traces.
-- **Draft.** Fish drafts what we draft: Stellar, Ren, Cassi & Issac, Ryth, Varg (fewer picks on maps with fewer). On contest and stampede it takes Stellar, Tavi, Prism, Cassi & Issac, Ren. **The gap is play and itemisation, not the draft.**
+- **Draft.** On most maps Fish drafts what we draft: Ren, Stellar, Cassi & Issac, Ryth, Varg (fewer picks on maps with fewer). On contest and stampede it takes Stellar, Tavi, Prism, Cassi & Issac, Ren; on expanse Cassi & Issac, Stellar, Varg; on rows Cassi & Issac, Stellar, Varg, Ren. **The gap is play and itemisation, not the draft.**
+- **Fish's own play,** reverse-engineered from 459 ladder games against other top teams: [FISH-BOT.md](FISH-BOT.md).
 - **Reproducing.** Extract with `node tools/replay/extract.mjs <the run dirs>`. Game ids below are `replays/.analysis/<dir>` prefixes.
 
 ## Where the gems go (60 distinct games)

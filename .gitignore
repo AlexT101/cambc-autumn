@@ -8,6 +8,7 @@ bots/*/target/
 tools/docs-sync/node_modules/
 __pycache__/
 bots/variants/
+bots/koi/
 research/**/*.pkl
 compile_commands.json
 replay-bulk/

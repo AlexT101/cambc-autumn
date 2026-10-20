@@ -261,3 +261,36 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   3 board operations and reads (~700 with the freed tiles' neighbours), which leaves heavy maps (100x100, crowded)
   slightly dearer. Not done: farm's loop has no cheap exact pre-rejection (its ~180 ops a group are spread over 25
   lines); a cheaper reuse check (field values in WASM memory, a host min over a mask) would make heavy maps gain too.
+
+## koi: Fish's play on hecate (2026-10-19/20)
+
+Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh seeds 7101-7106); details in
+[koi/LOG-attempt1.md](koi/LOG-attempt1.md) and [koi/LOG.md](koi/LOG.md).
+
+- Level (52-54%, the same as hecate + latsize alone at 53.3%): Cassi and other damage-free stuns on any monster hitting
+  an ally; a peel stun valued at the hurt ally's life; clusters first; spells from range only while an ally tanks;
+  enemy-race and late-race banking; Fish's commit (no retreat at hp after burst 300+ and local ratio 1.5+); chasing
+  any carrier; Fish's turn priority; the 150-gold shopping recall bag and all; lazy chaining to 5 gems a step; waiting
+  in bushes; cycle horizons 70-140; openers when a melee crewmate arrives; elk crews by pick pairs (−1.2); a Monster
+  emblem first on big-group maps; Fish's caster draft on Monolith-only and shared-gem maps; the late-race line at 850.
+- Fish's build table: −5 to −6 alone (no Jungle: 16-50% more camp damage, more heal trips; caster-only −2); with Fish's
+  camp-aggro priority (healthy empty-handed bodies act first) and 30% recall line −2.5; with its old-version table
+  (Durability second, no Home) about −2. koi ships it for Fish-likeness, with a melee pre-hold step (a body steps onto
+  a freed camp tile while the group still fights; level, freed-tile share 41% -> 52%) and Fish's engage as an advance
+  (go for the weakest enemy within 6 where hp after burst is 300+ and local health 1.5x theirs; level, kills 2.4 -> 2.9
+  a game): 50.4% over 1986 games, nemesis 59.0, rival 66.7, morgana 74.9, aphelios 89.5.
+- Lost: the fitted engage rule as the retreat/advance rule (33-35% on 390); crews by pick pairs (−4 to −10); solo range openers
+  (−4.6); respawning groups worth 1.3x (−6); casters chipping Monoliths on mixed maps (never finished in time; those
+  maps 33/78 -> 21/78); gold-free heal trips (−6).
+- Who wins koi-vs-hecate: the first champion death (first to die wins 41%; no death in a third of games, koi 58%).
+  Steals are about 28 gems a game each way: the games are farm races on each side's own groups.
+- Found: a body could stand for 90 rounds in a dead-end pocket whose way out a live camp blocked (static fields ignore
+  camps); a wider search fixes it (`Pathing::step_towards`), level overall.
+- Attempt 3 (from the Fish-vs-hecate scrims; `tools/koi/killcard.py`): Fish converts engagements with less damage per
+  kill (2.2k against 3.3k), mostly through its killers' Focus and health; bush and unseen kills are not distinctive.
+  Level alone: Fish's targeting (kill, else lowest health; stuns on the biggest threat), a chasing caster stopping at
+  nuke range in a bush (+2 on 390), retreating casters casting any ready spell, the step-in after an enemy acts, rush
+  tributes late in a tight race. An enemy capture holder counted as a carrier: +1.7 on 1010. Funnelling captures to
+  Stellar: −4 to −5. hecate's upkeep builds instead of Fish's table: +2. The final koi (those fight changes with
+  hecate's builds): 54.0% over 1986 games (53.4% over 2698), nemesis 63.3, rival 73.6, morgana 74.9, aphelios 92.6
+  against hecate-v1's 61.5, 69.0, 74.9, 90.3. Code: [koi/koi.patch](koi/koi.patch) against hecate 110e338.

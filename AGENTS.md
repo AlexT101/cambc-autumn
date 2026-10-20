@@ -21,7 +21,7 @@ The bots are **C++ only**. Each bot's draft is a fixed preference order compiled
 | [nemesis](bots/nemesis/) | rival | rival plus fixes from top-team replays and turn audits |
 | [hecate](bots/hecate/) | nemesis 2dba924 | the bot we work on, strongest locally; shipped changes in [research/hecate/CHANGES.md](research/hecate/CHANGES.md), direction and open work in [research/hecate/TODO.md](research/hecate/TODO.md) |
 
-`bots/starter-cpp` is reference only. Frozen snapshots used as A/B baselines live in `bots/baselines/<bot>-vN/` (none at present; make one from a commit, leaving out `.cambc/`); never edit them. Delete a baseline once the current bots beat it about 80% of the time. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:
+koi, a Fish-like sparring bot built from hecate 110e338, is not in the tree: [research/koi/](research/koi/README.md) has what it does, every change tried, and a patch to rebuild it. `bots/starter-cpp` is reference only. Frozen snapshots used as A/B baselines live in `bots/baselines/<bot>-vN/` (none at present; make one from a commit, leaving out `.cambc/`); never edit them. Delete a baseline once the current bots beat it about 80% of the time. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:
 
 - [docs/handbook/](docs/handbook/) and [docs/champions/](docs/champions/): game rules, superseded by the YAML
 - [docs/guides/cpp/](docs/guides/cpp/): C++ guides
