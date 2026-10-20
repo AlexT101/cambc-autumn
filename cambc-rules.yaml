@@ -65,20 +65,21 @@ abilities:
 
 combat:
   modifiers: "Damage modifiers multiply and are never rounded. Health, damage and Strength are fractional."
-  kill: "The champion landing the killing blow gets 50 gold and all of the victim's carried gems. Assists give nothing. The victim keeps its gold and items."
+  kill: "The champion landing the killing blow gets 100 gold and all of the victim's carried gems. Assists give nothing. The victim keeps its gold and items."
   camp_kill: "A champion killed by a camp loses its carried gems."
 
 camps:
   types:
-    wolf: {health: 1350, strength: 20, gold: 90, gems: 22, respawn: 40}
-    elk: {health: 2400, strength: 60, gold: 160, gems: 36, respawn: 60}
-    gem_cluster: {health: 500, strength: 0, gold: 0, gems: 24, respawn: 50}
-    gold_cluster: {health: 500, strength: 0, gold: 35, gems: 0, respawn: 50}
-    monolith: {health: 20000, strength: 200, gold: 300, gems: 200, respawn: 150}
+    wolf: {health: 1350, strength: 20, range: 3, gold: 40, gems: 4, respawn: 40}
+    elk: {health: 2400, strength: 60, range: 4, gold: 90, gems: 15, respawn: 60}
+    golem: {health: 5000, strength: 120, range: 4, gold: 160, gems: 36, respawn: 80}
+    gem_cluster: {health: 120, strength: 0, gold: 0, gems: 7, respawn: 50}
+    gold_cluster: {health: 120, strength: 0, gold: 20, gems: 0, respawn: 50}
+    monolith: {health: 20000, strength: 200, range: 5, gold: 300, gems: 200, respawn: 150}
   groups: "Cardinally connected monsters form a group. A group wakes together and shares one reward, the sum of its members'. Its camp tiles (SDK: spawn tiles) are its monsters' spawn positions."
   wake: "A sleeping group wakes when any member takes damage or is stunned."
-  sleep: "An awake group sleeps after 2 consecutive camp phases with no champion within range 3. Damage does not keep it awake. Camps never regenerate."
-  attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within range 3; ties go to the champion that acts first in that round's turn order (rounds.champion_order, rounds.team_order), not the lowest id. Bushes do not hide champions from camps. Monsters never move."
+  sleep: "An awake group sleeps after 2 consecutive camp phases with no champion within any member's range. Damage does not keep it awake. Camps never regenerate."
+  attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within its range; ties go to the champion that acts first in that round's turn order (rounds.champion_order, rounds.team_order), not the lowest id. Bushes do not hide champions from camps. Monsters never move."
   state: "Bots can read whether a camp is dead, awake or asleep while its tile (its last tile, if dead) is in vision. They cannot read how far a capture has progressed."
 
 capture:
@@ -94,10 +95,10 @@ gems:
 altar_locks:
   place: "Place a carried lock on an altar within 2. Each team can have at most one lock per altar."
   effect: "Placing a lock cancels every tribute channel at that altar, both teams'. A lock blocks only the other team's tributes."
-  removal: "Three basic attacks remove a lock; spells do not affect it. An enemy tribute attempt at a locked altar counts as one of those attacks and spends the basic attack. Locks never expire."
+  removal: "Five basic attacks remove a lock; spells do not affect it. An enemy tribute attempt at a locked altar counts as one of those attacks and spends the basic attack. Locks never expire."
 
 economy:
-  gold: "Gold is earned only from capture shares and kill gold. Gold is fractional; gold_count shows the floor."
+  gold: "Gold comes only from capture shares, kill gold and Marcella's passive. Gold is fractional; gold_count shows the floor."
   bonuses: "Gold bonuses add together and apply to each capture share and to kill gold, never to gems."
   shop: "Buy any number of items on your own spawn or while dead."
   shards: "30 gold each; a shard adds the champion's growth in its stat. Each emblem family has a Strength, Health and Focus shard. Five identical shards combine automatically into that emblem. Emblems cannot be bought directly."
@@ -116,7 +117,7 @@ vision:
 wards:
   placement: "Place on any tile within 2, unseen tiles included. Walls, holes, altars, enemy spawn and tiles with a visible allied ward are errors; an unseen allied ward is a hidden blocker (turn.hidden_blocker)."
   enemy_wards: "An enemy ward, seen or unseen, does not block: both wards share the tile."
-  rate: "Each champion has one ward, placeable once per round; a new ward replaces the old one."
+  rate: "Each champion has one ward. One placed in round t can be placed again from round t+10; a new ward replaces the old one."
   vision: "A 13x13 square (radius 6), shadowcast from the ward's tile."
   lifetime: "Wards never expire, take no damage and outlive their owner's death."
 
@@ -148,60 +149,65 @@ champions:
   ability_keys: {target: "unit (a visible enemy champion or camp), ground, self, or ally (another allied champion)", exclusive: "excludes walking"}
   ryth:
     attack: melee
-    stats: {health: [1200, 100], strength: [50, 5], focus: [100, 10]}
+    stats: {health: [1200, 100], strength: [45, 5], focus: [100, 10]}
     passive: "Gains Strength equal to 1% of max health above base health."
     abilities: [{damage: 1, stun: true, target: ground, exclusive: true}, attack_reset]
   vesper_vale:
     attack: ranged
-    stats: {health: [900, 100], strength: [45, 5], focus: [100, 10]}
-    passive: "+20% gold."
+    stats: {health: [900, 100], strength: [50, 5], focus: [100, 10]}
+    passive: "+33% gold."
     abilities: [attack_reset, dash]
   prism:
     attack: ranged
-    stats: {health: [700, 75], strength: [35, 3.5], focus: [80, 10]}
-    passive: "+0.2 Focus per carried gem."
+    stats: {health: [700, 60], strength: [35, 2.5], focus: [80, 8]}
+    passive: "+1 Focus per carried gem."
     abilities: [{damage: 1.5, stun: true, target: unit, exclusive: true}, {damage: 1, target: ground, exclusive: true}]
   stellar:
     attack: ranged
-    stats: {health: [750, 75], strength: [35, 3.5], focus: [100, 10]}
+    stats: {health: [750, 75], strength: [30, 3.5], focus: [85, 9]}
     abilities: [{damage: 2, target: unit, exclusive: true}, {damage: 1.4, target: ground, exclusive: true}]
   vendetta:
     attack: melee
-    stats: {health: [800, 100], strength: [70, 5], focus: [100, 10]}
+    stats: {health: [800, 100], strength: [70, 6], focus: [100, 10]}
     passive: "Killing a champion or monster readies both abilities."
     abilities: [attack_reset, dash]
   marcella:
     attack: melee
-    stats: {health: [1200, 100], strength: [45, 5], focus: [50, 10]}
-    passive: "Immune to stuns."
+    stats: {health: [1200, 100], strength: [45, 5], focus: [60, 15]}
+    passive: "Immune to stuns. Gains 2 gold per gem she tributes."
     abilities: ["attack_reset; her next basic attack this turn also stuns", {damage: 2, target: unit, exclusive: true}]
   tavi:
     attack: ranged
-    stats: {health: [750, 75], strength: [35, 5], focus: [100, 10]}
+    stats: {health: [750, 75], strength: [45, 5], focus: [100, 10]}
     passive: "Buys shards anywhere; consumables still need spawn or death. On spawn, sells items for their full price (shard 30, emblem 150); refunds are not earned gold."
-    abilities: [attack_reset, {damage: 2.2, stun: true, target: unit, exclusive: true}]
+    abilities: [attack_reset, {damage: 1.4, stun: true, target: unit, exclusive: true}]
   willow:
     attack: ranged
-    stats: {health: [700, 50], strength: [45, 3], focus: [105, 5]}
+    stats: {health: [700, 50], strength: [55, 3], focus: [120, 5]}
     abilities: [{heal: 3, target: ally}, attack_reset]
   ren:
     attack: melee
-    stats: {health: [900, 100], strength: [40, 5], focus: [100, 10]}
+    stats: {health: [900, 100], strength: [35, 5], focus: [100, 9]}
     passive: "When damaged, deals 0.2x Focus to the attacker (monsters included), even while dying."
     abilities: [{damage: 1.25, stun: true, target: unit, exclusive: true}, dash]
   varg:
     attack: melee
-    stats: {health: [1000, 100], strength: [50, 5], focus: [100, 10]}
+    stats: {health: [1000, 100], strength: [40, 5], focus: [100, 10]}
     passive: "Basic attacks also deal Strength to other enemy champions and camps within 1 of the target."
     abilities: [attack_reset, {shield: 2.5, target: self, duration: 5}]
     shield: "Absorbs damage before health; leftover is lost on expiry."
+  heart_of_ruin:
+    attack: melee
+    stats: {health: [1000, 100], strength: [40, 5], focus: [100, 15]}
+    passive: "All its damage x (1 + 0.5 x missing health fraction): +50% at 0 health, +25% at half. Shields do not count as health."
+    abilities: [{shield: 1.5, target: self, duration: 5}, "dash; on landing, 1.75 damage and a stun to enemy champions and camps within 1 of the landing tile"]
   cassi_and_issac:
     passive: "One pick, two bodies with separate turns, positions, bags and abilities. If either dies, both die, giving one kill reward and both bags."
     cassi:
       attack: ranged
-      stats: {health: [700, 71.25], strength: [30, 3.5], focus: [70, 15]}
+      stats: {health: [600, 65], strength: [30, 3], focus: [70, 13]}
       abilities: [{damage: 2, target: unit, exclusive: true}, {stun: true, target: unit}]
     issac:
       attack: melee
-      stats: {health: [900, 95], strength: [40, 4.75], focus: [100, 10]}
+      stats: {health: [900, 80], strength: [40, 3], focus: [100, 10]}
       abilities: [attack_reset, dash]
