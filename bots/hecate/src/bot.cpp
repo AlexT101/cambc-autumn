@@ -1729,7 +1729,9 @@ bool in_pack_zone(const World& world, vec2 p) {
     // Each box lies within pack_radius of every member of its subset.
     bool near = false, recent = false;
     for (const auto& e : world.enemies)
-        if (e.alive && e.age(world.round) <= 1) recent = true, near |= dist(p, e.pos) <= pack_radius;
+        if (e.alive && e.age(world.round) <= 1)
+            recent = true, near |= (static_cast<unsigned>(p.x - e.pos.x + pack_radius) <= 2u * pack_radius)
+                                   & (static_cast<unsigned>(p.y - e.pos.y + pack_radius) <= 2u * pack_radius);
     if (!near) {
         auto& pz = pack_zone_state();
         if (recent && pz.round != world.round && pz.frozen != world.round) {
