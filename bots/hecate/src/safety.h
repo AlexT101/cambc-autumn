@@ -281,9 +281,11 @@ public:
     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
     void refresh();
 
+    // A visible enemy's Reach, built on first use this turn: blow(e, p) where its strike reaches p.
+    const Reach& reach_of(const ChampionBelief& e);
+
 private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
-    const Reach& reach_of(const ChampionBelief& e);
     // Chance the threat could be within reach of p; uniform over its possible tiles.
     float chance_in_reach(const Threat& t, vec2 p);
     // Every credible threat at full damage, plus camps.

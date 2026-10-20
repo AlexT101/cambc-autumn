@@ -1943,12 +1943,15 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             if (const int k = std::countr_zero(left), d = dist(p, at[k]); d <= strikes[k]->reach) mask |= 1u << k, damage += strikes[k]->damage[d];
         return mask;
     };
+    // blow() for the foes whose strike reaches p.
+    std::array<const Reach*, 8> reaches{};
     const auto exposure = [&](vec2 p, float& damage, unsigned near) {
         unsigned mask = 0;
         damage = 0;
         for (; near; near &= near - 1) {
             const int k = std::countr_zero(near);
-            if (const auto b = safety.blow(*foes[k], p); b.hits) mask |= 1u << k, damage += b.damage;
+            if (!reaches[k]) reaches[k] = &safety.reach_of(*foes[k]);
+            if (const auto b = reaches[k]->at(p); b.hits) mask |= 1u << k, damage += b.damage;
         }
         return mask;
     };

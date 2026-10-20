@@ -766,27 +766,31 @@ void check_chunks(Terrain& t) {
     t.chunked = true;
 }
 
-const Terrain& terrain(const StaticMap& map) {
-    static Terrain t;
-    if (t.ready) return t;
+Terrain terrain_storage;
+
+[[gnu::noinline]] void make_terrain(Terrain& t, const StaticMap& map) {
     t.ready = true;
     t.map = &map;
     t.width = map.width;
     t.height = map.height;
     check_chunks(t);
     const std::size_t size = bitboard::linear_buffer_size();
-    if (size + 8 > Terrain::bytes) return t;
+    if (size + 8 > Terrain::bytes) return;
     map.walls.export_linear_buffer({t.walls.data(), size});
     // Bits run from the low end of each byte; check on a set tile.
     if (!map.walls.is_empty()) {
         const vec2 probe = first_tile(map.walls);
-        if (!Terrain::bit(t.walls, probe.x + probe.y * t.width)) return t;
+        if (!Terrain::bit(t.walls, probe.x + probe.y * t.width)) return;
     }
     map.blocked_for_them.export_linear_buffer({t.blocked.data(), size});
     map.bushes.export_linear_buffer({t.bushes.data(), size});
     map.camp_tiles.export_linear_buffer({t.camps.data(), size});
     t.packed = true;
-    return t;
+}
+
+const Terrain& terrain(const StaticMap& map) {
+    if (!terrain_storage.ready) make_terrain(terrain_storage, map);
+    return terrain_storage;
 }
 
 // By group: the box around its members, as x0, x1, y0, y1.
