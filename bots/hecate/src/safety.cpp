@@ -536,12 +536,13 @@ struct StrikeMemo {
 };
 
 StrikeMemo& strike_memo(const ChampionBelief& c, int turn_round) {
-    static std::array<StrikeMemo, 16> memo;
+    // By champion and slots ready: cooldowns run out and come back.
+    static std::array<std::array<StrikeMemo, 4>, 16> memo;
     const bool uncertain = c.cooldowns_uncertain();
     const unsigned slots =
         (uncertain || c.ability_ready(0, turn_round) ? 1u : 0u) | (uncertain || c.ability_ready(1, turn_round) ? 2u : 0u);
     const auto s = std::bit_cast<std::uint32_t>(c.strength), focus = std::bit_cast<std::uint32_t>(c.focus);
-    auto& m = memo[(c.side == team::enemy ? 8u : 0u) + (static_cast<unsigned>(c.index) & 7u)];
+    auto& m = memo[(c.side == team::enemy ? 8u : 0u) + (static_cast<unsigned>(c.index) & 7u)][slots];
     if (m.slots != slots || m.type != c.type || m.strength != s || m.focus != focus) {
         m.type = c.type;
         m.strength = s;
