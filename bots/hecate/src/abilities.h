@@ -1,5 +1,7 @@
-// Damage and stun casts: Ryth, Prism, Stellar, Marcella's slot 1, Tavi, Ren and Cassi.
+// Damage and stun casts: Ryth, Prism, Stellar, Marcella's slot 1, Tavi, Ren, Cassi and Heart of Ruin's
+// dash landing.
 #pragma once
+#include "util.h"
 
 namespace aph {
 
@@ -8,10 +10,11 @@ struct ChampionBelief;
 
 // The best enemy-hitting cast this turn, if worth it. With `keep_walk`, an excludes-walking cast
 // must be worth the walk (a kill or a cancelled tribute) or stun every visible enemy that could
-// reach us next turn. `hold`: a tributer hit only to kill it.
+// reach us next turn; a dash landing always must, as it moves us. `hold`: a tributer hit only to
+// kill it.
 bool cast_at_enemies(const World& world, bool keep_walk = false, const ChampionBelief* hold = nullptr);
 // cast_at_enemies' choice from here, kept unexecuted for cast_chosen(): its value (0: none worth
-// casting), and whether it excludes walking.
+// casting), and whether it excludes walking. Dash landings are left to the planner's dashes.
 float enemy_cast_value(const World& world, bool keep_walk, const ChampionBelief* hold, bool& exclusive);
 bool cast_chosen();
 
@@ -22,5 +25,12 @@ bool cast_at_camp(const World& world, int group, bool attackers_only = false, bo
 
 // A visible enemy tributing a bag that wins them the game.
 bool enemy_tribute_wins(const World& world, const ChampionBelief& e);
+
+// What stunning e is worth, in enemy health points. `damaging`: the hit's worth already counts a
+// cancelled recall.
+float stun_worth(const World& world, const ChampionBelief& e, bool damaging);
+
+// A dash landing at p would hit a member of a sleeping group that strikes, waking it.
+bool landing_wakes(const World& world, vec2 p, int radius);
 
 } // namespace aph

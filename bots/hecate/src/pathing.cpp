@@ -295,6 +295,7 @@ void Pathing::occupied_into(bitboard& out) {
 }
 
 const bitboard& Pathing::blocked() {
+    if (dashes_seen_ != outside_dashes()) invalidate();
     if (!blocked_fresh_) {
         occupied_into(blocked_);
         set_tile(blocked_, my_pos(), false);
@@ -306,10 +307,12 @@ const bitboard& Pathing::blocked() {
 void Pathing::invalidate() {
     blocked_fresh_ = false;
     pos_fresh_ = false;
+    dashes_seen_ = outside_dashes();
 }
 
 vec2 Pathing::my_pos() {
     const auto round = round_now();
+    if (dashes_seen_ != outside_dashes()) invalidate();
     if (!pos_fresh_ || pos_round_ != round) {
         pos_ = my_position();
         pos_round_ = round;
@@ -520,14 +523,13 @@ bool Pathing::step_closer(vec2 target) {
     return best && try_move(*best);
 }
 
-bitboard Pathing::dash_landings() {
+bitboard dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also) {
     static bitboard camps{cambc::uninitialized}, excluded{cambc::uninitialized}, t{cambc::uninitialized};
-    const vec2 me = my_pos();
     camps_into(camps);
     // Dash paths cross holes, altars and champions but not walls or camps.
-    or_into(map().walls, camps, excluded);
-    auto landings = excluded.reachable_tiles(me, 2);
-    landings &= map().open_for_us;
+    or_into(map.walls, camps, excluded);
+    auto landings = excluded.reachable_tiles(from, 2);
+    landings &= map.open_for_us;
     copy_into(camps, excluded);
     occupancy_into(team::ally, t);
     excluded |= t;
@@ -535,12 +537,20 @@ bitboard Pathing::dash_landings() {
     excluded |= t;
     teleports_into(t);
     excluded |= t;
-    if (bumped_any_) excluded |= bumped_;
-    if (guard_) excluded |= *guard_;
+    if (also) excluded |= *also;
     excluded &= landings;
     landings ^= excluded;
-    landings.set(me, false);
+    landings.set(from, false);
     return landings;
+}
+
+bitboard Pathing::dash_landings() {
+    static bitboard off{cambc::uninitialized};
+    const bitboard* also = nullptr;
+    if (bumped_any_ && guard_) or_into(bumped_, *guard_, off), also = &off;
+    else if (bumped_any_) also = &bumped_;
+    else if (guard_) also = guard_;
+    return dash_landings_from(map(), my_pos(), also);
 }
 
 bitboard Pathing::teleport_targets() {

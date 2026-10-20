@@ -3,6 +3,7 @@
 #include <array>
 #include <optional>
 #include <vector>
+#include "abilities.h"
 #include "champions.h"
 #include "params.h"
 #include "pathing.h"
@@ -107,6 +108,12 @@ template <class Score, class Keep> Landings ranked(const bitboard& landings, Sco
     return out;
 }
 
+// Heart of Ruin's landing hits camps beside it: keep it off sleeping groups that strike.
+bool wakes_camp(const World& world, vec2 p) {
+    const int slot = world.me().facts().slot_of(AbilityKind::dash);
+    return slot >= 0 && world.me().facts().abilities[slot].lands() && landing_wakes(world, p, world.me().facts().abilities[slot].radius);
+}
+
 bool dash_to_first(const cambc::ability& dash, Pathing& pathing, const Landings& landings) {
     for (int i = 0; i < landings.count; ++i)
         if (cast(dash, landings.tiles[i])) {
@@ -129,7 +136,9 @@ bool travel_dash(const World& world, Pathing& pathing, const cambc::ability& das
     const int here_danger = danger(threats, here);
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return steps_at(p); },
-        [&](vec2 p, int steps) { return steps <= here_steps - dash_steps && danger(threats, p) <= here_danger; });
+        [&](vec2 p, int steps) {
+            return steps <= here_steps - dash_steps && danger(threats, p) <= here_danger && !wakes_camp(world, p);
+        });
     return dash_to_first(dash, pathing, landings);
 }
 
@@ -170,12 +179,17 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
             if (passive == Passive::linked_pair)
                 for (const auto& e : world.enemies)
                     if (e.alive && e.visible && e.pos != p && e.facts().passive == Passive::linked_pair) partner = e.health;
-            seen.push_back({c, p, c.health(), retaliation, stunnable, partner});
+            // A shield must be hit through before health: counted as health.
+            float shield = 0;
+            if (facts(c.champion_name()).has(AbilityKind::shield))
+                for (const auto& e : world.enemies)
+                    if (e.alive && e.visible && e.pos == p) shield = e.shield;
+            seen.push_back({c, p, c.health() + shield, retaliation, stunnable, partner});
         } catch (const cambc::error&) {
         }
     }
     if (seen.empty()) return std::nullopt;
-    const float strength = my_strength(), health = my_health();
+    const float health = my_health(), strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health());
     // An enemy on its spawn heals to full at its turn end: only a kill or a stun is worth anything.
     const auto worth = [&](const Seen& s) {
         if (s.health <= strength) return s.health + params::life_value;
@@ -311,7 +325,7 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     if (enemy_within(world, here, range)) return false;
     const auto dash = ready(world, AbilityKind::dash);
     if (!dash) return false;
-    const float strength = my_strength();
+    const float strength = my_strength() * damage_scale(world.me().facts().passive, my_health(), my_max_health());
     const float my_fraction = health_fraction(me);
     for (const auto& e : world.enemies) {
         if (target_given) break;
@@ -330,7 +344,7 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     const auto landings = ranked(
         within(pathing.dash_landings(), at, range + walk),
         [&](vec2 p) { return (dist(p, at) > range ? 1000000 : 0) + danger(threats, p) * 1000 + std::min<int>(spawn.at(p), 999); },
-        [](vec2, int) { return true; });
+        [&](vec2 p, int) { return !wakes_camp(world, p); });
     return dash_to_first(*dash, pathing, landings);
 }
 
@@ -344,7 +358,7 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home) {
     if (here_danger == 0) return false;
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return danger(threats, p) * 1000 + std::min<int>(home.at(p), 999); },
-        [&](vec2, int score) { return score / 1000 < here_danger; });
+        [&](vec2 p, int score) { return score / 1000 < here_danger && !wakes_camp(world, p); });
     return dash_to_first(*dash, pathing, landings);
 }
 

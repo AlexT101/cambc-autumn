@@ -316,3 +316,24 @@ Against hecate 3e8dfa0 (`bots/baselines/hecate-v7`), both sides; fresh suites ar
 - Camp reach per monster type from the camp designs, instead of 3 for all: 54.3% vs hecate-v7 (398 games). Kept.
 - Gem limits rescaled by stampede's block (big_gems 55, chain_bag_limit 30, brake_bag 11): 52.8% on top (398), 52.3% on
   a fresh suite (264). Kept. With gem_value 40 as well: 50.8%. With life_value 400 as well: identical games (no effect).
+
+## hecate: Heart of Ruin (2026-10-20)
+
+Against hecate 1251236 (`bots/variants/hor-pre`, frozen pre-change), ladder + gen (554 games) both sides. HoR draft:
+heart_of_ruin, stellar, cassi_and_issac, ryth, varg (normal draft with Ren swapped for HoR).
+
+| match | new | pre |
+|---|---|---|
+| HoR draft vs pre HoR draft | 70.8 (ladder 64.3, gen 71.3) | |
+| normal draft vs pre normal draft | 49.8 | |
+| normal draft vs pre HoR draft | 54.7 | 52.0 |
+| normal draft vs new HoR draft | 37.7 | 34.7 |
+
+- The dash landing (planner, enemy casts, camp casts), the passive in our damage, and the shield gated on the plan
+  when a landing is ready (CHANGES 25). An earlier build with ungated shield reads for allies too gave 68.2 / 50.9 /
+  53.2 / 37.7 on the same rows.
+- Enemy modelling (landing reach, damage and stun, passive, active shields): +2.7 and +3.0 points against the two HoR
+  drafts, level in the mirror.
+- The new HoR draft beats our normal draft 62.3% (554): a draft change to try next, with ladder evidence.
+- Fuel: about +2% a turn from the early turns on (the shield bookkeeping per champion update, the passive in strikes
+  and outputs; moving it around shifted the bench by +-100 a turn from layout alone); real budget 0 out-of-fuel turns.

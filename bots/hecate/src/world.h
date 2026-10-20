@@ -223,6 +223,10 @@ struct ChampionBelief {
     int pos_round = -1;
     Source pos_source = Source::none;
     float health = 0, max_health = 0, strength = 0, focus = 0;
+    float shield = 0;     // a shielder's (Varg, Heart of Ruin) active shield, absorbed before health
+    int shield_turns = 0; // its turn ends left
+    std::int8_t shield_slot = -1; // enemies' and ours: the shield's slot, read with the cooldowns
+    float scale = 1;      // damage_scale() at `health`, kept with the stats: fights read it often
     int stats_round = -1;
     int gems = 0;
     bool fast_recall = false; // a Home emblem, when last seen (enemies and ourselves): recall takes home_recall_time turn ends
@@ -267,6 +271,8 @@ struct ChampionBelief {
     }
     // No walking, attacking or casting on the respawn turn.
     bool can_act(int round) const { return alive && round != respawned_round; }
+    // Heart of Ruin's multiplier on all its damage at its health; 1 for the rest.
+    float damage_scale() const { return scale; }
     // Damage back to whoever hits it (Ren), even as it dies.
     float retaliation() const { return facts().passive == Passive::retaliation ? retaliation_share * focus : 0.0f; }
     // True if an unseen reset could make the abilities ready earlier than ready_round says.

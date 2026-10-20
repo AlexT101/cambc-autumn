@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <span>
+#include <tuple>
 
 namespace aph {
 
@@ -35,6 +36,17 @@ cambc::champion_type type(std::uint32_t h) {
     champion_identity identity{};
     ok(sdk_champion_identity(h, &identity));
     return static_cast<cambc::champion_type>(identity.type);
+}
+
+// The active shield's value and turn ends left, {0, 0} if none.
+std::pair<float, int> shield(std::uint32_t h) {
+    static std::array<buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+    std::uint32_t n = 0;
+    ok(sdk_champion_buff_data(h, buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::shield))
+            return {buffs[i].data.shield.value, buffs[i].data.shield.duration};
+    return {0.0f, 0};
 }
 
 bool alive(std::uint32_t h) {
@@ -725,6 +737,7 @@ const bitboard& CampGroup::threat() const {
             b.health = b.max_health = b.facts().health.base;
             b.strength = b.facts().strength.base;
             b.focus = b.facts().focus.base;
+            if (side == team::enemy || b.is_self) b.shield_slot = static_cast<std::int8_t>(b.facts().slot_of(AbilityKind::shield));
             if (side == team::enemy) fix_at_spawn(b, s.enemy_spawn, {1, -1});
             if (b.is_self) self_index = i;
         }
@@ -780,6 +793,18 @@ void World::update() {
     update_champions(false);
 }
 
+namespace {
+
+// An enemy shielder's or our own active shield, read only while the cast is recent enough: it outlasts
+// the cast by its duration, the cooldown by 8.
+[[gnu::noinline]] void read_shield(ChampionBelief& b, const std::array<int, 2>& cds) {
+    b.shield = 0, b.shield_turns = 0;
+    if (cds[b.shield_slot] > ability_cooldown - b.facts().abilities[b.shield_slot].duration)
+        std::tie(b.shield, b.shield_turns) = engine::shield(engine::id(b.handle));
+}
+
+} // namespace
+
 void World::update_champions(bool full) {
     tracked_count_ = 0;
     // Allies read this round have not changed but for our own move and heals, and nothing reads
@@ -830,6 +855,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
             b.pos_round = round;
             b.pos_source = Source::inferred;
             b.health = b.max_health;
+            b.scale = 1;
             b.gems = 0;
             b.ready_round = {b.respawned_round + 1, b.respawned_round + 1};
             if (enemy) fix_at_spawn(b, s.enemy_spawn, {round - 1, -1});
@@ -847,6 +873,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
                 b.pos_round = b.channel_end_round;
                 b.pos_source = Source::inferred;
                 b.health = b.max_health;
+                b.scale = 1;
                 // Damage or a stun could have cancelled it, so add the spawn, not replace.
                 if (enemy) {
                     or_into(b.possible, s.enemy_spawn, b.possible);
@@ -879,6 +906,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.max_health = info->max_health;
     b.strength = info->strength;
     b.focus = info->focus;
+    b.scale = damage_scale(b.facts().passive, b.health, b.max_health);
     b.stats_round = round;
     if (!full && last_seen == round) return; // nothing else changes during our turn
     // Also in observe() for a champion first seen after our move: a recall then still tells when
@@ -898,10 +926,12 @@ void World::update_champion(ChampionBelief& b, bool full) {
         b.lineage = 0;
     }
     const int earliest = b.respawned_round + 1;
+    std::array<int, 2> cds;
     for (int slot = 0; slot < 2; ++slot) {
-        const int cd = engine::cooldown(h, static_cast<std::uint32_t>(slot));
-        b.ready_round[slot] = std::max(fire_round(round, cd, acted), earliest);
+        cds[slot] = engine::cooldown(h, static_cast<std::uint32_t>(slot));
+        b.ready_round[slot] = std::max(fire_round(round, cds[slot], acted), earliest);
     }
+    if (b.shield_slot >= 0) read_shield(b, cds);
     // In observe() too, for a champion first seen after our move.
     b.gems = engine::gems(h);
     if (enemy || b.is_self) b.fast_recall = engine::home_emblem(h);
@@ -950,6 +980,7 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float healt
     auto& b = enemies[enemy_index];
     if (!b.alive || b.visible || seen_round <= b.pos_round) return;
     b.health = health * b.max_health;
+    b.scale = damage_scale(b.facts().passive, b.health, b.max_health);
     b.pos = pos;
     b.pos_round = seen_round;
     b.pos_source = Source::comms;

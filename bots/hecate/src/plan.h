@@ -42,6 +42,8 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
 
 // A reset's second attack could kill an enemy this turn: a cast worth keeping for the plan.
 bool reset_may_kill(const World& world);
+// A dash that lands on enemies is ready: likewise.
+bool landing_ready(const World& world);
 
 // The basic attack from here on the enemy it is worth most against, if any.
 bool strike_enemy(const World& world, const ChampionBelief* hold);

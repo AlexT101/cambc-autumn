@@ -67,6 +67,7 @@ const ChampionBelief& live_self(const World& world) {
     b.health = info.health;
     b.strength = info.strength;
     b.focus = info.focus;
+    b.scale = damage_scale(b.facts().passive, b.health, b.max_health);
     b.gems = static_cast<int>(my_gems());
     for (std::uint32_t s = 0; s < 2; ++s) {
         static std::int32_t cooldown;

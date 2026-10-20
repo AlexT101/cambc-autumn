@@ -22,6 +22,10 @@ namespace {
 constexpr int max_fighters = 6; // one team's bodies
 constexpr int never = std::numeric_limits<int>::max();
 
+// Strength and Focus as they deal damage: Heart of Ruin's passive at its last-read health.
+float hit_strength(const ChampionBelief& c) { return c.strength * c.scale; }
+float hit_focus(const ChampionBelief& c) { return c.focus * c.scale; }
+
 // What casting a slot adds to a turn's basic attack.
 struct CastEffect {
     float value = 0; // the choice between ready slots: the most valuable, if any above 0
@@ -169,29 +173,27 @@ int next_cast(const Fighter& f) { return std::min(f.ready_at[0], f.ready_at[1]);
 // to take it: attack() then finds no target and moves on, as if it were worth nothing.
 void make_kit(const ChampionBelief& c, Kit& kit) {
     const auto& facts = c.facts();
+    const float strength = hit_strength(c), focus = hit_focus(c);
     for (int s = 0; s < 2; ++s) {
         const auto& a = facts.abilities[s];
         auto& e = kit.cast[s];
         e = {};
-        e.value = a.stuns ? c.strength : 0;
-        switch (a.kind) {
-        case AbilityKind::attack_reset: e.value += c.strength; break;
-        case AbilityKind::damage:
-        case AbilityKind::shield:
-        case AbilityKind::heal: e.value += a.multiplier * c.focus; break;
-        default: break;
-        }
+        const bool damages = a.kind == AbilityKind::damage || a.lands();
+        e.value = a.stuns ? strength : 0;
+        if (a.kind == AbilityKind::attack_reset) e.value += strength;
+        if (damages) e.value += a.multiplier * focus;
+        if (a.kind == AbilityKind::shield || a.kind == AbilityKind::heal) e.value += a.multiplier * c.focus;
         e.stuns = a.stuns;
         if (a.kind == AbilityKind::shield || a.kind == AbilityKind::heal) e.heal = a.multiplier * c.focus;
         e.heals_self = a.kind == AbilityKind::shield;
         e.heals_ally = e.heal != 0 && !e.heals_self;
-        if (a.kind == AbilityKind::attack_reset) e.damage = c.strength;
-        if (a.kind == AbilityKind::damage) e.damage = a.multiplier * c.focus;
-        e.hits = a.kind == AbilityKind::attack_reset || a.kind == AbilityKind::damage ? 2 : 1;
+        if (a.kind == AbilityKind::attack_reset) e.damage = strength;
+        if (damages) e.damage = a.multiplier * focus;
+        e.hits = a.kind == AbilityKind::attack_reset || damages ? 2 : 1;
         e.duration = a.duration;
     }
     kit.preference = kit.cast[1].value > kit.cast[0].value ? std::array<int, 2>{1, 0} : std::array<int, 2>{0, 1};
-    kit.plain = exact(c.strength) && exact(kit.cast[0].damage) && exact(kit.cast[1].damage) && !kit.cast[0].heals_self
+    kit.plain = exact(strength) && exact(kit.cast[0].damage) && exact(kit.cast[1].damage) && !kit.cast[0].heals_self
                 && !kit.cast[1].heals_self;
 }
 
@@ -199,7 +201,7 @@ void make_kit(const ChampionBelief& c, Kit& kit) {
 void make_fighter(const ChampionBelief& c, int turn_round, Fighter& f, Kit& kit) {
     const auto& facts = c.facts();
     f.kit = &kit;
-    f.strength = c.strength;
+    f.strength = hit_strength(c);
     const bool uncertain = c.cooldowns_uncertain();
     for (int s = 0; s < 2; ++s)
         f.ready_at[s] = kit.cast[s].value <= 0 ? never : uncertain ? 0 : std::max(0, c.ready_round[s] - turn_round);
@@ -209,8 +211,9 @@ void make_fighter(const ChampionBelief& c, int turn_round, Fighter& f, Kit& kit)
     f.linked = facts.passive == Passive::linked_pair;
     f.health = c.health;
     f.max_health = c.max_health;
-    f.shield = 0;
-    f.shield_until = never;
+    const bool shielded = c.shield > 0 && (c.visible || c.is_self);
+    f.shield = shielded ? c.shield : 0;
+    f.shield_until = shielded ? std::max(1, c.shield_turns) : never;
     f.retaliation = c.retaliation();
     f.link = -1;
 }
@@ -467,8 +470,8 @@ std::uint32_t fighting_allies(const World& world, vec2 p) {
 
 [[gnu::noinline]] void make_slot(const World& world, const ChampionBelief& c, int slot) {
     auto& m = made_fighters;
-    const std::array<std::uint32_t, 3> from{static_cast<std::uint32_t>(c.type), std::bit_cast<std::uint32_t>(c.strength),
-                                            std::bit_cast<std::uint32_t>(c.focus)};
+    const std::array<std::uint32_t, 3> from{static_cast<std::uint32_t>(c.type), std::bit_cast<std::uint32_t>(hit_strength(c)),
+                                            std::bit_cast<std::uint32_t>(hit_focus(c))};
     if (!(m.kits >> slot & 1) || m.kit_of[slot] != from) {
         m.kits |= 1u << slot;
         m.kit_of[slot] = from;
@@ -539,7 +542,14 @@ Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slo
             add(range + walk, 2 * s, a.stuns);
             if (f.ranged) add(range + 1, s, a.stuns); // walk, reset, attack
             break;
-        case AbilityKind::dash: add(range + walk + 2, s, false); break;
+        case AbilityKind::dash:
+            add(range + walk + 2, s, false);
+            if (a.lands()) {
+                // The landing, then a basic attack from it.
+                add(walk + a.reach(), a.multiplier * focus, a.stuns);
+                add(walk + 2 + std::min(range, a.radius), a.multiplier * focus + s, a.stuns);
+            }
+            break;
         case AbilityKind::damage:
             // Excludes walking but not the basic attack.
             add(a.reach(), a.multiplier * focus, a.stuns);
@@ -576,14 +586,15 @@ StrikeMemo& strike_memo(const ChampionBelief& c, int turn_round) {
     const bool uncertain = c.cooldowns_uncertain();
     const unsigned slots =
         (uncertain || c.ability_ready(0, turn_round) ? 1u : 0u) | (uncertain || c.ability_ready(1, turn_round) ? 2u : 0u);
-    const auto s = std::bit_cast<std::uint32_t>(c.strength), focus = std::bit_cast<std::uint32_t>(c.focus);
+    const float hs = hit_strength(c), hf = hit_focus(c);
+    const auto s = std::bit_cast<std::uint32_t>(hs), focus = std::bit_cast<std::uint32_t>(hf);
     auto& m = memo.by_champion[(c.side == team::enemy ? 8u : 0u) + (static_cast<unsigned>(c.index) & 7u)][slots];
     if (!m.valid || m.type != c.type || m.strength != s || m.focus != focus) {
         m.valid = true;
         m.type = c.type;
         m.strength = s;
         m.focus = focus;
-        m.value = compute_strike(c.facts(), c.strength, c.focus, slots);
+        m.value = compute_strike(c.facts(), hs, hf, slots);
         m.widened_known = false;
     }
     return m;
@@ -611,11 +622,12 @@ float most_damage(const ChampionBelief& c) {
         float damage;
     };
     static std::array<Memo, 8> memo;
-    const auto s = std::bit_cast<std::uint32_t>(c.strength), focus = std::bit_cast<std::uint32_t>(c.focus);
+    const float hs = hit_strength(c), hf = hit_focus(c);
+    const auto s = std::bit_cast<std::uint32_t>(hs), focus = std::bit_cast<std::uint32_t>(hf);
     auto& m = memo[static_cast<unsigned>(c.index) & 7u];
     if (!m.known || m.type != c.type || m.strength != s || m.focus != focus) {
-        const auto k = compute_strike(c.facts(), c.strength, c.focus, 3u);
-        m = {c.type, s, focus, true, k.hits(0) ? k.at(0) + c.strength : 0.0f};
+        const auto k = compute_strike(c.facts(), hs, hf, 3u);
+        m = {c.type, s, focus, true, k.hits(0) ? k.at(0) + hs : 0.0f};
     }
     return m.damage;
 }
@@ -633,7 +645,7 @@ const Strike& threat_strike(const World& world, const ChampionBelief& c) {
     auto& out = m.widened;
     for (int d = 0; d <= Strike::max_reach; ++d) {
         const float walked = s.at(std::max(0, d - 1));
-        const float twice = s.hits(d) ? s.at(d) + (d <= basic_reach ? c.strength : 0.0f) : 0.0f;
+        const float twice = s.hits(d) ? s.at(d) + (d <= basic_reach ? hit_strength(c) : 0.0f) : 0.0f;
         out.damage[d] = std::max(walked, twice);
         out.stuns[d] = s.stuns[std::max(0, d - 1)]; // s.stuns holds from 0 out to some distance
     }
@@ -1068,7 +1080,7 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     static std::uint32_t builds = 0;
     stamp_ = ++builds;
     twice_ = twice;
-    strength_ = e.strength;
+    strength_ = hit_strength(e);
     reach_ = -1;
     const auto& f = e.facts();
     const bool uncertain = e.cooldowns_uncertain();
@@ -1132,7 +1144,8 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
 
 void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool twice) {
     const auto& f = e.facts();
-    const Recipe recipe{e.type, std::bit_cast<std::uint32_t>(e.strength), std::bit_cast<std::uint32_t>(e.focus),
+    const float s = hit_strength(e), focus = hit_focus(e);
+    const Recipe recipe{e.type, std::bit_cast<std::uint32_t>(s), std::bit_cast<std::uint32_t>(focus),
                         static_cast<std::uint8_t>(ready[0] | ready[1] << 1), twice, true};
     ways_ = &ways_by_[static_cast<std::size_t>(recipe.slots | recipe.twice << 2)];
     auto& ws = *ways_;
@@ -1145,7 +1158,6 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool 
     ws.basic = -1;
     const Tiles basic_from = f.ranged ? here : walked1;
     const int range = f.attack_range();
-    const float s = e.strength;
     for (int turn = 0; turn < (twice ? 2 : 1); ++turn) {
         const bool walked = turn == 1;
         // A walk first, on the first of two turns.
@@ -1155,13 +1167,20 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool 
         for (std::size_t slot = 0; slot < 2; ++slot) {
             if (!ready[slot]) continue;
             const auto& a = f.abilities[slot];
-            const float spell = a.multiplier * e.focus;
+            const float spell = a.multiplier * focus;
             switch (a.kind) {
             case AbilityKind::attack_reset:
                 add(from(basic_from), range, true, 2 * s, a.stuns, walked);
                 if (f.ranged) add(from(walked1), range, true, s, a.stuns, walked); // walk, reset, attack
                 break;
-            case AbilityKind::dash: add(from(dashed), range, true, s, false, walked); break;
+            case AbilityKind::dash:
+                add(from(dashed), range, true, s, false, walked);
+                // The landing hits unseen tiles too; the landings are taken as all of `dashed`.
+                if (a.lands()) {
+                    add(from(dashed), a.radius, false, spell, a.stuns, walked);
+                    add(from(dashed), std::min(range, a.radius), true, spell + s, a.stuns, walked);
+                }
+                break;
             case AbilityKind::damage:
                 // Excludes walking but not the basic attack.
                 add(from(here), a.reach(), a.target == Targeting::unit, spell, a.stuns, walked);

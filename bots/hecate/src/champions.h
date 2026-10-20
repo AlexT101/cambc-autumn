@@ -11,7 +11,8 @@ enum class AbilityKind : std::uint8_t {
     attack_reset, // restores a spent basic attack (never the walk); fails while the attack is unspent
     damage,       // multiplier x Focus damage, maybe with a stun
     stun,         // stun with no damage (Cassi)
-    dash,         // move to a free tile by up to 2 king steps; crosses holes, altars and champions
+    dash,         // move to a free tile by up to 2 king steps; crosses holes, altars and champions; Heart of
+                  // Ruin's lands for multiplier x Focus damage and a stun within `radius` of the landing
     heal,         // multiplier x Focus heal on another ally
     shield,       // multiplier x Focus shield on self for `duration` turn ends
 };
@@ -38,6 +39,14 @@ enum class Passive : std::uint8_t {
 };
 
 inline constexpr float retaliation_share = cambc::constants::passive_abilities::ren_retaliation_focus_ratio; // of Ren's Focus, per hit taken
+inline constexpr float missing_health_bonus = cambc::constants::passive_abilities::heart_of_ruin_missing_health_damage_max_bonus;
+
+// Heart of Ruin's damage multiplier at this health (shields do not count); 1 for the rest.
+constexpr float damage_scale(Passive passive, float health, float max_health) {
+    if (passive != Passive::missing_health || max_health <= 0) return 1;
+    const float missing = 1 - health / max_health;
+    return 1 + missing_health_bonus * (missing < 0 ? 0 : missing > 1 ? 1 : missing);
+}
 
 struct Stat {
     float base, growth; // growth is per shard
@@ -51,6 +60,7 @@ struct AbilityFacts {
     bool stuns = false;            // stuns its target(s); for Marcella's reset, her next basic attack stuns
     bool excludes_walking = false; // cannot be cast after walking; walking is forbidden after it
     int duration = 0;              // shield turn ends
+    int radius = 0;                // a dash's landing damage and stun, around the landing tile
 
     constexpr int range() const {
         switch (kind) {
@@ -61,9 +71,11 @@ struct AbilityFacts {
         }
     }
     // Farthest tile from the caster this ability can affect (a ground cast hits a 3x3 area).
-    constexpr int reach() const { return range() + (target == Targeting::ground ? 1 : 0); }
+    constexpr int reach() const { return range() + (target == Targeting::ground ? 1 : 0) + radius; }
+    // A dash whose landing damages or stuns.
+    constexpr bool lands() const { return kind == AbilityKind::dash && (multiplier > 0 || stuns); }
     constexpr bool hits_enemies() const {
-        return kind == AbilityKind::damage || kind == AbilityKind::stun;
+        return kind == AbilityKind::damage || kind == AbilityKind::stun || lands();
     }
 };
 
@@ -133,7 +145,7 @@ inline constexpr std::array<ChampionFacts, 13> champion_table = [] {
         {C::tavi, "tavi", true, {750, 75}, {45, 5}, {100, 10}, P::remote_shop,
          {reset, damage(T::unit, 1.4f, true)}},
         {C::heart_of_ruin, "heart_of_ruin", false, {1000, 100}, {40, 5}, {100, 15}, P::missing_health,
-         {AbilityFacts{K::shield, T::self, 1.5f, false, false, 5}, dash}},
+         {AbilityFacts{K::shield, T::self, 1.5f, false, false, 5}, AbilityFacts{K::dash, T::self, 1.75f, true, false, 0, 1}}},
     }};
 }();
 

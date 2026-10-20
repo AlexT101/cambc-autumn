@@ -43,6 +43,12 @@ inline int& camp_hits() {
     return hits;
 }
 
+// Dashes cast outside Pathing (Heart of Ruin's landings): Pathing reads our tile again after one.
+inline unsigned& outside_dashes() {
+    static unsigned dashes = 0;
+    return dashes;
+}
+
 // The phase running, for locating out-of-fuel turns: set and read only inside debug_block.
 inline const char*& fuel_phase() {
     static const char* phase = "start";

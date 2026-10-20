@@ -157,3 +157,25 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    old big/not-big split of every ladder group but one), chain_bag_limit 80 -> 30, brake_bag 30 -> 11. 52.8% vs 23
    (ladder 42.9, gen 56.1, central 47.8), 52.3% on a fresh suite (seed 7101). gem_value 15 -> 40 on top: 50.8%;
    life_value 300 -> 400: no game changed.
+25. 2026-10-20 (not yet submitted). Heart of Ruin played as itself, and modelled as an enemy. HoR draft below is
+   heart_of_ruin, stellar, cassi_and_issac, ryth, varg (Ren swapped out); pre = hecate 1251236.
+   - champions.h: AbilityFacts::radius and lands() for a dash whose landing damages and stuns (HoR: 1.75 x Focus,
+     stun, radius 1; reach 3); damage_scale() for the missing-health passive (x (1 + 0.5 x missing fraction)).
+   - Own HoR: plan.cpp prices each dash landing within 2 that hits a visible enemy (damage via damage_amount, stun via
+     abilities.cpp stun_worth, a held tributer only if killed, Ren's retaliation) plus the basic attack after it, or
+     for melee the attack from here first; cast_at_enemies lands only for keep_walk_value (a kill or a cancelled
+     tribute: game enders, retreats, after the walk); cast_at_camp lands on the farmed group, never off a cleared
+     group we hold, onto another group's members or into another group's reach. Travel, chase and escape dashes keep
+     off landings next to sleeping groups that strike. The early shield waits for the plan while a landing is ready
+     (like the reset); the shield itself is shield_if_needed, as for Varg. Our basic-attack kill checks, output(),
+     killable_now and the fight kit scale by the passive at current health. A landing cast outside Pathing bumps
+     outside_dashes(), after which Pathing rereads our tile.
+   - Enemy HoR: Strike, Reach and the fight kit add the landing (walk + dash + radius, 1.75 x Focus, stun; plus the
+     basic attack beside it), all its damage scaled by its last-read health; its kit already shields.
+   - Active shields (enemy Varg and HoR, and our own) are read from the buffs while the cast is under 5 turns old:
+     the fight sim starts them shielded, and the planner, attack_target and killable_now count a shield as health.
+   - HoR draft vs pre with the same HoR draft: 70.8% (554 games: ladder 64.3, gen 71.3). Normal draft vs pre normal:
+     49.8% (level). Against the pre HoR draft: 54.7% vs pre's 52.0%; against the new HoR draft: 37.7% vs pre's 34.7%.
+     The new HoR draft beats the normal draft 62.3% (the draft is unchanged here). Fuel at 100M: +3.9% a turn mean
+     vs pre on the bench (+1.4% for the HoR draft); at the real budget 0 out-of-fuel turns either way, shortcuts
+     1174 -> 1137.

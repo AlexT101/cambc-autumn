@@ -443,14 +443,14 @@ const bitboard* pack_zone(const World& world);
     submit_here(world, pathing, safety, memory);
 }
 
-// Damage a turn, spells spread over their cooldown.
+// Damage a turn, spells (and dash landings) spread over their cooldown.
 float output(const ChampionBelief& c) {
     float damage = c.strength;
     for (const auto& a : c.facts().abilities) {
-        if (a.kind == AbilityKind::damage) damage += a.multiplier * c.focus / static_cast<float>(ability_cooldown);
+        if (a.kind == AbilityKind::damage || a.lands()) damage += a.multiplier * c.focus / static_cast<float>(ability_cooldown);
         if (a.kind == AbilityKind::attack_reset) damage += c.strength / static_cast<float>(ability_cooldown);
     }
-    return damage;
+    return damage * c.damage_scale();
 }
 
 // output(), at least 1: a divisor for clear times.
@@ -591,12 +591,12 @@ float spell_output(const ChampionBelief& c) {
     float damage = 0;
     for (const auto& a : c.facts().abilities)
         if (a.kind == AbilityKind::damage) damage += a.multiplier * c.focus / static_cast<float>(ability_cooldown);
-    return damage;
+    return damage * c.damage_scale();
 }
 
 // Basic attacks a turn, with the reset spread over its cooldown.
 float basic_output(const ChampionBelief& c) {
-    return c.strength * (c.facts().has_attack_reset() ? 1.0f + 1.0f / static_cast<float>(ability_cooldown) : 1.0f);
+    return c.strength * c.damage_scale() * (c.facts().has_attack_reset() ? 1.0f + 1.0f / static_cast<float>(ability_cooldown) : 1.0f);
 }
 
 // Bit i: member i deals no damage and a basic attack of `range` reaches it from a tile out of the
@@ -784,7 +784,7 @@ float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const 
     const auto out = [&](const Build& x) {
         float damage = x.strength;
         for (const auto& a : world.me().facts().abilities) {
-            if (a.kind == AbilityKind::damage) damage += a.multiplier * x.focus / static_cast<float>(ability_cooldown);
+            if (a.kind == AbilityKind::damage || a.lands()) damage += a.multiplier * x.focus / static_cast<float>(ability_cooldown);
             if (a.kind == AbilityKind::attack_reset) damage += x.strength / static_cast<float>(ability_cooldown);
         }
         return std::max(1.0f, damage);
@@ -1867,6 +1867,8 @@ int killable_now(const World& world, Safety& safety) {
     const vec2 here = my_position();
     const float health = my_health();
     const int range = f.attack_range();
+    const float scale = damage_scale(f.passive, health, my_max_health());
+    const float strength = self.strength * scale, focus = self.focus * scale;
     for (auto left = safety.seen_enemies(); left; left &= left - 1) {
         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         const int d = dist(here, e.pos);
@@ -1874,10 +1876,12 @@ int killable_now(const World& world, Safety& safety) {
         for (int s = 0; s < 2; ++s) {
             const auto& a = f.abilities[s];
             if (!self.ability_ready(s, world.round)) continue;
-            if (a.kind == AbilityKind::attack_reset && d <= range) cast = std::max(cast, self.strength);
-            if (a.kind == AbilityKind::damage && d <= a.range()) cast = std::max(cast, a.multiplier * self.focus);
+            if (a.kind == AbilityKind::attack_reset && d <= range) cast = std::max(cast, strength);
+            if (a.kind == AbilityKind::damage && d <= a.range()) cast = std::max(cast, a.multiplier * focus);
+            // The landing, then the attack from beside it.
+            if (a.lands() && d <= a.reach()) cast = std::max(cast, a.multiplier * focus + (d > range ? strength : 0.0f));
         }
-        if ((d <= range ? self.strength : 0.0f) + cast < e.health || test(world.map().enemy_spawn, e.pos)) continue;
+        if ((d <= range ? strength : 0.0f) + cast < e.health + e.shield || test(world.map().enemy_spawn, e.pos)) continue;
         const bool linked = e.facts().passive == Passive::linked_pair;
         float rest = safety.camp_damage(here);
         for (const auto& t : safety.threats())
@@ -2158,7 +2162,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
             continue;
         // Every tile in reach of it would make us retreat at once.
         if (pack_covers(world, e.pos, range)) continue;
-        if (!strength) strength = std::max(1.0f, my_strength());
+        if (!strength) strength = std::max(1.0f, my_strength() * world.me().damage_scale());
         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + e.health / *strength;
         // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
         const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
@@ -2965,9 +2969,9 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         return;
     }
     heal_ally(world);
-    // A reset that may kill is weighed against the shield by the plan.
+    // A reset that may kill, or a dash landing, is weighed against the shield by the plan.
     const bool strikes = strike_possible(world);
-    if (!strikes || !reset_may_kill(world)) shield_if_needed(world, safety, memory.claim);
+    if (!strikes || !(reset_may_kill(world) || landing_ready(world))) shield_if_needed(world, safety, memory.claim);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     if (on_spawn && my_health() < my_max_health()) {
         decision = 'H';

@@ -23,6 +23,7 @@ struct Foe {
     vec2 pos;
     float health, retaliation, partner, bag;
     bool spawn, hold;
+    float land, stun; // a ready dash landing's damage to it, and its stun's worth
 };
 
 using Healths = std::array<float, max_foes>;
@@ -43,6 +44,8 @@ struct Board {
     bool melee = true, splash = false;
     bool move = false, attack = false, cast = false;
     int reset = -1, dash = -1, shield = -1; // ready slots
+    bool lands = false; // the dash's landing damages or stuns within `land_radius`
+    int land_radius = 0;
 
     Healths healths() const {
         Healths h{};
@@ -88,20 +91,44 @@ bool read_board(const World& world, const ChampionBelief* hold, Board& b, int re
         if (e.facts().passive == Passive::linked_pair)
             for (const auto& o : world.enemies)
                 if (&o != &e && o.alive && o.visible && o.facts().passive == Passive::linked_pair) partner = o.health;
-        b.foes[b.n++] = {&e, e.pos, health, e.retaliation(), partner,
-                         params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), &e == hold};
+        // A shield absorbs before health: to kill, the hits must go through both.
+        b.foes[b.n++] = {&e, e.pos, health + e.shield, e.retaliation(), partner,
+                         params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), &e == hold, 0, 0};
     }
     if (b.n == 0) return false;
     const auto state = my_state();
     b.move = state.contains(cambc::champion_state::can_move);
     b.attack = state.contains(cambc::champion_state::can_attack);
     b.cast = state.contains(cambc::champion_state::can_cast);
-    b.strength = my_strength();
     b.health = my_health();
+    b.strength = my_strength() * damage_scale(f.passive, b.health, my_max_health());
     b.reset = b.cast ? ready_slot(world, AbilityKind::attack_reset) : -1;
     b.dash = b.cast ? ready_slot(world, AbilityKind::dash) : -1;
     b.shield = b.cast ? ready_slot(world, AbilityKind::shield) : -1;
     return true;
+}
+
+// The ready dash's landing on each foe, for the planner's dashes.
+void read_landing(const World& world, Board& b) {
+    if (b.dash < 0) return;
+    const auto& a = world.me().facts().abilities[b.dash];
+    if (!a.lands()) return;
+    b.lands = true;
+    b.land_radius = a.radius;
+    try {
+        const auto dash = cambc::self().abilities()[b.dash];
+        const float raw = dash.damage_amount();
+        for (int i = 0; i < b.n; ++i) {
+            auto& f = b.foes[i];
+            if (dist(b.here, f.pos) > a.reach()) continue;
+            const auto c = f.belief->live();
+            // Health lost after the shield, which f.health counts.
+            const float lost = raw > 0 ? dash.damage_amount(c) : 0.0f, shield = f.belief->shield;
+            f.land = shield <= 0 ? lost : lost > 0 ? lost + shield : std::min(raw, shield);
+            f.stun = a.stuns && !c.buffs().has_stun() ? stun_worth(world, *f.belief, raw > 0) : 0.0f;
+        }
+    } catch (const cambc::error&) {
+    }
 }
 
 // A kill takes the bag; other damage on its spawn heals at its turn end.
@@ -139,6 +166,21 @@ Hit best_hit(const Board& b, vec2 p, const Healths& h, int only = -1) {
             best = {value, i}, best_health = h[i];
     }
     return best;
+}
+
+// A landing at p on the foes within its radius, taken off h; its worth, or -1 if it would hit a held
+// tributer without killing it or its retaliation would kill us.
+float land_at(const Board& b, vec2 p, Healths& h) {
+    float value = 0, retaliation = 0;
+    for (int i = 0; i < b.n; ++i) {
+        const auto& f = b.foes[i];
+        if (h[i] <= 0 || dist(p, f.pos) > b.land_radius) continue;
+        if (f.hold && f.land < h[i] - 0.01f) return -1;
+        value += hit_worth(f, f.land, h[i]) + f.stun;
+        retaliation += f.land > 0 ? f.retaliation : 0.0f;
+        h[i] -= f.land;
+    }
+    return retaliation >= b.health ? -1.0f : value - retaliation;
 }
 
 void apply(const Board& b, const Hit& hit, Healths& h) {
@@ -229,6 +271,7 @@ bool strike_possible(const World& world) {
     Board b;
     const auto& f = world.me().facts();
     if (!read_board(world, hold, b, std::max(ability_range + 1, strike_reach(f, f.has_dash())), false)) return out;
+    read_landing(world, b);
     const bool walks = intent.walks && b.move;
     const float step = intent.step_value;
     const Healths h0 = b.healths();
@@ -297,12 +340,18 @@ bool strike_possible(const World& world) {
         if (d <= b.range + 1) walk_most = b.splash ? walk_most + w : std::max(walk_most, w);
         if (d <= dash_reach) dash_most = std::max(dash_most, w);
     }
+    // The landing adds what it does to everyone it can reach.
+    float land_most = 0;
+    if (b.lands)
+        for (int i = 0; i < b.n; ++i)
+            if (dist(b.here, b.foes[i].pos) <= dash_steps + b.land_radius)
+                land_most += std::max(0.0f, hit_worth(b.foes[i], b.foes[i].land, h0[i]) + b.foes[i].stun);
     const float shield_most = b.shield >= 0 ? 1e6f : 0.0f; // not bounded cheaply
     const bool try_walk = b.move && b.attack && nearest <= b.range + 1
                           && std::max(walk_most + shield_most, first.value + walk_most) + step > best.value;
     const float dash_cost = dash_steps * step;
-    const bool try_dash = b.dash >= 0 && b.attack && nearest <= dash_reach
-                          && std::max(dash_most, first.value) + (dash_steps + 2) * step - dash_cost > best.value;
+    const bool try_dash = b.dash >= 0 && (b.attack || land_most > 0) && nearest <= dash_reach
+                          && std::max(dash_most, first.value) + land_most + (dash_steps + 2) * step - dash_cost > best.value;
     const auto local = [&](vec2 p) { return (p.y - b.here.y + 3) * 7 + (p.x - b.here.x + 3); };
     Raw<Hit, 49> tile_hit;
     Raw<vec2, 49> struck; // the tiles tile_hit reaches, in marking order
@@ -364,7 +413,7 @@ bool strike_possible(const World& world) {
             if (d < 1) continue;
             const Hit there = hit_at(p);
             if (d <= dash_steps) {
-                if (there.target < 0) continue;
+                if (there.target < 0 || b.lands) continue;
                 const bool before = b.melee && first.value > there.value;
                 offer({Kind::dash, 0, p, {}, before, false, false}, (before ? first : there).value + walk_on - dash_cost, d, p);
             } else if (b.melee && b.move && there.target >= 0) {
@@ -372,6 +421,26 @@ bool strike_possible(const World& world) {
                 offer({Kind::dash_walk, 0, {}, p, false, false, false}, there.value - dash_cost, d, p);
             }
         }
+        // A landing that hits: then the attack from it, or for melee the attack from here first.
+        for (int dy = -dash_steps; b.lands && dy <= dash_steps; ++dy)
+            for (int dx = -dash_steps; dx <= dash_steps; ++dx) {
+                const vec2 p{b.here.x + dx, b.here.y + dy};
+                if ((dx == 0 && dy == 0) || !in_bounds(p)) continue;
+                bool hits = false;
+                for (int i = 0; i < b.n && !hits; ++i) hits = dist(p, b.foes[i].pos) <= b.land_radius;
+                if (!hits || landing_wakes(world, p, b.land_radius)) continue;
+                Healths hl = h0;
+                const float landed = land_at(b, p, hl);
+                if (landed < 0) continue;
+                const float after = landed + (b.attack ? best_hit(b, p, hl).value : 0.0f);
+                float before = -1;
+                if (b.melee && first.target >= 0) {
+                    Healths hf = h1;
+                    if (const float l = land_at(b, p, hf); l >= 0) before = first.value + l;
+                }
+                offer({Kind::dash, 0, p, {}, before > after, false, false}, std::max(after, before) + walk_on - dash_cost,
+                      dist(p, b.here), p);
+            }
     }
 
     if (count > 0) {
@@ -471,11 +540,14 @@ bool strike_possible(const World& world) {
         break;
     case Kind::dash:
         if (best.attack_first) strike_here(false);
-        dash_to(b.dash, pathing, best.dash);
+        if (dash_to(b.dash, pathing, best.dash) && b.lands) land_at(b, best.dash, h);
         if (!out.attacked) strike_here(false);
         break;
     case Kind::dash_walk:
-        if (dash_to(b.dash, pathing, best.dash) && pathing.try_move(best.walk)) out.moved = true;
+        if (dash_to(b.dash, pathing, best.dash)) {
+            if (b.lands) land_at(b, best.dash, h);
+            if (pathing.try_move(best.walk)) out.moved = true;
+        }
         strike_here(false);
         break;
     }
@@ -525,6 +597,12 @@ bool strike_possible(const World& world) {
     const auto& f = world.me().facts();
     if (!read_board(world, hold, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0), true)) return false;
     return attack(b, best_hit(b, b.here, b.healths()));
+}
+
+bool landing_ready(const World& world) {
+    const auto& self = world.me();
+    const int slot = self.facts().slot_of(AbilityKind::dash);
+    return slot >= 0 && self.facts().abilities[slot].lands() && self.ability_ready(slot, world.round);
 }
 
 bool reset_may_kill(const World& world) {

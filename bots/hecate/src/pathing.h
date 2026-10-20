@@ -17,6 +17,10 @@ inline constexpr int max_detour = 16;
 class World;
 struct StaticMap;
 
+// Tiles a dash from `from` can land on: <= 2 king steps not through walls or camps, onto a free
+// tile; off `also` too when given.
+bitboard dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also = nullptr);
+
 class Pathing {
 public:
     explicit Pathing(const World& world);
@@ -147,6 +151,7 @@ private:
     vec2 pos_;
     std::uint32_t pos_round_ = 0;
     bool pos_fresh_ = false;
+    unsigned dashes_seen_ = 0; // outside_dashes() when our tile was last read
 };
 
 } // namespace aph
