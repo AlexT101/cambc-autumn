@@ -64,7 +64,10 @@ inline int& siege_group() {
 // Our own champion, read raw. The SDK's accessors build and copy a whole record for each field
 // (position() ~85 fuel, item_count() ~225); a raw read into static storage costs ~25. Each call
 // reads the engine again, as the SDK's do.
-inline std::uint32_t my_handle() { return static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(cambc::self())); }
+// Read once at start-up, after the SDK's own; 0 in the draft, which has no champion.
+inline const std::uint32_t my_handle_value =
+    cambc::detail::cached_self ? static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(*cambc::detail::cached_self)) : 0;
+inline std::uint32_t my_handle() { return my_handle_value; }
 inline const cambc::detail::champion_info& my_record() {
     static cambc::detail::champion_info record;
     ok(cambc::detail::sdk_champion(my_handle(), &record));
@@ -289,7 +292,8 @@ inline std::unique_ptr<Field> make_field(const bitboard& walls, const bitboard& 
 // The imports read raw: the SDK's wrappers add checks for failures only an ABI mismatch could cause.
 inline std::uint64_t fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
 inline std::uint32_t round_now() {
-    std::uint32_t round = 0;
+    static std::uint32_t round;
+    round = 0;
     (void)cambc::detail::sdk_bc_round_number(&round);
     return round;
 }
