@@ -60,6 +60,8 @@ public:
     // A field capped at centre_cap() has a bounded cost, so it may go down to last_reserve.
     bool warm_centres(std::uint64_t fuel_floor);
 
+    // Our static fields' walls: a dasher's leave out the hole and altar lines a dash crosses.
+    const bitboard& static_walls() const;
     // Static walls, visible units and teleport reservations, and tiles bumped this round.
     const bitboard& blocked();
     void occupied_into(bitboard& out); // blocked() with our own tile set

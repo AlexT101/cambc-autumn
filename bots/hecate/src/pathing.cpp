@@ -18,6 +18,8 @@ Pathing::Pathing(const World& world) : world_{world} {}
 
 const StaticMap& Pathing::map() const { return world_.map(); }
 
+const bitboard& Pathing::static_walls() const { return world_.me().facts().has_dash() ? map().dash_walls : map().blocked_for_us; }
+
 void Pathing::begin_turn() {
     guard_ = nullptr; // a turn abandoned as stale left its guard set
     blocked_fresh_ = false;
@@ -33,7 +35,7 @@ const Field& Pathing::cached(Slot& slot, const bitboard& goals) {
     if (!slot) {
         FuelMeter meter{"field"};
         // Fill the slot only once computed, so a failure leaves it empty to retry.
-        slot = std::make_unique<Field>(make_field(map().blocked_for_us, goals));
+        slot = std::make_unique<Field>(make_field(static_walls(), goals));
     }
     return *slot;
 }
@@ -152,7 +154,7 @@ const Field* Pathing::approach(int group, int range) {
     static bitboard walls{cambc::uninitialized}, open{cambc::uninitialized}, origin{cambc::uninitialized},
         visited{cambc::uninitialized};
     copy_into(live_camps(), made.camps);
-    or_into(s.blocked_for_us, made.camps, walls);
+    or_into(static_walls(), made.camps, walls);
     auto& goals = made.field.goals;
     if (range == 0) {
         copy_into(s.groups[group].tiles(), goals);
@@ -269,7 +271,7 @@ int& Pathing::centre_cap(int group) {
             auto& cap = centre_cap(g);
             if (cambc::round_number() != round || !fuel_ok(last_reserve + search_cost_estimate(cap))) return false;
             FuelMeter meter{"field"};
-            slot = make_field(map().blocked_for_us, single(map().groups[g].centre), cap);
+            slot = make_field(static_walls(), single(map().groups[g].centre), cap);
             if (!slot) cap *= 2;
         }
     }

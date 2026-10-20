@@ -648,6 +648,26 @@ void find_gate(StaticMap& s) {
     }
 }
 
+void find_crossings(StaticMap& s) {
+    bitboard t{cambc::uninitialized}, ahead{cambc::uninitialized}, behind{cambc::uninitialized};
+    const auto opposite = [&](int dx, int dy) {
+        s.open_for_us.shift_right_into(-dx, t);
+        t.shift_up_into(-dy, ahead);
+        s.open_for_us.shift_right_into(dx, t);
+        t.shift_up_into(dy, behind);
+        ahead &= behind;
+        s.crossable |= ahead;
+    };
+    opposite(1, 0);
+    opposite(0, 1);
+    opposite(1, 1);
+    opposite(1, -1);
+    or_into(s.holes, s.altar_tiles, t);
+    s.crossable &= t;
+    copy_into(s.blocked_for_us, s.dash_walls);
+    drop(s.dash_walls, s.crossable);
+}
+
 void find_hops(StaticMap& s) {
     if (s.ally_spawn_tiles.empty()) return;
     s.blocked_for_us.reachable_tiles_into(s.ally_spawn_tiles[0], unreachable, s.foot);
@@ -693,6 +713,7 @@ void find_hops(StaticMap& s) {
     or_into(s->impassable, s->ally_spawn, s->blocked_for_them);
     not_into(s->blocked_for_us, s->open_for_us);
     not_into(s->blocked_for_them, s->open_for_them);
+    find_crossings(*s);
     for (auto t : s->enemy_spawn_tiles) draw_square(s->near_enemy_spawn, t, 1);
     or_into(s->walls, s->bushes, s->walls_and_bushes);
 

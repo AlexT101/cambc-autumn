@@ -124,6 +124,10 @@ struct StaticMap {
     bitboard blocked_for_them{cambc::uninitialized}; // impassable | our spawn
     bitboard open_for_us{cambc::uninitialized};      // ~blocked_for_us
     bitboard open_for_them{cambc::uninitialized};    // ~blocked_for_them
+    // Holes and altars a dash jumps (open for us on two opposite sides), and blocked_for_us without
+    // them: a dasher's static walls, each crossing priced at the dash's two steps.
+    bitboard crossable;
+    bitboard dash_walls{cambc::uninitialized};
     bitboard near_enemy_spawn; // within 1 of an enemy spawn tile
     bitboard walls_and_bushes{cambc::uninitialized};
     bitboard standable{cambc::uninitialized}; // ~(camp_tiles | blocked_for_us)

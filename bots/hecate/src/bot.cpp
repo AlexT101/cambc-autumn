@@ -434,6 +434,11 @@ bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& m
 
 const bitboard* pack_zone(const World& world);
 
+// A dasher beside a hole or altar line (StaticMap::crossable) dashes over it where `field` gains by it.
+bool dash_across(const World& world, Pathing& pathing, const Field& field) {
+    return world.me().facts().has_dash() && any_within(world.map().crossable, my_position(), 1) && dash_towards(world, pathing, field);
+}
+
 // The quickest bank by a crystal (StaticMap::hops) from where we stand on foot: the walk to
 // a source, the channel, the walk from the nearest landing and the recall out, as no walk leaves the
 // pocket. Locked and avoided altars are skipped.
@@ -1202,7 +1207,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const auto walk_on = [&](int g) __attribute__((always_inline)) {
         if (g < 0) return false;
         // Descending it walks around walls and live camps; a live route only helps past allies.
-        const auto walk = [&](const Field& field) __attribute__((always_inline)) { return pathing.descend(field, zone) || pathing.step_towards(field, zone); };
+        const auto walk = [&](const Field& field) __attribute__((always_inline)) {
+            return dash_across(world, pathing, field) || pathing.descend(field, zone) || pathing.step_towards(field, zone);
+        };
         if (const auto* field = pathing.prepare_approach(g, walk_range(g), end_reserve)) return walk(*field);
         // Too short of fuel to search the way to a new choice: last turn's, whose way is known.
         if (previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(previous))) {
@@ -1398,7 +1405,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             } else if (const auto drafted = map.drafted_spawn_steps(here, g)) {
                 steps_known = *drafted;
             } else {
-                if (!from_here) from_here = make_field(map.blocked_for_us, single(here));
+                if (!from_here) from_here = make_field(pathing.static_walls(), single(here));
                 steps_known = from_here->at(group.centre);
             }
         }
@@ -1536,6 +1543,11 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, memory.farm_spell = false;
     if (best < 0) return true;
     memory.farm_group = best;
+    // Our fields price a dash over a hole line; live routes walk round it.
+    const bool dasher = world.me().facts().has_dash();
+    if (dasher && any_within(map.crossable, here, 1))
+        if (const auto* field = pathing.prepare_approach(best, walk_range(best), end_reserve); field && dash_across(world, pathing, *field))
+            return true;
     const int cap = best_steps + max_detour;
     const bool search = fuel_ok(search_cost_estimate(cap) + end_reserve);
     // In a scratch board, valid until the next call.
@@ -1550,8 +1562,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     };
     if (world.camps[best].state == CampState::cleared) {
         if (!zone) dash_towards(world, pathing, groups[best].tiles(), cap);
-        if (search) pathing.step_towards(off_zone(groups[best].tiles()), zone, cap);
-        else {
+        if (search) {
+            if (!pathing.step_towards(off_zone(groups[best].tiles()), zone, cap) && dasher) walk_on(best);
+        } else {
             note_shortcut("farm-no-route");
             walk_on(best);
         }
@@ -1584,6 +1597,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
                             ? pathing.step_towards(off_zone(goals), zone, cap)
                                   || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap)
                             : (note_shortcut("farm-no-route"), walk_on(best));
+    if (!walked && dasher) walk_on(best);
     if (walked) {
         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
         if (!strike_enemy(world, strike_hold)) attack_camp(world, passing);
