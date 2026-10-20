@@ -473,13 +473,28 @@ const Fighter& fighter(const World& world, const ChampionBelief& c, std::uint32_
     return made_fighters.fighter[slot];
 }
 
-void join_allies(const World& world, Side& us, vec2 p, std::uint32_t& made) {
-    for (unsigned left = fighting_allies(world, p); left; left &= left - 1) {
-        const auto& a = world.allies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (a.is_self) us.self = us.count;
-        us.add(fighter(world, a, made));
+// An empty side's members, bit i for from[i]: Side::add() for each, kept in locals.
+void fill(Side& side, const World& world, const std::vector<ChampionBelief>& from, unsigned bits, std::uint32_t& made) {
+    int count = 0, alive = 0;
+    bool plain = true;
+    for (; bits && count < max_fighters; bits &= bits - 1) {
+        const auto& c = from[static_cast<std::size_t>(std::countr_zero(bits))];
+        if (c.is_self) side.self = count;
+        auto& g = side.fighters[count];
+        g = fighter(world, c, made);
+        plain = plain && g.kit->plain && g.arrives_at == 0;
+        if (g.linked)
+            for (int i = 0; i < count; ++i)
+                if (side.fighters[i].linked) g.link = i, side.fighters[i].link = count;
+        alive += g.health > 0;
+        ++count;
     }
+    side.count = count;
+    side.alive = alive;
+    side.plain = plain;
 }
+
+void join_allies(const World& world, Side& us, vec2 p, std::uint32_t& made) { fill(us, world, world.allies, fighting_allies(world, p), made); }
 
 } // namespace
 
@@ -1734,14 +1749,9 @@ Trade Safety::fight(vec2 p, int exclude) {
 Trade Safety::fight_of(std::uint32_t key) {
     if (const auto* t = memo(key)) return *t;
     Side us, them;
-    for (unsigned left = key & 0xFFFFu; left; left &= left - 1) {
-        const auto& a = world_.allies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (a.is_self) us.self = us.count;
-        us.add(fighter(world_, a, made_));
-    }
+    fill(us, world_, world_.allies, key & 0xFFFFu, made_);
     build();
-    for (unsigned left = key >> 16 & threat_mask_; left; left &= left - 1)
-        them.add(fighter(world_, world_.enemies[static_cast<std::size_t>(std::countr_zero(left))], made_));
+    fill(them, world_, world_.enemies, key >> 16 & threat_mask_, made_);
     const auto before = fuel();
     auto& slot = fights_[fight_count_++ % max_fights];
     slot = {key, trade(us, them, end_reserve)};
