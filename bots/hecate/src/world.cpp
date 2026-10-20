@@ -728,6 +728,9 @@ const bitboard& CampGroup::threat() const {
         }
     }
     me_ = allies.data() + self_index;
+    ally_count_ = static_cast<int>(allies.size());
+    enemy_count_ = static_cast<int>(enemies.size());
+    team_a_ = s.team_a;
 
     for (auto& order : turn_order_)
         for (int i = 0; i < 16; ++i) order[i] = static_cast<std::uint8_t>(i);
