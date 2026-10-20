@@ -185,7 +185,7 @@ struct Trade {
     int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
     int turns_to_kill_them = 0; // ours
     bool self_falls = false;    // we die before their side does, when they strike first
-    float our_health = 0, their_health = 0;
+    float our_health = 0, their_health = 0; // debug_fights only
     int allies = 0, enemies = 0;
     std::array<float, 4> dealt{}; // debug_fights only: see simulate()
 };
@@ -235,7 +235,8 @@ public:
     std::uint32_t fight_key_with(vec2 p, std::uint32_t visible);
     // The fight of a key, memoised.
     Trade fight_of(std::uint32_t key);
-    bool known_fight_of(std::uint32_t key) const { return memo(key) != nullptr; }
+    // fight_of(key) if memoised, else null.
+    const Trade* known_fight_of(std::uint32_t key) const { return memo(key); }
     // fight(p) if it needs no simulation, else null.
     const Trade* known_fight(vec2 p);
     // threat_strike(), kept for the turn.

@@ -1968,14 +1968,20 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             if (settled[i].won && covers(settled[i].key, key)) return lost = falls = false, true;
             if (settled[i].lost && covers(key, settled[i].key)) return lost = falls = true, true;
         }
-        if (!safety.known_fight_of(key) && !fuel_ok(safety.fight_cost_estimate() + act_reserve)) {
+        const auto* known = safety.known_fight_of(key);
+        if (!known && !fuel_ok(safety.fight_cost_estimate() + act_reserve)) {
             note_shortcut("step-guard");
             return false;
         }
-        const auto t = safety.fight_of(key);
-        lost = t.lost;
-        falls = t.self_falls;
-        if (s < static_cast<int>(settled.size())) settled[s++] = {key, !t.lost && !t.self_falls, t.lost};
+        if (known) {
+            lost = known->lost;
+            falls = known->self_falls;
+        } else {
+            const auto t = safety.fight_of(key);
+            lost = t.lost;
+            falls = t.self_falls;
+        }
+        if (s < static_cast<int>(settled.size())) settled[s++] = {key, !lost && !falls, lost};
         return true;
     };
     bool lost = false, falls = false;
