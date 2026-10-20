@@ -622,32 +622,6 @@ const bitboard& CampGroup::threat() const {
 
 namespace {
 
-// Host floods from our spawn: no altar's tribute tile is walkable past live camps, but one is once
-// a single group is cleared. Then its members that open one alone.
-void find_gate(StaticMap& s) {
-    if (s.ally_spawn_tiles.empty() || s.altars.empty()) return;
-    bitboard tributes, walls{cambc::uninitialized}, reach{cambc::uninitialized};
-    for (const auto& a : s.altars) tributes |= a.tribute_tiles();
-    const auto reaches_altar = [&] {
-        walls.reachable_tiles_into(s.ally_spawn_tiles[0], unreachable, reach);
-        reach &= tributes;
-        return !reach.is_empty();
-    };
-    or_into(s.blocked_for_us, s.camp_tiles, walls);
-    if (reaches_altar()) return;
-    for (int g = 0; g < static_cast<int>(s.groups.size()) && s.gate < 0; ++g) {
-        or_into(s.blocked_for_us, s.camp_tiles, walls);
-        drop(walls, s.groups[g].tiles());
-        if (reaches_altar()) s.gate = g;
-    }
-    if (s.gate < 0) return;
-    for (const auto& m : s.groups[s.gate].members) {
-        or_into(s.blocked_for_us, s.camp_tiles, walls);
-        walls.set(m.pos, false);
-        if (reaches_altar()) s.gate_keys.set(m.pos);
-    }
-}
-
 void find_crossings(StaticMap& s) {
     bitboard t{cambc::uninitialized}, ahead{cambc::uninitialized}, behind{cambc::uninitialized};
     const auto opposite = [&](int dx, int dy) {
@@ -806,9 +780,8 @@ void find_hops(StaticMap& s) {
     or_into(s->camp_tiles, s->blocked_for_us, s->standable);
     not_into(s->standable, s->standable);
     find_crossings(*s);
-    find_gate(*s);
     find_hops(*s);
-    debug_block({ std::printf("GATE %d HOPS %d\n", s->gate, static_cast<int>(s->hops.size())); });
+    debug_block({ std::printf("HOPS %d\n", static_cast<int>(s->hops.size())); });
 
     const auto* plan = read_draft_plan();
     if (plan && plan->steps && plan->width == s->width && plan->height == s->height && plan->groups == s->groups.size()

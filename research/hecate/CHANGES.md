@@ -200,7 +200,9 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    Monolith-only siege limits, its key member is hit first, and until it falls bags are not banked (bankable_bag):
    champions farm and shop as if empty-handed. Against the pre-change bot boss-battle went 1002-0 and 640-109
    (first key kill around round 1100); full A/B 50.2% (ladder 57.1 with boss-battle 2/2, gen 49.6: no generated map
-   has a gate, so the rest is fuel noise).
+   has a gate, so the rest is fuel noise). Reverted the same day: against submission 31 boss-battle went 1/2 (0-0 on
+   gold, 90-334), since killing the key left its tile in the other Monolith's reach and the held-back bags (400-875)
+   could not be banked; ladder teams that score there kill both Monoliths and hold the tile (EXPERIMENTS.md).
 28. 2026-10-20 (not yet submitted). Teleport crystals to altars no walk reaches. StaticMap::foot is the walkable region
    from our spawn (camps counted as cleared), StaticMap::hops each altar outside it that one crystal reaches: landing
    tiles in its pocket within 3 of foot, and the foot tiles they are reached from. bank_gems takes the hop when the

@@ -93,10 +93,6 @@ struct StaticMap {
     // stampede's shared block.
     bool shared_gems = false;
     int max_camp_reach = 0; // longest reach of any camp member on the map
-    // A group standing between our spawn and every altar, or -1: until it is cleared nothing can be
-    // tributed.
-    int gate = -1;
-    bitboard gate_keys; // the gate's members whose death alone opens a way to an altar
     bitboard foot;      // walkable from our spawn, every camp counted as cleared
     bitboard dash_foot; // the same through dash_walls
     // An altar no walk reaches but a teleport crystal does: from a source tile on foot to a landing

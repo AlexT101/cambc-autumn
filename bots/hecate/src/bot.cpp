@@ -185,8 +185,7 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
         for (int i = 0; i < static_cast<int>(members.size()); ++i) {
             if (members[i].pos != p) continue;
             const float hp = i < static_cast<int>(health.size()) && health[i] > 0 ? health[i] : members[i].max_health;
-            // The gate's member whose death opens an altar goes first.
-            float score = members[i].strength / std::max(1.0f, hp) + (g == map.gate && test(map.gate_keys, p) ? 1.0f : 0.0f);
+            float score = members[i].strength / std::max(1.0f, hp);
             if (splash) {
                 int near = 0;
                 for (int j = 0; j < static_cast<int>(members.size()); ++j)
@@ -340,22 +339,6 @@ int gems_short(const World& world) {
 }
 
 const ChampionBelief* partner(const World& world) { return linked_partner(world, world.me()); }
-
-// No live group stands between us and every altar (StaticMap::gate): a bag can be banked.
-bool altar_open(const World& world) {
-    const auto& map = world.map();
-    const int g = map.gate;
-    if (g < 0) return true;
-    const auto& c = world.camps[g];
-    if (c.state != CampState::alive) return true;
-    const auto& members = map.groups[g].members;
-    for (std::size_t i = 0; i < members.size(); ++i)
-        if (i < c.health.size() && c.health[i] <= 0 && test(map.gate_keys, members[i].pos)) return true;
-    return false;
-}
-
-// The bag that banking could score: none while the gate stands, so we farm and shop as if empty-handed.
-int bankable_bag(const World& world) { return altar_open(world) ? static_cast<int>(my_gems()) : 0; }
 
 // What a death would hand over: both bags for Cassi and Issac (an unseen partner's as posted).
 int bag_at_stake(const World& world) {
@@ -1134,7 +1117,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const float strength = floored_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
     const float max_health = my_max_health();
     const float spare_health = (my_health() - params::recall_health_fraction * max_health) / params::camp_risk;
-    const int bag = bankable_bag(world);
+    const int bag = my_gems();
     const int short_by = gems_short(world);
     if (world.is_stale()) return true;
     // Groups in passing pay too (gold clusters are never chosen below), but not one whose clear
@@ -2369,7 +2352,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
 // quicker.
 [[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if (bankable_bag(world) > 0 || memory.damage > 0 || !may_shop(world)) return false;
+    if (my_gems() > 0 || memory.damage > 0 || !may_shop(world)) return false;
     if (const auto gold = my_gold(); gold < shard_price || (gold < emblem_price && !emblem_begun())) return false;
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here) || safety.threatened(here)) return false;
@@ -2549,14 +2532,14 @@ int siege_candidate(const World& world, const Memory& memory) {
     if (!listed) {
         listed = true;
         for (int g = 0; g < static_cast<int>(map.groups.size()); ++g)
-            if (map.groups[g].has_monolith || g == map.gate) sieged.push_back(g);
+            if (map.groups[g].has_monolith) sieged.push_back(g);
     }
     int best = -1;
     float best_cost = 0;
     for (const int g : sieged) {
         const auto& c = world.camps[g];
-        // Off Monolith-only maps siege_ready passes no live Monolith but the gate.
-        if (!map.monolith_only && g != map.gate && c.state != CampState::cleared) continue;
+        // siege_ready never passes a live Monolith off Monolith-only maps: only a cleared one counts.
+        if (!map.monolith_only && c.state != CampState::cleared) continue;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
         if (wait > params::siege_respawn_wait) continue;
         if (c.state == CampState::cleared && c.holder == team::enemy) continue;
@@ -2580,7 +2563,7 @@ bool siege_ready(const World& world, int g, const SiegeLoad& load, bool committe
     const float rounds = load.health / team_power(world);
     const float taken = rounds * load.hit * camp_hit_factor() * params::siege_hit_share;
     const float slack = committed ? params::siege_commit_slack : 1.0f;
-    const float limit = world.map().monolith_only || g == world.map().gate ? params::siege_rounds : 0;
+    const float limit = world.map().monolith_only ? params::siege_rounds : 0;
     return rounds <= limit * slack && taken <= params::siege_pool_share * pool * slack;
 }
 
@@ -2918,7 +2901,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         if (recall_to_bank(world, pathing, safety, memory) || shop()) return true;
         if (siege_heal_trip(memory, safety)) return sieged = true; // the trip keeps the siege until home
         // No walk leaves a pocket a crystal took us into.
-        if (!test(pathing.foot(), my_position()) && bankable_bag(world) == 0) return true;
+        if (!test(pathing.foot(), my_position()) && my_gems() == 0) return true;
     }
     try {
         me.cancel_recall();
@@ -3110,7 +3093,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         decision = 'D';
         return;
     }
-    if (bankable_bag(world) > 0) {
+    if (my_gems() > 0) {
         carry_bag(world, pathing, safety, memory, attacked);
         return;
     }
