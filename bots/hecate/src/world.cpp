@@ -730,7 +730,8 @@ const bitboard& CampGroup::threat() const {
     for (auto& order : turn_order_)
         for (int i = 0; i < 16; ++i) order[i] = static_cast<std::uint8_t>(i);
     rank_turns(); // the first update keeps these as last round's ranks
-    camps.assign(s.groups.size(), CampBelief{});
+    camps.clear();
+    camps.resize(s.groups.size());
     for (std::size_t g = 0; g < s.groups.size(); ++g) {
         auto& health = camps[g].health;
         health.reserve(s.groups[g].members.size());
