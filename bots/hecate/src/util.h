@@ -119,7 +119,11 @@ inline std::int32_t my_channel_time() {
     return turns;
 }
 
-inline int dist(vec2 a, vec2 b) { return static_cast<int>(a.chebyshev_distance(b)); }
+// chebyshev_distance in 32 bits: coordinates are tiles or small sentinels.
+inline int dist(vec2 a, vec2 b) {
+    const int dx = a.x - b.x, dy = a.y - b.y;
+    return std::max(dx < 0 ? -dx : dx, dy < 0 ? -dy : dy);
+}
 
 inline bool in_bounds(vec2 p) { return cambc::map::is_in_bounds(p); }
 
