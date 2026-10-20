@@ -787,7 +787,7 @@ void World::update_champions(bool full) {
 void World::update_champion(ChampionBelief& b, bool full) {
     const auto& s = map();
     const auto h = engine::id(b.handle);
-    const vec2 spawn = b.side == team::ally ? s.ally_spawn_centre : s.enemy_spawn_centre;
+    const auto spawn = [&] { return b.side == team::ally ? s.ally_spawn_centre : s.enemy_spawn_centre; };
 
     // A champion in view is alive: liveness is read only for one out of view.
     const auto* info = engine::champion(h);
@@ -816,7 +816,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
             b.respawn_earliest = b.respawn_latest = -1;
             const bool before_us = slot(b, round) < slot(me(), round) && slot(b, round - 1) < slot(me(), round - 1);
             b.respawned_round = b.is_self || before_us ? round : round - 1;
-            b.pos = spawn;
+            b.pos = spawn();
             b.pos_round = round;
             b.pos_source = Source::inferred;
             b.health = b.max_health;
@@ -829,11 +829,11 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.visible = info != nullptr;
     if (!info) {
         // A channel completes at its owner's turn start.
-        const bool ended = round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < slot(me(), round));
-        if (b.channel != Channel::none && ended) {
+        if (b.channel != Channel::none
+            && (round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < slot(me(), round)))) {
             if (b.channel == Channel::tribute) b.gems = 0;
             if (b.channel == Channel::recall) {
-                b.pos = spawn;
+                b.pos = spawn();
                 b.pos_round = b.channel_end_round;
                 b.pos_source = Source::inferred;
                 b.health = b.max_health;
@@ -849,8 +849,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
         // An untracked `possible` is unread until a fix overwrites it, as is one note_sighting is
         // about to fix.
         const auto& x = expected_sighting;
-        const bool refixed = full && x.enemy == b.index && in_bounds(x.pos) && x.round > b.pos_round;
-        if (b.side == team::enemy && b.tracked && !refixed) track(b);
+        if (b.side == team::enemy && b.tracked && !(full && x.enemy == b.index && in_bounds(x.pos) && x.round > b.pos_round)) track(b);
         return;
     }
 
@@ -898,27 +897,31 @@ void World::update_champion(ChampionBelief& b, bool full) {
 }
 
 void World::read_priorities(bool new_round) {
+    static std::int32_t priority, next_priority;
+    const int now = round, ranked = ranked_round_;
+    bool stale = ranks_stale_, enemy_change = enemy_priorities_change;
     for (auto* team : {&allies, &enemies})
         for (auto& b : *team) {
             // This round's order before anything dates a turn in it.
             if (new_round) b.prev_rank = b.rank;
             const auto h = engine::id(b.handle);
-            std::int32_t priority{}, next_priority{};
             // Fails for champions out of sight. A priority read in round r applies from r + 1:
             // ranks change when a round passes one unread.
             if (cambc::detail::sdk_bc_champion_priority(h, 0, &priority) != 0
                 || cambc::detail::sdk_bc_champion_priority(h, 1, &next_priority) != 0) {
-                ranks_stale_ |= b.next_priority != b.priority && ranked_round_ <= b.priority_round && b.priority_round < round;
+                stale |= b.next_priority != b.priority && ranked <= b.priority_round && b.priority_round < now;
                 continue;
             }
             if (b.side == team::enemy
-                && (next_priority != priority || (b.priority_round >= 0 && b.priority_round < round && priority != b.next_priority)))
-                enemy_priorities_change = true;
-            ranks_stale_ |= priority != b.priority || next_priority != b.next_priority;
+                && (next_priority != priority || (b.priority_round >= 0 && b.priority_round < now && priority != b.next_priority)))
+                enemy_change = true;
+            stale |= priority != b.priority || next_priority != b.next_priority;
             b.priority = priority;
             b.next_priority = next_priority;
-            b.priority_round = round;
+            b.priority_round = now;
         }
+    ranks_stale_ = stale;
+    enemy_priorities_change = enemy_change;
 }
 
 [[gnu::flatten]] void World::note_turn_end() {
