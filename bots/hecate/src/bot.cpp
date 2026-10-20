@@ -2276,6 +2276,11 @@ bool can_stop_winning_tribute(const World& world) {
 // can stop: nothing we gain meanwhile counts unless our own bag wins first. The nearest; null if none.
 const ChampionBelief* game_ender(const World& world) {
     const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
+    if (!enemy_seen(world)) return nullptr;
+    // No pair carries more than every living enemy's bag together.
+    int carried = 0;
+    for (const auto& e : world.enemies) carried += e.alive ? e.gems : 0;
+    if (carried < need) return nullptr;
     std::optional<vec2> here; // and our bag not winning, once one qualifies
     const ChampionBelief* best = nullptr;
     int best_steps = unreachable;
