@@ -224,7 +224,7 @@ bool strike_possible(const World& world) {
     return enemy_within(world, here, std::max(ability_range + 1, strike_reach(self.facts(), self.facts().has_dash())));
 }
 
-Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent, const ChampionBelief* hold) {
+[[gnu::flatten]] Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent, const ChampionBelief* hold) {
     Planned out;
     Board b;
     const auto& f = world.me().facts();
@@ -483,7 +483,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     return out;
 }
 
-void strike_after(const World& world, Safety& safety, const ChampionBelief* hold) {
+[[gnu::flatten]] void strike_after(const World& world, Safety& safety, const ChampionBelief* hold) {
     if (!world.me().alive || world.is_stale()) return;
     const auto state = my_state();
     if (state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::recalling)
@@ -519,7 +519,7 @@ void strike_after(const World& world, Safety& safety, const ChampionBelief* hold
     if (walk_allows) cast_at_enemies(world, false, hold);
 }
 
-bool strike_enemy(const World& world, const ChampionBelief* hold) {
+[[gnu::flatten]] bool strike_enemy(const World& world, const ChampionBelief* hold) {
     if (!world.me().alive || !my_can_attack()) return false;
     Board b;
     const auto& f = world.me().facts();

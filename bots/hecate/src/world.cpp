@@ -295,7 +295,7 @@ const BushCluster& StaticMap::bush_cluster(vec2 p) const {
     }
 }
 
-const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) const {
+[[gnu::flatten]] const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) const {
     FuelMeter meter{"bush_cluster"};
     if (!growth_ || !growth_->tiles.is_set(p)) {
         // The host floods 8-connected. That cluster is edge-connected too unless it holds a pair
@@ -454,7 +454,7 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
     return out;
 }
 
-bool StaticMap::warm_up(std::uint64_t fuel_floor) const {
+[[gnu::flatten]] bool StaticMap::warm_up(std::uint64_t fuel_floor) const {
     const auto round = cambc::round_number();
     const auto afford = [&](std::uint64_t cost) { return cambc::round_number() == round && fuel_ok(fuel_floor + cost); };
     const auto field = field_cost_estimate();
@@ -607,7 +607,7 @@ const bitboard& CampGroup::threat() const {
 }
 
 
-std::unique_ptr<StaticMap> StaticMap::build() {
+[[gnu::flatten]] std::unique_ptr<StaticMap> StaticMap::build() {
     FuelMeter meter{"build_static"};
     auto s = std::make_unique<StaticMap>();
     s->width = cambc::map::width();
@@ -698,7 +698,7 @@ std::unique_ptr<StaticMap> StaticMap::build() {
     return s;
 }
 
-void World::init_beliefs() {
+[[gnu::flatten]] void World::init_beliefs() {
     FuelMeter meter{"init_beliefs"};
     const auto& s = map();
     const auto self_handle = static_cast<cambc::handle_champion_t>(cambc::self());
@@ -787,8 +787,10 @@ void World::update_champion(ChampionBelief& b, bool full) {
     const auto h = engine::id(b.handle);
     const vec2 spawn = b.side == team::ally ? s.ally_spawn_centre : s.enemy_spawn_centre;
 
+    // A champion in view is alive: liveness is read only for one out of view.
+    const auto* info = engine::champion(h);
     if (full) {
-        const bool alive_now = engine::alive(h);
+        const bool alive_now = info || engine::alive(h);
         if (!alive_now) {
             if (b.alive) {
                 // Died since our last turn: in round-1 after our turn, or this round before it.
@@ -822,7 +824,6 @@ void World::update_champion(ChampionBelief& b, bool full) {
         }
     }
 
-    const auto* info = engine::champion(h);
     b.visible = info != nullptr;
     if (!info) {
         // A channel completes at its owner's turn start.
@@ -918,7 +919,7 @@ void World::read_priorities(bool new_round) {
         }
 }
 
-void World::note_turn_end() {
+[[gnu::flatten]] void World::note_turn_end() {
     if (!me().alive || !engine::alive(my_handle())) return;
     const vec2 p = my_position();
     const int g = in_bounds(p) ? map().group_at(p) : -1;
@@ -1205,7 +1206,7 @@ struct World::CampViews {
     }
 };
 
-void World::update_camps() {
+[[gnu::flatten]] void World::update_camps() {
     const auto& s = map();
     const std::size_t words = (s.groups.size() + 63) / 64;
     group_visible_.assign(words, 0);
