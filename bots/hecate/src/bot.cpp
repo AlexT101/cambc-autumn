@@ -36,6 +36,7 @@ constexpr int siege_stage_radius = camp_attack_range + 2; // just out of a camp'
 // stopping a game-ending bag (E).
 char decision = '-';
 bool sieged = false; // siege() ran this turn
+bool stunned_turn = false; // stunned at this turn's start
 const ChampionBelief* strike_hold = nullptr; // this turn's tributer to hit only for a kill
 
 // Read by tools/replay/fight_calibration.py.
@@ -1486,6 +1487,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
 }
 
 bool try_ward(vec2 p, Memory& memory) {
+    // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
+    if (stunned_turn) return false;
     try {
         if (!cambc::self().place_ward(p)) return false;
     } catch (const cambc::error&) {
@@ -3035,6 +3038,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage);
     const bool stunned = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
+    stunned_turn = stunned;
     act(world, pathing, safety, memory, stunned);
     set_turn_order(world, safety);
     comms::claim(memory.claim);
