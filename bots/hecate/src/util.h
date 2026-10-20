@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <cstdlib>
 #include <cstdio>
 #include <memory>
 #include <vector>
@@ -113,7 +114,8 @@ inline std::int32_t my_channel_time() {
     return turns;
 }
 
-inline int dist(vec2 a, vec2 b) { return static_cast<int>(a.chebyshev_distance(b)); }
+// In 32 bits: the SDK's chebyshev_distance works in 64.
+inline int dist(vec2 a, vec2 b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
 
 inline bool in_bounds(vec2 p) { return cambc::map::is_in_bounds(p); }
 

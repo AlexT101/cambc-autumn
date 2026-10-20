@@ -195,6 +195,12 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
     return -1;
 }
 
+// Storage left unwritten until used: vec2 and std::pair initialise their members.
+template <typename T, std::size_t N> union Unwritten {
+    Unwritten() {}
+    std::array<T, N> a;
+};
+
 // Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
 // every turn, so only danger near us is worth the extra search.
 void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
@@ -246,7 +252,8 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         float damage;
         int steps, gap;
     };
-    std::array<Option, 8> options;
+    Unwritten<Option, 8> scratch;
+    auto& options = scratch.a;
     int n = 0;
     for (auto d : directions) {
         const vec2 p = here + d;
@@ -1648,7 +1655,8 @@ PackZone& pack_boxes(const World& world) {
             vec2 pos;
             float health, damage;
         };
-        std::array<Member, 8> members{};
+        Unwritten<Member, 8> scratch;
+        auto& members = scratch.a;
         int n = 0;
         for (const auto& e : world.enemies)
             if (n < static_cast<int>(members.size()) && e.alive && e.age(world.round) <= 1 && !map.near_enemy_spawn.is_set(e.pos))
@@ -1669,7 +1677,7 @@ PackZone& pack_boxes(const World& world) {
             const float healthy = home ? params::home_retreat_ratio : params::retreat_ratio;
             const float ours = (hurt ? std::min(healthy, params::hurt_retreat_ratio) : healthy) * our_health * our_damage;
             // Only minimal outmatching subsets: a superset's tiles lie within its subsets'.
-            std::array<unsigned, 32> minimal{};
+            std::array<unsigned, 32> minimal;
             int m = 0;
             const int r = pack_radius;
             // By mask, each built from the mask without its highest member, so that sums add the
@@ -1677,7 +1685,7 @@ PackZone& pack_boxes(const World& world) {
             struct Subset {
                 float health, damage;
             };
-            static std::array<Subset, (1u << std::tuple_size_v<decltype(members)>)> subsets;
+            static std::array<Subset, (1u << std::tuple_size_v<std::remove_reference_t<decltype(members)>>)> subsets;
             subsets[0] = {0, 0};
             for (unsigned mask = 1; mask < (1u << n); ++mask) {
                 // A covered mask's supersets are covered too, so its sums are never read.
@@ -1726,6 +1734,25 @@ bool in_pack_zone(const World& world, vec2 p) {
     return false;
 }
 
+// Adds the tiles of a box inside the map as a few squares: a host square costs about what a
+// single tile does, a whole-board operation far more.
+void draw_box(bitboard& b, int x0, int x1, int y0, int y1) {
+    const int side = std::min(x1 - x0, y1 - y0) / 2 * 2 + 1;
+    if (side == 1) {
+        for (int y = y0; y <= y1; ++y)
+            for (int x = x0; x <= x1; ++x) b.set({x, y});
+        return;
+    }
+    const int r = side / 2;
+    for (int cy = y0 + r;; cy = std::min(cy + side, y1 - r)) {
+        for (int cx = x0 + r;; cx = std::min(cx + side, x1 - r)) {
+            b.draw_chebyshev({cx, cy}, static_cast<float>(r));
+            if (cx == x1 - r) break;
+        }
+        if (cy == y1 - r) break;
+    }
+}
+
 const bitboard* pack_zone(const World& world) {
     static bitboard zone;
     auto& pz = pack_boxes(world);
@@ -1733,21 +1760,35 @@ const bitboard* pack_zone(const World& world) {
     if (!pz.drawn) {
         pz.drawn = true;
         zone.clear();
-        // The members' squares meet in the box, as do the two squares around the largest and the
-        // smallest member coordinates: (x0 + r, y0 + r) and (x1 - r, y1 - r).
-        static bitboard tiles{cambc::uninitialized}, other{cambc::uninitialized};
-        const int r = pack_radius;
+        const int width = world.map().width, height = world.map().height;
         for (int i = 0; i < pz.boxes; ++i) {
             const auto& b = pz.box[i];
-            tiles.clear();
-            tiles.draw_chebyshev({b.x0 + r, b.y0 + r}, static_cast<float>(r));
-            other.clear();
-            other.draw_chebyshev({b.x1 - r, b.y1 - r}, static_cast<float>(r));
-            tiles &= other;
-            zone |= tiles;
+            const int x0 = std::max(b.x0, 0), x1 = std::min(b.x1, width - 1), y0 = std::max(b.y0, 0), y1 = std::min(b.y1, height - 1);
+            if (x0 <= x1 && y0 <= y1) draw_box(zone, x0, x1, y0, y1);
         }
     }
     return &zone;
+}
+
+// pack_zone() holds every tile within r of p, worked out from its boxes.
+bool pack_covers(const World& world, vec2 p, int r) {
+    const auto& pz = pack_boxes(world);
+    if (pz.boxes == 0) return false;
+    const int x0 = std::max(0, p.x - r), x1 = std::min(world.map().width - 1, p.x + r);
+    const int y0 = std::max(0, p.y - r), y1 = std::min(world.map().height - 1, p.y + r);
+    for (int i = 0; i < pz.boxes; ++i)
+        if (const auto& b = pz.box[i]; b.x0 <= x0 && x1 <= b.x1 && b.y0 <= y0 && y1 <= b.y1) return true;
+    // Row by row, the boxes that hold the row's first tile not yet held.
+    for (int y = y0; y <= y1; ++y) {
+        int x = x0;
+        for (bool grew = true; grew && x <= x1;) {
+            grew = false;
+            for (int i = 0; i < pz.boxes; ++i)
+                if (const auto& b = pz.box[i]; b.y0 <= y && y <= b.y1 && b.x0 <= x && x <= b.x1) x = b.x1 + 1, grew = true;
+        }
+        if (x <= x1) return false;
+    }
+    return true;
 }
 
 // A capture about to pay is worth finishing while they are still a walk away.
@@ -1878,7 +1919,8 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     const vec2 here = my_position();
     std::array<const ChampionBelief*, 8> foes;
     std::array<const Strike*, 8> strikes;
-    std::array<vec2, 8> at;
+    Unwritten<vec2, 8> positions;
+    auto& at = positions.a;
     int n = 0;
     for (const auto& e : world.enemies)
         if (n < static_cast<int>(foes.size()) && e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + 2
@@ -1926,7 +1968,8 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     const auto* open_packed = open_bits(world);
     const int width = world.map().width;
     // The tiles more exposed than ours, and who would fight on each.
-    std::array<std::pair<vec2, std::uint32_t>, 24> exposed;
+    Unwritten<std::pair<vec2, std::uint32_t>, 24> tiles;
+    auto& exposed = tiles.a;
     int m = 0;
     std::uint32_t enemies = 0, allies = ~0u;
     for (int dy = -radius; dy <= radius; ++dy)
@@ -2020,16 +2063,6 @@ bool can_tribute_here(const World& world) {
     return false;
 }
 
-// Every tile within r of p lies in `zone`.
-bool covered(const bitboard& zone, vec2 p, int r) {
-    static bitboard outside{cambc::uninitialized};
-    outside.clear();
-    outside.draw_chebyshev(p, static_cast<float>(r));
-    outside |= zone;
-    outside ^= zone;
-    return outside.is_empty();
-}
-
 int carried_locks() { return static_cast<int>(cambc::self().consumables()[cambc::consumable_type::altar_lock].count()); }
 
 // The altar a tributer at p channels at.
@@ -2078,7 +2111,8 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
     const bool linked = partner(world) != nullptr;
     // Best first (ties in index order), so fights are simulated only up to the first won.
-    std::array<std::pair<float, const ChampionBelief*>, 8> order;
+    Unwritten<std::pair<float, const ChampionBelief*>, 8> candidates;
+    auto& order = candidates.a;
     int n = 0;
     for (const auto& e : world.enemies) {
         if (n == static_cast<int>(order.size()) || !e.alive || !e.visible || dist(here, e.pos) > vision_radius
@@ -2091,7 +2125,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
             && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
             continue;
         // Every tile in reach of it would make us retreat at once.
-        if (const auto* zone = pack_zone(world); zone && covered(*zone, e.pos, range)) continue;
+        if (pack_covers(world, e.pos, range)) continue;
         if (!strength) strength = std::max(1.0f, my_strength());
         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + e.health / *strength;
         // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.

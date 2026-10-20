@@ -117,17 +117,23 @@ private:
     Window sets_occupied_;
     std::uint8_t sets_kind_ = 0;
     bool sets_reusable_ = false;
-    // The ways depend only on what the recipe holds: kept between builds while it is unchanged.
+    // The ways depend only on what the recipe holds: kept between builds while it is unchanged,
+    // one set for each ready slots and number of turns, as cooldowns run out and come back.
     struct Recipe {
         cambc::champion_type type{};
         std::uint32_t strength = 0, focus = 0;
         std::uint8_t slots = 0;
         bool twice = false, valid = false;
         bool operator==(const Recipe&) const = default;
-    } recipe_;
-    std::array<Way, 14> ways_;
-    int count_ = 0;
-    int basic_ = -1; // the plain basic attack's way
+    };
+    struct Ways {
+        Recipe recipe;
+        std::array<Way, 14> way;
+        int count = 0;
+        int basic = -1; // the plain basic attack's way
+    };
+    std::array<Ways, 8> ways_by_;
+    Ways* ways_ = &ways_by_[0];
     float strength_ = 0;
     bool twice_ = false;
     int reach_ = -1;
@@ -324,6 +330,7 @@ private:
     // vector reallocates at ~300 fuel a time, and each Threat allocates a bitboard.
     std::vector<Threat>& threats_;
     int threat_count_ = 0;
+    std::uint16_t threat_mask_ = 0; // bit i: enemies[i] is one of them
     std::vector<CampHit>& members_; // likewise; valid once `members_known_`
     bool members_known_ = false;
     struct CampMemo {
