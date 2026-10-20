@@ -1584,7 +1584,7 @@ const Reach& Safety::reach_of(const ChampionBelief& e) {
 
 Blow Safety::blow(const ChampionBelief& e, vec2 p) {
     const auto& s = struck(e).strike;
-    if (s.reach < 0 || dist(p, e.pos) > s.reach) return {};
+    if (s.reach < 0 || !in_square(p, e.pos, s.reach)) return {};
     return reach_of(e).at(p);
 }
 
