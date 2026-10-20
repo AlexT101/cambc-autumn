@@ -1227,7 +1227,7 @@ struct World::CampViews {
     // The camp tiles in view as last turn: the same groups are.
     static bitboard seen{cambc::uninitialized}, before{cambc::uninitialized};
     and_into(visible, s.camp_tiles, seen);
-    if (group_visible_.size() != words || (xor_into(seen, before, before), !board_empty(before))) {
+    if (group_visible_.size() != words || !boards_equal(seen, before)) {
         group_visible_.assign(words, 0);
         auto* const visible_bits = group_visible_.data();
         for (auto p : Tiles<17 * 17 + 13 * 13>{seen}) {

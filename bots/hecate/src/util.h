@@ -156,6 +156,11 @@ inline constexpr vec2 directions[8] = {vec2::north, vec2::north_east, vec2::east
     ok(cambc::detail::sdk_Bitboard_IsZero(b.ptr(), &value));
     return value != 0;
 }
+[[gnu::always_inline]] inline bool boards_equal(const bitboard& a, const bitboard& b) {
+    static std::int32_t value;
+    ok(cambc::detail::sdk_Bitboard_IsEqual(a.ptr(), b.ptr(), &value));
+    return value != 0;
+}
 [[gnu::always_inline]] inline std::uint32_t board_count(const bitboard& b) {
     static std::uint32_t value;
     ok(cambc::detail::sdk_Bitboard_NumSetBits(b.ptr(), &value));
