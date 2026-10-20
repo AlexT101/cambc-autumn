@@ -29,8 +29,8 @@ Resets your basic attack cooldown.
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
 | Health | 700 | 50 |
-| Strength | 45 | 3 |
-| Focus | 105 | 5 |
+| Strength | 55 | 3 |
+| Focus | 120 | 5 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.
 

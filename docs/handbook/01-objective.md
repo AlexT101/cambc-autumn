@@ -61,15 +61,15 @@ The objective of the game is to tribute as many gems as possible! The game ends 
 - Claim
 - Hold the camp uncontested until its five-round capture timer finishes.
 - Carry
-- This single-wolf camp gives you 22 gems and 90 gold. Get the gems safely to an altar.
+- This single-wolf camp gives you 4 gems and 40 gold. Get the gems safely to an altar.
 - Tribute
-- Count down at three of your turn ends, including the starting turn. At your following turn start, your 22 gems become team score.
+- Count down at the end of the starting turn. At your following turn start, your 4 gems become team score.
 - Follow one delivery
 - Illustrated example
 - N: N
 - Camp
 - Altar
-- 22 gems
+- 4 gems
 - Carried
 - Tributed
 - Pause

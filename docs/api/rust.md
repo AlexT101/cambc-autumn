@@ -16,7 +16,7 @@ Start with [Getting Started](../guides/rust/first-bot.md). Other languages: [C++
 - [cambc::BuffCollection](#cambc-buffcollection) (9)
 - [cambc::BuffPayload](#cambc-buffpayload) (1)
 - [cambc::BuffRestrictions](#cambc-buffrestrictions) (22)
-- [cambc::Camp](#cambc-camp) (14)
+- [cambc::Camp](#cambc-camp) (15)
 - [cambc::CampGroup](#cambc-campgroup) (8)
 - [cambc::CampState](#cambc-campstate) (4)
 - [cambc::Champion](#cambc-champion) (51)
@@ -37,8 +37,8 @@ Start with [Getting Started](../guides/rust/first-bot.md). Other languages: [C++
 - [cambc::Teleport](#cambc-teleport) (8)
 - [cambc::Unit](#cambc-unit) (10)
 - [cambc::Vec2](#cambc-vec2) (11)
-- [cambc::vision](#cambc-vision) (28)
-- [cambc::Ward](#cambc-ward) (9)
+- [cambc::vision](#cambc-vision) (33)
+- [cambc::Ward](#cambc-ward) (10)
 
 <a id="cambc"></a>
 
@@ -87,10 +87,10 @@ Metadata for direct damage, including range and its engine modifier.
 ### AbilityDash
 
 ```rust
-pub struct AbilityDash { pub properties: AbilityProperties, pub range: f32, }
+pub struct AbilityDash { pub properties: AbilityProperties, pub range: f32, pub radius: f32, pub modifier: f32, pub duration: i32, }
 ```
 
-Metadata for a movement ability and its range.
+Dash metadata. Landing effects apply to enemies and camps only after a successful dash. range: Maximum dash travel distance in tiles. Diagonal steps count as one; the destination must be a different tile reachable by a legal dash path. radius: Chebyshev radius in tiles around the landing tile for damage and stun; 1 includes all eight neighbouring tiles. modifier: Landing damage multiplier: base damage = caster Focus * modifier, before damage bonuses and mitigation. 0 disables landing damage. duration: Stun duration applied on landing, in turns; 0 disables stun. This is not the dash travel time.
 
 ### AbilityHeal
 
@@ -255,7 +255,7 @@ Immutable camp design stats in the engine C layout, not current combat stats.
 ### CampType
 
 ```rust
-pub enum CampType { Wolf = 0,Elk = 1,GemCluster = 2,GoldCluster = 3,Monolith = 4 }
+pub enum CampType { Wolf = 0,Elk = 1,GemCluster = 2,GoldCluster = 3,Monolith = 4,Golem = 5 }
 ```
 
 Checked engine values. Implements TryFrom<i32> and Display; ALL lists the recognised values.
@@ -279,7 +279,7 @@ A champion handle or draft design, composed with `Unit` and cached slot metadata
 ### champion_designs
 
 ```rust
-pub fn champion_designs() -> Result<&'static [Champion; 12]>
+pub fn champion_designs() -> Result<&'static [Champion; 13]>
 ```
 
 Borrow all initialised champion designs, with no live cooldown/visibility queries.
@@ -287,7 +287,7 @@ Borrow all initialised champion designs, with no live cooldown/visibility querie
 ### ChampionDraft
 
 ```rust
-pub enum ChampionDraft { Ryth = 0,VesperVale = 1,Vendetta = 2,CassiAndIssac = 3,Stellar = 4,Prism = 5,Marcella = 6,Willow = 7,Ren = 8,Varg = 9,Tavi = 10 }
+pub enum ChampionDraft { Ryth = 0,VesperVale = 1,Vendetta = 2,CassiAndIssac = 3,Stellar = 4,Prism = 5,Marcella = 6,Willow = 7,Ren = 8,Varg = 9,Tavi = 10,HeartOfRuin = 11 }
 ```
 
 Checked engine values. Implements TryFrom<i32> and Display; ALL lists the recognised values.
@@ -319,7 +319,7 @@ Immutable champion design stats in the engine C layout, not current combat stats
 ### ChampionType
 
 ```rust
-pub enum ChampionType { Ryth = 0,VesperVale = 1,Vendetta = 2,Cassi = 3,Issac = 4,Stellar = 5,Prism = 6,Marcella = 7,Willow = 8,Ren = 9,Varg = 10,Tavi = 11 }
+pub enum ChampionType { Ryth = 0,VesperVale = 1,Vendetta = 2,Cassi = 3,Issac = 4,Stellar = 5,Prism = 6,Marcella = 7,Willow = 8,Ren = 9,Varg = 10,Tavi = 11,HeartOfRuin = 12 }
 ```
 
 Checked engine values. Implements TryFrom<i32> and Display; ALL lists the recognised values.
@@ -505,7 +505,7 @@ Checked engine values. Implements TryFrom<u32> and Display; ALL lists the recogn
 ### PassiveType
 
 ```rust
-pub enum PassiveType { None = 0,BonusGold = 1,RemoteShop = 2,GemFocus = 3,SplashAttack = 4,HealthStrength = 5,ResetCooldownsOnKill = 6,Retaliation = 7,StunImmunity = 8 }
+pub enum PassiveType { None = 0,BonusGold = 1,RemoteShop = 2,GemFocus = 3,SplashAttack = 4,HealthStrength = 5,ResetCooldownsOnKill = 6,Retaliation = 7,StunImmunity = 8,MissingHealthDamage = 10 }
 ```
 
 Checked engine values. Implements TryFrom<u8> and Display; ALL lists the recognised values.
@@ -686,7 +686,7 @@ Query the current cooldown; requires a live owner and propagates host errors.
 pub fn damage_amount(&self) -> Result<f32>
 ```
 
-Query this live ability's damage; unsupported kinds propagate the engine error.
+Query Focus-scaled damage, including dash landing damage and caster outgoing bonuses such as Heart of Ruin's passive. Excludes target-dependent modifiers, shields and health limits.
 
 ### damage_amount_against
 
@@ -898,7 +898,7 @@ Metadata for direct damage, including range and its engine modifier.
 pub use cambc::AbilityDash as Dash;
 ```
 
-Metadata for a movement ability and its range.
+Dash metadata. Landing effects apply to enemies and camps only after a successful dash. range: Maximum dash travel distance in tiles. Diagonal steps count as one; the destination must be a different tile reachable by a legal dash path. radius: Chebyshev radius in tiles around the landing tile for damage and stun; 1 includes all eight neighbouring tiles. modifier: Landing damage multiplier: base damage = caster Focus * modifier, before damage bonuses and mitigation. 0 disables landing damage. duration: Stun duration applied on landing, in turns; 0 disables stun. This is not the dash travel time.
 
 ### Heal
 
@@ -1846,6 +1846,12 @@ pub fn is_gem_cluster(&self) -> bool
 pub fn is_gold_cluster(&self) -> bool
 ```
 
+### is_golem
+
+```rust
+pub fn is_golem(&self) -> bool
+```
+
 ### is_monolith
 
 ```rust
@@ -2234,9 +2240,9 @@ if me.can_move()? {
 pub fn move_towards(&self, target: Vec2) -> Result<bool>
 ```
 
-Move self to the reachable tile on a shortest path to `target`, avoiding walls, holes, altars, the enemy spawn and visible units. Returns `Ok(false)` without moving when already there, unable to move, or `target` is blocked or unreachable, and for a newly revealed obstruction. # Arguments * `target` - Map tile to approach.
+Move self to the reachable tile on a shortest path to `target`. Always treat the target as free for pathfinding, while avoiding other walls, holes, altars, enemy spawn tiles, visible units and teleport reservations. Returns `Ok(false)` when already there, unable to move, no route exists, or a hidden obstruction is revealed. The engine still validates the chosen landing tile: trying to enter a known blocked target returns `Err`. # Arguments * `target` - Map tile to approach.
 
-*Example: Take a planned step; false means no movement occurred.*
+*Example: Path towards a target even when its tile is blocked. Stop at the desired range: the engine still rejects landing on a known blocked tile.*
 
 ```rust
 let me = bc::self_champion()?;
@@ -3598,6 +3604,38 @@ pub fn altar_locks(team: Option<Team>) -> Result<Vec<AltarLock>>
 
 Return owning visible altar-lock snapshots, optionally filtered by team. # Arguments * `team` - `Some(team)` for one side, or `None` for both.
 
+### asleep_camp_tiles
+
+```rust
+pub fn asleep_camp_tiles() -> Result<Bitboard>
+```
+
+Query the tiles of visible asleep camps. Dead camps are excluded.
+
+### asleep_camp_tiles_into
+
+```rust
+pub fn asleep_camp_tiles_into(out: &mut Bitboard) -> Result<()>
+```
+
+Like [`asleep_camp_tiles`], but writes into `out`. # Arguments * `out` - Destination mask; its previous contents are overwritten.
+
+### awake_camp_tiles
+
+```rust
+pub fn awake_camp_tiles() -> Result<Bitboard>
+```
+
+Query the tiles of visible awake camps. Dead camps are excluded.
+
+### awake_camp_tiles_into
+
+```rust
+pub fn awake_camp_tiles_into(out: &mut Bitboard) -> Result<()>
+```
+
+Like [`awake_camp_tiles`], but writes into `out`. # Arguments * `out` - Destination mask; its previous contents are overwritten.
+
 ### camp_at
 
 ```rust
@@ -3710,6 +3748,14 @@ pub fn has_ward(position: Vec2, team: Option<Team>) -> Result<bool>
 
 Test for a visible ward belonging to `team`; missing or hidden wards return `false`. # Arguments * `position` - Tile to query. * `team` - `Some(team)` for one side, or `None` for both.
 
+### in_vision
+
+```rust
+pub fn in_vision(position: Vec2) -> Result<bool>
+```
+
+Check current self vision, including owned ward vision, even on empty tiles. Hidden tiles return `Ok(false)`; out-of-bounds positions return `ApiBadPosition`. # Arguments * `position` - Tile to query.
+
 ### teleport_at
 
 ```rust
@@ -3805,6 +3851,14 @@ pub fn is_ally(&self) -> bool
 ```rust
 pub fn is_enemy(&self) -> bool
 ```
+
+### owner
+
+```rust
+pub fn owner(&self) -> Result<Champion>
+```
+
+Return the owning champion captured when this ward was visible, even if the owner is hidden. Live champion state still requires the champion to be in vision.
 
 ### position
 

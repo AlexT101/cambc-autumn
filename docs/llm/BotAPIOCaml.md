@@ -359,6 +359,8 @@ Pass at most one of `~target` and `~at`. Unit casts land on the target's tile; g
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -378,6 +380,8 @@ val cooldown : t -> int
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -393,9 +397,11 @@ let result = Ability.cooldown value1
 val damage_amount : ?against:champion -> t -> float
 ```
 
-`damage_amount ?against a` is the damage the ability would deal, after mitigation and shields when `against` is given. @param against Optional visible champion the amount is computed against. @param a Ability slot.
+`damage_amount ?against a` returns Focus-scaled damage, including dash landing damage and caster outgoing bonuses such as Heart of Ruin's passive. Without `against`, excludes target-dependent modifiers, shields and health limits. With `against`, predicts health lost after outgoing bonuses, mitigation and shields, capped at current health. Does not check range or whether a target is in the landing area. @param against Optional visible champion the amount is computed against. @param a Ability slot.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate an ability before choosing a spell.
 
@@ -416,6 +422,8 @@ val heal_amount : ?against:champion -> t -> float
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -428,15 +436,15 @@ let result = Ability.heal_amount value1
 ### info
 
 ```ocaml
-type info = | Attack_reset of { properties : properties; enhanced_attack : bool } | Damage of { properties : properties; range : float; modifier : float } | Aoe_damage of { properties : properties; range : float; modifier : float; radius : float; duration : int; } | Cc of { properties : properties; range : float; modifier : float; duration : int } | Heal of { properties : properties; range : float; modifier : float } | Dash of { properties : properties; range : float } | Shield of { properties : properties; range : float; modifier : float; duration : int }
+type info = | Attack_reset of { properties : properties; enhanced_attack : bool } | Damage of { properties : properties; range : float; modifier : float } | Aoe_damage of { properties : properties; range : float; modifier : float; radius : float; duration : int; } | Cc of { properties : properties; range : float; modifier : float; duration : int } | Heal of { properties : properties; range : float; modifier : float } | Dash of { properties : properties; range : float; radius : float; modifier : float; duration : int } | Shield of { properties : properties; range : float; modifier : float; duration : int }
 ```
 
-
+Ability metadata. For the `Dash` variant: Landing effects apply to enemies and camps only after a successful dash. `range`: Maximum dash travel distance in tiles. Diagonal steps count as one; the destination must be a different tile reachable by a legal dash path. `radius`: Chebyshev radius in tiles around the landing tile for damage and stun; 1 includes all eight neighbouring tiles. `modifier`: Landing damage multiplier: base damage = caster Focus * modifier, before damage bonuses and mitigation. 0 disables landing damage. `duration`: Stun duration applied on landing, in turns; 0 disables stun. This is not the dash travel time.
 
 Public SDK type declaration.
 
 ```ocaml
-type info = | Attack_reset of { properties : properties; enhanced_attack : bool } | Damage of { properties : properties; range : float; modifier : float } | Aoe_damage of { properties : properties; range : float; modifier : float; radius : float; duration : int; } | Cc of { properties : properties; range : float; modifier : float; duration : int } | Heal of { properties : properties; range : float; modifier : float } | Dash of { properties : properties; range : float } | Shield of { properties : properties; range : float; modifier : float; duration : int }
+type info = | Attack_reset of { properties : properties; enhanced_attack : bool } | Damage of { properties : properties; range : float; modifier : float } | Aoe_damage of { properties : properties; range : float; modifier : float; radius : float; duration : int; } | Cc of { properties : properties; range : float; modifier : float; duration : int } | Heal of { properties : properties; range : float; modifier : float } | Dash of { properties : properties; range : float; radius : float; modifier : float; duration : int } | Shield of { properties : properties; range : float; modifier : float; duration : int }
 ```
 
 ### info
@@ -586,6 +594,8 @@ val is_on_cooldown : t -> bool
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -604,6 +614,8 @@ val is_ready : t -> bool
 Check whether this ability is ready to cast. @param a Ability slot.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate an ability before choosing a spell.
 
@@ -657,6 +669,8 @@ val mask_into : t -> Bitboard.t -> unit
 Like `valid_tiles`, but writes into `out`. Raises `No_range` for attack resets. @param a Ability slot. @param out Destination; its previous contents are overwritten.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate an ability before choosing a spell.
 
@@ -726,6 +740,8 @@ val shield_amount : ?against:champion -> t -> float
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -792,6 +808,8 @@ val valid_tiles : t -> Bitboard.t
 `valid_tiles a` is the tiles within casting range; visibility and occupancy are not checked. @param a Ability slot.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate an ability before choosing a spell.
 
@@ -2438,6 +2456,8 @@ val attack_tiles : t -> Bitboard.t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2456,6 +2476,8 @@ val attack_tiles_into : t -> Bitboard.t -> unit
 Like `attack_tiles`, but writes into `out`. @param c Camp. @param out Destination; its previous contents are overwritten.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -2508,6 +2530,8 @@ val buffs : t -> Buff.t list
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2552,6 +2576,8 @@ val focus : t -> float
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2579,6 +2605,8 @@ val health : t -> float
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2597,6 +2625,8 @@ val is_alive : t -> bool
 Query whether this camp is living (awake or asleep); uses the visibility checks of `state`.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -2617,6 +2647,8 @@ Query whether this camp is living but dormant; uses the visibility checks of `st
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2636,6 +2668,8 @@ Query whether this camp is awake; uses the same visibility checks as `state`.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2654,6 +2688,8 @@ val is_dead : t -> bool
 Query whether this camp is dead; uses the same visibility checks as `state`.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -2713,6 +2749,23 @@ Inputs:
 
 ```ocaml
 let is_gold_cluster = Camp.is_gold_cluster value1
+```
+
+### is_golem
+
+```ocaml
+val is_golem : t -> bool
+```
+
+Check whether this camp is a golem. @param c Camp.
+
+Evaluate a visible camp before choosing where to farm.
+
+Inputs:
+- value1: t (types from Cambc.Camp)
+
+```ocaml
+let is_golem = Camp.is_golem value1
 ```
 
 ### is_monolith
@@ -2795,6 +2848,8 @@ val max_health : t -> float
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2813,6 +2868,8 @@ val position : t -> Vec2.t
 `position c` is the current tile; raises if `c` is not visible. @param c Camp.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -2864,6 +2921,8 @@ Query `Dead`, `Alive` (awake), or `Asleep`. The current tile, or last occupied t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -2882,6 +2941,8 @@ val strength : t -> float
 `strength c` is current strength; raises if `c` is not visible. @param c Camp.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -3184,7 +3245,7 @@ let result = Camp_type.all
 ### t
 
 ```ocaml
-type t = | Wolf | Elk | Gem_cluster | Gold_cluster | Monolith
+type t = | Wolf | Elk | Gem_cluster | Gold_cluster | Monolith | Golem
 ```
 
 
@@ -3192,7 +3253,7 @@ type t = | Wolf | Elk | Gem_cluster | Gold_cluster | Monolith
 Public SDK type declaration.
 
 ```ocaml
-type t = | Wolf | Elk | Gem_cluster | Gold_cluster | Monolith
+type t = | Wolf | Elk | Gem_cluster | Gold_cluster | Monolith | Golem
 ```
 
 ### to_string
@@ -3232,6 +3293,8 @@ val attack : t -> [ `Champion of champion | `Camp of camp | `Altar_lock of Altar
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3252,6 +3315,8 @@ val attack_range : t -> int
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3271,6 +3336,8 @@ val attack_tiles : t -> Bitboard.t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3289,6 +3356,8 @@ val attack_tiles_into : t -> Bitboard.t -> unit
 Like `attack_tiles`, but writes into `out`. @param c Champion. @param out Destination; its previous contents are overwritten.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -3340,6 +3409,8 @@ val buffs : t -> Buff.t list
 `buffs c` is the champion's current buffs; raises if `c` is not visible. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -3400,6 +3471,8 @@ Check whether this champion can attack. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Check the action allowance before spending fuel to choose an attack target.
 
 ```ocaml
@@ -3417,6 +3490,8 @@ val can_buy : ?count:int -> t -> Item.t -> bool
 `can_buy ?count c item` is true when `c` can buy `item` in its current state. @param count Number of copies; defaults to 1. @param c Champion. @param item Item type.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -3438,6 +3513,8 @@ val can_buy_consumable : t -> Consumable.t -> bool
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3458,6 +3535,8 @@ Check whether this champion can cast. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Check the action allowance before spending fuel to evaluate ready abilities.
 
 ```ocaml
@@ -3476,6 +3555,8 @@ Check whether this champion can move. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Check the action allowance before spending fuel to plan a path.
 
 ```ocaml
@@ -3493,6 +3574,8 @@ val can_sell : t -> bool
 `can_sell c` is true when `c` can sell items in its current state. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -3568,6 +3651,8 @@ val consumable_count : t -> Consumable.t -> int
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3587,6 +3672,8 @@ val consumable_counts : t -> Consumable_counts.t
 `consumable_counts c` is `c`'s consumable inventory. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -3648,6 +3735,8 @@ val focus : t -> float
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3666,6 +3755,8 @@ val gem_count : t -> int
 `gem_count c` is the gems `c` is carrying. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -3705,6 +3796,8 @@ Check whether this champion has completed its turn. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3731,6 +3824,8 @@ val health : t -> float
 `health c` is current health; raises if `c` is not visible. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Recall when badly injured and safe from interruption.
 
@@ -3830,6 +3925,8 @@ Check whether this champion is recalling. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3849,6 +3946,8 @@ Check whether this champion is submitting gems. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3867,6 +3966,8 @@ val is_teleporting : t -> bool
 Check whether this champion is teleporting. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -3904,6 +4005,8 @@ val item_count : t -> Item.t -> int
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3924,6 +4027,8 @@ val item_counts : t -> Item_counts.t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3942,6 +4047,8 @@ val max_health : t -> float
 `max_health c` is current maximum health; raises if `c` is not visible. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Recall when badly injured and safe from interruption.
 
@@ -4005,11 +4112,11 @@ if Champion.can_move me then
 val move_towards : t -> Vec2.t -> bool
 ```
 
-Move to the reachable tile on a shortest path to `target`, avoiding walls, holes, altars, the enemy spawn and visible units. Returns false without moving when already there, unable to move, or `target` is blocked or unreachable, and for a newly revealed obstruction. @param c The bot's own champion. @param target Map tile to approach.
+Move to the reachable tile on a shortest path to `target`. Always treat the target as free for pathfinding, while avoiding other walls, holes, altars, enemy spawn tiles, visible units and teleport reservations. Returns false when already there, unable to move, no route exists, or a hidden obstruction is revealed. The engine still validates the chosen landing tile: trying to enter a known blocked target raises `Cambc_error`. @param c The bot's own champion. @param target Map tile to approach.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
-Take a planned step; false means no movement occurred.
+Path towards a target even when its tile is blocked. Stop at the desired range: the engine still rejects landing on a known blocked tile.
 
 Inputs:
 - destination: a destination selected by your pathfinder
@@ -4068,6 +4175,8 @@ val position : t -> Vec2.t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4087,6 +4196,8 @@ val prev_priority : t -> int
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4105,6 +4216,8 @@ val priority : t -> int
 `priority c` is the priority that will apply from the next round. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4147,6 +4260,8 @@ val remaining_channel_time : t -> int
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4165,6 +4280,8 @@ val restrictions : t -> Buff_restrictions.t
 `restrictions c` is the actions the champion's buffs currently prohibit. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4225,6 +4342,8 @@ val state : t -> Champion_state.t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4243,6 +4362,8 @@ val strength : t -> float
 `strength c` is current strength; raises if `c` is not visible. @param c Champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4336,6 +4457,8 @@ val visible_tiles : t -> Bitboard.t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -4395,6 +4518,8 @@ val visible_tiles_into : t -> Bitboard.t -> unit
 Like `visible_tiles`, but writes into `out`. @param c Champion. @param out Destination; its previous contents are overwritten.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4502,7 +4627,7 @@ let result = Champion_draft.all
 ### t
 
 ```ocaml
-type t = | Ryth | Vesper_vale | Vendetta | Cassi_and_issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi
+type t = | Ryth | Vesper_vale | Vendetta | Cassi_and_issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi | Heart_of_ruin
 ```
 
 
@@ -4510,7 +4635,7 @@ type t = | Ryth | Vesper_vale | Vendetta | Cassi_and_issac | Stellar | Prism | M
 Public SDK type declaration.
 
 ```ocaml
-type t = | Ryth | Vesper_vale | Vendetta | Cassi_and_issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi
+type t = | Ryth | Vesper_vale | Vendetta | Cassi_and_issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi | Heart_of_ruin
 ```
 
 ### to_string
@@ -4808,7 +4933,7 @@ let result = Champion_type.all
 ### t
 
 ```ocaml
-type t = | Ryth | Vesper_vale | Vendetta | Cassi | Issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi
+type t = | Ryth | Vesper_vale | Vendetta | Cassi | Issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi | Heart_of_ruin
 ```
 
 
@@ -4816,7 +4941,7 @@ type t = | Ryth | Vesper_vale | Vendetta | Cassi | Issac | Stellar | Prism | Mar
 Public SDK type declaration.
 
 ```ocaml
-type t = | Ryth | Vesper_vale | Vendetta | Cassi | Issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi
+type t = | Ryth | Vesper_vale | Vendetta | Cassi | Issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi | Heart_of_ruin
 ```
 
 ### to_string
@@ -4858,6 +4983,34 @@ type t = { capture_time : int; camp_sleep_time : int; respawn_time : int; recall
 ```
 
 ## Cambc.Constants.Passive_abilities
+
+### heart_of_ruin_missing_health_damage_max_bonus
+
+```ocaml
+val heart_of_ruin_missing_health_damage_max_bonus : float
+```
+
+Heart of Ruin: maximum bonus to all damage at 100% missing health.
+
+Use this value in your bot's draft or turn logic.
+
+```ocaml
+let result = Constants.Passive_abilities.heart_of_ruin_missing_health_damage_max_bonus
+```
+
+### marcella_tribute_gold_per_gem
+
+```ocaml
+val marcella_tribute_gold_per_gem : int
+```
+
+Marcella: gold gained per gem tributed.
+
+Use this value in your bot's draft or turn logic.
+
+```ocaml
+let result = Constants.Passive_abilities.marcella_tribute_gold_per_gem
+```
 
 ### prism_focus_per_gem
 
@@ -5905,6 +6058,8 @@ val attack_range : t -> int
 
 `attack_range u` is the attack range in Chebyshev tiles; melee units have range 1. @param u Unit.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -5924,6 +6079,8 @@ val attack_tiles : t -> Bitboard.t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -5942,6 +6099,8 @@ val attack_tiles_into : t -> Bitboard.t -> unit
 Like `attack_tiles`, but writes into `out`. @param u Unit. @param out Destination; its previous contents are overwritten.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -5963,6 +6122,8 @@ val buffs : t -> Buff.t list
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -5982,6 +6143,8 @@ val focus : t -> float
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -6000,6 +6163,8 @@ val health : t -> float
 `health u` is current health; raises if `u` is not visible. @param u Unit.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -6037,6 +6202,8 @@ val max_health : t -> float
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -6056,6 +6223,8 @@ val position : t -> Vec2.t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -6074,6 +6243,8 @@ val strength : t -> float
 `strength u` is current strength; raises if `u` is not visible. @param u Unit.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -6453,7 +6624,7 @@ let result = Passive.all
 ### t
 
 ```ocaml
-type t = | None | Bonus_gold | Remote_shop | Gem_focus | Splash_attack | Health_strength | Reset_cooldowns_on_kill | Retaliation | Stun_immunity
+type t = | None | Bonus_gold | Remote_shop | Gem_focus | Splash_attack | Health_strength | Reset_cooldowns_on_kill | Retaliation | Stun_immunity | Missing_health_damage
 ```
 
 
@@ -6461,7 +6632,7 @@ type t = | None | Bonus_gold | Remote_shop | Gem_focus | Splash_attack | Health_
 Public SDK type declaration.
 
 ```ocaml
-type t = | None | Bonus_gold | Remote_shop | Gem_focus | Splash_attack | Health_strength | Reset_cooldowns_on_kill | Retaliation | Stun_immunity
+type t = | None | Bonus_gold | Remote_shop | Gem_focus | Splash_attack | Health_strength | Reset_cooldowns_on_kill | Retaliation | Stun_immunity | Missing_health_damage
 ```
 
 ### to_string
@@ -7172,6 +7343,8 @@ val altar_lock_at : Vec2.t -> Altar_lock.t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7190,6 +7363,8 @@ val altar_lock_at_opt : Vec2.t -> Altar_lock.t option
 Like `altar_lock_at`, but `None` instead of raising. @param p Tile to query.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Check visible objects before choosing a destination.
 
@@ -7251,6 +7426,76 @@ Check visible objects before choosing a destination.
 let result = Vision.altar_locks ()
 ```
 
+### asleep_camp_tiles
+
+```ocaml
+val asleep_camp_tiles : unit -> Bitboard.t
+```
+
+Tiles of visible asleep camps. Dead camps are excluded.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+Check visible objects before choosing a destination.
+
+```ocaml
+let result = Vision.asleep_camp_tiles ()
+```
+
+### asleep_camp_tiles_into
+
+```ocaml
+val asleep_camp_tiles_into : Bitboard.t -> unit
+```
+
+Like `asleep_camp_tiles`, but writes into `out`. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+Check visible objects before choosing a destination.
+
+Inputs:
+- value1: Bitboard.t (types from Cambc.Vision)
+
+```ocaml
+let result = Vision.asleep_camp_tiles_into value1
+```
+
+### awake_camp_tiles
+
+```ocaml
+val awake_camp_tiles : unit -> Bitboard.t
+```
+
+Tiles of visible awake camps. Dead camps are excluded.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+Check visible objects before choosing a destination.
+
+```ocaml
+let result = Vision.awake_camp_tiles ()
+```
+
+### awake_camp_tiles_into
+
+```ocaml
+val awake_camp_tiles_into : Bitboard.t -> unit
+```
+
+Like `awake_camp_tiles`, but writes into `out`. @param out Destination; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+Check visible objects before choosing a destination.
+
+Inputs:
+- value1: Bitboard.t (types from Cambc.Vision)
+
+```ocaml
+let result = Vision.awake_camp_tiles_into value1
+```
+
 ### camp_at
 
 ```ocaml
@@ -7260,6 +7505,8 @@ val camp_at : Vec2.t -> Camp.t
 `camp_at p` is the visible camp currently on `p`; raises if there is none or the tile is hidden. @param p Tile to query.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Check visible objects before choosing a destination.
 
@@ -7279,6 +7526,8 @@ val camp_at_opt : Vec2.t -> Camp.t option
 Like `camp_at`, but `None` instead of raising. @param p Tile to query.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Check visible objects before choosing a destination.
 
@@ -7366,6 +7615,8 @@ val champion_at : Vec2.t -> Champion.t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7384,6 +7635,8 @@ val champion_at_opt : Vec2.t -> Champion.t option
 Like `champion_at`, but `None` instead of raising. @param p Tile to query.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Check visible objects before choosing a destination.
 
@@ -7540,6 +7793,25 @@ Inputs:
 let has_ward = Vision.has_ward value1
 ```
 
+### in_vision
+
+```ocaml
+val in_vision : Vec2.t -> bool
+```
+
+Check current self vision, including owned ward vision, even on empty tiles. Hidden tiles return `false`; out-of-bounds positions raise `Api_bad_position`. @param position Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+Check visible objects before choosing a destination.
+
+Inputs:
+- value1: Vec2.t (types from Cambc.Vision)
+
+```ocaml
+let result = Vision.in_vision value1
+```
+
 ### teleport_at
 
 ```ocaml
@@ -7549,6 +7821,8 @@ val teleport_at : Vec2.t -> Teleport.t
 `teleport_at p` is the visible teleport reservation on `p`; raises if there is none. @param p Tile to query.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Check visible objects before choosing a destination.
 
@@ -7568,6 +7842,8 @@ val teleport_at_opt : Vec2.t -> Teleport.t option
 Like `teleport_at`, but `None` instead of raising. @param p Tile to query.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Check visible objects before choosing a destination.
 
@@ -7674,6 +7950,8 @@ val ward_at : ?team:Team.t -> Vec2.t -> Ward.t
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7692,6 +7970,8 @@ val ward_at_opt : ?team:Team.t -> Vec2.t -> Ward.t option
 Like `ward_at`, but `None` instead of raising. @param team Team to restrict to; either team when omitted. @param p Tile to query.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Check visible objects before choosing a destination.
 
@@ -7789,10 +8069,27 @@ Inputs:
 let is_enemy = Ward.is_enemy value1
 ```
 
+### owner
+
+```ocaml
+val owner : t -> champion
+```
+
+Return the owning champion captured when this ward was visible, even if the owner is hidden. Live champion state still requires the champion to be in vision. @param w Ward snapshot.
+
+Check visible objects before choosing a destination.
+
+Inputs:
+- value1: t (types from Cambc.Ward)
+
+```ocaml
+let result = Ward.owner value1
+```
+
 ### t
 
 ```ocaml
-type t = { position : Vec2.t; team : Team.t; remaining_time : int option }
+type t = { position : Vec2.t; team : Team.t; remaining_time : int option; owner : champion }
 ```
 
 
@@ -7800,7 +8097,7 @@ type t = { position : Vec2.t; team : Team.t; remaining_time : int option }
 Public SDK type declaration.
 
 ```ocaml
-type t = { position : Vec2.t; team : Team.t; remaining_time : int option }
+type t = { position : Vec2.t; team : Team.t; remaining_time : int option; owner : champion }
 ```
 
 ### visible_tiles

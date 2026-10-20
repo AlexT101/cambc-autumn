@@ -70,9 +70,9 @@ Tributing requires a channel to secure the gems. The amount of time this takes s
 
 ## Altar locks
 
-Altar locks are a consumable you can purchase for 10g, and carry one at a time. You can place them on altars if you are within range, cancelling enemy channels, or simply delaying them by leaving them there. It takes 3 basic attacks to clear the lock, which is also triggered by the tributing action in the engine.
+Altar locks are a consumable you can purchase for 10g, and carry one at a time. You can place them on altars if you are within range, cancelling enemy channels, or simply delaying them by leaving them there. It takes 5 basic attacks to clear the lock, which is also triggered by the tributing action in the engine.
 
-> **Diagram: lock.** An altar lock blocks opposing tributes but allows its owner's team to tribute. Placing it cancels existing tribute channels at that altar. Three basic attacks remove it.
+> **Diagram: lock.** An altar lock blocks opposing tributes but allows its owner's team to tribute. Placing it cancels existing tribute channels at that altar. Five basic attacks remove it.
 
 <details>
 <summary>Interactive diagram text</summary>
@@ -81,10 +81,16 @@ Altar locks are a consumable you can purchase for 10g, and carry one at a time. 
 - Enemy lock placed
 - Your team cannot tribute at this altar. Placing the lock also cancelled any tributes already in progress here.
 - 1 hit
-- 1 of 3 hits
+- 1 of 5 hits
 - Break it with basic attacks. A tribute attempt here becomes an attack on the lock.
 - 2 hits
-- 2 of 3 hits
+- 2 of 5 hits
+- Three more successful basic attacks.
+- 3 hits
+- 3 of 5 hits
+- Two more successful basic attacks.
+- 4 hits
+- 4 of 5 hits
 - One more successful basic attack.
 - Broken
 - Lock broken

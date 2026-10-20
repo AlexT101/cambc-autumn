@@ -1,6 +1,6 @@
 # Marcella
 
-*A melee champion immune to stuns, with a stunning enhanced attack and a ranged damage spell.*
+*A stun-immune melee champion who earns gold from tributes, with a stunning enhanced attack and a ranged damage spell.*
 
 <img src="../images/champion-marcella.webp" alt="Marcella" width="320">
 
@@ -8,7 +8,7 @@
 
 **Marcella**
 
-**Passive:** Immune to stuns
+**Passive:** Immune to stuns. Gains 2 gold per gem tributed.
 
 ### Slot 0: Enhanced attack reset
 
@@ -32,7 +32,7 @@ Resets your basic attack cooldown; the next enhanced attack stuns for one round.
 | --- | --- | --- |
 | Health | 1200 | 100 |
 | Strength | 45 | 5 |
-| Focus | 50 | 10 |
+| Focus | 60 | 15 |
 
 Attack type: Melee. Basic attack range: 1 tiles.
 

@@ -15,7 +15,7 @@ Start with [Getting Started](../guides/ocaml/first-bot.md). Other languages: [C+
 - [Cambc.Buff](#cambc-buff) (9)
 - [Cambc.Buff_kind](#cambc-buff-kind) (3)
 - [Cambc.Buff_restrictions](#cambc-buff-restrictions) (16)
-- [Cambc.Camp](#cambc-camp) (29)
+- [Cambc.Camp](#cambc-camp) (30)
 - [Cambc.Camp_group](#cambc-camp-group) (11)
 - [Cambc.Camp_state](#cambc-camp-state) (5)
 - [Cambc.Camp_type](#cambc-camp-type) (3)
@@ -24,7 +24,7 @@ Start with [Getting Started](../guides/ocaml/first-bot.md). Other languages: [C+
 - [Cambc.Champion_state](#cambc-champion-state) (17)
 - [Cambc.Champion_type](#cambc-champion-type) (3)
 - [Cambc.Constants](#cambc-constants) (2)
-- [Cambc.Constants.Passive_abilities](#cambc-constants-passive-abilities) (5)
+- [Cambc.Constants.Passive_abilities](#cambc-constants-passive-abilities) (7)
 - [Cambc.Consumable](#cambc-consumable) (7)
 - [Cambc.Consumable_counts](#cambc-consumable-counts) (5)
 - [Cambc.Debug](#cambc-debug) (2)
@@ -44,8 +44,8 @@ Start with [Getting Started](../guides/ocaml/first-bot.md). Other languages: [C+
 - [Cambc.Team](#cambc-team) (4)
 - [Cambc.Teleport](#cambc-teleport) (5)
 - [Cambc.Vec2](#cambc-vec2) (33)
-- [Cambc.Vision](#cambc-vision) (33)
-- [Cambc.Ward](#cambc-ward) (7)
+- [Cambc.Vision](#cambc-vision) (38)
+- [Cambc.Ward](#cambc-ward) (8)
 
 <a id="cambc"></a>
 
@@ -285,7 +285,7 @@ val cooldown : t -> int
 val damage_amount : ?against:champion -> t -> float
 ```
 
-`damage_amount ?against a` is the damage the ability would deal, after mitigation and shields when `against` is given.
+`damage_amount ?against a` returns Focus-scaled damage, including dash landing damage and caster outgoing bonuses such as Heart of Ruin's passive. Without `against`, excludes target-dependent modifiers, shields and health limits. With `against`, predicts health lost after outgoing bonuses, mitigation and shields, capped at current health. Does not check range or whether a target is in the landing area.
 
 - `against`: Optional visible champion the amount is computed against.
 - `a`: Ability slot.
@@ -304,8 +304,10 @@ val heal_amount : ?against:champion -> t -> float
 ### info
 
 ```ocaml
-type info = | Attack_reset of { properties : properties; enhanced_attack : bool } | Damage of { properties : properties; range : float; modifier : float } | Aoe_damage of { properties : properties; range : float; modifier : float; radius : float; duration : int; } | Cc of { properties : properties; range : float; modifier : float; duration : int } | Heal of { properties : properties; range : float; modifier : float } | Dash of { properties : properties; range : float } | Shield of { properties : properties; range : float; modifier : float; duration : int }
+type info = | Attack_reset of { properties : properties; enhanced_attack : bool } | Damage of { properties : properties; range : float; modifier : float } | Aoe_damage of { properties : properties; range : float; modifier : float; radius : float; duration : int; } | Cc of { properties : properties; range : float; modifier : float; duration : int } | Heal of { properties : properties; range : float; modifier : float } | Dash of { properties : properties; range : float; radius : float; modifier : float; duration : int } | Shield of { properties : properties; range : float; modifier : float; duration : int }
 ```
+
+Ability metadata. For the `Dash` variant: Landing effects apply to enemies and camps only after a successful dash. `range`: Maximum dash travel distance in tiles. Diagonal steps count as one; the destination must be a different tile reachable by a legal dash path. `radius`: Chebyshev radius in tiles around the landing tile for damage and stun; 1 includes all eight neighbouring tiles. `modifier`: Landing damage multiplier: base damage = caster Focus * modifier, before damage bonuses and mitigation. 0 disables landing damage. `duration`: Stun duration applied on landing, in turns; 0 disables stun. This is not the dash travel time.
 
 ### info
 
@@ -1705,6 +1707,16 @@ Check whether this camp is a gold cluster.
 
 - `c`: Camp.
 
+### is_golem
+
+```ocaml
+val is_golem : t -> bool
+```
+
+Check whether this camp is a golem.
+
+- `c`: Camp.
+
 ### is_monolith
 
 ```ocaml
@@ -1994,7 +2006,7 @@ Every value, in declaration order.
 ### t
 
 ```ocaml
-type t = | Wolf | Elk | Gem_cluster | Gold_cluster | Monolith
+type t = | Wolf | Elk | Gem_cluster | Gold_cluster | Monolith | Golem
 ```
 
 ### to_string
@@ -2514,12 +2526,12 @@ if Champion.can_move me then
 val move_towards : t -> Vec2.t -> bool
 ```
 
-Move to the reachable tile on a shortest path to `target`, avoiding walls, holes, altars, the enemy spawn and visible units. Returns false without moving when already there, unable to move, or `target` is blocked or unreachable, and for a newly revealed obstruction.
+Move to the reachable tile on a shortest path to `target`. Always treat the target as free for pathfinding, while avoiding other walls, holes, altars, enemy spawn tiles, visible units and teleport reservations. Returns false when already there, unable to move, no route exists, or a hidden obstruction is revealed. The engine still validates the chosen landing tile: trying to enter a known blocked target raises `Cambc_error`.
 
 - `c`: The bot's own champion.
 - `target`: Map tile to approach.
 
-*Example: Take a planned step; false means no movement occurred.*
+*Example: Path towards a target even when its tile is blocked. Stop at the desired range: the engine still rejects landing on a known blocked tile.*
 
 ```ocaml
 let me = self_champion () in
@@ -2800,7 +2812,7 @@ Every value, in declaration order.
 ### t
 
 ```ocaml
-type t = | Ryth | Vesper_vale | Vendetta | Cassi_and_issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi
+type t = | Ryth | Vesper_vale | Vendetta | Cassi_and_issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi | Heart_of_ruin
 ```
 
 ### to_string
@@ -2998,7 +3010,7 @@ Every value, in declaration order.
 ### t
 
 ```ocaml
-type t = | Ryth | Vesper_vale | Vendetta | Cassi | Issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi
+type t = | Ryth | Vesper_vale | Vendetta | Cassi | Issac | Stellar | Prism | Marcella | Willow | Ren | Varg | Tavi | Heart_of_ruin
 ```
 
 ### to_string
@@ -3032,6 +3044,22 @@ type t = { capture_time : int; camp_sleep_time : int; respawn_time : int; recall
 <a id="cambc-constants-passive-abilities"></a>
 
 ## Cambc.Constants.Passive_abilities
+
+### heart_of_ruin_missing_health_damage_max_bonus
+
+```ocaml
+val heart_of_ruin_missing_health_damage_max_bonus : float
+```
+
+Heart of Ruin: maximum bonus to all damage at 100% missing health.
+
+### marcella_tribute_gold_per_gem
+
+```ocaml
+val marcella_tribute_gold_per_gem : int
+```
+
+Marcella: gold gained per gem tributed.
 
 ### prism_focus_per_gem
 
@@ -4081,7 +4109,7 @@ Every value, in declaration order.
 ### t
 
 ```ocaml
-type t = | None | Bonus_gold | Remote_shop | Gem_focus | Splash_attack | Health_strength | Reset_cooldowns_on_kill | Retaliation | Stun_immunity
+type t = | None | Bonus_gold | Remote_shop | Gem_focus | Splash_attack | Health_strength | Reset_cooldowns_on_kill | Retaliation | Stun_immunity | Missing_health_damage
 ```
 
 ### to_string
@@ -4696,6 +4724,42 @@ val altar_locks : ?team:Team.t -> unit -> Altar_lock.t list
 
 - `team`: Team to include; both teams when omitted.
 
+### asleep_camp_tiles
+
+```ocaml
+val asleep_camp_tiles : unit -> Bitboard.t
+```
+
+Tiles of visible asleep camps. Dead camps are excluded.
+
+### asleep_camp_tiles_into
+
+```ocaml
+val asleep_camp_tiles_into : Bitboard.t -> unit
+```
+
+Like `asleep_camp_tiles`, but writes into `out`.
+
+- `out`: Destination; its previous contents are overwritten.
+
+### awake_camp_tiles
+
+```ocaml
+val awake_camp_tiles : unit -> Bitboard.t
+```
+
+Tiles of visible awake camps. Dead camps are excluded.
+
+### awake_camp_tiles_into
+
+```ocaml
+val awake_camp_tiles_into : Bitboard.t -> unit
+```
+
+Like `awake_camp_tiles`, but writes into `out`.
+
+- `out`: Destination; its previous contents are overwritten.
+
 ### camp_at
 
 ```ocaml
@@ -4852,6 +4916,16 @@ val has_ward : ?team:Team.t -> Vec2.t -> bool
 - `team`: Team to restrict to; either team when omitted.
 - `p`: Tile to query.
 
+### in_vision
+
+```ocaml
+val in_vision : Vec2.t -> bool
+```
+
+Check current self vision, including owned ward vision, even on empty tiles. Hidden tiles return `false`; out-of-bounds positions raise `Api_bad_position`.
+
+- `position`: Tile to query.
+
 ### teleport_at
 
 ```ocaml
@@ -4993,10 +5067,20 @@ Check whether this ward belongs to the opposing team.
 
 - `w`: Ward snapshot.
 
+### owner
+
+```ocaml
+val owner : t -> champion
+```
+
+Return the owning champion captured when this ward was visible, even if the owner is hidden. Live champion state still requires the champion to be in vision.
+
+- `w`: Ward snapshot.
+
 ### t
 
 ```ocaml
-type t = { position : Vec2.t; team : Team.t; remaining_time : int option }
+type t = { position : Vec2.t; team : Team.t; remaining_time : int option; owner : champion }
 ```
 
 ### visible_tiles

@@ -25,7 +25,7 @@ Start with [Getting Started](../guides/cpp/first-bot.md). Other languages: [Rust
 - [cambc::buff_restrictions](#cambc-buff-restrictions) (27)
 - [cambc::buff_shield](#cambc-buff-shield) (1)
 - [cambc::buff_stun](#cambc-buff-stun) (1)
-- [cambc::camp](#cambc-camp) (23)
+- [cambc::camp](#cambc-camp) (24)
 - [cambc::camp_state](#cambc-camp-state) (9)
 - [cambc::champion](#cambc-champion) (60)
 - [cambc::champion_state](#cambc-champion-state) (28)
@@ -49,8 +49,8 @@ Start with [Getting Started](../guides/cpp/first-bot.md). Other languages: [Rust
 - [cambc::uninitialized_t](#cambc-uninitialized-t) (1)
 - [cambc::unit](#cambc-unit) (11)
 - [cambc::vec2](#cambc-vec2) (23)
-- [cambc::vision](#cambc-vision) (39)
-- [cambc::ward](#cambc-ward) (10)
+- [cambc::vision](#cambc-vision) (44)
+- [cambc::ward](#cambc-ward) (11)
 - [std](#std) (4)
 
 <a id="cambc"></a>
@@ -100,10 +100,10 @@ Cached direct-damage ability metadata.
 ### ability_dash
 
 ```cpp
-struct ability_dash : ability_properties { static constexpr ability_kind kind; float range; };
+struct ability_dash : ability_properties { static constexpr ability_kind kind; float range; float radius; float modifier; std::int32_t duration; };
 ```
 
-Cached dash ability metadata.
+Dash metadata. Landing effects apply to enemies and camps only after a successful dash. range: Maximum dash travel distance in tiles. Diagonal steps count as one; the destination must be a different tile reachable by a legal dash path. radius: Chebyshev radius in tiles around the landing tile for damage and stun; 1 includes all eight neighbouring tiles. modifier: Landing damage multiplier: base damage = caster Focus * modifier, before damage bonuses and mitigation. 0 disables landing damage. duration: Stun duration applied on landing, in turns; 0 disables stun. This is not the dash travel time.
 
 ### ability_heal
 
@@ -252,7 +252,7 @@ Camp design stats and growth parameters; layout matches Game_CampStats.
 ### camp_type
 
 ```cpp
-enum class camp_type : std::int32_t { wolf, elk, gem_cluster, gold_cluster, monolith };
+enum class camp_type : std::int32_t { wolf, elk, gem_cluster, gold_cluster, monolith, golem };
 ```
 
 Physical camp types.
@@ -268,7 +268,7 @@ Champion handle with live queries and self-only actions.
 ### champion_draft
 
 ```cpp
-enum class champion_draft : std::int32_t { ryth = 0, vesper_vale, vendetta, cassi_and_issac, stellar, prism, marcella, willow, ren, varg, tavi, };
+enum class champion_draft : std::int32_t { ryth = 0, vesper_vale, vendetta, cassi_and_issac, stellar, prism, marcella, willow, ren, varg, tavi, heart_of_ruin, };
 ```
 
 Draft choices; Cassi and Issac share one pick.
@@ -292,7 +292,7 @@ Champion design stats and growth values.
 ### champion_type
 
 ```cpp
-enum class champion_type : std::int32_t { ryth = 0, vesper_vale, vendetta, cassi, issac, stellar, prism, marcella, willow, ren, varg, tavi, };
+enum class champion_type : std::int32_t { ryth = 0, vesper_vale, vendetta, cassi, issac, stellar, prism, marcella, willow, ren, varg, tavi, heart_of_ruin, };
 ```
 
 Physical champion types; Cassi and Issac are separate champions.
@@ -506,7 +506,7 @@ Get the other team.
 ### passive_type
 
 ```cpp
-enum class passive_type : std::uint8_t { none, bonus_gold, remote_shop, gem_focus, splash_attack, health_strength, reset_cooldowns_on_kill, retaliation, stun_immunity, };
+enum class passive_type : std::uint8_t { none, bonus_gold, remote_shop, gem_focus, splash_attack, health_strength, reset_cooldowns_on_kill, retaliation, stun_immunity, missing_health_damage = 10, };
 ```
 
 Champion passive effect tags from the engine definition.
@@ -803,7 +803,7 @@ Get the remaining owner turn-end ticks; zero means ready.
 float damage_amount() const
 ```
 
-Query damage before absorption/health limits; includes caster items and passives.
+Query Focus-scaled damage, including dash landing damage and caster outgoing bonuses such as Heart of Ruin's passive. Excludes target-dependent modifiers, shields and health limits.
 
 ### damage_amount
 
@@ -2584,6 +2584,14 @@ bool is_gold_cluster() const noexcept
 
 Check whether this camp is a gold cluster.
 
+### is_golem
+
+```cpp
+bool is_golem() const noexcept
+```
+
+Check whether this camp is a golem.
+
 ### is_monolith
 
 ```cpp
@@ -3113,11 +3121,11 @@ if (me.can_move()) {
 bool move_towards(vec2 target) const
 ```
 
-Move to the reachable tile on a shortest path to `target`, avoiding walls, holes, altars, the enemy spawn and visible units. Returns false without moving when already there, unable to move, or `target` is blocked or unreachable, and false for a newly revealed hidden obstruction.
+Move to the reachable tile on a shortest path to `target`. Always treat the target as free for pathfinding, while avoiding other walls, holes, altars, enemy spawn tiles, visible units and teleport reservations. Returns false when already there, unable to move, no route exists, or a hidden obstruction is revealed. The engine still validates the chosen landing tile: trying to enter a known blocked target throws.
 
 - `target`: Map tile to approach.
 
-*Example: Take a planned step; false means no movement occurred.*
+*Example: Path towards a target even when its tile is blocked. Stop at the desired range: the engine still rejects landing on a known blocked tile.*
 
 ```cpp
 auto me = bc::self();
@@ -5325,6 +5333,42 @@ Get fresh, owning visible altar-lock snapshots, optionally filtered by team.
 
 - `side`: Team to include.
 
+### asleep_camp_tiles
+
+```cpp
+bitboard asleep_camp_tiles()
+```
+
+Get the tiles of visible asleep camps. Dead camps are excluded.
+
+### asleep_camp_tiles_into
+
+```cpp
+void asleep_camp_tiles_into(bitboard& out)
+```
+
+Like `asleep_camp_tiles`, but writes into `out`.
+
+- `out`: Destination; its previous contents are overwritten.
+
+### awake_camp_tiles
+
+```cpp
+bitboard awake_camp_tiles()
+```
+
+Get the tiles of visible awake camps. Dead camps are excluded.
+
+### awake_camp_tiles_into
+
+```cpp
+void awake_camp_tiles_into(bitboard& out)
+```
+
+Like `awake_camp_tiles`, but writes into `out`.
+
+- `out`: Destination; its previous contents are overwritten.
+
 ### camp_at
 
 ```cpp
@@ -5497,6 +5541,16 @@ Check ward occupancy at a tile; hidden or absent wards return false.
 
 - `position`: Tile to query.
 
+### in_vision
+
+```cpp
+bool in_vision(vec2 position)
+```
+
+Check current self vision, including owned ward vision, whether or not the tile is occupied. Hidden tiles return false; out-of-bounds positions throw api_bad_position.
+
+- `position`: Tile to query.
+
 ### teleport_at
 
 ```cpp
@@ -5656,6 +5710,14 @@ friend bool operator==(const ward&, const ward&) = default
 ```
 
 Compare every captured field.
+
+### owner
+
+```cpp
+cambc::champion owner() const
+```
+
+Return the owning champion captured when this ward was visible, even if the owner is hidden. Live champion state still requires the champion to be in vision.
 
 ### position
 

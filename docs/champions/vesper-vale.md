@@ -8,7 +8,7 @@
 
 **Vesper Vale**
 
-**Passive:** Vesper Vale gains 20% more gold. A Treasure emblem adds another 20 percentage points, for a combined 40% bonus.
+**Passive:** Vesper Vale gains 33% more gold. A Treasure emblem adds another 20 percentage points, for a combined 53% bonus.
 
 ### Slot 0: Attack reset
 
@@ -31,7 +31,7 @@ Move up to 2 steps, including diagonals.
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
 | Health | 900 | 100 |
-| Strength | 45 | 5 |
+| Strength | 50 | 5 |
 | Focus | 100 | 10 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.

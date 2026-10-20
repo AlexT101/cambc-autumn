@@ -83,15 +83,15 @@ class AbilityDamage: max_cooldown: int; valid_targets: Any; exclusive_with_movem
 ### AbilityDash
 
 ```python
-class AbilityDash: max_cooldown: int; valid_targets: Any; exclusive_with_movement: bool; range: float
+class AbilityDash: max_cooldown: int; valid_targets: Any; exclusive_with_movement: bool; range: Maximum dash travel distance in tiles. Diagonal steps count as one;; radius: Chebyshev radius in tiles around the landing tile for damage and stun;; modifier: Landing damage multiplier: base damage; duration: Stun duration applied on landing, in turns; 0 disables stun.; range: float; radius: float; modifier: float; duration: int
 ```
 
-
+Dash metadata. Landing effects apply to enemies and camps only after a successful dash. range: Maximum dash travel distance in tiles. Diagonal steps count as one; the destination must be a different tile reachable by a legal dash path. radius: Chebyshev radius in tiles around the landing tile for damage and stun; 1 includes all eight neighbouring tiles. modifier: Landing damage multiplier: base damage = caster Focus * modifier, before damage bonuses and mitigation. 0 disables landing damage. duration: Stun duration applied on landing, in turns; 0 disables stun. This is not the dash travel time.
 
 Public SDK type declaration.
 
 ```python
-class AbilityDash: max_cooldown: int; valid_targets: Any; exclusive_with_movement: bool; range: float
+class AbilityDash: max_cooldown: int; valid_targets: Any; exclusive_with_movement: bool; range: Maximum dash travel distance in tiles. Diagonal steps count as one;; radius: Chebyshev radius in tiles around the landing tile for damage and stun;; modifier: Landing damage multiplier: base damage; duration: Stun duration applied on landing, in turns; 0 disables stun.; range: float; radius: float; modifier: float; duration: int
 ```
 
 ### AbilityHeal
@@ -335,7 +335,7 @@ class CampStats: vision_radius: float; base_move_speed: int; base_attack_range: 
 ### CampType
 
 ```python
-class CampType(IntEnum): WOLF = 0; ELK = 1; GEM_CLUSTER = 2; GOLD_CLUSTER = 3; MONOLITH = 4
+class CampType(IntEnum): WOLF = 0; ELK = 1; GEM_CLUSTER = 2; GOLD_CLUSTER = 3; MONOLITH = 4; GOLEM = 5
 ```
 
 Neutral camp type.
@@ -343,7 +343,7 @@ Neutral camp type.
 Public SDK type declaration.
 
 ```python
-class CampType(IntEnum): WOLF = 0; ELK = 1; GEM_CLUSTER = 2; GOLD_CLUSTER = 3; MONOLITH = 4
+class CampType(IntEnum): WOLF = 0; ELK = 1; GEM_CLUSTER = 2; GOLD_CLUSTER = 3; MONOLITH = 4; GOLEM = 5
 ```
 
 ### Champion
@@ -363,7 +363,7 @@ class Champion(Unit): ...
 ### ChampionDraft
 
 ```python
-class ChampionDraft(IntEnum): RYTH = 0; VESPER_VALE = 1; VENDETTA = 2; CASSI_AND_ISSAC = 3; STELLAR = 4; PRISM = 5; MARCELLA = 6; WILLOW = 7; REN = 8; VARG = 9; TAVI = 10
+class ChampionDraft(IntEnum): RYTH = 0; VESPER_VALE = 1; VENDETTA = 2; CASSI_AND_ISSAC = 3; STELLAR = 4; PRISM = 5; MARCELLA = 6; WILLOW = 7; REN = 8; VARG = 9; TAVI = 10; HEART_OF_RUIN = 11
 ```
 
 Draft pick.
@@ -371,7 +371,7 @@ Draft pick.
 Public SDK type declaration.
 
 ```python
-class ChampionDraft(IntEnum): RYTH = 0; VESPER_VALE = 1; VENDETTA = 2; CASSI_AND_ISSAC = 3; STELLAR = 4; PRISM = 5; MARCELLA = 6; WILLOW = 7; REN = 8; VARG = 9; TAVI = 10
+class ChampionDraft(IntEnum): RYTH = 0; VESPER_VALE = 1; VENDETTA = 2; CASSI_AND_ISSAC = 3; STELLAR = 4; PRISM = 5; MARCELLA = 6; WILLOW = 7; REN = 8; VARG = 9; TAVI = 10; HEART_OF_RUIN = 11
 ```
 
 ### champions
@@ -424,7 +424,7 @@ class ChampionStats: vision_radius: float; base_move_speed: int; base_attack_ran
 ### ChampionType
 
 ```python
-class ChampionType(IntEnum): RYTH = 0; VESPER_VALE = 1; VENDETTA = 2; CASSI = 3; ISSAC = 4; STELLAR = 5; PRISM = 6; MARCELLA = 7; WILLOW = 8; REN = 9; VARG = 10; TAVI = 11
+class ChampionType(IntEnum): RYTH = 0; VESPER_VALE = 1; VENDETTA = 2; CASSI = 3; ISSAC = 4; STELLAR = 5; PRISM = 6; MARCELLA = 7; WILLOW = 8; REN = 9; VARG = 10; TAVI = 11; HEART_OF_RUIN = 12
 ```
 
 Playable champion type.
@@ -432,7 +432,7 @@ Playable champion type.
 Public SDK type declaration.
 
 ```python
-class ChampionType(IntEnum): RYTH = 0; VESPER_VALE = 1; VENDETTA = 2; CASSI = 3; ISSAC = 4; STELLAR = 5; PRISM = 6; MARCELLA = 7; WILLOW = 8; REN = 9; VARG = 10; TAVI = 11
+class ChampionType(IntEnum): RYTH = 0; VESPER_VALE = 1; VENDETTA = 2; CASSI = 3; ISSAC = 4; STELLAR = 5; PRISM = 6; MARCELLA = 7; WILLOW = 8; REN = 9; VARG = 10; TAVI = 11; HEART_OF_RUIN = 12
 ```
 
 ### Consumable
@@ -674,7 +674,7 @@ result = bc.me()
 ### PassiveType
 
 ```python
-class PassiveType(IntEnum): NONE = 0; BONUS_GOLD = 1; REMOTE_SHOP = 2; GEM_FOCUS = 3; SPLASH_ATTACK = 4; HEALTH_STRENGTH = 5; RESET_COOLDOWNS_ON_KILL = 6; RETALIATION = 7; STUN_IMMUNITY = 8
+class PassiveType(IntEnum): NONE = 0; BONUS_GOLD = 1; REMOTE_SHOP = 2; GEM_FOCUS = 3; SPLASH_ATTACK = 4; HEALTH_STRENGTH = 5; RESET_COOLDOWNS_ON_KILL = 6; RETALIATION = 7; STUN_IMMUNITY = 8; MISSING_HEALTH_DAMAGE = 10
 ```
 
 Champion passive.
@@ -682,7 +682,7 @@ Champion passive.
 Public SDK type declaration.
 
 ```python
-class PassiveType(IntEnum): NONE = 0; BONUS_GOLD = 1; REMOTE_SHOP = 2; GEM_FOCUS = 3; SPLASH_ATTACK = 4; HEALTH_STRENGTH = 5; RESET_COOLDOWNS_ON_KILL = 6; RETALIATION = 7; STUN_IMMUNITY = 8
+class PassiveType(IntEnum): NONE = 0; BONUS_GOLD = 1; REMOTE_SHOP = 2; GEM_FOCUS = 3; SPLASH_ATTACK = 4; HEALTH_STRENGTH = 5; RESET_COOLDOWNS_ON_KILL = 6; RETALIATION = 7; STUN_IMMUNITY = 8; MISSING_HEALTH_DAMAGE = 10
 ```
 
 ### resign
@@ -941,6 +941,8 @@ Return the remaining cooldown; 0 means ready.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate an ability before choosing a spell.
 
 ```python
@@ -955,9 +957,11 @@ result = subject.cooldown()
 def damage_amount(self, target: Optional[Champion] = None) -> float
 ```
 
-Return the damage the ability would deal, after mitigation and shields if a target is given. Args: target: Optional visible champion that would be hit.
+Return Focus-scaled damage, including dash landing damage and caster outgoing bonuses such as Heart of Ruin's passive. Without a target, excludes target-dependent modifiers, shields and health limits. With a target, predict health lost after outgoing bonuses, mitigation and shields, capped at current health. Does not check range or landing area. Args: target: Optional visible champion that would be hit.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate an ability before choosing a spell.
 
@@ -1017,6 +1021,8 @@ def heal_amount(self, target: Optional[Champion] = None) -> float
 Return the healing the ability would do, capped at the target's missing health if a target is given. Args: target: Optional visible champion that would be healed.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate an ability before choosing a spell.
 
@@ -1154,6 +1160,8 @@ Return whether the cooldown is still running.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate an ability before choosing a spell.
 
 ```python
@@ -1171,6 +1179,8 @@ def is_ready(self) -> bool
 Check whether this ability is ready to cast.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate an ability before choosing a spell.
 
@@ -1206,6 +1216,8 @@ Like valid_tiles, but writes into out. Args: out: Destination Bitboard; its prev
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -1226,6 +1238,8 @@ def shield_amount(self, target: Optional[Champion] = None) -> float
 Return the shield the ability would grant. Args: target: Optional visible champion that would be shielded.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate an ability before choosing a spell.
 
@@ -1264,6 +1278,8 @@ Cast on a unit, at a ground tile, or without a target. Unit casts land on the ta
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate an ability before choosing a spell.
 
 Inputs:
@@ -1300,6 +1316,8 @@ def valid_tiles(self) -> Bitboard
 Return the tiles within casting range; does not check visibility or occupancy.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate an ability before choosing a spell.
 
@@ -3097,6 +3115,8 @@ Return current focus; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -3115,6 +3135,8 @@ def health(self) -> float
 Return current health; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -3135,6 +3157,8 @@ Query whether this camp is living (awake or asleep); uses the visibility checks 
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -3153,6 +3177,8 @@ def is_asleep(self) -> bool
 Query whether this camp is living but dormant; uses the visibility checks of state().
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -3173,6 +3199,8 @@ Query whether this camp is awake; uses the same visibility checks as state().
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -3191,6 +3219,8 @@ def is_dead(self) -> bool
 Query whether this camp is dead; uses the same visibility checks as state().
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -3250,6 +3280,23 @@ Inputs:
 
 ```python
 is_gold_cluster = subject.is_gold_cluster()
+```
+
+### is_golem
+
+```python
+def is_golem(self) -> bool
+```
+
+Check whether this camp is a golem.
+
+Evaluate a visible camp before choosing where to farm.
+
+Inputs:
+- subject: bc.Camp (a valid instance)
+
+```python
+is_golem = subject.is_golem()
 ```
 
 ### is_monolith
@@ -3332,6 +3379,8 @@ Return current maximum health; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -3350,6 +3399,8 @@ def position(self) -> Vec2
 Return the current tile; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -3387,6 +3438,8 @@ Return CampState.DEAD, ALIVE (awake), or ASLEEP (living but dormant). The curren
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate a visible camp before choosing where to farm.
 
 Inputs:
@@ -3405,6 +3458,8 @@ def strength(self) -> float
 Return current strength; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate a visible camp before choosing where to farm.
 
@@ -3580,6 +3635,8 @@ Basic-attack a visible champion, camp or altar lock in range; requires self. Arg
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 Inputs:
@@ -3600,6 +3657,8 @@ def attack_range(self) -> int
 Return the attack range in Chebyshev tiles; melee champions have range 1.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -3657,6 +3716,8 @@ Check whether this champion can attack.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Check the action allowance before spending fuel to choose an attack target.
 
 ```python
@@ -3673,6 +3734,8 @@ def can_buy(self, item: Union[ItemType, ConsumableType], count: object = _COUNT_
 Return whether the champion can buy an item or consumable in its current state. Args: item: Item or consumable to buy. count: Number of copies to buy.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -3696,6 +3759,8 @@ Check whether this champion can cast.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Check the action allowance before spending fuel to evaluate ready abilities.
 
 ```python
@@ -3713,6 +3778,8 @@ Check whether this champion can move.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Check the action allowance before spending fuel to plan a path.
 
 ```python
@@ -3729,6 +3796,8 @@ def can_sell(self) -> bool
 Return whether the champion can sell items in its current state.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -3853,6 +3922,8 @@ Return current focus; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -3870,6 +3941,8 @@ def gem_count(self) -> int
 Return the gems the champion is carrying.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -3907,6 +3980,8 @@ Check whether this champion has completed its turn.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -3924,6 +3999,8 @@ def health(self) -> float
 Return current health; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Recall when badly injured and safe from interruption.
 
@@ -4000,6 +4077,8 @@ Check whether this champion is recalling.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -4018,6 +4097,8 @@ Check whether this champion is submitting gems.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -4035,6 +4116,8 @@ def is_teleporting(self) -> bool
 Check whether this champion is teleporting.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4070,6 +4153,8 @@ Carried item counts, indexed by ItemType.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -4087,6 +4172,8 @@ def max_health(self) -> float
 Return current maximum health; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Recall when badly injured and safe from interruption.
 
@@ -4147,11 +4234,11 @@ if me.can_move():
 def move_towards(self, target: Vec2) -> bool
 ```
 
-Move to the reachable tile on a shortest path to target, avoiding walls, holes, altars, the enemy spawn and visible units. Return False without moving when already there, unable to move, or target is blocked or unreachable, and for a newly revealed obstruction. Args: target: Map tile to approach.
+Move to the reachable tile on a shortest path to target. Always treat the target as free for pathfinding, while avoiding other walls, holes, altars, enemy spawn tiles, visible units and teleport reservations. Return False when already there, unable to move, no route exists, or a hidden obstruction is revealed. The engine still validates the chosen landing tile: trying to enter a known blocked target raises Error. Args: target: Map tile to approach.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
-Take a planned step; false means no movement occurred.
+Path towards a target even when its tile is blocked. Stop at the desired range: the engine still rejects landing on a known blocked tile.
 
 Inputs:
 - destination: a destination selected by your pathfinder
@@ -4209,6 +4296,8 @@ Return the current tile; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -4227,6 +4316,8 @@ Return the priority used for the current round.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -4244,6 +4335,8 @@ def priority(self) -> int
 Return the priority that will apply from the next round.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4284,6 +4377,8 @@ Return the rounds left on the current recall, tribute or teleport channel.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -4301,6 +4396,8 @@ def restrictions(self) -> BuffRestrictions
 Return the actions the champion's buffs currently prohibit.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4363,6 +4460,8 @@ Return the champion's life, channel and action flags.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -4380,6 +4479,8 @@ def strength(self) -> float
 Return current strength; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4437,6 +4538,8 @@ def visible_tiles(self) -> Bitboard
 Current vision for this champion.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4498,6 +4601,8 @@ def visible_tiles_into(self, out: Bitboard) -> None
 Like visible_tiles, but writes into out. Args: out: Destination Bitboard; its previous contents are overwritten.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -4980,6 +5085,8 @@ def count(self) -> int
 Return how many the champion is carrying.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Plan a purchase or use an owned consumable.
 
@@ -6776,6 +6883,8 @@ def attack_range(self) -> int
 
 Return the attack range in Chebyshev tiles; melee units have range 1.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -6794,6 +6903,8 @@ Return the tiles within attack range of the unit's current position.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -6811,6 +6922,8 @@ def attack_tiles_into(self, out: Bitboard) -> None
 Like attack_tiles, but writes into out. Args: out: Destination Bitboard; its previous contents are overwritten.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -6833,6 +6946,8 @@ Capture the unit's current buffs; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -6851,6 +6966,8 @@ Return current focus; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -6868,6 +6985,8 @@ def health(self) -> float
 Return current health; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -6903,6 +7022,8 @@ Return current maximum health; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -6921,6 +7042,8 @@ Return the current tile; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Evaluate your champion's options during its turn.
 
 ```python
@@ -6938,6 +7061,8 @@ def strength(self) -> float
 Return current strength; raises Error if the unit is not visible.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Evaluate your champion's options during its turn.
 
@@ -7202,6 +7327,8 @@ The altar lock on a tile, ally first. Args: position: Tile to query.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7269,6 +7396,76 @@ Inputs:
 result = bc.vision.altar_locks(team)
 ```
 
+### asleep_camp_tiles
+
+```python
+def asleep_camp_tiles() -> Bitboard
+```
+
+Return the tiles of visible asleep camps. Dead camps are excluded.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+Check visible objects before choosing a destination.
+
+```python
+result = bc.vision.asleep_camp_tiles()
+```
+
+### asleep_camp_tiles_into
+
+```python
+def asleep_camp_tiles_into(out: Bitboard) -> None
+```
+
+Like asleep_camp_tiles, but writes into out. Args: out: Destination Bitboard; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+Check visible objects before choosing a destination.
+
+Inputs:
+- out: Bitboard
+
+```python
+bc.vision.asleep_camp_tiles_into(out)
+```
+
+### awake_camp_tiles
+
+```python
+def awake_camp_tiles() -> Bitboard
+```
+
+Return the tiles of visible awake camps. Dead camps are excluded.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+Check visible objects before choosing a destination.
+
+```python
+result = bc.vision.awake_camp_tiles()
+```
+
+### awake_camp_tiles_into
+
+```python
+def awake_camp_tiles_into(out: Bitboard) -> None
+```
+
+Like awake_camp_tiles, but writes into out. Args: out: Destination Bitboard; its previous contents are overwritten.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+Check visible objects before choosing a destination.
+
+Inputs:
+- out: Bitboard
+
+```python
+bc.vision.awake_camp_tiles_into(out)
+```
+
 ### camp_at
 
 ```python
@@ -7278,6 +7475,8 @@ def camp_at(position: Vec2) -> Camp
 Return the visible camp currently on a tile; raises Error if there is none or the tile is hidden. Args: position: Tile to query.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Check visible objects before choosing a destination.
 
@@ -7364,6 +7563,8 @@ def champion_at(position: Vec2) -> Champion
 Return the visible champion on a tile; raises Error if there is none or the tile is hidden. Args: position: Tile to query.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Check visible objects before choosing a destination.
 
@@ -7528,6 +7729,25 @@ Inputs:
 has_ward = bc.vision.has_ward(position, team)
 ```
 
+### in_vision
+
+```python
+def in_vision(position: Vec2) -> bool
+```
+
+Check current self vision, including owned ward vision, even on empty tiles. Hidden tiles return False; out-of-bounds positions raise Error with API_BAD_POSITION. Args: position: Tile to query.
+
+**gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+Check visible objects before choosing a destination.
+
+Inputs:
+- position: Vec2
+
+```python
+result = bc.vision.in_vision(position)
+```
+
 ### teleport_at
 
 ```python
@@ -7537,6 +7757,8 @@ def teleport_at(position: Vec2) -> Teleport
 The teleport reservation on a tile. Args: position: Tile to query.
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
+
+**vision**: This function requires you to have the subject in vision.
 
 Check visible objects before choosing a destination.
 
@@ -7643,6 +7865,8 @@ Snapshot of the ward on a tile, optionally of one team. Args: position: Tile to 
 
 **gameplay**: This function can only be used by champion bots and is not usable during draft phase.
 
+**vision**: This function requires you to have the subject in vision.
+
 Check visible objects before choosing a destination.
 
 Inputs:
@@ -7745,6 +7969,23 @@ Inputs:
 
 ```python
 is_enemy = subject.is_enemy()
+```
+
+### owner
+
+```python
+def owner(self) -> Champion
+```
+
+Return the owning champion captured when this ward was visible, even if the owner is hidden. Live champion state still requires the champion to be in vision.
+
+Check visible objects before choosing a destination.
+
+Inputs:
+- subject: bc.Ward (a valid instance)
+
+```python
+result = subject.owner()
 ```
 
 ### position

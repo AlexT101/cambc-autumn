@@ -53,7 +53,7 @@ const chunkName = (prefix) => {
   if (!m) throw new Error(`Could not find the ${prefix} chunk`);
   return m[1];
 };
-const chunks = { docs: chunkName('docs'), grid: chunkName('ChampionGrid'), patches: chunkName('PatchNotes') };
+const chunks = { docs: chunkName('docs'), grid: chunkName('ChampionGrid') };
 // Fetch each chunk plus the chunks it statically imports, so cross-chunk data resolves.
 const fetched = new Set([entry]);
 async function fetchChunk(name) {
@@ -68,7 +68,6 @@ console.log('chunks:', chunks);
 
 const docs = loadModule(join(work, chunks.docs));
 const grid = loadModule(join(work, chunks.grid));
-const patchesMod = loadModule(join(work, chunks.patches));
 
 // ---------------------------------------------------------------- data
 
@@ -89,8 +88,12 @@ const baseArticles = docs.get(articlesName);   // all articles, guides evaluated
 const visualText = docs.get(visualTextName);   // Markdown descriptions of rule diagrams
 const apiEntries = docs.get(apiEntriesName);   // {lang: [{group,name,signature,description,example}]}
 const langLabel = docs.get(langLabelName);     // {cpp: 'C++', ...}
-const champions = grid.get('_');               // champion designs
-const championArt = grid.get('Y');             // id -> {image, thumb, banner, ...}
+const gridDecl = (test, what) => {
+  for (const [name, node] of grid.decls) if (node && test(node, grid.src.slice(node.start, node.end))) return grid.get(name);
+  throw new Error(`Could not find ${what} in the ChampionGrid chunk`);
+};
+const champions = gridDecl((n, s) => n.type === 'ArrayExpression' && s.includes('bodies:') && s.includes('sharedPassive'), 'the champion designs');
+const championArt = gridDecl((n, s) => n.type === 'FunctionDeclaration' && s.includes('banner:') && s.includes('thumb:'), 'the champion art lookup');
 const rulesExport = docs.get(rulesExportName); // the site's own "GameRules.md" generator
 const apiExport = docs.get(apiExportName);     // the site's own "BotAPI*.md" generator
 console.log('names:', { groupsName, articlesName, visualTextName, apiEntriesName, langLabelName, rulesExportName, apiExportName });
@@ -360,19 +363,34 @@ function apiMarkdown(lang) {
 
 // ---------------------------------------------------------------- patch notes
 
-function patchNotesMarkdown() {
-  let patches = [];
-  for (const [name, node] of patchesMod.decls) {
-    if (node?.type !== 'ArrayExpression' || !patchesMod.src.slice(node.start, node.end).includes('version:')) continue;
-    const v = patchesMod.get(name);
-    if (Array.isArray(v) && v.length && v.every(p => p && typeof p === 'object' && 'version' in p && 'changes' in p)) { patches = v; break; }
+// Patch notes are served by the site's public API as Markdown with stat icon markup:
+// `<:health[Health]:>` is a labelled icon, `<:health:>` a bare one.
+const patchImages = new Map(); // local file name -> bytes
+async function patchNotesMarkdown() {
+  const patches = [];
+  for (let cursor; ;) {
+    const page = JSON.parse(await get(`/api/v1/patch-notes?limit=20${cursor ? `&after=${encodeURIComponent(cursor)}` : ''}`));
+    patches.push(...page.items);
+    if (!(cursor = page.nextCursor)) break;
   }
-  const real = patches.filter(p => !p.example);
   const parts = ['# Patch notes', '*Balance changes to champions and the game, newest first.*'];
-  if (!real.length) parts.push(`No patches have been published yet (checked ${new Date().toISOString().slice(0, 10)}). The site only shows a placeholder example patch, which is not live game balance.`);
-  for (const p of real) {
-    parts.push(`## ${p.version} (${p.date})`);
-    parts.push(p.changes.map(c => `- **${c.championId ?? 'General'}** (${c.kind}): ${c.changes.join(' ')}`).join('\n'));
+  if (!patches.length) parts.push(`No patches have been published yet (checked ${new Date().toISOString().slice(0, 10)}).`);
+  for (const p of patches) {
+    let body = p.bodyMarkdown.replace(/\r\n/g, '\n')
+      .replace(/\s*\(\+?<:\w+:>\)/g, '')
+      .replace(/<:\w+\[([^\]]*)\]:?>/g, '$1')
+      .replace(/<:\w+:>/g, '')
+      .replace(/ +:/g, ':')
+      .replace(/^(#+) /gm, '##$1 ');
+    for (const [, alt, path, id] of body.matchAll(/!\[([^\]]*)\]\((\/api\/v1\/patch-notes\/assets\/([\w-]+))\)/g)) {
+      const res = await fetch(SITE + path, { headers: { cookie } });
+      if (!res.ok) throw new Error(`GET ${path}: ${res.status}`);
+      const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' }[res.headers.get('content-type')] ?? 'png';
+      const file = `patch-${id.slice(0, 8)}.${ext}`;
+      patchImages.set(file, Buffer.from(await res.arrayBuffer()));
+      body = body.replace(path, `./images/${file}`);
+    }
+    parts.push(`## ${p.title} (${p.publishedAt.slice(0, 10)})`, body.trim());
   }
   return parts.join('\n\n') + '\n';
 }
@@ -396,7 +414,7 @@ for (const lang of LANGS) {
   const [file, text] = apiMarkdown(lang);
   add(file, text);
 }
-add('patch-notes.md', patchNotesMarkdown());
+add('patch-notes.md', await patchNotesMarkdown());
 
 // The site's own LLM exports, generated by its own (pure) generator functions.
 const llmFiles = { 'GameRules.md': rulesExport([...ruleIds.map(id => articleOf.get(id)), ...baseArticles.filter(a => a.group === 'Champions')]) };
@@ -447,6 +465,7 @@ The single-file Markdown exports the site offers for coding assistants: [llm/](.
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(join(OUT, 'images'), { recursive: true });
 for (const [sitePath, file] of images) writeFileSync(join(OUT, 'images', file), await get(sitePath, true));
+for (const [file, bytes] of patchImages) writeFileSync(join(OUT, 'images', file), bytes);
 
 // Report anything the interpreter could not evaluate.
 let problems = 0;
@@ -457,7 +476,7 @@ for (const [path, text] of files) {
   const n = (text.match(/\[\[unsupported:[^\]]*\]\]|Unrendered block kind/g) ?? []).length;
   if (n) { problems += n; console.warn(`  ${path}: ${n} unevaluated fragment(s)`); }
 }
-console.log(`wrote ${files.size} Markdown files and ${images.size} images to docs/${problems ? ` (${problems} problems)` : ''}`);
+console.log(`wrote ${files.size} Markdown files and ${images.size + patchImages.size} images to docs/${problems ? ` (${problems} problems)` : ''}`);
 
 // Gaps that never reach the output text (e.g. an unevaluated assignment) still show up here.
 // Unsupported markers from the interactive components' React code are expected and harmless.

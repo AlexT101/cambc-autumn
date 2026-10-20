@@ -96,10 +96,14 @@ match Distance_field.next_move_from field position with
 | None -> ()
 ```
 
-- Do not fix this by clearing a genuinely occupied or impassable target from the walls mask: that would describe a route you cannot walk.
+- Clearing an occupied or impassable goal permits planning towards it, but does not make it a legal landing tile. Use open attack positions when the route must end on a walkable tile.
 - If your champion is included in the occupancy mask, exclude its own current tile from that mask before computing, so its starting distance is available.
 - Check for unreachable before choosing a step. Disconnected goals and empty goal sets also produce no route.
 - With a limited or early-stopped search, unreachable can mean not yet computed. Recompute when goals or blockers change.
+
+## Approach a blocked target
+
+The champion move_towards helper always treats the supplied target tile as free for pathfinding. You can pass a camp or opponent position directly; other blockers are still avoided. Stop at the desired attack or interaction range: if the chosen step lands on a known occupied or impassable target, the engine rejects it with a movement error. This convenience does not change how the lower-level distance-field functions handle blocked goals.
 
 ## Use the SDK
 

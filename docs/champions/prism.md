@@ -8,7 +8,7 @@
 
 **Prism**
 
-**Passive:** Prism gains 0.2 Focus per carried gem. Ten carried gems add 2 Focus. Tributing or losing those gems removes that bonus.
+**Passive:** Prism gains 1 Focus per carried gem. Ten carried gems add 10 Focus. Tributing or losing those gems removes that bonus.
 
 ### Slot 0: Damage and stun
 
@@ -30,9 +30,9 @@
 
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
-| Health | 700 | 75 |
-| Strength | 35 | 3.5 |
-| Focus | 80 | 10 |
+| Health | 700 | 60 |
+| Strength | 35 | 2.5 |
+| Focus | 80 | 8 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.
 

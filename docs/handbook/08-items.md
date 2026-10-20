@@ -78,14 +78,14 @@ The shop also has some consumable items, each costing 10 gold. You may carry onl
 
 | Tool | Use |
 | --- | --- |
-| Altar lock | Place on an altar within two tiles. Blocks enemy tributes until removed by three basic attacks. |
+| Altar lock | Place on an altar within two tiles. Blocks enemy tributes until removed by five basic attacks. |
 | Teleport crystal | Teleport crystal allows you to access otherwise unreachable areas by teleporting you 3 tiles, ignoring terrain. However, the teleport only activates after a channel of 3 turns. |
 
 ### Extra item rules
 
 - **Stats stack**: Every shard counts, including those inside duplicate emblems.
 - **Emblem passives don’t**: A second emblem of a family adds no extra passive.
-- **Gold bonuses add**: Treasure with Vesper Vale: 20% + 20% = 40%.
+- **Gold bonuses add**: Treasure with Vesper Vale: 33% + 20% = 53%.
 - **Spawn purchases heal**: Buying Health on your spawn heals the amount gained; Tavi’s field purchases do not.
 - **Only Tavi can sell**: On spawn, for the full purchase value. Refunds are not earned gold.
 

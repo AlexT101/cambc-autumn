@@ -60,7 +60,7 @@ Vision in the game is raycast, you can try it with the interactive vision tool b
 
 ## Wards
 
-Each champion has a free ward, that can be placed to expand their personal vision. You may freely replace it, once per round, but note that you can/will only ever have one active.
+Each champion has a free ward, that can be placed to expand their personal vision. Its charge recharges over 10 owner turn ends. Placing a new ward replaces your existing ward, so you only ever have one active.
 
 - **One active ward**: A new ward replaces the old one.
 - **Permanent**: Wards do not expire or take damage.

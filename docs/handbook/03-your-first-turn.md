@@ -26,7 +26,7 @@ If you are a ranged champion, you may NOT move, and basic attack on the same tur
 
 In addition to the basic combat, a champion has a few other options to interact.
 
-Each champion carries a ward, that grants them persistent vision of an area with a range of 6 tiles. They may leave this ward behind to keep watch of an area anywhere within 2 tiles of them, and is able to relocate them every turn.
+Each champion carries a ward, that grants them persistent vision of an area with a range of 6 tiles. They may leave this ward behind to keep watch of an area anywhere within 2 tiles of them, and can relocate it once its free ward charge has recharged over 10 owner turn ends.
 
 When a champion is low on health, or simply needs to travel to their spawn tiles, they can activate a recall. This cancellable action takes 5 turns, and will teleport the champion straight to their spawn tiles.
 
@@ -38,7 +38,7 @@ Additionally, you can use consumable items without limit (though you can only ca
 
 ### Everything you can do
 
-> **Diagram: actions.** Each turn normally allows one ordinary move, one basic attack, and one successful ability cast across both slots. Melee attack range is 1 tile; ranged attack range is 3. Movement and attacks share an allowance for ranged champions. Abilities have an 8-turn-end cooldown per slot. Some abilities exclude walking or reset attacks. Wards require their trinket charge; consumables require inventory. Shop on your spawn or while dead (subject to champion exceptions). Starting a channel prevents other actions until it finishes or is cancelled. Recall and tribute each have one start and one cancellation per turn. Priority changes affect the next round.
+> **Diagram: actions.** Each turn normally allows one ordinary move, one basic attack, and one successful ability cast across both slots. Melee attack range is 1 tile; ranged attack range is 3. Movement and attacks share an allowance for ranged champions. Abilities have an 8-turn-end cooldown per slot. Some abilities exclude walking or reset attacks. Wards require their trinket charge, which recharges over 10 owner turn ends; consumables require inventory. Shop on your spawn or while dead (subject to champion exceptions). Starting a channel prevents other actions until it finishes or is cancelled. Recall and tribute each have one start and one cancellation per turn. Priority changes affect the next round.
 
 <details>
 <summary>Interactive diagram text</summary>
@@ -60,7 +60,7 @@ Additionally, you can use consumable items without limit (though you can only ca
 - Whenever you have one
 - No per-turn limit
 - 1 charge
-- Recharges after 1 round
+- Recharges over 10 owner turn ends
 - Crystal or altar lock
 - 1 of each
 - 10 gold each

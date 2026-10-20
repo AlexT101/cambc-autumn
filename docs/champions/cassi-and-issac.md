@@ -34,9 +34,9 @@ One-round stun with no direct damage.
 
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
-| Health | 700 | 71.25 |
-| Strength | 30 | 3.5 |
-| Focus | 70 | 15 |
+| Health | 600 | 65 |
+| Strength | 30 | 3 |
+| Focus | 70 | 13 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.
 
@@ -62,8 +62,8 @@ Move up to 2 steps, including diagonals.
 
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
-| Health | 900 | 95 |
-| Strength | 40 | 4.75 |
+| Health | 900 | 80 |
+| Strength | 40 | 3 |
 | Focus | 100 | 10 |
 
 Attack type: Melee. Basic attack range: 1 tiles.

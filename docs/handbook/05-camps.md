@@ -8,11 +8,12 @@ The main way to obtain resources is to defeat camps or monsters, on the map. The
 
 | Monster | Health | Strength | Range | Gold | Gems | Respawn |
 | --- | --- | --- | --- | --- | --- | --- |
-| Wolf | 1,350 | 20 | 3 | 90 | 22 | 40 rounds |
-| Elk | 2,400 | 60 | 3 | 160 | 36 | 60 rounds |
-| Gem cluster | 500 | 0 | 0 | 0 | 24 | 50 rounds |
-| Gold cluster | 500 | 0 | 0 | 35 | 0 | 50 rounds |
-| Monolith | 20,000 | 200 | 3 | 300 | 200 | 150 rounds |
+| Wolf | 1,350 | 20 | 3 | 40 | 4 | 40 rounds |
+| Elk | 2,400 | 60 | 4 | 90 | 15 | 60 rounds |
+| Golem | 5,000 | 120 | 4 | 160 | 36 | 80 rounds |
+| Gem cluster | 120 | 0 | 0 | 0 | 7 | 50 rounds |
+| Gold cluster | 120 | 0 | 0 | 20 | 0 | 50 rounds |
+| Monolith | 20,000 | 200 | 5 | 300 | 200 | 150 rounds |
 
 The map is populated with a variety of monsters. They vary in health, strength (damage dealt per turn) and the rewards they drop.
 
@@ -39,7 +40,7 @@ The monsters are friendly until they are hit! When a champion strikes a monster,
 - 1 round left
 - One more round in the area finishes the capture.
 - Captured
-- Gems and gold are split between your champions in the area. This single-wolf camp pays 22 gems and 90 gold.
+- Gems and gold are split between your champions in the area. This single-wolf camp pays 4 gems and 40 gold.
 - Capture a wolf camp
 - Illustrated example
 - N. N
@@ -68,7 +69,7 @@ After a camp reward is captured, its respawn timer begins. After the timer has f
 - Rewards combine every monster in the group.
 - Allies on the region split the reward; the lowest ID gets the remainder.
 - Extra allies do not speed capture. Empty or contested regions reset it.
-- All monsters have attack range 3 and vision 8, see through bushes and do not chase.
+- Wolf attacks at range 3, Elk and Golem at range 4, and Monolith at range 5. Monsters have vision 8, see through bushes and do not chase.
 - Damage wakes the group; two rounds without an in-range champion let it sleep.
 
 ---

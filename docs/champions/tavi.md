@@ -20,7 +20,7 @@ Resets your basic attack cooldown.
 
 ### Slot 1: Damage and stun
 
-2.2 × Focus damage and a one-round stun.
+1.4 × Focus damage and a one-round stun.
 
 - **Target / range:** Enemy or camp · 4
 - **Walking:** Excludes walking
@@ -31,7 +31,7 @@ Resets your basic attack cooldown.
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
 | Health | 750 | 75 |
-| Strength | 35 | 5 |
+| Strength | 45 | 5 |
 | Focus | 100 | 10 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.

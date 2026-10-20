@@ -25,7 +25,7 @@ Every turn champions can attack using their basic attack, melees can hit targets
 
 Abilities scale with focus by taking the champion's focus value, and multiplying by the ability multiplier.
 
-For example, Stellar starts with 100 focus, and has an ability dealing 2x focus damage. Therefore she can cast the ability on her turn dealing a burst of 200 damage, starting its 8 turn cooldown. After 8 turns, she can cast the ability again.
+For example, Stellar starts with 85 focus, and has an ability dealing 2x focus damage. Therefore she can cast the ability on her turn dealing a burst of 170 damage, starting its 8 turn cooldown. After 8 turns, she can cast the ability again.
 
 > **Diagram: slots.** Each champion has two ability slots but only one successful cast per turn. Casting starts an 8-turn-end cooldown for that slot. Spell effects scale with Focus as specified in the champion's kit.
 

@@ -4,7 +4,7 @@
 
 ## When a champion dies
 
-> **Diagram: death.** The killer receives all carried gems and 50 base gold; assists award no gold. Camp kills destroy carried gems. Dead champions retain shopping turns and respawn at their next turn start after 60 owner turn-end ticks, when a spawn tile is available, with full health and abilities reset.
+> **Diagram: death.** The killer receives all carried gems and 100 base gold; assists award no gold. Camp kills destroy carried gems. Dead champions retain shopping turns and respawn at their next turn start after 60 owner turn-end ticks, when a spawn tile is available, with full health and abilities reset.
 
 <details>
 <summary>Interactive diagram text</summary>
@@ -13,7 +13,7 @@
 - Carrying 11 gems
 - An enemy closes in while your bag is full.
 - Killed
-- The champion who lands the killing blow takes all 11 gems and 50 gold. You keep your own gold and equipment.
+- The champion who lands the killing blow takes all 11 gems and 100 gold. You keep your own gold and equipment.
 - Waiting
 - 60 turn ends to respawn
 - Your bot still gets a turn each round to shop. Its respawn timer counts down at the end of each of those turns.
@@ -27,7 +27,7 @@
 - 60 rounds · can shop
 - On your spawn
 - Enemy
-- +50 gold
+- +100 gold
 - Pause
 - Replay
 - Play
@@ -37,11 +37,11 @@
 
 </details>
 
-When a champion dies they respawn on their spawn tiles after 60 rounds, awarding their killer all the gems they were carrying in addition to 50 gold.
+When a champion dies they respawn on their spawn tiles after 60 rounds, awarding their killer all the gems they were carrying in addition to 100 gold.
 
 If a camp kills you, the carried gems are lost.
 
-Cassi and Issac die together, awarding the killer 50 gold, and all the gems that both of them were carrying.
+Cassi and Issac die together, awarding the killer 100 gold, and all the gems that both of them were carrying.
 
 ## Recalling
 
