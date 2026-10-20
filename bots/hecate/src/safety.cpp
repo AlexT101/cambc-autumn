@@ -527,27 +527,34 @@ Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slo
 // Called many times a turn for the same few champions: the last result per champion is kept,
 // keyed by everything it depends on, and its widening to two turns once threat_strike() asks.
 struct StrikeMemo {
+    bool valid;
     cambc::champion_type type;
     std::uint32_t strength, focus;
-    unsigned slots = 4; // never a key
     Strike value;
     bool widened_known;
     Strike widened;
 };
 
+// Static storage starts zeroed, and a zeroed memo is not valid: no constructor writes it all on
+// first use.
+union StrikeMemos {
+    constexpr StrikeMemos() {}
+    std::array<std::array<StrikeMemo, 4>, 16> by_champion;
+};
+
 StrikeMemo& strike_memo(const ChampionBelief& c, int turn_round) {
     // By champion and slots ready: cooldowns run out and come back.
-    static std::array<std::array<StrikeMemo, 4>, 16> memo;
+    static StrikeMemos memo;
     const bool uncertain = c.cooldowns_uncertain();
     const unsigned slots =
         (uncertain || c.ability_ready(0, turn_round) ? 1u : 0u) | (uncertain || c.ability_ready(1, turn_round) ? 2u : 0u);
     const auto s = std::bit_cast<std::uint32_t>(c.strength), focus = std::bit_cast<std::uint32_t>(c.focus);
-    auto& m = memo[(c.side == team::enemy ? 8u : 0u) + (static_cast<unsigned>(c.index) & 7u)][slots];
-    if (m.slots != slots || m.type != c.type || m.strength != s || m.focus != focus) {
+    auto& m = memo.by_champion[(c.side == team::enemy ? 8u : 0u) + (static_cast<unsigned>(c.index) & 7u)][slots];
+    if (!m.valid || m.type != c.type || m.strength != s || m.focus != focus) {
+        m.valid = true;
         m.type = c.type;
         m.strength = s;
         m.focus = focus;
-        m.slots = slots;
         m.value = compute_strike(c.facts(), c.strength, c.focus, slots);
         m.widened_known = false;
     }
@@ -1222,9 +1229,16 @@ std::vector<Threat>& threat_pool() {
     return pool;
 }
 
+// Left zeroed rather than constructed, as constructing ~50KB costs as many fuel: a zeroed Reach
+// is ready for its first build.
+union ReachPool {
+    constexpr ReachPool() {}
+    std::array<Reach, 16> reaches;
+};
+
 std::array<Reach, 16>& reach_pool() {
-    static std::array<Reach, 16> pool;
-    return pool;
+    static ReachPool pool;
+    return pool.reaches;
 }
 
 } // namespace
