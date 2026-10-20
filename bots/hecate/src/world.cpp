@@ -300,9 +300,13 @@ const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) con
     if (!growth_ || !growth_->tiles.is_set(p)) {
         // The host floods 8-connected. That cluster is edge-connected too unless it holds a pair
         // of bushes joined only diagonally; then grow from p by edge steps within it.
-        auto tiles = (~bushes).reachable_tiles(p, static_cast<std::uint16_t>(width * height));
-        const bool diagonal = !(tiles & diagonal_links()).is_empty();
-        growth_ = Growth{std::move(tiles), diagonal};
+        static bitboard open{cambc::uninitialized}, linked{cambc::uninitialized};
+        static bool open_made = false;
+        if (!open_made) not_into(bushes, open), open_made = true;
+        bitboard tiles{cambc::uninitialized};
+        open.reachable_tiles_into(p, static_cast<std::uint16_t>(width * height), tiles);
+        and_into(tiles, diagonal_links(), linked);
+        growth_ = Growth{std::move(tiles), !linked.is_empty()};
     }
     auto& g = *growth_;
     static std::array<vec2, max_tiles> flood, reached;
@@ -370,10 +374,22 @@ bool StaticMap::find_all_bush_clusters(std::uint64_t fuel_floor) const {
 
 const bitboard& StaticMap::near_bushes() const {
     if (!near_bushes_) {
-        auto rows = bushes;
-        for (int d = 1; d <= 2; ++d) rows |= bushes.shift_right(d) | bushes.shift_right(-d);
-        auto b = rows;
-        for (int d = 1; d <= 2; ++d) b |= rows.shift_up(d) | rows.shift_up(-d);
+        static bitboard rows{cambc::uninitialized}, shifted{cambc::uninitialized};
+        copy_into(bushes, rows);
+        for (int d = 1; d <= 2; ++d) {
+            bushes.shift_right_into(d, shifted);
+            rows |= shifted;
+            bushes.shift_right_into(-d, shifted);
+            rows |= shifted;
+        }
+        bitboard b{cambc::uninitialized};
+        copy_into(rows, b);
+        for (int d = 1; d <= 2; ++d) {
+            rows.shift_up_into(d, shifted);
+            b |= shifted;
+            rows.shift_up_into(-d, shifted);
+            b |= shifted;
+        }
         near_bushes_ = std::move(b);
     }
     return *near_bushes_;
@@ -382,10 +398,26 @@ const bitboard& StaticMap::near_bushes() const {
 const bitboard& StaticMap::diagonal_links() const {
     if (!diagonal_links_) {
         // Bit a: bushes at a and a+(dx,dy) with neither tile between them a bush.
-        const auto at = [&](int dx, int dy) { return bushes.shift_right(-dx).shift_up(-dy); };
-        const auto rise = bushes & at(1, 1) & ~at(1, 0) & ~at(0, 1);
-        const auto fall = bushes & at(-1, 1) & ~at(-1, 0) & ~at(0, 1);
-        diagonal_links_ = rise | fall;
+        static bitboard row{cambc::uninitialized}, other{cambc::uninitialized};
+        const auto at = [&](int dx, int dy, bitboard& out) {
+            bushes.shift_right_into(-dx, row);
+            row.shift_up_into(-dy, out);
+        };
+        bitboard rise{cambc::uninitialized}, fall{cambc::uninitialized};
+        at(1, 1, rise);
+        rise &= bushes;
+        at(1, 0, other);
+        drop(rise, other);
+        at(0, 1, other);
+        drop(rise, other);
+        at(-1, 1, fall);
+        fall &= bushes;
+        at(-1, 0, other);
+        drop(fall, other);
+        at(0, 1, other);
+        drop(fall, other);
+        rise |= fall;
+        diagonal_links_ = std::move(rise);
     }
     return *diagonal_links_;
 }
@@ -466,10 +498,17 @@ std::optional<int> StaticMap::drafted_altar_steps(int group) const {
 }
 
 std::optional<int> StaticMap::drafted_spawn_steps(vec2 tile, int group) const {
-    if (!spawn_steps_drafted() || !ally_spawn.is_set(tile)) return std::nullopt;
+    if (!spawn_steps_drafted()) return std::nullopt;
+    // The tile's spawn index, -1 off spawn, kept for the tile last asked: farm asks for every group.
+    static vec2 asked{-1, -1};
+    static int i = -1;
+    if (tile != asked) {
+        i = ally_spawn.is_set(tile) ? static_cast<int>(std::find(ally_spawn_tiles.begin(), ally_spawn_tiles.end(), tile) - ally_spawn_tiles.begin()) : -1;
+        asked = tile;
+    }
+    if (i < 0) return std::nullopt;
     const int base = drafted_steps(group, 0);
     if (base == unreachable) return base;
-    const int i = static_cast<int>(std::find(ally_spawn_tiles.begin(), ally_spawn_tiles.end(), tile) - ally_spawn_tiles.begin());
     return base + (plan_->data[group * DraftPlan::group_bytes + 6 + i / 4] >> (2 * (i % 4)) & 3);
 }
 
@@ -548,9 +587,11 @@ const bitboard& CampGroup::tiles() const {
 
 const bitboard& CampGroup::adjacent() const {
     if (!adjacent_) {
+        static bitboard excluded{cambc::uninitialized};
         bitboard b;
         for (const auto& m : members) b.draw_chebyshev(m.pos, 1);
-        b &= ~(tiles() | map_->blocked_for_us);
+        or_into(tiles(), map_->blocked_for_us, excluded);
+        drop(b, excluded);
         adjacent_ = std::move(b);
     }
     return *adjacent_;
