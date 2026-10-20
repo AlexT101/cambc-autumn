@@ -97,6 +97,14 @@ struct StaticMap {
     // only one within tribute range), or -1: until it is cleared nothing can be tributed.
     int gate = -1;
     bitboard gate_keys; // the gate's members whose death alone opens a way to an altar
+    bitboard foot;      // walkable from our spawn, every camp counted as cleared
+    // An altar no walk reaches but a teleport crystal does (collision's vault): the crystal from a
+    // source tile, on foot, to a landing tile within its range, terrain ignored, then the walk.
+    struct Hop {
+        int altar = -1;
+        bitboard sources, landings;
+    };
+    std::vector<Hop> hops;
 
     // The SDK's own boards, read once at start-up.
     const bitboard& walls = cambc::map::walls();

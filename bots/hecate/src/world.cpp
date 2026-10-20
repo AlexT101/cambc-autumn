@@ -648,6 +648,28 @@ void find_gate(StaticMap& s) {
     }
 }
 
+void find_hops(StaticMap& s) {
+    if (s.ally_spawn_tiles.empty()) return;
+    s.blocked_for_us.reachable_tiles_into(s.ally_spawn_tiles[0], unreachable, s.foot);
+    bitboard pocket{cambc::uninitialized};
+    for (int a = 0; a < static_cast<int>(s.altars.size()); ++a) {
+        const auto& tributes = s.altars[a].tribute_tiles();
+        if (tributes.is_empty() || !(tributes & s.foot).is_empty()) continue;
+        s.blocked_for_us.reachable_tiles_into(tributes.positions()[0], unreachable, pocket);
+        drop(pocket, s.camp_tiles);
+        StaticMap::Hop hop;
+        hop.altar = a;
+        for (const vec2 l : pocket.positions()) {
+            if (!any_within(s.foot, l, teleport_crystal_range)) continue;
+            hop.landings.set(l);
+            hop.sources.draw_chebyshev(l, teleport_crystal_range);
+        }
+        hop.sources &= s.foot;
+        drop(hop.sources, s.camp_tiles);
+        if (!hop.landings.is_empty()) s.hops.push_back(std::move(hop));
+    }
+}
+
 } // namespace
 
 [[gnu::flatten]] std::unique_ptr<StaticMap> StaticMap::build() {
@@ -734,7 +756,8 @@ void find_gate(StaticMap& s) {
     or_into(s->camp_tiles, s->blocked_for_us, s->standable);
     not_into(s->standable, s->standable);
     find_gate(*s);
-    debug_block({ std::printf("GATE %d\n", s->gate); });
+    find_hops(*s);
+    debug_block({ std::printf("GATE %d HOPS %d\n", s->gate, static_cast<int>(s->hops.size())); });
 
     const auto* plan = read_draft_plan();
     if (plan && plan->steps && plan->width == s->width && plan->height == s->height && plan->groups == s->groups.size()

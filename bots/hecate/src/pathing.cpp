@@ -51,6 +51,20 @@ const Field& Pathing::to_any_altar() {
     return cached(any_altar_, goals);
 }
 
+const Field& Pathing::to_hop(int hop) { return cached(entry(hop_fields_, map().hops.size(), hop), map().hops[hop].sources); }
+
+int Pathing::hop_landing_steps(int hop) {
+    auto& steps = entry(hop_landing_steps_, map().hops.size(), hop);
+    if (!steps) {
+        const auto& h = map().hops[hop];
+        const auto& field = to_altar(h.altar);
+        int best = unreachable;
+        for (const vec2 l : h.landings.positions()) best = std::min(best, field.at(l));
+        steps = best;
+    }
+    return *steps;
+}
+
 int Pathing::centre_to_altar(int group) {
     auto& steps = entry(centre_to_altar_, map().groups.size(), group);
     if (!steps) steps = map().drafted_altar_steps(group);
