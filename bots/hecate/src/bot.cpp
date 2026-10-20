@@ -1883,8 +1883,8 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     for (int s = 0; s < 2; ++s)
         if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round)) radius = 2;
     // Who can hit a tile, and how hard: a tile no worse than ours is as safe as ours. `bound`
-    // by distance alone, never below the exact exposure, which only the foes in it can add to.
-    // Only foes within their reach of a step or dash can hit any of the tiles.
+    // by distance alone, never below the exact exposure, which only the foes in it can add to;
+    // only those `reaching` a step or dash can be in it.
     unsigned reaching = 0;
     for (int k = 0; k < n; ++k)
         if (dist(here, at[k]) <= strikes[k]->reach + radius) reaching |= 1u << k;
