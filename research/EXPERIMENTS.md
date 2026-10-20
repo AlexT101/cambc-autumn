@@ -168,3 +168,21 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   than it saves), ward checks by distance to each ward (+7% a query), a second recipe kept in Reach (recipes rarely
   flip back), the far-champion filter on small groups, a cross-turn simulation memo (2-10% hit rate). On the turns over
   95k at 100M the fight cost is simulations ~30k (a 5v5 fight 8-12k), Reach ~25k and step_guard's own loop ~9k.
+- Fight-path round 2 on hecate 72cc39c, byte-identical at 100M (same 46 games, measured before the last commit): turns
+  over 100k −20/−24/−23%, p999 −5.6/−4.2/−4.8%, max −7.5/−6.4/−7.1%, all turns −1.1/−1.4/−1.2%. Simulation: sentinels
+  for idle, no shield and worthless slots, hurt()'s common case inline, an exact-sum fast turn for sides whose Strength
+  and cast damage are small sixteenths (casts add to the cached basic attacks), the weakest kept across shields and
+  heals that cannot change it (−14% a simulation on recorded fights). Hidden writes: vec2 and std::pair zero their
+  members, so step_guard, prey, retreat_step and pack_boxes cleared hundreds of bytes a call, and Reach::at its sight
+  windows; constructing the Reach pool wrote ~50KB at each game's first fight and the strike memos ~6KB on round 1
+  (now zeroed static storage). dist() in 32-bit (the SDK's is 64-bit: −0.2% on every turn). Memos per ready slots:
+  strikes and Reach ways (cooldowns flip recipes back and forth; the single-entry memos missed most turns). Also
+  awake_members works out turn order only near a member's reach, fight keys read joining allies once a turn,
+  best_ground clears only cells it reads, the pack zone is drawn as squares and prey tests coverage from its boxes.
+  Tried and slower or no gain in games (judge with whole games: ±0.1% swings from codegen alone): shields in the fast
+  turn (−1.8% on big recorded fights, +1.4% on small), side-level shield expiry, a cache of built fight sides (a Side
+  copy is memory.copy at a fuel a byte), a bulk side fill (−35% in a microbenchmark, slower in games), step_guard's
+  bound from per-foe offsets or row/column tables, pack boxes by a pruned subset search (recursion), an early stop in
+  Reach::at when the rest is dominated, packed bits instead of is_set for near_enemy_spawn (the host test is cheaper),
+  lethal settled by strike bounds first (the Reach builds only move elsewhere). Top turns (shared-gem maps, ~270k) are
+  still step_guard's 6v6 simulations (~10k each, ~11 a turn), Reach (~35k) and fight setup (~1.5k a simulation).
