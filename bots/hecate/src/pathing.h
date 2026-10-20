@@ -62,6 +62,7 @@ public:
 
     // Our static fields' walls: a dasher's leave out the hole and altar lines a dash crosses.
     const bitboard& static_walls() const;
+    const bitboard& foot() const;
     // Static walls, visible units and teleport reservations, and tiles bumped this round.
     const bitboard& blocked();
     void occupied_into(bitboard& out); // blocked() with our own tile set
@@ -134,6 +135,7 @@ private:
 
     const World& world_;
     Slot any_altar_;
+    Slot ally_spawn_;
     std::vector<std::optional<int>> centre_to_altar_;
     std::vector<Slot> altar_fields_, centre_fields_, hop_fields_;
     std::vector<std::optional<int>> hop_landing_steps_;

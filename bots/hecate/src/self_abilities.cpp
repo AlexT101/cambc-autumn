@@ -287,6 +287,24 @@ bool dash_towards(const World& world, Pathing& pathing, const Field& field) {
            && travel_dash(world, pathing, *dash, field.at(my_position()), [&](vec2 p) { return field.at(p); });
 }
 
+bool dash_across(const World& world, Pathing& pathing, const Field& field) {
+    if (!world.me().facts().has_dash() || !any_within(world.map().crossable, my_position(), 1)) return false;
+    const auto dash = ready(world, AbilityKind::dash);
+    const vec2 here = my_position();
+    const int here_steps = field.at(here);
+    if (!dash || here_steps == 0 || here_steps == unreachable) return false;
+    // The walk goes into camp reach anyway; only enemies are kept from.
+    static std::vector<Hazard> enemies;
+    enemies.clear();
+    for (const auto& t : threats_near(world, here))
+        if (!t.camp) enemies.push_back(t);
+    const int here_danger = danger(enemies, here);
+    const auto landings = ranked(
+        pathing.dash_landings(), [&](vec2 p) { return field.at(p); },
+        [&](vec2 p, int steps) { return steps <= here_steps - dash_steps && danger(enemies, p) <= here_danger && !wakes_camp(world, p); });
+    return dash_to_first(*dash, pathing, landings);
+}
+
 bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps) {
     static int paused_until = -1;
     if (world.round < paused_until) return false;

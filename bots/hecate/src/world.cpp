@@ -651,9 +651,9 @@ void find_gate(StaticMap& s) {
 void find_crossings(StaticMap& s) {
     bitboard t{cambc::uninitialized}, ahead{cambc::uninitialized}, behind{cambc::uninitialized};
     const auto opposite = [&](int dx, int dy) {
-        s.open_for_us.shift_right_into(-dx, t);
+        s.standable.shift_right_into(-dx, t);
         t.shift_up_into(-dy, ahead);
-        s.open_for_us.shift_right_into(dx, t);
+        s.standable.shift_right_into(dx, t);
         t.shift_up_into(dy, behind);
         ahead &= behind;
         s.crossable |= ahead;
@@ -664,6 +664,35 @@ void find_crossings(StaticMap& s) {
     opposite(1, -1);
     or_into(s.holes, s.altar_tiles, t);
     s.crossable &= t;
+    // No two may touch, or a field would walk along the line, which no dash does: keep every other
+    // tile ((x + y) even), and of diagonal neighbours, which share a parity, the lowest.
+    bitboard even{cambc::uninitialized}, beside{cambc::uninitialized};
+    clear_board(even);
+    for (int x = 0; x < s.width; x += 2) even.set({x, 0});
+    even.shift_right_into(1, beside);
+    beside.shift_up_into(1, t);
+    even |= t;
+    for (int rows = 2; rows < s.height; rows *= 2) {
+        even.shift_up_into(rows, t);
+        even |= t;
+    }
+    clear_board(beside);
+    for (const int d : {1, -1}) {
+        s.crossable.shift_right_into(d, t);
+        beside |= t;
+        s.crossable.shift_up_into(d, t);
+        beside |= t;
+    }
+    beside &= s.crossable;
+    drop(beside, even);
+    drop(s.crossable, beside);
+    clear_board(beside);
+    for (const int dx : {1, -1}) {
+        s.crossable.shift_right_into(dx, t);
+        t.shift_up_into(1, even);
+        beside |= even;
+    }
+    drop(s.crossable, beside);
     copy_into(s.blocked_for_us, s.dash_walls);
     drop(s.dash_walls, s.crossable);
 }
@@ -671,6 +700,7 @@ void find_crossings(StaticMap& s) {
 void find_hops(StaticMap& s) {
     if (s.ally_spawn_tiles.empty()) return;
     s.blocked_for_us.reachable_tiles_into(s.ally_spawn_tiles[0], unreachable, s.foot);
+    s.dash_walls.reachable_tiles_into(s.ally_spawn_tiles[0], unreachable, s.dash_foot);
     bitboard pocket{cambc::uninitialized};
     for (int a = 0; a < static_cast<int>(s.altars.size()); ++a) {
         const auto& tributes = s.altars[a].tribute_tiles();
@@ -713,7 +743,6 @@ void find_hops(StaticMap& s) {
     or_into(s->impassable, s->ally_spawn, s->blocked_for_them);
     not_into(s->blocked_for_us, s->open_for_us);
     not_into(s->blocked_for_them, s->open_for_them);
-    find_crossings(*s);
     for (auto t : s->enemy_spawn_tiles) draw_square(s->near_enemy_spawn, t, 1);
     or_into(s->walls, s->bushes, s->walls_and_bushes);
 
@@ -776,6 +805,7 @@ void find_hops(StaticMap& s) {
     s->shared_gems = big && !other;
     or_into(s->camp_tiles, s->blocked_for_us, s->standable);
     not_into(s->standable, s->standable);
+    find_crossings(*s);
     find_gate(*s);
     find_hops(*s);
     debug_block({ std::printf("GATE %d HOPS %d\n", s->gate, static_cast<int>(s->hops.size())); });

@@ -20,6 +20,8 @@ const StaticMap& Pathing::map() const { return world_.map(); }
 
 const bitboard& Pathing::static_walls() const { return world_.me().facts().has_dash() ? map().dash_walls : map().blocked_for_us; }
 
+const bitboard& Pathing::foot() const { return world_.me().facts().has_dash() ? map().dash_foot : map().foot; }
+
 void Pathing::begin_turn() {
     guard_ = nullptr; // a turn abandoned as stale left its guard set
     blocked_fresh_ = false;
@@ -42,7 +44,9 @@ const Field& Pathing::cached(Slot& slot, const bitboard& goals) {
 
 Pathing::Slot& Pathing::altar_slot(int altar) { return entry(altar_fields_, map().altars.size(), altar); }
 
-const Field& Pathing::to_ally_spawn() { return map().from_ally_spawn(); }
+const Field& Pathing::to_ally_spawn() {
+    return world_.me().facts().has_dash() ? cached(ally_spawn_, map().ally_spawn) : map().from_ally_spawn();
+}
 
 const Field& Pathing::to_altar(int altar) { return cached(altar_slot(altar), map().altars[altar].tribute_tiles()); }
 
@@ -161,7 +165,9 @@ const Field* Pathing::approach(int group, int range) {
     } else {
         clear_board(goals);
         for (const auto& m : s.groups[group].members) draw_square(goals, m.pos, static_cast<float>(range));
-        not_into(walls, open);
+        // Not static_walls(): a dasher cannot stand on the tiles it jumps.
+        or_into(s.blocked_for_us, made.camps, open);
+        not_into(open, open);
         and_into(goals, open, goals);
     }
     set_tile(walls, me, false);

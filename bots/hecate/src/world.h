@@ -93,13 +93,14 @@ struct StaticMap {
     // stampede's shared block.
     bool shared_gems = false;
     int max_camp_reach = 0; // longest reach of any camp member on the map
-    // A group standing between our spawn and every altar (boss-battle's Monoliths, whose tile is the
-    // only one within tribute range), or -1: until it is cleared nothing can be tributed.
+    // A group standing between our spawn and every altar, or -1: until it is cleared nothing can be
+    // tributed.
     int gate = -1;
     bitboard gate_keys; // the gate's members whose death alone opens a way to an altar
     bitboard foot;      // walkable from our spawn, every camp counted as cleared
-    // An altar no walk reaches but a teleport crystal does (collision's vault): the crystal from a
-    // source tile, on foot, to a landing tile within its range, terrain ignored, then the walk.
+    bitboard dash_foot; // the same through dash_walls
+    // An altar no walk reaches but a teleport crystal does: from a source tile on foot to a landing
+    // tile within its range, terrain ignored, then the walk.
     struct Hop {
         int altar = -1;
         bitboard sources, landings;
@@ -124,10 +125,9 @@ struct StaticMap {
     bitboard blocked_for_them{cambc::uninitialized}; // impassable | our spawn
     bitboard open_for_us{cambc::uninitialized};      // ~blocked_for_us
     bitboard open_for_them{cambc::uninitialized};    // ~blocked_for_them
-    // Holes and altars a dash jumps (open for us on two opposite sides), and blocked_for_us without
-    // them: a dasher's static walls, each crossing priced at the dash's two steps.
+    // Holes and altars with standable tiles on two opposite sides, which a dash jumps in its two steps.
     bitboard crossable;
-    bitboard dash_walls{cambc::uninitialized};
+    bitboard dash_walls{cambc::uninitialized}; // blocked_for_us without crossable: a dasher's static walls
     bitboard near_enemy_spawn; // within 1 of an enemy spawn tile
     bitboard walls_and_bushes{cambc::uninitialized};
     bitboard standable{cambc::uninitialized}; // ~(camp_tiles | blocked_for_us)

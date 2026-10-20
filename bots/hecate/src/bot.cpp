@@ -434,14 +434,8 @@ bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& m
 
 const bitboard* pack_zone(const World& world);
 
-// A dasher beside a hole or altar line (StaticMap::crossable) dashes over it where `field` gains by it.
-bool dash_across(const World& world, Pathing& pathing, const Field& field) {
-    return world.me().facts().has_dash() && any_within(world.map().crossable, my_position(), 1) && dash_towards(world, pathing, field);
-}
-
-// The quickest bank by a crystal (StaticMap::hops) from where we stand on foot: the walk to
-// a source, the channel, the walk from the nearest landing and the recall out, as no walk leaves the
-// pocket. Locked and avoided altars are skipped.
+// The quickest bank by a crystal (StaticMap::hops): the walk to a source, the channel, the walk from
+// the nearest landing and the recall out, as no walk leaves the pocket.
 struct HopRoute {
     int hop = -1;
     int steps = unreachable;
@@ -450,7 +444,7 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory) {
     HopRoute best;
     const auto& map = world.map();
     const vec2 here = my_position();
-    if (map.hops.empty() || !test(map.foot, here)) return best;
+    if (map.hops.empty() || !test(pathing.foot(), here)) return best;
     for (int h = 0; h < static_cast<int>(map.hops.size()); ++h) {
         const int a = map.hops[h].altar;
         if (world.altars[a].enemy_lock || (a == memory.avoid_altar && world.round < memory.avoid_until)) continue;
@@ -523,7 +517,7 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
         }
     }
     const Field& field = any_locked ? pathing.to_altar(best) : pathing.to_any_altar();
-    if (dash_towards(world, pathing, field) && submit_here(world, pathing, safety, memory)) return;
+    if ((dash_across(world, pathing, field) || dash_towards(world, pathing, field)) && submit_here(world, pathing, safety, memory)) return;
     if (any_locked && world.altars[best].enemy_lock && break_lock(world, best) && !world.me().facts().walk_and_attack_independent())
         return;
     step_safely(pathing, field, safety);
@@ -977,8 +971,7 @@ int capture_share(const World& world, int g) {
 // of elk and gem clusters.
 bool big_group(const CampGroup& G) { return !G.has_monolith && G.gems >= params::big_gems; }
 
-// A capture is split until each share's tribute fits the window its safety is judged over
-// (tribute_safe): gems are worth the same however rich the camps, and a long channel is a bag at risk.
+// Split until each share's tribute fits the window its safety is judged over (tribute_safe).
 int holders(const CampGroup& G) {
     if (G.has_monolith) return params::monolith_holders;
     int n = 1;
@@ -2548,8 +2541,7 @@ SiegeLoad siege_load(const World& world, int g) {
     return load;
 }
 
-// The Monolith to siege; one the enemy holds or that returns too late is skipped. Big groups off
-// shared-gem maps are farmed by crews like any other group.
+// The Monolith to siege; one the enemy holds or that returns too late is skipped.
 int siege_candidate(const World& world, const Memory& memory) {
     const auto& map = world.map();
     static std::vector<int> sieged; // the Monoliths, in group order
@@ -2563,8 +2555,7 @@ int siege_candidate(const World& world, const Memory& memory) {
     float best_cost = 0;
     for (const int g : sieged) {
         const auto& c = world.camps[g];
-        // siege_ready never passes a live Monolith off Monolith-only maps but the gate: only a cleared
-        // one counts.
+        // Off Monolith-only maps siege_ready passes no live Monolith but the gate.
         if (!map.monolith_only && g != map.gate && c.state != CampState::cleared) continue;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
         if (wait > params::siege_respawn_wait) continue;
@@ -2612,8 +2603,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     const auto& c = world.camps[g];
     const vec2 here = my_position();
     if (c.state == CampState::cleared) {
-        // The nearest of us take the capture, split to shorten the tributes; the rest go back to
-        // farming.
+        // The nearest take the capture, split to shorten the tributes; the rest farm.
         if (capture_taken(world, G, here)) {
             memory.siege = false;
             return false;
@@ -2928,7 +2918,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         if (recall_to_bank(world, pathing, safety, memory) || shop()) return true;
         if (siege_heal_trip(memory, safety)) return sieged = true; // the trip keeps the siege until home
         // No walk leaves a pocket a crystal took us into.
-        if (!test(world.map().foot, my_position()) && bankable_bag(world) == 0) return true;
+        if (!test(pathing.foot(), my_position()) && bankable_bag(world) == 0) return true;
     }
     try {
         me.cancel_recall();
