@@ -157,6 +157,10 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    old big/not-big split of every ladder group but one), chain_bag_limit 80 -> 30, brake_bag 30 -> 11. 52.8% vs 23
    (ladder 42.9, gen 56.1, central 47.8), 52.3% on a fresh suite (seed 7101). gem_value 15 -> 40 on top: 50.8%;
    life_value 300 -> 400: no game changed.
+   Settled after 26 (2026-10-20, all vs the bot with 26-28): brake_bag 30 50.9% (ladder 22-20, gen 260-252),
+   chain_bag_limit 80 52.7% (ladder 18-24, gen 274-238, not confirmed on a fresh suite), both bag limits at
+   life_value / gem_value = 20 ladder 22-20. Since 26, big_gems only sets which maps are kited and is no longer a
+   siege trigger. Values kept as above.
 25. 2026-10-20 (not yet submitted). Heart of Ruin played as itself, and modelled as an enemy. HoR draft below is
    heart_of_ruin, stellar, cassi_and_issac, ryth, varg (Ren swapped out); pre = hecate 1251236.
    - champions.h: AbilityFacts::radius and lands() for a dash whose landing damages and stuns (HoR: 1.75 x Focus,
@@ -179,3 +183,45 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
      The new HoR draft beats the normal draft 62.3% (the draft is unchanged here). Fuel at 100M: +3.9% a turn mean
      vs pre on the bench (+1.4% for the HoR draft); at the real budget 0 out-of-fuel turns either way, shortcuts
      1174 -> 1137.
+26. 2026-10-20 (not yet submitted). corridors (1-10 on the ladder): with big_gems 55 (item 24) its 58- and 60-gem
+   lane groups were "big", so siege() sent the whole team after them: 62% of champion turns were siege staging (G)
+   and corridors went 812-1026 and 741-1048 against rival. Big groups are no longer sieged off shared-gem maps (siege()
+   takes Monoliths only; kite() still handles big groups where they are the only gems; big_rounds and
+   big_respawn_wait removed), and holders() splits a capture only until each share's tribute fits tribute_window (6)
+   turns, in absolute gems: 58 or 60 gems get one holder, elk-arena's 72 two, stampede's 132 three (Monoliths keep
+   monolith_holders). corridors vs rival 1012-484 and 1032-122. 54.7% vs hecate 1251236 (554: ladder 57.1, gen
+   54.5); collision, corridors, eight, fracture and islands, the ladder maps with a 55+ gem group, all won from both
+   sides.
+27. 2026-10-20 (not yet submitted). boss-battle (1-8): its only altar sits behind the shared Monolith pair, whose tile
+   (24, 20) is the only one in tribute range, so hecate tributed nothing and lost on gold (no teleport helps: a crystal
+   cannot land on a camp tile; `mapgen check` calls it teleport-only because its closure walks camp tiles).
+   StaticMap::gate is a group that stands between our spawn and every altar (host floods with live camps as walls),
+   gate_keys its members whose death alone opens one. The gate is a siege candidate on any map with the
+   Monolith-only siege limits, its key member is hit first, and until it falls bags are not banked (bankable_bag):
+   champions farm and shop as if empty-handed. Against the pre-change bot boss-battle went 1002-0 and 640-109
+   (first key kill around round 1100); full A/B 50.2% (ladder 57.1 with boss-battle 2/2, gen 49.6: no generated map
+   has a gate, so the rest is fuel noise).
+28. 2026-10-20 (not yet submitted). Teleport crystals to altars no walk reaches. StaticMap::foot is the walkable region
+   from our spawn (camps counted as cleared), StaticMap::hops each altar outside it that one crystal reaches: landing
+   tiles in its pocket within 3 of foot, and the foot tiles they are reached from. bank_gems takes the hop when the
+   walk to a source + tp_crystal_time + the walk from the best landing + the recall out (no walk leaves the pocket)
+   beats walking to an unlocked altar, or when every walkable altar is avoided; carry_bag's wait at an unsafe altar
+   is bounded by it too; continue_recall keeps the recall in a pocket once the bag is in. A crystal (10 gold) is
+   bought on spawn or while dead only once a hop would have won (Memory::wants_crystal). Only collision (its vault
+   altar) and islands (4 inner altars) have hops; no generated map does. Ignoring the recall out, carriers hopped
+   into collision's vault too often; a first version bought a crystal every life (52.0%, islands 0/2). Full A/B 52.2% (ladder
+   47.6, gen 52.5 with no hop maps); collision and islands 1/2 each. Camps reachable only by crystal (ambush,
+   big-world, fracture: 7-21 gems) are not farmed.
+29. 2026-10-20 (not yet submitted). Dashers cross one-tile hole and altar lines. StaticMap::crossable holds the
+   holes and altars with standable tiles on two opposite sides (host shifts, once); dash_walls is blocked_for_us
+   without them, so a dasher's cached, approach, centre and spawn fields price a crossing at the dash's two steps.
+   No two crossable tiles touch (every other tile along a line, the lowest of diagonal neighbours), else a field
+   walks along the line; camp tiles do not count as standable, else a field reaches gem clusters ringed by holes
+   that no dash can land beside. Approach goals stay on standable tiles. Beside a crossable tile on a farm walk
+   or a bank walk, dash_across dashes where the field gains, with enemies near too as long as the landing is no
+   deeper in their reach (the travel dash's 10-tile clearance stalled dashers at crossings). StaticMap::dash_foot
+   replaces foot for dashers, so a dasher across a line is not taken for one in a crystal pocket and recalled.
+   First version (3d837e6) left Ren and Issac standing still most of the game on big-world and islands. Full
+   A/B 52.0% vs the pre-dash bot (554: ladder 47.6, gen 52.3); on islands, big-world, fracture, gold-rush,
+   concentrated-wealth and ambush dashers cross dozens to hundreds of times a game. Two crossings within 8 turns
+   still wait out the cooldown. Fuel at the real budget: +1.2% a play turn on the bench, out-of-fuel turns 1 -> 1.

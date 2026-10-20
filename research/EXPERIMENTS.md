@@ -337,3 +337,38 @@ heart_of_ruin, stellar, cassi_and_issac, ryth, varg (normal draft with Ren swapp
 - The new HoR draft beats our normal draft 62.3% (554): a draft change to try next, with ladder evidence.
 - Fuel: about +2% a turn from the early turns on (the shield bookkeeping per champion update, the passive in strikes
   and outputs; moving it around shifted the bench by +-100 a turn from layout alone); real budget 0 out-of-fuel turns.
+
+## hecate: gates, crystals, big groups and gem limits (2026-10-20)
+
+Each against the bot before it (frozen in bots/variants), ladder + gen both sides (554). The first three were measured
+on hecate 1251236 and rebased onto d70138d (Heart of Ruin) afterwards.
+
+| change | ladder | gen | all |
+|---|---|---|---|
+| no big-group sieges off shared-gem maps, holders by tribute length (CHANGES 26) | 57.1 | 54.5 | 54.7 |
+| siege the group that gates every altar (27) | 57.1 (boss-battle 2/2) | 49.6 | 50.2 |
+| crystal hops to altars no walk reaches, crystal bought every life | 45.2 | 52.5 | 52.0 |
+| the same, recall out priced, crystal bought on demand (28) | 47.6 | 52.5 | 52.2 |
+
+- No generated map has a gate or a hop (`GATE`/`HOPS` debug line), so the gen columns of 27 and 28 are fuel noise:
+  find_gate and find_hops shift round-1 fuel and reroute games. Only boss-battle has a gate; collision and islands hops.
+- corridors locally vs rival: 812-1026 and 741-1048 before 26, 1012-484 and 1032-122 after (identical to big_gems 150).
+- boss-battle vs the pre-gate bot: 1002-0 and 640-109; mirror games before it ended 0-0 on gold. The siege is slow
+  (champions walk into the Monolith's reach 5 to hit it; the key member fell around round 1100).
+- Hops without the recall in their price: carriers hopped into collision's vault whenever it was nearer than the mid
+  altar and then sat out 5 recall turns and the walk back.
+- Dash crossings (one-tile hole/altar lines a dash jumps), counted for a later change: walks from spawn to groups
+  shorten by 51% on fracture, 60% on concentrated-wealth, 58% on gold-rush and 11% on islands (+34 groups reachable),
+  under 6% elsewhere on the ladder; 17 of 256 generated maps gain more than 5%.
+- Dash crossings (CHANGES 29) vs the pre-dash bot: 52.0% (ladder 20/42, gen 268/512). The first version (3d837e6)
+  was 21-21 on ladder and 105-99 after 208 gen games, with dashers stuck on big-world (Ren still 1004 of 1060
+  turns) and islands (0 camp attacks): approach goals on crossable holes, crossings into camp tiles, recalls out
+  of what looked like a crystal pocket, and fields walking along chains of crossable tiles.
+- Gem limits after 26: brake_bag 30 50.9% (554), chain_bag_limit 80 52.7% (ladder 42.9, gen 53.5), both at
+  life_value / gem_value ladder 22-20. Not adopted; item 24's values stay.
+- corridors: lost mirror games show farm targets flipping every turn (32% of farm turns A-B-A on corridors, 1-2%
+  elsewhere), crews joining and leaving a group together because claims reach teammates a turn late. Counting only
+  allies earlier in index in crew_strength cut corridors flips to 5.5% but lost 44.5% on gen; counting them only
+  once in a crew 40.5% ladder, 44.9% gen; seniority for contested claims made corridors flips worse. All dropped.
+- A crystal shortcut over open ground (a crystal landing more than twice the channel's turns nearer on foot, for
+  corridors' lanes) was left unfinished and dropped: ladder opponents used 9 crystals in 9 corridors games.
