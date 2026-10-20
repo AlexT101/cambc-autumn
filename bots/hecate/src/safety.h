@@ -100,6 +100,7 @@ private:
         std::int8_t range;
         std::uint8_t key; // its tiles, range, sight and turn: ways with equal keys merge
         bool sight, stuns, walked;
+        std::int8_t bound; // extent_[from] + range: the farthest tile it reaches
     };
     // Returns the way's index: one already there with the same key takes the larger damage.
     int add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked);
@@ -324,6 +325,12 @@ private:
     int threat_count_ = 0;
     std::vector<CampHit>& members_; // likewise; valid once `members_known_`
     bool members_known_ = false;
+    struct CampMemo {
+        vec2 p;
+        float damage;
+        bool valid = false;
+    };
+    std::array<CampMemo, 2> camp_memo_{}; // camp_damage() by `worst`, the last tile asked
     std::optional<bitboard> camp_area_, enemy_area_;
     // By fight_key(). A memo: past `max_fights` the oldest is replaced.
     struct FightMemo {
@@ -337,6 +344,9 @@ private:
         std::array<FightMemo, max_fights> fights_;
     };
     std::uint64_t costliest_fight_ = 0;
+    // query_cost_estimate()'s Reaches pending, for `reaches_for_` as reached_; -1 once refreshed.
+    std::uint64_t reaches_ = 0;
+    int reaches_for_ = -1;
     int champions_ = -1;            // in sight, for fight_cost_estimate(); beliefs are fixed for the turn
     std::uint64_t build_cost_ = 0;  // build_cost_estimate() until built, refreshed or invalidated; 0: unknown
 };

@@ -1788,7 +1788,7 @@ int killable_now(const World& world, Safety& safety) {
     const float health = my_health();
     const int range = f.attack_range();
     for (const auto& e : world.enemies) {
-        if (!e.alive || !e.visible || world.map().enemy_spawn.is_set(e.pos)) continue;
+        if (!e.alive || !e.visible) continue;
         const int d = dist(here, e.pos);
         float cast = 0;
         for (int s = 0; s < 2; ++s) {
@@ -1797,7 +1797,7 @@ int killable_now(const World& world, Safety& safety) {
             if (a.kind == AbilityKind::attack_reset && d <= range) cast = std::max(cast, self.strength);
             if (a.kind == AbilityKind::damage && d <= a.range()) cast = std::max(cast, a.multiplier * self.focus);
         }
-        if ((d <= range ? self.strength : 0.0f) + cast < e.health) continue;
+        if ((d <= range ? self.strength : 0.0f) + cast < e.health || world.map().enemy_spawn.is_set(e.pos)) continue;
         const bool linked = e.facts().passive == Passive::linked_pair;
         float rest = safety.camp_damage(here);
         for (const auto& t : safety.threats())

@@ -110,9 +110,11 @@ struct Side {
     void hurt(float damage, int first = -2) {
         for (int i = damage <= 0 ? -1 : first >= -1 ? first : weakest(); i >= 0; i = damage > 0 ? weakest() : -1) {
             auto& f = fighters[i];
-            const float absorbed = std::min(damage, f.shield);
-            f.shield -= absorbed;
-            damage -= absorbed;
+            if (f.shield != 0) {
+                const float absorbed = std::min(damage, f.shield);
+                f.shield -= absorbed;
+                damage -= absorbed;
+            }
             const float taken = std::min(damage, f.health);
             f.health -= taken;
             damage -= taken;
@@ -134,9 +136,9 @@ int next_cast(const Fighter& f) {
     return turn;
 }
 
-// A champion as it enters a fight. A heal is valued even with no ally to take it: attack() then
-// finds no target and moves on, as if it were worth nothing.
-void make_fighter(const ChampionBelief& c, int turn_round, Fighter& f, Kit& kit) {
+// A champion's casts, from its type, Strength and Focus alone. A heal is valued even with no ally
+// to take it: attack() then finds no target and moves on, as if it were worth nothing.
+void make_kit(const ChampionBelief& c, Kit& kit) {
     const auto& facts = c.facts();
     for (int s = 0; s < 2; ++s) {
         const auto& a = facts.abilities[s];
@@ -159,6 +161,11 @@ void make_fighter(const ChampionBelief& c, int turn_round, Fighter& f, Kit& kit)
         e.duration = a.duration;
     }
     kit.preference = kit.cast[1].value > kit.cast[0].value ? std::array<int, 2>{1, 0} : std::array<int, 2>{0, 1};
+}
+
+// A champion as it enters a fight, with its kit made.
+void make_fighter(const ChampionBelief& c, int turn_round, Fighter& f, Kit& kit) {
+    const auto& facts = c.facts();
     f.kit = &kit;
     f.strength = c.strength;
     const bool uncertain = c.cooldowns_uncertain();
@@ -185,6 +192,10 @@ struct Fighters {
     union {
         std::array<Kit, 32> kit;
     };
+    // Kits are kept across turns while what they are made from holds: bit i, kit[i] is made from
+    // kit_of[i] (type, Strength and Focus).
+    std::uint32_t kits = 0;
+    std::array<std::array<std::uint32_t, 3>, 32> kit_of;
     Fighters() {}
 };
 
@@ -367,6 +378,13 @@ const Fighter& fighter(const World& world, const ChampionBelief& c, std::uint32_
     auto& m = made_fighters();
     if (!(made >> slot & 1)) {
         made |= 1u << slot;
+        const std::array<std::uint32_t, 3> from{static_cast<std::uint32_t>(c.type), std::bit_cast<std::uint32_t>(c.strength),
+                                                std::bit_cast<std::uint32_t>(c.focus)};
+        if (!(m.kits >> slot & 1) || m.kit_of[slot] != from) {
+            m.kits |= 1u << slot;
+            m.kit_of[slot] = from;
+            make_kit(c, m.kit[slot]);
+        }
         make_fighter(c, c.is_self ? world.round : next_turn_round(world, c), m.fighter[slot], m.kit[slot]);
     }
     return m.fighter[slot];
@@ -425,27 +443,38 @@ Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slo
     return out;
 }
 
-} // namespace
-
 // Called many times a turn for the same few champions: the last result per champion is kept,
-// keyed by everything it depends on.
-Strike strike(const ChampionBelief& c, int turn_round) {
-    struct Memo {
-        cambc::champion_type type;
-        std::uint32_t strength, focus;
-        unsigned slots = 4; // never a key
-        Strike value;
-    };
-    static std::array<Memo, 16> memo;
+// keyed by everything it depends on, and its widening to two turns once threat_strike() asks.
+struct StrikeMemo {
+    cambc::champion_type type;
+    std::uint32_t strength, focus;
+    unsigned slots = 4; // never a key
+    Strike value;
+    bool widened_known;
+    Strike widened;
+};
+
+StrikeMemo& strike_memo(const ChampionBelief& c, int turn_round) {
+    static std::array<StrikeMemo, 16> memo;
     const bool uncertain = c.cooldowns_uncertain();
     const unsigned slots =
         (uncertain || c.ability_ready(0, turn_round) ? 1u : 0u) | (uncertain || c.ability_ready(1, turn_round) ? 2u : 0u);
     const auto s = std::bit_cast<std::uint32_t>(c.strength), focus = std::bit_cast<std::uint32_t>(c.focus);
     auto& m = memo[(c.side == team::enemy ? 8u : 0u) + (static_cast<unsigned>(c.index) & 7u)];
-    if (m.slots != slots || m.type != c.type || m.strength != s || m.focus != focus)
-        m = {c.type, s, focus, slots, compute_strike(c.facts(), c.strength, c.focus, slots)};
-    return m.value;
+    if (m.slots != slots || m.type != c.type || m.strength != s || m.focus != focus) {
+        m.type = c.type;
+        m.strength = s;
+        m.focus = focus;
+        m.slots = slots;
+        m.value = compute_strike(c.facts(), c.strength, c.focus, slots);
+        m.widened_known = false;
+    }
+    return m;
 }
+
+} // namespace
+
+Strike strike(const ChampionBelief& c, int turn_round) { return strike_memo(c, turn_round).value; }
 
 int turns_before_ours(const World& world, const ChampionBelief& c) {
     const auto& me = world.me();
@@ -477,11 +506,14 @@ float most_damage(const ChampionBelief& c) {
 } // namespace
 
 Strike threat_strike(const World& world, const ChampionBelief& c) {
-    const auto s = strike(c, next_turn_round(world, c));
+    auto& m = strike_memo(c, next_turn_round(world, c));
+    const auto& s = m.value;
     if (s.reach < 0 || turns_before_ours(world, c) < 2) return s;
+    if (m.widened_known) return m.widened;
+    m.widened_known = true;
     const auto& f = c.facts();
     const int basic_reach = f.attack_range() + (f.ranged ? 0 : 1);
-    Strike out;
+    auto& out = m.widened;
     for (int d = 0; d <= Strike::max_reach; ++d) {
         const float walked = s.at(std::max(0, d - 1));
         const float twice = s.hits(d) ? s.at(d) + (d <= basic_reach ? c.strength : 0.0f) : 0.0f;
@@ -667,21 +699,30 @@ bool live_camp(const World& world, vec2 p) {
     return false;
 }
 
-// Tiles a visible enemy ward sees this round: a target there is in sight of whoever owns it.
+// Tiles a visible enemy ward sees this round: a target there is in sight of whoever owns it. Cast
+// again only when the wards change.
 const bitboard* ward_sight(const World& world) {
     static int round = -1;
     static bool any = false;
+    static std::array<vec2, 64> cast_from; // the wards `seen` holds
+    static std::uint32_t cast_count = 0;
     static bitboard seen{cambc::uninitialized}, wards{cambc::uninitialized}, cast{cambc::uninitialized};
     if (round != world.round) {
         round = world.round;
         cambc::vision::ward_tiles_into(team::enemy, wards);
         any = !wards.is_empty();
         if (any) {
-            seen.clear();
-            const auto r = static_cast<std::uint16_t>(cambc::constants::ward_vision_radius);
-            for (const vec2 w : Tiles<64>{wards}) {
-                world.map().walls.shadow_cast_into(w, r, cast);
-                seen |= cast;
+            const Tiles<64> tiles{wards};
+            const auto count = static_cast<std::uint32_t>(tiles.end() - tiles.begin());
+            if (count != cast_count || !std::equal(tiles.begin(), tiles.end(), cast_from.begin())) {
+                cast_count = count;
+                std::copy(tiles.begin(), tiles.end(), cast_from.begin());
+                seen.clear();
+                const auto r = static_cast<std::uint16_t>(cambc::constants::ward_vision_radius);
+                for (const vec2 w : tiles) {
+                    world.map().walls.shadow_cast_into(w, r, cast);
+                    seen |= cast;
+                }
             }
         }
     }
@@ -965,8 +1006,9 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool 
 void Reach::set_reach() {
     reach_ = -1;
     for (int i = 0; i < count_; ++i) {
-        const auto& w = ways_[static_cast<std::size_t>(i)];
-        reach_ = std::max(reach_, extent_[w.from] + w.range);
+        auto& w = ways_[static_cast<std::size_t>(i)];
+        w.bound = static_cast<std::int8_t>(extent_[w.from] + w.range);
+        reach_ = std::max(reach_, static_cast<int>(w.bound));
     }
 }
 
@@ -980,12 +1022,14 @@ Blow Reach::at(vec2 p) const {
         // sees it from anywhere.
         Window near, far;
         bool near_known = false, far_known = false, warded = false;
+        // Out of line: inlined, its shift's constants were worked out on every call.
+        const auto seen = [this, p, dx, dy](bool wide) __attribute__((noinline)) { return shift(sight(*world_, p, wide), dx, dy); };
         float single = -1, walked = -1;
         bool basic = false;
         const int d = std::max(std::abs(dx), std::abs(dy));
         for (int i = 0; i < count_; ++i) {
             const auto& w = ways_[static_cast<std::size_t>(i)];
-            if (d > extent_[w.from] + w.range) continue;
+            if (d > w.bound) continue;
             auto& best = w.walked ? walked : single;
             if (out.hits && w.damage <= best && (!w.stuns || out.stuns) && !(twice_ && i == basic_)) continue;
             Window from = tiles_[w.from] & box(dx + win_r, dy + win_r, w.range);
@@ -996,10 +1040,10 @@ Blow Reach::at(vec2 p) const {
             }
             if (w.sight) {
                 if (w.range <= 1) {
-                    if (!near_known) near = shift(sight(*world_, p, false), dx, dy), near_known = true;
+                    if (!near_known) near = seen(false), near_known = true;
                     from &= near;
                 } else {
-                    if (!far_known) far = shift(sight(*world_, p, true), dx, dy), far_known = true;
+                    if (!far_known) far = seen(true), far_known = true;
                     from &= far;
                 }
                 if (!from) continue;
@@ -1064,6 +1108,7 @@ const std::vector<Safety::CampHit>& Safety::awake_members() {
     if (!members_known_) {
         members_known_ = true;
         members_.clear();
+        camp_memo_[0].valid = camp_memo_[1].valid = false;
         // Each monster attacks the nearest champion within range, ties to the one acting first in
         // the round of the next camp phase.
         struct Other {
@@ -1129,12 +1174,14 @@ void Safety::invalidate() {
     enemy_area_.reset();
     fight_count_ = 0;
     gone_.fill(0);
+    reaches_for_ = -1;
 }
 
 void Safety::refresh() {
     refresh_ = true;
     gone_.fill(0);
     build_cost_ = 0;
+    reaches_for_ = -1;
     if (!built_ && !members_known_) return;
     bool changed = false;
     for (const auto& e : world_.enemies) changed |= e.alive && gone(e);
@@ -1354,9 +1401,14 @@ float Safety::chance_in_reach(const Threat& t, vec2 p) {
 }
 
 float Safety::camp_damage(vec2 p, bool worst) {
+    const auto& members = awake_members();
+    if (members.empty()) return 0;
+    auto& memo = camp_memo_[worst ? 1 : 0];
+    if (memo.valid && memo.p == p) return memo.damage;
     float total = 0;
-    for (const auto& m : awake_members())
+    for (const auto& m : members)
         if (dist(p, m.pos) <= m.reach) total += worst ? m.strength : m.strength * m.weight;
+    memo = {p, total, true};
     return total;
 }
 
@@ -1508,11 +1560,13 @@ std::uint64_t Safety::fight_cost_estimate() {
 
 std::uint64_t Safety::query_cost_estimate() {
     // Once listed, a visible threat's Reach is still built on its first query.
-    std::uint64_t reaches = 0;
-    if (built_)
+    if (built_ && reaches_for_ != reached_) {
+        reaches_for_ = reached_;
+        reaches_ = 0;
         for (const auto& e : world_.enemies)
-            if (e.alive && e.visible && !(reached_ >> e.index & 1) && !gone(e) && struck(e).strike.reach >= 0) reaches += 2000;
-    return reaches + build_cost_estimate();
+            if (e.alive && e.visible && !(reached_ >> e.index & 1) && !gone(e) && struck(e).strike.reach >= 0) reaches_ += 2000;
+    }
+    return (built_ ? reaches_ : 0) + build_cost_estimate();
 }
 
 std::uint64_t Safety::build_cost_estimate() {
