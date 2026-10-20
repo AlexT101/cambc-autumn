@@ -324,6 +324,7 @@ private:
     // vector reallocates at ~300 fuel a time, and each Threat allocates a bitboard.
     std::vector<Threat>& threats_;
     int threat_count_ = 0;
+    std::uint16_t threat_mask_ = 0; // bit i: enemies[i] is one of them
     std::vector<CampHit>& members_; // likewise; valid once `members_known_`
     bool members_known_ = false;
     struct CampMemo {

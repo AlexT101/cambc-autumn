@@ -32,7 +32,12 @@ struct CastEffect {
 struct Kit {
     std::array<CastEffect, 2> cast;
     std::array<int, 2> preference; // slots by value, ties to slot 0
+    // No shield, and its Strength and cast damage are sixteenths small enough that any sum of a
+    // side's is exact in any order.
+    bool plain;
 };
+
+bool exact(float v) { return v >= 0 && v < 4096 && v * 16 == std::trunc(v * 16); }
 
 // Turns are counted per side from 0, so cooldowns and arrivals are turn indices rather than
 // counters to tick down.
@@ -67,6 +72,7 @@ struct Side {
     int quiet_until = 0, quiet_alive = -1, quiet_hits = 0;
     float quiet_damage = 0;
     int weak = -2; // weakest(), or -2 when it must be found again
+    bool plain = true; // every kit plain and no arrivals
 
     Side() {}
 
@@ -74,6 +80,7 @@ struct Side {
         if (count == max_fighters) return;
         auto& g = fighters[count];
         g = f;
+        plain = plain && g.kit->plain && g.arrives_at == 0;
         if (g.linked)
             for (int i = 0; i < count; ++i)
                 if (fighters[i].linked) g.link = i, fighters[i].link = count;
@@ -169,6 +176,8 @@ void make_kit(const ChampionBelief& c, Kit& kit) {
         e.duration = a.duration;
     }
     kit.preference = kit.cast[1].value > kit.cast[0].value ? std::array<int, 2>{1, 0} : std::array<int, 2>{0, 1};
+    kit.plain = exact(c.strength) && exact(kit.cast[0].damage) && exact(kit.cast[1].damage) && !kit.cast[0].heals_self
+                && !kit.cast[1].heals_self;
 }
 
 // A champion as it enters a fight, with its kit made.
@@ -212,10 +221,8 @@ Fighters& made_fighters() {
     return f;
 }
 
-// A fighter's basic attack and its most valuable ready cast (one a turn); returns hits landed.
-int attack(Fighter& f, int turn, Side& self, Side& other, float& damage) {
-    damage += f.strength;
-    if (turn < f.next_cast) return 1;
+// A fighter's most valuable ready cast (one a turn); returns hits landed with the basic attack.
+[[gnu::always_inline]] inline int cast(Fighter& f, int turn, Side& self, Side& other, float& damage) {
     for (const int s : f.kit->preference) {
         const auto& c = f.kit->cast[s];
         if (f.ready_at[s] > turn) continue;
@@ -237,6 +244,29 @@ int attack(Fighter& f, int turn, Side& self, Side& other, float& damage) {
     return 1;
 }
 
+// A fighter's basic attack and its most valuable ready cast; returns hits landed.
+int attack(Fighter& f, int turn, Side& self, Side& other, float& damage) {
+    damage += f.strength;
+    return turn < f.next_cast ? 1 : cast(f, turn, self, other, damage);
+}
+
+// Bit i: fighters[i] is stunned, the strongest of those in reach first.
+unsigned stun_skips(const Side& self, int turn) {
+    unsigned skip = 0;
+    for (int k = 0; k < self.stunned; ++k) {
+        int best = -1;
+        for (int i = 0; i < self.count; ++i) {
+            const auto& f = self.fighters[i];
+            if (!(skip >> i & 1) && f.health > 0 && f.arrives_at <= turn && !f.stun_immune
+                && (best < 0 || f.strength > self.fighters[best].strength))
+                best = i;
+        }
+        if (best < 0) break;
+        skip |= 1u << best;
+    }
+    return skip;
+}
+
 // One side's turn: stunned members (the strongest of those in reach first) skip it.
 float act(Side& self, Side& other) {
     const int turn = self.turn++;
@@ -245,19 +275,33 @@ float act(Side& self, Side& other) {
     if (self.stunned == 0 && turn < self.quiet_until && self.alive == self.quiet_alive) {
         damage = self.quiet_damage;
         hits = self.quiet_hits;
-    } else {
-        unsigned skip = 0; // bit i: fighters[i]
-        for (int k = 0; k < self.stunned; ++k) {
-            int best = -1;
-            for (int i = 0; i < self.count; ++i) {
-                const auto& f = self.fighters[i];
-                if (!(skip >> i & 1) && f.health > 0 && f.arrives_at <= turn && !f.stun_immune
-                    && (best < 0 || f.strength > self.fighters[best].strength))
-                    best = i;
-            }
-            if (best < 0) break;
-            skip |= 1u << best;
+    } else if (self.plain) {
+        // The basic attacks are the quiet ones, and the casts add to them exactly.
+        const unsigned skip = self.stunned == 0 ? 0u : stun_skips(self, turn);
+        self.stunned = 0;
+        const int count = self.count;
+        if (self.alive != self.quiet_alive) {
+            int quiet_hits = 0;
+            float quiet = 0;
+            for (int i = 0; i < count; ++i)
+                if (const auto& f = self.fighters[i]; f.health > 0) quiet += f.strength, ++quiet_hits;
+            self.quiet_alive = self.alive;
+            self.quiet_damage = quiet;
+            self.quiet_hits = quiet_hits;
         }
+        damage = self.quiet_damage;
+        hits = self.quiet_hits;
+        for (unsigned left = skip; left; left &= left - 1) damage -= self.fighters[std::countr_zero(left)].strength, --hits;
+        int until = never;
+        for (int i = 0; i < count; ++i) {
+            auto& f = self.fighters[i];
+            if (f.health <= 0) continue;
+            if (f.next_cast <= turn && !(skip >> i & 1)) hits += cast(f, turn, self, other, damage) - 1;
+            until = std::min(until, f.next_cast);
+        }
+        self.quiet_until = until;
+    } else {
+        const unsigned skip = stun_skips(self, turn);
         self.stunned = 0;
         int until = std::numeric_limits<int>::max(), quiet_hits = 0;
         float quiet = 0;
@@ -1233,6 +1277,7 @@ void Safety::invalidate() {
     reached_ = 0;
     build_cost_ = 0;
     threat_count_ = 0;
+    threat_mask_ = 0;
     members_known_ = false;
     camp_area_.reset();
     enemy_area_.reset();
@@ -1312,6 +1357,7 @@ void Safety::build() {
         if (reach < 0) continue;
         if (e.visible) {
             auto& t = next_threat(threats_, threat_count_);
+            threat_mask_ |= static_cast<std::uint16_t>(1u << e.index);
             t.enemy = e.index;
             t.strike = s;
             t.visible = true;
@@ -1327,6 +1373,7 @@ void Safety::build() {
         if (weight == 0) continue;
         const auto before = fuel();
         auto& t = next_threat(threats_, threat_count_);
+        threat_mask_ |= static_cast<std::uint16_t>(1u << e.index);
         t.enemy = e.index;
         t.strike = s;
         t.visible = false;
@@ -1594,16 +1641,14 @@ Trade Safety::fight(vec2 p, int exclude) {
 Trade Safety::fight_of(std::uint32_t key) {
     if (const auto* t = memo(key)) return *t;
     Side us, them;
-    for (std::size_t i = 0; i < world_.allies.size(); ++i) {
-        const auto& a = world_.allies[i];
-        if (!(key >> i & 1)) continue;
+    for (unsigned left = key & 0xFFFFu; left; left &= left - 1) {
+        const auto& a = world_.allies[static_cast<std::size_t>(std::countr_zero(left))];
         if (a.is_self) us.self = us.count;
         us.add(fighter(world_, a, made_));
     }
-    for (const auto& t : threats()) {
-        const auto& e = world_.enemies[t.enemy];
-        if (key >> (16 + t.enemy) & 1) them.add(fighter(world_, e, made_));
-    }
+    build();
+    for (unsigned left = key >> 16 & threat_mask_; left; left &= left - 1)
+        them.add(fighter(world_, world_.enemies[static_cast<std::size_t>(std::countr_zero(left))], made_));
     const auto before = fuel();
     auto& slot = fights_[fight_count_++ % max_fights];
     slot = {key, trade(us, them, end_reserve)};
@@ -1658,7 +1703,7 @@ Trade Safety::pursuit(vec2 p, int approach) {
         if (walk > approach) continue;
         const int k = them.count;
         them.add(fighter(world_, e, made_));
-        if (them.count > k) them.fighters[k].arrives_at = walk;
+        if (them.count > k && walk != 0) them.fighters[k].arrives_at = walk, them.plain = false;
     }
     if (them.count == 0) return {};
     join_allies(world_, us, p, made_);
@@ -1670,6 +1715,7 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
     Side us, them;
     us.add(fighter(world_, world_.me(), made_));
     us.fighters[0].arrives_at = never;
+    us.plain = false;
     us.camp = camp_damage(p, false);
     for (const auto& e : world_.enemies) {
         if (!e.alive || !e.visible || gone(e)) continue;
@@ -1679,7 +1725,7 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
         if (walk >= horizon) continue;
         const int k = them.count;
         them.add(fighter(world_, e, made_));
-        if (them.count > k) them.fighters[k].arrives_at = walk;
+        if (them.count > k && walk != 0) them.fighters[k].arrives_at = walk, them.plain = false;
     }
     if (them.count == 0 && us.camp <= 0) return 0;
     return simulate(us, them, true, nullptr, horizon).second;
