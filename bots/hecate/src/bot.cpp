@@ -1938,7 +1938,7 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     int n = 0;
     for (auto left = safety.seen_enemies(); left; left &= left - 1)
         if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-            n < static_cast<int>(foes.size()) && dist(here, e.pos) <= Strike::max_reach + 2 && safety.strike_of(e).reach >= 0)
+            n < static_cast<int>(foes.size()) && in_square(here, e.pos, Strike::max_reach + 2) && safety.strike_of(e).reach >= 0)
             strikes[n] = &safety.strike_of(e), at[n] = e.pos, foes[n++] = &e;
     if (n == 0) return nullptr;
     int radius = 1;
@@ -1949,7 +1949,7 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     // only those `reaching` a step or dash can be in it.
     unsigned reaching = 0;
     for (int k = 0; k < n; ++k)
-        if (dist(here, at[k]) <= strikes[k]->reach + radius) reaching |= 1u << k;
+        if (in_square(here, at[k], strikes[k]->reach + radius)) reaching |= 1u << k;
     const auto bound = [&](vec2 p, float& damage) {
         unsigned mask = 0;
         damage = 0;

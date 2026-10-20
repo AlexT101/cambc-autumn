@@ -1303,16 +1303,6 @@ std::vector<Safety::CampHit>& Safety::member_pool() {
 
 Safety::Safety(const World& world) : world_{world}, threats_{threat_pool()}, members_{member_pool()} {}
 
-namespace {
-
-// dist(p, c) <= r for r >= 0, without the distance.
-[[gnu::always_inline]] inline bool in_square(vec2 p, vec2 c, int r) {
-    const auto side = 2 * static_cast<unsigned>(r);
-    return (static_cast<unsigned>(p.x - c.x + r) <= side) & (static_cast<unsigned>(p.y - c.y + r) <= side);
-}
-
-} // namespace
-
 std::span<const Safety::CampHit> Safety::awake_members() {
     if (!members_known_) find_members();
     return {members_.data(), static_cast<std::size_t>(member_count_)};

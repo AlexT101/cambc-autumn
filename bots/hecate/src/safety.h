@@ -163,6 +163,12 @@ int turns_before_ours(const World& world, const ChampionBelief& c);
 // and a second basic attack.
 const Strike& threat_strike(const World& world, const ChampionBelief& c);
 
+// dist(p, c) <= r for r >= 0, without the distance.
+[[gnu::always_inline]] inline bool in_square(vec2 p, vec2 c, int r) {
+    const auto side = 2 * static_cast<unsigned>(r);
+    return (static_cast<unsigned>(p.x - c.x + r) <= side) & (static_cast<unsigned>(p.y - c.y + r) <= side);
+}
+
 struct Threat {
     int enemy = -1; // index into World::enemies
     bool visible = false;
