@@ -819,7 +819,7 @@ Target / range: Ground · 2 tiles. Walking: Compatible. Cooldown: 8 owner turn e
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
 | Health | 1000 | 100 |
-| Strength | 40 | 5 |
-| Focus | 100 | 15 |
+| Strength | 40 | 4 |
+| Focus | 100 | 12 |
 
 Attack type: Melee. Basic attack range: 1 tiles.

@@ -44,7 +44,7 @@ function sourceContext(file) {
     const bots = (res.bots ?? []).map(b => path.basename(b));
     const order = m[3] === '12' ? [0, 1] : [1, 0];
     ctx.kind = 'batch';
-    ctx.map = m[2];
+    ctx.map = m[2].replace(/^\d\d(?=[a-z])/, '');
     ctx.teams = order.map(i => ({ name: bots[i], bot: i }));
     const match = (res.matches ?? []).find(q => path.basename(q.replay ?? '') === path.basename(file));
     if (match) ctx.expected = { winnerBot: match.winner, rounds: match.rounds, order: match.order };

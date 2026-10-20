@@ -43,7 +43,7 @@ const PLAN = [
   ['close-spawns', 6], ['far-spawns', 5],
   ['golem-heavy', 5], ['monolith-heavy', 4], ['gem-centre', 5], ['huge-shared', 6], ['tiny-groups', 4], ['sparse-camps', 4], ['dense-camps', 3], ['monsters-only', 2], ['clusters-only', 2],
 ];
-const SUITES = { gen: { dir: 'maps/gen', plan: PLAN, seed: 6501 } };
+const SUITES = { gen: { dir: 'maps/gen', plan: PLAN, seed: 7207 } };
 const LADDER_DIR = path.join(ROOT, 'maps');
 const EXOTIC_PRESETS = new Set(Object.entries(PRESETS).filter(([, v]) => v.exotic).map(([k]) => k));
 
@@ -208,7 +208,7 @@ function repair(g, rng) {
   }
 }
 
-// Competition-map spawns that are not 3x3 or 4x4 (boss-battle's is 5x2) become the nearest such
+// Competition-map spawns that are not 3x3 or 4x4 (boss-battle's is 5x2, shortcut's 4x3) become the nearest such
 // square, centred on the old one; camps under it move off.
 function fixSpawn(g) {
   const s = g.spawn;
@@ -222,7 +222,8 @@ function fixSpawn(g) {
 
 function loadGrid(engine, file) {
   const name = file.endsWith('.map26a') ? file : `${file}.map26a`;
-  const p = fs.existsSync(file) ? file : [path.join(ROOT, 'maps', name), path.join(ROOT, 'tools', 'mapgen', 'retired', name)].find(f => fs.existsSync(f)) ?? path.join(ROOT, 'maps', name);
+  const prefixed = fs.readdirSync(LADDER_DIR).find(f => f.replace(/^\d\d/, '') === name);
+  const p = fs.existsSync(file) ? file : path.join(LADDER_DIR, prefixed ?? name);
   return Grid.fromMap(engine.decode(fs.readFileSync(p)));
 }
 

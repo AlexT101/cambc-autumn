@@ -617,7 +617,6 @@ export function validate(g, { strict = true } = {}) {
   if (g.picks < 3 || g.picks > 5) errors.push(`picks ${g.picks}`);
   const s = g.spawn, area = s.w * s.h;
   if (area < 9 || area > 16) errors.push(`spawn area ${s.w}x${s.h}`);
-  else if (!(s.w === s.h && (s.w === 3 || s.w === 4))) warnings.push(`spawn ${s.w}x${s.h} (competition maps use 3x3 or 4x4)`);
   if (!g.isSymmetric()) errors.push('terrain is not symmetric');
   const a = new Set(g.spawnTiles(0)), b = g.spawnTiles(1);
   if (b.some(i => a.has(i))) errors.push('spawns overlap');
@@ -744,7 +743,7 @@ export function metrics(g) {
 
 // ---- presets -------------------------------------------------------------------------------
 // altar_mode is one dimension of every preset; the default mix makes about half the maps'
-// nearest altars central (the ladder has 11 of 21).
+// nearest altars central (the ladder has 20 of 35).
 const DEFAULTS = {
   symmetry: { rotational: 5, horizontal: 2.5, vertical: 2.5 }, picks: [3, 5], spawn_size: { 3: 1, 4: 1 }, spawn_place: { corner: 5, edge: 3, inset: 2 }, spawn_bush: 0.15,
   terrain: { open: 1, scatter: 4, caves: 1.5, rooms: 1.5, lanes: 1, rings: 1, rows: 1 }, wall_density: [0.02, 0.12], wall_length: [0.1, 0.35],

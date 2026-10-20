@@ -144,7 +144,7 @@ inline constexpr std::array<ChampionFacts, 13> champion_table = [] {
          {reset, AbilityFacts{K::shield, T::self, 2.5f, false, false, 5}}},
         {C::tavi, "tavi", true, {750, 75}, {45, 5}, {100, 10}, P::remote_shop,
          {reset, damage(T::unit, 1.4f, true)}},
-        {C::heart_of_ruin, "heart_of_ruin", false, {1000, 100}, {40, 5}, {100, 15}, P::missing_health,
+        {C::heart_of_ruin, "heart_of_ruin", false, {1000, 100}, {40, 4}, {100, 12}, P::missing_health,
          {AbilityFacts{K::shield, T::self, 1.5f, false, false, 5}, dash}},
     }};
 }();

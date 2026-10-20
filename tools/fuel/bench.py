@@ -29,7 +29,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_MAPS = ["ambush", "lanes", "hooks", "corners", "contest", "interlock", "fragment", "expanse"]
+DEFAULT_MAPS = ["00ambush", "00lanes", "01hooks", "00corners", "00contest", "00interlock", "00fragment", "00expanse"]
 HEADER = 77
 
 

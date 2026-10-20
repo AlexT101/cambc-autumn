@@ -35,7 +35,7 @@ Before equipment and passives. Strength powers basic attacks, Focus powers spell
 | Willow | Ranged | 700 | 50 | 55 | 3 | 120 | 5 |
 | Ren | Melee | 900 | 100 | 35 | 5 | 100 | 9 |
 | Varg | Melee | 1000 | 100 | 40 | 5 | 100 | 10 |
-| Heart of Ruin | Melee | 1000 | 100 | 40 | 5 | 100 | 15 |
+| Heart of Ruin | Melee | 1000 | 100 | 40 | 4 | 100 | 12 |
 
 ## Shared by every champion
 

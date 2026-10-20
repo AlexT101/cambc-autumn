@@ -16,7 +16,7 @@ map:
     altar: "Blocks walking and landing; dash paths may cross it."
   occupancy: "One unit per tile. Champions and camps block walking and landing."
   corners: "Diagonal steps, walked or on a dash path, only check the tile stepped onto: they may pass between two diagonally touching blockers of any kind, so a one-tile diagonal wall line does not block movement. The SDK's distance_field and reachable_tiles match."
-  spawn: "Each team has a spawn region (3x3 or 4x4 on the competition maps). Enemies can never enter or land on it, but they can attack into it."
+  spawn: "Each team has a spawn region (3x3, 4x4, 4x3 or 5x2 on the competition maps). Enemies can never enter or land on it, but they can attack into it."
 
 draft:
   picks: "The map sets 3-5 picks per team. There is one draft round per pick, numbered from 0, and both teams pick each round."
@@ -198,7 +198,7 @@ champions:
     shield: "Absorbs damage before health; leftover is lost on expiry."
   heart_of_ruin:
     attack: melee
-    stats: {health: [1000, 100], strength: [40, 5], focus: [100, 15]}
+    stats: {health: [1000, 100], strength: [40, 4], focus: [100, 12]}
     passive: "All its damage x (1 + 0.5 x missing health fraction): +50% at 0 health, +25% at half. Shields do not count as health."
     abilities: [{shield: 1.5, target: self, duration: 5}, "dash; on landing, 1.75 damage and a stun to enemy champions and camps within 1 of the landing tile"]
   cassi_and_issac:
