@@ -38,9 +38,9 @@ struct Enemy {
 const std::vector<Enemy>& live_enemies(const World& world) {
     static std::vector<Enemy> out; // kept across turns: growing it reallocates
     out.clear();
+    static cambc::detail::champion_info info;
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible) continue;
-        cambc::detail::champion_info info{};
         // A dead champion reads as off the map.
         if (cambc::detail::sdk_champion(static_cast<std::uint32_t>(e.handle), &info) != 0 || info.x < 0 || info.y < 0) continue;
         out.push_back({&e, info.health});
@@ -68,7 +68,7 @@ const ChampionBelief& live_self(const World& world) {
     b.focus = info.focus;
     b.gems = static_cast<int>(my_gems());
     for (std::uint32_t s = 0; s < 2; ++s) {
-        std::int32_t cooldown{};
+        static std::int32_t cooldown;
         ok(cambc::detail::sdk_champion_cooldown(my_handle(), s, &cooldown));
         b.ready_round[s] = world.round + std::max(0, static_cast<int>(cooldown));
     }
@@ -230,7 +230,9 @@ void set_turn_order(const World& world, Safety& safety) {
         }
     }
     try {
-        if (wish.priority() != me.priority()) me.set_priority(wish.priority());
+        static std::int32_t next;
+        ok(cambc::detail::sdk_bc_champion_priority(my_handle(), 1, &next));
+        if (wish.priority() != next) me.set_priority(wish.priority());
     } catch (const cambc::error&) {
     }
 }
