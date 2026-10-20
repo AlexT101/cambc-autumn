@@ -385,8 +385,8 @@ bool shield_if_needed(const World& world, Safety& safety, int farmed) {
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
     bool danger = false;
-    for (const auto& e : world.enemies)
-        danger |= e.alive && e.visible && safety.blow(e, here).hits;
+    for (auto left = safety.seen_enemies(); left; left &= left - 1)
+        danger |= safety.blow(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], here).hits;
     if (danger) return cast(*shield);
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(here, camp_attack_range)) {

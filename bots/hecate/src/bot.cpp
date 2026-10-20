@@ -1613,8 +1613,10 @@ bool contesting(const World& world) {
 
 // The threats' visible part, without building the unseen ones' fields.
 bool visible_threat(const World& world, Safety& safety, vec2 p) {
-    for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(p, e.pos) <= Strike::max_reach && safety.blow(e, p).hits) return true;
+    for (auto left = safety.seen_enemies(); left; left &= left - 1)
+        if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+            dist(p, e.pos) <= Strike::max_reach && safety.blow(e, p).hits)
+            return true;
     return false;
 }
 
@@ -1849,8 +1851,8 @@ int killable_now(const World& world, Safety& safety) {
     const vec2 here = my_position();
     const float health = my_health();
     const int range = f.attack_range();
-    for (const auto& e : world.enemies) {
-        if (!e.alive || !e.visible) continue;
+    for (auto left = safety.seen_enemies(); left; left &= left - 1) {
+        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         const int d = dist(here, e.pos);
         float cast = 0;
         for (int s = 0; s < 2; ++s) {
@@ -1932,9 +1934,9 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     Unwritten<vec2, 8> positions;
     auto& at = positions.a;
     int n = 0;
-    for (const auto& e : world.enemies)
-        if (n < static_cast<int>(foes.size()) && e.alive && e.visible && dist(here, e.pos) <= Strike::max_reach + 2
-            && safety.strike_of(e).reach >= 0)
+    for (auto left = safety.seen_enemies(); left; left &= left - 1)
+        if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+            n < static_cast<int>(foes.size()) && dist(here, e.pos) <= Strike::max_reach + 2 && safety.strike_of(e).reach >= 0)
             strikes[n] = &safety.strike_of(e), at[n] = e.pos, foes[n++] = &e;
     if (n == 0) return nullptr;
     int radius = 1;
@@ -2126,10 +2128,9 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     Unwritten<std::pair<float, const ChampionBelief*>, 8> candidates;
     auto& order = candidates.a;
     int n = 0;
-    for (const auto& e : world.enemies) {
-        if (n == static_cast<int>(order.size()) || !e.alive || !e.visible || dist(here, e.pos) > vision_radius
-            || test(near_enemy_spawn, e.pos))
-            continue;
+    for (auto left = safety.seen_enemies(); left; left &= left - 1) {
+        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (n == static_cast<int>(order.size()) || dist(here, e.pos) > vision_radius || test(near_enemy_spawn, e.pos)) continue;
         // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
         // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
         // but a bag has to stop at an altar to score, and a kill takes it.

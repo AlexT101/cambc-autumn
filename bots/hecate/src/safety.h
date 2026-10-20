@@ -202,6 +202,17 @@ public:
 
     std::span<const Threat> threats();
     bool built() const { return built_; }
+    // Bit i: enemies[i] is alive and visible (seen) or alive, unseen and tracked (unseen).
+    // Beliefs are fixed for the turn, so these are listed once.
+    std::uint32_t seen_enemies() {
+        if (!listed_) list_enemies();
+        return seen_;
+    }
+    std::uint32_t live_enemies() {
+        if (!listed_) list_enemies();
+        return seen_ | unseen_;
+    }
+    void list_enemies();
     bool any_threat(); // threats() is not empty, without building it
     // Without building the threats: at least worst_damage(p), and at least their sum with each
     // visible enemy yet to act counted twice when `double_unacted`.
@@ -326,17 +337,6 @@ private:
     template <class F> void each_threat(vec2 p, F&& f);
     // Seen alive at turn start but dead now, once refreshed.
     bool gone(const ChampionBelief& c);
-    // Bit i: enemies[i] is alive and visible (seen) or alive, unseen and tracked (unseen).
-    // Beliefs are fixed for the turn, so these are listed once.
-    std::uint32_t seen_enemies() {
-        if (!listed_) list_enemies();
-        return seen_;
-    }
-    std::uint32_t live_enemies() {
-        if (!listed_) list_enemies();
-        return seen_ | unseen_;
-    }
-    void list_enemies();
 
     const World& world_;
     std::uint16_t reached_ = 0; // bit i: reach_pool()[i] is built for enemies[i] this turn
