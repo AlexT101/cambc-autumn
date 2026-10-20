@@ -326,12 +326,25 @@ private:
     template <class F> void each_threat(vec2 p, F&& f);
     // Seen alive at turn start but dead now, once refreshed.
     bool gone(const ChampionBelief& c);
+    // Bit i: enemies[i] is alive and visible (seen) or alive, unseen and tracked (unseen).
+    // Beliefs are fixed for the turn, so these are listed once.
+    std::uint32_t seen_enemies() {
+        if (!listed_) list_enemies();
+        return seen_;
+    }
+    std::uint32_t live_enemies() {
+        if (!listed_) list_enemies();
+        return seen_ | unseen_;
+    }
+    void list_enemies();
 
     const World& world_;
     std::uint16_t reached_ = 0; // bit i: reach_pool()[i] is built for enemies[i] this turn
     bool built_ = false;
     bool refresh_ = false;
     std::array<std::int8_t, 16> gone_{}; // by enemy index: 0 unknown, 1 alive, 2 dead
+    bool listed_ = false;
+    std::uint32_t seen_ = 0, unseen_ = 0;
     // Left uninitialised: the engine charges for every byte written. Bit i: foes_[i] is set.
     std::uint16_t known_ = 0;
     std::uint16_t counted_ = 0; // bit i: foes_[i] has its tiles and weight
