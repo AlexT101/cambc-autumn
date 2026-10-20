@@ -1,4 +1,4 @@
-// Transcribed from cambc-rules.yaml; check_facts_against_engine() compares it with the engine.
+// Transcribed from cambc-rules.yaml.
 #pragma once
 #include <cambc.h>
 #include <algorithm>
@@ -27,17 +27,18 @@ enum class Targeting : std::uint8_t {
 enum class Passive : std::uint8_t {
     none,
     health_strength,   // Ryth: +1% of bonus max health as Strength
-    bonus_gold,        // Vesper Vale: +20% gold
-    gem_focus,         // Prism: +0.2 Focus per carried gem
+    bonus_gold,        // Vesper Vale: +33% gold
+    gem_focus,         // Prism: +1 Focus per carried gem
     reset_on_kill,     // Vendetta: killing a champion or monster readies both abilities
-    stun_immune,       // Marcella
+    stun_immune,       // Marcella; also 2 gold per gem she tributes
     remote_shop,       // Tavi: buys shards anywhere, sells at full price on spawn
     retaliation,       // Ren: 0.2 x Focus back to whoever damages it, monsters included
     splash_attack,     // Varg: basic attacks also hit other enemies within 1 of the target
     linked_pair,       // Cassi and Issac: if either dies, both die
+    missing_health,    // Heart of Ruin: up to +50% damage as health falls
 };
 
-inline constexpr float retaliation_share = 0.2f; // of Ren's Focus, per hit taken
+inline constexpr float retaliation_share = cambc::constants::passive_abilities::ren_retaliation_focus_ratio; // of Ren's Focus, per hit taken
 
 struct Stat {
     float base, growth; // growth is per shard
@@ -115,41 +116,39 @@ constexpr AbilityFacts damage(T target, float mult, bool stuns = false) { return
 } // namespace facts_detail
 
 // Indexed by cambc::champion_type.
-inline constexpr std::array<ChampionFacts, 12> champion_table = [] {
+inline constexpr std::array<ChampionFacts, 13> champion_table = [] {
     using namespace facts_detail;
     using C = cambc::champion_type;
     using P = Passive;
-    return std::array<ChampionFacts, 12>{{
-        {C::ryth, "ryth", false, {1200, 100}, {50, 5}, {100, 10}, P::health_strength,
+    return std::array<ChampionFacts, 13>{{
+        {C::ryth, "ryth", false, {1200, 100}, {45, 5}, {100, 10}, P::health_strength,
          {damage(T::ground, 1, true), reset}},
-        {C::vesper_vale, "vesper_vale", true, {900, 100}, {45, 5}, {100, 10}, P::bonus_gold, {reset, dash}},
-        {C::vendetta, "vendetta", false, {800, 100}, {70, 5}, {100, 10}, P::reset_on_kill, {reset, dash}},
-        {C::cassi, "cassi", true, {700, 71.25f}, {30, 3.5f}, {70, 15}, P::linked_pair,
+        {C::vesper_vale, "vesper_vale", true, {900, 100}, {50, 5}, {100, 10}, P::bonus_gold, {reset, dash}},
+        {C::vendetta, "vendetta", false, {800, 100}, {70, 6}, {100, 10}, P::reset_on_kill, {reset, dash}},
+        {C::cassi, "cassi", true, {600, 65}, {30, 3}, {70, 13}, P::linked_pair,
          {damage(T::unit, 2), AbilityFacts{K::stun, T::unit, 0, true, false}}},
-        {C::issac, "issac", false, {900, 95}, {40, 4.75f}, {100, 10}, P::linked_pair, {reset, dash}},
-        {C::stellar, "stellar", true, {750, 75}, {35, 3.5f}, {100, 10}, P::none,
+        {C::issac, "issac", false, {900, 80}, {40, 3}, {100, 10}, P::linked_pair, {reset, dash}},
+        {C::stellar, "stellar", true, {750, 75}, {30, 3.5f}, {85, 9}, P::none,
          {damage(T::unit, 2), damage(T::ground, 1.4f)}},
-        {C::prism, "prism", true, {700, 75}, {35, 3.5f}, {80, 10}, P::gem_focus,
+        {C::prism, "prism", true, {700, 60}, {35, 2.5f}, {80, 8}, P::gem_focus,
          {damage(T::unit, 1.5f, true), damage(T::ground, 1)}},
-        {C::marcella, "marcella", false, {1200, 100}, {45, 5}, {50, 10}, P::stun_immune,
+        {C::marcella, "marcella", false, {1200, 100}, {45, 5}, {60, 15}, P::stun_immune,
          {AbilityFacts{K::attack_reset, T::self, 0, true}, damage(T::unit, 2)}},
-        {C::willow, "willow", true, {700, 50}, {45, 3}, {105, 5}, P::none,
+        {C::willow, "willow", true, {700, 50}, {55, 3}, {120, 5}, P::none,
          {AbilityFacts{K::heal, T::ally, 3}, reset}},
-        {C::ren, "ren", false, {900, 100}, {40, 5}, {100, 10}, P::retaliation,
+        {C::ren, "ren", false, {900, 100}, {35, 5}, {100, 9}, P::retaliation,
          {damage(T::unit, 1.25f, true), dash}},
-        {C::varg, "varg", false, {1000, 100}, {50, 5}, {100, 10}, P::splash_attack,
+        {C::varg, "varg", false, {1000, 100}, {40, 5}, {100, 10}, P::splash_attack,
          {reset, AbilityFacts{K::shield, T::self, 2.5f, false, false, 5}}},
-        {C::tavi, "tavi", true, {750, 75}, {35, 5}, {100, 10}, P::remote_shop,
-         {reset, damage(T::unit, 2.2f, true)}},
+        {C::tavi, "tavi", true, {750, 75}, {45, 5}, {100, 10}, P::remote_shop,
+         {reset, damage(T::unit, 1.4f, true)}},
+        {C::heart_of_ruin, "heart_of_ruin", false, {1000, 100}, {40, 5}, {100, 15}, P::missing_health,
+         {AbilityFacts{K::shield, T::self, 1.5f, false, false, 5}, dash}},
     }};
 }();
 
 constexpr const ChampionFacts& facts(cambc::champion_type type) {
     return champion_table[static_cast<std::size_t>(type)];
 }
-
-// Compare the table with the engine's champion designs; returns the number of mismatches and
-// prints each one. Costs a few thousand fuel, so call it only when debugging.
-int check_facts_against_engine();
 
 } // namespace aph

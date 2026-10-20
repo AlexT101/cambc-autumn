@@ -643,7 +643,7 @@ const bitboard& CampGroup::threat() const {
     // Camp groups, through the raw imports. Member stats come from the camp designs, read once
     // per camp type.
     namespace raw = cambc::detail;
-    std::array<std::optional<cambc::camp_stats>, 5> design{};
+    std::vector<std::optional<cambc::camp_stats>> design;
     const auto layout = engine::camp_layout();
     std::size_t group_count = 0;
     for (std::size_t i = 0; i + 5 <= layout.size(); i += 5 + 4 * layout[i + 4]) ++group_count;
@@ -663,7 +663,8 @@ const bitboard& CampGroup::threat() const {
             const auto id = layout[i];
             const auto raw_type = layout[i + 1];
             const auto type = static_cast<cambc::camp_type>(raw_type);
-            auto& stats = design[static_cast<std::size_t>(raw_type)];
+            if (raw_type >= design.size()) design.resize(raw_type + 1);
+            auto& stats = design[raw_type];
             if (!stats) {
                 raw::camp_design d{};
                 raw::check(raw::sdk_camp_design(raw_type, &d));

@@ -141,3 +141,9 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
      pocket). No new fuel gate: it runs only after the funded search.
    - bot.cpp prey(): an enemy standing on a cleared group counts the group's gems as its bag, so it is chased on its
      own ground and is worth more to kill (koi: +1.7 on 1010 games).
+22. 2026-10-20 (not yet submitted). SDK 3.0.1 / week 2 patch (Heart of Ruin, golem, new stats).
+   - champions.h: table updated to the new stats, with a Heart of Ruin row (it read past the 12-row table). Read from
+     the engine at start-up instead, it played identically but cost ~11k fuel in round 1 and ~110 a turn (+0.4%), all
+     from lost constant folding (a mutable copy of the constexpr table costs the same), so it stays compiled in.
+   - world.cpp: the camp-design cache grows to fit the camp type (it had 5 slots; golem is type 5 and wrote past it).
+   - draft.cpp: Heart of Ruin is in the fallback order. No other behaviour change: camp reach is still 3 everywhere.

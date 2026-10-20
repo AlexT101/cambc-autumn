@@ -15,7 +15,7 @@ namespace {
 int draft_round() { return static_cast<int>(cambc::round_number()); }
 
 constexpr auto all_champions() {
-    std::array<cambc::champion_draft, static_cast<std::size_t>(cambc::champion_draft::tavi) + 1> all{};
+    std::array<cambc::champion_draft, static_cast<std::size_t>(cambc::champion_draft::heart_of_ruin) + 1> all{};
     for (std::size_t i = 0; i < all.size(); ++i) all[i] = static_cast<cambc::champion_draft>(i);
     return all;
 }

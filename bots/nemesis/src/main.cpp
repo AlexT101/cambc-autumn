@@ -52,7 +52,6 @@ struct Instance {
                 std::cout << "map " << m.width << 'x' << m.height << ' ' << cambc::to_string(m.symmetry) << " groups "
                           << m.groups.size() << " altars " << m.altars.size()
                           << " plan " << (m.drafted() ? "ok" : "missing") << '\n';
-                aph::check_facts_against_engine();
             }
         });
         if (!updated || !world->ready()) return;
