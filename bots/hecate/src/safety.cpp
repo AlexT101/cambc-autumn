@@ -1169,19 +1169,28 @@ Blow Reach::at(vec2 p) const {
         bool basic = false;
         const int d = std::max(std::abs(dx), std::abs(dy));
         const auto& ws = *ways_;
+        int ward = -1;
+        const auto seen = [&](bool far, Window& m) __attribute__((always_inline)) {
+            if (ward < 0) ward = warded(*world_, p);
+            m = ward ? win_full : sight_from(*world_, p, far, dx, dy);
+        };
         for (int i = 0; i < ws.count; ++i) {
             const auto& w = ws.way[static_cast<std::size_t>(i)];
             if (d > w.bound) continue;
             if (out.hits && w.damage <= (w.walked ? walked : single) && (!w.stuns || out.stuns) && !(twice_ && i == ws.basic)) continue;
             Window from = tiles_[w.from] & box(dx + win_r, dy + win_r, w.range);
             if (!from) continue;
-            if (w.sight && !near_known && !far_known && warded(*world_, p)) near_known = far_known = true, near = far = win_full;
             if (w.sight) {
                 if (w.range <= 1) {
-                    if (!near_known) near = sight_from(*world_, p, false, dx, dy), near_known = true;
+                    if (!near_known) {
+                        // Outside bushes, all within 1 of p sees it: the box alone settles it.
+                        if (terrain(world_->map()).bush(p)) seen(false, near);
+                        else near = win_full;
+                        near_known = true;
+                    }
                     from &= near;
                 } else {
-                    if (!far_known) far = sight_from(*world_, p, true, dx, dy), far_known = true;
+                    if (!far_known) seen(true, far), far_known = true;
                     from &= far;
                 }
                 if (!from) continue;
