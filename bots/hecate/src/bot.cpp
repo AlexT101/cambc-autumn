@@ -2216,8 +2216,8 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
 // quicker.
 [[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if (my_gems() > 0 || my_gold() < (emblem_begun() ? shard_price : emblem_price) || memory.damage > 0 || !may_shop(world))
-        return false;
+    if (my_gems() > 0 || memory.damage > 0 || !may_shop(world)) return false;
+    if (const auto gold = my_gold(); gold < shard_price || (gold < emblem_price && !emblem_begun())) return false;
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here) || safety.threatened(here)) return false;
     // The trip costs the recall and the walk back out; hurt, it also heals.
