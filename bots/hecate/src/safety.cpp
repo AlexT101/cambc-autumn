@@ -222,14 +222,11 @@ struct Fighters {
     // Kits are kept across turns while what they are made from holds: bit i, kit[i] is made from
     // kit_of[i] (type, Strength and Focus).
     std::uint32_t kits = 0;
-    std::array<std::array<std::uint32_t, 3>, 32> kit_of;
-    Fighters() {}
+    std::array<std::array<std::uint32_t, 3>, 32> kit_of{};
+    constexpr Fighters() {}
 };
 
-Fighters& made_fighters() {
-    static Fighters f;
-    return f;
-}
+constinit Fighters made_fighters;
 
 // A fighter's most valuable ready cast (one a turn); returns hits landed with the basic attack.
 [[gnu::always_inline]] inline int cast(Fighter& f, int turn, Side& self, Side& other, float& damage) {
@@ -383,11 +380,13 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours,
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does.
 // `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
 // {-1, -1} if the fuel left fell below `fuel_floor` first.
+template <bool Dealt = false>
 std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = 24,
                              std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0) {
     int ours = 0, theirs = 0;
+    int watched = self_falls ? us.self : -1;
     for (int t = 0; t < 2 * horizon; ++t) {
-        if (!dealt && us.turn < us.quiet_until && them.turn < them.quiet_until) {
+        if (!Dealt && us.turn < us.quiet_until && them.turn < them.quiet_until) {
             t = play_quiet(us, them, t, 2 * horizon, they_first, ours, theirs);
             if (t == 2 * horizon) break;
         }
@@ -395,16 +394,18 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
         const bool their_turn = (t % 2 == 0) == they_first;
         if (their_turn) {
             const float d = act(them, us);
-            if (dealt && theirs < 5) (*dealt)[2] += d, (*dealt)[0] += theirs == 0 ? d : 0;
+            if constexpr (Dealt)
+                if (theirs < 5) (*dealt)[2] += d, (*dealt)[0] += theirs == 0 ? d : 0;
             if (us.camp > 0) us.hurt(us.camp);
             ++theirs;
         } else {
             const float d = act(us, them);
-            if (dealt && ours < 5) (*dealt)[3] += d, (*dealt)[1] += ours == 0 ? d : 0;
+            if constexpr (Dealt)
+                if (ours < 5) (*dealt)[3] += d, (*dealt)[1] += ours == 0 ? d : 0;
             ++ours;
         }
         // Ren's reflection can fell the side whose turn it is.
-        if (self_falls && us.self >= 0 && us.fighters[us.self].health <= 0) *self_falls = true;
+        if (watched >= 0 && us.fighters[watched].health <= 0) *self_falls = true, watched = -1;
         if (us.alive == 0) return {0, std::max(1, theirs)};
         if (them.count > 0 && them.alive == 0) return {std::max(1, ours), 0};
     }
@@ -419,7 +420,7 @@ Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first 
     t.enemies = them.count;
     if constexpr (debug_fights) t.our_health = us.health(), t.their_health = them.health();
     if (them.count == 0) return t;
-    const auto [we_kill, they_kill] = simulate(us, them, they_first, &t.self_falls, 24, debug_fights ? &t.dealt : nullptr, fuel_floor);
+    const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, 24, debug_fights ? &t.dealt : nullptr, fuel_floor);
     if (we_kill < 0) {
         note_shortcut("fight-cut");
         t.lost = t.self_falls = true;
@@ -453,22 +454,23 @@ std::uint32_t fighting_allies(const World& world, vec2 p) {
     return out;
 }
 
+[[gnu::noinline]] void make_slot(const World& world, const ChampionBelief& c, int slot) {
+    auto& m = made_fighters;
+    const std::array<std::uint32_t, 3> from{static_cast<std::uint32_t>(c.type), std::bit_cast<std::uint32_t>(c.strength),
+                                            std::bit_cast<std::uint32_t>(c.focus)};
+    if (!(m.kits >> slot & 1) || m.kit_of[slot] != from) {
+        m.kits |= 1u << slot;
+        m.kit_of[slot] = from;
+        make_kit(c, m.kit[slot]);
+    }
+    make_fighter(c, c.is_self ? world.round : next_turn_round(world, c), m.fighter[slot], m.kit[slot]);
+}
+
 // `made`: bit i, Fighters::fighter[i] is this turn's.
 const Fighter& fighter(const World& world, const ChampionBelief& c, std::uint32_t& made) {
     const int slot = (c.side == team::enemy ? 16 : 0) + c.index;
-    auto& m = made_fighters();
-    if (!(made >> slot & 1)) {
-        made |= 1u << slot;
-        const std::array<std::uint32_t, 3> from{static_cast<std::uint32_t>(c.type), std::bit_cast<std::uint32_t>(c.strength),
-                                                std::bit_cast<std::uint32_t>(c.focus)};
-        if (!(m.kits >> slot & 1) || m.kit_of[slot] != from) {
-            m.kits |= 1u << slot;
-            m.kit_of[slot] = from;
-            make_kit(c, m.kit[slot]);
-        }
-        make_fighter(c, c.is_self ? world.round : next_turn_round(world, c), m.fighter[slot], m.kit[slot]);
-    }
-    return m.fighter[slot];
+    if (!(made >> slot & 1)) made |= 1u << slot, make_slot(world, c, slot);
+    return made_fighters.fighter[slot];
 }
 
 void join_allies(const World& world, Side& us, vec2 p, std::uint32_t& made) {
