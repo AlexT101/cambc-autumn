@@ -129,6 +129,13 @@ inline int tile_index(vec2 p) { return p.x + p.y * cambc::map::width(); }
 inline constexpr vec2 directions[8] = {vec2::north, vec2::north_east, vec2::east, vec2::south_east,
                                        vec2::south, vec2::south_west, vec2::west, vec2::north_west};
 
+// b.is_set(p) without check()'s call and a stack slot.
+[[gnu::always_inline]] inline bool test(const bitboard& b, vec2 p) {
+    static std::int32_t value;
+    ok(cambc::detail::sdk_Bitboard_Test(b.ptr(), p.x, p.y, &value));
+    return value != 0;
+}
+
 inline bitboard single(vec2 p) {
     bitboard b;
     b.set(p);
@@ -227,7 +234,12 @@ inline constexpr std::uint16_t unreachable = cambc::distance_field::unreachable;
 struct Field {
     cambc::distance_field steps;
     bitboard goals;
-    int at(vec2 p) const { return steps.get(p); } // `unreachable` if cut off
+    // `unreachable` if cut off. steps.get(p) without check()'s call and a stack slot.
+    int at(vec2 p) const {
+        static std::uint16_t result;
+        ok(cambc::detail::sdk_DistanceField_Get(steps.ptr(), p.x, p.y, &result));
+        return result;
+    }
 };
 
 // A host search costs about 1.5k + (20 + layers) per 8x8 chunk of the map.

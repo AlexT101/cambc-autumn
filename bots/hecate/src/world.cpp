@@ -298,7 +298,7 @@ const BushCluster& StaticMap::bush_cluster(vec2 p) const {
 
 [[gnu::flatten]] const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) const {
     FuelMeter meter{"bush_cluster"};
-    if (!growth_ || !growth_->tiles.is_set(p)) {
+    if (!growth_ || !test(growth_->tiles, p)) {
         // The host floods 8-connected. That cluster is edge-connected too unless it holds a pair
         // of bushes joined only diagonally; then grow from p by edge steps within it.
         static bitboard open{cambc::uninitialized}, linked{cambc::uninitialized};
@@ -435,7 +435,7 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
         opaque.shadow_cast_into(p, r, out);
         out &= cluster;
     };
-    if (bushes.is_set(p)) {
+    if (test(bushes, p)) {
         bitboard out{cambc::uninitialized};
         cast_from_inside(bush_cluster(p).tiles, out);
         return out;
@@ -504,7 +504,7 @@ std::optional<int> StaticMap::drafted_spawn_steps(vec2 tile, int group) const {
     static vec2 asked{-1, -1};
     static int i = -1;
     if (tile != asked) {
-        i = ally_spawn.is_set(tile) ? static_cast<int>(std::find(ally_spawn_tiles.begin(), ally_spawn_tiles.end(), tile) - ally_spawn_tiles.begin()) : -1;
+        i = test(ally_spawn, tile) ? static_cast<int>(std::find(ally_spawn_tiles.begin(), ally_spawn_tiles.end(), tile) - ally_spawn_tiles.begin()) : -1;
         asked = tile;
     }
     if (i < 0) return std::nullopt;
@@ -1289,7 +1289,7 @@ struct World::CampViews {
     std::optional<Awake> seen_awake;
     for (std::size_t i = 0; i < G.members.size(); ++i) {
         const auto& m = G.members[i];
-        if (!visible.is_set(m.pos)) continue;
+        if (!test(visible, m.pos)) continue;
         const float hp = engine::camp_health(m.handle).value_or(0.0f);
         if (hp < c.health[i] - 1e-3f) {
             c.quiet_rounds = 0;
@@ -1327,9 +1327,9 @@ struct World::CampViews {
             std::uint32_t occupants = 0;
             if (!disjoint(G.tiles(), views.champs())) {
                 for (const auto& b : allies)
-                    if (b.alive && (b.visible || b.is_self) && G.tiles().is_set(b.pos)) occupants |= 1u << b.index;
+                    if (b.alive && (b.visible || b.is_self) && test(G.tiles(), b.pos)) occupants |= 1u << b.index;
                 for (const auto& b : enemies)
-                    if (b.alive && b.visible && G.tiles().is_set(b.pos)) occupants |= 1u << (16 + b.index);
+                    if (b.alive && b.visible && test(G.tiles(), b.pos)) occupants |= 1u << (16 + b.index);
             }
             const bool a = (occupants & 0xFFFF) != 0, e = (occupants >> 16) != 0;
             const std::optional<team> holder = a && !e ? std::optional{team::ally}
@@ -1376,7 +1376,7 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
     if (earliest >= round || (earliest >= 0 && !cleared_by_us)) return round;
     const auto& list = holder == team::ally ? allies : enemies;
     for (const auto& c : list)
-        if (c.alive && c.pos_round == round && G.tiles().is_set(c.pos) && (c.is_self || slot(c, round) > slot(me(), round)))
+        if (c.alive && c.pos_round == round && test(G.tiles(), c.pos) && (c.is_self || slot(c, round) > slot(me(), round)))
             return round - 1;
     return round;
 }
@@ -1395,7 +1395,7 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
         for (auto p : Tiles<128>{in_view}) seen(s.altar_at(p));
     } else {
         for (std::size_t a = 0; a < s.altars.size(); ++a)
-            if (visible.is_set(s.altars[a].pos)) seen(static_cast<int>(a));
+            if (test(visible, s.altars[a].pos)) seen(static_cast<int>(a));
     }
     std::uint32_t count{};
     ok(raw::sdk_altar_locks(nullptr, 0, &count));

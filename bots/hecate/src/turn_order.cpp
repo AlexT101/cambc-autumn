@@ -118,7 +118,7 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
     Strikes allies;
     for (const auto& [e, health] : enemies) {
         const int d = dist(self.pos, e->pos);
-        if (!ours.hits(d) || enemy_spawn.is_set(e->pos) || !can_act_before(world, *e)) continue;
+        if (!ours.hits(d) || test(enemy_spawn, e->pos) || !can_act_before(world, *e)) continue;
         if (side_damage(world, self, ours, e->pos, allies) >= health) {
             const float value = params::life_value + params::gem_value * static_cast<float>(pair_gems(world, *e));
             wish.offer(kill, e->acted ? value : unacted_share * value);
@@ -160,7 +160,7 @@ void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
 // Enemies yet to act this round strike before our next turn whatever the order; acting first
 // next round denies the second strike of those, and the only one of the others.
 void offer_escape(const World& world, const ChampionBelief& self, Safety& safety, Wish& wish) {
-    if (world.map().ally_spawn.is_set(self.pos) || safety.damage_ceiling(self.pos, true) < self.health
+    if (test(world.map().ally_spawn, self.pos) || safety.damage_ceiling(self.pos, true) < self.health
         || safety.damage_bound(self.pos, true) < self.health)
         return;
     float damage = safety.camp_damage(self.pos);
@@ -186,7 +186,7 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
     const auto& spawn = world.map().ally_spawn;
     Strikes strikes;
     for (const auto& ally : world.allies) {
-        if (ally.is_self || !ally.alive || !ally.visible || spawn.is_set(ally.pos) || dist(self.pos, ally.pos) > a.range() + 1)
+        if (ally.is_self || !ally.alive || !ally.visible || test(spawn, ally.pos) || dist(self.pos, ally.pos) > a.range() + 1)
             continue;
         float damage = 0;
         for (const auto& [e, health] : enemies) damage += next_strike(world, *e, strikes).at(dist(e->pos, ally.pos));
@@ -223,7 +223,7 @@ void set_turn_order(const World& world, Safety& safety) {
         // With no enemy in sight our turn only removed camp members, so the threats before a refresh
         // overstate those after: when they cannot kill us and no channel ends, nothing needs it.
         if (channel_ending() || enemy_seen(world)
-            || !(world.map().ally_spawn.is_set(self.pos) || safety.damage_ceiling(self.pos, true) < self.health)) {
+            || !(test(world.map().ally_spawn, self.pos) || safety.damage_ceiling(self.pos, true) < self.health)) {
             safety.refresh();
             offer_channel(self, safety, wish);
             offer_escape(world, self, safety, wish);

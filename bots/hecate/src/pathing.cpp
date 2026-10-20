@@ -103,7 +103,7 @@ int Pathing::approach_steps(int group, int range) {
     else if (const auto* from = from_centre(group)) steps = from->at(me);
     else if (s.from_ally_spawn_ready() && s.from_ally_spawn().at(me) != unreachable && s.from_ally_spawn().at(centre) != unreachable)
         steps = s.from_ally_spawn().at(me) + s.from_ally_spawn().at(centre);
-    else if (s.drafted() && s.ally_spawn.is_set(me) && s.ally_steps(group) != unreachable)
+    else if (s.drafted() && test(s.ally_spawn, me) && s.ally_steps(group) != unreachable)
         steps = s.ally_steps(group);
     return std::min(steps, s.width + s.height);
 }
@@ -326,7 +326,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     std::array<int, 8> steps_of{};
     for (auto d : directions) {
         const vec2 p = me + d;
-        if (!in_bounds(p) || walls.is_set(p) || (avoid && avoid->is_set(p)) || (guard_ && guard_->is_set(p))) continue;
+        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard_ && test(*guard_, p))) continue;
         const int steps = field.at(p);
         if (steps >= here) continue;
         auto i = out.count++;
@@ -341,7 +341,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     world_.throw_if_stale();
     Route r;
     const vec2 me = my_pos();
-    if (goals.is_set(me)) {
+    if (test(goals, me)) {
         r.steps = 0;
         return r;
     }
@@ -354,7 +354,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     if (blocked_fresh_) copy_into(blocked_, walls);
     else occupied_into(walls);
     if (in_bounds(through)) walls.set(through, false);
-    if (avoid && avoid->is_set(me)) {
+    if (avoid && test(*avoid, me)) {
         // Inside danger every neighbour is in it too: free the connected region we stand in.
         static bitboard outside{cambc::uninitialized}, region{cambc::uninitialized}, danger{cambc::uninitialized};
         not_into(*avoid, outside);
@@ -393,7 +393,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
 }
 
 [[gnu::flatten]] bool Pathing::try_move(vec2 tile) {
-    if (guard_ && guard_->is_set(tile)) return false;
+    if (guard_ && test(*guard_, tile)) return false;
     try {
         if (cambc::self().move_absolute(tile)) {
             invalidate();
@@ -416,7 +416,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
         bool bumped = false;
         for (int i = 0; i < r.count; ++i) {
             if (try_move(r.first_steps[i])) return true;
-            bumped |= bumped_.is_set(r.first_steps[i]);
+            bumped |= test(bumped_, r.first_steps[i]);
         }
         if (!bumped) return r.steps == unreachable && make_way(goals, avoid, max_steps);
     }
@@ -429,7 +429,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
     cambc::vision::champion_tiles_into(team::ally, allies);
     for (auto d : directions) {
         const vec2 a = me + d;
-        if (!in_bounds(a) || !allies.is_set(a)) continue;
+        if (!in_bounds(a) || !test(allies, a)) continue;
         const auto r = route(goals, avoid, max_steps, a);
         if (r.steps == unreachable || r.steps < 2 || std::find(r.first_steps.begin(), r.first_steps.begin() + r.count, a) == r.first_steps.begin() + r.count) continue;
         auto& self = cambc::self();
@@ -441,7 +441,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
         int best_dist = 0;
         for (auto e : directions) {
             const vec2 p = me + e;
-            if (!in_bounds(p) || walls.is_set(p) || (avoid && avoid->is_set(p)) || (guard_ && guard_->is_set(p))) continue;
+            if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard_ && test(*guard_, p))) continue;
             if (const int d2 = dist(p, a); d2 > best_dist) best = p, best_dist = d2;
         }
         return best && try_move(*best);
@@ -452,7 +452,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
 bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor) {
     const auto round = cambc::round_number();
     if (world_.round != round) return false;
-    if (!my_can_move() || goals.is_set(my_pos())) return false;
+    if (!my_can_move() || test(goals, my_pos())) return false;
     const auto fixed = search_cost_estimate(0) + small_cost_estimate;
     const auto chunks = search_chunks();
     for (int attempt = 0; attempt < 3; ++attempt) {
@@ -475,7 +475,7 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
             const auto before_move = fuel();
             if (before_move < fuel_floor || before_move - fuel_floor < last_reserve) return false;
             if (try_move(r.first_steps[i])) return true;
-            bumped |= bumped_.is_set(r.first_steps[i]);
+            bumped |= test(bumped_, r.first_steps[i]);
         }
         if (!bumped) return false;
     }
@@ -508,7 +508,7 @@ bool Pathing::step_closer(vec2 target) {
     int best_dist = dist(me, target);
     for (auto d : directions) {
         const vec2 p = me + d;
-        if (!in_bounds(p) || walls.is_set(p)) continue;
+        if (!in_bounds(p) || test(walls, p)) continue;
         if (const int d2 = dist(p, target); d2 < best_dist) best = p, best_dist = d2;
     }
     return best && try_move(*best);
