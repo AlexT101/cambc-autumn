@@ -172,6 +172,14 @@ inline constexpr vec2 directions[8] = {vec2::north, vec2::north_east, vec2::east
     return count;
 }
 
+// cambc::vision's occupancy reads, without check()'s call.
+[[gnu::always_inline]] inline void occupancy_into(team side, bitboard& out) {
+    ok(side == team::ally ? cambc::detail::sdk_ally_occupancy(out.ptr()) : cambc::detail::sdk_enemy_occupancy(out.ptr()));
+}
+[[gnu::always_inline]] inline void camps_into(bitboard& out) { ok(cambc::detail::sdk_camp_occupancy(out.ptr())); }
+[[gnu::always_inline]] inline void teleports_into(bitboard& out) { ok(cambc::detail::sdk_teleport_occupancy(out.ptr())); }
+[[gnu::always_inline]] inline void vision_into(bitboard& out) { ok(cambc::detail::sdk_vision(out.ptr())); }
+
 inline bitboard single(vec2 p) {
     bitboard b;
     set_tile(b, p);
@@ -255,13 +263,13 @@ inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return
 inline const bitboard& live_champion_tiles(team side) {
     static bitboard ally{cambc::uninitialized}, enemy{cambc::uninitialized};
     auto& b = side == team::ally ? ally : enemy;
-    cambc::vision::champion_tiles_into(side, b);
+    occupancy_into(side, b);
     return b;
 }
 
 inline const bitboard& live_camp_tiles() {
     static bitboard b{cambc::uninitialized};
-    cambc::vision::camp_tiles_into(b);
+    camps_into(b);
     return b;
 }
 

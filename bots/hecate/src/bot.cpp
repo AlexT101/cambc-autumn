@@ -2352,9 +2352,9 @@ bool ally_claims(const World& world, int g) {
 const bitboard& free_tiles(const bitboard& tiles) {
     static bitboard free{cambc::uninitialized}, units{cambc::uninitialized};
     copy_into(tiles, free);
-    cambc::vision::champion_tiles_into(team::ally, units);
+    occupancy_into(team::ally, units);
     drop(free, units);
-    cambc::vision::champion_tiles_into(team::enemy, units);
+    occupancy_into(team::enemy, units);
     drop(free, units);
     return free;
 }

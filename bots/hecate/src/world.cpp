@@ -983,7 +983,7 @@ void World::note_stirring(int g) {
 }
 
 void World::read_vision() {
-    cambc::vision::visible_tiles_into(visible);
+    vision_into(visible);
     not_into(visible, unseen_);
     landing_ready_ = false;
 }
@@ -1202,8 +1202,8 @@ struct World::CampViews {
         static bitboard ally{cambc::uninitialized}, enemy{cambc::uninitialized}, both{cambc::uninitialized};
         if (!champs_read) {
             champs_read = true;
-            cambc::vision::champion_tiles_into(team::ally, ally);
-            cambc::vision::champion_tiles_into(team::enemy, enemy);
+            occupancy_into(team::ally, ally);
+            occupancy_into(team::enemy, enemy);
             or_into(ally, enemy, both);
         }
         return both;

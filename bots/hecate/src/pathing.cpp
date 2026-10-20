@@ -283,13 +283,13 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
 
 void Pathing::occupied_into(bitboard& out) {
     static bitboard t{cambc::uninitialized};
-    cambc::vision::champion_tiles_into(team::ally, out);
+    occupancy_into(team::ally, out);
     or_into(out, map().blocked_for_us, out);
-    cambc::vision::champion_tiles_into(team::enemy, t);
+    occupancy_into(team::enemy, t);
     or_into(out, t, out);
-    cambc::vision::camp_tiles_into(t);
+    camps_into(t);
     or_into(out, t, out);
-    cambc::vision::teleport_tiles_into(t);
+    teleports_into(t);
     or_into(out, t, out);
     if (bumped_any_) or_into(out, bumped_, out);
 }
@@ -427,7 +427,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
 bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_steps) {
     const vec2 me = my_pos();
     static bitboard allies{cambc::uninitialized};
-    cambc::vision::champion_tiles_into(team::ally, allies);
+    occupancy_into(team::ally, allies);
     for (auto d : directions) {
         const vec2 a = me + d;
         if (!in_bounds(a) || !test(allies, a)) continue;
@@ -518,17 +518,17 @@ bool Pathing::step_closer(vec2 target) {
 bitboard Pathing::dash_landings() {
     static bitboard camps{cambc::uninitialized}, excluded{cambc::uninitialized}, t{cambc::uninitialized};
     const vec2 me = my_pos();
-    cambc::vision::camp_tiles_into(camps);
+    camps_into(camps);
     // Dash paths cross holes, altars and champions but not walls or camps.
     or_into(map().walls, camps, excluded);
     auto landings = excluded.reachable_tiles(me, 2);
     landings &= map().open_for_us;
     copy_into(camps, excluded);
-    cambc::vision::champion_tiles_into(team::ally, t);
+    occupancy_into(team::ally, t);
     excluded |= t;
-    cambc::vision::champion_tiles_into(team::enemy, t);
+    occupancy_into(team::enemy, t);
     excluded |= t;
-    cambc::vision::teleport_tiles_into(t);
+    teleports_into(t);
     excluded |= t;
     if (bumped_any_) excluded |= bumped_;
     if (guard_) excluded |= *guard_;
