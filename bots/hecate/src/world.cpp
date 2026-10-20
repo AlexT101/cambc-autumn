@@ -1018,7 +1018,7 @@ void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when) 
     b.lineage = 0x80000000u | static_cast<std::uint32_t>(when.round) << 6 | static_cast<std::uint32_t>(when.slot + 1);
 }
 
-void World::fix(ChampionBelief& b, vec2 tile, Moment when) {
+[[gnu::always_inline]] void World::fix(ChampionBelief& b, vec2 tile, Moment when) {
     clear_board(b.possible);
     set_tile(b.possible, tile);
     mark_fixed(b, when);
