@@ -124,9 +124,9 @@ struct StaticMap {
     const std::vector<int>& groups_near(vec2 p, int radius) const;
 
     // Walking steps over static terrain (camps and units ignored).
-    const Field& from_ally_spawn() const;
+    const Field& from_ally_spawn() const { return ally_field_ ? *ally_field_ : make_ally_field(); }
     bool from_ally_spawn_ready() const { return ally_field_.has_value(); }
-    const Field& from_enemy_spawn() const;
+    const Field& from_enemy_spawn() const { return enemy_field_ ? *enemy_field_ : make_enemy_field(); }
     const BushCluster& bush_cluster(vec2 p) const;
     const bitboard& near_bushes() const; // tiles with a bush within ward placement range (2)
     // Find every cluster viewers(p, radius) needs while more than `fuel_floor` fuel remains; true
@@ -173,6 +173,8 @@ private:
     // The cluster grown from p; null if the fuel fell to the floor first.
     const BushCluster* grow_cluster(vec2 p, std::uint64_t fuel_floor) const;
     mutable std::optional<bitboard> diagonal_links_, near_bushes_;
+    const Field& make_ally_field() const;
+    const Field& make_enemy_field() const;
     const bitboard& diagonal_links() const; // bushes with a bush diagonal neighbour joined only diagonally
 };
 

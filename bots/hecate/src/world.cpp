@@ -277,19 +277,15 @@ const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const {
     return out;
 }
 
-const Field& StaticMap::from_ally_spawn() const {
-    if (!ally_field_) {
-        FuelMeter meter{"ally_spawn_field"};
-        ally_field_ = make_field(blocked_for_us, ally_spawn);
-    }
+const Field& StaticMap::make_ally_field() const {
+    FuelMeter meter{"ally_spawn_field"};
+    ally_field_ = make_field(blocked_for_us, ally_spawn);
     return *ally_field_;
 }
 
-const Field& StaticMap::from_enemy_spawn() const {
-    if (!enemy_field_) {
-        FuelMeter meter{"enemy_spawn_field"};
-        enemy_field_ = make_field(blocked_for_them, enemy_spawn);
-    }
+const Field& StaticMap::make_enemy_field() const {
+    FuelMeter meter{"enemy_spawn_field"};
+    enemy_field_ = make_field(blocked_for_them, enemy_spawn);
     return *enemy_field_;
 }
 
