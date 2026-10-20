@@ -1,17 +1,17 @@
 import fs from 'node:fs';
-import { wasmPath } from '../replay/engine.mjs';
+import { wasmPath, engineImports } from '../replay/engine.mjs';
 
 const { WASI } = await import('node:wasi');
 
 export const SYMMETRIES = ['horizontal', 'vertical', 'rotational'];
-export const CAMP_TYPES = ['wolf', 'elk', 'gem_cluster', 'gold_cluster', 'monolith'];
+export const CAMP_TYPES = ['wolf', 'elk', 'gem_cluster', 'gold_cluster', 'monolith', 'golem'];
 
 let modulePromise;
 
 export async function createEngine() {
   modulePromise ??= WebAssembly.compile(fs.readFileSync(wasmPath()));
   const wasi = new WASI({ version: 'preview1', args: [], env: {} });
-  const instance = await WebAssembly.instantiate(await modulePromise, wasi.getImportObject());
+  const instance = await WebAssembly.instantiate(await modulePromise, engineImports(wasi));
   wasi.initialize(instance);
   return new MapEngine(instance.exports);
 }

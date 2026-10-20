@@ -76,11 +76,16 @@ export function replayEngine(bytes) {
   return `v${bytes[8]}_${bytes[9]}_${bytes[10]}`;
 }
 
+// Some engine builds import an assertion hook; the viewer logs the failure and returns 1.
+export function engineImports(wasi) {
+  return { ...wasi.getImportObject(), deep_wasm: { on_assert_fail_impl: () => { console.error('engine assertion failed'); return 1; } } };
+}
+
 export class Engine {
   static async create(module) {
     module ??= await compileEngine();
     const wasi = new WASI({ version: 'preview1', args: [], env: {} });
-    const instance = await WebAssembly.instantiate(module, wasi.getImportObject());
+    const instance = await WebAssembly.instantiate(module, engineImports(wasi));
     wasi.initialize(instance);
     return new Engine(instance.exports);
   }

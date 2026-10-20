@@ -207,7 +207,8 @@ function repair(g, rng) {
 }
 
 function loadGrid(engine, file) {
-  const p = fs.existsSync(file) ? file : path.join(ROOT, 'maps', file.endsWith('.map26a') ? file : `${file}.map26a`);
+  const name = file.endsWith('.map26a') ? file : `${file}.map26a`;
+  const p = fs.existsSync(file) ? file : [path.join(ROOT, 'maps', name), path.join(ROOT, 'tools', 'mapgen', 'retired', name)].find(f => fs.existsSync(f)) ?? path.join(ROOT, 'maps', name);
   return Grid.fromMap(engine.decode(fs.readFileSync(p)));
 }
 

@@ -1,11 +1,12 @@
 export const GROUND = 0, WALL = 1, HOLE = 2, BUSH = 3, ALTAR = 4;
 export const KIND_KEYS = { [WALL]: 'walls', [HOLE]: 'holes', [BUSH]: 'bushes', [ALTAR]: 'altars' };
 export const CAMP = {
-  wolf: { gems: 22, gold: 90, respawn: 40 },
-  elk: { gems: 36, gold: 160, respawn: 60 },
-  gem_cluster: { gems: 24, gold: 0, respawn: 50 },
-  gold_cluster: { gems: 0, gold: 35, respawn: 50 },
+  wolf: { gems: 4, gold: 40, respawn: 40 },
+  elk: { gems: 15, gold: 90, respawn: 60 },
+  gem_cluster: { gems: 7, gold: 0, respawn: 50 },
+  gold_cluster: { gems: 0, gold: 20, respawn: 50 },
   monolith: { gems: 200, gold: 300, respawn: 150 },
+  golem: { gems: 36, gold: 160, respawn: 80 },
 };
 const N8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
 const N4 = N8.slice(0, 4);
@@ -222,7 +223,7 @@ export class Grid {
   }
 
   render() {
-    const ch = { wolf: 'w', elk: 'e', gem_cluster: 'g', gold_cluster: '$', monolith: 'm' }, rows = [];
+    const ch = { wolf: 'w', elk: 'e', gem_cluster: 'g', gold_cluster: '$', monolith: 'm', golem: 'G' }, rows = [];
     const glyph = ['.', '#', 'o', '"', 'A'], cells = Array.from(this.t, k => glyph[k]);
     for (const c of this.allCamps()) cells[c.y * this.W + c.x] = c.team ? ch[c.type].toUpperCase() : ch[c.type];
     for (const team of [0, 1]) for (const i of this.spawnTiles(team)) cells[i] = String(team + 1);
