@@ -38,19 +38,19 @@ cambc::champion_type type(std::uint32_t h) {
 }
 
 bool alive(std::uint32_t h) {
-    std::int32_t value{};
+    static std::int32_t value;
     ok(sdk_champion_is_alive(h, &value));
     return value != 0;
 }
 
 int cooldown(std::uint32_t h, std::uint32_t slot) {
-    std::int32_t value{};
+    static std::int32_t value;
     ok(sdk_champion_cooldown(h, slot, &value));
     return value;
 }
 
 int gems(std::uint32_t h) {
-    std::uint32_t value{};
+    static std::uint32_t value;
     ok(sdk_champion_gems(h, &value));
     return static_cast<int>(value);
 }
@@ -96,7 +96,7 @@ int handles(team side, Handles& out) {
 
 // Remaining channel turn ends, or nullopt if not channelling.
 std::optional<int> channel_time(std::uint32_t h) {
-    std::int32_t value{};
+    static std::int32_t value;
     if (sdk_champion_channel_time(h, &value) != 0) return std::nullopt;
     return value;
 }
@@ -112,7 +112,7 @@ std::optional<float> camp_health(std::uint32_t h) {
 
 // Whether a visible live camp is awake or asleep; nullopt if hidden or dead.
 std::optional<Awake> camp_awake(std::uint32_t h) {
-    std::uint32_t value{};
+    static std::uint32_t value;
     const auto code = sdk_camp_state(h, &value);
     if (code == not_in_vision || code == not_found) return std::nullopt;
     ok(code);
@@ -123,10 +123,11 @@ std::optional<Awake> camp_awake(std::uint32_t h) {
 
 // Camp-group state code (1 alive, 2 reward available, 3 respawning) and the respawn timer.
 std::pair<std::uint32_t, int> group_state(std::uint32_t h) {
-    std::uint32_t state{};
+    static std::uint32_t state;
+    static std::int32_t timer;
     ok(sdk_camp_group_state(h, &state));
-    std::int32_t timer = 0;
-    if (state == 3) ok(sdk_camp_group_cooldown(h, &timer));
+    if (state != 3) return {state, 0};
+    ok(sdk_camp_group_cooldown(h, &timer));
     return {state, timer};
 }
 } // namespace engine
@@ -787,7 +788,9 @@ void World::update_champions(bool full) {
 void World::update_champion(ChampionBelief& b, bool full) {
     const auto& s = map();
     const auto h = engine::id(b.handle);
-    const auto spawn = [&] { return b.side == team::ally ? s.ally_spawn_centre : s.enemy_spawn_centre; };
+    const int round = this->round;
+    const bool enemy = b.side == team::enemy;
+    const auto spawn = [&] { return enemy ? s.enemy_spawn_centre : s.ally_spawn_centre; };
 
     // A champion in view is alive: liveness is read only for one out of view.
     const auto* info = engine::champion(h);
@@ -822,7 +825,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
             b.health = b.max_health;
             b.gems = 0;
             b.ready_round = {b.respawned_round + 1, b.respawned_round + 1};
-            if (b.side == team::enemy) fix_at_spawn(b, s.enemy_spawn, {round - 1, -1});
+            if (enemy) fix_at_spawn(b, s.enemy_spawn, {round - 1, -1});
         }
     }
 
@@ -838,7 +841,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
                 b.pos_source = Source::inferred;
                 b.health = b.max_health;
                 // Damage or a stun could have cancelled it, so add the spawn, not replace.
-                if (b.side == team::enemy) {
+                if (enemy) {
                     b.possible |= s.enemy_spawn;
                     also_undashed(b, s.enemy_spawn);
                     b.lineage = 0;
@@ -849,14 +852,15 @@ void World::update_champion(ChampionBelief& b, bool full) {
         // An untracked `possible` is unread until a fix overwrites it, as is one note_sighting is
         // about to fix.
         const auto& x = expected_sighting;
-        if (b.side == team::enemy && b.tracked && !(full && x.enemy == b.index && in_bounds(x.pos) && x.round > b.pos_round)) track(b);
+        if (enemy && b.tracked && !(full && x.enemy == b.index && in_bounds(x.pos) && x.round > b.pos_round)) track(b);
         return;
     }
 
     const int last_seen = b.stats_round;
     const auto state = cambc::champion_state::from_bits_retain(static_cast<std::uint32_t>(info->state));
-    b.acted = !b.is_self && state.contains(cambc::champion_state::completed_turn);
-    if (b.side == team::enemy) {
+    const bool acted = !b.is_self && state.contains(cambc::champion_state::completed_turn);
+    b.acted = acted;
+    if (enemy) {
         const vec2 seen{info->x, info->y};
         // Fixed there at this turn's update already, and nothing moves during our turn.
         if (full || last_seen != round || b.pos != seen) fix(b, seen, now());
@@ -878,22 +882,22 @@ void World::update_champion(ChampionBelief& b, bool full) {
                                                                          : Channel::none;
     if (b.channel != Channel::none) {
         const auto left = engine::channel_time(h);
-        b.channel_end_round = fire_round(round, left.value_or(0), b.acted);
+        b.channel_end_round = fire_round(round, left.value_or(0), acted);
     }
     // The crystal's destination: a free tile within 3, terrain in between ignored.
-    if (b.side == team::enemy && b.channel == Channel::teleport) {
+    if (enemy && b.channel == Channel::teleport) {
         b.possible |= square(b.pos, teleport_crystal_range) & ~s.blocked_for_them;
         also_undashed(b, b.possible);
         b.lineage = 0;
     }
+    const int earliest = b.respawned_round + 1;
     for (int slot = 0; slot < 2; ++slot) {
         const int cd = engine::cooldown(h, static_cast<std::uint32_t>(slot));
-        const int ready = fire_round(round, cd, b.acted);
-        b.ready_round[slot] = std::max(ready, b.respawned_round + 1);
+        b.ready_round[slot] = std::max(fire_round(round, cd, acted), earliest);
     }
     // In observe() too, for a champion first seen after our move.
     b.gems = engine::gems(h);
-    if (b.side == team::enemy || b.is_self) b.fast_recall = engine::home_emblem(h);
+    if (enemy || b.is_self) b.fast_recall = engine::home_emblem(h);
 }
 
 void World::read_priorities(bool new_round) {
