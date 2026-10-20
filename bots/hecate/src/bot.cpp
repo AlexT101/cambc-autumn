@@ -2630,12 +2630,12 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     if (c.state == CampState::cleared) {
         const auto& tiles = G.tiles();
         if (enemy_on(world, tiles) || c.holder == team::enemy) {
-            if (!tiles.is_set(here) && too_late(g)) return false;
+            if (!test(tiles, here) && too_late(g)) return false;
             memory.claim = g;
             memory.crew = false;
-            if (tiles.is_set(here)) return true; // our tile keeps their hold from counting
+            if (test(tiles, here)) return true; // our tile keeps their hold from counting
             const auto& free = free_tiles(tiles);
-            if (!free.is_empty()) pathing.step_towards_funded(free, end_reserve);
+            if (!board_empty(free)) pathing.step_towards_funded(free, end_reserve);
             return true;
         }
         if (capture_taken(world, G, here) || dist(here, G.centre) > 2 * vision_radius) return false;
@@ -2647,9 +2647,9 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     const bool fresh = c.state == CampState::respawning;
     static bitboard threat{cambc::uninitialized}, near{cambc::uninitialized}, goals{cambc::uninitialized},
         basic{cambc::uninitialized};
-    threat.clear();
-    near.clear();
-    basic.clear();
+    clear_board(threat);
+    clear_board(near);
+    clear_board(basic);
     const int range = world.me().facts().attack_range();
     bool attackers = false;
     for (std::size_t i = 0; i < G.members.size(); ++i) {
@@ -2657,10 +2657,10 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
         const vec2 p = G.members[i].pos;
         if (G.members[i].strength > 0) {
             attackers = true;
-            threat.draw_chebyshev(p, static_cast<float>(camp_attack_range));
-            near.draw_chebyshev(p, static_cast<float>(ability_range));
+            draw_square(threat, p, static_cast<float>(camp_attack_range));
+            draw_square(near, p, static_cast<float>(ability_range));
         } else {
-            basic.draw_chebyshev(p, static_cast<float>(range));
+            draw_square(basic, p, static_cast<float>(range));
         }
     }
     // Only harmless members: farm clears them. Champions without spells stand guard with the
@@ -2669,15 +2669,15 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     const bool ally_in = ally_claims(world, g);
     memory.claim = g;
     memory.crew = ally_in;
-    goals.clear();
+    clear_board(goals);
     goals |= near;
     goals &= map.standable;
     drop(goals, threat);
-    if (goals.is_empty()) return false;
+    if (board_empty(goals)) return false;
     // Ranged: where a basic attack also reaches a harmless member, if that is a safe walk away.
     basic &= goals;
-    const bool basic_first = world.me().facts().ranged && !basic.is_empty();
-    const bool safe_here = !threat.is_set(here);
+    const bool basic_first = world.me().facts().ranged && !board_empty(basic);
+    const bool safe_here = !test(threat, here);
     const auto hit = [&] {
         if (fresh) return false;
         const bool cast = cast_at_camp(world, g, false, true);
@@ -2686,8 +2686,8 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
         return cast || attacked;
     };
     const auto& first = basic_first ? basic : goals;
-    if (safe_here && (first.is_set(here) || hit())) {
-        if (first.is_set(here)) hit();
+    if (safe_here && (test(first, here) || hit())) {
+        if (test(first, here)) hit();
         return true;
     }
     // Far off, the static walk to within reach; the live route around the monsters once near.
@@ -2700,21 +2700,21 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     // of the monsters costs more than the attacks pay.
     const int cap = 2 * (vision_radius + ability_range);
     bool moved = basic_first && pathing.step_towards(basic, &threat, vision_radius);
-    if (!moved && !goals.is_set(here)) moved = pathing.step_towards(goals, &threat, cap);
+    if (!moved && !test(goals, here)) moved = pathing.step_towards(goals, &threat, cap);
     // A sleeping group hits nobody passing through its reach.
-    if (!moved && !goals.is_set(here) && c.awake == Awake::asleep) moved = pathing.step_towards(goals, nullptr, cap);
+    if (!moved && !test(goals, here) && c.awake == Awake::asleep) moved = pathing.step_towards(goals, nullptr, cap);
     // No way within the cap (round a lake): the static walk.
-    if (!moved && !goals.is_set(here))
+    if (!moved && !test(goals, here))
         if (const auto* field = pathing.approach(g, ability_range))
             moved = pathing.step_towards(*field, c.awake == Awake::asleep ? nullptr : &threat);
     if (!moved && !safe_here) {
         static bitboard out{cambc::uninitialized};
-        out.clear();
+        clear_board(out);
         out |= map.standable;
         drop(out, threat);
         pathing.step_towards(out, nullptr, 2 * camp_attack_range);
     }
-    if (!threat.is_set(my_position())) hit();
+    if (!test(threat, my_position())) hit();
     return true;
 }
 
