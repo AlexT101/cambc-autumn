@@ -146,10 +146,15 @@ template <class Items, class Pos> vec2 central_tile(const Items& items, Pos pos)
     for (const auto& x : items) sx += pos(x).x, sy += pos(x).y;
     const auto n = static_cast<long>(items.size());
     const vec2 mean{static_cast<int>(sx / n), static_cast<int>(sy / n)};
+    // Squared lengths of tile offsets fit in 32 bits.
+    const auto length_squared = [&](vec2 p) {
+        const int dx = p.x - mean.x, dy = p.y - mean.y;
+        return dx * dx + dy * dy;
+    };
     vec2 best = pos(*items.begin());
-    auto nearest = (best - mean).length_squared();
+    int nearest = length_squared(best);
     for (const auto& x : items)
-        if (const auto d = (pos(x) - mean).length_squared(); d < nearest) nearest = d, best = pos(x);
+        if (const int d = length_squared(pos(x)); d < nearest) nearest = d, best = pos(x);
     return best;
 }
 
@@ -631,7 +636,7 @@ const bitboard& CampGroup::threat() const {
     or_into(s->impassable, s->ally_spawn, s->blocked_for_them);
     not_into(s->blocked_for_us, s->open_for_us);
     not_into(s->blocked_for_them, s->open_for_them);
-    for (auto t : s->enemy_spawn_tiles) s->near_enemy_spawn.draw_chebyshev(t, 1);
+    for (auto t : s->enemy_spawn_tiles) draw_square(s->near_enemy_spawn, t, 1);
     or_into(s->walls, s->bushes, s->walls_and_bushes);
 
     const auto altar_positions = s->altar_tiles.positions();
@@ -675,7 +680,7 @@ const bitboard& CampGroup::threat() const {
             g.members.push_back({id, pos, type, stats->base_health, stats->base_strength});
             g.strength += stats->base_strength;
             g.has_monolith |= type == cambc::camp_type::monolith;
-            s->camp_tiles.set(pos);
+            set_tile(s->camp_tiles, pos);
             s->group_lookup_[tile_index(pos)] = static_cast<std::uint16_t>(gi + 1);
         }
         g.centre = central_tile(g.members, [](const CampMember& m) { return m.pos; });
