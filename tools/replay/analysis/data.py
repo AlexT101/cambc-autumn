@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 ANALYSIS = ROOT / 'replays' / '.analysis'
 
-TYPE_ABBR = {'Wolf': 'W', 'Elk': 'E', 'Gem cluster': 'G', 'Gold cluster': '$', 'Monolith': 'M'}
+TYPE_ABBR = {'Wolf': 'W', 'Elk': 'E', 'Gem cluster': 'G', 'Gold cluster': '$', 'Monolith': 'M', 'Golem': 'O'}
 
 
 def load_index():
@@ -141,7 +141,7 @@ class Map:
             if d[k] * 3 >= self.cell * self.cell:
                 out[c] = k
         for camp in self.camps:
-            out[self.cell_of((camp['x'], camp['y']))] = {'W': 'w', 'E': 'e', 'G': 'g', '$': '$', 'M': 'M'}[TYPE_ABBR[camp['type']]]
+            out[self.cell_of((camp['x'], camp['y']))] = {'W': 'w', 'E': 'e', 'G': 'g', '$': '$', 'M': 'M', 'O': 'o'}[TYPE_ABBR[camp['type']]]
         for a in self.altars:
             out[self.cell_of(a)] = 'A'
         for team, ch_ in ((0, 'S'), (1, 'X')):

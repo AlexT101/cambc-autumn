@@ -6,7 +6,7 @@ import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import {
-  Engine, compileEngine, engineInfo, engineVersions, replayEngine, wasmPath, ENGINE_DIR, SNAPSHOT_SIZE, STEP_KINDS, CHAMPIONS, DRAFT_CHAMPIONS, ITEMS, CONSUMABLES,
+  Engine, compileEngine, engineInfo, engineVersions, replayEngine, wasmPath, ENGINE_DIR, STEP_KINDS, CHAMPIONS, DRAFT_CHAMPIONS, ITEMS, CONSUMABLES,
   ABILITY_TYPES, BUFFS, CAMPS, CHANNELS, GROUP_STATES, mirror,
 } from './engine.mjs';
 
@@ -17,7 +17,7 @@ const NONE = 0xFFFFFFFF;
 const K = Object.fromEntries(STEP_KINDS.map((n, i) => [n, i]));
 const ACTIONS = new Set([K.Move, K.Attack, K['Cast ability'], K.Recall, K['Submit gems'], K.Shop, K['Place ward'], K.Consumable, K['Cancel channel'], K['Place altar lock'], K['Teleport channel'], K['Sell item'], K['Movement blocked']]);
 const REN = CHAMPIONS.indexOf('Ren');
-const TURN = { none: 0, acted: 1, idle: 2, channel: 3, dead: 4, stunned: 5, fuel: 6 };
+const TURN = { none: 0, acted: 1, idle: 2, channel: 3, dead: 4, stunned: 5, fuel: 6, error: 7 };
 
 const r1 = v => Math.round(v * 10) / 10;
 const sha256 = b => crypto.createHash('sha256').update(b).digest('hex');
@@ -422,10 +422,11 @@ export function extractGame(engines, file) {
         }
         prevAwake = awake;
 
-        if ((st.kind === K['End turn'] || st.kind === K['Turn rollover']) && isChamp && a === turnChamp) {
+        if ((st.kind === K['End turn'] || st.kind === K['Turn rollover'] || st.kind === K['Bot error']) && isChamp && a === turnChamp) {
           const p = curById.get(a);
           let status;
           if (st.kind === K['Turn rollover']) status = TURN.fuel;
+          else if (st.kind === K['Bot error']) status = TURN.error;
           else if (turnActed) status = TURN.acted;
           else if (turnStatus.get(a) !== undefined) status = turnStatus.get(a);
           else status = TURN.idle;
@@ -679,16 +680,16 @@ async function updateEngine() {
       const r = await fetch(base + 'assets/' + wasmName);
       if (!r.ok) throw new Error(`download ${wasmName}: HTTP ${r.status}`);
       const bytes = Buffer.from(await r.arrayBuffer());
-      await Engine.create(await WebAssembly.compile(bytes)).catch(e => { throw new Error(`downloaded engine ${wasmName} rejected: ${e.message}`); });
+      const engine = await Engine.create(await WebAssembly.compile(bytes)).catch(e => { throw new Error(`downloaded engine ${wasmName} rejected: ${e.message}`); });
       const v = wasmName.split('-')[0];
-      engines[v] = { asset: wasmName, sha256: sha256(bytes), bytes: bytes.length, data: bytes };
+      engines[v] = { asset: wasmName, sha256: sha256(bytes), bytes: bytes.length, snapshotSize: engine.snapshotSize, data: bytes };
     }
     fs.mkdirSync(ENGINE_DIR, { recursive: true });
     for (const f of fs.readdirSync(ENGINE_DIR)) if (f.endsWith('.wasm')) fs.rmSync(path.join(ENGINE_DIR, f));
     for (const [v, e] of Object.entries(engines)) { fs.writeFileSync(wasmPath(v), e.data); delete e.data; }
-    const info = { cambc: version, snapshotSize: SNAPSHOT_SIZE, updated: new Date().toISOString(), engines };
+    const info = { cambc: version, updated: new Date().toISOString(), engines };
     fs.writeFileSync(path.join(ENGINE_DIR, 'version.json'), JSON.stringify(info, null, 2) + '\n');
-    for (const [v, e] of Object.entries(engines)) console.log(`engine ${v}: ${e.asset} (${version}), sha256 ${e.sha256}`);
+    for (const [v, e] of Object.entries(engines)) console.log(`engine ${v}: ${e.asset} (${version}), snapshot ${e.snapshotSize}, sha256 ${e.sha256}`);
   } finally {
     if (process.platform === 'win32') spawn('taskkill', ['/pid', String(server.pid), '/T', '/F'], { stdio: 'ignore' });
     else server.kill();

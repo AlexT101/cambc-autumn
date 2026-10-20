@@ -1,22 +1,42 @@
 {
-  "cambc": "cambc 2.2.4",
-  "snapshotSize": 184696,
-  "updated": "2026-10-17T04:51:45.171Z",
+  "cambc": "cambc 3.0.1",
+  "updated": "2026-10-20T16:07:29.723Z",
   "engines": {
     "v0_0_1": {
       "asset": "v0_0_1-ctH8uuEb.wasm",
       "sha256": "ce302dc6666ae43592f6936e572bc4baca92a345bff13ef7f986609ac666a0dc",
-      "bytes": 616952
+      "bytes": 616952,
+      "snapshotSize": 184696
     },
     "v0_0_2": {
       "asset": "v0_0_2-DFj19m76.wasm",
       "sha256": "e123b59d9dea198762ab7a04db9b3cb6d06dfa991088e41c24750fc4cb88b947",
-      "bytes": 627412
+      "bytes": 627412,
+      "snapshotSize": 184696
     },
     "v0_0_3": {
       "asset": "v0_0_3-zaIi77qe.wasm",
       "sha256": "1919c5a6f2ea039041071166aef38f6f1ede8d5c29b062db8c2e028109e3f96f",
-      "bytes": 630261
+      "bytes": 630261,
+      "snapshotSize": 184696
+    },
+    "v0_0_4": {
+      "asset": "v0_0_4-CicMoJc9.wasm",
+      "sha256": "250bbd85d0d2fd1892521fac41a79e9eef33b5caef43cbee2dc5cd80c01d8a1d",
+      "bytes": 632360,
+      "snapshotSize": 184696
+    },
+    "v0_1_0": {
+      "asset": "v0_1_0-BXVwOcAb.wasm",
+      "sha256": "133a8c8603af1824de15ae5531e668aec3e737684c5fc4a73090aa5f0c1b0584",
+      "bytes": 697743,
+      "snapshotSize": 184760
+    },
+    "v1_0_0": {
+      "asset": "v1_0_0-C4DgnQ2t.wasm",
+      "sha256": "f7d27c468024ce20f1f64eb1bd06ec4de6314213314fb0132e8b605cf0a610db",
+      "bytes": 633925,
+      "snapshotSize": 184760
     }
   }
 }

@@ -3,7 +3,7 @@ from collections import deque
 
 from .data import TYPE_ABBR
 
-STRENGTH = {'Wolf': 20, 'Elk': 60, 'Gem cluster': 0, 'Gold cluster': 0, 'Monolith': 200}
+STRENGTH = {'Wolf': 20, 'Elk': 60, 'Gem cluster': 0, 'Gold cluster': 0, 'Monolith': 200, 'Golem': 120}
 CAPTURE_ROUNDS = 6
 SIDE = {0: 'own', 1: 'enemy', -1: 'mid'}
 

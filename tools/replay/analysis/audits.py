@@ -167,7 +167,7 @@ def extract(g, P=None):
                 if i == 0:
                     fuel_r1 += tv == 6
                     continue
-                alive = tv in (1, 2, 3, 5, 6)
+                alive = tv in (1, 2, 3, 5, 6, 7)
                 if alive:
                     alive_turns += 1
                     if tv == 6:

@@ -133,7 +133,7 @@ def render(ctx, rep):
     rep.p(CAVEAT)
     rep.p(f'Set: {ctx.describe()}. Sides analysed: {len(sides)} ({sum(s["won"] for s in sides)} won). '
           'Own-side frame: team B positions and camp groups are mirrored onto team A\'s side, so labels mean the same place for both teams. '
-          'Group labels are `<types>(x,y)<side>`: W wolf, E elk, G gem cluster, $ gold cluster, M monolith; side o = own half, e = enemy half, m = middle.')
+          'Group labels are `<types>(x,y)<side>`: W wolf, E elk, G gem cluster, $ gold cluster, M monolith, O golem; side o = own half, e = enemy half, m = middle.')
 
     rep.h('Game length')
     rows = []

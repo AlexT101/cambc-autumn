@@ -12,8 +12,9 @@ node tools/replay/extract.mjs --update-engine
 - Identical replays do occur: the bots and engine are deterministic, so a rematch on the same map can be byte-identical. All copies are listed in `meta.sources`; `index.json` has one row per source file. A shared game's `meta.teams` names come from whichever batch extracted it first, so take a batch's team names from its `index.json` rows (`teams`), not from `meta.json`.
 - `index.json` is updated in place, re-reading only the games given on the command line. `--reindex` (with or without inputs) rebuilds it from every `meta.json`, which takes minutes on a large cache; use it after deleting analysis folders by hand.
 - Exit code 1 if any replay fails to decode or fails a hard validation check.
-- A replay's header names the engine that played it (`v0_0_1` until the ladder's 0.0.2 patch on 2026-10-16 about 08:00Z, `v0_0_2` since, for ladder and local `cambc run` alike), and only that engine loads it. Each replay is decoded with its own engine from `engine/`; `tools/mapgen` uses the newest.
-- `--update-engine` starts `cambc view`, downloads every `v*_*_*-*.wasm` the viewer ships into `engine/<version>.wasm`, and rewrites `engine/version.json`. If the snapshot layout changed (`Game_Visualiser_SnapshotSize() != 184696`), loading fails and the decoder in `engine.mjs` has to be re-ported from the viewer's `PanelChrome-*.js` (functions `xr`/`br`/`Sr` and table constant `Q`).
+- A replay's header names the engine that played it (`v0_0_1` until the ladder's 0.0.2 patch on 2026-10-16 about 08:00Z, then `v0_0_2`, `v0_0_3`, ..., `v1_0_0` from the week 2 patch (cambc 3.0.1), for ladder and local `cambc run` alike), and only that engine loads it. Each replay is decoded with its own engine from `engine/`; `tools/mapgen` uses the newest.
+- Snapshot layouts are picked per engine instance from `Game_Visualiser_SnapshotSize()` (`SNAPSHOT_SIZES` in `engine.mjs`): 184696 up to `v0_0_4`; 184760 from `v0_1_0`, the same layout plus each champion's passive damage bonus (float32 by champion id) appended at 184696. Every other offset is shared.
+- `--update-engine` starts `cambc view`, downloads every `v*_*_*-*.wasm` the viewer ships into `engine/<version>.wasm`, and rewrites `engine/version.json`. If an engine reports a snapshot size not in `SNAPSHOT_SIZES`, loading fails and the decoder in `engine.mjs` has to be extended from the viewer's `PanelChrome-*.js` (the snapshot reader that checks the sizes, e.g. `Gn=184696,Kn=184760`, and the table constant `Q`).
 - About 1.1 s per game on one thread (39 s for 532 games on 16). About 100 KB per game (gzipped).
 
 ## Files
@@ -22,7 +23,7 @@ node tools/replay/extract.mjs --update-engine
 | --- | --- |
 | `engine.mjs` | WASM wrapper (`Engine`, `Game`), snapshot decoder (`Snapshot`), static map extraction, enums, `mirror`/`ownFrame` helpers, zip unwrapping for local replays. |
 | `extract.mjs` | CLI and per-game extraction (`extractGame`). |
-| `engine/<version>.wasm`, `engine/version.json` | Engine copies and their provenance (cambc version, snapshot size, and per version the asset name and sha256). |
+| `engine/<version>.wasm`, `engine/version.json` | Engine copies and their provenance (cambc version, and per version the asset name, sha256 and snapshot size). |
 
 Output, under `replays/.analysis/`:
 
@@ -48,7 +49,7 @@ Python: `json.load(gzip.open(p))` for rounds, `[json.loads(l) for l in gzip.open
 
 ## meta.json
 
-- `v`, `engine` (`{version, cambc, asset, sha256, bytes}` of the engine that decoded it; games extracted before 2026-10-16 have no `version`, and all are v0_0_1), `source`, `sha256`, `sourceKind` (`ladder`, `batch` or `file`), `sources` (every copy: `{source, kind, map, teams, group, matchId, position, problems?}`).
+- `v`, `engine` (`{version, cambc, asset, sha256, bytes, snapshotSize}` of the engine that decoded it; games extracted before 2026-10-16 have no `version`, and all are v0_0_1), `source`, `sha256`, `sourceKind` (`ladder`, `batch` or `file`), `sources` (every copy: `{source, kind, map, teams, group, matchId, position, problems?}`).
 - `map`: `{name, hash, width, height, symmetry}`; `mapFile` is the relative path of the map JSON.
 - `teams[0|1]`: ladder `{name, id, ratingBefore}`; batch `{name, bot}` where `bot` is the index into `results.json` `bots` (`-12` files: bot 0 is team A).
 - `group`, `matchId`, `position`: ladder group and match.
@@ -63,7 +64,7 @@ Python: `json.load(gzip.open(p))` for rounds, `[json.loads(l) for l in gzip.open
 
 `{hash, width, height, symmetry, champsPerTeam, spawn: [A, B] ({minX, minY, maxX, maxY}, inclusive), walls, holes, bushes, altars (tile lists), camps, groups}`
 
-- `camps[i]`: `{id, type (Wolf, Elk, Gem cluster, Gold cluster, Monolith), x, y, group, hp}`.
+- `camps[i]`: `{id, type (Wolf, Elk, Gem cluster, Gold cluster, Monolith, Golem), x, y, group, hp}`.
 - `groups[g]`: `{id, camps (camp ids), tiles (capture tiles), types, gems, gold, respawn (group reward and respawn rounds), mirror (symmetric group id), side (0/1: nearer team A/B spawn, -1 equidistant)}`.
 
 ## events.jsonl.gz
@@ -107,7 +108,7 @@ State at the end of each round (read at the first step of the next round; the la
 - `round[i]`: round number; every per-round array below is indexed by `i`.
 - `gems: [A[], B[]]`: tributed gems.
 - `champions[]` (same order as `meta.champions`), `{id, team}` plus arrays: `x, y, hp, maxHp, alive (0/1), respawn` (rounds left while dead), `gold` (floor), `earned` (lifetime gold), `gems` (carried), `chan` (`enums.channels`: 1 recall, 2 tribute, 3 teleport), `chanT` (turns left), `cd0, cd1` (cooldowns), `str, foc` (effective Strength and Focus), `shield` (shield amount), `stun` (stun turns), `items` (flat `[itemId, count, ...]`, `enums.items`), `cons` (`[teleport crystal, control ward, altar lock, TP scroll]` carried), `kills, deaths, assists, prio` (priority), `ward` (`[charges, recharge]` or null), and:
-  - `turn`: what the champion did with its turn this round: 0 no turn, 1 acted, 2 idle (alive, nothing done), 3 channelling, 4 dead, 5 stunned, 6 fuel exhausted (turn rollover).
+  - `turn`: what the champion did with its turn this round: 0 no turn, 1 acted, 2 idle (alive, nothing done), 3 channelling, 4 dead, 5 stunned, 6 fuel exhausted (turn rollover), 7 bot error (the `Bot error` step of newer engines).
   - `sees`: enemy champion ids this champion could see (its own view and ward, as its bot sees it) at the start of its turn this round.
   - `seenBy`: enemy champion ids that saw this champion at the start of their turns this round (empty = unseen by the enemy team).
 - `groups`: change rows `[round, group, state, team, timer, respawn, awake, hp]` (`groupCols`), written only when a group's row changes, so forward-fill per group. `state` indexes `enums.groupStates` (1 monsters up, 2 cleared and claimable, 3 respawning); `team`/`timer` capture holder and rounds left; `respawn` rounds until respawn; `awake` -1 no living monster, 0 asleep, 1 awake; `hp` living monsters' total.
@@ -152,7 +153,7 @@ Statistics:
 | `gap` | Only with `--team` and `--vs`: every per-side metric (tempo, fights, audits, economy) for the focus team against the comparison set and its game winners, per map and pooled, ranked by a robust z score; opponent-dependent metrics are flagged. |
 | `sensitivity` | Opt-in: headline numbers at a lower and higher value of each key constant. |
 
-Conventions: positions and camp groups are in each team's own frame (team B mirrored onto A); group labels are `<types>(x,y)<o|m|e>` (W wolf, E elk, G gem, $ gold, M monolith; own/middle/enemy half).
+Conventions: positions and camp groups are in each team's own frame (team B mirrored onto A); group labels are `<types>(x,y)<o|m|e>` (W wolf, E elk, G gem, $ gold, M monolith, O golem; own/middle/enemy half).
 
 For ad-hoc scripts, `tools/replay/analysis/data.py` has the loaders: `resolve(sources)` gives analysis dirs, `Game(dir)` exposes `meta`, `map` (`Map`: `own(team, p)`, `own_group(team, g)`, `group_label`, `cell_of`, altars, bushes), lazily loaded `events` and `rounds`, `ch(id)` (per-round arrays), `champ_damage`, `camp_damage`, `deaths` and `seen_recently`. Each report module's `extract(game, params)` returns its per-game features. Run with `sys.path.insert(0, 'tools/replay')` and `from analysis import Game, resolve`.
 

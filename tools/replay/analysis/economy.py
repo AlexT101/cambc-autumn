@@ -11,7 +11,7 @@ from .util import mean, median, pct
 
 VERSION = 1
 CACHE = ANALYSIS / 'cache' / 'economy'
-MELEE = {'Ryth', 'Vendetta', 'Marcella', 'Ren', 'Varg', 'Issac'}
+MELEE = {'Ryth', 'Vendetta', 'Marcella', 'Ren', 'Varg', 'Issac', 'Heart of Ruin'}
 DAMAGING = set('WEM')
 LOOP_HP, LOOP_GAP = 0.35, 8
 

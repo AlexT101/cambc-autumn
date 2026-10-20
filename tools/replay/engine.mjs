@@ -10,7 +10,9 @@ const { WASI } = await import('node:wasi');
 // One engine per ladder patch (engine/<version>.wasm, listed in engine/version.json): a replay
 // plays back only on the engine named in its header.
 export const ENGINE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'engine');
-export const SNAPSHOT_SIZE = 184696;
+// Snapshot layouts, by Game_Visualiser_SnapshotSize(): v1_0_0 appends each champion's passive damage
+// bonus (float32 by champion id) to the v0 layout; every other offset is shared.
+export const SNAPSHOT_SIZES = [184696, 184760];
 export const SNAPSHOT_ABI = 1;
 export const OBSERVER = { team: 2, champion: 0xFFFFFFFF };
 const NONE = 0xFFFFFFFF;
@@ -21,12 +23,12 @@ export const ITEMS = ['Monster', 'Power', 'Durability', 'Treasure', 'Jungle', 'H
 export const CONSUMABLES = ['Teleport crystal', 'Control ward', 'Altar lock', 'TP scroll'];
 export const ABILITY_TYPES = ['None', 'Attack reset', 'Damage', 'AoE damage', 'CC', 'Heal', 'Dash', 'Shield'];
 export const BUFFS = ['Shield', 'Stun', 'Enhanced auto'];
-export const CAMPS = ['Wolf', 'Elk', 'Gem cluster', 'Gold cluster', 'Monolith'];
+export const CAMPS = ['Wolf', 'Elk', 'Gem cluster', 'Gold cluster', 'Monolith', 'Golem'];
 export const SYMMETRIES = ['horizontal', 'vertical', 'rotational'];
 export const CHANNELS = ['', 'recall', 'tribute', 'teleport', 'teleport_scroll'];
 export const GROUP_STATES = ['unknown', 'camps', 'empty', 'respawning'];
 export const ENTITY_KINDS = { 1: 'champion', 2: 'camp', 4: 'spell' };
-export const STEP_KINDS = ['Phase', 'Respawn', 'Capture', 'Tick', 'Move', 'Attack', 'Cast ability', 'Input', 'End turn', 'Set priority', '', 'Recall', 'Submit gems', 'Shop', 'Place ward', 'Consumable', 'Cancel channel', 'Sandbox', 'Gems submitted', 'Draft champion', 'Place altar lock', 'Teleport channel', 'Teleport complete', 'Movement blocked', 'Resign', 'Sell item', 'Turn rollover'];
+export const STEP_KINDS = ['Phase', 'Respawn', 'Capture', 'Tick', 'Move', 'Attack', 'Cast ability', 'Input', 'End turn', 'Set priority', '', 'Recall', 'Submit gems', 'Shop', 'Place ward', 'Consumable', 'Cancel channel', 'Sandbox', 'Gems submitted', 'Draft champion', 'Place altar lock', 'Teleport channel', 'Teleport complete', 'Movement blocked', 'Resign', 'Sell item', 'Turn rollover', 'Bot error'];
 export const PHASES = { 0: 'Round start', 1: 'Camp respawns', 4: 'Spell entities', 7: 'Camp captures', 9: 'Camp turns', 10: 'Champion turns', 11: 'Finished', 12: 'Draft', 13: 'Champion turn end', 14: 'Champion turn start' };
 export const ROUND_FLAGS = { attackReady: 2, recallStarted: 64, tributeStarted: 128, recallCancelled: 256, tributeCancelled: 512, castReady: 1024, walked: 2048 };
 export const KNOWN = { basic: 1, bag: 2, channel: 4, gold: 8 };
@@ -40,7 +42,7 @@ const TABLES = {
   spells: { countOffset: 136, dataOffset: 138556, stride: 40, capacity: 1024 },
 };
 const DRAFT_OFFSET = 179516;
-const EXT_SUBMISSION = 184184, EXT_GOLD = 184248, EXT_KDA = 184504;
+const EXT_SUBMISSION = 184184, EXT_GOLD = 184248, EXT_KDA = 184504, EXT_PASSIVE = 184696;
 
 export class EngineError extends Error {
   constructor(code, message) { super(`engine error ${code}: ${message}`); this.code = code; }
@@ -93,16 +95,17 @@ export class Engine {
   constructor(x) {
     this.x = x;
     const size = x.Game_Visualiser_SnapshotSize();
-    if (size !== SNAPSHOT_SIZE) throw new Error(`Engine snapshot size is ${size}, decoder expects ${SNAPSHOT_SIZE}: the snapshot layout changed, update the decoder in tools/replay/engine.mjs (port it from the viewer's PanelChrome-*.js).`);
+    if (!SNAPSHOT_SIZES.includes(size)) throw new Error(`Engine snapshot size is ${size}, decoder knows ${SNAPSHOT_SIZES.join(', ')}: the snapshot layout changed, update the decoder in tools/replay/engine.mjs (port it from the viewer's PanelChrome-*.js).`);
+    this.snapshotSize = size;
     this.out = x.Engine_Malloc(64);
     this.args = x.Engine_Malloc(256);
-    this.snap = x.Engine_Malloc(SNAPSHOT_SIZE);
+    this.snap = x.Engine_Malloc(size);
     this.placedCap = 64;
     this.placed = x.Engine_Malloc(this.placedCap * 28);
     this.scratch = x.Engine_Malloc(64 * 1024);
     this.ck(x.Game_Visualiser_GetConstants(this.args));
     const d = this.dv;
-    if (d.getUint32(this.args, true) !== SNAPSHOT_ABI || d.getUint32(this.args + 8, true) !== SNAPSHOT_SIZE || d.getUint32(this.args + 12, true) !== 64)
+    if (d.getUint32(this.args, true) !== SNAPSHOT_ABI || d.getUint32(this.args + 8, true) !== size || d.getUint32(this.args + 12, true) !== 64)
       throw new Error('Unsupported visualiser interface: update the decoder in tools/replay/engine.mjs.');
     const a = this.args;
     this.constants = {
@@ -238,7 +241,7 @@ export class Game {
 
   read(p = OBSERVER) {
     this.e.ck(this.x.Game_Visualiser_ReadState(this.h, this.perspective(p), this.e.snap), 'read state');
-    return new Snapshot(this.e.dv, this.e.snap);
+    return new Snapshot(this.e.dv, this.e.snap, this.e.snapshotSize);
   }
 
   // Tile-visibility tester for a perspective; valid until the next engine call that reallocates.
@@ -338,7 +341,7 @@ function testBit(d, ptr, meta, x, y) {
 }
 
 export class Snapshot {
-  constructor(d, base) { this.d = d; this.b = base; }
+  constructor(d, base, size = SNAPSHOT_SIZES[0]) { this.d = d; this.b = base; this.size = size; }
   u(o) { return this.d.getUint32(this.b + o, true); }
   i(o) { return this.d.getInt32(this.b + o, true); }
   f(o) { return this.d.getFloat32(this.b + o, true); }
@@ -346,13 +349,13 @@ export class Snapshot {
   arr(o, n) { const r = new Array(n); for (let k = 0; k < n; k++) r[k] = this.u(o + k * 4); return r; }
 
   header() {
-    if (this.u(0) !== SNAPSHOT_ABI || this.u(4) !== SNAPSHOT_SIZE) throw new Error('Unsupported game snapshot ABI: update the decoder in tools/replay/engine.mjs.');
-    const slot = this.u(108);
+    if (this.u(0) !== SNAPSHOT_ABI || this.u(4) !== this.size) throw new Error('Unsupported game snapshot ABI: update the decoder in tools/replay/engine.mjs.');
+    const kind = this.u(68), slot = kind === 19 ? NONE : this.u(108);
     return {
       round: this.u(8), turn: this.u(12), team: this.u(16), awaitingInput: !!this.u(20), phase: this.u(24), outcome: this.u(28),
       submittedGems: [this.u64(32), this.u64(40)], inputPosition: this.u(56), currentChampion: this.u(60),
       step: {
-        phase: this.u(64), kind: this.u(68), actor: { kind: this.u(72), index: this.u(76) },
+        phase: this.u(64), kind, actor: { kind: this.u(72), index: this.u(76) },
         from: { x: this.i(80), y: this.i(84) }, to: { x: this.i(88), y: this.i(92) },
         round: this.u(96), inputPosition: this.u(100), substep: this.u(104),
         abilitySlot: slot === NONE ? undefined : slot, abilityType: slot === NONE ? undefined : this.u(112), priority: this.i(116),
@@ -385,6 +388,7 @@ export class Snapshot {
       u.abilities = [this.u(o + 104), this.u(o + 108)];
       u.focus = this.f(o + 132);
       u.strength = this.f(o + 148);
+      if (this.size > EXT_PASSIVE && u.kind === 1) u.passiveDamageBonus = this.f(EXT_PASSIVE + u.id * 4);
     }
     if (known & KNOWN.channel) u.roundFlags = this.u(o + 36);
     return u;
