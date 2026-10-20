@@ -486,12 +486,17 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
 bool Pathing::step_towards(const Field& field, const bitboard* avoid) {
     const int here = field.at(my_pos());
     if (here == 0 || !my_can_move()) return false;
+    bool searched = false;
     if (here != unreachable) {
         const int cap = here + max_detour;
         if (!fuel_ok(search_cost_estimate(cap) + end_reserve)) note_shortcut("static-descend");
         else if (step_towards(field.goals, avoid, cap)) return true;
+        else searched = true;
     }
-    return descend(field, avoid);
+    if (descend(field, avoid)) return true;
+    // Live camps can block the static way for longer than max_detour (a dead-end pocket whose way
+    // out a camp holds): a wider search walks round them.
+    return searched && step_towards(field.goals, avoid, here + 6 * max_detour);
 }
 
 bool Pathing::descend(const Field& field, const bitboard* avoid) {

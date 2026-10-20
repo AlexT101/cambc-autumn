@@ -294,3 +294,18 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   Stellar: −4 to −5. hecate's upkeep builds instead of Fish's table: +2. The final koi (those fight changes with
   hecate's builds): 54.0% over 1986 games (53.4% over 2698), nemesis 63.3, rival 73.6, morgana 74.9, aphelios 92.6
   against hecate-v1's 61.5, 69.0, 74.9, 90.3. Code: [koi/koi.patch](koi/koi.patch) against hecate 110e338.
+
+## hecate: ports from koi (2026-10-20)
+
+Against hecate 3e8dfa0 (`bots/baselines/hecate-v7`), both sides; fresh suites are `replays/koi-maps/` (seeds 7101-7112).
+
+| variant | ladder + gen + central (390) | fresh gen (1848) | central, standard + fresh (552) | all |
+|---|---|---|---|---|
+| port: farm horizon on the farm side only, wide search, holders as carriers | 52.3 | 52.9 | 48.6 | 52.1 (2698) |
+| cycbank: plain farm values, the horizon only on the chain side of the bank test | 50.5 | | 50.5 | 49.8 (850) |
+| cycboth (kept): the horizon on the bank-then-farm value too | 55.4 | 51.9 | 49.8 | 51.9 (2698) |
+
+- The port against the older bots (390 each, hecate-v7 in brackets): aphelios 90.8 (91.8), morgana 76.7 (74.9), rival
+  74.4 (70.5), nemesis 63.6 (65.1); against koi 48.7.
+- The gain is the group choice (nearer, faster cycles), not earlier banking: the koi version's undiscounted bank side
+  made carriers bank early, which was level to negative on its own and cost central-altar maps.

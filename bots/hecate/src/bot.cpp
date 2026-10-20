@@ -468,6 +468,19 @@ float camp_hit_factor() {
     return (has(jungle) ? 0.7f : 1.0f) * (has(durability) ? 0.9f : 1.0f);
 }
 
+// A farm cycle's worth a round, falling faster than 1 / rounds for long cycles: gems taken sooner
+// turn into shards sooner, and a long clear is more often contested or cut short. On a large map
+// every walk is long, so the horizon grows with it.
+constexpr float cycle_horizon = 100;
+float rate(const World& world, float worth, float rounds) {
+    static float horizon = 0;
+    if (horizon <= 0) {
+        const auto& map = world.map();
+        horizon = cycle_horizon * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f);
+    }
+    return worth / (rounds * (1.0f + rounds / horizon));
+}
+
 // Rounds from the first hold of a cleared group to its payout.
 int capture_rounds() { return cambc::constants::capture_time + 1; }
 constexpr float stickiness = 1.2f;
@@ -1368,7 +1381,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             // A capture that wins the game is the team's, not a share: what counts is how soon.
             const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
             // No capture rounds: the claimer holds it, and the crew moves on once it is cleared.
-            const float value = worth * part / (static_cast<float>(trip) + rounds);
+            const float value = rate(world, worth * part, static_cast<float>(trip) + rounds);
             // Only a better share counts, and the final pick takes none an affordable group beats.
             if (value <= shared_value || (best >= 0 && value <= best_value) || too_late(rounds)) continue;
             float joint_rounds = 0;
@@ -1403,14 +1416,14 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         }
         if (too_late(clear_rounds)) continue;
         const float cycle = static_cast<float>(trip) + clear_rounds + capture_rounds();
-        float value = worth / cycle;
+        float value = rate(world, worth, cycle);
         if (damage > spare_health && partner_output > 0 && belief.state == CampState::alive) {
             float joint_rounds = 0;
             const float part = strength / (strength + partner_output);
             if (soften * min_camp_damage(world, g, strength + partner_output, &joint_rounds) * part <= spare_health) {
                 damage = 0;
                 const float joint_cycle = static_cast<float>(trip) + joint_rounds + capture_rounds();
-                value = worth * part / joint_cycle;
+                value = rate(world, worth * part, joint_cycle);
             }
         }
         if (damage > spare_health && !ally_engaged(world, g)) {
@@ -1420,7 +1433,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             if (bag > 0 && walk != unreachable) {
                 const int via_altar = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - bank_now - walk) : 0;
                 const float from_altar = static_cast<float>(walk + cycle_bank + via_altar) + clear_rounds + capture_rounds();
-                from_altar_value = std::max(from_altar_value, worth / from_altar);
+                from_altar_value = std::max(from_altar_value, rate(world, worth, from_altar));
             }
         }
     }
@@ -2135,8 +2148,11 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         if (n == static_cast<int>(order.size()) || dist(here, e.pos) > vision_radius || test(near_enemy_spawn, e.pos)) continue;
         // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
         // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
-        // but a bag has to stop at an altar to score, and a kill takes it.
-        if (dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= 0.5f * e.max_health
+        // but a bag has to stop at an altar to score, and a kill takes it. An enemy holding a
+        // cleared group is taking its gems: killing it is how a capture is contested.
+        const int g = world.map().group_at(e.pos);
+        const int held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
+        if (dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= 0.5f * e.max_health && held == 0
             && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
             continue;
         // Every tile in reach of it would make us retreat at once.
@@ -2144,7 +2160,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         if (!strength) strength = std::max(1.0f, my_strength());
         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + e.health / *strength;
         // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
-        const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e)));
+        const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
         int i = n++;
         for (; i > 0 && order[i - 1].first > cost; --i) order[i] = order[i - 1];
         order[i] = {cost, &e};

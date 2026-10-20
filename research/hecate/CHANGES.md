@@ -129,3 +129,15 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    an exact-sum fast turn in simulate, memoised strikes and kits, per-turn enemy masks, known cases inline with the
    work out of line; world and economy: farm inlined, raw host calls through util.h helpers, camp visibility reused,
    no ward attempt on a stunned turn. Details per round in [../EXPERIMENTS.md](../EXPERIMENTS.md).
+21. 2026-10-20 (not yet submitted). Three changes ported from koi ([../koi/README.md](../koi/README.md)), A/B against
+   hecate at 3e8dfa0 (bots/baselines/hecate-v7) over 2698 games (ladder, gen, central and 12 fresh-seed suites from
+   replays/koi-maps): 51.9%; fresh gen 51.9% (1848), central level (49.8%, 552); out-of-fuel turns 24 vs 17 in 390.
+   - bot.cpp rate(): a farm cycle is worth `worth / (cycle (1 + cycle / H))`, H = 100 x max(1, longer side / 50), so
+     long cycles count for less; applied to every farm value, the bank-then-farm one included. Discounting only the
+     farm side (as koi does) also made carriers bank early: 50.2% over 850 games against 52.0% for both sides, and
+     discounting only the bank test was 49.8%.
+   - pathing.cpp step_towards(Field): when the funded search and the descent both fail, a search to here + 6 x
+     max_detour walks round live camps that block the static way (a body otherwise sat 90 rounds in a dead-end
+     pocket). No new fuel gate: it runs only after the funded search.
+   - bot.cpp prey(): an enemy standing on a cleared group counts the group's gems as its bag, so it is chased on its
+     own ground and is worth more to kill (koi: +1.7 on 1010 games).
