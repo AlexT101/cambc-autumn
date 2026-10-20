@@ -116,15 +116,17 @@ struct StaticMap {
     std::vector<Altar> altars;
     std::vector<CampGroup> groups;
 
-    int group_at(vec2 p) const; // group whose camp tile this is, or -1
-    int altar_at(vec2 p) const; // altar on this tile, or -1
+    // Group whose camp tile this is, or -1.
+    int group_at(vec2 p) const { return static_cast<int>(group_lookup_[tile_index(p)]) - 1; }
+    // Altar on this tile, or -1.
+    int altar_at(vec2 p) const { return in_bounds(p) ? static_cast<int>(altar_lookup_[tile_index(p)]) - 1 : -1; }
     // Groups with a camp tile within `radius`, seen or not; a scratch vector, valid until the next call.
     const std::vector<int>& groups_near(vec2 p, int radius) const;
 
     // Walking steps over static terrain (camps and units ignored).
-    const Field& from_ally_spawn() const;
+    const Field& from_ally_spawn() const { return ally_field_ ? *ally_field_ : make_ally_field(); }
     bool from_ally_spawn_ready() const { return ally_field_.has_value(); }
-    const Field& from_enemy_spawn() const;
+    const Field& from_enemy_spawn() const { return enemy_field_ ? *enemy_field_ : make_enemy_field(); }
     const BushCluster& bush_cluster(vec2 p) const;
     const bitboard& near_bushes() const; // tiles with a bush within ward placement range (2)
     // Find every cluster viewers(p, radius) needs while more than `fuel_floor` fuel remains; true
@@ -171,6 +173,8 @@ private:
     // The cluster grown from p; null if the fuel fell to the floor first.
     const BushCluster* grow_cluster(vec2 p, std::uint64_t fuel_floor) const;
     mutable std::optional<bitboard> diagonal_links_, near_bushes_;
+    const Field& make_ally_field() const;
+    const Field& make_enemy_field() const;
     const bitboard& diagonal_links() const; // bushes with a bush diagonal neighbour joined only diagonally
 };
 
@@ -343,14 +347,28 @@ public:
         if (is_stale()) throw StaleTurn{};
     }
 
-    const ChampionBelief& me() const { return allies[self_index]; }
+    const ChampionBelief& me() const { return *me_; }
+    // An enemy alive and in view, as of the last update or observe.
+    bool enemy_seen() const {
+        if (!enemy_seen_known_) {
+            enemy_seen_ = false;
+            for (const auto& e : enemies)
+                if (e.alive && e.visible) {
+                    enemy_seen_ = true;
+                    break;
+                }
+            enemy_seen_known_ = true;
+        }
+        return enemy_seen_;
+    }
     // Index of the champion's turn in `round`, by its rank then: the current one for this round,
     // that of our previous update for earlier rounds.
     int slot(const ChampionBelief& c, int r) const {
         // Teams alternate one turn at a time, A first in odd rounds; the larger team's extra
         // champions go last.
-        const int others = static_cast<int>((c.side == team::ally ? enemies : allies).size());
-        const bool first = (c.side == team::ally) == (map().team_a == (r % 2 == 1));
+        const bool ally = c.side == team::ally;
+        const int others = ally ? enemy_count_ : ally_count_;
+        const bool first = ally == (team_a_ == (r % 2 == 1));
         const int rank = r < round ? c.prev_rank : c.rank;
         return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
     }
@@ -421,6 +439,8 @@ private:
     // Every change to `possible` but growth goes to `undashed` too.
     static void also_undashed(ChampionBelief& b, const bitboard& tiles);
     void update_camps();
+    struct CampViews;
+    void update_camp(std::size_t g, bool in_view, CampViews& views);
     int hold_start(const CampGroup& G, team holder, int earliest, bool cleared_by_us) const;
     void update_altars();
     std::uint32_t tributing_enemies() const; // bit i: enemies[i] is believed to be tributing
@@ -428,6 +448,10 @@ private:
     std::vector<int> ally_scores_; // by round
 
     std::unique_ptr<StaticMap> static_;
+    const ChampionBelief* me_ = nullptr; // &allies[self_index], set with the beliefs
+    int ally_count_ = 0, enemy_count_ = 0; // allies.size(), enemies.size()
+    bool team_a_ = true;                  // map().team_a
+    mutable bool enemy_seen_known_ = false, enemy_seen_ = false;
     bitboard unseen_; // ~visible
     bitboard landing_{cambc::uninitialized}; // open_for_them & unseen_, once landing_ready_
     bool landing_ready_ = false;
@@ -480,11 +504,7 @@ inline bool kept_recall(const cambc::champion& c, int full = static_cast<int>(ca
     return c.is_recalling() && static_cast<int>(c.remaining_channel_time()) < full - 1;
 }
 
-inline bool enemy_seen(const World& world) {
-    for (const auto& e : world.enemies)
-        if (e.alive && e.visible) return true;
-    return false;
-}
+inline bool enemy_seen(const World& world) { return world.enemy_seen(); }
 
 inline bool enemy_within(const World& world, vec2 p, int r) {
     for (const auto& e : world.enemies)

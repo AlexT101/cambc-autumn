@@ -100,6 +100,7 @@ private:
         std::int8_t range;
         std::uint8_t key; // its tiles, range, sight and turn: ways with equal keys merge
         bool sight, stuns, walked;
+        std::int8_t bound; // extent_[from] + range: the farthest tile it reaches
     };
     // Returns the way's index: one already there with the same key takes the larger damage.
     int add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked);
@@ -116,17 +117,23 @@ private:
     Window sets_occupied_;
     std::uint8_t sets_kind_ = 0;
     bool sets_reusable_ = false;
-    // The ways depend only on what the recipe holds: kept between builds while it is unchanged.
+    // The ways depend only on what the recipe holds: kept between builds while it is unchanged,
+    // one set for each ready slots and number of turns, as cooldowns run out and come back.
     struct Recipe {
         cambc::champion_type type{};
         std::uint32_t strength = 0, focus = 0;
         std::uint8_t slots = 0;
         bool twice = false, valid = false;
         bool operator==(const Recipe&) const = default;
-    } recipe_;
-    std::array<Way, 14> ways_;
-    int count_ = 0;
-    int basic_ = -1; // the plain basic attack's way
+    };
+    struct Ways {
+        Recipe recipe;
+        std::array<Way, 14> way;
+        int count = 0;
+        int basic = -1; // the plain basic attack's way
+    };
+    std::array<Ways, 8> ways_by_;
+    Ways* ways_ = &ways_by_[0];
     float strength_ = 0;
     bool twice_ = false;
     int reach_ = -1;
@@ -147,14 +154,20 @@ private:
 void warm_reach(const World& world, std::uint64_t fuel_floor);
 
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
-Strike strike(const ChampionBelief& c, int turn_round);
+const Strike& strike(const ChampionBelief& c, int turn_round);
 // The round of the enemy's next turn: later this round if it acts after us, else next round.
 int next_turn_round(const World& world, const ChampionBelief& c);
 // Its turns before our next one: later this round, and next round before us.
 int turns_before_ours(const World& world, const ChampionBelief& c);
 // strike(), widened when it has two turns before our next: a walk then the strike, or the strike
 // and a second basic attack.
-Strike threat_strike(const World& world, const ChampionBelief& c);
+const Strike& threat_strike(const World& world, const ChampionBelief& c);
+
+// dist(p, c) <= r for r >= 0, without the distance.
+[[gnu::always_inline]] inline bool in_square(vec2 p, vec2 c, int r) {
+    const auto side = 2 * static_cast<unsigned>(r);
+    return (static_cast<unsigned>(p.x - c.x + r) <= side) & (static_cast<unsigned>(p.y - c.y + r) <= side);
+}
 
 struct Threat {
     int enemy = -1; // index into World::enemies
@@ -184,7 +197,7 @@ struct Trade {
     int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
     int turns_to_kill_them = 0; // ours
     bool self_falls = false;    // we die before their side does, when they strike first
-    float our_health = 0, their_health = 0;
+    float our_health = 0, their_health = 0; // debug_fights only
     int allies = 0, enemies = 0;
     std::array<float, 4> dealt{}; // debug_fights only: see simulate()
 };
@@ -195,6 +208,17 @@ public:
 
     std::span<const Threat> threats();
     bool built() const { return built_; }
+    // Bit i: enemies[i] is alive and visible (seen) or alive, unseen and tracked (unseen).
+    // Beliefs are fixed for the turn, so these are listed once.
+    std::uint32_t seen_enemies() {
+        if (!listed_) list_enemies();
+        return seen_;
+    }
+    std::uint32_t live_enemies() {
+        if (!listed_) list_enemies();
+        return seen_ | unseen_;
+    }
+    void list_enemies();
     bool any_threat(); // threats() is not empty, without building it
     // Without building the threats: at least worst_damage(p), and at least their sum with each
     // visible enemy yet to act counted twice when `double_unacted`.
@@ -234,7 +258,10 @@ public:
     std::uint32_t fight_key_with(vec2 p, std::uint32_t visible);
     // The fight of a key, memoised.
     Trade fight_of(std::uint32_t key);
-    bool known_fight_of(std::uint32_t key) const { return memo(key) != nullptr; }
+    // fight_of(key) if memoised, else null.
+    const Trade* known_fight_of(std::uint32_t key) const { return memo(key); }
+    // fight_of(key) when known_fight_of(key) is null.
+    Trade new_fight(std::uint32_t key);
     // fight(p) if it needs no simulation, else null.
     const Trade* known_fight(vec2 p);
     // threat_strike(), kept for the turn.
@@ -268,14 +295,16 @@ public:
         float weight;
         int reach; // farthest distance at which it would pick us
     };
-    const std::vector<CampHit>& awake_members();
+    std::span<const CampHit> awake_members();
 
     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
     void refresh();
 
+    // A visible enemy's Reach, built on first use this turn: blow(e, p) where its strike reaches p.
+    const Reach& reach_of(const ChampionBelief& e);
+
 private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
-    const Reach& reach_of(const ChampionBelief& e);
     // Chance the threat could be within reach of p; uniform over its possible tiles.
     float chance_in_reach(const Threat& t, vec2 p);
     // Every credible threat at full damage, plus camps.
@@ -301,6 +330,15 @@ private:
     // foe(e) with only its strike worked out: an unseen enemy's tiles and weight count its
     // possible set, a whole-board host operation.
     Foe& struck(const ChampionBelief& e);
+    void strike_foe(const ChampionBelief& e, Foe& x);
+    void count_foe(const ChampionBelief& e, Foe& x);
+    void build_threats();
+    void find_members();
+    void count_champions();
+    void list_reachable();
+    std::uint64_t estimate_build();
+    bool still_alive(const ChampionBelief& c);
+    void build_reach(const ChampionBelief& e, Reach& r);
     void build();
     template <class F> void each_threat(vec2 p, F&& f);
     // Seen alive at turn start but dead now, once refreshed.
@@ -311,6 +349,8 @@ private:
     bool built_ = false;
     bool refresh_ = false;
     std::array<std::int8_t, 16> gone_{}; // by enemy index: 0 unknown, 1 alive, 2 dead
+    bool listed_ = false;
+    std::uint32_t seen_ = 0, unseen_ = 0;
     // Left uninitialised: the engine charges for every byte written. Bit i: foes_[i] is set.
     std::uint16_t known_ = 0;
     std::uint16_t counted_ = 0; // bit i: foes_[i] has its tiles and weight
@@ -322,8 +362,19 @@ private:
     // vector reallocates at ~300 fuel a time, and each Threat allocates a bitboard.
     std::vector<Threat>& threats_;
     int threat_count_ = 0;
-    std::vector<CampHit>& members_; // likewise; valid once `members_known_`
+    std::uint16_t threat_mask_ = 0; // bit i: enemies[i] is one of them
+    std::vector<CampHit>& members_; // likewise, the first `member_count_`; valid once `members_known_`
+    int member_count_ = 0;
     bool members_known_ = false;
+    struct CampMemo {
+        vec2 p;
+        float damage;
+        bool valid;
+    };
+    // camp_damage() by `worst`: the last tile asked. Reset whenever the members are found.
+    union {
+        std::array<CampMemo, 2> camp_memo_;
+    };
     std::optional<bitboard> camp_area_, enemy_area_;
     // By fight_key(). A memo: past `max_fights` the oldest is replaced.
     struct FightMemo {
@@ -337,6 +388,10 @@ private:
         std::array<FightMemo, max_fights> fights_;
     };
     std::uint64_t costliest_fight_ = 0;
+    // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
+    // once refreshed: reached_ only gains bits meanwhile, and gone() keeps its answers.
+    std::uint16_t reachable_ = 0;
+    bool reachable_known_ = false;
     int champions_ = -1;            // in sight, for fight_cost_estimate(); beliefs are fixed for the turn
     std::uint64_t build_cost_ = 0;  // build_cost_estimate() until built, refreshed or invalidated; 0: unknown
 };

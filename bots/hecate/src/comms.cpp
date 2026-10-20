@@ -65,10 +65,8 @@ struct State {
     std::uint64_t last = 0; // the bits as we left them at the end of our previous turn
     int last_round = -1;
     std::uint64_t fresh = 0; // records written since then
-    std::array<int, 8> bags{-1, -1, -1, -1, -1, -1, -1, -1}; // by ally index
-    int my_bag = 0, posted_bag = -1;
-    std::array<int, 8> claims{-1, -1, -1, -1, -1, -1, -1, -1}; // by ally index
-    int mine = -1, posted = -1;
+    int posted_bag = -1;
+    int posted = -1;
     int fighting = -1; // enemy index to post as a rally this turn
 };
 State state;
@@ -76,12 +74,12 @@ State state;
 // Raw reads and writes: the SDK's checked ones cost several times more.
 std::uint64_t read_bits() {
     std::uint64_t bits = 0;
-    cambc::detail::check(cambc::detail::sdk_read_shared_memory(0, &bits, sizeof bits));
+    ok(cambc::detail::sdk_read_shared_memory(0, &bits, sizeof bits));
     return bits;
 }
 
 void write_bits(std::uint64_t bits, int round) {
-    cambc::detail::check(cambc::detail::sdk_write_shared_memory(0, &bits, sizeof bits));
+    ok(cambc::detail::sdk_write_shared_memory(0, &bits, sizeof bits));
     state.last = bits;
     state.last_round = round;
 }
@@ -102,14 +100,14 @@ int dated(int parity) {
 
 } // namespace
 
-void expect(World& world) {
+[[gnu::flatten]] void expect(World& world) {
     world.expected_sighting = {};
     const auto bits = read_bits();
     if ((changes(bits) & sighting_bits) && sight_x.get(bits) != 0)
         world.expected_sighting = {sight_index.get(bits), {sight_x.get(bits) - 1, sight_y.get(bits)}, dated(sight_parity.get(bits))};
 }
 
-void receive(World& world) {
+[[gnu::flatten]] void receive(World& world) {
     state.fighting = -1;
     const auto bits = read_bits();
     const int round = world.round;
@@ -120,9 +118,9 @@ void receive(World& world) {
         const float health = code == 7 ? 1.0f : (static_cast<float>(code) + 0.5f) / 7.0f;
         world.note_sighting(sight_index.get(bits), pos, dated(sight_parity.get(bits)), health);
     }
-    if ((state.fresh & bag_bits) && bag_body.get(bits) != world.me().index) state.bags[bag_body.get(bits)] = 4 * bag_fours.get(bits);
+    if ((state.fresh & bag_bits) && bag_body.get(bits) != world.me().index) detail::posts.bags[bag_body.get(bits)] = 4 * bag_fours.get(bits);
     if ((state.fresh & claim_bits) && claim_body.get(bits) != world.me().index)
-        state.claims[claim_body.get(bits)] = claim_group.get(bits) - 1;
+        detail::posts.claims[claim_body.get(bits)] = claim_group.get(bits) - 1;
     if ((state.fresh & camp_bits) && camp_group.get(bits) != 0) {
         const int after = std::max(state.last_round, 0);
         const int respawn = after + ((camp_respawn.get(bits) - after) & 255);
@@ -163,18 +161,18 @@ void send(World& world, bool moved, bool refresh) {
     const bool claim_fresh = (state.fresh & claim_bits) && claim_body.get(bits) != me;
     const int team = static_cast<int>(world.allies.size());
     const bool reminder = round % team == me
-                          && (claim_body.get(bits) != me || claim_group.get(bits) != state.mine + 1);
-    if (!claim_fresh && (state.mine != state.posted || reminder)) {
-        claim_group.set(bits, state.mine + 1);
+                          && (claim_body.get(bits) != me || claim_group.get(bits) != detail::posts.mine + 1);
+    if (!claim_fresh && (detail::posts.mine != state.posted || reminder)) {
+        claim_group.set(bits, detail::posts.mine + 1);
         claim_body.set(bits, me);
-        state.posted = state.mine;
+        state.posted = detail::posts.mine;
         dirty = true;
     }
 
     // Bags change at captures, kills, deaths and tributes; the same rules as claims, one turn later
     // in the reminder cycle.
     const bool bag_fresh = (state.fresh & bag_bits) && bag_body.get(bits) != me;
-    const int fours = std::min(127, (state.my_bag + 3) / 4);
+    const int fours = std::min(127, (detail::posts.my_bag + 3) / 4);
     const bool bag_reminder = (round + 1) % team == me && (bag_body.get(bits) != me || bag_fours.get(bits) != fours);
     if (!bag_fresh && (fours != state.posted_bag || bag_reminder)) {
         bag_fours.set(bits, fours);
@@ -205,22 +203,10 @@ void send(World& world, bool moved, bool refresh) {
     if (dirty) write_bits(bits, round);
 }
 
-void bag(int gems) { state.my_bag = gems; }
+void bag(int gems) { detail::posts.my_bag = gems; }
 
 void post_rally(int enemy) { state.fighting = enemy; }
 
-int bag_of(const World& world, int ally) {
-    const auto& a = world.allies[ally];
-    if (a.is_self) return state.my_bag;
-    return a.alive ? state.bags[ally] : 0;
-}
-
-void claim(int group) { state.mine = group < max_group ? group : -1; }
-
-int claim_of(const World& world, int ally) {
-    const auto& a = world.allies[ally];
-    if (a.is_self) return state.mine;
-    return a.alive ? state.claims[ally] : -1;
-}
+void claim(int group) { detail::posts.mine = group < max_group ? group : -1; }
 
 } // namespace aph::comms

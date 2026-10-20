@@ -122,3 +122,10 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
 19. 2026-10-19 (not yet submitted). The shared-gem caster draft of item 17 reverted: on the ladder version 29 (with
    it) was level with version 28 (without it), 29-46 vs 30-45, and 2-3 on stampede against 3-2. The 63% local
    result stands in EXPERIMENTS.md for anyone who wants to retry it with ladder evidence.
+20. 2026-10-20 (not yet submitted). Fuel rounds 4-9, byte-identical at 100M (46 bench games vs rival and nemesis, and
+   40 games on 20 held-out maps/gen and maps/gen-central maps): -18% fuel a turn (-21% on heavy maps), p99 -20%,
+   turns over 100k -71 to -79%, round 1 -9%, no turn dearer. At the real budget on the bench: out-of-fuel turns 6 -> 0,
+   fuel-gate shortcuts 6765 -> 2234. No fuel gate, reserve or estimate changed. Fight path: Reach::at, step_guard,
+   an exact-sum fast turn in simulate, memoised strikes and kits, per-turn enemy masks, known cases inline with the
+   work out of line; world and economy: farm inlined, raw host calls through util.h helpers, camp visibility reused,
+   no ward attempt on a stunned turn. Details per round in [../EXPERIMENTS.md](../EXPERIMENTS.md).

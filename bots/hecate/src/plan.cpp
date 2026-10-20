@@ -89,7 +89,7 @@ bool read_board(const World& world, const ChampionBelief* hold, Board& b, int re
             for (const auto& o : world.enemies)
                 if (&o != &e && o.alive && o.visible && o.facts().passive == Passive::linked_pair) partner = o.health;
         b.foes[b.n++] = {&e, e.pos, health, e.retaliation(), partner,
-                         params::gem_value * static_cast<float>(pair_gems(world, e)), enemy_spawn.is_set(e.pos), &e == hold};
+                         params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), &e == hold};
     }
     if (b.n == 0) return false;
     const auto state = my_state();
@@ -224,7 +224,7 @@ bool strike_possible(const World& world) {
     return enemy_within(world, here, std::max(ability_range + 1, strike_reach(self.facts(), self.facts().has_dash())));
 }
 
-Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent, const ChampionBelief* hold) {
+[[gnu::flatten]] Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent, const ChampionBelief* hold) {
     Planned out;
     Board b;
     const auto& f = world.me().facts();
@@ -377,7 +377,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     if (count > 0) {
         const auto& blocked = pathing.blocked();
         const bitboard* guard = pathing.guard();
-        const auto walkable = [&](vec2 p) { return in_bounds(p) && !blocked.is_set(p) && !(guard && guard->is_set(p)); };
+        const auto walkable = [&](vec2 p) { return in_bounds(p) && !test(blocked, p) && !(guard && test(*guard, p)); };
         const Field* field = walks ? goal_field(world, pathing, intent) : nullptr;
         const int here_steps = field ? field->at(b.here) : static_cast<int>(unreachable);
         const auto gain_to = [&](vec2 p) {
@@ -436,7 +436,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     }
     // Carry it out; a move refused (a hidden unit) falls back to striking from here.
     Healths h = h0;
-    const auto strike_here = [&](bool reset) {
+    const auto strike_here = [&](bool reset) __attribute__((always_inline)) {
         const Hit a = b.attack ? best_hit(b, my_position(), h) : Hit{};
         if (attack(b, a)) {
             out.attacked = true;
@@ -483,7 +483,7 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     return out;
 }
 
-void strike_after(const World& world, Safety& safety, const ChampionBelief* hold) {
+[[gnu::flatten]] void strike_after(const World& world, Safety& safety, const ChampionBelief* hold) {
     if (!world.me().alive || world.is_stale()) return;
     const auto state = my_state();
     if (state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::recalling)
@@ -519,7 +519,7 @@ void strike_after(const World& world, Safety& safety, const ChampionBelief* hold
     if (walk_allows) cast_at_enemies(world, false, hold);
 }
 
-bool strike_enemy(const World& world, const ChampionBelief* hold) {
+[[gnu::flatten]] bool strike_enemy(const World& world, const ChampionBelief* hold) {
     if (!world.me().alive || !my_can_attack()) return false;
     Board b;
     const auto& f = world.me().facts();
@@ -531,7 +531,7 @@ bool reset_may_kill(const World& world) {
     const auto& self = world.me();
     const auto& f = self.facts();
     const int slot = f.slot_of(AbilityKind::attack_reset);
-    if (slot < 0 || !self.ability_ready(slot, world.round)) return false;
+    if (slot < 0 || !self.ability_ready(slot, world.round) || !enemy_seen(world)) return false;
     const int reach = f.attack_range() + (f.walk_and_attack_independent() ? 1 : 0);
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && dist(self.pos, e.pos) <= reach && e.health <= 2 * self.strength) return true;

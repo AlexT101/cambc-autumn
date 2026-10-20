@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <cstdlib>
 #include <cstdio>
 #include <memory>
 #include <vector>
@@ -55,39 +56,48 @@ inline int& siege_group() {
     return g;
 }
 
+// cambc::detail::check() out of line costs a call and a stack frame per host call; it throws only for
+// a nonzero code.
+[[gnu::always_inline]] inline void ok(std::int32_t code) {
+    if (code != 0) [[unlikely]] cambc::detail::check(code);
+}
+
 // Our own champion, read raw. The SDK's accessors build and copy a whole record for each field
 // (position() ~85 fuel, item_count() ~225); a raw read into static storage costs ~25. Each call
 // reads the engine again, as the SDK's do.
-inline std::uint32_t my_handle() { return static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(cambc::self())); }
-inline const cambc::detail::champion_info& my_record() {
+// Read once at start-up, after the SDK's own; 0 in the draft, which has no champion.
+inline const std::uint32_t my_handle_value =
+    cambc::detail::cached_self ? static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(*cambc::detail::cached_self)) : 0;
+inline std::uint32_t my_handle() { return my_handle_value; }
+[[gnu::always_inline]] inline const cambc::detail::champion_info& my_record() {
     static cambc::detail::champion_info record;
-    cambc::detail::check(cambc::detail::sdk_champion(my_handle(), &record));
+    ok(cambc::detail::sdk_champion(my_handle(), &record));
     return record;
 }
-inline vec2 my_position() {
+[[gnu::always_inline]] inline vec2 my_position() {
     const auto& r = my_record();
     return {r.x, r.y};
 }
-inline float my_health() { return my_record().health; }
-inline float my_max_health() { return my_record().max_health; }
-inline float my_strength() { return my_record().strength; }
-inline cambc::champion_state my_state() { return cambc::champion_state::from_bits_retain(my_record().state); }
-inline bool my_can_move() { return my_state().contains(cambc::champion_state::can_move); }
-inline bool my_can_attack() { return my_state().contains(cambc::champion_state::can_attack); }
-inline bool my_can_cast() { return my_state().contains(cambc::champion_state::can_cast); }
-inline std::uint32_t my_gems() {
+[[gnu::always_inline]] inline float my_health() { return my_record().health; }
+[[gnu::always_inline]] inline float my_max_health() { return my_record().max_health; }
+[[gnu::always_inline]] inline float my_strength() { return my_record().strength; }
+[[gnu::always_inline]] inline cambc::champion_state my_state() { return cambc::champion_state::from_bits_retain(my_record().state); }
+[[gnu::always_inline]] inline bool my_can_move() { return my_state().contains(cambc::champion_state::can_move); }
+[[gnu::always_inline]] inline bool my_can_attack() { return my_state().contains(cambc::champion_state::can_attack); }
+[[gnu::always_inline]] inline bool my_can_cast() { return my_state().contains(cambc::champion_state::can_cast); }
+[[gnu::always_inline]] inline std::uint32_t my_gems() {
     static std::uint32_t gems;
-    cambc::detail::check(cambc::detail::sdk_champion_gems(my_handle(), &gems));
+    ok(cambc::detail::sdk_champion_gems(my_handle(), &gems));
     return gems;
 }
-inline std::uint32_t my_gold() {
+[[gnu::always_inline]] inline std::uint32_t my_gold() {
     static std::uint32_t gold;
-    cambc::detail::check(cambc::detail::sdk_champion_gold(my_handle(), &gold));
+    ok(cambc::detail::sdk_champion_gold(my_handle(), &gold));
     return gold;
 }
 inline const cambc::enum_map<cambc::item_type>& my_items() {
     static cambc::enum_map<cambc::item_type> items;
-    cambc::detail::check(cambc::detail::sdk_champion_items(my_handle(), items.ptr()));
+    ok(cambc::detail::sdk_champion_items(my_handle(), items.ptr()));
     return items;
 }
 // From our state at turn start: later, a turn that has walked, attacked and cast shows the same bits.
@@ -100,7 +110,7 @@ inline bool my_stunned(cambc::champion_state state) {
         return false;
     static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
     std::uint32_t n = 0;
-    cambc::detail::check(cambc::detail::sdk_champion_buff_data(my_handle(), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    ok(cambc::detail::sdk_champion_buff_data(my_handle(), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
     return false;
@@ -109,11 +119,12 @@ inline bool my_stunned(cambc::champion_state state) {
 inline std::int32_t my_channel_time() {
     (void)my_record();
     static std::int32_t turns;
-    cambc::detail::check(cambc::detail::sdk_champion_channel_time(my_handle(), &turns));
+    ok(cambc::detail::sdk_champion_channel_time(my_handle(), &turns));
     return turns;
 }
 
-inline int dist(vec2 a, vec2 b) { return static_cast<int>(a.chebyshev_distance(b)); }
+// In 32 bits: the SDK's chebyshev_distance works in 64.
+inline int dist(vec2 a, vec2 b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
 
 inline bool in_bounds(vec2 p) { return cambc::map::is_in_bounds(p); }
 
@@ -123,15 +134,59 @@ inline int tile_index(vec2 p) { return p.x + p.y * cambc::map::width(); }
 inline constexpr vec2 directions[8] = {vec2::north, vec2::north_east, vec2::east, vec2::south_east,
                                        vec2::south, vec2::south_west, vec2::west, vec2::north_west};
 
+// b.is_set(p) without check()'s call and a stack slot.
+[[gnu::always_inline]] inline bool test(const bitboard& b, vec2 p) {
+    static std::int32_t value;
+    ok(cambc::detail::sdk_Bitboard_Test(b.ptr(), p.x, p.y, &value));
+    return value != 0;
+}
+
+// The SDK's bitboard calls without check()'s call and a stack slot for the result.
+[[gnu::always_inline]] inline void clear_board(bitboard& b) { ok(cambc::detail::sdk_Bitboard_Zero(b.ptr())); }
+[[gnu::always_inline]] inline void set_tile(bitboard& b, vec2 p, bool value = true) {
+    ok(cambc::detail::sdk_Bitboard_Set(b.ptr(), p.x, p.y, value));
+}
+[[gnu::always_inline]] inline void draw_square(bitboard& b, vec2 centre, float radius) {
+    ok(cambc::detail::sdk_Bitboard_DrawChebyshev(b.ptr(), centre.x, centre.y, radius));
+}
+[[gnu::always_inline]] inline bool board_empty(const bitboard& b) {
+    static std::int32_t value;
+    ok(cambc::detail::sdk_Bitboard_IsZero(b.ptr(), &value));
+    return value != 0;
+}
+[[gnu::always_inline]] inline bool boards_equal(const bitboard& a, const bitboard& b) {
+    static std::int32_t value;
+    ok(cambc::detail::sdk_Bitboard_IsEqual(a.ptr(), b.ptr(), &value));
+    return value != 0;
+}
+[[gnu::always_inline]] inline std::uint32_t board_count(const bitboard& b) {
+    static std::uint32_t value;
+    ok(cambc::detail::sdk_Bitboard_NumSetBits(b.ptr(), &value));
+    return value;
+}
+[[gnu::always_inline]] inline std::uint32_t positions_into(const bitboard& b, vec2* out, std::uint32_t size) {
+    static std::uint32_t count;
+    ok(cambc::detail::sdk_Bitboard_GetSetBits(b.ptr(), out, size, &count));
+    return count;
+}
+
+// cambc::vision's occupancy reads, without check()'s call.
+[[gnu::always_inline]] inline void occupancy_into(team side, bitboard& out) {
+    ok(side == team::ally ? cambc::detail::sdk_ally_occupancy(out.ptr()) : cambc::detail::sdk_enemy_occupancy(out.ptr()));
+}
+[[gnu::always_inline]] inline void camps_into(bitboard& out) { ok(cambc::detail::sdk_camp_occupancy(out.ptr())); }
+[[gnu::always_inline]] inline void teleports_into(bitboard& out) { ok(cambc::detail::sdk_teleport_occupancy(out.ptr())); }
+[[gnu::always_inline]] inline void vision_into(bitboard& out) { ok(cambc::detail::sdk_vision(out.ptr())); }
+
 inline bitboard single(vec2 p) {
     bitboard b;
-    b.set(p);
+    set_tile(b, p);
     return b;
 }
 
 inline bitboard square(vec2 p, int r) {
     bitboard b;
-    b.draw_chebyshev(p, static_cast<float>(r));
+    draw_square(b, p, static_cast<float>(r));
     return b;
 }
 
@@ -139,7 +194,7 @@ inline bitboard square(vec2 p, int r) {
 // fuel). The caller bounds the set to N tiles.
 template <std::size_t N> class Tiles {
 public:
-    explicit Tiles(const bitboard& b) : count_{std::min<std::uint32_t>(b.positions_into(std::span<vec2>{tiles_, N}), N)} {}
+    explicit Tiles(const bitboard& b) : count_{std::min<std::uint32_t>(positions_into(b, tiles_, N), N)} {}
     const vec2* begin() const { return tiles_; }
     const vec2* end() const { return tiles_ + count_; }
     bool empty() const { return count_ == 0; }
@@ -154,29 +209,29 @@ private:
 // The first set tile in board order; b must not be empty.
 inline vec2 first_tile(const bitboard& b) {
     vec2 p;
-    (void)b.positions_into({&p, 1});
+    (void)positions_into(b, &p, 1);
     return p;
 }
 
 // out = a | b, a & b, a ^ b, ~a: one host call each, where the operators allocate a result (~130) or
 // take two calls to copy (clear and |=). out may be a or b.
 inline void or_into(const bitboard& a, const bitboard& b, bitboard& out) {
-    cambc::detail::check(cambc::detail::sdk_Bitboard_Union(a.ptr(), b.ptr(), out.ptr()));
+    ok(cambc::detail::sdk_Bitboard_Union(a.ptr(), b.ptr(), out.ptr()));
 }
 inline void and_into(const bitboard& a, const bitboard& b, bitboard& out) {
-    cambc::detail::check(cambc::detail::sdk_Bitboard_Intersect(a.ptr(), b.ptr(), out.ptr()));
+    ok(cambc::detail::sdk_Bitboard_Intersect(a.ptr(), b.ptr(), out.ptr()));
 }
 inline void xor_into(const bitboard& a, const bitboard& b, bitboard& out) {
-    cambc::detail::check(cambc::detail::sdk_Bitboard_Xor(a.ptr(), b.ptr(), out.ptr()));
+    ok(cambc::detail::sdk_Bitboard_Xor(a.ptr(), b.ptr(), out.ptr()));
 }
 inline void not_into(const bitboard& a, bitboard& out) {
-    cambc::detail::check(cambc::detail::sdk_Bitboard_Not(a.ptr(), out.ptr()));
+    ok(cambc::detail::sdk_Bitboard_Not(a.ptr(), out.ptr()));
 }
 inline void copy_into(const bitboard& a, bitboard& out) { or_into(a, a, out); }
 // out &= ~tiles without a new board.
 inline void drop(bitboard& out, const bitboard& tiles) {
-    out |= tiles;
-    out ^= tiles;
+    or_into(out, tiles, out);
+    xor_into(out, tiles, out);
 }
 
 // The helpers below work in scratch boards: allocating a board (~300 fuel) costs more than the
@@ -189,8 +244,8 @@ inline const bitboard& within(const bitboard& tiles, vec2 p, int r) {
     static vec2 square_at{-1, -1};
     static int square_r = -1;
     if (p != square_at || r != square_r) {
-        square.clear();
-        square.draw_chebyshev(p, static_cast<float>(r));
+        clear_board(square);
+        draw_square(square, p, static_cast<float>(r));
         square_at = p, square_r = r;
     }
     and_into(square, tiles, box);
@@ -199,29 +254,36 @@ inline const bitboard& within(const bitboard& tiles, vec2 p, int r) {
 
 // r <= 8.
 inline Tiles<17 * 17> positions_within(const bitboard& tiles, vec2 p, int r) { return Tiles<17 * 17>{within(tiles, p, r)}; }
-inline bool any_within(const bitboard& tiles, vec2 p, int r) { return !within(tiles, p, r).is_empty(); }
-inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return within(tiles, p, r).count(); }
+inline bool any_within(const bitboard& tiles, vec2 p, int r) { return !board_empty(within(tiles, p, r)); }
+inline std::uint32_t count_within(const bitboard& tiles, vec2 p, int r) { return board_count(within(tiles, p, r)); }
 
 // Live occupancy, each in its own scratch board, valid until its next read.
 inline const bitboard& live_champion_tiles(team side) {
     static bitboard ally{cambc::uninitialized}, enemy{cambc::uninitialized};
     auto& b = side == team::ally ? ally : enemy;
-    cambc::vision::champion_tiles_into(side, b);
+    occupancy_into(side, b);
     return b;
 }
 
 inline const bitboard& live_camp_tiles() {
     static bitboard b{cambc::uninitialized};
-    cambc::vision::camp_tiles_into(b);
+    camps_into(b);
     return b;
 }
 
 inline constexpr std::uint16_t unreachable = cambc::distance_field::unreachable;
 
+// field.get(p) without check()'s call and a stack slot.
+[[gnu::always_inline]] inline int steps_at(const cambc::distance_field& field, vec2 p) {
+    static std::uint16_t result;
+    ok(cambc::detail::sdk_DistanceField_Get(field.ptr(), p.x, p.y, &result));
+    return result;
+}
+
 struct Field {
     cambc::distance_field steps;
     bitboard goals;
-    int at(vec2 p) const { return steps.get(p); } // `unreachable` if cut off
+    int at(vec2 p) const { return steps_at(steps, p); } // `unreachable` if cut off
 };
 
 // A host search costs about 1.5k + (20 + layers) per 8x8 chunk of the map.
@@ -266,8 +328,15 @@ inline std::unique_ptr<Field> make_field(const bitboard& walls, const bitboard& 
 
 // The imports read raw: the SDK's wrappers add checks for failures only an ABI mismatch could cause.
 inline std::uint64_t fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
+// cambc::round_number() without check()'s call and a stack slot.
+inline std::uint32_t checked_round() {
+    static std::uint32_t round;
+    ok(cambc::detail::sdk_bc_round_number(&round));
+    return round;
+}
 inline std::uint32_t round_now() {
-    std::uint32_t round = 0;
+    static std::uint32_t round;
+    round = 0;
     (void)cambc::detail::sdk_bc_round_number(&round);
     return round;
 }

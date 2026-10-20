@@ -157,3 +157,107 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
 - Measuring out-of-fuel turns: the 16-game bench (`tools/fuel/bench.py --fuel 0`) swings by about ±20 and has no
   shared-gem maps. Over all maps, hecate-v5 runs out ~170 times in 390 games (14% of games), a third of them on two
   shared-gem maps (gen-shared-gems-640105705 alone ~50), then contest and stampede. Count them on the full suite.
+- Fight-path round on hecate 110e338, byte-identical at 100M (46 bench games: the default maps vs rival and nemesis,
+  heavy maps vs rival): turns over 100k −23/−36/−23%, p999 −6/−7/−6.5%, all turns −1.1/−2.1/−1.2%. Reach::at boxes from
+  span tables, its sight shift out of line and per-way bounds (−14% a query); step_guard bounds only foes that can
+  reach a step, asks Reach only of foes in bound reach, reads open tiles packed and memoised fights in place; kits kept
+  across turns; threat_strike's widening memoised; camp_damage memo; ward sight cast again only when the wards change,
+  read packed; live camps by a per-tile member index; big camp groups skip far champions; pack boxes worked out only
+  for outmatching subsets. Tried and slower or no gain: act or hurt inlined into simulate, a loop for plain sides in act
+  (−1%), cast split out of attack (+13% a simulation), a cast-only fast path when sums are exact (its checks cost more
+  than it saves), ward checks by distance to each ward (+7% a query), a second recipe kept in Reach (recipes rarely
+  flip back), the far-champion filter on small groups, a cross-turn simulation memo (2-10% hit rate). On the turns over
+  95k at 100M the fight cost is simulations ~30k (a 5v5 fight 8-12k), Reach ~25k and step_guard's own loop ~9k.
+- World and economy round on hecate 110e338, byte-identical at 100M (46 bench games vs rival and nemesis): −3.2% a turn
+  (−2.2% on heavy maps), p99 −1.4%, turns over 100k −5%, round 1 without the warm-up −8% (lanes ~208k -> ~180k). Wins:
+  `always_inline` on farm's lambdas, whose captured locals otherwise live in memory (−0.8% alone); `[[gnu::flatten]]` on
+  farm, update_camp(s), track, observe, comms receive, route, plan_strikes and the warm-up; camp updates in a member
+  function; liveness read only out of view; first-use caches in static arrays, not vectors; scratch boards for warm-up
+  temporaries. Slower: flatten on decide (+0.7%), update_champion or continue_recall; refixing a seen enemy by moving
+  its one tile; camp member visibility from the tile list; a Chebyshev bound before farm's steps; by-value captures;
+  dash widening by dilation and walks by capped fields (+0.4-1.5%). Fuel is ~1 per WASM instruction, loads included.
+- Fight-path round 2 on hecate 72cc39c, byte-identical at 100M (same 46 games, measured before the last commit): turns
+  over 100k −20/−24/−23%, p999 −5.6/−4.2/−4.8%, max −7.5/−6.4/−7.1%, all turns −1.1/−1.4/−1.2%. Simulation: sentinels
+  for idle, no shield and worthless slots, hurt()'s common case inline, an exact-sum fast turn for sides whose Strength
+  and cast damage are small sixteenths (casts add to the cached basic attacks), the weakest kept across shields and
+  heals that cannot change it (−14% a simulation on recorded fights). Hidden writes: vec2 and std::pair zero their
+  members, so step_guard, prey, retreat_step and pack_boxes cleared hundreds of bytes a call, and Reach::at its sight
+  windows; constructing the Reach pool wrote ~50KB at each game's first fight and the strike memos ~6KB on round 1
+  (now zeroed static storage). dist() in 32-bit (the SDK's is 64-bit: −0.2% on every turn). Memos per ready slots:
+  strikes and Reach ways (cooldowns flip recipes back and forth; the single-entry memos missed most turns). Also
+  awake_members works out turn order only near a member's reach, fight keys read joining allies once a turn,
+  best_ground clears only cells it reads, the pack zone is drawn as squares and prey tests coverage from its boxes.
+  Tried and slower or no gain in games (judge with whole games: ±0.1% swings from codegen alone): shields in the fast
+  turn (−1.8% on big recorded fights, +1.4% on small), side-level shield expiry, a cache of built fight sides (a Side
+  copy is memory.copy at a fuel a byte), a bulk side fill (−35% in a microbenchmark, slower in games), step_guard's
+  bound from per-foe offsets or row/column tables, pack boxes by a pruned subset search (recursion), an early stop in
+  Reach::at when the rest is dominated, packed bits instead of is_set for near_enemy_spawn (the host test is cheaper),
+  lethal settled by strike bounds first (the Reach builds only move elsewhere). Top turns (shared-gem maps, ~270k) are
+  still step_guard's 6v6 simulations (~10k each, ~11 a turn), Reach (~35k) and fight setup (~1.5k a simulation).
+- World, economy and SDK-call round 2 on hecate 85a648a, byte-identical at 100M (46 bench games): −11.2% a turn on the
+  default maps vs rival, −13.1% heavy, −11.0% vs nemesis; p99 −5.5/−6.4/−5.4%, p999 −3.6/−5.2/−4.0%, turns over 100k
+  284/90/278 -> 220/69/213; round 1 without the warm-up mean 143k -> 139k (max 180k -> 175k). Real budget: shortcuts on
+  the default maps 1665 -> 1018 and vs nemesis 1700 -> 1062, out-of-fuel turns 1/2/0 -> 0/3/0 (noise). Found with a
+  line profiler that counts every WASM op per source line and function (assembly instrumented, counters dumped inside
+  debug_block). Simple host calls cost only ~3-5 fuel; the waste was the WASM around them. Wins: hecate's own host reads
+  test the result inline (`ok()`) instead of calling the SDK's out-of-line `check()` (−1.2%), with raw helpers for tile
+  tests, field steps, bitboard clear/set/square/empty/count/positions, occupancy and scores, outputs in static storage
+  rather than stack slots (−0.4% each batch); `World::me()` through a kept pointer and `enemy_seen()` cached until a
+  champion update (−2.1%); loops over visible enemies return at once when none is seen (game_ender −0.6%, five more
+  −0.7%); our handle read once at start-up and round_now into static storage (−0.9%); read_priorities and
+  update_champion in locals, out of reach of aliasing stores (−1.4%, −0.3%); World::fix inlined so update_champion
+  passes no struct through memory (−0.4%: vec2 and Moment are passed by pointer to a stack copy when not inlined);
+  group_at/altar_at and the spawn fields inline in the header (−0.35%, −0.1%); dist() and central tiles in 32 bits;
+  slot() from kept team sizes; update_camps reuses last turn's visible groups while the camp tiles in view are the
+  same (one IsEqual host call; −0.3% to −1%); route's neighbour scan raw and bounds-free off the edge (−0.4%); no ward
+  attempt on a stunned turn (every one threw error 63, ~3.9k). Slower or no gain: `always_inline` on the SDK's check()
+  through a pre-declaration (+2%: inlined throw paths bloat every wrapper); an ally_seen() cache (allies are usually in
+  view, +0.2%); farm's loop index without modulo and its claim test as one mask (0%); a precomputed crew list (costs
+  more than the claimed groups it serves); CampGroup tile/threat accessors inline (round 1 +640, no gain); moving the
+  teleport branch out of update_champion (identical fuel); Moment comparisons field by field (+0.02%); vector resize
+  instead of reserve+push_back for camp health (round 1 +840). farm's loop (~280 ops a group, ~10 groups a turn) is
+  now ~17% of WASM ops and at its floor for local changes.
+- Fight-path round 3 on hecate bbd10a9 (merged with the world round 2), byte-identical at 100M (46 bench games):
+  before the merge −0.81/−0.95/−0.85% a turn, p999 −5.3/−4.5/−4.5%, turns over 100k 210/67/200 -> 168/56/160; after it
+  (raw SDK helpers in the fight path, step_guard's visible key) a further −0.26/−0.26/−0.27%, p99 −0.5/−0.7/−0.6%,
+  turns over 100k 125/44/121 -> 123/39/117. Mostly "known case inline, work out of line": struck(), reach_of(),
+  terrain(), the threat build, gone(), foe counts, camp members, cost estimates and fighter slots each test their ready
+  state inline and call a noinline builder, so callers keep their locals in registers. Also Reach::at settles a near way
+  outside bushes from its box and tests wards once a query; enemy ward sight refreshed from one raw occupancy read and
+  compared in place; step_guard asks each foe's Reach directly and simulates an unknown fight without a second memo
+  search; the Reach cost estimate counts a pending mask built once a refresh; fight sides filled in one pass with
+  tallies in locals; simulate's debug tallies compile-time; static windows place rows by constexpr shifts. Real budget
+  (games diverge, so noisy): out-of-fuel turns 1/5/3 -> 0/0/1 before the merge, 0/0/0 with both rounds; step-guard
+  shortcuts 117/421/186 -> 114/175/108 before the merge, 87/327/78 with both. Slower or no gain: per-round static caches in small inlined helpers (+0.1-0.5%: codegen around them grows), a
+  turns_before_ours cache (+0.1%). Leads: the general simulation path for Varg shields (~5k a heavy turn), Reach::at's
+  fixed cost (~10k a heavy turn), step_guard's own loop (~8.5k) and pack_boxes (~3k).
+- Fight-path round 4 on hecate 98706e5, byte-identical at 100M (46 bench games): −1.53/−2.40/−1.59% a turn (default
+  vs rival, heavy, vs nemesis), p99 −2.1/−2.6/−2.1%, p999 −2.1/−2.3/−1.9%, max −1.5/−1.8/−1.6%, turns over 100k
+  123/39/117 -> 112/31/101. Wins: Safety lists its enemies once a turn as masks (alive and visible; alive, unseen and
+  tracked), and every enemy loop in Safety and in step_guard, prey, killable_now, visible_threat and shield_if_needed
+  walks the mask instead of testing each belief (−0.6/−0.8/−0.65%, then −0.24/−0.39/−0.27%: a loop over the 152-byte
+  beliefs costs ~25 ops an enemy); camp members written into pre-sized storage rather than push_back (−0.26/−0.43%);
+  strike()/threat_strike() return their memo by reference (−0.09%); kite's bitboard calls through the raw helpers
+  (heavy −0.24%); distance thresholds whose distance is unused tested as a square by unsigned offsets (`in_square`:
+  camp members' reach −0.1/−0.18%, blow() −0.1%, fighting_allies' ally squares p999 −0.5 to −0.95%, in_pack_zone and
+  step_guard's filters −0.06%). Slower or no gain: most_damage cached per turn (+0.02%: called about once a turn),
+  Reach::at's memo hit inline with the miss out of line (+0.12-0.15%: the memo rarely hits, and callers grow), hoisted
+  member and health pointers in find_members (−0.01%), a square pre-test before find_members' distance (tail +0.3%).
+  Leads unchanged: the general simulation path for shields, Reach::at, step_guard's bound loop (dist ~800 a heavy turn),
+  static_window misses (~640 each, ~6 a heavy turn); World-level enemy masks would let the loops in abilities.cpp and
+  self_abilities.cpp (no Safety there) and the age-based loops (in_pack_zone, pack_boxes, recall_outruns) skip beliefs too.
+- World and economy round 3 on hecate c3c874c (not merged: it raises p99 and leaves heavy maps flat, against the
+  aim of cutting the tail), byte-identical at 100M (46 bench games): −1.16% a turn on the default
+  maps vs rival, −1.27% vs nemesis, 0.0% heavy; p99 +0.2-0.3%, p999 +0.1-0.2%, turns over 100k unchanged; real budget
+  (an earlier setting) unchanged: out-of-fuel 0/0/1 as before, shortcuts 751/913/874 -> 762/914/883 (noise).
+  Measured: a simple host call costs 3 + its arguments (sdk_champion 8, round 7, cooldown 9), so caching `my_record()`
+  cannot beat the round read its invalidation needs; a field search costs chunks × (16 + layers) + ~30 over the whole
+  map (100x100: 169 chunks, 2.9k for 1 layer), whatever region it touches, and `route` was 7% of all fuel (3.8k a
+  call, 0.6 a turn; inclusive meters: farm 8.7k a turn with its walk, world update 7.1k). Win: `route` keeps its last
+  field, walls and goals and, for the same goals, reuses it while every tile its walls changed at is at least our best
+  neighbour's layer (newly blocked) or has no neighbour below it (newly freed, not a goal); the layers below the one
+  that reached us are complete, so the neighbours and steps are exact. Checks that fail back off (up to 3 calls),
+  guarded searches are neither checked nor kept, at most 4 changed tiles (2: -0.1%, 6-12: +0.05-0.3%). Hits ~40% of unguarded calls; each check costs
+  3 board operations and reads (~700 with the freed tiles' neighbours), which leaves heavy maps (100x100, crowded)
+  slightly dearer. Not done: farm's loop has no cheap exact pre-rejection (its ~180 ops a group are spread over 25
+  lines); a cheaper reuse check (field values in WASM memory, a host min over a mask) would make heavy maps gain too.
