@@ -266,9 +266,6 @@ void* static_alloc(std::size_t bytes, std::size_t align) {
     return pool + start;
 }
 
-int StaticMap::group_at(vec2 p) const { return static_cast<int>(group_lookup_[tile_index(p)]) - 1; }
-
-int StaticMap::altar_at(vec2 p) const { return in_bounds(p) ? static_cast<int>(altar_lookup_[tile_index(p)]) - 1 : -1; }
 
 const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const {
     static std::vector<int> out;

@@ -116,8 +116,10 @@ struct StaticMap {
     std::vector<Altar> altars;
     std::vector<CampGroup> groups;
 
-    int group_at(vec2 p) const; // group whose camp tile this is, or -1
-    int altar_at(vec2 p) const; // altar on this tile, or -1
+    // Group whose camp tile this is, or -1.
+    int group_at(vec2 p) const { return static_cast<int>(group_lookup_[tile_index(p)]) - 1; }
+    // Altar on this tile, or -1.
+    int altar_at(vec2 p) const { return in_bounds(p) ? static_cast<int>(altar_lookup_[tile_index(p)]) - 1 : -1; }
     // Groups with a camp tile within `radius`, seen or not; a scratch vector, valid until the next call.
     const std::vector<int>& groups_near(vec2 p, int radius) const;
 
