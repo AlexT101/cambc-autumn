@@ -1880,11 +1880,15 @@ const bitboard* step_guard(const World& world, Safety& safety) {
         if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round)) radius = 2;
     // Who can hit a tile, and how hard: a tile no worse than ours is as safe as ours. `bound`
     // by distance alone, never below the exact exposure, which only the foes in it can add to.
+    // Only foes within their reach of a step or dash can hit any of the tiles.
+    unsigned reaching = 0;
+    for (int k = 0; k < n; ++k)
+        if (dist(here, at[k]) <= strikes[k]->reach + radius) reaching |= 1u << k;
     const auto bound = [&](vec2 p, float& damage) {
         unsigned mask = 0;
         damage = 0;
-        for (int k = 0; k < n; ++k)
-            if (const int d = dist(p, at[k]); d <= strikes[k]->reach) mask |= 1u << k, damage += strikes[k]->damage[d];
+        for (unsigned left = reaching; left; left &= left - 1)
+            if (const int k = std::countr_zero(left), d = dist(p, at[k]); d <= strikes[k]->reach) mask |= 1u << k, damage += strikes[k]->damage[d];
         return mask;
     };
     const auto exposure = [&](vec2 p, float& damage, unsigned near) {

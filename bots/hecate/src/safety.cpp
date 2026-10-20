@@ -537,6 +537,8 @@ struct Tables {
     std::array<std::array<Window, win_n>, win_n> columns{}, rows{};
     std::array<Window, win_r + 1> square{}; // [k]: within k of the centre
     std::array<Window, win_n * win_n> bits{};
+    // [c + win_n][r]: the columns (rows) within r of column (row) c, which may lie outside the window.
+    std::array<std::array<Window, win_n>, 3 * win_n> column_spans{}, row_spans{};
 };
 
 constexpr Tables tables = [] {
@@ -551,6 +553,13 @@ constexpr Tables tables = [] {
                     t.rows[a][b] |= win_bit(j, i);
                 }
     for (int k = 0; k <= win_r; ++k) t.square[k] = t.columns[win_r - k][win_r + k] & t.rows[win_r - k][win_r + k];
+    for (int c = -win_n; c < 2 * win_n; ++c)
+        for (int r = 0; r < win_n; ++r) {
+            const int a = std::max(0, c - r), b = std::min(win_n - 1, c + r);
+            if (a > b) continue;
+            t.column_spans[c + win_n][r] = t.columns[a][b];
+            t.row_spans[c + win_n][r] = t.rows[a][b];
+        }
     return t;
 }();
 
@@ -559,12 +568,11 @@ Window dilate(Window s) {
     return h | h.shl(win_n) | h.shr(win_n);
 }
 
-// The window tiles within r of window tile (cx, cy), which may lie outside it.
+// The window tiles within r of window tile (cx, cy), which may lie outside it: -win_n <= cx, cy <
+// 2 * win_n and r < win_n.
 Window box(int cx, int cy, int r) {
-    const int x0 = std::max(0, cx - r), x1 = std::min(win_n - 1, cx + r);
-    const int y0 = std::max(0, cy - r), y1 = std::min(win_n - 1, cy + r);
-    if (x0 > x1 || y0 > y1) return {};
-    return tables.columns[x0][x1] & tables.rows[y0][y1];
+    return tables.column_spans[static_cast<std::size_t>(cx + win_n)][static_cast<std::size_t>(r)]
+           & tables.row_spans[static_cast<std::size_t>(cy + win_n)][static_cast<std::size_t>(r)];
 }
 
 // A mask laid out around tile q, read in the window around q - (dx, dy).
@@ -796,6 +804,10 @@ Window sight(const World& world, vec2 p, bool far) {
     if (i < known.size()) masks[i] = m, known[i] = 1;
     return m;
 }
+
+// sight() laid out around the enemy at p - (dx, dy). Out of line: inlined, the shift's constants
+// were worked out on every Reach::at() call.
+[[gnu::noinline]] Window sight_from(const World& world, vec2 p, bool far, int dx, int dy) { return shift(sight(world, p, far), dx, dy); }
 
 // Static terrain around each tile, kept for the game: enemies keep to a few tiles. pass: a dash
 // path may cross it; land: open to them; camps: camp tiles, whose monsters block while alive.
@@ -1034,8 +1046,6 @@ Blow Reach::at(vec2 p) const {
         // sees it from anywhere.
         Window near, far;
         bool near_known = false, far_known = false;
-        // Out of line: inlined, its shift's constants were worked out on every call.
-        const auto seen = [this, p, dx, dy](bool wide) __attribute__((noinline)) { return shift(sight(*world_, p, wide), dx, dy); };
         float single = -1, walked = -1;
         bool basic = false;
         const int d = std::max(std::abs(dx), std::abs(dy));
@@ -1049,10 +1059,10 @@ Blow Reach::at(vec2 p) const {
             if (w.sight && !near_known && !far_known && warded(*world_, p)) near_known = far_known = true, near = far = win_full;
             if (w.sight) {
                 if (w.range <= 1) {
-                    if (!near_known) near = seen(false), near_known = true;
+                    if (!near_known) near = sight_from(*world_, p, false, dx, dy), near_known = true;
                     from &= near;
                 } else {
-                    if (!far_known) far = seen(true), far_known = true;
+                    if (!far_known) far = sight_from(*world_, p, true, dx, dy), far_known = true;
                     from &= far;
                 }
                 if (!from) continue;
