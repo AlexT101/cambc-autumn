@@ -90,12 +90,6 @@ public:
     // While guarding, no step or dash ends on a tile safety()->guarded() bans: routes go around them.
     void set_guarding(bool on);
     bool guarding() const { return guarding_; }
-    // Until W2-D: set_guard(nullptr) is set_guarding(false).
-    void set_guard(std::nullptr_t) { set_guarding(false); }
-    // Inert until W2-C and W2-D drop their calls; the integrator then deletes them.
-    const bitboard* guard() const { return nullptr; }
-    using GuardSource = const bitboard* (*)(const World&, Safety&);
-    void set_guard_source(GuardSource) {}
 
     // Unseen units can still block these.
     bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile, not known guarded

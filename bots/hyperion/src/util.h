@@ -640,8 +640,6 @@ inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }
 
 // Left for the rest of the turn after optional work.
 inline constexpr std::uint64_t end_reserve = 10000;
-// Left by the fight evaluations before acting: the strikes, the goal's walk and the turn's end.
-inline constexpr std::uint64_t act_reserve = 2 * end_reserve;
 // Left after work whose cost is bounded, at the end of the turn: little runs after warm-up.
 inline constexpr std::uint64_t last_reserve = 2000;
 // Layers a capped centre field may run past the farther spawn's steps to it; a field cut short
