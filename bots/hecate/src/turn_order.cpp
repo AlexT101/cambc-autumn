@@ -61,8 +61,8 @@ const ChampionBelief& live_self(const World& world) {
     b.is_self = true;
     b.alive = now.alive;
     b.visible = now.visible;
-    b.max_health = now.max_health;
     const auto& info = my_record();
+    b.max_health = info.max_health;
     b.pos = {info.x, info.y};
     b.health = info.health;
     b.strength = info.strength;
