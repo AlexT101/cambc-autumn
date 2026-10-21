@@ -146,7 +146,7 @@ derivations.
 
 Each phase is one commit:
 - A/B on ladder + `--gen` (582 games, both sides) against the previous phase's frozen commit, plus a cumulative
-  run against the baseline frozen in `bots/baselines/hecate-vN` before phase 1, and a run against nemesis.
+  run against the baseline frozen in `bots/baselines/hecate-vN` before phase 1.
 - Keep or drop at the real budget by TODO.md's rule (drop if clearly worse, below ~47%). The 100M run tells
   behaviour from fuel.
 - Out-of-fuel turns (`oof.py` on the A/B) no higher than the previous phase's.

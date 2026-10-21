@@ -13,7 +13,6 @@ Read the rest of `docs/` (generated; WebFetch can't read the site) or `rules-ver
 C++ only; ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ docs.
 - **hyperion** is the bot we work on: shipped changes in [CHANGES.md](research/hyperion/CHANGES.md), direction and the keep rule in [TODO.md](research/hyperion/TODO.md). It was named hecate until 2026-10-21.
 - **hecate** is now hyperion as it was at the 2026-10-21 session start (the former baseline hecate-v8), kept as the pre-changes reference. Its `params::test_draft` is on, so `py tools/ab.py main hecate` gives both bots the same test drafts.
-- **nemesis** is the predecessor of both.
 - Each bot's draft is compiled in (`params::draft_preference`).
 - A/B baselines are frozen copies in `bots/baselines/<bot>-vN/`: never edit them, and delete one once the current bots beat it about 80% of the time.
 - When copying a bot, leave out `.cambc/`, whose CMake cache breaks the build.

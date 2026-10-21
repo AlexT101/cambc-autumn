@@ -30,11 +30,11 @@ The full A/B: CAND against REF through run_batched.py on every suite, both sides
 ```
 py tools/ab.py orch/my-branch main --name my-change     # two git refs
 py tools/ab.py HEAD hecate                              # a ref against hecate (hyperion at the 2026-10-21 session start)
-py tools/ab.py main nemesis --no-test-draft --suites ladder,gen
+py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen    # each on its own compiled-in draft
 ```
 
 - **CAND / REF:** a git ref (branch, sha, `main`), whose `bots/hyperion` (`bots/hecate` in commits before the rename) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` set to true; or a bot directory under `bots/`, used as it is. Refs resolve in the shared repo, so worktree branches work; run it from the primary checkout.
-- **Options:** `--name` (default `<cand>-vs-<ref>`), `--threads` (default 22), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, and each `maps/gen-s*/`; a directory of maps also works), `--no-test-draft` (leave copies untouched, e.g. against nemesis), `--fuel N`.
+- **Options:** `--name` (default `<cand>-vs-<ref>`), `--threads` (default 22), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, and each `maps/gen-s*/`; a directory of maps also works), `--no-test-draft` (leave copies untouched, so each plays its own draft), `--fuel N`.
 - **Output:** a summary of at most 25 lines: CAND's win % with a 95% Wilson interval overall and per suite, failed matches, out-of-fuel turns per bot (`oof.py`) and wall time. `replays/ab/<name>/` gets `summary.json`, `summary.md` and each suite's run_batched log; batches go to `replays/batch-<time>-ab-<name>-<suite>/`.
 - The exit code is non-zero if any match failed.
 
@@ -69,18 +69,19 @@ The draft is compiled in (`params::draft_preference`), so a forced draft is a se
 - [matrix.py](variants/matrix.py) plays variants against each other through run_batched.py, one batch per distinct pair. It writes a win-rate matrix to `replays/matrix-TIMESTAMP/`.
 - Rows use `--bot` (default hyperion); columns default to the row drafts on `--vs-bot`.
 - Identical row and column entries play mirror matches, reported as team A's win rate.
+- hecate's `params::test_draft` overrides any forced draft, so make variants from hyperion (the default `--source`).
 
 ```
-py tools/variants/make_variant.py varg,willow,ryth --source nemesis
-py tools/variants/matrix.py varg,tavi,ryth,stellar,ren nemesis@willow,ren --one-side   # specs [BOT@]DRAFT, or BOT@ for its own draft
-py tools/variants/matrix.py --focus --cols nemesis@      # each champion first pick + --filler, vs nemesis's own draft
+py tools/variants/make_variant.py varg,willow,ryth
+py tools/variants/matrix.py varg,tavi,ryth,stellar,ren willow,ren --one-side   # specs [BOT@]DRAFT, or BOT@ for its own draft
+py tools/variants/matrix.py --focus --cols hecate@       # each champion first pick + --filler, vs hecate's own (test) drafts
 py tools/variants/matrix.py --resume replays/matrix-TIMESTAMP # finish unfinished pairs (--report: rewrite reports only)
 ```
 
 ## Fuel: tools/fuel
 
 ```
-py tools/fuel/bench.py run hyperion --out replays/fuel/base.json          # 16 games vs nemesis, 8 maps, both sides, 100M fuel
+py tools/fuel/bench.py run hyperion --out replays/fuel/base.json          # 16 games vs hecate, 8 maps, both sides, 100M fuel
 py tools/fuel/bench.py run variants/x --out replays/fuel/x.json           # a modified copy of hyperion
 py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # identical replays, fuel change
 py tools/fuel/bench.py run hyperion --fuel 0 --out replays/fuel/real.json # the real budget: counts shortcuts and lost turns

@@ -4,11 +4,11 @@ With a per-turn budget far above what any turn needs (the default), no fuel gate
 games are fully determined by its logic: a pure fuel optimisation must leave every replay
 byte-identical while the fuel it records drops.
 
-    py tools/fuel/bench.py run nemesis --out replays/fuel/base.json      # bots/ names or paths
+    py tools/fuel/bench.py run hyperion --out replays/fuel/base.json     # bots/ names or paths
     py tools/fuel/bench.py run variants/x --out replays/fuel/x.json
     py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json
 
-`run` options: --opp (default nemesis), --maps (default a small mixed set), --fuel (per-turn quantum,
+`run` options: --opp (default hecate), --maps (default a small mixed set), --fuel (per-turn quantum,
 default 100000000; 0 for the real 100000), --jobs. Each game's bundle is kept under --games
 (default replays/fuel/games/<out stem>/). Fuel used per turn comes from the bundle's team-<x>.fuel:
 a 77-byte header, then one little-endian u64 per turn: the draft turns, then every body's turn of
@@ -135,6 +135,8 @@ def cmd_run(args):
 
 def cmd_compare(args):
     a, b = json.loads(Path(args.a).read_text()), json.loads(Path(args.b).read_text())
+    if Path(a["opp"]).name != Path(b["opp"]).name:
+        sys.exit(f"different opponents: {a['opp']} vs {b['opp']}")
     key = lambda g: (g["map"], g["side"])
     ga = {key(g): g for g in a["games"] if "error" not in g}
     gb = {key(g): g for g in b["games"] if "error" not in g}
@@ -160,7 +162,7 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
     r.add_argument("bot")
-    r.add_argument("--opp", default="nemesis")
+    r.add_argument("--opp", default="hecate")
     r.add_argument("--maps", nargs="+", default=DEFAULT_MAPS)
     r.add_argument("--fuel", type=int, default=100_000_000)
     r.add_argument("--jobs", type=int, default=12)

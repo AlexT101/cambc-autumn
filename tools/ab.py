@@ -2,11 +2,11 @@
 
     py tools/ab.py orch/my-branch main --name my-change
     py tools/ab.py HEAD hecate
-    py tools/ab.py main nemesis --no-test-draft --suites ladder,gen
+    py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen
 
 CAND and REF are each a git ref (branch, sha, main), whose bots/hyperion (bots/hecate before the
 2026-10-21 rename) is materialised with git archive into bots/variants/ab-<name>-<cand|ref>-<sha7>/
-with params::test_draft switched on, or a bot directory under bots/ (hecate, nemesis) used as it is. Wins are CAND's.
+with params::test_draft switched on, or a bot directory under bots/ (hecate) used as it is. Wins are CAND's.
 Suites: ladder (maps/), gen (maps/gen), fresh (every maps/gen-s*/), or any directory of maps."""
 
 import argparse
@@ -152,7 +152,7 @@ def main():
     parser.add_argument("--suites", default="ladder,gen,fresh",
                         help="Comma-separated: ladder, gen, fresh, or directories of maps (default: all three)")
     parser.add_argument("--no-test-draft", action="store_true",
-                        help="Leave materialised copies' params.h untouched (e.g. against nemesis)")
+                        help="Leave materialised copies' params.h untouched, so each plays its own draft")
     parser.add_argument("--fuel", type=int, help="Fuel per turn, passed to run_batched.py --fuel")
     args = parser.parse_args()
     started = perf_counter()
