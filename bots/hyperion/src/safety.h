@@ -386,10 +386,10 @@ public:
     // from a walk along the edge of its reach. q must not be a wall (tile()).
     float escape_cost(vec2 q);
     // Last round's damage (Memory::damage), and the part of it no visible enemy or camp explains,
-    // charged at the turn-start tile `at` on each of the enemies' turns in idle mode.
+    // charged in idle mode on each of the enemies' turns within a turn's move of the turn-start tile `at`.
     void note_taken(float damage) { taken_ = damage; }
     void note_unseen_hit(vec2 at, float damage);
-    float unseen_hit(vec2 p) const; // 0 off the noted tile
+    float unseen_hit(vec2 p) const; // 0 beyond a dash and a walk from `at`
     float taken() const { return taken_; }
 
     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near

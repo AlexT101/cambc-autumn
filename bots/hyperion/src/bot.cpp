@@ -1015,8 +1015,8 @@ void note_upkeep(const World& world, Safety& safety, const Memory& memory) {
         if (const int s = map.from_ally_spawn().at(here); s != unreachable) upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
 }
 
-// What hit us since our last turn, for Safety. With no visible enemy able to reach our tile, the
-// part the camps do not explain came from an unseen one, which may hit again while we stay.
+// What hit us since our last turn, for Safety. The part neither the camps nor the most the visible
+// enemies could do to our tile explain came from an unseen one, which may hit again while we stay near.
 void note_hits(const World& world, Safety& safety, const Memory& memory) {
     Phase phase{"note_hits"};
     const float damage = memory.damage;
@@ -1027,9 +1027,9 @@ void note_hits(const World& world, Safety& safety, const Memory& memory) {
     // A camp's hit less its modelled share leaves float dust; no champion hits for under 1.
     if (champ < 1.0f) return;
     std::uint16_t visible = 0;
-    (void)safety.strike_sum(here, &visible);
-    debug_block({ std::printf("GHOST %d %.0f %.0f %u\n", world.round, damage, champ, static_cast<unsigned>(visible)); });
-    if (visible == 0) safety.note_unseen_hit(here, champ);
+    const float ghost = champ - safety.strike_sum(here, &visible);
+    debug_block({ std::printf("GHOST %d %.0f %.0f %u %.0f\n", world.round, damage, champ, static_cast<unsigned>(visible), ghost); });
+    if (ghost >= 1.0f) safety.note_unseen_hit(here, ghost);
 }
 
 // A Jungle, Power or Durability shard short of its emblem.
@@ -2454,10 +2454,20 @@ bool may_chain(const World& world, Safety& safety) {
     return !safety.any_threat(); // all credible
 }
 
+// Safety::threatened(my_position()), asked once and only when a test needs it.
+struct Threat {
+    Safety& safety;
+    std::optional<bool> known;
+    bool operator()() {
+        if (!known) known = safety.threatened(my_position());
+        return *known;
+    }
+};
+
 // A bag bound for an altar rides the recall home when that reaches an altar sooner than walking;
-// the stop also heals and shops. `threat`: Safety::threatened() here.
-bool recall_to_bank(const World& world, Pathing& pathing, const Memory& memory, bool threat) {
-    if (!memory.banking || threat) return false;
+// the stop also heals and shops.
+bool recall_to_bank(const World& world, Pathing& pathing, const Memory& memory, Threat& threat) {
+    if (!memory.banking || threat()) return false;
     const int walk = pathing.to_any_altar().at(my_position());
     return walk != unreachable && home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk);
 }
@@ -2475,9 +2485,9 @@ bool recall_outruns(const World& world, Safety& safety) {
 
 // Recall from a capture we hold (holding_capture), timed to land home the turn it pays: the gems
 // skip the walk when an altar is nearer by way of home, and the stop heals and shops.
-bool capture_recall(const World& world, Pathing& pathing, bool threat) {
+bool capture_recall(const World& world, Pathing& pathing, Threat& threat) {
     const vec2 here = my_position();
-    if (threat) return false;
+    if (threat()) return false;
     const int g = world.map().group_at(here);
     const auto& c = world.camps[g];
     if (c.holder != team::ally || c.held_since < 0) return false;
@@ -2493,16 +2503,15 @@ bool capture_recall(const World& world, Pathing& pathing, bool threat) {
 }
 
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
-// quicker. Not while camps or enemies could hit us here (`threat`, else Safety::threatened()), nor after an
-// unseen enemy hit us since our last turn (Safety::unseen_hit).
-[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory&,
-                                 std::optional<bool> threat = std::nullopt) {
+// quicker. Not while camps or enemies could hit us here (Safety::threatened()), nor after an unseen enemy
+// hit us since our last turn (Safety::unseen_hit).
+[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory&, Threat* threat = nullptr) {
     Phase phase{"wants_shop"};
     if (bankable_bag(world, pathing) > 0 || safety.unseen_hit(world.me().pos) > 0 || !may_shop(world)) return false;
     const auto gold = my_gold();
     if (gold < shard_price || (gold < emblem_price && !emblem_begun())) return false;
     const vec2 here = my_position();
-    if (test(world.map().ally_spawn, here) || (threat ? *threat : safety.threatened(here))) return false;
+    if (test(world.map().ally_spawn, here) || (threat ? (*threat)() : safety.threatened(here))) return false;
     // The trip costs the recall and the walk back out; arriving by recall, the heal takes the turn.
     const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
     if (stop.short_gold > 0) return false;
@@ -2971,8 +2980,8 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
 }
 
 // A sieger stepped out of the besieged group's reach goes home to heal before it is needed again.
-bool siege_heal_trip(const Memory& memory, bool threat) {
-    return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !threat;
+bool siege_heal_trip(const Memory& memory, Threat& threat) {
+    return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !threat();
 }
 
 // Our tribute channel goes on unless it is unsafe and fleeing or fighting back pays. True if the
@@ -3021,8 +3030,8 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         return false;
     }
     home = want_home(world, safety, memory.siege);
-    const bool threat = safety.threatened(my_position());
-    if (*home && !threat && !can_tribute_safely(world, safety, memory) && recall_outruns(world, safety)) return true;
+    Threat threat{safety, std::nullopt};
+    if (*home && !threat() && !can_tribute_safely(world, safety, memory) && recall_outruns(world, safety)) return true;
     decision = 'k';
     if (holding_capture(world)) {
         if (capture_recall(world, pathing, threat)) {
@@ -3031,7 +3040,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         }
     } else {
         const auto shop = [&] {
-            return wants_shop(world, pathing, safety, memory, threat) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
+            return wants_shop(world, pathing, safety, memory, &threat) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
         };
         if (recall_to_bank(world, pathing, memory, threat) || shop()) return true;
         if (siege_heal_trip(memory, threat)) return sieged = true; // the trip keeps the siege until home

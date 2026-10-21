@@ -2705,7 +2705,8 @@ void Safety::note_unseen_hit(vec2 at, float damage) {
     idle_known_ = 0;
 }
 
-float Safety::unseen_hit(vec2 p) const { return p == ghost_at_ ? ghost_ : 0.0f; }
+// A tribute can start after this turn's dash and walk; the hitter can follow us that far.
+float Safety::unseen_hit(vec2 p) const { return dist(p, ghost_at_) <= 3 ? ghost_ : 0.0f; }
 
 std::uint32_t Safety::guard_epoch() const { return guarded_generation_ == generation_ ? guard_epoch_ : generation_; }
 
