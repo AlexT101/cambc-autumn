@@ -283,3 +283,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    camp phase in its reach. Dash paths are blocked by visible enemy champions (probe-dash-enemy; cambc-rules.yaml
    corrected), in the search and in dash_landings_from. 52.6% vs main (582, ladder 54.3, gen 52.3), 55.2% at 100M;
    out-of-fuel turns 3441 vs 1191 (99.5% in decide), to be brought down by a fuel-only follow-up.
+38. 2026-10-21 (not yet submitted). Strike search phase 3a: Varg's splash in Reach and Strike. An enemy Varg's basic
+   attack reaches a tile through a unit beside it (our visible champions but us, live camp members) that it can see;
+   compute_strike and threat_strike add 1 to Varg's basic reach so Strike still bounds Reach (debug check
+   REACH-BOUND). 51.0% vs main (1094, ladder 50.0, gen 50.6, fresh 51.6), 51.4% at 100M; out-of-fuel turns 6551 vs
+   6471.

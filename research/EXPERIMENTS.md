@@ -148,6 +148,10 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   elk-arena, contest, hooks, shared-gems, diamond, lanes worst). At 100M 55.2% (ladder 55.7, gen 55.1). Kept and
   merged (main e2242aa) on the keep rule: it wins at the real budget with its out-of-fuel turns included. STRIKE-SEARCH's
   out-of-fuel rule is owed by a fuel-only follow-up (decide), pending.
+- Strike search phase 3a (2026-10-21, orch/int-strike-p3a): an enemy Varg's basic attack reaches a tile through a
+  unit beside it (our other visible champions, live camp members), with Strike +1 for Varg's basic attacks. 51.0% of
+  1094 vs main (ladder 50.0, gen 50.6, fresh gen-s1 51.6), out-of-fuel turns 6551 vs 6471; at 100M 51.4% (ladder
+  54.3, gen 49.8, fresh 52.5). Level; kept and merged on the keep rule (follows the rules, plays level).
 
 ### Fuel
 
