@@ -86,9 +86,11 @@ py tools/fuel/bench.py run variants/x --out replays/fuel/x.json           # a mo
 py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # identical replays, fuel change
 py tools/fuel/bench.py run hyperion --fuel 0 --out replays/fuel/real.json # the real budget: counts shortcuts and lost turns
 py tools/fuel/oof.py replays/batch-A replays/batch-B replays/batch-C       # out-of-fuel turns per bot in run_batched.py batches
+py tools/fuel/oof_phases.py replays/batch-A replays/fuel/games/real        # the same turns by Phase path (batches, bundle dirs or bundles)
 ```
 
 - hyperion prints `SHORTCUT round champion what` wherever fuel made it choose worse (`note_shortcut` in util.h), and `OOF round phase` for each turn that ran out. Both are inside `debug_block`.
+- With `debug_phases` on in util.h, the OOF line ends `path=decide/chase/prey`, the `Phase` scopes it ran out in. Phases cost ~1% fuel in local builds, so games change while it is on; off, the build is byte-identical.
 - The bench's 16 games swing by about ±20 out-of-fuel turns and include no shared-gem map, where a third of them happen. Judge out-of-fuel turns on a full A/B with `oof.py`.
 - Set `debug_fuel` in util.h for per-phase costs (`FuelMeter`, ~170 fuel per meter).
 

@@ -1180,6 +1180,7 @@ int Reach::add(Tiles from, int range, bool sight, float damage, bool stuns, bool
 }
 
 void Reach::build(const World& world, const ChampionBelief& e, int turn_round, bool twice) {
+    Phase phase{"Reach::build"};
     world_ = &world;
     origin_ = e.pos;
     static std::uint32_t builds = 0;
@@ -1948,6 +1949,7 @@ Trade Safety::fight_of(std::uint32_t key) {
 }
 
 Trade Safety::new_fight(std::uint32_t key) {
+    Phase phase{"new_fight"};
     Side us, them;
     fill(us, world_, world_.allies, key & 0xFFFFu, made_);
     build();
@@ -2006,6 +2008,7 @@ std::uint64_t Safety::build_cost_estimate() {
 }
 
 Trade Safety::pursuit(vec2 p, int approach) {
+    Phase phase{"pursuit"};
     world_.throw_if_stale();
     Side us, them;
     const auto& spawn = world_.map().near_enemy_spawn;
@@ -2027,6 +2030,7 @@ Trade Safety::pursuit(vec2 p, int approach) {
 }
 
 int Safety::turns_to_kill_idle(vec2 p, int horizon) {
+    Phase phase{"turns_to_kill_idle"};
     Side us, them;
     us.add(fighter(world_, world_.me(), made_));
     us.fighters[0].arrives_at = never;

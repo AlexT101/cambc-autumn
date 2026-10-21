@@ -19,6 +19,7 @@ constexpr std::uint64_t late_floor = 1500;
 
 template <class F> bool run(const char* phase, F&& f) {
     debug_block({ aph::fuel_phase() = phase; });
+    aph::Phase scope{phase};
     try {
         f();
         return true;
@@ -106,6 +107,7 @@ int main() {
     Instance instance;
     while (true) {
         const auto round = aph::checked_round();
+        aph::begin_phase_turn(round);
         if (cambc::is_draft())
             instance.draft_turn();
         else
@@ -113,7 +115,10 @@ int main() {
         // Out of fuel, we resumed as this round's turn with a fresh budget: play it rather than end it.
         if (const auto now = aph::checked_round(); now != round) {
             std::printf("r%u turn ran out of fuel, finished in r%u\n", round, now);
-            debug_block({ std::printf("OOF %u %s\n", round, aph::fuel_phase()); });
+            debug_block({
+                if constexpr (aph::debug_phases) std::printf("OOF %u %s path=%s\n", round, aph::fuel_phase(), aph::out_of_fuel_path());
+                else std::printf("OOF %u %s\n", round, aph::fuel_phase());
+            });
             aph::note_shortcut("out-of-fuel");
             continue;
         }

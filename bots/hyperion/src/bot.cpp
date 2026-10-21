@@ -1369,6 +1369,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
 // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
 // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
 [[gnu::flatten]] bool farm(const World& world, Pathing& pathing, Memory& memory) {
+    Phase phase{"farm"};
     world.throw_if_stale();
     if (pick_up(world, pathing, memory)) return true;
     const auto& map = world.map();
@@ -1922,6 +1923,7 @@ bool ward_bushes(const World& world, Memory& memory, bool grow) {
 }
 
 bool place_ward(const World& world, Memory& memory, bool grow) {
+    Phase phase{"place_ward"};
     world.throw_if_stale();
     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
     if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return false;
@@ -2196,6 +2198,7 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
 bool want_home(const World& world, Safety& safety, bool sieging) {
+    Phase phase{"want_home"};
     world.throw_if_stale();
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
@@ -2241,6 +2244,7 @@ const std::uint8_t* open_bits(const World& world) {
 // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
 // there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
 const bitboard* step_guard(const World& world, Safety& safety) {
+    Phase phase{"step_guard"};
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
     static bitboard guard{cambc::uninitialized};
@@ -2433,6 +2437,7 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
 // The visible enemy whose kill pays most a turn to reach and kill it, among those whose local
 // fight we win even when they strike first; never one on or next to its spawn, where it heals.
 const ChampionBelief* prey(const World& world, Safety& safety) {
+    Phase phase{"prey"};
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
     const vec2 here = my_position();
@@ -2480,6 +2485,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
 }
 
 bool chase(const World& world, Pathing& pathing, Safety& safety) {
+    Phase phase{"chase"};
     const auto* target = prey(world, safety);
     if (!target) return false;
     decision = 'C';
@@ -2505,6 +2511,7 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
 }
 
 bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory) {
+    Phase phase{"can_tribute_safely"};
     if (!can_tribute_here(world)) return false;
     return tribute_ok(world, safety, memory, tribute_turns(my_gems()));
 }
@@ -2761,6 +2768,7 @@ bool siege_ready(const World& world, const SiegeLoad& load, bool committed, bool
 // Once the team is strong enough it goes together: melee adjacent, ranged at their range, the hurt
 // stepping out to 4, where casters still cast.
 bool siege(const World& world, Pathing& pathing, Memory& memory) {
+    Phase phase{"siege"};
     world.throw_if_stale();
     sieged = true;
     const auto& map = world.map();
@@ -2894,6 +2902,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
 // A big group cleared by spells from 4, out of its monsters' reach, so that nobody takes a hit;
 // harmless members fall to basic attacks from there, the rest once the monsters are dead.
 bool kite(const World& world, Pathing& pathing, Memory& memory) {
+    Phase phase{"kite"};
     world.throw_if_stale();
     const auto& map = world.map();
     const vec2 here = my_position();
@@ -3036,6 +3045,7 @@ bool siege_heal_trip(const Memory& memory, Safety& safety) {
 // Our tribute channel goes on unless it is unsafe and fleeing or fighting back pays. True if the
 // turn ends with it.
 bool continue_tribute(const World& world, Safety& safety, Memory& memory) {
+    Phase phase{"continue_tribute"};
     auto& me = cambc::self();
     decision = 'T';
     // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits.
@@ -3065,6 +3075,7 @@ bool continue_tribute(const World& world, Safety& safety, Memory& memory) {
 // to land as a held capture pays or to heal from a siege, else cancelled. True if the turn ends
 // with it; `home` gets want_home's answer.
 bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
+    Phase phase{"continue_recall"};
     auto& me = cambc::self();
     decision = 'K';
     if (game_ender(world)) {
@@ -3102,6 +3113,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
 }
 
 void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    Phase phase{"retreat"};
     world.throw_if_stale();
     auto& me = cambc::self();
     decision = 'R';
@@ -3144,6 +3156,7 @@ void hold_capture(const World& world, Memory& memory, bool attacked) {
 // Carrying: chase a kill worth the risk, bank, wait at an altar until it is safe, or chain another
 // capture on the way.
 void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked) {
+    Phase phase{"carry_bag"};
     const bool safe = can_tribute_safely(world, safety, memory);
     const bool close = closing(world, pathing);
     if (!safe && !close && !winning_bag(world) && chase(world, pathing, safety)) return;

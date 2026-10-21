@@ -206,6 +206,7 @@ void offer_engaged(const ChampionBelief& self, const std::vector<Enemy>& enemies
 } // namespace
 
 void set_turn_order(const World& world, Safety& safety) {
+    Phase phase{"set_turn_order"};
     world.throw_if_stale();
     auto& me = cambc::self();
     Wish wish;

@@ -383,6 +383,7 @@ bool worth_healing(float amount, float gain, float fraction) {
 }
 
 bool heal_ally(const World& world) {
+    Phase phase{"heal_ally"};
     const int slot = world.me().facts().slot_of(AbilityKind::heal);
     if (slot < 0) return false;
     const auto heal = ready(world, AbilityKind::heal);
@@ -413,6 +414,7 @@ bool heal_ally(const World& world) {
 }
 
 bool shield_if_needed(const World& world, Safety& safety, int farmed) {
+    Phase phase{"shield_if_needed"};
     const auto& f = world.me().facts();
     const auto shield = ready(world, AbilityKind::shield);
     if (!shield) return false;

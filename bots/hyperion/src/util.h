@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 namespace aph {
@@ -25,6 +26,10 @@ inline constexpr bool debug_beliefs = false;
 inline constexpr int debug_beliefs_period = 10;
 // Fight-model calibration: an "FF" stdout line per turn in reach of an enemy, "FC" per chase.
 inline constexpr bool debug_fights = false;
+// Each out-of-fuel turn's OOF line (main.cpp) gets the Phases it ran out in, as path=decide/chase/prey.
+// Local builds only. A Phase's exception cleanup costs fuel outside debug_block (~1%), so games
+// change while this is on.
+inline constexpr bool debug_phases = false;
 
 // A choice made worse to save fuel: one "SHORTCUT round champion what" stdout line. debug_block
 // spends no fuel in local (non-release) builds and is compiled out of release ones.
@@ -347,6 +352,107 @@ inline std::uint32_t round_now() {
     (void)cambc::detail::sdk_bc_round_number(&round);
     return round;
 }
+
+// The Phases running, outermost first. Read and written only inside debug_block.
+struct PhaseStack {
+    static constexpr int capacity = 24;
+    std::array<const char*, capacity> names{};
+    int depth = 0;
+    std::uint32_t turn_round = 0;
+    bool resumed = false;
+    std::array<char, 320> path{};
+};
+
+inline PhaseStack& phase_stack() {
+    static PhaseStack s;
+    return s;
+}
+
+// "decide/chase/prey", or "-" outside every Phase.
+inline void write_phase_path(PhaseStack& s) {
+    const std::size_t room = s.path.size() - 1;
+    std::size_t n = 0;
+    for (int i = 0; i < std::min(s.depth, PhaseStack::capacity); ++i) {
+        if (i && n < room) s.path[n++] = '/';
+        for (const char* c = s.names[i]; *c && n < room; ++c) s.path[n++] = *c == ' ' ? '_' : *c;
+    }
+    if (!n) s.path[n++] = '-';
+    s.path[n] = 0;
+}
+
+// The first change to the stack after the turn resumed in a later round sees it as it was when the
+// fuel ran out.
+inline void note_phase_resumed(PhaseStack& s) {
+    if (!s.resumed && round_now() != s.turn_round) s.resumed = true, write_phase_path(s);
+}
+
+[[gnu::noinline]] inline void enter_phase(const char* name) noexcept {
+    debug_block({
+        auto& s = phase_stack();
+        note_phase_resumed(s);
+        if (s.depth < PhaseStack::capacity) s.names[s.depth] = name;
+        ++s.depth;
+    });
+}
+
+[[gnu::noinline]] inline void leave_phase() noexcept {
+    debug_block({
+        auto& s = phase_stack();
+        note_phase_resumed(s);
+        --s.depth;
+    });
+}
+
+[[gnu::noinline]] inline void rename_phase(const char* name) noexcept {
+    debug_block({
+        auto& s = phase_stack();
+        note_phase_resumed(s);
+        if (s.depth > 0 && s.depth <= PhaseStack::capacity) s.names[s.depth - 1] = name;
+    });
+}
+
+inline void begin_phase_turn(std::uint32_t round) {
+    if constexpr (debug_phases) {
+        debug_block({
+            auto& s = phase_stack();
+            s.turn_round = round;
+            s.resumed = false;
+            s.depth = 0;
+        });
+    }
+}
+
+// Inside debug_block: the Phases the turn ran out of fuel in.
+inline const char* out_of_fuel_path() {
+    auto& s = phase_stack();
+    if (!s.resumed) write_phase_path(s);
+    return s.path.data();
+}
+
+class TracedPhase {
+public:
+    explicit TracedPhase(const char* name) { enter_phase(name); }
+    ~TracedPhase() { leave_phase(); }
+    // Renames this Phase, the innermost, for the next step of the same work.
+    void next(const char* name) { rename_phase(name); }
+    TracedPhase(const TracedPhase&) = delete;
+    TracedPhase& operator=(const TracedPhase&) = delete;
+};
+
+struct NoPhase {
+    explicit constexpr NoPhase(const char*) {}
+    constexpr void next(const char*) {}
+};
+
+#ifdef CAMBC_DEBUG
+inline constexpr bool phases_traced = debug_phases;
+#else
+inline constexpr bool phases_traced = false;
+#endif
+
+// `Phase phase{"chase"};` names the code running to the end of its scope (debug_phases). Untraced, it
+// is trivial, so the code is as if it were not there; traced, its destructor adds exception cleanups.
+using Phase = std::conditional_t<phases_traced, TracedPhase, NoPhase>;
 
 inline std::uint64_t search_cost_estimate(int layers) {
     return 4000 + search_chunks() * (20 + static_cast<std::uint64_t>(layers));
