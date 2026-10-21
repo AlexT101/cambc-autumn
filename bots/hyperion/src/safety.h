@@ -212,9 +212,17 @@ struct Trade {
     int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
     int turns_to_kill_them = 0; // ours
     bool self_falls = false;    // we die before their side does, when they strike first
+    bool cut = false;           // set in trade() on fight-cut; never memoised
     float our_health = 0, their_health = 0; // debug_fights only
     int allies = 0, enemies = 0;
     std::array<float, 4> dealt{}; // debug_fights only: see simulate()
+};
+
+// What could hit one tile before our next turn. Bit i of a mask: enemies[i].
+struct TileDanger {
+    std::uint16_t vis_mask = 0, stun_mask = 0, unseen_mask = 0;
+    float vis = 0, vis_unacted = 0, unseen = 0, camp_exp = 0, camp_worst = 0;
+    float worst() const { return vis + unseen + camp_worst; }
 };
 
 class Safety {
@@ -260,6 +268,20 @@ public:
         Blow blow;
     };
     int threats_at(vec2 p, std::array<ThreatAt, 16>& out);
+
+    // The tile table: each tile's danger numbers. A row stays put until generation() changes, but
+    // tiles outside the 7x7 around the turn-start tile share 4 slots: copy a row to keep it across
+    // other tile() calls. Like blow(), it throws for a wall tile in a visible enemy's reach.
+    const TileDanger& tile(vec2 p);
+    // The visible threats' Strike bounds at p, without building their Reach; `mask` gets their bits.
+    float strike_sum(vec2 p, std::uint16_t* mask = nullptr);
+    // Rounds of walking from p until no awake camp member can pick us: the least r with
+    // any_within(standable & ~camp_area(), p, r), at most one more than the longest camp reach;
+    // 0 if none can pick us at p.
+    int exit_rounds(vec2 p);
+    // Chance an unseen threat hits p: 1 - prod(1 - near / tiles * hit_given_reach) over
+    // tile(p).unseen_mask.
+    float unseen_chance(vec2 p);
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
@@ -307,11 +329,18 @@ public:
         float strength; // softened by our emblems: its damage to us
         float weight;
         int reach; // farthest distance at which it would pick us
+        std::int16_t group;
     };
     std::span<const CampHit> awake_members();
 
     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
     void refresh();
+    // Changes whenever cached answers may. Unique across Safety instances, so a stamp left in
+    // uninitialised storage by an earlier one never matches.
+    std::uint32_t generation() const { return generation_; }
+    // After world.observe(): true if Safety was kept, dropping only what unseen enemies decide;
+    // false if it must be rebuilt.
+    bool reobserve();
 
     // A visible enemy's Reach, built on first use this turn: blow(e, p) where its strike reaches p.
     const Reach& reach_of(const ChampionBelief& e);
@@ -384,6 +413,19 @@ private:
     union {
         std::array<CampMemo, 2> camp_memo_;
     };
+    // The tile table: rows_[7 * (y - centre_.y + 3) + x - centre_.x + 3] for the window, then the
+    // ring's 4 slots. Rows are left uninitialised; the known bits are dropped at a new generation.
+    void fill_row(vec2 p, TileDanger& row);
+    vec2 centre_;
+    std::uint32_t table_generation_ = 0;
+    std::uint64_t window_known_ = 0;
+    std::uint8_t ring_known_ = 0, ring_next_ = 0;
+    union {
+        std::array<vec2, 4> ring_at_;
+    };
+    union {
+        std::array<TileDanger, 53> rows_;
+    };
     std::optional<bitboard> camp_area_, enemy_area_;
     // By fight_key(). A memo: past `max_fights` the oldest is replaced.
     struct FightMemo {
@@ -392,6 +434,7 @@ private:
     };
     static constexpr int max_fights = 32;
     const Trade* memo(std::uint32_t key) const;
+    std::uint32_t generation_;
     int fight_count_ = 0;
     union {
         std::array<FightMemo, max_fights> fights_;
