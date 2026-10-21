@@ -277,3 +277,9 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    Safety's camp hits carry our Jungle and Durability emblems; an asleep group is stirred only by a champion yet to act
    within its own strike's reach. 54.5% vs main (582, ladder 50.0, gen 55.1), fresh seed 9421 59.4% (512);
    out-of-fuel turns 1136 vs 914 (fresh 945 vs 731).
+37. 2026-10-21 (not yet submitted). Strike search phase 1 (STRIKE-SEARCH.md, strike-notes.md): plan.cpp searches
+   every legal order of moves, dashes and strikes, camps as targets with the bans, scored as before; a move is offered
+   only when a strike follows it, no landing wakes a sleeping striker or hits only camps, a woken striker is priced per
+   camp phase in its reach. Dash paths are blocked by visible enemy champions (probe-dash-enemy; cambc-rules.yaml
+   corrected), in the search and in dash_landings_from. 52.6% vs main (582, ladder 54.3, gen 52.3), 55.2% at 100M;
+   out-of-fuel turns 3441 vs 1191 (99.5% in decide), to be brought down by a fuel-only follow-up.
