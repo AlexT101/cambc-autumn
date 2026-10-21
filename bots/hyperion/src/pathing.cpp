@@ -521,6 +521,9 @@ bool Pathing::try_move(vec2 tile, bool* refused) {
     }
     const bool kept = kept_.goals == &goals && kept_.avoid == avoid && kept_.max_steps == max_steps && kept_.round == round_now()
                       && kept_.guard == guard_key();
+    debug_block({
+        if (kept_.goals) std::printf("KEPT-ROUTE %d %s\n", world_.round, kept ? "hit" : "miss");
+    });
     kept_.goals = nullptr;
     // Only a hidden blocker or a guarded first step makes a retry worth its search. Each rules a
     // neighbour out of the next route, so the cap covers all eight.
