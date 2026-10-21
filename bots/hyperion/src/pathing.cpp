@@ -24,6 +24,9 @@ const bitboard& Pathing::foot() const { return world_.me().facts().has_dash() ? 
 
 void Pathing::begin_turn() {
     guard_ = nullptr; // a turn abandoned as stale left its guard set
+    guarding_ = false;
+    safety_ = nullptr;
+    source_run_ = false;
     blocked_fresh_ = false;
     pos_fresh_ = false;
     if (bumped_round_ != world_.round) {
@@ -434,6 +437,15 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
         for (int i = 0; i < 8; ++i)
             if (around[i] == best) r.first_steps[r.count++] = me + directions[i];
     return r;
+}
+
+void Pathing::set_guarding(bool on) {
+    guarding_ = on;
+    if (on && !source_run_ && guard_source_ && safety_) {
+        source_run_ = true;
+        source_board_ = guard_source_(world_, *safety_);
+    }
+    guard_ = on && source_run_ ? source_board_ : nullptr;
 }
 
 [[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {

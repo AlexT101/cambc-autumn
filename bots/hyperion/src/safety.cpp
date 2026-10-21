@@ -393,10 +393,7 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours,
     return t;
 }
 
-// Own turns a fight is played for: every slot ready at the start is cast on turns 0, 8 and 16.
-// Measured at 100M on the worst maps, kills land just after those casts (peaks on turns 9 and 17),
-// and the 8% of fights still undecided at 24 turns cost 20% of the simulation fuel.
-constexpr int fight_horizon = 2 * ability_cooldown + 1;
+static_assert(fight_horizon == 2 * ability_cooldown + 1);
 
 // Whether our fighter `self` (and its linked body) must outlive their next `theirs` turns and our
 // next `ours`: every member of theirs alive now attacking each turn and casting each slot as soon
@@ -1903,12 +1900,36 @@ bool Safety::any_threat() {
     return false;
 }
 
+// The credible field is capped at the radius, inside the reach, so a credible hit is in reach.
 float Safety::damage_bound(vec2 p, bool double_unacted) {
-    const auto& row = tile(p);
-    const float bound = row.worst() + (double_unacted ? row.vis_unacted : 0.0f);
+    const int s = threat_slot(p);
+    const auto& row = rows_[static_cast<std::size_t>(s)];
+    auto& lazy = lazy_[static_cast<std::size_t>(s)];
+    if (const auto bit = std::uint64_t{1} << s; !(bounds_known_ & bit)) {
+        float unseen = 0;
+        for (auto left = live_enemies(); left; left &= left - 1) {
+            const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+            if (e.visible) continue;
+            const auto& x = foe(e);
+            if (x.strike.reach < 0 || x.weight <= 0) continue;
+            bool near = row.unseen_mask >> e.index & 1;
+            if (!near) {
+                const int r = unseen_in_reach(e, x, p, s < window_slots);
+                near = r > 0 || (r < 0 && reach_field_hit(e, x, p));
+            }
+            if (near) unseen += x.strike.at(0);
+        }
+        lazy.bound = unseen;
+        bounds_known_ |= bit;
+    }
+    const float bound = row.vis + lazy.bound + row.camp_worst + (double_unacted ? row.vis_unacted : 0.0f);
     debug_block({
+        // The old function: camps at full strength, each credible unseen threat by the distance-0 rule.
+        float old = row.vis + (double_unacted ? row.vis_unacted : 0.0f) + debug_old_unseen(p, nullptr);
+        for (int i = 0; members_known_ && i < member_count_; ++i)
+            if (const auto& m = members_[static_cast<std::size_t>(i)]; in_square(p, m.pos, m.reach)) old += m.strength;
         static int last = -1;
-        if (const float old = bound - row.unseen + debug_old_unseen(p, nullptr); last != world_.round && std::abs(old - bound) > 0.01f) {
+        if (last != world_.round && std::abs(old - bound) > 0.01f) {
             last = world_.round;
             std::printf("TABLE-MISMATCH %d bound %d %d %.1f %.1f\n", world_.round, p.x, p.y, old, bound);
         }
@@ -2231,8 +2252,9 @@ bool Safety::lethal(vec2 p) {
 void Safety::sync_table() {
     if (table_generation_ == generation_) return;
     table_generation_ = generation_;
-    threats_known_ = camps_known_ = chances_known_ = 0;
+    threats_known_ = camps_known_ = chances_known_ = bounds_known_ = 0;
     gate_asked_ = gate_near_ = 0;
+    reach_asked_ = reach_near_ = reach_all_ = reach_built_ = 0;
     ring_used_ = 0;
 }
 
@@ -2255,7 +2277,7 @@ int Safety::claim_slot(vec2 p) {
     ring_used_ |= static_cast<std::uint8_t>(1u << k);
     ring_at_[static_cast<std::size_t>(k)] = p;
     const auto keep = ~(std::uint64_t{1} << (window_slots + k));
-    threats_known_ &= keep, camps_known_ &= keep, chances_known_ &= keep;
+    threats_known_ &= keep, camps_known_ &= keep, chances_known_ &= keep, bounds_known_ &= keep;
     return window_slots + k;
 }
 
@@ -2319,6 +2341,50 @@ Blow Safety::unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p, bool win
     for (int i = 0; i < threat_count_; ++i)
         if (const auto& t = threats_[static_cast<std::size_t>(i)]; t.enemy == e.index) return t.at(p);
     return {};
+}
+
+// Window tiles lie within 3 of the centre. Out of the reach + 3 it is out of the radius + 3 too,
+// which answers unseen_blow's gate.
+int Safety::unseen_in_reach(const ChampionBelief& e, const Foe& x, vec2 p, bool window) {
+    const auto bit = static_cast<std::uint16_t>(1u << e.index);
+    const int reach = x.strike.reach;
+    if (!window) return (reach_built_ & bit ? reach_field_hit(e, x, p) : any_within(e.possible, p, reach)) ? 1 : 0;
+    if (!(reach_asked_ & bit)) {
+        reach_asked_ |= bit;
+        if (!any_within(e.possible, centre_, reach + 3)) {
+            gate_asked_ |= bit;
+        } else {
+            reach_near_ |= bit;
+            if (unseen_radius(reach, x.tiles) == reach) gate_asked_ |= bit, gate_near_ |= bit;
+            if (reach >= 3 && any_within(e.possible, centre_, reach - 3)) reach_all_ |= bit;
+        }
+    }
+    if (!(reach_near_ & bit)) return 0;
+    return reach_all_ & bit ? 1 : -1;
+}
+
+namespace {
+
+// One per enemy, reused between turns.
+cambc::distance_field& reach_field(int i) {
+    static std::array<std::unique_ptr<cambc::distance_field>, 16> fields;
+    auto& field = fields[static_cast<std::size_t>(i)];
+    if (!field) field = std::make_unique<cambc::distance_field>();
+    return *field;
+}
+
+} // namespace
+
+// Over no walls a king-step field is the Chebyshev distance.
+bool Safety::reach_field_hit(const ChampionBelief& e, const Foe& x, vec2 p) {
+    auto& field = reach_field(e.index);
+    if (const auto bit = static_cast<std::uint16_t>(1u << e.index); !(reach_built_ & bit)) {
+        reach_built_ |= bit;
+        static bitboard reached{cambc::uninitialized};
+        static const bitboard none;
+        field.compute(none, e.possible, reached, static_cast<std::uint16_t>(x.strike.reach));
+    }
+    return steps_at(field, p) <= x.strike.reach;
 }
 
 float Safety::debug_old_unseen(vec2 p, bool* near) {
@@ -2398,6 +2464,70 @@ float Safety::unseen_chance(vec2 p) {
     lazy.chance = 1 - safe;
     chances_known_ |= bit;
     return lazy.chance;
+}
+
+// The verdict section (W2-A). Stubs over today's fight API until W2-A replaces them.
+
+Trade Safety::engage(vec2 p, Engage e) {
+    Phase phase{"engage"};
+    switch (e.mode) {
+    case Engage::Mode::pursue:
+        return pursuit(p, e.approach);
+    case Engage::Mode::idle: {
+        Trade t;
+        t.turns_to_kill_us = turns_to_kill_idle(p, e.horizon);
+        t.lost = t.self_falls = t.turns_to_kill_us != 0;
+        return t;
+    }
+    case Engage::Mode::stand:
+        break;
+    }
+    if (e.with_enemy < 0) return fight(p);
+    world_.throw_if_stale();
+    const auto with = 1u << (16 + e.with_enemy);
+    const auto key = fight_key(p);
+    return fight_of(key == no_fight ? with | fighting_allies(world_, p) : key | with);
+}
+
+int Safety::idle_turns(vec2 p, int horizon) { return turns_to_kill_idle(p, horizon); }
+
+void Safety::set_claimed(int group) { claimed_ = group; }
+
+Verdict Safety::verdict(vec2 q) {
+    Phase phase{"verdict"};
+    const auto t = fight(q);
+    return {t.lost, t.self_falls};
+}
+
+// step_guard's per-tile rule, without its fuel gates, union key or dominance list.
+bool Safety::guarded(vec2 q) {
+    const vec2 here = world_.me().pos;
+    if (q == here || !in_square(q, here, 3) || !in_bounds(q) || !test(world_.map().open_for_us, q)) return false;
+    std::uint16_t near = 0;
+    const float bound = strike_sum(q, &near);
+    if (near == 0) return false;
+    const TileDanger at_here = tile(here);
+    const auto no_worse = [&](std::uint16_t mask, float damage) {
+        return mask == 0 || ((mask & ~at_here.vis_mask) == 0 && damage <= at_here.vis);
+    };
+    if (no_worse(near, bound)) return false;
+    const auto& row = tile(q);
+    if (no_worse(row.vis_mask, row.vis)) return false;
+    const bool dies = row.worst() >= world_.me().health;
+    const auto v = verdict(q);
+    const bool linked = linked_partner(world_, world_.me()) != nullptr;
+    const bool out = v.lost || (v.falls && (linked || dies));
+    if (out) {
+        if (guarded_generation_ != generation_) guarded_generation_ = generation_, guarded_count_ = 0;
+        ++guarded_count_;
+    }
+    return out;
+}
+
+const bitboard* Safety::guarded_board() { return nullptr; }
+
+std::uint32_t Safety::guard_stamp() const {
+    return generation_ << 8 | (guarded_generation_ == generation_ ? guarded_count_ & 0xFFu : 0u);
 }
 
 } // namespace aph

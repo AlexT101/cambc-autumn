@@ -3268,6 +3268,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         if (!safety.reobserve()) {
             std::destroy_at(&safety);
             std::construct_at(&safety, world);
+            safety.set_claimed(memory.claim);
         }
         // Even a kept Safety answers anew wherever the unseen enemies count.
         debug_block({ home_asks -= home.has_value(); });
@@ -3308,7 +3309,8 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         return;
     }
 
-    pathing.set_guard(step_guard(world, safety));
+    pathing.set_guard_source(step_guard);
+    pathing.set_guarding(true);
     const bool holding = holding_capture(world) || contesting(world);
     bool attacked = false;
     if (strikes) {
@@ -3447,6 +3449,8 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
 
 void play_turn(World& world, Pathing& pathing, Memory& memory) {
     Safety safety{world};
+    pathing.set_safety(&safety);
+    safety.set_claimed(memory.claim);
     const auto* record = world.me().alive ? &my_record() : nullptr;
     const float health = record ? record->health : 0;
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
@@ -3463,6 +3467,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     } catch (const std::exception& e) {
         std::printf("r%u act error: %s\n", cambc::round_number(), e.what());
     }
+    pathing.set_safety(nullptr);
     set_turn_order(world, safety);
     comms::claim(memory.claim);
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
