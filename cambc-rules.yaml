@@ -78,7 +78,7 @@ camps:
     monolith: {health: 20000, strength: 200, range: 5, gold: 300, gems: 200, respawn: 150}
   groups: "Cardinally connected monsters form a group. A group wakes together and shares one reward, the sum of its members'. Its camp tiles (SDK: spawn tiles) are its monsters' spawn positions."
   wake: "A sleeping group wakes when any member takes damage or is stunned."
-  sleep: "An awake group sleeps after 2 consecutive camp phases with no champion within any member's range. Damage does not keep it awake. Camps never regenerate."
+  sleep: "Each awake monster sleeps after 2 consecutive camp phases with no champion within its own range, so a group can be part asleep. Damage does not keep it awake. Camps never regenerate."
   attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within its range; ties go to the champion that acts first in that round's turn order (rounds.champion_order, rounds.team_order), not the lowest id. Bushes do not hide champions from camps. Monsters never move."
   state: "Bots can read whether a camp is dead, awake or asleep while its tile (its last tile, if dead) is in vision. They cannot read how far a capture has progressed."
 
@@ -119,10 +119,10 @@ wards:
   enemy_wards: "An enemy ward, seen or unseen, does not block: both wards share the tile."
   rate: "Each champion has one ward. One placed in round t can be placed again from round t+10; a new ward replaces the old one."
   vision: "A 13x13 square (radius 6), shadowcast from the ward's tile."
-  lifetime: "Wards never expire, take no damage and outlive their owner's death."
+  lifetime: "Wards never expire, take no damage, outlive their owner's death and never block walking or landing."
 
 recall:
-  channel: "Recall lasts 5 turn ends and then moves the champion to its own spawn with its gems. Any damage or stun cancels it. The arrival turn is a full turn."
+  channel: "Recall lasts 5 turn ends and then moves the champion to its own spawn with its gems. Any damage (shield-absorbed included) or stun cancels it. The arrival turn is a full turn."
 
 teleport_crystal:
   target: "A free open or bush tile within 3, not a camp or the enemy spawn; unseen tiles allowed, terrain in between ignored."
@@ -200,7 +200,7 @@ champions:
     attack: melee
     stats: {health: [1000, 100], strength: [30, 3.5], focus: [100, 12]}
     passive: "All its damage x (1 + 0.5 x missing health fraction): +50% at 0 health, +25% at half. Shields do not count as health."
-    abilities: [{shield: 1.5, target: self, duration: 5}, "dash; on landing, 1.5 damage and a stun to enemy champions and camps within 1 of the landing tile"]
+    abilities: [{shield: 1.5, target: self, duration: 5}, "dash; on landing, 1.5 damage and a stun to enemy champions (even unseen ones) and camps within 1 of the landing tile"]
   cassi_and_issac:
     passive: "One pick, two bodies with separate turns, positions, bags and abilities. If either dies, both die, giving one kill reward and both bags."
     cassi:
