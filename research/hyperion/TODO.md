@@ -35,4 +35,4 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
 
 ## Don't remove
 
-These have evidence behind them: `step_guard`, `pursuit`, `threat_strike`; Monolith sieges; kite on shared-gem maps.
+These have evidence behind them: `step_guard`'s rule (since combat wave 2 it lives in `Safety::guarded()`, asked lazily by Pathing and the search), `pursuit`, `threat_strike`; Monolith sieges; kite on shared-gem maps.
