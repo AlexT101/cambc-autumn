@@ -171,9 +171,10 @@ struct Valued {
     vec2 at{-1, -1};
     bool any = false;
     int slot = -1;
-    int target = -1;      // a unit cast's target, enemies[target]
-    vec2 ground{-1, -1};  // else the area's centre
-    float health = 0;     // ours when valued
+    int target = -1;        // a unit cast's target, enemies[target]
+    vec2 ground{-1, -1};    // else the area's centre
+    std::uint16_t foes = 0; // the enemies the area's value counted, bits by enemies index
+    float health = 0;       // ours when valued
 } valued;
 
 const Field* goal_field(const World& world, Pathing& pathing, const Intent& intent) {
@@ -1644,7 +1645,8 @@ void value_casts(const World& world, Search& S, vec2 here) {
             if (!(x.cast_legal & at)) continue;
             bool ok;
             const float v = S.centre_value({x.pos, static_cast<std::uint16_t>(1u << t), 0, x.suicidal[sp.slot]}, sp.slot, root, ok);
-            if (ok && v > top) top = v, valued.any = true, valued.slot = sp.slot, valued.target = x.belief->index, valued.ground = {-1, -1};
+            if (ok && v > top)
+                top = v, valued.any = true, valued.slot = sp.slot, valued.target = x.belief->index, valued.ground = {-1, -1}, valued.foes = 0;
         }
         if (!sp.ground) continue;
         for (int q = 0; q < S.n_distinct; ++q) {
@@ -1652,7 +1654,10 @@ void value_casts(const World& world, Search& S, vec2 here) {
             bool ok;
             float v = S.centre_value(ce, sp.slot, root, ok), cost = 0;
             if (!ok || (ce.touched && !S.wake_here(ce.touched, cost))) continue;
-            if ((v -= cost) > top) top = v, valued.any = true, valued.slot = sp.slot, valued.target = -1, valued.ground = ce.tile;
+            if ((v -= cost) <= top) continue;
+            top = v, valued.any = true, valued.slot = sp.slot, valued.target = -1, valued.ground = ce.tile, valued.foes = 0;
+            for (std::uint32_t m = ce.foes; m; m &= m - 1)
+                if (const int t = std::countr_zero(m); S.h[t] > 0) valued.foes |= static_cast<std::uint16_t>(1u << S.u[t].belief->index);
         }
     }
 }
@@ -2161,18 +2166,20 @@ bool casts_searched(const World& world) { return valued.round == world.round && 
 namespace {
 
 // The valued cast; false, to value the turn afresh, if a Ren's retaliation has cost us health since
-// (the search's Ren bans assumed the health it read), or its target or area's enemies died since.
+// (the search's Ren bans assumed the health it read), or its target or any enemy its area counted
+// died since (the turn's attacks run after the valuing).
 bool cast_valued(const World& world) {
     bool cast = false;
     const bool unhurt = my_health() >= valued.health;
     try {
         const auto ability = cambc::self().abilities()[valued.slot];
         if (unhurt && valued.target >= 0) {
-            cast = ability.use(world.enemies[static_cast<std::size_t>(valued.target)].live());
+            const auto c = world.enemies[static_cast<std::size_t>(valued.target)].live();
+            cast = c.is_alive() && c.is_visible() && ability.use(c);
         } else if (unhurt) {
-            bool live = false;
-            for (const auto& e : world.enemies)
-                live = live || (e.alive && e.visible && dist(e.pos, valued.ground) <= 1 && e.live().is_alive());
+            bool live = valued.foes != 0;
+            for (std::uint32_t m = valued.foes; m && live; m &= m - 1)
+                live = world.enemies[static_cast<std::size_t>(std::countr_zero(m))].live().is_alive();
             cast = live && ability.use(valued.ground);
         }
     } catch (const cambc::error&) {
