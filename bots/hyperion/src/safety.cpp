@@ -2190,10 +2190,22 @@ Trade Safety::new_fight(std::uint32_t key) {
 }
 
 Trade Safety::engage(vec2 p, Engage e) {
+    int sims = 1;
+    return *engage_if(p, e, sims);
+}
+
+std::optional<Trade> Safety::engage_if(vec2 p, Engage e, int& sims) {
     Phase phase{"engage"};
     world_.throw_if_stale();
     FightKey k;
-    return shape(p, e, k) ? play(k) : Trade{};
+    if (!shape(p, e, k)) return Trade{};
+    Trade t;
+    // fight_calibration.py reads every field of a debug_fights trade: none is settled then.
+    const int how = recall(k, t);
+    if (how == 0 && sims <= 0) return std::nullopt;
+    if (how == 0) --sims;
+    if (how == 0 || (debug_fights && how == 2)) t = run(k, k.who >> 16);
+    return t;
 }
 
 // Per COMBAT-MERGE.md's rule table.
@@ -2243,14 +2255,6 @@ bool Safety::shape(vec2 p, const Engage& e, FightKey& k) {
     k.who = (idle ? 1u << world_.me().index : fighting_allies(world_, p) & allies) | enemies << 16;
     debug_block({ debug_keys_[debug_key_next_++ % debug_keys_.size()] = {p, generation_, k}; });
     return true;
-}
-
-Trade Safety::play(const FightKey& k) {
-    Trade t;
-    // fight_calibration.py reads every field of a debug_fights trade: none is settled then.
-    const int how = recall(k, t);
-    if (how == 0 || (debug_fights && how == 2)) t = run(k, k.who >> 16);
-    return t;
 }
 
 namespace {

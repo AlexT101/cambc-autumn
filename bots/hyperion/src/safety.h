@@ -397,6 +397,9 @@ public:
     // lost one at most as hard, and a pursuit by a won stand one at least as hard (Trade::settled:
     // only lost and self_falls hold).
     Trade engage(vec2 p, Engage e);
+    // engage(), starting a new simulation only while `sims` is above 0 (each takes one); null where
+    // the memo cannot answer it then.
+    std::optional<Trade> engage_if(vec2 p, Engage e, int& sims);
     int idle_turns(vec2 p, int horizon);
     // The camp group our farm/siege budgets, left out of the stand/pursue camp charge. A change
     // starts a new guard_epoch(); the fight memo needs nothing, as its keys carry the charge.
@@ -559,8 +562,6 @@ private:
     }
     // False if there is no fight: no enemy (and, idle, no camp charge).
     bool shape(vec2 p, const Engage& e, FightKey& k);
-    // The memo's trade, or a fight it settles, else a new one.
-    Trade play(const FightKey& k);
     // 1: k's memoised trade; 2: a stand or pursue key settled by a memoised stand fight not cut
     // short, a won one with at least its enemies, at most its allies and at least its camp charge
     // for as many turns, or (stand keys only) a lost one the reverse (Trade::settled); 0: neither.

@@ -2370,12 +2370,16 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         if (n > 0) ++sim_stats().p4_calls;
     });
     SimTag tag{SimCaller::prey, linked ? SimNeed::falls : SimNeed::lost};
+    // One new simulation a call: later candidates only as the memo answers them.
+    int sims = 1;
     for (int i = 0, fights = 0; i < n && fights < max_fights; ++i) {
         const auto& e = *order[i].second;
         const auto at = attack_tile(e.pos);
         if (!at) continue;
+        const auto known = safety.engage_if(*at, {.with_enemy = e.index}, sims);
+        if (!known) continue;
         ++fights;
-        const auto t = safety.engage(*at, {.with_enemy = e.index});
+        const auto& t = *known;
         const bool won = !t.lost && !(linked && t.self_falls);
         debug_block({ safety.debug_note_prey(*at, e.index, won); });
         if constexpr (debug_verdicts) {
