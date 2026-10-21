@@ -15,8 +15,6 @@ namespace aph {
 namespace {
 
 constexpr int dash_steps = 2;
-constexpr int reset_hold_margin = 2;      // an enemy this far beyond attack range keeps the reset off camps
-constexpr int travel_dash_clearance = 10; // no visible enemy this close for a travel dash
 constexpr float heal_min_share = 0.6f;    // of the heal amount restored
 constexpr float heal_low_health = 0.5f;
 constexpr float dash_min_health = 0.5f;
@@ -123,6 +121,8 @@ bool dash_to_first(const cambc::ability& dash, Pathing& pathing, const Landings&
         }
     return false;
 }
+
+constexpr int travel_dash_clearance = 10; // no visible enemy this close for a travel dash
 
 // A travel dash waits while an enemy may want it for a fight or an escape (W4-D: Safety::engaged_within).
 bool travel_dash_held(const World& world, Pathing&) { return enemy_within(world, my_position(), travel_dash_clearance); }
@@ -245,6 +245,8 @@ bool camp_in_reach(const World& world, vec2 p, int range) {
 }
 
 namespace {
+
+constexpr int reset_hold_margin = 2; // an enemy this far beyond attack range keeps the reset off camps
 
 // The reset is kept off camps while an enemy may want it for a fight (W4-D: Safety::engaged_within).
 bool camp_reset_held(const World& world, Safety*, vec2 here, int range) { return enemy_within(world, here, range + reset_hold_margin); }
