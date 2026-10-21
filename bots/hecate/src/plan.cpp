@@ -286,10 +286,7 @@ struct Node {
     float value = 0, pending = 0; // pending: a cast's price a Vendetta kill would refund
     std::uint32_t touched = 0;     // local camp groups hit
     Grid req_w = grid_all, req_d = grid_all, req_e = grid_all; // the tiles still allowed for each move's end
-    // A landing that hits: its tiles, alike in what they hit; the tile, when it touches camps
-    // (its stun then matters to the wake).
-    Grid lset = 0;
-    vec2 land{-1, -1};
+    Grid lset = 0; // a landing that hits: its tiles, alike in what they hit
     vec2 pos;          // exhaustive enumerator: where we stand
 };
 
@@ -459,23 +456,22 @@ struct Search {
     bool land_at(vec2 L, Node& s);
     float centre_value(const Centre& c, int slot, const Node& s, bool& ok) const;
     void hit_centre(const Centre& c, int slot, Node& s);
-    bool wake(std::uint32_t touched, vec2 E, vec2 stunned_at, float& cost);
+    bool wake(std::uint32_t touched, vec2 E, float& cost);
     bool wakers_known_slot = false;
-    // wake() by end tile, for the last touched set and landing asked there: leaves differing only
-    // in their hits share them.
+    // wake() by end tile, for the last touched set asked there: leaves differing only in their
+    // hits share them.
     struct WakeMemo {
         std::uint32_t touched;
-        vec2 land;
         float cost;
         bool ok;
     };
 
     Grid wake_known = 0;
-    bool wake_at(std::uint32_t touched, int c, vec2 land, float& cost) {
+    bool wake_at(std::uint32_t touched, int c, float& cost) {
         static std::array<WakeMemo, 49> memo; // valid by wake_known
         auto& m = memo[c];
-        if (!(wake_known & gbit(c)) || m.touched != touched || m.land != land) {
-            m.touched = touched, m.land = land, m.ok = wake(touched, tile(c), land, m.cost);
+        if (!(wake_known & gbit(c)) || m.touched != touched) {
+            m.touched = touched, m.ok = wake(touched, tile(c), m.cost);
             wake_known |= gbit(c);
         }
         cost = m.cost;
@@ -921,7 +917,6 @@ bool Search::land_at(vec2 L, Node& s) {
     if (retaliation >= health) return false;
     s.touched |= land_touch(cell(L));
     s.value += value - retaliation;
-    s.land = L;
     s.owed = !struck;
     return true;
 }
@@ -961,7 +956,7 @@ void Search::find_wakers(int k) {
 // place (acted this round, or channelling). A hit on an enemy earns nothing for now. False for the
 // bans: a sleeping Monolith; a woken hit on an ally recalling, tributing or holding a capture; a
 // woken hit that could kill us or an ally.
-bool Search::wake(std::uint32_t touched, vec2 E, vec2 stunned_at, float& cost) {
+bool Search::wake(std::uint32_t touched, vec2 E, float& cost) {
     cost = 0;
     std::array<float, 8> ally_hit{};
     float on_us = 0;
@@ -971,16 +966,14 @@ bool Search::wake(std::uint32_t touched, vec2 E, vec2 stunned_at, float& cost) {
         for (int i = waker_begin[k]; i < waker_end[k]; ++i) {
             const auto& w = tables.wakers[i];
             if (w.monolith) return false;
-            // Our landing's stun makes it skip the first phase.
-            const bool stunned = stunned_at.x >= 0 && dist(stunned_at, w.pos) <= land_radius;
             const int d = dist(E, w.pos);
             if (d <= w.reach && (d < w.other_d || (d == w.other_d && self_slot < w.other_slot))) {
-                // Awake, it hits us every camp phase we are in its reach: the next one unless
-                // stunned, and the one after unless our next step can leave its reach.
-                const float hits = (stunned ? 0.0f : 1.0f) + (d < w.reach ? 1.0f : 0.0f);
+                // Awake, it hits us every camp phase we are in its reach: the next one, and the
+                // one after unless our next step can leave its reach.
+                const float hits = d < w.reach ? 2.0f : 1.0f;
                 cost += w.strength * hits;
                 on_us += w.strength * hits;
-            } else if (!stunned && w.other_d <= w.reach && w.ally >= 0) {
+            } else if (w.other_d <= w.reach && w.ally >= 0) {
                 const auto& o = world.allies[static_cast<std::size_t>(w.ally)];
                 if (o.channel == Channel::recall || o.channel == Channel::tribute) return false;
                 if (const int at = world.map().group_at(o.pos); at >= 0 && world.camps[at].state == CampState::cleared) return false;
@@ -1016,7 +1009,7 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& 
         float x = v;
         if (s.touched) {
             float cost;
-            if (!wake_at(s.touched, c, s.land, cost)) return;
+            if (!wake_at(s.touched, c, cost)) return;
             x -= cost;
         }
         if ((has & gbit(c)) && x <= best[c].raw) return;
@@ -1166,7 +1159,7 @@ void Search::grow(const Node& s) {
             rest &= ~alike;
             Node d = c;
             if (land_at(tile(l), d)) {
-                d.lset = alike, d.land = {-1, -1};
+                d.lset = alike;
                 push(d, {Op::dash});
             } else {
                 h = saved;
@@ -1197,7 +1190,7 @@ void Search::grow(const Node& s) {
                     float v = centre_value(ce, sp.slot, s, ok);
                     if (!ok) continue;
                     float cost = 0;
-                    if ((ce.touched | s.touched) && !wake(ce.touched | s.touched, here, s.land, cost)) continue;
+                    if ((ce.touched | s.touched) && !wake(ce.touched | s.touched, here, cost)) continue;
                     v -= cost;
                     std::uint16_t mask = 0;
                     for (std::uint32_t m = ce.foes; m; m &= m - 1)
@@ -1242,7 +1235,7 @@ void Search::offer_exh(const Node& s) {
     float v = leaf_value(s);
     if (s.touched) {
         float cost;
-        if (!wake(s.touched, s.pos, s.land, cost)) return;
+        if (!wake(s.touched, s.pos, cost)) return;
         v -= cost;
     }
     const int c = cell(s.pos);
