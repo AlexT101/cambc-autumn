@@ -307,6 +307,16 @@ struct Unseen {
     float weight, worth; // worth < 0: hitting it is suicidal
 };
 
+// What lies within 1 of a tile, for ground centres.
+struct Near {
+    std::uint16_t foes;
+    bool banned;
+    float unseen;
+};
+
+// Tiles within 4 of the start: a 9x9 window, index (y + 4) * 9 + x + 4 relative to it.
+constexpr int win9_r = 4, win9_n = 9;
+
 // Kept in static storage: zeroing it each turn would cost more than the search. In a union, so
 // its members' default initialisers never run: they cost ~50k of the first turn's fuel.
 struct Tables {
@@ -319,6 +329,10 @@ struct Tables {
     std::array<Leaf, 512> leaves;
     std::array<Grid, 49> land_from;
     std::array<float, 49> exh, menu;
+    std::array<std::uint32_t, win9_n * win9_n> touch1;
+    std::array<Near, win9_n * win9_n> near;
+    std::array<std::uint8_t, max_centres> distinct; // centres, less those equal to an earlier one
+    std::array<std::uint32_t, 49> land_foes;
 };
 union TableStorage {
     Tables t;
@@ -352,7 +366,7 @@ struct Search {
     int n = 0, foes = 0;
     UnitHealths h{};
     std::array<int, max_groups> groups{};
-    int n_groups = 0, n_members = 0, n_centres = 0, n_unseen = 0;
+    int n_groups = 0, n_members = 0, n_centres = 0, n_distinct = 0, n_unseen = 0;
     // By local group: its wakers in tables.wakers, found on first need.
     std::array<std::uint8_t, max_groups> waker_begin{}, waker_end{};
     std::uint32_t wakers_known = 0;
@@ -408,12 +422,41 @@ struct Search {
     // Tiles within r of the visible unit at p that see it. attack_viewers leaves out bushes beyond
     // a step, but the start tile is exact: the unit is visible from there now.
     Grid viewers(vec2 p, int r) const {
-        return to_grid(attack_viewers(world, p, r), p, r) | (dist(here, p) <= r ? gbit(cell(here)) : 0);
+        const auto& rows = viewer_rows(p, r);
+        const int shift = p.x - here.x - 1; // grid column less window column
+        const std::uint32_t span = ((1u << (2 * r + 1)) - 1) << (4 - r);
+        Grid g = 0;
+        for (int dy = std::max(-r, here.y - grid_r - p.y), dy1 = std::min(r, here.y + grid_r - p.y); dy <= dy1; ++dy) {
+            const std::uint32_t row = rows[dy + 4] & span;
+            g |= static_cast<Grid>((shift >= 0 ? row << shift : row >> -shift) & 0x7F) << ((p.y + dy - here.y + grid_r) * grid_n);
+        }
+        return g | (dist(here, p) <= r ? gbit(cell(here)) : 0);
+    }
+    // attack_viewers by window row (bit x + 4), kept for the game for the two ranges asked most:
+    // it depends on terrain alone.
+    using Rows = std::array<std::uint16_t, 9>;
+    const Rows& viewer_rows(vec2 p, int r) const {
+        static std::array<std::array<Rows, 100 * 100>, 2> rows;
+        static std::array<std::array<std::uint8_t, 100 * 100>, 2> known;
+        static Rows scratch;
+        const auto fill = [&](Rows& out) {
+            const auto w = attack_viewers(world, p, r);
+            for (int y = 0; y < 9; ++y) out[y] = static_cast<std::uint16_t>(w.shr(9 * y).lo & 0x1FF);
+        };
+        const int slot = r == ability_range ? 0 : r == range ? 1 : -1;
+        const auto i = static_cast<std::size_t>(p.x + p.y * world.map().width);
+        if (slot < 0 || i >= known[0].size()) {
+            fill(scratch);
+            return scratch;
+        }
+        if (!known[slot][i]) fill(rows[slot][i]), known[slot][i] = 1;
+        return rows[slot][i];
     }
 
     // The camp groups a landing on cell c touches, by cell.
     Grid land_touch_known = 0;
     std::uint32_t land_touch(int c) {
+        if (land_radius == 1) return touch1(tile(c));
         static std::array<std::uint32_t, 49> memo; // valid by land_touch_known
         if (!(land_touch_known & gbit(c))) memo[c] = touch_near(tile(c), land_radius), land_touch_known |= gbit(c);
         return memo[c];
@@ -423,6 +466,46 @@ struct Search {
         for (int k = 0; k < n_members; ++k)
             if (dist(p, tables.members[k].pos) <= r) mask |= 1u << tables.members[k].local;
         return mask;
+    }
+    // Calls f(i) for each 9x9 window index within 1 of p.
+    template <class F> [[gnu::always_inline]] void around(vec2 p, F&& f) const {
+        const int x = p.x - here.x + win9_r, y = p.y - here.y + win9_r;
+        const int x0 = std::max(0, x - 1), x1 = std::min(win9_n - 1, x + 1), y1 = std::min(win9_n - 1, y + 1);
+        for (int yy = std::max(0, y - 1); yy <= y1; ++yy)
+            for (int xx = x0; xx <= x1; ++xx) f(yy * win9_n + xx);
+    }
+    // touch_near(p, 1), from the members scattered once over the 9x9 window.
+    bool touch1_known = false;
+    std::uint32_t touch1(vec2 p) {
+        if (n_members == 0) return 0;
+        const int dx = p.x - here.x, dy = p.y - here.y;
+        if (std::abs(dx) > win9_r || std::abs(dy) > win9_r) return touch_near(p, 1);
+        auto& t = tables.touch1;
+        if (!touch1_known) {
+            touch1_known = true;
+            t.fill(0);
+            for (int k = 0; k < n_members; ++k) {
+                const std::uint32_t bit = 1u << tables.members[k].local;
+                around(tables.members[k].pos, [&](int i) { t[i] |= bit; });
+            }
+        }
+        return t[(dy + win9_r) * win9_n + dx + win9_r];
+    }
+    // Landings that hit, grouped alike for the last hits set and foes alive asked.
+    Grid groups_hits = 0;
+    std::uint32_t groups_alive = 0;
+    int n_land_groups = 0;
+    std::array<Grid, 49> land_groups;
+    // The foes a landing on cell c hits, alive or not.
+    Grid land_foes_known = 0;
+    std::uint32_t land_foes(int c) {
+        if (!(land_foes_known & gbit(c))) {
+            std::uint32_t m = 0;
+            for (int t = 0; t < foes; ++t)
+                if (dist(tile(c), u[t].pos) <= land_radius) m |= 1u << t;
+            tables.land_foes[c] = m, land_foes_known |= gbit(c);
+        }
+        return tables.land_foes[c];
     }
 
     bool read();
@@ -476,6 +559,19 @@ struct Search {
         }
         cost = m.cost;
         return m.ok;
+    }
+    // wake() at the start tile, by touched set: the ground centres ask it at every node.
+    std::array<WakeMemo, 8> here_wakes;
+    int n_here_wakes = 0;
+    bool wake_here(std::uint32_t touched, float& cost) {
+        for (int i = 0; i < n_here_wakes; ++i)
+            if (here_wakes[i].touched == touched) {
+                cost = here_wakes[i].cost;
+                return here_wakes[i].ok;
+            }
+        const bool ok = wake(touched, here, cost);
+        if (n_here_wakes < static_cast<int>(here_wakes.size())) here_wakes[n_here_wakes++] = {touched, cost, ok};
+        return ok;
     }
     float leaf_value(const Node& s) const;
 
@@ -664,29 +760,61 @@ void Search::add_unseen(int s) {
 
 // Centres within range whose 3x3 holds a visible foe or an unseen one's tile.
 void Search::find_centres(int s) {
-    const int r = f.abilities[s].range();
-    std::array<std::uint8_t, 81> seen{};
-    n_centres = 0;
+    const int r = std::min(f.abilities[s].range(), win9_r);
+    // What each tile holds within 1, scattered from the foes and unseen tiles once.
+    auto& near = tables.near;
+    // Centres lie within 1 of a foe or an unseen tile: only those are cleared.
+    for (int i = 0; i < foes; ++i) around(u[i].pos, [&](int j) { near[j] = {}; });
+    for (int k = 0; k < n_unseen; ++k) around(tables.unseen[k].pos, [&](int j) { near[j] = {}; });
+    for (int i = 0; i < foes; ++i)
+        around(u[i].pos, [&](int j) { near[j].foes |= static_cast<std::uint16_t>(1u << i), near[j].banned |= u[i].suicidal[s]; });
+    for (int k = 0; k < n_unseen; ++k) {
+        const auto& un = tables.unseen[k];
+        around(un.pos, [&](int j) {
+            if (un.worth < 0) near[j].banned = true;
+            else near[j].unseen += un.weight * un.worth;
+        });
+    }
+    // Window columns and rows on the map and within r.
+    std::uint32_t cols = 0, rows = 0;
+    for (int k = -r; k <= r; ++k) {
+        if (const int x = here.x + k; x >= 0 && x < world.map().width) cols |= 1u << (k + win9_r);
+        if (const int y = here.y + k; y >= 0 && y < world.map().height) rows |= 1u << (k + win9_r);
+    }
+    std::array<std::uint8_t, win9_n * win9_n> seen{};
+    // A centre equal to an earlier one in all its value reads can never be picked over it: only
+    // the first of each is kept in `distinct`, found by a hash of those reads.
+    std::array<std::uint8_t, 128> slots{};
+    std::array<std::uint64_t, max_centres> keys;
+    std::array<std::uint32_t, max_centres> unseen_bits;
+    n_centres = n_distinct = 0;
     const auto add = [&](vec2 p) {
-        for (int dy = -1; dy <= 1; ++dy)
-            for (int dx = -1; dx <= 1; ++dx) {
-                const vec2 c{p.x + dx, p.y + dy};
-                if (dist(c, here) > r || !inside_map(c) || n_centres == max_centres) continue;
-                auto& mark = seen[static_cast<std::size_t>((c.y - here.y + 4) * 9 + c.x - here.x + 4)];
-                if (mark) continue;
-                mark = 1;
-                Centre ce;
-                ce.tile = c;
-                for (int i = 0; i < foes; ++i)
-                    if (dist(c, u[i].pos) <= 1) ce.foes |= static_cast<std::uint16_t>(1u << i), ce.banned |= u[i].suicidal[s];
-                for (int k = 0; k < n_unseen; ++k)
-                    if (dist(c, tables.unseen[k].pos) <= 1) {
-                        if (tables.unseen[k].worth < 0) ce.banned = true;
-                        else ce.unseen += tables.unseen[k].weight * tables.unseen[k].worth;
-                    }
-                ce.touched = touch_near(c, 1);
-                tables.centres[n_centres++] = ce;
+        const int x = p.x - here.x + win9_r, y = p.y - here.y + win9_r;
+        for (int yy = std::max(0, y - 1), y1 = std::min(win9_n - 1, y + 1); yy <= y1; ++yy) {
+            if (!(rows >> yy & 1)) continue;
+            for (int xx = std::max(0, x - 1), x1 = std::min(win9_n - 1, x + 1); xx <= x1; ++xx) {
+                const int j = yy * win9_n + xx;
+                if (!(cols >> xx & 1) || seen[j]) continue;
+                seen[j] = 1;
+                const int k = n_centres++;
+                auto& ce = tables.centres[k];
+                ce.tile = {here.x + xx - win9_r, here.y + yy - win9_r};
+                ce.foes = near[j].foes, ce.banned = near[j].banned, ce.unseen = near[j].unseen;
+                ce.touched = touch1(ce.tile);
+                const std::uint64_t key = ce.foes | std::uint64_t{ce.banned} << 16 | std::uint64_t{ce.touched} << 17;
+                const auto bits = std::bit_cast<std::uint32_t>(ce.unseen);
+                std::uint32_t h = static_cast<std::uint32_t>((key * 0x9E3779B97F4A7C15ull + bits * 0xC2B2AE3Dull) >> 57);
+                bool twin = false;
+                for (; slots[h] && !twin; h = (h + 1) & 127) {
+                    const int q = slots[h] - 1;
+                    twin = keys[q] == key && unseen_bits[q] == bits;
+                }
+                if (twin) continue;
+                slots[h] = static_cast<std::uint8_t>(n_distinct + 1);
+                keys[n_distinct] = key, unseen_bits[n_distinct] = bits;
+                tables.distinct[n_distinct++] = static_cast<std::uint8_t>(k);
             }
+        }
     };
     for (int i = 0; i < foes; ++i)
         if (dist(here, u[i].pos) <= r + 1) add(u[i].pos);
@@ -695,17 +823,18 @@ void Search::find_centres(int s) {
 
 bool Search::read() {
     const auto& self = world.me();
-    here = my_position();
+    const auto& record = my_record();
+    here = {record.x, record.y};
     range = f.attack_range();
     melee = f.walk_and_attack_independent();
     splash = f.passive == Passive::splash_attack;
     vendetta = f.passive == Passive::reset_on_kill;
-    const auto state = my_state();
+    const auto state = cambc::champion_state::from_bits_retain(record.state);
     can_walk = state.contains(cambc::champion_state::can_move);
     can_attack = state.contains(cambc::champion_state::can_attack);
     can_cast = state.contains(cambc::champion_state::can_cast);
-    health = my_health();
-    strength = my_strength() * damage_scale(f.passive, health, my_max_health());
+    health = record.health;
+    strength = record.strength * damage_scale(f.passive, health, record.max_health);
     moves = !intent.anchored;
     walks = intent.walks && can_walk;
     step = intent.step_value;
@@ -833,7 +962,7 @@ bool Search::hit_unit(int t, Node& s) {
             }
             lose(j, strength);
         }
-        s.touched |= touch_near(x.pos, 1);
+        s.touched |= touch1(x.pos);
     }
     if (retaliation >= health) return false;
     value -= retaliation;
@@ -1046,10 +1175,20 @@ void Search::settle(const Node& s) {
         const Grid allowed = (s.lset ? s.lset : ~land_hits) & s.req_d, mids = free_n & s.req_w;
         Grid ends = 0;
         each_bit(mids, [&](int m) { ends |= landings(m); });
+        // Each end's walk tile: the first mid it lands from, found for all ends on first need.
+        std::array<std::int8_t, 49> first;
+        bool firsts = false;
         offer(ends & allowed, v, s, leaf, [&](int c, vec2& w, vec2& d) {
-            each_bit(mids, [&](int m) {
-                if (w.x < 0 && (landings(m) & gbit(c))) w = tile(m);
-            });
+            if (!firsts) {
+                firsts = true;
+                Grid left = ends & allowed;
+                each_bit(mids, [&](int m) {
+                    const Grid now = landings(m) & left;
+                    left &= ~now;
+                    each_bit(now, [&](int e) { first[e] = static_cast<std::int8_t>(m); });
+                });
+            }
+            w = tile(first[c]);
             d = tile(c);
         });
         break;
@@ -1143,26 +1282,33 @@ void Search::grow(const Node& s) {
         c.seg = first ? dashed : walked_dashed;
         if ((reach & ~land_hits) != 0 && strikes_left(c)) push(c, {Op::dash});
         // Landings wake no sleeper, so those hitting the same foes and camp groups are alike.
-        for (Grid rest = lands ? reach & land_hits : 0; rest;) {
-            const int l = std::countr_zero(rest);
-            const auto hit = [&](int k) {
-                std::uint32_t m = 0;
-                for (int t = 0; t < foes; ++t)
-                    if (h[t] > 0 && dist(tile(k), u[t].pos) <= land_radius) m |= 1u << t;
-                return m;
-            };
-            const std::uint32_t m = hit(l), touch = land_touch(l);
-            Grid alike = gbit(l);
-            each_bit(rest & ~alike, [&](int k) {
-                if (land_touch(k) == touch && hit(k) == m) alike |= gbit(k);
-            });
-            rest &= ~alike;
-            Node d = c;
-            if (land_at(tile(l), d)) {
-                d.lset = alike;
-                push(d, {Op::dash});
-            } else {
-                h = saved;
+        if (const Grid hits = lands ? reach & land_hits : 0) {
+            std::uint32_t alive = 0;
+            for (int t = 0; t < foes; ++t)
+                if (h[t] > 0) alive |= 1u << t;
+            // Nodes before any kill share their landings' groups.
+            if (hits != groups_hits || alive != groups_alive) {
+                groups_hits = hits, groups_alive = alive, n_land_groups = 0;
+                std::array<std::uint32_t, 49> hit, touch;
+                each_bit(hits, [&](int k) {
+                    const std::uint32_t m = land_foes(k) & alive, t = land_touch(k);
+                    int i = 0;
+                    while (i < n_land_groups && !(hit[i] == m && touch[i] == t)) ++i;
+                    if (i == n_land_groups) hit[i] = m, touch[i] = t, land_groups[i] = 0, ++n_land_groups;
+                    land_groups[i] |= gbit(k);
+                });
+            }
+            const int kinds = n_land_groups;
+            std::array<Grid, 49> alike;
+            std::copy_n(land_groups.begin(), kinds, alike.begin());
+            for (int i = 0; i < kinds; ++i) {
+                Node d = c;
+                if (land_at(tile(std::countr_zero(alike[i])), d)) {
+                    d.lset = alike[i];
+                    push(d, {Op::dash});
+                } else {
+                    h = saved;
+                }
             }
         }
     }
@@ -1184,13 +1330,14 @@ void Search::grow(const Node& s) {
                 std::array<int, 16> which;
                 std::array<std::uint16_t, 16> masks;
                 int kinds = 0;
-                for (int k = 0; k < n_centres; ++k) {
+                for (int q = 0; q < n_distinct; ++q) {
+                    const int k = tables.distinct[q];
                     const auto& ce = tables.centres[k];
                     bool ok;
                     float v = centre_value(ce, sp.slot, s, ok);
                     if (!ok) continue;
                     float cost = 0;
-                    if ((ce.touched | s.touched) && !wake(ce.touched | s.touched, here, cost)) continue;
+                    if ((ce.touched | s.touched) && !wake_here(ce.touched | s.touched, cost)) continue;
                     v -= cost;
                     std::uint16_t mask = 0;
                     for (std::uint32_t m = ce.foes; m; m &= m - 1)
@@ -1464,9 +1611,11 @@ bool strike_possible(const World& world) {
         for (int t = 0; t < S.foes && sp.unit; ++t)
             valued.any |= (S.u[t].cast_legal & gbit(S.cell(here))) && !S.u[t].suicidal[sp.slot]
                           && S.u[t].spell[sp.slot] + S.u[t].spell_stun[sp.slot] > cast_cost;
-        for (int k = 0; k < S.n_centres && sp.ground; ++k) {
+        if (!sp.ground) continue;
+        const Node root = S.root();
+        for (int q = 0; q < S.n_distinct && !valued.any; ++q) {
             bool ok;
-            valued.any |= S.centre_value(tables.centres[k], sp.slot, S.root(), ok) > cast_cost && ok;
+            valued.any |= S.centre_value(tables.centres[tables.distinct[q]], sp.slot, root, ok) > cast_cost && ok;
         }
     }
 
@@ -1586,11 +1735,11 @@ bool strike_possible(const World& world) {
     if constexpr (debug_search) {
         debug_block({
             const std::uint64_t now = fuel(), used = fuel_start > now ? fuel_start - now : 0;
-            std::printf("SRCH %d %u fuel %llu nodes %d offers %d tiles %d priced %d queries %d boundstop %d sharestop %d capped %d len %d read %llu grow %llu price %llu act %llu foes %d units %d\n",
+            std::printf("SRCH %d %u fuel %llu nodes %d offers %d tiles %d priced %d queries %d boundstop %d sharestop %d capped %d len %d read %llu grow %llu price %llu act %llu foes %d units %d left %llu\n",
                         world.round, static_cast<unsigned>(world.me().handle), static_cast<unsigned long long>(used), S.nodes, S.offers, nt,
                         priced, queries, bound_stops, share_stops, capped ? 1 : 0, seq.n,
                         static_cast<unsigned long long>(fuel_start - marks[0]), static_cast<unsigned long long>(marks[0] - marks[1]),
-                        static_cast<unsigned long long>(marks[1] - marks[2]), static_cast<unsigned long long>(marks[2] - marks[3]), S.foes, S.n);
+                        static_cast<unsigned long long>(marks[1] - marks[2]), static_cast<unsigned long long>(marks[2] - marks[3]), S.foes, S.n, static_cast<unsigned long long>(fuel_start));
         });
     }
     return out;
