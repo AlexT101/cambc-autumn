@@ -55,7 +55,7 @@ inline const char*& fuel_phase() {
     return phase;
 }
 
-// The Monolith or big group the team is besieging this turn, or -1: camp actions skip every other
+// The Monolith the team is besieging this turn, or -1: camp actions skip every other
 // Monolith.
 inline int& siege_group() {
     static int g = -1;

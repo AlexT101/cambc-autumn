@@ -12,10 +12,9 @@ struct Memory {
     float damage = 0;  // taken since, as of this turn's start
     bool banking = false; // our bag headed for an altar rather than another capture last turn
     int farm_group = -1;  // farm's latest choice: kept when near tied, walked to on short fuel
-    bool farm_spell = false; // farm's choice is cleared by spells from out of the camps' reach
     int claim = -1;       // the group we told allies we work towards, or -1
     bool crew = false;    // joining an ally's claim rather than our own
-    bool siege = false;   // our claim is a Monolith or big group the team attacks together
+    bool siege = false;   // our claim is a Monolith the team attacks together
     int staged_since = -1; // round we started waiting near it for the others
     int wait_altar = -1, wait_since = -1;   // the altar we wait at for a safe tribute, since when
     int avoid_altar = -1, avoid_until = -1; // one we gave up waiting at, skipped until that round
