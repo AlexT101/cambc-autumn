@@ -23,8 +23,9 @@ struct Memory {
     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
 };
 
-// `world` is as of the turn's start; ask cambc for anything that changes after acting.
-void play_turn(const World& world, Pathing& pathing, Memory& memory);
+// `world` is as of the turn's start, observed again after a ward; ask cambc for anything that
+// changes after acting.
+void play_turn(World& world, Pathing& pathing, Memory& memory);
 // With the turn's spare fuel: the walk to our farm choice from where we ended, so that a costly
 // turn next round still walks it well.
 void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory);

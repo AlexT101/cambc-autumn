@@ -9,6 +9,7 @@
 #include <bit>
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <vector>
 #include "abilities.h"
@@ -589,7 +590,7 @@ bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int tu
     return any_risk(world, turns) || tribute_safe(safety, memory, turns);
 }
 
-void place_ward(const World& world, Memory& memory);
+bool place_ward(const World& world, Memory& memory, bool grow = true);
 
 // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, or at
 // an altar carry_bag gave up waiting at, is judged again.
@@ -1834,7 +1835,8 @@ bool try_ward(vec2 p, Memory& memory) {
 
 // Attackers in a bush stay unseen from outside it, and a ward inside sees across its cluster.
 // Ward the cluster in reach with the most tiles near us, unless our own ward already watches it.
-bool ward_bushes(const World& world, Memory& memory) {
+// Without `grow`, only if every cluster that needs is found already.
+bool ward_bushes(const World& world, Memory& memory, bool grow) {
     const auto& map = world.map();
     const vec2 here = my_position();
     const auto floor = small_cost_estimate + end_reserve;
@@ -1844,7 +1846,9 @@ bool ward_bushes(const World& world, Memory& memory) {
         return false;
     }
     if (!test(map.near_bushes(), here)) return false;
-    if (!map.find_bush_clusters(here, 2, floor)) {
+    if (!grow) {
+        if (!map.bush_clusters_found(here, 2)) return false;
+    } else if (!map.find_bush_clusters(here, 2, floor)) {
         note_shortcut("ward-no-bushes-clusters");
         return false;
     }
@@ -1896,11 +1900,11 @@ bool ward_bushes(const World& world, Memory& memory) {
     return false;
 }
 
-void place_ward(const World& world, Memory& memory) {
+bool place_ward(const World& world, Memory& memory, bool grow) {
     world.throw_if_stale();
     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
-    if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return;
-    ward_bushes(world, memory);
+    if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return false;
+    return ward_bushes(world, memory, grow);
 }
 
 // A live group, awake or maybe, whose monsters not read asleep reach p.
@@ -3183,7 +3187,7 @@ float farm_step_value(const World& world) {
 }
 
 
-void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     if (!world.me().alive || bankable_bag(world, pathing) == 0) memory.banking = false;
     if (!world.me().alive) {
@@ -3200,6 +3204,15 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     // Read again only after shopping changes our stats.
     std::optional<bool> home;
     if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home)) return;
+    // A ward shares the recall's channel, so this is its first chance; its sight counts this turn
+    // (probe-ward-sight). Growing clusters here would starve the search: the turn end grows them.
+    if (place_ward(world, memory, false)) {
+        world.observe();
+        // Safety's beliefs are fixed for its life: what we see changed, so it starts again.
+        std::destroy_at(&safety);
+        std::construct_at(&safety, world);
+        home.reset();
+    }
 
     // Shopping, heals and shields do not move us.
     const bool on_spawn = test(world.map().ally_spawn, my_position());
@@ -3334,7 +3347,7 @@ void count_use(const World& world, vec2 start, bool could_attack) {
 }
 
 // The turn's walk, hits and casts, and the free actions that end it.
-void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const vec2 start = world.me().pos;
     const bool could_attack = my_can_attack();
     prepare_walk(world, pathing, memory, walk_first_floor);
@@ -3363,7 +3376,7 @@ void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     count_use(world, start, could_attack);
 }
 
-void play_turn(const World& world, Pathing& pathing, Memory& memory) {
+void play_turn(World& world, Pathing& pathing, Memory& memory) {
     Safety safety{world};
     const auto* record = world.me().alive ? &my_record() : nullptr;
     const float health = record ? record->health : 0;
