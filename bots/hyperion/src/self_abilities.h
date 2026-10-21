@@ -41,8 +41,6 @@ bool dash_towards(const World& world, Pathing& pathing, const Field& field);
 bool dash_across(const World& world, Pathing& pathing, const Field& field);
 // Into attack range of `target` (a melee walk's step short), least exposed first; attack after it.
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief& target);
-// To a landing strictly less exposed than here, least exposed first, then nearest `home`.
-bool dash_away(const World& world, Pathing& pathing, const Field& home);
 
 // Willow: the ally the heal restores most, if it restores enough or the ally is low.
 bool heal_ally(const World& world);

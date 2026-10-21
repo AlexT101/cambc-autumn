@@ -390,29 +390,6 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief& 
     return dash_to_first(world, *dash, pathing, landings, [](vec2) { return true; }, "attack");
 }
 
-bool dash_away(const World& world, Pathing& pathing, const Field& home) {
-    Safety* safety = pathing.safety();
-    if (!world.me().facts().has_dash() || !safety) return false;
-    const auto dash = ready(world, AbilityKind::dash);
-    if (!dash) return false;
-    const Exposure here = exposure(world, *safety, my_position());
-    if (here.worst <= 0 && here.depth == 0) return false;
-    struct Rank {
-        Exposure exposed;
-        int home;
-        bool operator<(const Rank& o) const {
-            if (exposed < o.exposed || o.exposed < exposed) return exposed < o.exposed;
-            return home < o.home;
-        }
-    };
-    const auto landings = ranked(pathing.dash_landings(), [&](vec2 p) -> std::optional<Rank> {
-        if (wakes_camp(world, p)) return std::nullopt;
-        const auto e = exposure(world, *safety, p);
-        return e < here ? std::optional<Rank>{Rank{e, home.at(p)}} : std::nullopt;
-    });
-    return dash_to_first(world, *dash, pathing, landings, [](vec2) { return true; }, "away");
-}
-
 bool worth_healing(float amount, float gain, float fraction) {
     return gain > 0 && (gain >= heal_min_share * amount || fraction < heal_low_health);
 }
