@@ -242,18 +242,34 @@ void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
 
 // Out of the camps' reach first, along the cheapest neighbour: walking home past an awake camp
 // takes a hit every step, while a recall started outside its reach goes home untouched.
-bool flee_camps(Pathing& pathing, Safety& safety, const Field& home) {
+bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
     if (!my_can_move()) return false;
     const vec2 here = my_position();
     if (safety.camp_damage(here) <= 0) return false;
+    // A camp hits every tile in its reach alike, so one step's damage cannot tell the way out from
+    // a walk along the edge of its reach: count the hits still to come before leaving it.
+    static bitboard exits{cambc::uninitialized};
+    or_into(world.map().standable, safety.camp_area(), exits);
+    exits ^= safety.camp_area();
+    const int longest = world.map().max_camp_reach;
+    const auto cost = [&](vec2 p) {
+        const float camp = safety.camp_damage(p);
+        float damage = safety.damage_bound(p);
+        if (camp > 0) {
+            int r = 1;
+            while (r <= longest && !any_within(exits, p, r)) ++r;
+            damage += camp * static_cast<float>(r - 1);
+        }
+        return damage;
+    };
     const auto& blocked = pathing.blocked();
     std::optional<vec2> best;
-    float best_damage = safety.damage_bound(here);
+    float best_damage = cost(here);
     int best_home = home.at(here);
     for (auto d : directions) {
         const vec2 p = here + d;
         if (!in_bounds(p) || test(blocked, p)) continue;
-        const float damage = safety.damage_bound(p);
+        const float damage = cost(p);
         const int steps = home.at(p);
         if (damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
     }
@@ -3105,7 +3121,7 @@ void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memor
     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
     dash_away(world, pathing, pathing.to_ally_spawn());
     reset_and_attack_enemy(world);
-    if (!flee_camps(pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+    if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
     reset_and_attack_enemy(world);
 }
 

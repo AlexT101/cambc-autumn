@@ -241,6 +241,9 @@ public:
     // strikes for them.
     float damage_ceiling(vec2 p, bool double_unacted = false);
     float camp_damage(vec2 p, bool worst = true);
+    // Where a live member of an awake (or maybe awake) group would attack us: within its range, and
+    // no visible champion nearer it (or as near and acting first).
+    const bitboard& camp_area();
     // Chance of taking any damage or a stun at p before our next turn (cancelling a recall).
     bool threatened(vec2 p);
 
@@ -317,9 +320,6 @@ private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
     // Every credible threat at full damage, plus camps.
     float worst_damage(vec2 p);
-    // Where a live member of an awake (or maybe awake) group would attack us: within its range, and
-    // no visible champion nearer it (or as near and acting first).
-    const bitboard& camp_area();
     // Drop everything cached, after something this turn changed the fight: a kill, a stun or a
     // camp kill. Later queries recheck the engine for champions and monsters that died.
     void invalidate();
