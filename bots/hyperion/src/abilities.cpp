@@ -17,8 +17,7 @@ constexpr float winning_tribute_value = 5000; // a stun that stops the enemy's g
 constexpr float min_value = 40;
 constexpr float min_landing_value = 250; // a landing moves us off the goal's way
 constexpr float min_camp_value = 50;
-constexpr int hold_range = 6;       // camp casts wait while a visible enemy is this close
-constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not kept off
+constexpr int hold_range = 6; // camp casts wait while a visible enemy is this close
 
 bool walked(const World& world) { return my_position() != world.me().pos; }
 
@@ -109,12 +108,12 @@ bool landing_wakes(const World& world, vec2 p, int radius) {
     return false;
 }
 
-int unseen_retaliators(const World& world, vec2 here, int reach, float raw, vec2* out, int size) {
+int unseen_retaliators(const World& world, vec2 here, int reach, float raw, float health, vec2* out, int size) {
     int n = 0;
     if (raw <= 0) return n;
     for (const auto& e : world.enemies) {
-        if (!e.alive || e.visible || !e.tracked || e.retaliation() < my_health() || board_empty(e.possible)) continue;
-        if (board_count(e.possible) > max_unseen_tiles) continue;
+        if (!e.alive || e.visible || !e.tracked || e.retaliation() < health) continue;
+        if (const auto count = board_count(e.possible); count == 0 || count > max_unseen_tiles) continue;
         for (auto p : positions_within(e.possible, here, reach)) {
             if (n == size) return n;
             out[n++] = p;
@@ -228,13 +227,14 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
     int visible = 0;
     for (const auto& e : world.enemies) visible += e.alive && e.visible && dist(here, e.pos) <= reach;
     if (visible == 0) return best;
+    const float health = my_health();
     const auto& enemy_spawn = world.map().enemy_spawn;
     if (!my_can_move()) walk = 0;
     const bitboard* risk = nullptr;
     const auto keep_off_unseen = [&](const AbilityFacts& a, float raw, int radius, bitboard& off) {
         // Ren alone retaliates and picks are unique: one enemy's tiles at most.
         std::array<vec2, max_unseen_tiles> unseen;
-        const int n = unseen_retaliators(world, here, a.reach(), raw, unseen.data(), max_unseen_tiles);
+        const int n = unseen_retaliators(world, here, a.reach(), raw, health, unseen.data(), max_unseen_tiles);
         for (int k = 0; k < n; ++k) draw_square(off, unseen[k], static_cast<float>(radius));
     };
     for (int s = 0; s < 2; ++s) {
@@ -242,7 +242,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
         const auto& a = f.abilities[s];
         const float threshold = min_value + (a.excludes_walking ? walk : 0.0f);
         const float raw = raw_damage(s);
-        const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= my_health(); };
+        const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= health; };
         if (a.lands()) {
             if (!landings) continue;
             // It moves us: worth only what an excludes-walking cast must be worth to keep the walk.
@@ -252,13 +252,14 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
             clear_board(off);
             for (const auto& e : world.enemies) {
                 if (!e.alive || !e.visible || dist(here, e.pos) > a.reach()) continue;
-                const auto c = e.live();
-                if (!c.is_visible()) continue;
-                const float damage = damage_to(s, c, raw);
+                // Before the sight check: after a walk the area still hits a Ren seen at turn start.
                 if (suicidal(e)) {
                     draw_square(off, e.pos, static_cast<float>(a.radius));
                     continue;
                 }
+                const auto c = e.live();
+                if (!c.is_visible()) continue;
+                const float damage = damage_to(s, c, raw);
                 const float stun = a.stuns && !c.buffs().has_stun() ? stun_worth(world, e, raw > 0) : 0;
                 targets.push_back({e.pos, hit_worth(world, e, damage, c.health(), test(enemy_spawn, e.pos)) + stun});
             }
