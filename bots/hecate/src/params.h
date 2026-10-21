@@ -9,6 +9,9 @@ inline constexpr cambc::champion_draft draft_preference[] = {
     cambc::champion_draft::cassi_and_issac, cambc::champion_draft::varg, cambc::champion_draft::ren,
     cambc::champion_draft::vendetta, cambc::champion_draft::tavi, cambc::champion_draft::prism,
 };
+// Test copies only (tools/ab.py): draft a common ladder composition chosen by the map and side
+// (draft.cpp test_compositions) instead of draft_preference.
+constexpr bool test_draft = false;
 
 // Rounds out of sight after which an enemy could be anywhere.
 inline constexpr int track_horizon = 10;

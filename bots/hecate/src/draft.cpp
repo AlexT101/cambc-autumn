@@ -137,6 +137,91 @@ void analyse(DraftPlan& plan) {
     a.done = true;
 }
 
+// params::test_draft: the 10 most common compositions per pick count among the ladder's top 10
+// teams (research/hecate/DRAFT.md), each in its most common pick order.
+namespace test_compositions {
+using C = cambc::champion_draft;
+constexpr C three[][3] = {
+    {C::stellar, C::heart_of_ruin, C::ren},
+    {C::heart_of_ruin, C::ren, C::ryth},
+    {C::marcella, C::heart_of_ruin, C::stellar},
+    {C::heart_of_ruin, C::vendetta, C::ren},
+    {C::heart_of_ruin, C::marcella, C::vesper_vale},
+    {C::heart_of_ruin, C::varg, C::stellar},
+    {C::heart_of_ruin, C::marcella, C::ren},
+    {C::heart_of_ruin, C::ryth, C::vesper_vale},
+    {C::stellar, C::heart_of_ruin, C::cassi_and_issac},
+    {C::heart_of_ruin, C::varg, C::cassi_and_issac},
+};
+constexpr C four[][4] = {
+    {C::heart_of_ruin, C::ren, C::stellar, C::ryth},
+    {C::heart_of_ruin, C::vendetta, C::ren, C::vesper_vale},
+    {C::marcella, C::heart_of_ruin, C::stellar, C::ren},
+    {C::stellar, C::heart_of_ruin, C::ren, C::cassi_and_issac},
+    {C::heart_of_ruin, C::marcella, C::vesper_vale, C::ryth},
+    {C::heart_of_ruin, C::varg, C::cassi_and_issac, C::ryth},
+    {C::vesper_vale, C::cassi_and_issac, C::varg, C::stellar},
+    {C::marcella, C::ryth, C::stellar, C::heart_of_ruin},
+    {C::heart_of_ruin, C::ren, C::ryth, C::tavi},
+    {C::marcella, C::ren, C::stellar, C::ryth},
+};
+constexpr C five[][5] = {
+    {C::heart_of_ruin, C::ren, C::stellar, C::ryth, C::varg},
+    {C::marcella, C::heart_of_ruin, C::stellar, C::ren, C::ryth},
+    {C::heart_of_ruin, C::ren, C::ryth, C::stellar, C::tavi},
+    {C::stellar, C::heart_of_ruin, C::ren, C::cassi_and_issac, C::ryth},
+    {C::heart_of_ruin, C::marcella, C::vesper_vale, C::ryth, C::stellar},
+    {C::heart_of_ruin, C::vendetta, C::ren, C::vesper_vale, C::varg},
+    {C::heart_of_ruin, C::varg, C::cassi_and_issac, C::ryth, C::stellar},
+    {C::stellar, C::heart_of_ruin, C::prism, C::marcella, C::ren},
+    {C::stellar, C::heart_of_ruin, C::cassi_and_issac, C::marcella, C::willow},
+    {C::vesper_vale, C::cassi_and_issac, C::varg, C::vendetta, C::stellar},
+};
+
+std::uint64_t mix(std::uint64_t h, std::uint64_t w) {
+    h = (h ^ w) * 0x9E3779B97F4A7C15ull;
+    return h ^ (h >> 29);
+}
+
+std::uint64_t mix_board(std::uint64_t h, const bitboard& board) {
+    const auto words = cambc::detail::layout().board_bytes / 8;
+    for (std::uint32_t i = 0; i < words; ++i) h = mix(h, board.ptr()[i]);
+    return h;
+}
+
+// Both sides see the same map, so the side-swapped game repeats each side's draft.
+std::uint64_t map_hash() {
+    std::uint64_t h = mix(0, static_cast<std::uint64_t>(cambc::detail::sdk_my_team()));
+    h = mix(h, static_cast<std::uint64_t>(cambc::map::width()) << 32 | static_cast<std::uint32_t>(cambc::map::height()));
+    for (const auto* board : {&cambc::map::walls(), &cambc::map::bushes(), &cambc::map::holes(), &cambc::map::altars(),
+                              &cambc::map::spawn_region(team::ally), &cambc::map::spawn_region(team::enemy)})
+        h = mix_board(h, *board);
+    static std::array<std::uint32_t, 4096> camps;
+    std::uint32_t count{};
+    cambc::detail::check(cambc::detail::sdk_map_camp_layout(camps.data(), static_cast<std::uint32_t>(camps.size()), &count));
+    h = mix(h, count);
+    for (std::uint32_t i = 0; i < std::min<std::uint32_t>(count, camps.size()); ++i) h = mix(h, camps[i]);
+    return mix(h, 0);
+}
+
+std::span<const C> choose() {
+    const auto picks = cambc::draft::team_size();
+    const auto pick = [&](const auto& table) -> std::span<const C> { return table[map_hash() % std::size(table)]; };
+    if (picks == 3) return pick(three);
+    if (picks == 4) return pick(four);
+    if (picks == 5) return pick(five);
+    return params::draft_preference;
+}
+} // namespace test_compositions
+
+std::span<const cambc::champion_draft> draft_order() {
+    if constexpr (params::test_draft) {
+        static const auto chosen = test_compositions::choose();
+        return chosen;
+    }
+    return params::draft_preference;
+}
+
 void write_plan(DraftState& state) {
     state.plan.version = DraftPlan::current_version;
     cambc::draft_memory = std::span<const std::byte>{reinterpret_cast<const std::byte*>(&state.plan), sizeof(DraftPlan)};
@@ -155,6 +240,7 @@ const DraftPlan* read_draft_plan() {
 void play_draft(DraftState& state) {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
     // and the draft bot may not run again after its last pick.
+    if constexpr (params::test_draft) draft_order(); // while the first turn's fuel lasts
     try {
         analyse(state.plan);
     } catch (const std::exception&) {
@@ -162,7 +248,7 @@ void play_draft(DraftState& state) {
     }
     state.plan.field_layers = static_cast<std::uint16_t>(max_field_layers());
     write_plan(state);
-    pick_first_available(state, params::draft_preference);
+    pick_first_available(state, draft_order());
 }
 
 void ensure_picked(DraftState& state) {
