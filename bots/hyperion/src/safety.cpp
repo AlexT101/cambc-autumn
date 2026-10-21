@@ -1494,7 +1494,6 @@ std::span<const Safety::CampHit> Safety::awake_members() {
 [[gnu::noinline]] void Safety::find_members() {
     members_known_ = true;
     int count = 0;
-    camp_memo_[0].valid = camp_memo_[1].valid = false;
     // Each monster attacks the nearest champion within range, ties to the one acting first in
     // the round of the next camp phase.
     struct Other {
@@ -1702,7 +1701,6 @@ bool Safety::reobserve() {
 [[gnu::noinline]] void Safety::strike_foe(const ChampionBelief& e, Foe& x) {
     known_ |= static_cast<std::uint16_t>(1u << e.index);
     x.strike = threat_strike(world_, e);
-    x.asked = {-1, -1};
 }
 
 Safety::Foe& Safety::struck(const ChampionBelief& e) {
@@ -1738,11 +1736,10 @@ Threat& next_threat(std::vector<Threat>& pool, int& count) {
 
 void Safety::build() {
     world_.throw_if_stale();
-    if (!built_) build_threats();
+    if (!built_) built_ = true, build_threats(~0u);
 }
 
-[[gnu::noinline]] void Safety::build_threats() {
-    built_ = true;
+[[gnu::noinline]] void Safety::build_threats(std::uint32_t which) {
     FuelMeter meter{"safety"};
     // One per enemy, reused between builds: a new field allocates and clears ~13k bytes.
     static std::vector<std::unique_ptr<cambc::distance_field>> fields;
@@ -1752,7 +1749,7 @@ void Safety::build() {
         if (!field) field = std::make_unique<cambc::distance_field>();
         return *field;
     };
-    for (auto left = live_enemies(); left; left &= left - 1) {
+    for (auto left = live_enemies() & which & ~std::uint32_t{threat_mask_}; left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;
         const auto& x = foe(e);
@@ -1798,22 +1795,17 @@ std::span<const Threat> Safety::threats() {
     return {threats_.data(), static_cast<std::size_t>(threat_count_)};
 }
 
-// f(enemy, blow) for each enemy build() makes a threat of, the blow at least its threat's at p:
-// exact if visible; if unseen, its strike at 0 when a tile it could be on is within its reach of
-// p, else none, as its field is capped within the reach. Strikes only weaken with distance, so
-// this bounds the threats' damage and hits at p without building them.
+// f(enemy, blow) for each enemy build() makes a threat of, with its threat's blow at p: exact if
+// visible, by the one unseen rule (tile()) if not.
 template <class F> void Safety::each_threat(vec2 p, F&& f) {
+    const bool window = window_slot(p) >= 0;
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;
-        auto& x = foe(e);
-        const auto& s = x.strike;
-        if (s.reach < 0) continue;
+        const auto& x = foe(e);
+        if (x.strike.reach < 0) continue;
         if (e.visible) f(e, blow(e, p));
-        else if (x.weight > 0) {
-            if (x.asked != p) x.asked = p, x.near = any_within(e.possible, p, s.reach);
-            f(e, x.near ? s.blow(0) : Blow{});
-        }
+        else if (x.weight > 0) f(e, unseen_blow(e, x, p, window));
     }
 }
 
@@ -1850,37 +1842,50 @@ int Safety::approach(const ChampionBelief& e, vec2 p) {
     return blow(e, p).hits ? 0 : std::max(1, dist(p, e.pos) - reach);
 }
 
+namespace {
+
+// Inside debug_block only: any_within() on a board of its own, leaving within()'s kept square alone.
+bool debug_any_within(const bitboard& tiles, vec2 p, int r) {
+    static bitboard box{cambc::uninitialized};
+    clear_board(box);
+    draw_square(box, p, static_cast<float>(r));
+    and_into(box, tiles, box);
+    return !board_empty(box);
+}
+
+} // namespace
+
 int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out) {
+    const bool was_built = built_;
+    const auto& row = tile(p);
+    const unsigned hit = row.vis_mask | row.unseen_mask;
+    const bool window = window_slot(p) >= 0;
     int n = 0;
-    if (built_) {
-        for (const auto& t : threats())
-            if (n < static_cast<int>(out.size())) out[n++] = {t.enemy, t.at(p)};
-        return n;
-    }
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e) || n == static_cast<int>(out.size())) continue;
         const auto& x = foe(e);
-        if (x.strike.reach < 0) continue;
-        if (e.visible) {
-            out[n++] = {e.index, blow(e, p)};
-        } else if (x.weight > 0) {
-            // The nearest possible tile within the radius, by bisection; past the reach every
-            // distance misses alike.
-            const int radius = unseen_radius(x.strike.reach, x.tiles), top = std::min(radius, x.strike.reach);
-            int d = radius + 1;
-            if (any_within(e.possible, p, top)) {
-                int lo = 0;
-                d = top;
-                while (lo < d) {
-                    const int mid = (lo + d) / 2;
-                    if (any_within(e.possible, p, mid)) d = mid;
-                    else lo = mid + 1;
-                }
-            }
-            out[n++] = {e.index, x.strike.blow(d <= radius ? d : static_cast<int>(unreachable))};
-        }
+        if (x.strike.reach < 0 || (!e.visible && x.weight <= 0)) continue;
+        out[n++] = {e.index, !(hit >> e.index & 1) ? Blow{} : e.visible ? blow(e, p) : unseen_blow(e, x, p, window)};
     }
+    debug_block({
+        // The old rule before a build: an unseen threat's Chebyshev distance to `possible`, out to
+        // its radius.
+        static int last = -1;
+        for (int i = 0; i < n && !was_built && last != world_.round; ++i) {
+            const auto& e = world_.enemies[static_cast<std::size_t>(out[i].enemy)];
+            if (e.visible) continue;
+            const auto& x = foes_[static_cast<std::size_t>(e.index)];
+            const int radius = unseen_radius(x.strike.reach, x.tiles);
+            int d = 0;
+            while (d <= radius && !debug_any_within(e.possible, p, d)) ++d;
+            const Blow old = x.strike.blow(d <= radius ? d : static_cast<int>(unreachable));
+            if (old.hits != out[i].blow.hits || std::abs(old.damage - out[i].blow.damage) > 0.01f) {
+                last = world_.round;
+                std::printf("TABLE-MISMATCH %d threats_at %d %d %.1f %.1f e%d\n", world_.round, p.x, p.y, old.damage, out[i].blow.damage, e.index);
+            }
+        }
+    });
     return n;
 }
 
@@ -1896,11 +1901,16 @@ bool Safety::any_threat() {
 }
 
 float Safety::damage_bound(vec2 p, bool double_unacted) {
-    float total = camp_damage(p);
-    each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
-        total += b.damage * (double_unacted && e.visible && !e.acted ? 2.0f : 1.0f);
+    const auto& row = tile(p);
+    const float bound = row.worst() + (double_unacted ? row.vis_unacted : 0.0f);
+    debug_block({
+        static int last = -1;
+        if (const float old = bound - row.unseen + debug_old_unseen(p, nullptr); last != world_.round && std::abs(old - bound) > 0.01f) {
+            last = world_.round;
+            std::printf("TABLE-MISMATCH %d bound %d %d %.1f %.1f\n", world_.round, p.x, p.y, old, bound);
+        }
     });
-    return total;
+    return bound;
 }
 
 float Safety::damage_ceiling(vec2 p, bool double_unacted) {
@@ -1919,45 +1929,46 @@ float Safety::damage_ceiling(vec2 p, bool double_unacted) {
 }
 
 bool Safety::may_be_hit(vec2 p) {
-    bool hit = false;
-    each_threat(p, [&](const ChampionBelief&, const Blow& b) { hit |= b.hits; });
-    return hit;
+    const auto& row = tile(p);
+    return (row.vis_mask | row.unseen_mask) != 0;
 }
 
 float Safety::camp_damage(vec2 p, bool worst) {
-    const auto& members = awake_members();
-    if (members.empty()) return 0;
-    auto& memo = camp_memo_[worst ? 1 : 0];
-    if (memo.valid && memo.p == p) return memo.damage;
-    float total = 0;
-    for (const auto& m : members)
-        if (in_square(p, m.pos, m.reach)) total += worst ? m.strength : m.strength * m.weight;
-    memo = {p, total, true};
-    return total;
+    if (awake_members().empty()) return 0;
+    sync_table();
+    const int s = slot_of(p);
+    if (s < 0) {
+        TileDanger row;
+        fill_camps(p, row);
+        return worst ? row.camp_worst : row.camp_exp;
+    }
+    auto& row = rows_[static_cast<std::size_t>(s)];
+    if (const auto bit = std::uint64_t{1} << s; !(camps_known_ & bit)) fill_camps(p, row), camps_known_ |= bit;
+    return worst ? row.camp_worst : row.camp_exp;
 }
 
-float Safety::worst_damage(vec2 p) {
-    float total = camp_damage(p, true);
-    for (const auto& t : threats())
-        total += t.at(p).damage;
-    return total;
-}
+float Safety::worst_damage(vec2 p) { return tile(p).worst(); }
 
 // Any camp member or visible threat in reach is enough on its own. An unseen threat's chance is
 // uniform over its possible tiles; it hits p only within its field, capped inside its reach.
 bool Safety::threatened(vec2 p) {
     static_assert(unknown_camp_weight >= recall_risk && hit_given_reach >= recall_risk);
     if (camp_damage(p) > 0) return true;
-    if (!built_ && !may_be_hit(p)) return false;
-    float safe = 1;
-    for (const auto& t : threats()) {
-        if (!t.at(p).hits) continue;
-        if (t.visible) return true;
-        const auto near = count_within(world_.enemies[t.enemy].possible, p, t.strike.reach);
-        const float chance = std::min(1.0f, static_cast<float>(near) / static_cast<float>(t.tiles));
-        if (1 - (safe *= 1 - chance * hit_given_reach) >= recall_risk) return true;
-    }
-    return false;
+    const bool was_built = built_;
+    const auto& row = tile(p);
+    const bool threat = row.vis_mask || (row.unseen_mask && unseen_chance(p) >= recall_risk);
+    debug_block({
+        // The old rule skipped the build only when nothing could hit p by the distance-0 rule.
+        bool near = false;
+        (void)debug_old_unseen(p, &near);
+        const bool old = (was_built || row.vis_mask || near) && threat;
+        static int last = -1;
+        if (old != threat && last != world_.round) {
+            last = world_.round;
+            std::printf("TABLE-MISMATCH %d threatened %d %d %d %d\n", world_.round, p.x, p.y, old ? 1 : 0, threat ? 1 : 0);
+        }
+    });
+    return threat;
 }
 
 const bitboard& Safety::camp_area() {
@@ -2125,7 +2136,7 @@ std::uint64_t Safety::build_cost_estimate() {
 
 [[gnu::noinline]] std::uint64_t Safety::estimate_build() {
     std::uint64_t cost = 2000;
-    for (auto left = live_enemies(); left; left &= left - 1) {
+    for (auto left = live_enemies() & ~std::uint32_t{threat_mask_}; left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;
         if (e.visible) cost += 4000; // with its Reach
@@ -2197,46 +2208,126 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
 bool Safety::lethal(vec2 p) {
     const float health = world_.me().health;
     // Most turns no enemy is near enough; skip the threat build then.
-    if (!built_ && (damage_ceiling(p) < health || damage_bound(p) < health)) return false;
-    return worst_damage(p) >= health;
+    const bool was_built = built_;
+    if (!built_ && damage_ceiling(p) < health) return false;
+    const auto& row = tile(p);
+    const bool dies = row.worst() >= health;
+    debug_block({
+        const bool old = (was_built || row.vis + row.camp_worst + debug_old_unseen(p, nullptr) >= health) && dies;
+        static int last = -1;
+        if (old != dies && last != world_.round) {
+            last = world_.round;
+            std::printf("TABLE-MISMATCH %d lethal %d %d %d %d\n", world_.round, p.x, p.y, old ? 1 : 0, dies ? 1 : 0);
+        }
+    });
+    return dies;
 }
 
-const TileDanger& Safety::tile(vec2 p) {
-    if (table_generation_ != generation_) table_generation_ = generation_, window_known_ = 0, ring_known_ = 0;
+void Safety::sync_table() {
+    if (table_generation_ == generation_) return;
+    table_generation_ = generation_;
+    threats_known_ = camps_known_ = chances_known_ = 0;
+    gate_asked_ = gate_near_ = 0;
+    ring_used_ = 0;
+}
+
+int Safety::window_slot(vec2 p) const {
     const auto dx = static_cast<unsigned>(p.x - centre_.x + 3), dy = static_cast<unsigned>(p.y - centre_.y + 3);
-    if (dx < 7 && dy < 7) {
-        const auto i = 7 * dy + dx;
-        auto& row = rows_[i];
-        if (!(window_known_ >> i & 1)) window_known_ |= std::uint64_t{1} << i, fill_row(p, row);
-        return row;
-    }
-    for (int k = 0; k < 4; ++k)
-        if ((ring_known_ >> k & 1) && ring_at_[static_cast<std::size_t>(k)] == p) return rows_[static_cast<std::size_t>(49 + k)];
-    const int k = ring_next_++ & 3;
-    ring_known_ |= static_cast<std::uint8_t>(1u << k);
-    ring_at_[static_cast<std::size_t>(k)] = p;
-    auto& row = rows_[static_cast<std::size_t>(49 + k)];
-    fill_row(p, row);
-    return row;
+    return dx < 7 && dy < 7 ? static_cast<int>(7 * dy + dx) : -1;
 }
 
-void Safety::fill_row(vec2 p, TileDanger& row) {
-    row = {};
+int Safety::slot_of(vec2 p) {
+    if (const int s = window_slot(p); s >= 0) return s;
+    for (int k = 0; k < 4; ++k)
+        if ((ring_used_ >> k & 1) && ring_at_[static_cast<std::size_t>(k)] == p) return window_slots + k;
+    return -1;
+}
+
+int Safety::claim_slot(vec2 p) {
+    sync_table();
+    if (const int s = slot_of(p); s >= 0) return s;
+    const int k = ring_next_++ & 3;
+    ring_used_ |= static_cast<std::uint8_t>(1u << k);
+    ring_at_[static_cast<std::size_t>(k)] = p;
+    const auto keep = ~(std::uint64_t{1} << (window_slots + k));
+    threats_known_ &= keep, camps_known_ &= keep, chances_known_ &= keep;
+    return window_slots + k;
+}
+
+int Safety::threat_slot(vec2 p) {
+    const int s = claim_slot(p);
+    if (const auto bit = std::uint64_t{1} << s; !(threats_known_ & bit)) {
+        auto& row = rows_[static_cast<std::size_t>(s)];
+        if (!(camps_known_ & bit)) fill_camps(p, row), camps_known_ |= bit;
+        fill_threats(p, row);
+        threats_known_ |= bit;
+    }
+    return s;
+}
+
+const TileDanger& Safety::tile(vec2 p) { return rows_[static_cast<std::size_t>(threat_slot(p))]; }
+
+[[gnu::noinline]] void Safety::fill_threats(vec2 p, TileDanger& row) {
+    Phase phase{"tile"};
+    std::uint16_t vis_mask = 0, stun_mask = 0, unseen_mask = 0;
+    float vis = 0, vis_unacted = 0, unseen = 0;
     each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
         if (!b.hits) return;
         const auto bit = static_cast<std::uint16_t>(1u << e.index);
-        if (b.stuns) row.stun_mask |= bit;
+        if (b.stuns) stun_mask |= bit;
         if (e.visible) {
-            row.vis_mask |= bit;
-            row.vis += b.damage;
-            if (!e.acted) row.vis_unacted += b.damage;
+            vis_mask |= bit, vis += b.damage;
+            if (!e.acted) vis_unacted += b.damage;
         } else {
-            row.unseen_mask |= bit;
-            row.unseen += b.damage;
+            unseen_mask |= bit, unseen += b.damage;
         }
     });
-    row.camp_worst = camp_damage(p, true);
-    row.camp_exp = camp_damage(p, false);
+    row.vis_mask = vis_mask, row.stun_mask = stun_mask, row.unseen_mask = unseen_mask;
+    row.vis = vis, row.vis_unacted = vis_unacted, row.unseen = unseen;
+}
+
+void Safety::fill_camps(vec2 p, TileDanger& row) {
+    float worst = 0, expected = 0;
+    for (const auto& m : awake_members())
+        if (in_square(p, m.pos, m.reach)) worst += m.strength, expected += m.strength * m.weight;
+    row.camp_worst = worst, row.camp_exp = expected;
+}
+
+// Its field is capped at the radius, so only `possible` within the radius of p can hit p: within
+// radius + 3 of the window's centre for any window tile. Only this enemy's threat is built.
+Blow Safety::unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p, bool window) {
+    if (const auto bit = static_cast<std::uint16_t>(1u << e.index); !built_ && !(threat_mask_ & bit)) {
+        const int radius = unseen_radius(x.strike.reach, x.tiles);
+        if (window) {
+            if (!(gate_asked_ & bit)) {
+                gate_asked_ |= bit;
+                if (any_within(e.possible, centre_, radius + 3)) gate_near_ |= bit;
+            }
+            if (!(gate_near_ & bit)) return {};
+        } else if (!any_within(e.possible, p, radius)) {
+            return {};
+        }
+        world_.throw_if_stale();
+        build_threats(bit);
+        build_cost_ = 0;
+    }
+    for (int i = 0; i < threat_count_; ++i)
+        if (const auto& t = threats_[static_cast<std::size_t>(i)]; t.enemy == e.index) return t.at(p);
+    return {};
+}
+
+float Safety::debug_old_unseen(vec2 p, bool* near) {
+    float total = 0;
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const int i = std::countr_zero(left);
+        const auto& e = world_.enemies[static_cast<std::size_t>(i)];
+        if (e.visible || !(counted_ >> i & 1)) continue;
+        const auto& x = foes_[static_cast<std::size_t>(i)];
+        if (x.strike.reach < 0 || x.weight <= 0 || !debug_any_within(e.possible, p, x.strike.reach)) continue;
+        total += x.strike.at(0);
+        if (near) *near = true;
+    }
+    return total;
 }
 
 float Safety::strike_sum(vec2 p, std::uint16_t* mask) {
@@ -2254,24 +2345,54 @@ float Safety::strike_sum(vec2 p, std::uint16_t* mask) {
 
 int Safety::exit_rounds(vec2 p) {
     if (camp_damage(p) <= 0) return 0;
-    const auto& open = world_.map().standable;
-    const auto out = [&](vec2 q) { return in_bounds(q) && test(open, q) && camp_damage(q) <= 0; };
     const int longest = world_.map().max_camp_reach;
-    for (int r = 1; r <= longest; ++r)
-        for (int i = -r; i <= r; ++i)
-            if (out({p.x + i, p.y - r}) || out({p.x + i, p.y + r}) || out({p.x - r, p.y + i}) || out({p.x + r, p.y + i})) return r;
-    return longest + 1;
+    // Over no walls a king-step field is the Chebyshev distance to the nearest exit.
+    static cambc::distance_field field;
+    if (exits_generation_ != generation_) {
+        exits_generation_ = generation_;
+        static bitboard exits{cambc::uninitialized}, reached{cambc::uninitialized};
+        static const bitboard none;
+        or_into(world_.map().standable, camp_area(), exits);
+        xor_into(exits, camp_area(), exits);
+        field.compute(none, exits, reached, static_cast<std::uint16_t>(longest));
+    }
+    const int r = std::clamp(steps_at(field, p), 1, longest + 1);
+    debug_block({
+        // The old ring walk, tile by tile.
+        const auto out = [&](vec2 q) {
+            if (!in_bounds(q) || !test(world_.map().standable, q)) return false;
+            TileDanger t;
+            fill_camps(q, t);
+            return t.camp_worst <= 0;
+        };
+        int old = longest + 1;
+        for (int k = 1; k <= longest && old > longest; ++k)
+            for (int i = -k; i <= k && old > longest; ++i)
+                if (out({p.x + i, p.y - k}) || out({p.x + i, p.y + k}) || out({p.x - k, p.y + i}) || out({p.x + k, p.y + i})) old = k;
+        static int last = -1;
+        if (old != r && last != world_.round) {
+            last = world_.round;
+            std::printf("TABLE-MISMATCH %d exit %d %d %d %d\n", world_.round, p.x, p.y, old, r);
+        }
+    });
+    return r;
 }
 
 float Safety::unseen_chance(vec2 p) {
+    const int s = threat_slot(p);
+    const auto bit = std::uint64_t{1} << s;
+    auto& lazy = lazy_[static_cast<std::size_t>(s)];
+    if (chances_known_ & bit) return lazy.chance;
     float safe = 1;
-    for (unsigned left = tile(p).unseen_mask; left; left &= left - 1) {
+    for (unsigned left = rows_[static_cast<std::size_t>(s)].unseen_mask; left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         const auto& x = foe(e);
         const auto near = count_within(e.possible, p, x.strike.reach);
         safe *= 1 - std::min(1.0f, static_cast<float>(near) / static_cast<float>(x.tiles)) * hit_given_reach;
     }
-    return 1 - safe;
+    lazy.chance = 1 - safe;
+    chances_known_ |= bit;
+    return lazy.chance;
 }
 
 } // namespace aph
