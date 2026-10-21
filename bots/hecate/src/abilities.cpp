@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <array>
 #include <optional>
-#include <utility>
 #include <vector>
 #include "safety.h"
 #include "params.h"
@@ -206,7 +205,6 @@ Cast best_landing(int slot, float min_value, const std::vector<Target>& targets,
 }
 
 Cast enemy_cast(const World& world, float walk, bool landings) {
-    auto& me = cambc::self();
     Cast best;
     if (!my_can_cast()) return best;
     const vec2 here = my_position();
@@ -361,7 +359,6 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
 }
 
 Cast camp_cast(const World& world, int group, bool attackers_only, bool any_value) {
-    auto& me = cambc::self();
     if (!my_can_cast()) return {};
     const auto& f = world.me().facts();
     const std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};

@@ -154,7 +154,6 @@ bool shield_wanted(const World& world) {
 } // namespace
 
 std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only) {
-    auto& me = cambc::self();
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
     const bool splash = world.me().facts().passive == Passive::splash_attack;

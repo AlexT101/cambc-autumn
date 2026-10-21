@@ -610,7 +610,7 @@ bool place_ward(const World& world, Memory& memory, bool grow = true);
 
 // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, or at
 // an altar carry_bag gave up waiting at, is judged again.
-bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+bool submit_here(const World& world, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     const vec2 here = my_position();
     const auto& altars = world.map().altars;
@@ -676,13 +676,13 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
 
 [[gnu::flatten]] void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
-    if (submit_here(world, pathing, safety, memory)) return;
+    if (submit_here(world, safety, memory)) return;
     const vec2 here = my_position();
     const auto& altars = world.map().altars;
     // A pack we would retreat from stands in the way: around it within the usual detour, else
     // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
     if (const auto* zone = pack_zone(world)) {
-        if (pathing.step_towards(pathing.to_any_altar(), zone)) submit_here(world, pathing, safety, memory);
+        if (pathing.step_towards(pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
         return;
     }
     // One we gave up waiting at (carry_bag) counts as locked until we could reach another.
@@ -715,11 +715,11 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
         }
     }
     const Field& field = any_locked ? pathing.to_altar(best) : pathing.to_any_altar();
-    if ((dash_across(world, pathing, field) || dash_towards(world, pathing, field)) && submit_here(world, pathing, safety, memory)) return;
+    if ((dash_across(world, pathing, field) || dash_towards(world, pathing, field)) && submit_here(world, safety, memory)) return;
     if (any_locked && world.altars[best].enemy_lock && break_lock(world, best) && !world.me().facts().walk_and_attack_independent())
         return;
     step_safely(pathing, field, safety);
-    submit_here(world, pathing, safety, memory);
+    submit_here(world, safety, memory);
 }
 
 // Damage a turn, spells (and dash landings) spread over their cooldown.
@@ -1512,7 +1512,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     // its own can join: valued, like a crew's, by our share of the work.
     float partner_output = 0;
     for (const auto& a : world.allies)
-        if (!a.is_self && a.alive && a.visible && dist(here, a.pos) <= params::rally_radius && comms::claim_of(world, a.index) < 0)
+        if (!a.is_self && a.alive && a.visible && dist(here, a.pos) <= params::partner_radius && comms::claim_of(world, a.index) < 0)
             partner_output = std::max(partner_output, floored_output(a));
     const int n_groups = static_cast<int>(groups.size());
     // Static per group once read: its centre field (once warm) and that field's steps to our

@@ -1,6 +1,5 @@
 #include "comms.h"
 #include <algorithm>
-#include <array>
 #include "world.h"
 
 namespace aph::comms {
