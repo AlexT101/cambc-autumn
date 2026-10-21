@@ -87,8 +87,6 @@ public:
     // Unseen units can still block these.
     bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile, off the guard
     bitboard teleport_targets(); // free open or bush tiles within 3, not camp tiles or enemy spawn
-    // Within 2, not wall, hole, altar, enemy spawn or one of our wards.
-    bitboard ward_targets();
 
 private:
     vec2 my_pos(); // our tile, read again after invalidate() or in a new round

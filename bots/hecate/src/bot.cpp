@@ -391,7 +391,7 @@ bool endgame(const World& world, Pathing& pathing) {
     return walk != unreachable && rounds_left(world) <= walk + tribute_turns(bag) + endgame_margin;
 }
 
-void place_ward(const World& world, Pathing& pathing, Memory& memory);
+void place_ward(const World& world, Memory& memory);
 
 // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, or at
 // an altar carry_bag gave up waiting at, is judged again.
@@ -404,7 +404,7 @@ bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& m
         const bool avoided = a == memory.avoid_altar && world.round < memory.avoid_until;
         if ((avoided || here != world.me().pos) && !tribute_ok(world, safety, memory, tribute_turns(my_gems()))) return false;
         place_lock(world); // first: it cancels every tribute at its altar
-        place_ward(world, pathing, memory); // first: no ward goes down while channelling
+        place_ward(world, memory); // first: no ward goes down while channelling
         try {
             me.submit_gems(altars[a].pos);
             return true;
@@ -1650,16 +1650,11 @@ bool ward_bushes(const World& world, Memory& memory) {
     return false;
 }
 
-void place_ward(const World& world, Pathing& pathing, Memory& memory) {
+void place_ward(const World& world, Memory& memory) {
     world.throw_if_stale();
     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
     if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return;
-    if (ward_bushes(world, memory) || world.round % params::ward_period != 0) return;
-    const vec2 spawn = world.map().ally_spawn_centre;
-    std::optional<vec2> best;
-    for (auto p : pathing.ward_targets().positions())
-        if (!best || dist(spawn, p) > dist(spawn, *best)) best = p;
-    if (best) try_ward(*best, memory);
+    ward_bushes(world, memory);
 }
 
 // A live group, awake or maybe, whose monsters not read asleep reach p.
@@ -3082,7 +3077,7 @@ void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
             if (const auto t = safety.fight(start); t.enemies > 0) log_fight("FF", world, safety, start, t);
     heal_ally(world); // allies in reach after walking
     shield_if_needed(world, safety, memory.claim);
-    place_ward(world, pathing, memory); // where we end the turn
+    place_ward(world, memory); // where we end the turn
     place_lock(world);
     start_recall(world);
 }

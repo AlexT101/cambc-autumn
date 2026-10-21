@@ -26,7 +26,6 @@ inline constexpr float finish_camp_health_fraction = 0.6f;
 inline constexpr float camp_risk = 0.35f;
 // Enemy-ground discount: a group's weight is min(1, 2 d_enemy / (d_ally + d_enemy)) to this power.
 inline constexpr float home_power = 2.0f;
-inline constexpr int ward_period = 20;
 // An ally this near with no claim of its own can partner on a group too costly for us alone.
 inline constexpr int rally_radius = 12;
 // Help a struggling teammate clear its damaging group within this many steps.
