@@ -133,21 +133,18 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
     }
 }
 
-bool channel_ending() {
+bool channel_ending(cambc::champion_state state) {
     using cambc::champion_state;
-    const auto state = my_state();
     return (state.contains(champion_state::recalling) || state.contains(champion_state::submitting_gems)
             || state.contains(champion_state::teleporting))
            && my_channel_time() == 1;
 }
 
-// Our channel ends at our next turn's start, unless an enemy acting first cancels it: any damage
-// cancels a recall, only a stun a tribute or a teleport.
-void offer_channel(const ChampionBelief& self, Safety& safety, Wish& wish) {
+// Our ending channel completes at our next turn's start, unless an enemy acting first cancels it:
+// any damage cancels a recall, only a stun a tribute or a teleport.
+void offer_channel(const ChampionBelief& self, cambc::champion_state state, Safety& safety, Wish& wish) {
     using cambc::champion_state;
-    const auto state = my_state();
     const bool recall = state.contains(champion_state::recalling), tribute = state.contains(champion_state::submitting_gems);
-    if (!(recall || tribute || state.contains(champion_state::teleporting)) || my_channel_time() != 1) return;
     std::array<Safety::ThreatAt, 16> threats;
     const int n = safety.threats_at(self.pos, threats);
     for (int i = 0; i < n; ++i) {
@@ -224,10 +221,12 @@ void set_turn_order(const World& world, Safety& safety) {
         offer_heal(world, self, enemies, wish);
         // With no enemy in sight our turn only removed camp members, so the threats before a refresh
         // overstate those after: when they cannot kill us and no channel ends, nothing needs it.
-        if (channel_ending() || enemy_seen(world)
+        const auto state = my_state();
+        const bool ending = channel_ending(state);
+        if (ending || enemy_seen(world)
             || !(test(world.map().ally_spawn, self.pos) || safety.damage_ceiling(self.pos, true) < self.health)) {
             safety.refresh();
-            offer_channel(self, safety, wish);
+            if (ending) offer_channel(self, state, safety, wish);
             offer_escape(world, self, safety, wish);
         }
     }
