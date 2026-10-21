@@ -48,8 +48,7 @@ bool worth_healing(float amount, float gain, float fraction);
 // above 0: visible enemies' blows, camps that pick us (Safety::tile), and every member in reach of
 // a group we hit this turn (`farmed`, the group farm chose, hit from attack range; once our attack
 // is spent, any group in attack range). Never a shield on our spawn. `site` (debug MEND lines):
-// d before the goal, m on spawn after the hits, r a retreat the search did not plan (a reset that
-// may kill holds the shield), a the turn's end.
+// d before the goal, m on spawn before the hits, r a retreat the search did not plan, a the turn's end.
 bool mend(const World& world, Safety& safety, int farmed, char site = 'a');
 // Whether mend() would cast here, casting nothing.
 bool mend_due(const World& world, Safety& safety, int farmed);

@@ -3136,17 +3136,19 @@ float farm_step_value(const World& world) {
 }
 
 
-// Heals and shields have one valuer, mend(), judged in mend_searched, mend_spawn, mend_retreat and
-// at the turn's end (act). Nothing to judge here: nothing acts before mend_searched's call, and on
-// spawn the hits come first.
-void mend_early(const World&, Safety&, const Memory&, bool) {}
+// Heals and shields have one valuer, mend(), judged here on spawn, in mend_searched, mend_retreat
+// and at the turn's end (act). Off spawn nothing acts before mend_searched's call. On spawn, before
+// the hits: a shield is worth nothing there, and a reset would take the heal's cast.
+void mend_early(const World& world, Safety& safety, const Memory& memory, bool) {
+    if (test(world.map().ally_spawn, my_position())) mend(world, safety, memory.claim, 'm');
+}
 
 // Before the goal, whether or not the search ran: the search is blind to the goal's coming camp
 // hit, and farm's camp reset or dash would take the cast.
 void mend_searched(const World& world, Safety& safety, const Memory& memory, bool) { mend(world, safety, memory.claim, 'd'); }
 
-// On spawn healing, after the hits.
-void mend_spawn(const World& world, Safety& safety, const Memory& memory) { mend(world, safety, memory.claim, 'm'); }
+// mend_early judged the heal before the hits, which change nothing it reads.
+void mend_spawn(const World&, Safety&, const Memory&) {}
 
 // In a retreat the search did not plan.
 void mend_retreat(const World& world, Safety& safety, const Memory& memory) { mend(world, safety, memory.claim, 'r'); }

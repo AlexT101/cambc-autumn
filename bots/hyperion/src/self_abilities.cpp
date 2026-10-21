@@ -1,6 +1,7 @@
 #include "self_abilities.h"
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <optional>
 #include <vector>
 #include "abilities.h"
@@ -217,8 +218,13 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only, Safety* safe
     const auto target = attack_target(world, stunning_only);
     if (!target) return false;
     // Under visible fire, the heal or shield due here is worth more than a hit that does not kill.
-    const bool kills = target->health() <= me.strength();
-    if (!kills && safety && mend_due(world, *safety, -1) && safety->tile(my_position()).vis_mask) return false;
+    if (const bool kills = target->health() <= me.strength(); !kills && safety) {
+        // Strike bounds Reach: with no visible foe's Strike reaching here, vis_mask is 0.
+        const vec2 here = my_position();
+        std::uint16_t reaching = 0;
+        safety->strike_sum(here, &reaching);
+        if (reaching && mend_due(world, *safety, -1) && safety->tile(here).vis_mask) return false;
+    }
     if (!cast(*reset)) return false;
     try {
         me.attack(*target);
@@ -441,10 +447,12 @@ ShieldHits shield_hits(const World& world, Safety& safety, int farmed, vec2 p) {
     ShieldHits h;
     if (!test(world.map().ally_spawn, p)) {
         h.camp = safety.camp_damage(p);
-        // Strike bounds Reach: with no visible foe's Strike reaching p, tile(p)'s row stays unfilled.
+        // tile(p).vis, summed in its order, without filling the row's unseen columns. Strike bounds
+        // Reach, so only foes whose Strike reaches p can hit it.
         std::uint16_t reaching_foes = 0;
         safety.strike_sum(p, &reaching_foes);
-        if (reaching_foes) h.vis = safety.tile(p).vis;
+        for (auto left = reaching_foes; left; left &= left - 1)
+            if (const auto b = safety.blow(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], p); b.hits) h.vis += b.damage;
         const auto& groups = world.map().groups;
         const int range = world.me().facts().attack_range();
         const auto add_hit = [&](int g) {
@@ -468,19 +476,6 @@ ShieldHits shield_hits(const World& world, Safety& safety, int farmed, vec2 p) {
     }
     memo_round = world.round, memo_generation = safety.generation(), memo_p = p, memo_group = hit_group, memo = h;
     return h;
-}
-
-// Before the hits, the shield waits for a reset that may kill: a visible enemy within reach that
-// our attack (if unspent) and the reset's could finish.
-bool kill_pending(const World& world) {
-    if (!enemy_seen(world) || !ready(world, AbilityKind::attack_reset)) return false;
-    const auto& f = world.me().facts();
-    const int reach = f.attack_range() + (f.walk_and_attack_independent() && my_can_move() ? 1 : 0);
-    const float hits = (my_can_attack() ? 2.0f : 1.0f) * my_strength();
-    const vec2 here = my_position();
-    for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(here, e.pos) <= reach && e.health <= hits) return true;
-    return false;
 }
 
 // The one heal and shield valuer: the heal's gain on the ally it picks, else shield_cap against
@@ -524,9 +519,7 @@ bool mend(const World& world, Safety& safety, int farmed, char site) {
     Phase phase{"mend"};
     const auto m = judge(world, safety, farmed);
     if (m.value <= 0) return false;
-    // In a retreat the search did not plan, the hits come after: a kill outranks the shield.
-    const bool held = !m.ally && site == 'r' && kill_pending(world);
-    const bool cast_ok = !held && (m.ally ? cast(*m.ability, *m.ally) : cast(*m.ability));
+    const bool cast_ok = m.ally ? cast(*m.ability, *m.ally) : cast(*m.ability);
     debug_block({
         static int mended_round = -1;
         std::printf("MEND %d %c %c %.0f %.0f %.0f %.0f\n", world.round, site, cast_ok ? (m.ally ? 'h' : 's') : '-', m.value,
