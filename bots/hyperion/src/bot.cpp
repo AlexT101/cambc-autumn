@@ -40,6 +40,8 @@ bool stunned_turn = false; // stunned at this turn's start
 bool searched = false; // the strike search chose this turn's cast, heals and shields included
 vec2 searched_at{};      // where the search's plan ended, and whether it had attacked by then
 bool searched_hit = false;
+// Debug only (WANTHOME): want_home's runs this decide, less the answers a ward or shards discarded.
+int home_asks = 0;
 
 // Read by tools/replay/fight_calibration.py.
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1) {
@@ -241,35 +243,30 @@ void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
     if (!pathing.step_towards(field, &avoid)) pathing.step_towards(field);
 }
 
+// Ending a step on q: its hit, then the camps' hits on each further round it takes to walk out of
+// their reach. A camp hits every tile in its reach alike, so the hit alone cannot tell the way out
+// from a walk along the edge of its reach. q must not be a wall (tile()).
+float escape_cost(Safety& safety, vec2 q) {
+    const auto& t = safety.tile(q);
+    const float hit = t.worst(), camp = t.camp_worst;
+    if (camp <= 0) return hit;
+    return hit + camp * static_cast<float>(std::max(0, safety.exit_rounds(q) - 1));
+}
+
 // Out of the camps' reach first, along the cheapest neighbour: walking home past an awake camp
 // takes a hit every step, while a recall started outside its reach goes home untouched.
-bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+bool flee_camps(const World&, Pathing& pathing, Safety& safety, const Field& home) {
     if (!my_can_move()) return false;
     const vec2 here = my_position();
     if (safety.camp_damage(here) <= 0) return false;
-    // A camp hits every tile in its reach alike, so one step's damage cannot tell the way out from
-    // a walk along the edge of its reach: count the hits still to come before leaving it.
-    static bitboard exits{cambc::uninitialized};
-    or_into(world.map().standable, safety.camp_area(), exits);
-    exits ^= safety.camp_area();
-    const int longest = world.map().max_camp_reach;
-    int walk_out = 1;
-    while (walk_out <= longest && !any_within(exits, here, walk_out)) ++walk_out;
-    // A step changes the walk out by at most one: only a step that shortens it needs telling apart.
-    const auto cost = [&](vec2 p) {
-        const float camp = safety.camp_damage(p);
-        float damage = safety.damage_bound(p);
-        if (camp > 0 && walk_out > 1) damage += camp * static_cast<float>(p != here && any_within(exits, p, walk_out - 1) ? walk_out - 2 : walk_out - 1);
-        return damage;
-    };
-    const auto& blocked = pathing.blocked();
+    const auto& blocked = pathing.blocked(); // walls included
     std::optional<vec2> best;
-    float best_damage = cost(here);
+    float best_damage = escape_cost(safety, here);
     int best_home = home.at(here);
     for (auto d : directions) {
         const vec2 p = here + d;
         if (!in_bounds(p) || test(blocked, p)) continue;
-        const float damage = cost(p);
+        const float damage = escape_cost(safety, p);
         const int steps = home.at(p);
         if (damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
     }
@@ -277,8 +274,8 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
 }
 
 // Inside danger a route home is only the shortest walk, ties in compass order, which can lead
-// along the enemies we flee: take the homeward step that can be hit least, then the nearest home,
-// then the farthest from them. A sideways step goes first only when it can be hit less.
+// along the enemies we flee: take the homeward step that costs least (escape_cost), then the
+// nearest home, then the farthest from them. A sideways step goes first only when it costs less.
 void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
     if (!my_can_move()) return;
     const vec2 here = my_position();
@@ -306,7 +303,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         int gap = unreachable;
         for (const auto& e : world.enemies)
             if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
-        options[n++] = {p, safety.damage_bound(p), s, gap};
+        options[n++] = {p, escape_cost(safety, p), s, gap};
     }
     std::stable_sort(options.begin(), options.begin() + n, [](const Option& a, const Option& b) {
         if (a.damage != b.damage) return a.damage < b.damage;
@@ -2170,9 +2167,6 @@ bool paying_soon(const World& world) {
 
 bool outmatched(const World& world) { return in_pack_zone(world, world.me().pos) && !paying_soon(world); }
 
-// Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
-int camp_exit_rounds(const World&, Safety& safety, vec2 here) { return safety.exit_rounds(here); }
-
 // Camps keep hitting while we walk out of their reach: leave while the health still covers that.
 // A siege (Memory::siege) keeps its own health limits for its group's hits.
 bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, bool sieging) {
@@ -2183,12 +2177,13 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
     // The exit takes 1 to max_camp_reach + 1 rounds: the bounds settle most cases without the search.
     if (health > exit_cost(world.map().max_camp_reach + 1)) return false;
     if (health <= exit_cost(1)) return true;
-    return health <= exit_cost(camp_exit_rounds(world, safety, here));
+    return health <= exit_cost(safety.exit_rounds(here));
 }
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
 bool want_home(const World& world, Safety& safety, bool sieging) {
     Phase phase{"want_home"};
+    debug_block({ ++home_asks; });
     world.throw_if_stale();
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
@@ -3033,8 +3028,8 @@ bool siege_heal_trip(const Memory& memory, Safety& safety) {
 }
 
 // Our tribute channel goes on unless it is unsafe and fleeing or fighting back pays. True if the
-// turn ends with it.
-bool continue_tribute(const World& world, Safety& safety, Memory& memory) {
+// turn ends with it; `home` gets want_home's answer when it is asked.
+bool continue_tribute(const World& world, Safety& safety, Memory& memory, std::optional<bool>& home) {
     Phase phase{"continue_tribute"};
     auto& me = cambc::self();
     decision = 'T';
@@ -3049,9 +3044,10 @@ bool continue_tribute(const World& world, Safety& safety, Memory& memory) {
     }
     if (tribute_ok(world, safety, memory, my_channel_time())) return true;
     // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
-    if (memory.damage <= 0 && !want_home(world, safety, memory.siege) && !attack_target(world)
-        && (winning_bag(world) || !prey(world, safety)))
-        return true;
+    if (memory.damage <= 0) {
+        home = want_home(world, safety, memory.siege);
+        if (!*home && !attack_target(world) && (winning_bag(world) || !prey(world, safety))) return true;
+    }
     decision = 't';
     try {
         me.cancel_submit_gems();
@@ -3222,24 +3218,31 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // One state read covers the channels until one is cancelled; a channel excludes the others.
     const auto state = my_state();
     if (state.contains(cambc::champion_state::teleporting)) return;
-    if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, safety, memory)) return;
-    // Read again only after shopping changes our stats.
+    // Read again only after shopping or a ward changes what it rests on.
     std::optional<bool> home;
+    if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, safety, memory, home)) return;
     if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home)) return;
     // A ward shares the recall's channel, so this is its first chance; its sight counts this turn
     // (probe-ward-sight). Growing clusters here would starve the search: the turn end grows them.
     if (place_ward(world, memory, false)) {
         world.observe();
         pathing.invalidate();
-        // Safety's beliefs are fixed for its life: what we see changed, so it starts again.
-        std::destroy_at(&safety);
-        std::construct_at(&safety, world);
+        // Safety's beliefs are fixed for its life: it keeps what the new sight left alone, else starts again.
+        if (!safety.reobserve()) {
+            std::destroy_at(&safety);
+            std::construct_at(&safety, world);
+        }
+        // Even a kept Safety answers anew wherever the unseen enemies count.
+        debug_block({ home_asks -= home.has_value(); });
         home.reset();
     }
 
     // Shopping, heals and shields do not move us.
     const bool on_spawn = test(world.map().ally_spawn, my_position());
-    if ((on_spawn || world.me().facts().passive == Passive::remote_shop) && buy_shards(world)) home.reset();
+    if ((on_spawn || world.me().facts().passive == Passive::remote_shop) && buy_shards(world)) {
+        debug_block({ home_asks -= home.has_value(); });
+        home.reset();
+    }
     if (on_spawn) buy_lock(), buy_crystal(memory);
     if (!world.me().can_act(world.round)) return;
     if (const auto* ender = game_ender(world)) {
@@ -3375,7 +3378,11 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool could_attack = my_can_attack();
     prepare_walk(world, pathing, memory, walk_first_floor);
     const int claim = memory.claim;
+    debug_block({ home_asks = 0; });
     decide(world, pathing, safety, memory);
+    debug_block({
+        if (home_asks > 1) std::printf("WANTHOME %d %d\n", world.round, home_asks);
+    });
     if (decision != 'W') memory.wait_altar = -1;
     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
     // or a bag takes us away from it.
