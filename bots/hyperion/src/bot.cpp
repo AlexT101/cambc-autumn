@@ -636,7 +636,7 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory) {
 // Towards the hop's sources; on one, the crystal to the free landing nearest its altar, the least
 // dangerous on ties. The channel is judged as a tribute's (death cancels it, a camp kill takes the
 // bag), and a stun cancels it after the crystal is spent; a refused carrier walks home meanwhile.
-void take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h) {
+void take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory&, int h) {
     const auto& hop = world.map().hops()[h];
     const vec2 here = my_position();
     if (test(hop.sources, here)) {
@@ -648,7 +648,7 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
             stun = (t.stun_mask & t.vis_mask)
                    || ((t.stun_mask & t.unseen_mask) && safety.unseen_chance(here) >= safety_params::recall_risk);
         }
-        const bool safe = risk || (!stun && tribute_safe(safety, memory, channel));
+        const bool safe = risk || (!stun && tribute_safe(world, safety, channel));
         // The idle sim may run out of fuel: a resumed turn must not spend the crystal on last round's beliefs.
         world.throw_if_stale();
         vec2 best{-1, -1};
@@ -1988,17 +1988,6 @@ bool place_ward(const World& world, Memory& memory, bool grow) {
     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
     if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return false;
     return ward_bushes(world, memory, grow);
-}
-
-// A live group, awake or maybe, whose monsters not read asleep reach p.
-bool awake_over(const World& world, int g, vec2 p) {
-    const auto& c = world.camps[g];
-    const auto& G = world.map().groups[g];
-    if (c.state != CampState::alive || c.awake == Awake::asleep || !test(G.threat(), p)) return false;
-    if (c.asleep == 0) return true;
-    for (std::size_t i = 0; i < G.members.size(); ++i)
-        if (c.health[i] > 0 && G.members[i].strength > 0 && !c.member_asleep(i) && dist(p, G.members[i].pos) <= G.members[i].reach) return true;
-    return false;
 }
 
 // Retreating from an awake camp takes its hits anyway, and the clear is lost. Every group with a
