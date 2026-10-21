@@ -248,6 +248,9 @@ struct Unit {
     int group = -1, member = -1, local = -1;    // camps
     std::int8_t hor = -1;                       // its index among enemy Hearts of Ruin
     std::int8_t link = -1;                      // Cassi's or Issac's partner among the foes
+    // Enemies (bits by index) leaving our end tile's danger: when it dies, both of a pair, the
+    // unseen one too; when stunned, itself if it has one turn before ours.
+    std::uint16_t drop_kill = 0, drop_stun = 0;
     Grid legal = 0, cast_legal = 0; // where our attack, or a unit cast, reaches and sees it
 };
 
@@ -305,6 +308,35 @@ struct Choice {
     vec2 w, d;          // its walk and dash tiles
     std::int8_t mate;   // healed, or -1
     bool first;         // the heal cast from the start tile, before the moves
+    std::uint16_t removed; // enemies out of the end tile's danger, by index
+};
+
+// The best leaves on one end tile, one per set of enemies removed, less those another beats with
+// a superset removed. When full the lowest goes: an option lost, never one overvalued.
+constexpr int max_sets = 8;
+struct Front {
+    std::array<Choice, max_sets> e;
+    int n;
+    // The entry to fill with a leaf worth `raw` removing `r`, or -1.
+    int admit(float raw, std::uint16_t r) {
+        for (int i = 0; i < n; ++i)
+            if ((e[i].removed & r) == r && e[i].raw >= raw) return -1;
+        int k = 0, low = -1;
+        for (int i = 0; i < n; ++i)
+            if ((e[i].removed & r) != e[i].removed || e[i].raw > raw) {
+                e[k] = e[i];
+                if (low < 0 || e[k].raw < e[low].raw) low = k;
+                ++k;
+            }
+        n = k;
+        if (n < max_sets) return n++;
+        return e[low].raw < raw ? low : -1;
+    }
+    float top() const {
+        float x = e[0].raw;
+        for (int i = 1; i < n; ++i) x = std::max(x, e[i].raw);
+        return x;
+    }
 };
 
 struct Unseen {
@@ -330,10 +362,10 @@ struct Tables {
     std::array<Unseen, max_unseen> unseen;
     std::array<Member, max_members> members;
     std::array<Waker, max_members> wakers;
-    std::array<Choice, 49> best, kept; // kept: the cast left for the shield
+    std::array<Front, 49> best, kept, exh, exh_kept; // kept: the cast left for the shield; valid by has bits
     std::array<Leaf, 512> leaves;
     std::array<Grid, 49> land_from;
-    std::array<float, 49> exh, exh_kept, menu;
+    std::array<float, 49> menu;
     std::array<float, 49> heal_at; // the best heal cast from each tile
     std::array<std::int8_t, 49> heal_who;
     std::array<std::uint32_t, win9_n * win9_n> touch1;
@@ -355,7 +387,7 @@ struct Search {
     const Intent& intent;
     const ChampionFacts& f;
     std::array<Unit, max_units>& u = tables.u;
-    std::array<Choice, 49>& best = tables.best;
+    std::array<Front, 49>& best = tables.best;
 
     vec2 here;
     float strength = 0, health = 0, step = 0, dash_cost = 0, shield_amount = 0;
@@ -611,8 +643,13 @@ struct Search {
     void grow(const Node& s);
     void settle(const Node& s);
     template <class Mid> void offer(Grid ends, float v, const Node& s, int& leaf, Mid&& mid);
-    Seq concrete(int c, bool keep, bool shields) const {
-        const auto& ch = keep ? tables.kept[c] : best[c];
+    std::uint16_t removed(const Node& s) const {
+        std::uint16_t r = 0;
+        for (int t = 0; t < foes; ++t) r |= h[t] <= 0 ? u[t].drop_kill : s.stunned >> t & 1 ? u[t].drop_stun : 0;
+        return r;
+    }
+    Seq concrete(int c, bool keep, int entry, bool shields) const {
+        const auto& ch = (keep ? tables.kept[c] : best[c]).e[entry];
         Seq q = tables.leaves[ch.leaf].seq;
         for (int i = 0; i < q.n; ++i) {
             if (q.a[i].op == Op::walk) q.a[i].tile = ch.w;
@@ -960,6 +997,10 @@ bool Search::read() {
         x.stunnable = !stunned && e.facts().passive != Passive::stun_immune;
         x.recall = recall;
         x.stun = arms && x.stunnable ? stun_worth(world, e, true) : 0.0f;
+        x.drop_kill = static_cast<std::uint16_t>(1u << e.index);
+        if (const auto* p = linked_partner(world, e); p && p->alive) x.drop_kill |= static_cast<std::uint16_t>(1u << p->index);
+        // A stun takes only the next turn: with two before ours, the blow still lands.
+        if (stuns && x.stunnable && turns_before_ours(world, e) == 1) x.drop_stun = static_cast<std::uint16_t>(1u << e.index);
         if (e.facts().passive == Passive::missing_health && n_hors < 2) x.hor = static_cast<std::int8_t>(n_hors), hors[n_hors++] = &e;
         x.legal = can_attack && dist(here, e.pos) <= grid_r + range ? viewers(e.pos, range) : 0;
         h[foes++] = x.health;
@@ -1219,6 +1260,7 @@ Node Search::root() const {
 // Offers the leaf at each end tile in `ends`; mid(c, w, d) names the walk and dash tiles for one
 // it improves.
 template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& leaf, Mid&& mid) {
+    const std::uint16_t r = ends ? removed(s) : 0;
     each_bit(ends, [&](int c) {
         ++offers;
         const vec2 E = tile(c);
@@ -1229,22 +1271,24 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& 
             x -= cost;
         }
         const auto place = [&](bool keep, float val, std::int8_t mate, bool first) {
-            auto& tab = keep ? tables.kept : best;
+            auto& fr = (keep ? tables.kept : best)[c];
             Grid& got = keep ? kept_has : has;
-            if ((got & gbit(c)) && val <= tab[c].raw) return;
+            if (!(got & gbit(c))) fr.n = 0;
+            if (leaf < 0 && n_leaves == static_cast<int>(tables.leaves.size())) return;
+            const int i = fr.admit(val, r);
+            got |= gbit(c);
+            if (i < 0) return;
             if (leaf < 0) {
-                if (n_leaves == static_cast<int>(tables.leaves.size())) return;
                 leaf = n_leaves++;
                 auto& l = tables.leaves[leaf];
                 l.seq.n = s.depth;
-                for (int i = 0; i < s.depth; ++i) l.seq.a[i] = stack[i];
+                for (int k = 0; k < s.depth; ++k) l.seq.a[k] = stack[k];
                 for (int t = 0; t < foes; ++t)
                     if (u[t].hor >= 0) l.hor[u[t].hor] = h[t];
             }
             vec2 w{-1, -1}, d{-1, -1};
             mid(c, w, d);
-            got |= gbit(c);
-            tab[c] = {val, leaf, w, d, mate, first};
+            fr.e[i] = {val, leaf, w, d, mate, first, r};
         };
         // A cast left over goes to a heal now, or to the shield, priced with the tile's danger.
         place(s.cast && shield >= 0, x, -1, false);
@@ -1484,8 +1528,13 @@ void Search::offer_exh(const Node& s) {
         v -= cost;
     }
     const int c = cell(s.pos);
-    const auto put = [&](std::array<float, 49>& tab, Grid& got, float x) {
-        if (!(got & gbit(c)) || x > tab[c]) tab[c] = x, got |= gbit(c);
+    const std::uint16_t r = removed(s);
+    const auto put = [&](std::array<Front, 49>& tab, Grid& got, float x) {
+        if (!(got & gbit(c))) tab[c].n = 0, got |= gbit(c);
+        if (const int i = tab[c].admit(x, r); i >= 0) tab[c].e[i].raw = x, tab[c].e[i].removed = r;
+    };
+    const auto put_menu = [&](float x) {
+        if (!(menu_has & gbit(c)) || x > tables.menu[c]) tables.menu[c] = x, menu_has |= gbit(c);
     };
     if (s.cast && shield >= 0) put(tables.exh_kept, exh_kept_has, v);
     else put(tables.exh, exh_has, v);
@@ -1494,7 +1543,7 @@ void Search::offer_exh(const Node& s) {
         const float hv = std::max(tables.heal_at[cell(here)], tables.heal_at[c]);
         if (hv > 0) put(tables.exh, exh_has, top = v + hv);
     }
-    if (menu_shape(s.depth)) put(tables.menu, menu_has, top);
+    if (menu_shape(s.depth)) put_menu(top);
 }
 
 void Search::exhaust(const Node& s) {
@@ -1630,27 +1679,42 @@ bool strike_possible(const World& world) {
             if (dist(p, camps[k].pos) <= camps[k].reach) camp += camps[k].strength * camps[k].weight;
         return camp;
     };
-    // Picked by their bound before the camps, which can only lower it. Each tile has two
-    // candidates: the best leaf with its cast spent (or on a heal), and the best keeping it for
+    // Picked by their bound before the camps, which can only lower it. Each tile's candidates are
+    // its best leaves per set of enemies removed, with the cast spent (or on a heal) or kept for
     // the shield, bounded by the shield's whole amount until the tile is priced.
     struct Tile {
         int c;
         float bound, total, danger, shield;
         bool exact, done, keep;
+        std::int8_t entry;
+    };
+    struct Cand {
+        float raw, d;
+        int leaf;
+        std::uint16_t removed;
+        bool keep;
+        std::int8_t entry;
     };
     std::array<Tile, 49> tiles;
+    std::array<Cand, 2 * max_sets> cand;
     int nt = 0;
     const float shield_top = S.shield >= 0 ? S.shield_amount : 0.0f;
-    constexpr float none = -1e30f;
-    const auto raw_of = [&](int c, bool keep) {
-        return keep ? (S.kept_has >> c & 1 ? tables.kept[c].raw : none) : (S.has >> c & 1 ? S.best[c].raw : none);
-    };
-    const auto leaf_of = [&](int c, bool keep) {
-        return keep ? (S.kept_has >> c & 1 ? tables.kept[c].leaf : -1) : (S.has >> c & 1 ? S.best[c].leaf : -1);
+    const auto gather = [&](int c) {
+        int k = 0;
+        for (int keep = 0; keep < 2; ++keep) {
+            if (!((keep ? S.kept_has : S.has) >> c & 1)) continue;
+            const auto& fr = (keep ? tables.kept : S.best)[c];
+            for (int i = 0; i < fr.n; ++i)
+                cand[k++] = {fr.e[i].raw, 0, fr.e[i].leaf, fr.e[i].removed, keep == 1, static_cast<std::int8_t>(i)};
+        }
+        return k;
     };
     each_bit(S.has | S.kept_has, [&](int c) {
-        const float bound = std::max(raw_of(c, false), raw_of(c, true) + shield_top) + gain_to(S.tile(c));
-        tiles[nt++] = {c, bound, bound, 0, 0, false, false, false};
+        float top = -1e30f;
+        if (S.has >> c & 1) top = S.best[c].top();
+        if (S.kept_has >> c & 1) top = std::max(top, tables.kept[c].top() + shield_top);
+        const float bound = top + gain_to(S.tile(c));
+        tiles[nt++] = {c, bound, bound, 0, 0, false, false, !(S.has >> c & 1), 0};
     });
     float best_total = -1e30f;
     int chosen = -1, queries = 0, priced = 0, share_stops = 0, bound_stops = 0;
@@ -1675,15 +1739,29 @@ bool strike_possible(const World& world) {
             ++bound_stops;
             continue;
         }
-        const float r0 = raw_of(t.c, false), r1 = raw_of(t.c, true), base = gain_to(p) - camp;
-        const int l0 = leaf_of(t.c, false), l1 = leaf_of(t.c, true);
-        float d0 = 0, d1 = 0, sh = shield_top;
-        const auto top = [&] { return std::max(r0 - d0, r1 + sh - d1) + base; };
+        const float base = gain_to(p) - camp;
+        const int nk = gather(t.c);
+        bool kept = false;
+        for (int j = 0; j < nk; ++j) kept |= cand[j].keep;
+        float sh = shield_top;
+        int arg = 0;
+        const auto top = [&] {
+            float x = -1e30f;
+            for (int j = 0; j < nk; ++j)
+                if (const float y = cand[j].raw + (cand[j].keep ? sh : 0.0f) - cand[j].d; y > x) x = y, arg = j;
+            return x + base;
+        };
+        const auto add = [&](int enemy, float b, int hor) {
+            for (int j = 0; j < nk; ++j)
+                if (!(cand[j].removed >> enemy & 1)) cand[j].d += b * factor(cand[j].leaf, hor);
+        };
         std::array<std::pair<float, int>, 16> order;
         int no = 0;
         for (int k = 0; k < ns; ++k) {
-            const float share = safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].e->pos))
-                                * std::max(factor(l0, strikers[k].hor), factor(l1, strikers[k].hor));
+            float most = 0;
+            for (int j = 0; j < nk; ++j)
+                if (!(cand[j].removed >> strikers[k].e->index & 1)) most = std::max(most, factor(cand[j].leaf, strikers[k].hor));
+            const float share = safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].e->pos)) * most;
             if (share <= 0) continue;
             int m = no++;
             for (; m > 0 && order[m - 1].first < share; --m) order[m] = order[m - 1];
@@ -1693,20 +1771,24 @@ bool strike_possible(const World& world) {
         bool cut = false;
         for (int m = 0; m < no && !cut; ++m) {
             const auto& sk = strikers[order[m].second];
-            const float b = safety_params::hit_given_reach * safety.blow(*sk.e, p).damage;
-            d0 += b * factor(l0, sk.hor), d1 += b * factor(l1, sk.hor);
+            add(sk.e->index, safety_params::hit_given_reach * safety.blow(*sk.e, p).damage, sk.hor);
             ++queries;
             total = top();
             cut = total <= best_total;
         }
-        if (!cut && r1 > none && sh > 0) {
+        if (!cut && kept && sh > 0) {
             sh = S.shield_at(p);
             total = top();
             cut = total <= best_total;
         }
         ++priced;
+        const auto most_danger = [&] {
+            float x = 0;
+            for (int j = 0; j < nk; ++j) x = std::max(x, cand[j].d);
+            return x;
+        };
         t.total = total;
-        t.danger = camp + std::max(d0, d1);
+        t.danger = camp + most_danger();
         if (cut) {
             ++share_stops;
             continue;
@@ -1715,14 +1797,15 @@ bool strike_possible(const World& world) {
             std::array<Safety::ThreatAt, 16> at;
             const int k = safety.threats_at(p, at);
             for (int m = 0; m < k; ++m)
-                if (!world.enemies[static_cast<std::size_t>(at[m].enemy)].visible) {
-                    const float b = safety_params::hit_given_reach * at[m].blow.damage;
-                    total -= b, t.danger += b;
-                }
+                if (!world.enemies[static_cast<std::size_t>(at[m].enemy)].visible)
+                    add(at[m].enemy, safety_params::hit_given_reach * at[m].blow.damage, -1);
+            total = top();
             t.total = total;
+            t.danger = camp + most_danger();
         }
         t.exact = true;
-        t.keep = r1 + sh - d1 > r0 - d0;
+        t.keep = cand[arg].keep;
+        t.entry = cand[arg].entry;
         t.shield = t.keep ? sh : 0.0f;
         // The step guard covers radius 1-2 only.
         if (dist(p, here) == 3 && safety.lethal(p)) continue;
@@ -1734,16 +1817,19 @@ bool strike_possible(const World& world) {
             auto& t = tiles[i];
             const vec2 p = S.tile(t.c);
             if (t.done || dist(p, here) == 3) continue;
-            const int l0 = leaf_of(t.c, false), l1 = leaf_of(t.c, true);
-            float d0 = 0, d1 = 0;
+            const int nk = gather(t.c);
             for (int k = 0; k < ns; ++k) {
                 const float b = safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].e->pos));
-                d0 += b * factor(l0, strikers[k].hor), d1 += b * factor(l1, strikers[k].hor);
+                for (int j = 0; j < nk; ++j)
+                    if (!(cand[j].removed >> strikers[k].e->index & 1)) cand[j].d += b * factor(cand[j].leaf, strikers[k].hor);
             }
-            const float r0 = raw_of(t.c, false), r1 = raw_of(t.c, true), base = gain_to(p) - camp_at(p);
-            t.keep = r1 - d1 > r0 - d0;
+            int arg = 0;
+            for (int j = 1; j < nk; ++j)
+                if (cand[j].raw - cand[j].d > cand[arg].raw - cand[arg].d) arg = j;
+            t.keep = cand[arg].keep;
+            t.entry = cand[arg].entry;
             t.shield = 0;
-            t.total = std::max(r0 - d0, r1 - d1) + base;
+            t.total = cand[arg].raw - cand[arg].d + gain_to(p) - camp_at(p);
             if (t.total > best_total) best_total = t.total, chosen = i;
         }
 
@@ -1768,13 +1854,26 @@ bool strike_possible(const World& world) {
             // The exhaustive enumerator must agree with the search on every end tile; the old
             // menu, scored the same way, must never beat the search's choice.
             S.exhaust(S.root());
+            // Per end tile, each front's entries are matched by the other's: as many enemies removed
+            // or more, for as much.
+            const auto covers = [](const Front& a, const Front& b) {
+                for (int i = 0; i < b.n; ++i) {
+                    bool ok = false;
+                    for (int j = 0; j < a.n && !ok; ++j)
+                        ok = (a.e[j].removed & b.e[i].removed) == b.e[i].removed && a.e[j].raw >= b.e[i].raw - 0.5f;
+                    if (!ok) return false;
+                }
+                return true;
+            };
             for (int c = 0; c < 49; ++c)
                 for (int keep = 0; keep < 2; ++keep) {
                     const bool a = (keep ? S.kept_has : S.has) >> c & 1, b = (keep ? S.exh_kept_has : S.exh_has) >> c & 1;
-                    const float x = keep ? tables.kept[c].raw : S.best[c].raw, y = keep ? tables.exh_kept[c] : tables.exh[c];
-                    if (a != b || (a && std::abs(x - y) > 0.5f))
-                        std::printf("SRCH-EXH %d %u tile %d,%d keep %d search %.1f exh %.1f\n", world.round,
-                                    static_cast<unsigned>(world.me().handle), S.tile(c).x, S.tile(c).y, keep, a ? x : -1.0f, b ? y : -1.0f);
+                    const Front &x = (keep ? tables.kept : S.best)[c], &y = (keep ? tables.exh_kept : tables.exh)[c];
+                    if (a && b && (x.n == max_sets || y.n == max_sets)) continue;
+                    if (a != b || (a && (!covers(x, y) || !covers(y, x))))
+                        std::printf("SRCH-EXH %d %u tile %d,%d keep %d search %.1f/%d exh %.1f/%d\n", world.round,
+                                    static_cast<unsigned>(world.me().handle), S.tile(c).x, S.tile(c).y, keep, a ? x.top() : -1.0f,
+                                    a ? x.n : 0, b ? y.top() : -1.0f, b ? y.n : 0);
                 }
             if (chosen >= 0 && !capped)
                 for (int i = 0; i < nt; ++i) {
@@ -1794,7 +1893,7 @@ bool strike_possible(const World& world) {
     // Carry it out. A move a hidden unit refuses takes the next-ranked plan from where we stand.
     Seq seq;
     std::array<bool, 49> dropped{};
-    const auto concrete = [&](const Tile& t) { return S.concrete(t.c, t.keep, t.keep && t.shield > 0); };
+    const auto concrete = [&](const Tile& t) { return S.concrete(t.c, t.keep, t.entry, t.keep && t.shield > 0); };
     if (chosen >= 0) seq = concrete(tiles[chosen]), dropped[tiles[chosen].c] = true;
     int done = 0;
     bool failed = false;
@@ -1895,11 +1994,20 @@ bool strike_possible(const World& world) {
             char cast = '-';
             for (int k = 0; k < seq.n; ++k)
                 if (seq.a[k].op == Op::heal || seq.a[k].op == Op::shield) cast = seq.a[k].op == Op::heal ? 'h' : 's';
-            std::printf("SRCH %d %u fuel %llu nodes %d offers %d tiles %d priced %d queries %d boundstop %d sharestop %d capped %d len %d cast %c mates %d read %llu grow %llu price %llu act %llu foes %d units %d left %llu\n",
+            unsigned rm = 0;
+            int sets = 0;
+            if (chosen >= 0) rm = (tiles[chosen].keep ? tables.kept : S.best)[tiles[chosen].c].e[tiles[chosen].entry].removed;
+            for (int i = 0; i < nt; ++i) {
+                const int c = tiles[i].c;
+                if (S.has >> c & 1) sets = std::max(sets, S.best[c].n);
+                if (S.kept_has >> c & 1) sets = std::max(sets, tables.kept[c].n);
+            }
+            std::printf("SRCH %d %u fuel %llu nodes %d offers %d tiles %d priced %d queries %d boundstop %d sharestop %d capped %d len %d cast %c mates %d read %llu grow %llu price %llu act %llu foes %d units %d rm %x sets %d leaves %d left %llu\n",
                         world.round, static_cast<unsigned>(world.me().handle), static_cast<unsigned long long>(used), S.nodes, S.offers, nt,
                         priced, queries, bound_stops, share_stops, capped ? 1 : 0, seq.n, cast, S.n_mates,
                         static_cast<unsigned long long>(fuel_start - marks[0]), static_cast<unsigned long long>(marks[0] - marks[1]),
-                        static_cast<unsigned long long>(marks[1] - marks[2]), static_cast<unsigned long long>(marks[2] - marks[3]), S.foes, S.n, static_cast<unsigned long long>(fuel_start));
+                        static_cast<unsigned long long>(marks[1] - marks[2]), static_cast<unsigned long long>(marks[2] - marks[3]), S.foes, S.n,
+                        rm, sets, S.n_leaves, static_cast<unsigned long long>(fuel_start));
         });
     }
     return out;

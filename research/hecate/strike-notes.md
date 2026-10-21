@@ -51,46 +51,53 @@ options; 50.0% of 1094 vs main, 51.1% at 100M, out-of-fuel turns 7041 vs 6256). 
 - **Execution:** `Search::concrete`; a walk/dash refused by a hidden unit takes the best leaf with the same prefix
   avoiding that tile (it becomes `chosen`), else `strike_enemy`. `Pathing::try_move` has a `refused` out-param.
 
-## Phase 2: heal and shield
+## Phase 2: heal and shield (on main)
 
-- A leaf whose cast is unused is offered per end tile twice:
-  - `best[c]`: plus the best heal castable from the start tile or from c (`heal_from`, `tables.heal_at/heal_who`
-    from `read_mates`). Heal worth per mate = min(amount, missing health, `ability_cooldown` x
-    `damage_bound(mate)`), only if `worth_healing` (heal_ally's threshold, shared).
-  - `tables.kept[c]` (shielders): pricing adds `shield_at(c)` = shield_worth's min(amount, duration x
-    `damage_bound(c)`) once the tile's foes are priced; the bound uses the whole amount until then.
-- Pricing keeps both candidates per tile (`raw_of/leaf_of`; danger `d0/d1` per candidate, as the HoR factor is per
-  leaf). `Tile::keep` says which won, `Tile::shield` whether to cast it. `concrete(c, keep, shields)` puts a heal
-  first (from the start) or last, a shield last (`Op::heal`, `Op::shield`).
-- `Planned::searched`: a plan was carried out and its tile was exactly priced (a capped, unpriced tile had no
-  shield priced, so the turn's end decides). Then decide skips its post-plan heal, and act() its end-of-turn
-  `heal_ally`/`shield_if_needed` unless the goal walked or attacked afterwards (`searched_at`, `searched_hit`).
-  decide's post-plan `shield_if_needed` stays: a cast the plan left unused had its shield priced at 0 (no seen
-  blow or awake camp on the end tile). The search cannot see the goal's coming hit on a sleeping farmed camp
-  (shield_if_needed's `in_reach && hitting`), so without this, farm's camp reset (Varg) or dash (Heart of Ruin)
-  would take the cast first.
-  Turns the search does not plan (no strike, heal on spawn `mend`, retreat `leave`) cast them first as before,
-  with the reset_may_kill/landing_ready gate; `want_home` now runs before them (beliefs are fixed for the turn).
+- A leaf whose cast is unused goes to `best` with the best heal from the start tile or the end tile (`heal_from`,
+  worth min(amount, missing, cooldown x `damage_bound(mate)`)), and to `kept` (shielders): pricing adds `shield_at(c)`.
+- `Planned::searched`: decide skips its post-plan heal, act() its end-of-turn heal/shield unless the goal walked or
+  hit after. decide's post-plan `shield_if_needed` stays (the search cannot see the goal's hit on a farmed camp).
+- 6 games vs main: 0 EXH/DOM; OOF 46 vs 41. Search mean 11.0k vs 10.3k.
+
+## Phase 3b: removal (orch/strike-p3b)
+
+- **Rule.** A leaf's removed set (bits by enemy index) drops enemies from its end tile's danger: a killed foe and its
+  Cassi/Issac partner (`Unit::drop_kill`, the partner by `linked_partner`, seen or not, so unseen threats from
+  `threats_at` drop too); a stunned foe only if `turns_before_ours == 1` and it was stunnable (not Marcella, not
+  already stunned: `x.stunnable`, read only when the turn can stun) (`drop_stun`). `stun_worth` stays 80.
+- **Collapse.** `best`/`kept`/`exh`/`exh_kept` are `Front`s per tile: the best leaf per removed set, less any another
+  beats with a superset removed (`Front::admit`); 8 entries, when full the lowest goes (an option lost, never one
+  overvalued). With no removal it behaves exactly as before.
+- **Pricing.** Per tile, `gather` lists both fronts' candidates; each Reach blow (and unseen threat) is added to the
+  candidates not removing that enemy (HoR factor per leaf); a foe every candidate removes is never queried. The tile
+  takes the best candidate (`Tile::entry`); `t.danger` = the largest candidate danger (keeps SRCH-DOM sound).
+- **Checks.** SRCH-EXH compares fronts by mutual cover (each entry matched by one removing a superset, within 0.5);
+  skipped when a front is full. SRCH lines add `rm` (chosen removed set), `sets` (largest front), `leaves`.
+- **6 games** (hecate's draft, this branch vs main's hecate; 00packs, gen-shared-gems-720701900,
+  gen-huge-shared-720707800, both sides): no crash, 0 EXH/DOM. REFUSED 9 vs 5, every one on a turn that ran out
+  of fuel (as before). The removal decided 56 of 3213 searches (`rm` non-zero); fronts held 2 sets 4 times.
+- **Fuel: not settled.** OOF (oof.py) 179 vs 38: shared gems 175 vs 36 (143 in one game, an early 4v4 brawl
+  r37-176 where all four of ours search each turn), 00packs 4 vs 2, huge 0/0 (no fights). Search per call mean
+  13.1k vs 10.5k; on searches of the same shape (nodes, offers, tiles, queries, foes) read +0.4k, grow +0.2k,
+  price +0.55k over main, of which p2's notes claim +0.2k/+0.1k/+0.3k. So 3b costs ~0.5k a call; the rest of the
+  OOF gap looks like game divergence, but 6 games cannot say. The A/B's oof.py (vs p2 and vs main) decides.
+- Not done: the shield's `damage_bound` (and heal worth) ignore removal, so a kept shield is overvalued next to a
+  leaf that removes the foes it would block; camps woken onto a stunned enemy (fixed wake targets).
 
 ## Debug checks (debug_block, `debug_search`)
 
-- `SRCH-EXH`: the exhaustive enumerator agrees with the search per end tile and per slot (spent/kept); heal only
-  from start or end tile in both (exact for Willow, who has no dash).
-- `SRCH-DOM`: the old menu (larger candidate's danger, shield left out) never beats the choice.
-- `SRCH-REFUSED`: a thrown or refused action other than a hidden unit. `SRCH` lines carry `cast h|s|-`, `mates N`.
+- `SRCH-EXH` (exhaustive enumerator, per tile and slot), `SRCH-DOM` (old menu must not beat the choice),
+  `SRCH-REFUSED` (an action refused other than by a hidden unit), `REACH-BOUND` (3a: Reach beyond Strike).
 - Debug code never touches Safety, Pathing or sight caches: the game stays byte-identical to release.
-- Summariser: strip NULs from `team-*.stdout`, regex `^SRCH`. Not committed (~30 lines).
+- Summariser: strip NULs from `team-*.stdout`, regex `^SRCH`; skip lines with wrapped phase counters (OOF).
 
-## Phase 2 port: checks (6 games, real budget)
+## Fuel (main)
 
-- Variant willow,varg,heart_of_ruin,marcella,vesper from this branch vs the same from main: 00packs, 01big-world,
-  gen-huge-shared-720707800, both sides. No crashes, 0 EXH, 0 DOM. 5 REFUSED (main's copy: 3), every one a stale
-  plan resumed after an out-of-fuel turn. Casts chosen: shield 115, heal 14 of ~1700 searches.
-- Search fuel per call (lines that did not run out): mean 11.0k vs main's 10.3k (read +0.2k, grow +0.1k, price
-  +0.3k, act +0.1k). p99 39-50k vs 29-44k.
-- Out-of-fuel turns (oof.py): 46 vs main's 41 (00packs 27 vs 29, 01big-world 19 vs 12, shared 0 vs 0; the shared
-  map had no search turns). Of the 46, 8 ran out inside a search (main: 10); the rest were farm, bank and goal
-  work after small searches in diverged games. Within noise on 4 games; judge on a full A/B.
+- Searches start with ~40-60k left (after step_guard down to `act_reserve` 20k + estimate); OOF turns are those
+  whose search costs 25-50k. Tail: Heart of Ruin trees (30-56 nodes, ~1.5k a node), ground centres with many unseen
+  tiles, pricing at the query cap. Caps on nodes/queries changed games but not OOF: the tail needs cheaper nodes.
+- A search that runs out of fuel resumes next round with a stale plan: the source of every REFUSED seen so far.
+- WASM: raw bitboard reads cost more than host ops plus `positions_into` for 7x7; cache Window rows as `uint16`.
 
 ## Fuel
 
@@ -117,14 +124,10 @@ options; 50.0% of 1094 vs main, 51.1% at 100M, out-of-fuel turns 7041 vs 6256). 
 - Window (9x9, safety.cpp) vs Grid (7x7, plan.cpp) layouts differ; `to_grid` converts row by row.
 - `hit_unit` mutates `h` before it can fail: callers restore `h = saved`.
 - Cassi and Issac: `Unit::link`; all damage through `lose()`; `moot()` for one blow on both bodies.
-- `Tables` live in a union so their initialisers never run at start-up (they cost ~50k of turn 1).
-- A search that runs out of fuel resumes next round with a stale plan: all REFUSED seen so far.
-- The shield's `damage_bound` ignores camps the leaf itself wakes (their hit is in the wake cost only).
-- Heal targets only allies visible at turn start. Neither heal nor shield pays `cast_cost`.
-- Not done: the probe that no second cast follows a Vendetta refresh; the Strike-equals-Reach shortcut;
-  stunned/capture-holding enemies as fixed wake targets.
+- `Tables` live in a union so their initialisers never run (~50k of turn 1); `Front::n` is valid by the has bits.
+- Not done: the probe that no second cast follows a Vendetta refresh; the Strike-equals-Reach shortcut.
 
 ## Next
 
-Phase 2's out-of-fuel rise (+12.5% on the A/B) is unlocated. The open fuel step: meter grow's per-node work in
-Heart of Ruin fights. Phase 4a takes retreat turns, and with them the last reset_may_kill/landing_ready use.
+Phase 2's out-of-fuel rise (+12.5% on the A/B) is unlocated. If 3b's OOF rises, meter `gather`/`admit` in a
+debug_block first. Phase 4a takes retreat turns, and with them the last reset_may_kill/landing_ready use.
