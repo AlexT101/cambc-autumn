@@ -639,7 +639,8 @@ void find_crossings(StaticMap& s) {
     or_into(s.holes, s.altar_tiles, t);
     s.crossable &= t;
     // No two may touch, or a field would walk along the line, which no dash does: keep every other
-    // tile ((x + y) even), and of diagonal neighbours, which share a parity, the lowest.
+    // tile ((x + y) even), and of diagonal neighbours, which share that parity, the one on an even
+    // row. Ties broken by height would chain: a diagonal run would keep only its lowest tile.
     bitboard even{cambc::uninitialized}, beside{cambc::uninitialized};
     clear_board(even);
     for (int x = 0; x < s.width; x += 2) even.set({x, 0});
@@ -660,12 +661,21 @@ void find_crossings(StaticMap& s) {
     beside &= s.crossable;
     drop(beside, even);
     drop(s.crossable, beside);
-    clear_board(beside);
-    for (const int dx : {1, -1}) {
-        s.crossable.shift_right_into(dx, t);
-        t.shift_up_into(1, even);
-        beside |= even;
+    bitboard odd_rows{cambc::uninitialized};
+    clear_board(odd_rows);
+    for (int x = 0; x < s.width; ++x) odd_rows.set({x, 1});
+    for (int rows = 2; rows < s.height; rows *= 2) {
+        odd_rows.shift_up_into(rows, t);
+        odd_rows |= t;
     }
+    clear_board(beside);
+    for (const int dx : {1, -1})
+        for (const int dy : {1, -1}) {
+            s.crossable.shift_right_into(dx, t);
+            t.shift_up_into(dy, ahead);
+            beside |= ahead;
+        }
+    beside &= odd_rows;
     drop(s.crossable, beside);
     copy_into(s.blocked_for_us, s.dash_walls);
     drop(s.dash_walls, s.crossable);
