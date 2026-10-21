@@ -1749,7 +1749,10 @@ bool strike_possible(const World& world) {
         if (!(guard_asked & bit)) {
             guard_asked |= bit;
             bool out = guard_asks >= max_guard_asks;
-            if (!out) ++guard_asks, out = safety.guarded(S.tile(tiles[i].c));
+            if (!out) {
+                SimTag tag{SimCaller::srch_guard};
+                ++guard_asks, out = safety.guarded(S.tile(tiles[i].c));
+            }
             if (out) guard_banned |= bit, ++guard_skips;
         }
         return (guard_banned & bit) != 0;

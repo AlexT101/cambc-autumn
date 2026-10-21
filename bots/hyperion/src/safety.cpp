@@ -28,8 +28,11 @@ struct MemoStats {
     std::array<int, 3> act{}; // act() calls by branch: quiet, plain, general
     // The VERDICT line: verdicts asked, and those answered by a simulation, the memo or dominance.
     int verdicts = 0, verdict_sims = 0, verdict_memo = 0, verdict_dom = 0;
+    int sim_acts = 0, fall_at = -1; // the simulation running: act() calls, and how many before our fighter fell
 };
 constinit MemoStats memo_stats{};
+constinit SimContext sim_context_now{};
+constinit SimStats sim_stats_now{};
 // Debug only: the generation each Safety::fights_ slot was simulated in.
 constinit std::array<std::uint32_t, 64> fight_generation{};
 
@@ -494,6 +497,8 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             debug_block({
                 const Side& s = their_turn ? them : us;
                 ++memo_stats.act[s.stunned == 0 && s.turn < s.quiet_until && s.alive == s.quiet_alive ? 0 : s.plain ? 1 : 2];
+                ++memo_stats.sim_acts;
+                ++sim_stats_now.acts[static_cast<std::size_t>(sim_context_now.caller)];
             });
         }
         if (their_turn) {
@@ -509,7 +514,12 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             ++ours;
         }
         // Ren's reflection can fell the side whose turn it is.
-        if (watched >= 0 && us.fighters[watched].health <= 0) *self_falls = true, watched = -1;
+        if (watched >= 0 && us.fighters[watched].health <= 0) {
+            *self_falls = true, watched = -1;
+            if constexpr (!Dealt) {
+                debug_block({ memo_stats.fall_at = memo_stats.sim_acts; });
+            }
+        }
         if (us.alive == 0) return {0, std::max(1, theirs)};
         if (them.count > 0 && them.alive == 0) return {std::max(1, ours), 0};
     }
@@ -1487,6 +1497,12 @@ std::uint32_t next_generation() {
 
 } // namespace
 
+SimContext& sim_context() { return sim_context_now; }
+SimStats& sim_stats() { return sim_stats_now; }
+
+constinit std::array<Safety::DebugKey, 8> Safety::debug_keys_{};
+constinit unsigned Safety::debug_key_next_ = 0;
+
 std::vector<Safety::CampHit>& Safety::member_pool() {
     static std::vector<CampHit> pool;
     return pool;
@@ -1507,6 +1523,26 @@ Safety::~Safety() {
         if (m.verdicts)
             std::printf("VERDICT %d %d %d %d %d\n", world_.round, m.verdicts, m.verdict_sims, m.verdict_memo, m.verdict_dom);
         m = {};
+        auto& s = sim_stats_now;
+        static constexpr std::array<const char*, SimStats::callers> names{"other", "wh_stand", "wh_pursue", "prey", "srch_guard", "path_guard", "idle"};
+        static std::array<char, 1024> line;
+        int n = 0;
+        const auto put = [&](const char* format, auto... v) {
+            if (n < static_cast<int>(line.size())) n += std::snprintf(line.data() + n, line.size() - static_cast<std::size_t>(n), format, v...);
+        };
+        for (int c = 0; c < SimStats::callers; ++c)
+            if (s.sims[c] | s.memo[c] | s.dom[c])
+                put(" %s=%d/%d/%d/%d/%llu", names[static_cast<std::size_t>(c)], s.sims[c], s.memo[c], s.dom[c], s.acts[c],
+                    static_cast<unsigned long long>(s.fuel[c]));
+        if (s.p1a_would) put(" p1a=%d/%d", s.p1a_would, s.p1a_flip);
+        if (s.p1b_asks) put(" p1b=%d/%d", s.p1b_asks, s.p1b_clean);
+        if (s.p2_asks) put(" p2=%d/%d/%d/%d", s.p2_asks, s.p2_would, s.p2_flip, s.p2_unknown);
+        if (s.p4_calls) put(" p4=%d/%d/%d", s.p4_calls, s.p4_moot, s.p4_moot_asks);
+        if (s.need_sims[0] | s.need_sims[1] | s.need_sims[2])
+            put(" need=%d/%d/%d/%d/%d/%d", s.need_sims[0], s.need_after_fall[0], s.need_sims[1], s.need_after_fall[1], s.need_sims[2],
+                s.need_after_fall[2]);
+        if (n > 0) std::printf("SIMS %d %u%s\n", world_.round, static_cast<std::uint32_t>(world_.me().handle), line.data());
+        s = {};
     });
 }
 
@@ -2172,13 +2208,22 @@ bool Safety::shape(vec2 p, const Engage& e, FightKey& k) {
     if (enemies == 0 && k.camp_q == 0) return false;
     k.camp_turns = k.camp_q == 0 ? 0 : idle ? k.horizon : static_cast<std::uint8_t>(std::clamp(exit_rounds(p), 0, 255));
     k.who = (idle ? 1u << world_.me().index : fighting_allies(world_, p)) | enemies << 16;
+    debug_block({ debug_keys_[debug_key_next_++ % debug_keys_.size()] = {p, generation_, k}; });
     return true;
 }
 
 Trade Safety::play(const FightKey& k) {
     Trade t;
     // fight_calibration.py reads every field of a debug_fights trade: none is settled then.
-    if (const int how = recall(k, t); how == 0 || (debug_fights && how == 2)) t = run(k, k.who >> 16);
+    const int how = recall(k, t);
+    if (how == 0 || (debug_fights && how == 2)) t = run(k, k.who >> 16);
+    debug_block({
+        // P1A: a clean stand fight covering a pursue key would settle it.
+        if (how == 0 && k.mode == static_cast<std::uint8_t>(Engage::Mode::pursue) && debug_clean_known(k)) {
+            ++sim_stats_now.p1a_would;
+            sim_stats_now.p1a_flip += t.lost || t.self_falls;
+        }
+    });
     return t;
 }
 
@@ -2203,6 +2248,7 @@ int Safety::recall(const FightKey& k, Trade& out) {
                    : k.mode == static_cast<std::uint8_t>(Engage::Mode::pursue) ? m.pursuit_hits
                                                                                 : m.hits);
                 m.kept += fight_generation[static_cast<std::size_t>(i)] != generation_;
+                ++sim_stats_now.memo[static_cast<std::size_t>(sim_context_now.caller)];
             });
             out = f.trade;
             return 1;
@@ -2240,12 +2286,23 @@ int Safety::recall(const FightKey& k, Trade& out) {
             std::printf("DOMINANCE-MISMATCH %d %x %x %d %d %d %d %d %d %d\n", world_.round, k.who, settler.key.who, k.camp_q,
                         settler.key.camp_q, k.camp_turns, settler.key.camp_turns, lost ? 1 : 0, b > 0 ? 1 : 0, falls ? 1 : 0);
         made_fighters = debug_fighters;
+        ++sim_stats_now.dom[static_cast<std::size_t>(sim_context_now.caller)];
     });
     return 2;
 }
 
 Trade Safety::run(const FightKey& k, std::uint32_t enemies) {
-    Phase phase{"new_fight"};
+    Phase phase{k.mode == static_cast<std::uint8_t>(Engage::Mode::stand)    ? "new_fight/stand"
+                : k.mode == static_cast<std::uint8_t>(Engage::Mode::pursue) ? "new_fight/pursue"
+                                                                             : "new_fight/idle"};
+    std::uint64_t debug_start = 0;
+    std::uint32_t debug_round = 0;
+    debug_block({
+        debug_start = fuel();
+        debug_round = round_now();
+        memo_stats.sim_acts = 0;
+        memo_stats.fall_at = -1;
+    });
     Side us, them;
     key_sides(world_, k, enemies, us, them, made_);
     const bool stand = k.mode == static_cast<std::uint8_t>(Engage::Mode::stand);
@@ -2259,7 +2316,18 @@ Trade Safety::run(const FightKey& k, std::uint32_t enemies) {
     } else {
         t = trade(us, them, end_reserve, stand, k.horizon);
     }
-    debug_block({ ++memo_stats.sims; });
+    debug_block({
+        ++memo_stats.sims;
+        auto& s = sim_stats_now;
+        const auto c = static_cast<std::size_t>(sim_context_now.caller);
+        ++s.sims[c];
+        if (round_now() == debug_round) s.fuel[c] += debug_start - std::min(debug_start, fuel());
+        if (k.mode != static_cast<std::uint8_t>(Engage::Mode::idle)) {
+            const auto need = static_cast<std::size_t>(sim_context_now.need);
+            ++s.need_sims[need];
+            if (memo_stats.fall_at >= 0) s.need_after_fall[need] += memo_stats.sim_acts - memo_stats.fall_at;
+        }
+    });
     // A cut fight is a guess forced by the fuel left: asked again, it may be played out.
     if (!t.cut) {
         const int i = fight_count_++ % max_fights;
@@ -2652,7 +2720,15 @@ bool Safety::guarded(vec2 q) {
     guard_asked_ |= bit;
     FightKey k;
     bool dies = false;
-    if (!exposed(q, k, dies) || !guard_rule(judge(k), dies)) return false;
+    if (!exposed(q, k, dies)) return false;
+    SimNeed outer{};
+    debug_block({
+        outer = sim_context_now.need;
+        sim_context_now.need = dies || linked_partner(world_, world_.me()) ? SimNeed::falls : SimNeed::lost;
+    });
+    const Verdict v = judge(k);
+    debug_block({ sim_context_now.need = outer; });
+    if (!guard_rule(v, dies)) return false;
     guard_true_ |= bit;
     return true;
 }
@@ -2672,6 +2748,74 @@ const bitboard* Safety::guarded_board() {
 }
 
 std::uint32_t Safety::guard_epoch() const { return guarded_generation_ == generation_ ? guard_epoch_ : generation_; }
+
+const Safety::FightKey* Safety::debug_key_at(vec2 p, std::uint8_t mode) const {
+    for (unsigned j = 1; j <= debug_keys_.size(); ++j)
+        if (const auto& d = debug_keys_[(debug_key_next_ - j) % debug_keys_.size()]; d.generation == generation_ && d.p == p && d.key.mode == mode)
+            return &d.key;
+    return nullptr;
+}
+
+bool Safety::debug_clean_known(const FightKey& k) const {
+    std::uint32_t linked = 0;
+    for (std::size_t i = 0; i < world_.allies.size() && i < 16; ++i)
+        if (world_.allies[i].facts().passive == Passive::linked_pair) linked |= 1u << i;
+    for (std::size_t i = 0; i < world_.enemies.size() && i < 16; ++i)
+        if (world_.enemies[i].facts().passive == Passive::linked_pair) linked |= 1u << (16 + i);
+    for (int i = 0; i < std::min(fight_count_, max_fights); ++i) {
+        const auto& f = fights_[static_cast<std::size_t>(i)];
+        if (f.key.who == 0 || f.key.mode != static_cast<std::uint8_t>(Engage::Mode::stand) || f.key.horizon != k.horizon
+            || ((f.key.who ^ k.who) & linked) || f.trade.lost || f.trade.self_falls)
+            continue;
+        if (f.key.camp_q >= k.camp_q && f.key.camp_turns >= k.camp_turns && covers(f.key.who, k.who)) return true;
+    }
+    return false;
+}
+
+bool Safety::debug_clean_played(const FightKey& k, bool they_first) {
+    debug_fighters = made_fighters;
+    std::uint32_t made = made_;
+    Side us, them;
+    key_sides(world_, k, k.who >> 16, us, them, made);
+    bool falls = false;
+    std::array<float, 4> dealt{};
+    const auto [a, b] = simulate<true>(us, them, they_first, &falls, k.horizon, &dealt);
+    made_fighters = debug_fighters;
+    return b == 0 && !falls;
+}
+
+void Safety::debug_note_prey(vec2 at, int enemy, bool won) {
+    auto& s = sim_stats_now;
+    ++s.p2_asks;
+    const int sa = table_generation_ == generation_ ? slot_of(at) : -1, sc = window_slot(centre_);
+    if (sa < 0 || sc < 0 || !(threats_known_ >> sa & 1) || !(threats_known_ >> sc & 1)) {
+        ++s.p2_unknown;
+        return;
+    }
+    const auto& ra = rows_[static_cast<std::size_t>(sa)];
+    const auto& rc = rows_[static_cast<std::size_t>(sc)];
+    if (((ra.vis_mask | 1u << enemy) & ~std::uint32_t{rc.vis_mask}) != 0 || ra.vis > rc.vis) return;
+    const auto* key = debug_key_at(centre_, static_cast<std::uint8_t>(Engage::Mode::stand));
+    if (!key) {
+        ++s.p2_unknown;
+        return;
+    }
+    if (!debug_clean_known(*key)) return;
+    ++s.p2_would;
+    s.p2_flip += !won;
+}
+
+void Safety::debug_note_pursue(vec2 p) {
+    const auto* pursue = debug_key_at(p, static_cast<std::uint8_t>(Engage::Mode::pursue));
+    if (!pursue) return;
+    const auto* stand = debug_key_at(p, static_cast<std::uint8_t>(Engage::Mode::stand));
+    FightKey k = stand ? *stand : *pursue;
+    k.who |= pursue->who & 0xFFFF0000u;
+    k.arrive = 0;
+    k.mode = static_cast<std::uint8_t>(Engage::Mode::stand);
+    ++sim_stats_now.p1b_asks;
+    sim_stats_now.p1b_clean += debug_clean_played(k, true);
+}
 
 // guard_true_ gains a bit once per tile an epoch: asking again changes nothing.
 std::uint32_t Safety::guard_stamp() const {

@@ -344,6 +344,7 @@ bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
     const int window = std::min(turns, params::tribute_window);
     const float health = my_health();
     if (memory.damage * static_cast<float>(window) >= health) return false;
+    SimTag tag{SimCaller::idle};
     const int kill = safety.turns_to_kill_idle(my_position(), window + 1);
     return kill == 0 || kill > window;
 }
@@ -2233,7 +2234,10 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
     if (!lethal && !enemy_seen(world)) return false;
     std::optional<Trade> stand;
     const auto s = [&]() -> const Trade& {
-        if (!stand) stand = safety.engage(here, {});
+        if (!stand) {
+            SimTag tag{SimCaller::wh_stand};
+            stand = safety.engage(here, {});
+        }
         return *stand;
     };
     if ((lethal && s().self_falls) || (visible_threat(world, safety, here) && s().lost)) return true;
@@ -2266,7 +2270,11 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
         }
         return false;
     }
+    SimTag tag{SimCaller::wh_pursue, linked ? SimNeed::falls : SimNeed::lost};
     const auto t = safety.engage(here, pursue);
+    debug_block({
+        if (stand) safety.debug_note_pursue(here);
+    });
     return t.lost || (linked && t.self_falls);
 }
 
@@ -2371,6 +2379,15 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     };
     // The prey stays in the key: a melee one cannot reach a ranged attack tile.
     constexpr int max_fights = 3;
+    bool moot = false;
+    debug_block({
+        if (n > 0) {
+            ++sim_stats().p4_calls;
+            moot = !my_can_move() && !my_can_attack();
+            sim_stats().p4_moot += moot;
+        }
+    });
+    SimTag tag{SimCaller::prey, linked ? SimNeed::falls : SimNeed::lost};
     for (int i = 0, fights = 0; i < n && fights < max_fights; ++i) {
         const auto& e = *order[i].second;
         const auto at = attack_tile(e.pos);
@@ -2378,6 +2395,10 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         ++fights;
         const auto t = safety.engage(*at, {.with_enemy = e.index});
         const bool won = !t.lost && !(linked && t.self_falls);
+        debug_block({
+            sim_stats().p4_moot_asks += moot;
+            safety.debug_note_prey(*at, e.index, won);
+        });
         if constexpr (debug_verdicts) {
             if (const auto old = safety.engage(e.pos, {}); won != (!old.lost && !(linked && old.self_falls))) {
                 debug_block({

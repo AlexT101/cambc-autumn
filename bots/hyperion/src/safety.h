@@ -247,6 +247,52 @@ struct Verdict {
     bool lost = false, falls = false;
 };
 
+// Debug only (the SIMS line): who asks the fight engine, and which of a fight's answers it reads.
+enum class SimCaller : std::uint8_t { other, wh_stand, wh_pursue, prey, srch_guard, path_guard, idle, count };
+enum class SimNeed : std::uint8_t { lost, falls, both };
+struct SimContext {
+    SimCaller caller = SimCaller::other;
+    SimNeed need = SimNeed::both;
+};
+SimContext& sim_context();
+// Debug only: the SIMS line's counts for one Safety, printed and reset by its destructor.
+struct SimStats {
+    static constexpr int callers = static_cast<int>(SimCaller::count);
+    std::array<int, callers> sims{}, memo{}, dom{}, acts{};
+    std::array<std::uint64_t, callers> fuel{};
+    // Would-settle counts (W2 fuel fix): a clean stand settling a pursue key, and how often the
+    // pursue sim disagreed; a stand with the pursuers added asked on want_home's pursue, and clean;
+    // prey asks, those its start tile's exposure rule would settle, those whose sim lost anyway,
+    // and those whose start row was not known; prey() calls with candidates, those with neither
+    // walk nor attack left, and their asks.
+    int p1a_would = 0, p1a_flip = 0, p1b_asks = 0, p1b_clean = 0;
+    int p2_asks = 0, p2_would = 0, p2_flip = 0, p2_unknown = 0;
+    int p4_calls = 0, p4_moot = 0, p4_moot_asks = 0;
+    // By SimNeed: stand and pursue sims, and their act() calls after our fighter fell.
+    std::array<int, 3> need_sims{}, need_after_fall{};
+};
+SimStats& sim_stats();
+class TracedSimTag {
+public:
+    explicit TracedSimTag(SimCaller caller, SimNeed need = SimNeed::both) {
+        debug_block({
+            prev_ = sim_context();
+            sim_context() = {caller, need};
+        });
+    }
+    ~TracedSimTag() { debug_block({ sim_context() = prev_; }); }
+    TracedSimTag(const TracedSimTag&) = delete;
+    TracedSimTag& operator=(const TracedSimTag&) = delete;
+
+private:
+    SimContext prev_;
+};
+struct NoSimTag {
+    explicit constexpr NoSimTag(SimCaller, SimNeed = SimNeed::both) {}
+};
+// Names the engine's asker to the end of its scope, like Phase (debug_phases builds only).
+using SimTag = std::conditional_t<phases_traced, TracedSimTag, NoSimTag>;
+
 class Safety {
 public:
     explicit Safety(const World& world);
@@ -396,6 +442,11 @@ public:
     // A visible enemy's Reach, built on first use this turn: blow(e, p) where its strike reaches p.
     const Reach& reach_of(const ChampionBelief& e);
 
+    // Inside debug_block only, after the engine answered: the SIMS line's would-settle counts for a
+    // prey ask at `at` (P2) and for want_home's pursue at p once its stand was asked (P1B).
+    void debug_note_prey(vec2 at, int enemy, bool won);
+    void debug_note_pursue(vec2 p);
+
 private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
     // Every credible threat at full damage, plus camps.
@@ -524,6 +575,18 @@ private:
     int recall(const FightKey& k, Trade& out);
     // Simulates k with `enemies` as its enemies and memoises it, unless cut.
     Trade run(const FightKey& k, std::uint32_t enemies);
+    // Debug only: the keys shape() made lately, by tile and generation; whether a memoised stand
+    // fight answers k clean, as itself or as a clean stand covering it (any mode); its sides played out.
+    struct DebugKey {
+        vec2 p;
+        std::uint32_t generation;
+        FightKey key;
+    };
+    static std::array<DebugKey, 8> debug_keys_;
+    static unsigned debug_key_next_;
+    const FightKey* debug_key_at(vec2 p, std::uint8_t mode) const;
+    bool debug_clean_known(const FightKey& k) const;
+    bool debug_clean_played(const FightKey& k, bool they_first);
     void note_linked();
     std::uint32_t linked_who_ = 0; // Cassi and Issac, as FightKey::who bits
     bool linked_known_ = false;

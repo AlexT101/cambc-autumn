@@ -366,7 +366,7 @@ inline std::uint32_t round_now() {
 // - "OOFSELF round champion total=N name=self ...": an out-of-fuel turn's self fuel by Phase name, at any depth.
 // Entries under cost_floor (big_turn_floor on BIGTURN lines, which are many) are left out: the team's
 // stdout is capped at 1 MiB. phases= counts Phase entries, each of which costs fuel.
-inline constexpr int cost_depth = 3;
+inline constexpr int cost_depth = 4;
 inline constexpr std::uint64_t cost_floor = 1000;
 inline constexpr std::uint64_t big_turn_floor = 2000;
 inline constexpr std::uint64_t big_turn_fuel = 60000;
