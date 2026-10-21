@@ -35,7 +35,7 @@ SOURCE = {0: "none", 1: "seen", 2: "comms", 3: "inferred"}
 ENEMY_FIELDS = ["id", "alive", "visible", "tracked", "x", "y", "pos_round", "source", "fixed_round", "at_round",
                 "at_slot", "turns", "ready0", "ready1", "respawn_earliest", "respawn_latest", "count"]
 GROUP_FIELDS = ["handle", "state", "awake", "state_round", "respawn_round", "holder", "held_since", "damaged",
-                "quiet", "tiles_seen"]
+                "tiles_seen"]
 ALTAR_FIELDS = ["x", "y", "ally", "enemy", "seen_round"]
 
 
@@ -460,7 +460,7 @@ def audit(replays, n_examples):
 
                 for g in range(len(T.map["groups"])):
                     b = d["groups"].get(g) or {"state": 0, "awake": 0, "state_round": -1, "respawn_round": -1,
-                                               "holder": -1, "held_since": -1, "damaged": -1, "quiet": 0, "tiles_seen": -1}
+                                               "holder": -1, "held_since": -1, "damaged": -1, "tiles_seen": -1}
                     state, team, awake = T.group_at(g, r, t)
                     true_state = TRUE_STATE.get(state)
                     seen = b["state_round"] == r
@@ -482,7 +482,7 @@ def audit(replays, n_examples):
                         elif b["awake"] != awake:
                             kind = ("awake_believed_asleep" if awake == 1 else "awake_believed_awake") + ("_seen" if seen else "_unseen")
                             note(kind, f"{tag}: believed {AWAKE[b['awake']]}, true {'awake' if awake == 1 else 'asleep'}"
-                                 f" (damaged r{b.get('damaged')}, quiet {b.get('quiet')})")
+                                 f" (damaged r{b.get('damaged')})")
                     if b["state"] == 2 and true_state == 2:
                         c["respawn_checks"] += 1
                         later = [x for x in T.group_respawns[g] if x >= r]

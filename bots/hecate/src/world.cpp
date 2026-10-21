@@ -705,10 +705,10 @@ void find_hops(StaticMap& s) {
     s->team_a = cambc::detail::sdk_my_team() == 0;
 
     s->ally_spawn_tiles = s->ally_spawn.positions();
-    s->enemy_spawn_tiles = s->enemy_spawn.positions();
+    const auto enemy_spawn_tiles = s->enemy_spawn.positions();
     const auto tile = [](vec2 p) { return p; };
     s->ally_spawn_centre = central_tile(s->ally_spawn_tiles, tile);
-    s->enemy_spawn_centre = central_tile(s->enemy_spawn_tiles, tile);
+    s->enemy_spawn_centre = central_tile(enemy_spawn_tiles, tile);
 
     or_into(s->walls, s->holes, s->impassable);
     s->impassable |= s->altar_tiles;
@@ -717,7 +717,7 @@ void find_hops(StaticMap& s) {
     or_into(s->impassable, s->ally_spawn, s->blocked_for_them);
     not_into(s->blocked_for_us, s->open_for_us);
     not_into(s->blocked_for_them, s->open_for_them);
-    for (auto t : s->enemy_spawn_tiles) draw_square(s->near_enemy_spawn, t, 1);
+    for (auto t : enemy_spawn_tiles) draw_square(s->near_enemy_spawn, t, 1);
     or_into(s->walls, s->bushes, s->walls_and_bushes);
 
     const auto altar_positions = s->altar_tiles.positions();
@@ -863,7 +863,6 @@ void World::update() {
     guard("camps", [&] { update_camps(); });
     guard("altars", [&] { update_altars(); });
     guard("scores", [&] { update_scores(tributing); });
-    expected_sighting.enemy = -1;
 }
 
 [[gnu::flatten]] void World::observe() {
@@ -1000,7 +999,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     }
     // The crystal's destination: a free tile within 3, terrain in between ignored.
     if (enemy && b.channel == Channel::teleport) {
-        b.possible |= square(b.pos, teleport_crystal_range) & ~s.blocked_for_them;
+        or_into(b.possible, within(s.open_for_them, b.pos, teleport_crystal_range), b.possible);
         also_undashed(b, b.possible);
         b.lineage = 0;
     }
@@ -1182,8 +1181,9 @@ const bitboard& World::landing() {
     return landing_;
 }
 
-bool World::grow(ChampionBelief& b, int turns, const bitboard& land) {
+bool World::grow(ChampionBelief& b, int turns) {
     const auto& s = map();
+    const auto& land = landing();
     b.turns_since_fixed += turns;
     const bool dasher = b.facts().has_dash();
     const bool undashed_read = dasher && b.turns_since_fixed <= ability_cooldown;
@@ -1227,7 +1227,6 @@ bool World::grow(ChampionBelief& b, int turns, const bitboard& land) {
 [[gnu::flatten]] void World::track(ChampionBelief& b) {
     if (round - b.fixed.round > params::track_horizon) {
         b.tracked = false;
-        clear_board(b.possible);
         return;
     }
     const auto to = now();
@@ -1238,14 +1237,8 @@ bool World::grow(ChampionBelief& b, int turns, const bitboard& land) {
         prune(b);
         return;
     }
-    if (!b.lineage) {
-        b.at = to;
-        (void)grow(b, turns, landing());
-        note_emptied(b);
-        return;
-    }
     const bool dasher = b.facts().has_dash();
-    for (int i = 0; i < tracked_count_; ++i) {
+    for (int i = 0; i < tracked_count_ && b.lineage; ++i) {
         const auto& t = tracked_[i];
         if (t.before != b.lineage || t.turns != turns || t.tsf != b.turns_since_fixed || t.fixed != b.fixed || t.at != b.at
             || t.dasher != dasher || t.fast_recall != b.fast_recall || t.dash != (dasher && dash_ready(b, round)))
@@ -1260,11 +1253,12 @@ bool World::grow(ChampionBelief& b, int turns, const bitboard& land) {
         b.lineage = t.after;
         return;
     }
-    Tracked t{b.lineage, ++lineages_, b.index, turns, b.turns_since_fixed, b.fixed, b.at, dasher, false, b.fast_recall};
+    Tracked t{b.lineage, 0, b.index, turns, b.turns_since_fixed, b.fixed, b.at, dasher, false, b.fast_recall};
     b.at = to;
-    t.dash = grow(b, turns, landing());
+    t.dash = grow(b, turns);
     note_emptied(b);
-    b.lineage = t.after;
+    if (!t.before) return;
+    b.lineage = t.after = ++lineages_;
     if (tracked_count_ < static_cast<int>(tracked_.size())) tracked_[tracked_count_++] = t;
 }
 
@@ -1278,7 +1272,7 @@ void World::walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard&
     static bitboard grown{cambc::uninitialized};
     field.compute(s.blocked_for_them, tiles, grown, static_cast<std::uint16_t>(steps));
     tiles.swap(grown);
-    if (&land != &s.open_for_them) and_into(tiles, land, tiles);
+    and_into(tiles, land, tiles);
 }
 
 // `steps` turns with one dash (2 king steps, with that turn's walk): it crosses holes, altars and
@@ -1404,7 +1398,6 @@ struct World::CampViews {
     const auto previous = c.state;
     const int previous_round = c.state_round;
     const int previous_respawn = c.respawn_round;
-    if (previous_round != round - 1) c.quiet_rounds = 0;
     if (code == 1) c.state = CampState::alive;
     else if (code == 2) c.state = CampState::cleared;
     else if (code == 3) {
@@ -1432,8 +1425,6 @@ struct World::CampViews {
         const CampMember* members = G.members.data();
         const std::size_t n = G.members.size();
         Awake awake = c.awake;
-        const bool any_asleep = awake == Awake::asleep || c.asleep != 0;
-        int quiet_rounds = c.quiet_rounds;
         std::uint32_t version = c.version;
         bool striker_awake = false, striker_asleep = false, striker_unread = false, woke = false;
         std::uint64_t read_asleep = 0, read_awake = 0, unseen = 0;
@@ -1450,7 +1441,6 @@ struct World::CampViews {
             }
             const float hp = engine::camp_health(m.handle).value_or(0.0f);
             if (hp < health[i] - 1e-3f) {
-                quiet_rounds = 0;
                 if (now - health_round[i] < cambc::constants::camp_sleep_time) {
                     c.last_damaged_round = now;
                     awake = Awake::awake;
@@ -1473,11 +1463,10 @@ struct World::CampViews {
             striker_asleep |= read == Awake::asleep;
             striker_unread |= !read;
             if (read == Awake::asleep) read_asleep |= bit;
-            else read_awake |= bit;
+            else if (read == Awake::awake) read_awake |= bit;
         }
         // A member known asleep that reads awake was woken by damage, which woke the rest too.
         woke |= (c.awake == Awake::asleep ? read_awake : c.asleep & read_awake) != 0;
-        if (woke && any_asleep) c.woken_round = now;
         c.asleep = woke ? read_asleep : (c.asleep & ~read_awake) | read_asleep;
         striker_unread |= (unseen & ~c.asleep) != 0;
         striker_asleep |= (unseen & c.asleep) != 0;
@@ -1485,7 +1474,6 @@ struct World::CampViews {
         else if (striker_asleep && !striker_unread) seen_awake = Awake::asleep;
         else if (!striker_asleep && !striker_unread && harmless >= 0) seen_awake = engine::camp_awake(members[harmless].handle);
         c.awake = awake;
-        c.quiet_rounds = quiet_rounds;
         c.version = version;
     }
 
@@ -1493,19 +1481,6 @@ struct World::CampViews {
         c.awake = Awake::asleep;
     } else if (seen_awake) {
         c.awake = *seen_awake;
-        c.quiet_rounds = 0;
-    } else if (c.awake != Awake::asleep) {
-        // Asleep after 2 camp phases with no champion within any member's range: count rounds
-        // where the whole threat area is visible and empty. Anything unseen there could be a champion.
-        // A streak from the round a member was woken also spans the phase after it, which counts
-        // as occupied.
-        const bool fully_seen = disjoint(G.threat(), views.hidden());
-        if (fully_seen && disjoint(G.threat(), views.champs())) {
-            ++c.quiet_rounds;
-            if (c.quiet_rounds >= (round - c.quiet_rounds < c.woken_round ? 3 : 2)) c.awake = Awake::asleep;
-        } else {
-            c.quiet_rounds = 0;
-        }
     }
     if (c.awake == Awake::asleep) c.asleep = 0;
 
@@ -1628,22 +1603,20 @@ std::uint32_t World::tributing_enemies() const {
     if (static_cast<int>(ally_scores_.size()) <= round) ally_scores_.resize(round + 1, ally);
     if (enemy_delta <= 0) return;
 
-    // An enemy tribute just landed: empty the bag of whoever most plausibly made it. First choice:
-    // an enemy that was tributing before this update and no longer is. A visible enemy's bag was
-    // just read, so only an unseen one's needs emptying.
-    ChampionBelief* tributer = nullptr;
+    // An enemy tribute just landed: empty the bag of whoever most plausibly made it. One enemy that
+    // was tributing before this update and no longer is had its bag read, or emptied as its
+    // channel ended, by update_champion; failing that, an unseen one whose bag matches.
     int candidates = 0;
     for (std::size_t i = 0; i < enemies.size(); ++i) {
-        auto& b = enemies[i];
-        if ((tributing >> i & 1) && b.alive && b.channel != Channel::tribute) tributer = &b, ++candidates;
+        const auto& b = enemies[i];
+        candidates += (tributing >> i & 1) && b.alive && b.channel != Channel::tribute;
     }
-    if (candidates != 1) {
-        tributer = nullptr;
-        candidates = 0;
-        for (auto& b : enemies)
-            if (b.alive && !b.visible && b.gems == enemy_delta) tributer = &b, ++candidates;
-    }
-    if (candidates == 1 && !tributer->visible) {
+    if (candidates == 1) return;
+    ChampionBelief* tributer = nullptr;
+    candidates = 0;
+    for (auto& b : enemies)
+        if (b.alive && !b.visible && b.gems == enemy_delta) tributer = &b, ++candidates;
+    if (candidates == 1) {
         tributer->gems = 0;
         tributer->channel = Channel::none;
     }
@@ -1754,7 +1727,6 @@ void World::dump_beliefs() const {
         out.num(c.holder ? (*c.holder == team::ally ? 0 : 1) : -1);
         out.num(c.held_since);
         out.num(c.last_damaged_round);
-        out.num(c.quiet_rounds);
         out.num(c.state == CampState::cleared ? (s.groups[g].tiles() & ~visible).is_empty() : -1);
     }
     for (std::size_t a = 0; a < altars.size(); ++a) {

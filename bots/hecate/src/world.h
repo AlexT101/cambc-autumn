@@ -111,7 +111,7 @@ struct StaticMap {
     const bitboard& ally_spawn = cambc::map::spawn_region(team::ally);
     const bitboard& enemy_spawn = cambc::map::spawn_region(team::enemy);
     bitboard camp_tiles;
-    std::vector<vec2> ally_spawn_tiles, enemy_spawn_tiles;
+    std::vector<vec2> ally_spawn_tiles;
     vec2 ally_spawn_centre, enemy_spawn_centre;
 
     // Written whole by StaticMap::build, so not cleared first.
@@ -313,8 +313,6 @@ struct CampBelief {
     // wakes every asleep member, so one seen to wake clears them all. Members past 64 count awake.
     std::uint64_t asleep = 0;
     int last_damaged_round = -1; // a health drop we saw
-    int woken_round = -1;        // a health drop that woke an asleep member: its next phase counts as occupied
-    int quiet_rounds = 0;        // consecutive fully observed rounds with no champion within any member's range
     bool member_asleep(std::size_t i) const { return awake == Awake::asleep || (i < 64 && (asleep >> i & 1)); }
     bool maybe_asleep(std::size_t i) const { return awake != Awake::awake || (i < 64 && (asleep >> i & 1)); }
     // Awake with no striker left asleep: a hit wakes nobody.
@@ -456,8 +454,8 @@ private:
     static void fix_at_spawn(ChampionBelief& b, const bitboard& spawn, Moment when);
     static void fix(ChampionBelief& b, vec2 tile, Moment when);
     static void mark_fixed(ChampionBelief& b, Moment when);
-    // Adds `turns` of movement to `possible`, ending on `land`; returns whether a dash widened it.
-    bool grow(ChampionBelief& b, int turns, const bitboard& land);
+    // Adds `turns` of movement to `possible`, ending on landing(); returns whether a dash widened it.
+    bool grow(ChampionBelief& b, int turns);
     // Where a growth pruned straight after can end: open to them and out of sight.
     const bitboard& landing();
     // Advance `possible` to now and prune it to unseen tiles; for an enemy of a lineage, copy the
