@@ -434,7 +434,6 @@ struct Search {
     int cell(vec2 p) const { return (p.y - here.y + grid_r) * grid_n + (p.x - here.x + grid_r); }
     vec2 tile(int c) const { return {here.x + c % grid_n - grid_r, here.y + c / grid_n - grid_r}; }
     bool in_grid(vec2 p) const { return std::abs(p.x - here.x) <= grid_r && std::abs(p.y - here.y) <= grid_r; }
-    bool inside_map(vec2 p) const { return p.x >= 0 && p.y >= 0 && p.x < world.map().width && p.y < world.map().height; }
 
     // A dash from cell c: at most 2 king steps not through walls or live camps, onto a free tile.
     Grid landings(int c) {
@@ -443,21 +442,6 @@ struct Search {
         tables.land_from[c] = ((one | dilate(one & pass_)) & free_) & ~s & ~land_bad;
         land_known |= gbit(c);
         return tables.land_from[c];
-    }
-
-    // A Reach::Window around `centre`, within r of it, read into the grid a row at a time.
-    Grid to_grid(Reach::Window w, vec2 centre, int r) const {
-        Grid g = 0;
-        const int shift = centre.x - here.x - 1; // grid column less window column
-        const std::uint64_t span = ((std::uint64_t{1} << (2 * r + 1)) - 1) << (4 - r);
-        for (int dy = -r; dy <= r; ++dy) {
-            const int gy = centre.y + dy - here.y + grid_r;
-            if (gy < 0 || gy >= grid_n) continue;
-            std::uint64_t row = w.shr((dy + 4) * 9).lo & span;
-            row = (shift >= 0 ? row << shift : row >> -shift) & 0x7F;
-            g |= row << (gy * grid_n);
-        }
-        return g;
     }
 
     // Tiles within r of the visible unit at p that see it. attack_viewers leaves out bushes beyond
@@ -1263,7 +1247,6 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& 
     const std::uint16_t r = ends ? removed(s) : 0;
     each_bit(ends, [&](int c) {
         ++offers;
-        const vec2 E = tile(c);
         float x = v;
         if (s.touched) {
             float cost;

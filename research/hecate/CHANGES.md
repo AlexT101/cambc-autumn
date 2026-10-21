@@ -360,5 +360,6 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
 51. 2026-10-21 (not yet submitted). Final quality, behaviour-identical (bench 16/16 identical at 100M): reverts 39's
    live_camps flip-only cache (-0.001% fuel, not worth its state), drops unused `me` locals (enemy_cast, camp_cast,
    attack_target), submit_here's unused Pathing parameter and two unused includes; params::rally_radius is now
-   partner_radius, since it only sizes pick_up's partner check. Clang also flags plan.cpp's unused inside_map,
-   to_grid and E, left for whoever next edits plan.cpp.
+   partner_radius, since it only sizes pick_up's partner check.
+52. 2026-10-21 (not yet submitted). Unused code clang flagged: plan.cpp's inside_map, to_grid and an unused E, and
+   the unused `me` locals in prey and chase. Bench 16/16 identical.

@@ -2435,7 +2435,6 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
 const ChampionBelief* prey(const World& world, Safety& safety) {
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
-    const auto& me = cambc::self();
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
     std::optional<float> strength; // read once a candidate needs it
@@ -2485,7 +2484,6 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     if (!target) return false;
     decision = 'C';
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
-    auto& me = cambc::self();
     const int range = world.me().facts().attack_range();
     // A walk alone cannot reach range this turn; a melee walk can follow the dash.
     if (dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
