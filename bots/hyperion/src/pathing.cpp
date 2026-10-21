@@ -27,7 +27,7 @@ const bitboard& Pathing::foot() const { return world_.me().facts().has_dash() ? 
 void Pathing::begin_turn() {
     guarding_ = false; // a turn abandoned as stale left guarding on
     safety_ = nullptr;
-    guard_generation_ = 0;
+    guard_epoch_ = 0;
     blocked_fresh_ = false;
     pos_fresh_ = false;
     if (bumped_round_ != world_.round) {
@@ -444,9 +444,9 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
 }
 
 std::uint8_t* Pathing::guard_slot(vec2 p) {
-    if (const auto g = safety_->generation(); g != guard_generation_) {
+    if (const auto g = safety_->guard_epoch(); g != guard_epoch_) {
         guard_memo_.fill(0);
-        guard_generation_ = g;
+        guard_epoch_ = g;
         guard_centre_ = world_.me().pos;
         guard_count_ = 0;
     }
@@ -466,13 +466,13 @@ bool Pathing::guarded(vec2 p) {
 }
 
 std::uint8_t Pathing::guard_known(vec2 p) const {
-    if (!safety_ || safety_->generation() != guard_generation_) return 0;
+    if (!safety_ || safety_->guard_epoch() != guard_epoch_) return 0;
     if (!in_square(p, guard_centre_, 3)) return 1;
     return guard_memo_[static_cast<std::size_t>((p.y - guard_centre_.y + 3) * 7 + p.x - guard_centre_.x + 3)];
 }
 
 void Pathing::mark_known_guarded(bitboard& b, bool value) const {
-    if (guard_count_ == 0 || !safety_ || guard_generation_ != safety_->generation()) return;
+    if (guard_count_ == 0 || !safety_ || guard_epoch_ != safety_->guard_epoch()) return;
     for (int i = 0; i < static_cast<int>(guard_memo_.size()); ++i)
         if (guard_memo_[static_cast<std::size_t>(i)] == 2) set_tile(b, {guard_centre_.x + i % 7 - 3, guard_centre_.y + i / 7 - 3}, value);
 }

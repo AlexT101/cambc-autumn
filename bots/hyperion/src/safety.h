@@ -357,15 +357,19 @@ public:
     // lost one at most as hard (Trade::settled: only lost and self_falls hold).
     Trade engage(vec2 p, Engage e);
     int idle_turns(vec2 p, int horizon);
-    void set_claimed(int group); // camp group our farm/siege budgets; skipped in stand/pursue camp charge
+    // The camp group our farm/siege budgets, left out of the stand/pursue camp charge. A change
+    // starts a new guard_epoch(); the fight memo needs nothing, as its keys carry the charge.
+    void set_claimed(int group);
     Verdict verdict(vec2 q);       // engage(q) stand's lost and self_falls
     bool guarded(vec2 q);          // false if no visible foe reaches q (strike_sum) or q no worse than here (mask ⊆, damage ≤);
                                    // else v.lost || (v.falls && (linked || tile(q).worst() >= health)). Radius 3 only.
                                    // Here is the turn-start tile; answers are kept for the generation.
-    // The tiles guarded() has answered true this generation, drawn when asked; null: none. Tiles
+    // The tiles guarded() has answered true this epoch, drawn when asked; null: none. Tiles
     // nobody asked about are left out: callers ask guarded() of the tiles they would end on.
     const bitboard* guarded_board();
-    std::uint32_t guard_stamp() const; // generation << 8 | guarded count (KeptRoute key)
+    // Changes whenever guarded()'s answers may: with generation(), or with the claimed group.
+    std::uint32_t guard_epoch() const;
+    std::uint32_t guard_stamp() const; // guard_epoch() << 8 | distinct guarded tiles (KeptRoute key)
     // fight/pursuit/turns_to_kill_idle stay as wrappers until W4.
 
     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
@@ -557,10 +561,10 @@ private:
     bool guard_rule(Verdict v, bool dies) const;
     // Whether guarded(q) needs a verdict, with its key and whether tile(q) can kill us.
     bool exposed(vec2 q, FightKey& k, bool& dies);
-    // guarded()'s answers (bit s: window slot s) for guarded_generation_, and the true ones
-    // guarded_board() has drawn for board_generation_.
+    // guarded()'s answers (bit s: window slot s) for guarded_generation_ and guard_epoch_, and
+    // the true ones guarded_board() has drawn for board_generation_ (an epoch).
     void sync_guard();
-    std::uint32_t guarded_generation_ = 0, board_generation_ = 0;
+    std::uint32_t guarded_generation_ = 0, guard_epoch_ = 0, board_generation_ = 0;
     std::uint64_t guard_asked_ = 0, guard_true_ = 0, board_bits_ = 0;
     std::uint64_t costliest_fight_ = 0;
     // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found

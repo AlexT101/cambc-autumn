@@ -2577,7 +2577,11 @@ float Safety::unseen_chance(vec2 p) {
 
 int Safety::idle_turns(vec2 p, int horizon) { return turns_to_kill_idle(p, horizon); }
 
-void Safety::set_claimed(int group) { claimed_ = group; }
+void Safety::set_claimed(int group) {
+    if (group == claimed_) return;
+    claimed_ = group;
+    if (guarded_generation_ == generation_ && guard_asked_) guard_asked_ = guard_true_ = 0, guard_epoch_ = next_generation();
+}
 
 float Safety::stand_camp(vec2 p) {
     float charge = camp_damage(p, false);
@@ -2614,7 +2618,7 @@ bool Safety::guard_rule(Verdict v, bool dies) const {
 
 void Safety::sync_guard() {
     if (guarded_generation_ == generation_) return;
-    guarded_generation_ = generation_;
+    guarded_generation_ = guard_epoch_ = generation_;
     guard_asked_ = guard_true_ = 0;
 }
 
@@ -2658,7 +2662,7 @@ const bitboard* Safety::guarded_board() {
     if (!guard_true_) return nullptr;
     // One Safety lives at a time and generations are unique: a board from another is redrawn.
     static bitboard board{cambc::uninitialized};
-    if (board_generation_ != generation_) board_generation_ = generation_, board_bits_ = 0, clear_board(board);
+    if (board_generation_ != guard_epoch_) board_generation_ = guard_epoch_, board_bits_ = 0, clear_board(board);
     for (auto left = guard_true_ & ~board_bits_; left; left &= left - 1) {
         const int s = std::countr_zero(left);
         set_tile(board, {centre_.x + s % 7 - 3, centre_.y + s / 7 - 3});
@@ -2667,8 +2671,11 @@ const bitboard* Safety::guarded_board() {
     return &board;
 }
 
+std::uint32_t Safety::guard_epoch() const { return guarded_generation_ == generation_ ? guard_epoch_ : generation_; }
+
+// guard_true_ gains a bit once per tile an epoch: asking again changes nothing.
 std::uint32_t Safety::guard_stamp() const {
-    return generation_ << 8 | (guarded_generation_ == generation_ ? static_cast<std::uint32_t>(std::popcount(guard_true_)) & 0xFFu : 0u);
+    return guard_epoch() << 8 | (guarded_generation_ == generation_ ? static_cast<std::uint32_t>(std::popcount(guard_true_)) & 0xFFu : 0u);
 }
 
 } // namespace aph

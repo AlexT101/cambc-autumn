@@ -120,9 +120,9 @@ private:
     // Right after a route that found no way, with the same arguments: read from its field.
     // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.
     bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps);
-    // guarding_ && safety_ && safety_->guarded(p), each tile asked once a generation.
+    // guarding_ && safety_ && safety_->guarded(p), each tile asked once a guard_epoch().
     bool guarded(vec2 p);
-    // The memo's answer, asking nothing: 0 not asked this generation, 1 free (or outside the window), 2 guarded.
+    // The memo's answer, asking nothing: 0 not asked this epoch, 1 free (or outside the window), 2 guarded.
     std::uint8_t guard_known(vec2 p) const;
     std::uint8_t* guard_slot(vec2 p); // null outside the window
     struct NeighbourGuard {
@@ -186,10 +186,10 @@ private:
     bool bumped_any_ = false;
     Safety* safety_ = nullptr;
     bool guarding_ = false;
-    // guarded()'s answers this generation, in the 7x7 window around the turn-start tile beyond which
+    // guarded()'s answers this guard_epoch(), in the 7x7 window around the turn-start tile beyond which
     // Safety guards nothing: 0 not asked, 1 free, 2 guarded.
     std::array<std::uint8_t, 49> guard_memo_{};
-    std::uint32_t guard_generation_ = 0; // 0: none
+    std::uint32_t guard_epoch_ = 0; // 0: none
     vec2 guard_centre_{-1, -1};
     int guard_count_ = 0; // tiles the memo holds guarded
     int bumped_round_ = -1;
