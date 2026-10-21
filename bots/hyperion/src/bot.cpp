@@ -651,13 +651,22 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory) {
 
 // Towards the hop's sources; on one, the crystal to the free landing nearest its altar, the least
 // dangerous on ties. The channel is judged as a tribute's (death cancels it, a camp kill takes the
-// bag), and a stun cancels it after the crystal is spent.
+// bag), and a stun cancels it after the crystal is spent; a refused carrier walks home meanwhile.
 void take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h) {
     const auto& hop = world.map().hops()[h];
     const vec2 here = my_position();
     if (test(hop.sources, here)) {
-        const bool stun = world.me().facts().passive != Passive::stun_immune && safety.tile(here).stun_mask != 0;
-        const bool safe = !stun && tribute_ok(world, safety, memory, cambc::constants::tp_crystal_time);
+        const int channel = cambc::constants::tp_crystal_time;
+        const bool risk = any_risk(world, channel);
+        bool stun = false;
+        if (!risk && world.me().facts().passive != Passive::stun_immune) {
+            const auto& t = safety.tile(here);
+            stun = (t.stun_mask & t.vis_mask)
+                   || ((t.stun_mask & t.unseen_mask) && safety.unseen_chance(here) >= safety_params::recall_risk);
+        }
+        const bool safe = risk || (!stun && tribute_safe(safety, memory, channel));
+        // The idle sim may run out of fuel: a resumed turn must not spend the crystal on last round's beliefs.
+        world.throw_if_stale();
         vec2 best{-1, -1};
         float best_worst = 0;
         if (safe) {
@@ -678,6 +687,11 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
                 if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return;
             } catch (const cambc::error&) {
             }
+        }
+        // to_hop is 0 on a source: standing there would wait out the threat in its reach.
+        if (!safe) {
+            step_safely(pathing, pathing.to_ally_spawn(), safety);
+            return;
         }
     }
     step_safely(pathing, pathing.to_hop(h), safety);
