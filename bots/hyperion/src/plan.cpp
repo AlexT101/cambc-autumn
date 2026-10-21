@@ -109,7 +109,7 @@ Hit best_hit(const Board& b, const Healths& h) {
                 if (j != i && h[j] > 0 && dist(o.pos, f.pos) <= 1)
                     value += hit_worth(b.strength, h[j], o.spawn, o.bag, o.partner), retaliation += o.retaliation;
             }
-        if (retaliation >= b.health) continue;
+        if (retaliation_kills(b.strength, retaliation, b.health)) continue;
         value -= retaliation;
         if (value <= 0) continue;
         if (best.target < 0 || value > best.value || (value == best.value && h[i] < best_health)) best = {value, i}, best_health = h[i];
@@ -167,16 +167,17 @@ float shield_worth(const World& world, Safety& safety, int slot, vec2 p) {
     return shield_cap(safety, p, amount, world.me().facts().abilities[slot].duration);
 }
 
-// Whether the search valued an enemy cast from its start tile this turn: strike_after casts there
-// if the goal did not walk.
+// The enemy cast the search values most from its start tile this round, if any is worth its price:
+// strike_after casts it if the goal did not walk.
 struct Valued {
     int round = -1;
     vec2 at{-1, -1};
     bool any = false;
-    // W4-B: the cast itself, a slot at a unit target (enemies[target]) or at a ground tile.
     int slot = -1;
-    int target = -1;
-    vec2 ground{-1, -1};
+    int target = -1;        // a unit cast's target, enemies[target]
+    vec2 ground{-1, -1};    // else the area's centre
+    std::uint16_t foes = 0; // the enemies the area's value counted, bits by enemies index
+    float health = 0;       // ours when valued
 } valued;
 
 const Field* goal_field(const World& world, Pathing& pathing, const Intent& intent) {
@@ -1809,19 +1810,34 @@ void Search::exhaust(const Node& s) {
         }
 }
 
-// A cast worth its price from the start tile, for strike_after (W4-B).
-void value_casts(const World& world, const Search& S, vec2 here) {
-    valued = {world.round, here, false};
+// The cast worth most from the start tile, priced as the search prices it there: a unit spell as an
+// area holding its target alone, a centre less the camps it wakes.
+void value_casts(const World& world, Search& S, vec2 here) {
+    valued = {world.round, here};
+    valued.health = S.health;
+    float top = cast_cost;
+    const Node root = S.root();
+    const Grid at = gbit(S.cell(here));
     for (const auto& sp : S.spells) {
         if (sp.slot < 0) continue;
-        for (int t = 0; t < S.foes && sp.unit; ++t)
-            valued.any |= (S.u[t].cast_legal & gbit(S.cell(here))) && !S.u[t].suicidal[sp.slot]
-                          && S.u[t].spell[sp.slot] + S.u[t].spell_stun[sp.slot] > cast_cost;
-        if (!sp.ground) continue;
-        const Node root = S.root();
-        for (int q = 0; q < S.n_distinct && !valued.any; ++q) {
+        for (int t = 0; t < S.foes && sp.unit; ++t) {
+            const auto& x = S.u[t];
+            if (!(x.cast_legal & at)) continue;
             bool ok;
-            valued.any |= S.centre_value(tables.centres[tables.distinct[q]], sp.slot, root, ok) > cast_cost && ok;
+            const float v = S.centre_value({x.pos, static_cast<std::uint16_t>(1u << t), 0, x.suicidal[sp.slot]}, sp.slot, root, ok);
+            if (ok && v > top)
+                top = v, valued.any = true, valued.slot = sp.slot, valued.target = x.belief->index, valued.ground = {-1, -1}, valued.foes = 0;
+        }
+        if (!sp.ground) continue;
+        for (int q = 0; q < S.n_distinct; ++q) {
+            const auto& ce = tables.centres[tables.distinct[q]];
+            bool ok;
+            float v = S.centre_value(ce, sp.slot, root, ok), cost = 0;
+            if (!ok || (ce.touched && !S.wake_here(ce.touched, cost))) continue;
+            if ((v -= cost) <= top) continue;
+            top = v, valued.any = true, valued.slot = sp.slot, valued.target = -1, valued.ground = ce.tile, valued.foes = 0;
+            for (std::uint32_t m = ce.foes; m; m &= m - 1)
+                if (const int t = std::countr_zero(m); S.h[t] > 0) valued.foes |= static_cast<std::uint16_t>(1u << S.u[t].belief->index);
         }
     }
 }
@@ -2695,6 +2711,38 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     return price_strikes(*prepare_strikes(world, pathing, safety, intent), intent);
 }
 
+bool casts_searched(const World& world) { return valued.round == world.round && valued.at == my_position(); }
+
+namespace {
+
+// The valued cast; false, to value the turn afresh, if a Ren's retaliation has cost us health since
+// (the search's Ren bans assumed the health it read), or its target or any enemy its area counted
+// died since (the turn's attacks run after the valuing).
+bool cast_valued(const World& world) {
+    bool cast = false;
+    const bool unhurt = my_health() >= valued.health;
+    try {
+        const auto ability = cambc::self().abilities()[valued.slot];
+        if (unhurt && valued.target >= 0) {
+            const auto c = world.enemies[static_cast<std::size_t>(valued.target)].live();
+            cast = c.is_alive() && c.is_visible() && ability.use(c);
+        } else if (unhurt) {
+            bool live = valued.foes != 0;
+            for (std::uint32_t m = valued.foes; m && live; m &= m - 1)
+                live = world.enemies[static_cast<std::size_t>(std::countr_zero(m))].live().is_alive();
+            cast = live && ability.use(valued.ground);
+        }
+    } catch (const cambc::error&) {
+    }
+    debug_block({
+        std::printf("CAST-VALUED %d %u slot %d target %d tile %d,%d ok %d\n", world.round, static_cast<unsigned>(world.me().handle),
+                    valued.slot, valued.target, valued.ground.x, valued.ground.y, cast ? 1 : 0);
+    });
+    return cast;
+}
+
+} // namespace
+
 [[gnu::flatten]] void strike_after(const World& world, Pathing& pathing, Safety& safety) {
     Phase phase{"strike_after"};
     if (!world.me().alive || world.is_stale()) return;
@@ -2718,11 +2766,15 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
             if (again.target >= 0 && again.value > shield_worth(world, safety, b.shield, b.here) && use_slot(b.reset)) attack(b, again);
         }
     }
-    if (!state.contains(cambc::champion_state::can_cast)) return;
-    // A cast the search valued for a walk the goal did not take, or one a walk allows.
+    // Live: the reset above may have spent the cast.
+    if (!my_can_cast()) return;
+    // The search's cast for a walk the goal did not take, or one a walk allows.
     const vec2 here = my_position();
     if (valued.round == world.round && valued.at == here) {
-        if (valued.any) cast_at_enemies(world, pathing);
+        if (valued.any && !cast_valued(world)) {
+            valued.round = -1; // spent: cast_at_enemies values the turn as it now stands
+            cast_at_enemies(world, pathing);
+        }
         return;
     }
     if (here == world.me().pos) return;

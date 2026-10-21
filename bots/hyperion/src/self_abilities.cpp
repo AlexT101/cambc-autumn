@@ -204,7 +204,7 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
         if (splash)
             for (const auto& o : seen)
                 if (&o != &t && dist(o.pos, t.pos) <= 1) value += worth(o), retaliation += o.retaliation;
-        if ((value <= 0 && !stunnable_only) || retaliation >= health) continue;
+        if ((value <= 0 && !stunnable_only) || retaliation_kills(strength, retaliation, health)) continue;
         if (!splash) value = 0; // the weakest, a pair by its weaker body
         const float pair = std::min(t.health, t.partner);
         if (!best || value > best_value || (value == best_value && (pair < best_pair || (pair == best_pair && t.health < best_health))))

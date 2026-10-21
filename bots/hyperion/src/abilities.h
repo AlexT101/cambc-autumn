@@ -10,7 +10,8 @@ class Pathing;
 struct ChampionBelief;
 
 // The best enemy-hitting cast at a visible enemy this turn, if worth it. An excludes-walking cast
-// must also be worth `walk`, the walk it forgoes.
+// must also be worth `walk`, the walk it forgoes. None from the tile this round's search priced:
+// strike_after casts the search's choice there.
 bool cast_at_enemies(const World& world, Pathing& pathing, float walk = 0);
 
 // A damage or stun cast on the group being farmed, held while enemies are near.
@@ -22,6 +23,10 @@ bool cast_at_camp(const World& world, Pathing& pathing, int group, bool attacker
 // bag (`bag`, gems x gem_value) and its life; other damage counts only off its spawn (it heals at
 // its turn end), as far as it takes Cassi or Issac below `partner`, plus `recall` for a cancelled recall.
 float hit_worth(float damage, float health, bool spawn, float bag, float partner, float recall = 0);
+
+// Ren's passive deals 0.2 x its Focus back to whoever damages it, even as it dies. Whether a blow
+// dealing `damage` to enemies whose retaliation sums to `back` kills us at `health`: never taken.
+inline bool retaliation_kills(float damage, float back, float health) { return damage > 0 && back >= health; }
 
 // A visible enemy tributing a bag that wins them the game.
 bool enemy_tribute_wins(const World& world, const ChampionBelief& e);
