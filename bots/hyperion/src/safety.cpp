@@ -1467,12 +1467,6 @@ int unseen_radius(int reach, int tiles) {
 
 namespace {
 
-// The most an unseen enemy's threat has cost to build so far, 0 before the first.
-std::uint64_t& costliest_unseen() {
-    static std::uint64_t cost = 0;
-    return cost;
-}
-
 std::vector<Threat>& threat_pool() {
     static std::vector<Threat> pool;
     return pool;
@@ -1680,22 +1674,18 @@ void Safety::invalidate() {
     built_ = false;
     refresh_ = true;
     reached_ = 0;
-    build_cost_ = 0;
     threat_count_ = 0;
     threat_mask_ = 0;
     members_known_ = false;
     camp_area_.reset();
     enemy_area_.reset();
     gone_.fill(0);
-    reachable_known_ = false;
 }
 
 void Safety::refresh() {
     Phase phase{"safety_refresh"};
     refresh_ = true;
     gone_.fill(0);
-    build_cost_ = 0;
-    reachable_known_ = false;
     // Fights outlive invalidate() and reobserve(), so a kill must still drop those naming the dead.
     if (!built_ && !members_known_ && fight_count_ == 0) return;
     bool changed = false;
@@ -1748,8 +1738,6 @@ bool Safety::reobserve() {
     known_ &= enemies;
     counted_ &= enemies;
     listed_ = false;
-    build_cost_ = 0;
-    reachable_known_ = false;
     // Every mode's key: pursue and idle keys name only visible enemies, so they all stay.
     drop_fights(unseen);
     generation_ = next_generation();
@@ -1831,7 +1819,6 @@ void Safety::build() {
         const int tiles = x.tiles;
         const float weight = x.weight;
         if (weight == 0) continue;
-        const auto before = fuel();
         auto& t = next_threat(threats_, threat_count_);
         threat_mask_ |= static_cast<std::uint16_t>(1u << e.index);
         t.enemy = e.index;
@@ -1845,7 +1832,6 @@ void Safety::build() {
         clear_board(t.area);
         field.compute(world_.map().walls, e.possible, t.area, static_cast<std::uint16_t>(radius));
         t.steps = &field;
-        if (const auto after = fuel(); after < before) costliest_unseen() = std::max(costliest_unseen(), before - after);
     }
 }
 
@@ -2307,7 +2293,6 @@ Trade Safety::run(const FightKey& k, std::uint32_t enemies) {
     key_sides(world_, k, enemies, us, them, made_);
     const bool stand = k.mode == static_cast<std::uint8_t>(Engage::Mode::stand);
     Trade t;
-    const auto before = stand ? fuel() : 0;
     if (k.mode == static_cast<std::uint8_t>(Engage::Mode::idle)) {
         t.allies = us.count;
         t.enemies = them.count;
@@ -2334,8 +2319,6 @@ Trade Safety::run(const FightKey& k, std::uint32_t enemies) {
         fights_[static_cast<std::size_t>(i)] = {k, t};
         debug_block({ fight_generation[static_cast<std::size_t>(i)] = generation_; });
     }
-    if (stand)
-        if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
     return t;
 }
 
@@ -2347,52 +2330,6 @@ Trade Safety::run(const FightKey& k, std::uint32_t enemies) {
     for (std::size_t i = 0; i < world_.enemies.size() && i < 16; ++i)
         if (world_.enemies[i].facts().passive == Passive::linked_pair) bits |= 1u << (16 + i);
     linked_who_ = bits;
-}
-
-[[gnu::noinline]] void Safety::count_champions() {
-    champions_ = 0;
-    for (const auto& a : world_.allies) champions_ += a.alive && (a.is_self || a.visible);
-    champions_ += std::popcount(seen_enemies());
-}
-
-std::uint64_t Safety::fight_cost_estimate() {
-    if (champions_ < 0) count_champions();
-    const auto champions = static_cast<std::uint64_t>(champions_);
-    const auto simulation = std::max(std::max(std::uint64_t{10000}, 2000 + 2000 * champions), costliest_fight_ + costliest_fight_ / 4);
-    return simulation + query_cost_estimate();
-}
-
-[[gnu::noinline]] void Safety::list_reachable() {
-    reachable_known_ = true;
-    reachable_ = 0;
-    for (auto left = seen_enemies(); left; left &= left - 1)
-        if (const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-            !(reached_ >> e.index & 1) && !gone(e) && struck(e).strike.reach >= 0)
-            reachable_ |= static_cast<std::uint16_t>(1u << e.index);
-}
-
-std::uint64_t Safety::query_cost_estimate() {
-    // A visible threat's Reach is built on its first query, built_ or not: engage() never builds.
-    if (!reachable_known_) list_reachable();
-    return 2000 * static_cast<std::uint64_t>(std::popcount(static_cast<unsigned>(reachable_ & ~reached_))) + build_cost_estimate();
-}
-
-std::uint64_t Safety::build_cost_estimate() {
-    if (built_) return 0;
-    if (build_cost_) return build_cost_;
-    return estimate_build();
-}
-
-[[gnu::noinline]] std::uint64_t Safety::estimate_build() {
-    // A visible threat costs its Reach alone, which query_cost_estimate() counts.
-    std::uint64_t cost = 0;
-    for (auto left = live_enemies() & ~std::uint32_t{threat_mask_}; left; left &= left - 1) {
-        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (e.visible || gone(e) || foe(e).weight == 0) continue;
-        cost += costliest_unseen() ? costliest_unseen() + costliest_unseen() / 4 : 3000 + 25 * search_chunks();
-    }
-    build_cost_ = cost;
-    return cost;
 }
 
 Trade Safety::pursuit(vec2 p, int approach) {
@@ -2511,7 +2448,6 @@ Blow Safety::unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p, bool win
         }
         world_.throw_if_stale();
         build_threats(bit);
-        build_cost_ = 0;
     }
     for (int i = 0; i < threat_count_; ++i)
         if (const auto& t = threats_[static_cast<std::size_t>(i)]; t.enemy == e.index) return t.at(p);

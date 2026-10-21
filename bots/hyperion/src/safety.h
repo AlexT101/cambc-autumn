@@ -377,13 +377,6 @@ public:
     // A visible enemy's turns of walking before it can strike p: 0 if it can now, else at least 1
     // and at least its Chebyshev distance past its reach.
     int approach(const ChampionBelief& e, vec2 p);
-    // Enough for most fights, by the champions in sight and this turn's costliest simulation;
-    // plus query_cost_estimate().
-    std::uint64_t fight_cost_estimate();
-    // The threat build and the visible threats' Reach builds still pending.
-    std::uint64_t query_cost_estimate();
-    // At most what building the credible unseen threats' fields costs, 0 once built.
-    std::uint64_t build_cost_estimate();
     // engage(p) pursue: lost means they win even if we stand and fight.
     Trade pursuit(vec2 p, int approach);
     // engage(p) idle: their turns for the visible enemies and camps to kill us at p if we never act
@@ -472,9 +465,6 @@ private:
     // Appends the threats of the enemies in `which` that have none yet.
     void build_threats(std::uint32_t which);
     void find_members();
-    void count_champions();
-    void list_reachable();
-    std::uint64_t estimate_build();
     bool still_alive(const ChampionBelief& c);
     void build_reach(const ChampionBelief& e, Reach& r);
     void build();
@@ -629,13 +619,6 @@ private:
     void sync_guard();
     std::uint32_t guarded_generation_ = 0, guard_epoch_ = 0, board_generation_ = 0;
     std::uint64_t guard_asked_ = 0, guard_true_ = 0, board_bits_ = 0;
-    std::uint64_t costliest_fight_ = 0;
-    // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
-    // once refreshed: reached_ only gains bits meanwhile, and gone() keeps its answers.
-    std::uint16_t reachable_ = 0;
-    bool reachable_known_ = false;
-    int champions_ = -1;            // in sight, for fight_cost_estimate(); beliefs are fixed for the turn
-    std::uint64_t build_cost_ = 0;  // build_cost_estimate() until built, refreshed or invalidated; 0: unknown
 };
 
 } // namespace aph
