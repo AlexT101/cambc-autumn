@@ -637,3 +637,8 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   place of a bool, and retreat and the game-ender intercept pass escape_step_value 210, so those paths keep 250 and
   free stun. Works against the earlier "ranged carriers hold fire to keep walking" loss (47.9%). 52.1% vs main (1094,
   ladder 51.4, gen 52.1, fresh gen-s1 52.1); out-of-fuel turns 11027 vs 11206. Kept.
+- Final check (2026-10-21; main 4afef8c = ab47731's code, after keepwalk and quality). Against hecate-v8 (the
+  session's first baseline): 63.4% of 1094 (95% CI 60.5-66.2; ladder 65.7 of 70, gen 62.3, fresh gen-s2 64.3);
+  out-of-fuel turns 9223 in 743 games vs 1853 in 522. On gen-s1 alone 65.2% of 512 (61.0-69.2), out-of-fuel turns
+  4786 vs 837. Against nemesis, both on their own drafts: 93.0% of 1606 (91.6-94.1; ladder 92.9, gen 94.1, gen-s1
+  92.2, gen-s2 92.6); out-of-fuel turns 11516 in 1153 games vs 0. v8 stays (under the 80% bar).
