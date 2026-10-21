@@ -83,7 +83,7 @@ struct Side {
     int weak = -2; // weakest(), or -2 when it must be found again
     bool plain = true; // every kit plain and no arrivals
 
-    Side() {}
+    constexpr Side() {}
 
     void add(const Fighter& f) {
         if (count == max_fighters) return;
@@ -384,16 +384,92 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours,
     return t;
 }
 
+// Own turns a fight is played for: every slot ready at the start is cast on turns 0, 8 and 16.
+// Measured at 100M on the worst maps, kills land just after those casts (peaks on turns 9 and 17),
+// and the 8% of fights still undecided at 24 turns cost 20% of the simulation fuel.
+constexpr int fight_horizon = 2 * ability_cooldown + 1;
+
+// Whether our fighter `self` (and its linked body) must outlive their next `theirs` turns and our
+// next `ours`: every member of theirs alive now attacking each turn and casting each slot as soon
+// as it is ready, Ren hitting back at each of our hits, and the camps, still fall short of it.
+bool outlives(const Side& us, const Side& them, int self, int theirs, int ours) {
+    const auto& me = us.fighters[self];
+    const float health = me.link >= 0 ? std::min(me.health, us.fighters[me.link].health) : me.health;
+    const int end = them.turn + theirs;
+    float most = static_cast<float>(theirs) * us.camp, back = 0;
+    for (int i = 0; i < them.count; ++i) {
+        const auto& f = them.fighters[i];
+        if (f.health <= 0) continue;
+        most += static_cast<float>(theirs) * f.strength;
+        back = std::max(back, f.retaliation);
+        for (int s = 0; s < 2; ++s)
+            if (const int first = std::max(them.turn, f.ready_at[s]); f.ready_at[s] != never && first < end)
+                most += static_cast<float>((end - first + ability_cooldown - 1) / ability_cooldown) * f.kit->cast[s].damage;
+    }
+    if (back > 0) most += static_cast<float>(2 * ours * us.alive) * back;
+    return most * 1.001f + 1.0f < health;
+}
+
+// Whether their side must take all of ours within their next `theirs` turns. We cannot fell any of
+// theirs in our next `ours`: every attack and cast of ours as soon as ready, and our Ren hitting
+// back at each of their hits, fall short of their weakest. Then their basic attacks alone, less a
+// turn of their strongest for each stun we could cast, and the camps, outweigh our health, shields
+// and every heal or shield we could cast.
+bool overwhelmed(const Side& us, const Side& them, int theirs, int ours) {
+    const int our_end = us.turn + ours;
+    float most = 0, guard = 0, back = 0;
+    int stuns = them.stunned;
+    for (int i = 0; i < us.count; ++i) {
+        const auto& f = us.fighters[i];
+        if (f.health <= 0) continue;
+        back = std::max(back, f.retaliation);
+        guard += f.health + f.shield;
+        if (f.arrives_at == never) continue;
+        most += static_cast<float>(ours) * f.strength;
+        for (int s = 0; s < 2; ++s)
+            if (const int first = std::max(us.turn, f.ready_at[s]); f.ready_at[s] != never && first < our_end) {
+                const int n = (our_end - first + ability_cooldown - 1) / ability_cooldown;
+                const auto& c = f.kit->cast[s];
+                most += static_cast<float>(n) * c.damage;
+                guard += static_cast<float>(n) * c.heal;
+                stuns += c.stuns ? n : 0;
+            }
+    }
+    if (back > 0) most += static_cast<float>(2 * theirs * them.alive) * back;
+    float weakest = std::numeric_limits<float>::max(), least = static_cast<float>(theirs) * us.camp, strongest = 0;
+    for (int i = 0; i < them.count; ++i) {
+        const auto& f = them.fighters[i];
+        if (f.health <= 0) continue;
+        weakest = std::min(weakest, f.health);
+        if (!f.stun_immune) strongest = std::max(strongest, f.strength);
+        if (f.arrives_at == never) continue;
+        least += static_cast<float>(std::max(0, theirs - std::max(0, f.arrives_at - them.turn))) * f.strength;
+    }
+    if (!(most * 1.001f + 1.0f < weakest)) return false;
+    least -= static_cast<float>(stuns) * strongest;
+    return least > guard * 1.001f + 1.0f;
+}
+
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does.
 // `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
-// {-1, -1} if the fuel left fell below `fuel_floor` first.
+// {-1, -1} if the fuel left fell below `fuel_floor` first. With `self_falls` and not Dealt, a fight
+// our fighter must outlive ends at once as {0, 0}, and one they must win as {0, horizon}.
 template <bool Dealt = false>
-std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = 24,
+std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = fight_horizon,
                              std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0) {
     int ours = 0, theirs = 0;
     int watched = self_falls ? us.self : -1;
-    for (int t = 0; t < 2 * horizon; ++t) {
+    // Asked at the start and as either side loses a member.
+    for (int t = 0, alive = -1; t < 2 * horizon; ++t) {
+        if (!Dealt && self_falls && us.alive + 16 * them.alive != alive) {
+            alive = us.alive + 16 * them.alive;
+            if (watched >= 0 && outlives(us, them, watched, horizon - theirs, horizon - ours)) return {0, 0};
+            if (overwhelmed(us, them, horizon - theirs, horizon - ours)) {
+                if (watched >= 0) *self_falls = true;
+                return {0, horizon};
+            }
+        }
         if (!Dealt && us.turn < us.quiet_until && them.turn < them.quiet_until) {
             t = play_quiet(us, them, t, 2 * horizon, they_first, ours, theirs);
             if (t == 2 * horizon) break;
@@ -420,6 +496,8 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
     return {0, 0};
 }
 
+constinit std::array<Side, 2> debug_sides{};
+
 // Only the order where they strike first: `lost` is all callers need.
 // Plays the fight out on the sides given, which callers discard: copying them is costly.
 Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first = true) {
@@ -428,7 +506,16 @@ Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first 
     t.enemies = them.count;
     if constexpr (debug_fights) t.our_health = us.health(), t.their_health = them.health();
     if (them.count == 0) return t;
-    const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, 24, debug_fights ? &t.dealt : nullptr, fuel_floor);
+    debug_block({ debug_sides = {us, them}; });
+    const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, fight_horizon, debug_fights ? &t.dealt : nullptr, fuel_floor);
+    debug_block({
+        // An early end (outlives, overwhelmed) must agree with the fight played out.
+        bool falls = false;
+        std::array<float, 4> dealt{};
+        const auto [a, b] = simulate<true>(debug_sides[0], debug_sides[1], they_first, &falls, fight_horizon, &dealt);
+        if (we_kill >= 0 && ((b > 0) != (they_kill > 0) || falls != t.self_falls))
+            std::printf("FIGHT-EXIT-MISMATCH %d %d %d %d %d\n", cambc::round_number(), b, they_kill, falls, t.self_falls);
+    });
     if (we_kill < 0) {
         note_shortcut("fight-cut");
         t.lost = t.self_falls = true;

@@ -326,6 +326,20 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   (ladder 70.0, gen 62.1, fresh 60.7). Main does 3.7 points better at the real budget, so lifting the limit helps v8
   more than main: main's 4x more out-of-fuel turns do not show as lost games against v8. Main alone at 100M against v8
   at the real budget would isolate main's own loss; ab.py's `--fuel` sets both sides.
+- bounded-decide (2026-10-21; orch/bounded-decide, kept and merged): fight horizon 24 -> 2 * cooldown + 1 = 17 own turns,
+  and exact early ends (our fighter must outlive the rest of the horizon given every attack and ready cast of theirs;
+  or we cannot fell any of theirs and their basic attacks alone, less a stunned turn of their strongest per stun,
+  beat our health and every heal). Asked at the start and as either side loses a member; a debug check replays
+  each fight to the horizon (0 mismatches in 16k fights). Measured on 01elk-arena, 00contest, 00fragment both
+  sides at 100M vs main: kills peak right after cast turns (own turns 9 and 17); the 8% of fights undecided at 24
+  cost 20% of simulation fuel (16.9k vs 6.1k). 5.8% of fight verdicts change against 24, all lost -> not lost
+  (fights first lost on their turns 18-24). Per fight 7.06k -> 6.26k; same games, both bots metered: decide
+  25.4k -> 23.7k a turn (-6.7%), decide >= 100k turns 380 -> 349, pursuit 611 -> 441. Real budget, same 6 games:
+  out-of-fuel turns 186 vs main 198 (noise). Tried and dropped: damage reaching us only after every weaker ally
+  falls (no heals or shields) plus a re-check every cooldown, identical but +0.1% fuel. Fighters were not cut:
+  fight keys already hold only enemies whose blow reaches the tile, pursuit only those within `pursuit_steps`.
+  A/B vs main b05d209: 49.8% of 1094 (ladder 50.0, gen 49.4, fresh gen-s1 50.2), out-of-fuel turns 10543 vs 11337
+  (-7%); at 100M 50.6% (ladder 52.9, gen 49.4, fresh 51.6). Level with fewer out-of-fuel turns: kept.
 
 ### Ports from koi (2026-10-20)
 
