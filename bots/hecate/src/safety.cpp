@@ -1367,6 +1367,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
                 if (const auto& o = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
                     n < static_cast<int>(others.at.size()) && !gone(o))
                     others.at[n++] = {o.pos, &o, -1};
+            if (camp_factor_ <= 0) camp_factor_ = camp_hit_factor();
             if (refresh_) {
                 reread = true;
                 vision_into(seen);
@@ -1408,7 +1409,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
                 auto& o = others.at[near[k]];
                 if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o));
             }
-            if (reach > 0) out[count++] = {m.pos, m.strength, w, reach};
+            if (reach > 0) out[count++] = {m.pos, m.strength * camp_factor_, w, reach};
         }
     });
     member_count_ = count;

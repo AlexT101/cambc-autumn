@@ -347,8 +347,6 @@ int bag_at_stake(const World& world) {
     return static_cast<int>(my_gems()) + other;
 }
 
-float camp_hit_factor();
-
 // The tribute tiles a walk from our spawn reaches with live camps as walls; those only a crystal
 // reaches stay in. With none, `opened` gets those live camps cut off and `blocks` the groups beside
 // our walk in the same area as one: a thicker wall of camps is opened a layer at a time.
@@ -666,11 +664,14 @@ bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family) {
     return owned[emblem_of(family, strength_stat)] + owned[emblem_of(family, focus_stat)] + owned[emblem_of(family, health_stat)] > 0;
 }
 
-// Camps hit a Jungle emblem's owner 30% softer, and a Durability emblem's 10%.
+} // namespace
+
 float camp_hit_factor() {
     const auto& owned = my_items();
     return (has_family(owned, jungle) ? 0.7f : 1.0f) * (has_family(owned, durability) ? 0.9f : 1.0f);
 }
+
+namespace {
 
 // A farm cycle's worth a round, falling faster than 1 / rounds for long cycles: gems taken sooner
 // turn into shards sooner, and a long clear is more often contested or cut short. On a large map

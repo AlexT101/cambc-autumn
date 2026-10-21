@@ -286,7 +286,7 @@ public:
     // enough to wake, with where they would attack us from.
     struct CampHit {
         vec2 pos;
-        float strength;
+        float strength; // softened by our emblems: its damage to us
         float weight;
         int reach; // farthest distance at which it would pick us
     };
@@ -359,6 +359,7 @@ private:
     std::vector<CampHit>& members_; // likewise, the first `member_count_`; valid once `members_known_`
     int member_count_ = 0;
     bool members_known_ = false;
+    float camp_factor_ = 0; // camp_hit_factor(), read on first need: CampHit strengths carry it
     struct CampMemo {
         vec2 p;
         float damage;
