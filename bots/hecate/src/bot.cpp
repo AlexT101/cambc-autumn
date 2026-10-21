@@ -1153,17 +1153,6 @@ int walk_range(const World& world, int g) {
                : 0;
 }
 
-// Fuel for the farm evaluation and the walk after it: a field from here unless the steps are
-// known, about 1000 a group, and the approach to last turn's choice.
-bool farm_evaluation_affordable(const World& world, Pathing& pathing, const Memory& memory, vec2 here) {
-    const auto& map = world.map();
-    const int group = memory.farm_group;
-    const bool steps_free = pathing.centres_ready() || (test(map.ally_spawn, here) && map.spawn_steps_drafted());
-    const auto rest = (steps_free ? 0 : full_field_cost_estimate()) + 1000 * map.groups.size() + end_reserve;
-    if (group < 0 || group >= static_cast<int>(map.groups.size())) return fuel_ok(rest);
-    return fuel_ok(rest + pathing.max_approach_cost()) || fuel_ok(rest + pathing.approach_cost(group, walk_range(world, group)));
-}
-
 // Farm's spell clear (spell_clear_rounds): from a tile within ability range of a live attacker of
 // the group but out of every attacker's reach, casting at the attackers, with basic attacks on
 // what cannot hit back. False with no such tile or way to one, for the usual approach.
@@ -1333,39 +1322,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         note_shortcut("crow-flies-farm");
         return pathing.step_closer(groups[g].centre, zone);
     };
-    const bool on_spawn = test(map.ally_spawn, here);
     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.
     const auto walk_reserve = [&](int g) __attribute__((always_inline)) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(world, g)); };
-    if (!farm_evaluation_affordable(world, pathing, memory, here)) {
-        note_shortcut("farm-no-evaluation");
-        debug_block({
-            if (!pathing.centres_ready() && !(on_spawn && map.spawn_steps_drafted()))
-                std::printf("SHORTCUT %d %u farm-no-evaluation-cold\n", world.round, static_cast<unsigned>(world.me().handle));
-        });
-        if (bag > 0) return false;
-        // On large maps this can last hundreds of rounds, past the last choice's capture: once
-        // that is gone, the nearest group, as the crow flies until fields are ready.
-        const auto steps_to = [&](int g) __attribute__((always_inline)) {
-            if (const auto* field = pathing.from_centre(g)) return field->at(here);
-            return on_spawn ? map.ally_steps(g) : dist(here, groups[g].centre);
-        };
-        const auto worth = [&](int g) __attribute__((always_inline)) {
-            const auto& c = world.camps[g];
-            return !groups[g].has_monolith && groups[g].gems + groups[g].gold > 0 && !taken(g) && !(c.state == CampState::cleared && ally_holding(g))
-                   && !(c.state == CampState::respawning && c.respawn_round - world.round > dist(here, groups[g].centre));
-        };
-        if (memory.farm_group < 0 || !worth(memory.farm_group)) {
-            memory.farm_group = -1;
-            int nearest = 0;
-            for (int g = 0; g < static_cast<int>(groups.size()); ++g)
-                if (const int d = steps_to(g); (memory.farm_group < 0 || d < nearest) && worth(g))
-                    memory.farm_group = g, nearest = d;
-        }
-        memory.claim = memory.farm_group;
-        memory.crew = false;
-        walk_on(memory.farm_group);
-        return true;
-    }
     // Warmed-up centre fields give the steps a field from here would, without its cost. Walls are
     // static, so the steps are kept while we stand still, as when attacking a camp.
     static std::vector<int> centre_steps; // by group, -1 until read
@@ -1516,7 +1474,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             } else if (const auto drafted = map.drafted_spawn_steps(here, g)) {
                 steps_known = *drafted;
             } else {
-                if (!from_here) from_here = make_field(pathing.static_walls(), single(here));
+                if (!from_here) {
+                    if (!fuel_ok(full_field_cost_estimate() + loop_floor + loop_reserve())) break;
+                    from_here = make_field(pathing.static_walls(), single(here));
+                }
                 steps_known = from_here->at(group.centre);
             }
         }
@@ -1652,7 +1613,11 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (shared >= 0 && (best < 0 || shared_value > best_value))
         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false;
     if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false;
-    if (best < 0) return true;
+    if (best < 0) {
+        // Cut short before weighing even last turn's choice: walk on towards it.
+        if (k == 0 && memory.farm_group >= 0) memory.claim = memory.farm_group, walk_on(memory.farm_group);
+        return true;
+    }
     memory.farm_group = best;
     // Our fields price a dash over a hole line; live routes walk round it.
     const bool dasher = world.me().facts().has_dash();
