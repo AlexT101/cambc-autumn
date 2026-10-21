@@ -268,3 +268,12 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    of a tribute are siege candidates with the Monolith-only limits (replaces 27's gate). chase returns false when it
    can neither step nor hit. 49.0% vs main (582, ladder 51.4 with boss-battle 2/2, gen 48.6), out-of-fuel turns 2145
    vs 1004 (EXPERIMENTS.md).
+36. 2026-10-21 (not yet submitted). Quality wave 2 fixes. A world phase that ran out of fuel skips comms receive and
+   decide; comms send observes before marking any camp, claim or bag posted and stops if the turn went stale. farm
+   always evaluates (farm_evaluation_affordable and the nearest-group fallback deleted; a field from here only if a
+   full field fits, else the loop stops, and a loop cut before last turn's choice walks on to it). An error in act
+   still posts the turn order, claim, bag and health. heal_rounds (a heal trip's price, as upkeep_cost has it) prices
+   the heal in recall_to_bank, capture_recall and wants_shop (recall_heal_bonus and the 0.6 shop bypass removed).
+   Safety's camp hits carry our Jungle and Durability emblems; an asleep group is stirred only by a champion yet to act
+   within its own strike's reach. 54.5% vs main (582, ladder 50.0, gen 55.1), fresh seed 9421 59.4% (512);
+   out-of-fuel turns 1136 vs 914 (fresh 945 vs 731).

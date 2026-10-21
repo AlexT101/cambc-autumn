@@ -41,7 +41,7 @@ Tagged gates (`note_shortcut`) and where each goes:
 | farm-no-attack-tiles, siege-no-tiles, spell-clear-no-tiles | `prepare_member` | bush-cluster growth inside `viewers` | remove once clusters are on demand within bound | 2 |
 | ward-no-bushes-fuel, ward-no-bushes-clusters | `ward_bushes` | cluster growth | remove | 2 |
 | siege-route-fuel | `step_towards_funded` | an uncapped route | remove; fixed cap (see below) | 2 |
-| farm-no-evaluation (-cold), farm-partial-evaluation | `farm` | the camp evaluation; the mini-farm fallback walks to the nearest group | always evaluate; delete the mini-farm | 4 |
+| farm-partial-evaluation | `farm` | the camp evaluation (farm-no-evaluation and the mini-farm deleted, CHANGES 36) | always evaluate | 4 |
 | comms-stale-vision | `comms::send` / main.cpp | `World::observe` after moving | always observe | 5 |
 | out-of-fuel | main.cpp | not a gate | keep, count | — |
 

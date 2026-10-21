@@ -492,3 +492,8 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   (gen-clusters-only-720708305, gen-huge-shared-720707817) where a carrier stood still with a bankable bag 10 steps from
   an altar for 500 rounds and the farmer behind it spent 60-80k a turn in farm's step_towards/make_way retries. The
   stuck carrier is on main too (a 1481-round 'B' run on gen-dense-camps-720708102).
+- q2 bundle (2026-10-21; quality wave 2 fixes): stale-turn guards in main.cpp and comms send, farm always evaluates
+  (mini-farm fallback deleted), act errors still post claim/bag/health, one heal_rounds price for heal trips, Safety's
+  camp hits scaled by our emblems, asleep groups stirred only within a yet-to-act champion's strike reach. 54.5% vs
+  main (582, ladder 50.0, gen 55.1), fresh seed 9421 59.4% (512): kept. Out-of-fuel turns 1136 vs 914 (fresh 945 vs
+  731), not broken down.
