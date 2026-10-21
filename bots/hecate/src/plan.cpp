@@ -4,6 +4,7 @@
 #include <bit>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <string_view>
 #include "abilities.h"
 #include "params.h"
@@ -835,9 +836,13 @@ void Search::find_centres(int s) {
     const int r = std::min(f.abilities[s].range(), win9_r);
     // What each tile holds within 1, scattered from the foes and unseen tiles once.
     auto& near = tables.near;
-    // Centres lie within 1 of a foe or an unseen tile: only those are cleared.
-    for (int i = 0; i < foes; ++i) around(u[i].pos, [&](int j) { near[j] = {}; });
-    for (int k = 0; k < n_unseen; ++k) around(tables.unseen[k].pos, [&](int j) { near[j] = {}; });
+    // Centres lie within 1 of a foe or an unseen tile: only those are read. Clearing all costs
+    // less than clearing around many.
+    if (foes + n_unseen > 8) std::memset(near.data(), 0, sizeof(near));
+    else {
+        for (int i = 0; i < foes; ++i) around(u[i].pos, [&](int j) { near[j] = {}; });
+        for (int k = 0; k < n_unseen; ++k) around(tables.unseen[k].pos, [&](int j) { near[j] = {}; });
+    }
     for (int i = 0; i < foes; ++i)
         around(u[i].pos, [&](int j) { near[j].foes |= static_cast<std::uint16_t>(1u << i), near[j].banned |= u[i].suicidal[s]; });
     for (int k = 0; k < n_unseen; ++k) {
@@ -847,13 +852,13 @@ void Search::find_centres(int s) {
             else near[j].unseen += un.weight * un.worth;
         });
     }
-    // Window columns and rows on the map and within r.
-    std::uint32_t cols = 0, rows = 0;
-    for (int k = -r; k <= r; ++k) {
+    // By window row: the columns on the map and within r, less the centres already added.
+    std::uint32_t cols = 0;
+    std::array<std::uint32_t, win9_n> open{};
+    for (int k = -r; k <= r; ++k)
         if (const int x = here.x + k; x >= 0 && x < world.map().width) cols |= 1u << (k + win9_r);
-        if (const int y = here.y + k; y >= 0 && y < world.map().height) rows |= 1u << (k + win9_r);
-    }
-    std::array<std::uint8_t, win9_n * win9_n> seen{};
+    for (int k = -r; k <= r; ++k)
+        if (const int y = here.y + k; y >= 0 && y < world.map().height) open[k + win9_r] = cols;
     // A centre equal to an earlier one in all its value reads can never be picked over it: only
     // the first of each is kept in `distinct`, found by a hash of those reads.
     std::array<std::uint8_t, 128> slots{};
@@ -862,12 +867,12 @@ void Search::find_centres(int s) {
     n_centres = n_distinct = 0;
     const auto add = [&](vec2 p) {
         const int x = p.x - here.x + win9_r, y = p.y - here.y + win9_r;
+        const std::uint32_t three = x > 0 ? 7u << (x - 1) : 7u >> (1 - x);
         for (int yy = std::max(0, y - 1), y1 = std::min(win9_n - 1, y + 1); yy <= y1; ++yy) {
-            if (!(rows >> yy & 1)) continue;
-            for (int xx = std::max(0, x - 1), x1 = std::min(win9_n - 1, x + 1); xx <= x1; ++xx) {
-                const int j = yy * win9_n + xx;
-                if (!(cols >> xx & 1) || seen[j]) continue;
-                seen[j] = 1;
+            std::uint32_t row = open[yy] & three;
+            open[yy] &= ~row;
+            for (; row; row &= row - 1) {
+                const int xx = std::countr_zero(row), j = yy * win9_n + xx;
                 const int k = n_centres++;
                 auto& ce = tables.centres[k];
                 ce.tile = {here.x + xx - win9_r, here.y + yy - win9_r};
