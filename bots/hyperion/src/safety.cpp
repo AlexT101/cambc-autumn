@@ -29,6 +29,7 @@ struct MemoStats {
     // The VERDICT line: verdicts asked, and those answered by a simulation, the memo or dominance.
     int verdicts = 0, verdict_sims = 0, verdict_memo = 0, verdict_dom = 0;
     int sim_acts = 0, fall_at = -1; // the simulation running: act() calls, and how many before our fighter fell
+    std::array<int, 3> exits{};     // simulate()'s early ends: outlives, overwhelmed, our side outliving them
 };
 constinit MemoStats memo_stats{};
 constinit SimContext sim_context_now{};
@@ -375,11 +376,10 @@ float watched_health(const Side& us, int self) {
     return me.link >= 0 ? std::min(me.health, us.fighters[me.link].health) : me.health;
 }
 
-// Whether our fighter `self` (and its linked body) must outlive their next `theirs` turns and our
-// next `ours`: every member of theirs alive now attacking each turn and casting each slot as soon
-// as it is ready, Ren hitting back at each of our hits, and the camps, still fall short of it.
-bool outlives(const Side& us, const Side& them, int self, int theirs, int ours) {
-    const float health = watched_health(us, self);
+// The most we can take in their next `theirs` turns and our next `ours`: every member of theirs
+// alive now attacking each turn and casting each slot as soon as it is ready, Ren hitting back at
+// each of our hits, and the camps.
+float most_taken(const Side& us, const Side& them, int theirs, int ours) {
     const int end = them.turn + theirs;
     float most = static_cast<float>(camp_turns(us, them, theirs)) * us.camp, back = 0;
     for (int i = 0; i < them.count; ++i) {
@@ -392,7 +392,23 @@ bool outlives(const Side& us, const Side& them, int self, int theirs, int ours) 
                 most += static_cast<float>((end - first + ability_cooldown - 1) / ability_cooldown) * f.kit->cast[s].damage;
     }
     if (back > 0) most += static_cast<float>(2 * ours * us.alive) * back;
-    return most * 1.001f + 1.0f < health;
+    return most;
+}
+
+// Whether our fighter `self` (and its linked body) must outlive their next `theirs` turns and our
+// next `ours`: most_taken() falls short of it.
+bool outlives(const Side& us, const Side& them, int self, int theirs, int ours) {
+    return most_taken(us, them, theirs, ours) * 1.001f + 1.0f < watched_health(us, self);
+}
+
+// What their side must deal to fell all of ours: damage lands on the weakest and spills over, and
+// a linked pair falls with its lower body. Shields and heals left out only lower it.
+float side_health(const Side& us) {
+    float total = 0;
+    for (int i = 0; i < us.count; ++i)
+        if (const auto& f = us.fighters[i]; f.health > 0 && (f.link < 0 || f.link > i))
+            total += f.link >= 0 ? std::min(f.health, us.fighters[f.link].health) : f.health;
+    return total;
 }
 
 // Whether their side must take all of ours within their next `theirs` turns. We cannot fell any of
@@ -454,7 +470,8 @@ ExitBounds exit_bounds(const Side& us, const Side& them) {
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does.
 // `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
 // {-1, -1} if the fuel left fell below `fuel_floor` first. With `self_falls` and not Dealt, a fight
-// our fighter must outlive ends at once as {0, 0}, and one they must win as {0, horizon}.
+// our fighter must outlive ends at once as {0, 0}, and one they must win as {0, horizon}; once our
+// fighter has fallen, one the rest of our side must outlive ends as {0, 0}.
 template <bool Dealt = false>
 std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = fight_horizon,
                              std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0) {
@@ -468,17 +485,35 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             const auto bound = exit_bounds(us, them);
             if (watched >= 0) {
                 if (static_cast<float>(theirs_left) * bound.their_strength < watched_health(us, watched)) {
-                    if (outlives(us, them, watched, theirs_left, ours_left)) return {0, 0};
+                    if (outlives(us, them, watched, theirs_left, ours_left)) {
+                        if constexpr (!Dealt) {
+                            debug_block({ ++memo_stats.exits[0]; });
+                        }
+                        return {0, 0};
+                    }
                 } else if constexpr (!Dealt) {
                     debug_block({
                         if (outlives(us, them, watched, theirs_left, ours_left))
                             std::printf("PREFILTER-MISMATCH %d outlives\n", cambc::round_number());
                     });
                 }
+            } else if (us.alive > 0) {
+                // Our fighter fell: the rest of our side outliving them is all that is left to know.
+                const float health = side_health(us);
+                if (static_cast<float>(theirs_left) * bound.their_strength < health
+                    && most_taken(us, them, theirs_left, ours_left) * 1.001f + 1.0f < health) {
+                    if constexpr (!Dealt) {
+                        debug_block({ ++memo_stats.exits[2]; });
+                    }
+                    return {0, 0};
+                }
             }
             if (static_cast<float>(ours_left) * bound.our_strength < bound.weakest) {
                 if (overwhelmed(us, them, theirs_left, ours_left)) {
                     if (watched >= 0) *self_falls = true;
+                    if constexpr (!Dealt) {
+                        debug_block({ ++memo_stats.exits[1]; });
+                    }
                     return {0, horizon};
                 }
             } else if constexpr (!Dealt) {
@@ -1510,8 +1545,8 @@ Safety::~Safety() {
     debug_block({
         auto& m = memo_stats;
         if (m.sims | m.hits | m.idle_hits | m.pursuit_hits | m.act[0] | m.act[1] | m.act[2])
-            std::printf("MEMO %d %d %d %d %d %d %d %d %d\n", world_.round, m.sims, m.hits, m.kept, m.idle_hits, m.pursuit_hits,
-                        m.act[0], m.act[1], m.act[2]);
+            std::printf("MEMO %d %d %d %d %d %d %d %d %d exits=%d/%d/%d\n", world_.round, m.sims, m.hits, m.kept, m.idle_hits, m.pursuit_hits,
+                        m.act[0], m.act[1], m.act[2], m.exits[0], m.exits[1], m.exits[2]);
         if (m.verdicts)
             std::printf("VERDICT %d %d %d %d %d\n", world_.round, m.verdicts, m.verdict_sims, m.verdict_memo, m.verdict_dom);
         m = {};
