@@ -998,6 +998,14 @@ float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const 
     return static_cast<float>(upkeep.camp_turns) / turns * clear + taken * static_cast<float>(recall_turns(world) + steps) / usable;
 }
 
+// Rounds our missing health is worth, priced as upkeep_cost prices it: a heal trip (a recall and
+// the walk back out) per usable health.
+float heal_rounds(const World& world) {
+    const float steps = upkeep.spawn_turns > 0 ? upkeep.spawn_steps / static_cast<float>(upkeep.spawn_turns) : 0.0f;
+    const float usable = my_max_health() * (1.0f - params::recall_health_fraction);
+    return (my_max_health() - my_health()) / usable * (static_cast<float>(recall_turns(world)) + steps);
+}
+
 // The emblem to complete next and the share of a turn it saves (upkeep_cost): a Power emblem in
 // the main stat (6 shards' stats for 5), a Jungle one in it (-30% camp damage) or a Durability one
 // in Health (-10% damage taken), whichever saves most; one already begun is finished first, priced
@@ -2364,8 +2372,11 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
     const auto& to_altar = pathing.to_any_altar();
     const int walk = to_altar.at(here), from_spawn = to_altar.at(world.map().ally_spawn_centre);
     if (walk == unreachable || from_spawn == unreachable) return false;
-    const int heal = my_health() < my_max_health() ? 1 : 0;
-    return my_channel_time() + heal + from_spawn < walk;
+    // A recall lands at turn start, and healing waits for the turn's end on spawn. Healing is worth
+    // nothing once the bag wins.
+    const int hurt = my_health() < my_max_health() ? 1 : 0;
+    const float heal = winning_bag(world) ? 0.0f : heal_rounds(world);
+    return static_cast<float>(my_channel_time() + hurt + from_spawn) < static_cast<float>(walk) + heal;
 }
 
 // No enemy seen this round or last could walk into reach before the recall lands: standing
@@ -2404,9 +2415,9 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
             && emblem_gain_rounds(world, next) >= static_cast<float>(lands - payout + from_spawn - walk))
             return true;
     }
-    // Healing is worth nothing once the bag wins: only the quicker way to an altar counts.
-    const bool hurt = !wins && my_health() < params::heal_trip_fraction * my_max_health();
-    return lands - payout + from_spawn < walk + (hurt ? params::recall_heal_bonus : 0);
+    const int hurt = my_health() < my_max_health() ? 1 : 0;
+    const float heal = wins ? 0.0f : heal_rounds(world);
+    return static_cast<float>(lands - payout + from_spawn + hurt) < static_cast<float>(walk) + heal;
 }
 
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
@@ -2417,12 +2428,14 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     if (gold < shard_price || (gold < emblem_price && !emblem_begun())) return false;
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here) || safety.threatened(here)) return false;
-    // The trip costs the recall and the walk back out; hurt, it also heals.
+    // The trip costs the recall and the walk back out, and heals; arriving by recall, the heal
+    // takes the turn.
     const auto next = best_emblem(world);
     if (gold < next.cost) return false;
     const int back = pathing.to_ally_spawn().at(here);
-    if (my_health() >= params::heal_trip_fraction * my_max_health() && back != unreachable
-        && emblem_gain_rounds(world, next) < static_cast<float>(std::min(back, recall_turns(world)) + back))
+    const int hurt = my_health() < my_max_health() ? 1 : 0;
+    if (back != unreachable
+        && emblem_gain_rounds(world, next) + heal_rounds(world) < static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))
         return false;
     bool awake = false;
     world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });

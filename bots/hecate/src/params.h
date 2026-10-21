@@ -46,10 +46,7 @@ inline constexpr float home_retreat_ratio = 2.0f;
 // Leave before contact when the visible enemies within this many steps of their reach would win
 // even if we struck first (Safety::pursuit).
 inline constexpr int pursuit_steps = 3;
-// A capture recall still pays when hurt if it costs at most this many more rounds to an altar.
-inline constexpr int recall_heal_bonus = 6;
-// Below this health a trip home also heals: a shopping trip goes whatever the emblem is worth, a
-// capture recall counts the heal, and a sieger out of the big group's reach recalls.
+// Below this health a sieger out of the big group's reach recalls, and a caster stages farther.
 inline constexpr float heal_trip_fraction = 0.6f;
 // Turns ahead a tribute's safety is judged over, each turn of the channel.
 inline constexpr int tribute_window = 6;
