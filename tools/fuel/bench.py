@@ -8,7 +8,7 @@ byte-identical while the fuel it records drops.
     py tools/fuel/bench.py run variants/x --out replays/fuel/x.json
     py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json
 
-`run` options: --opp (default rival), --maps (default a small mixed set), --fuel (per-turn quantum,
+`run` options: --opp (default nemesis), --maps (default a small mixed set), --fuel (per-turn quantum,
 default 100000000; 0 for the real 100000), --jobs. Each game's bundle is kept under --games
 (default replays/fuel/games/<out stem>/). Fuel used per turn comes from the bundle's team-<x>.fuel:
 a 77-byte header, then one little-endian u64 per turn: the draft turns, then every body's turn of
@@ -160,7 +160,7 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
     r.add_argument("bot")
-    r.add_argument("--opp", default="rival")
+    r.add_argument("--opp", default="nemesis")
     r.add_argument("--maps", nargs="+", default=DEFAULT_MAPS)
     r.add_argument("--fuel", type=int, default=100_000_000)
     r.add_argument("--jobs", type=int, default=12)

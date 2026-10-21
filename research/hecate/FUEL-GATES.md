@@ -112,7 +112,7 @@ small.
 ### 1. Remove gates on bounded work
 
 The rows marked phase 1. At 100M the bot is byte-identical (the gates never fired there), so the check is the real
-budget: out-of-fuel turns no higher than the baseline's (`bench.py --fuel 0`, rival and nemesis-v2).
+budget: out-of-fuel turns no higher than the baseline's (`bench.py --fuel 0`, against nemesis).
 
 Removing all of them at once (on hecate-v4) raised out-of-fuel turns 48/36 -> 121/112: each one's work is bounded,
 but they fired on turns the fight steps had already drained, and acted as the turn's last brakes. So they go in two

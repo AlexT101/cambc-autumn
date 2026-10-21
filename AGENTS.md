@@ -15,9 +15,7 @@ The bots are **C++ only**. Each bot's draft is a fixed preference order compiled
 
 | Bot | Built from | Role |
 |---|---|---|
-| [morgana](bots/morgana/) | aphelios (removed; in git history) | out-farms rather than out-fights: one-price farm valuation, crews, capture recalls |
-| [rival](bots/rival/) | morgana-v5 | plays like the top five ladder teams: gold camps, team sieges of Monoliths and big shared groups, retreats only when hurt or carrying |
-| [nemesis](bots/nemesis/) | rival | rival plus fixes from top-team replays and turn audits |
+| [nemesis](bots/nemesis/) | rival, from morgana, from aphelios (all removed; in git history) | plays like the top five ladder teams: one-price farm valuation, crews, gold camps, team sieges of Monoliths and big shared groups, retreats only when hurt or carrying; fixes from top-team replays and turn audits |
 | [hecate](bots/hecate/) | nemesis 2dba924 | the bot we work on, strongest locally; shipped changes in [research/hecate/CHANGES.md](research/hecate/CHANGES.md), direction and open work in [research/hecate/TODO.md](research/hecate/TODO.md) |
 
 koi, a Fish-like sparring bot built from hecate 110e338, is not in the tree: [research/koi/](research/koi/README.md) has what it does, every change tried, and a patch to rebuild it. `bots/starter-cpp` is reference only. Frozen snapshots used as A/B baselines live in `bots/baselines/<bot>-vN/` (none at present; make one from a commit, leaving out `.cambc/`); never edit them. Delete a baseline once the current bots beat it about 80% of the time. Ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ pages in `docs/`. Relevant docs, if needed:
@@ -73,7 +71,7 @@ Rows use `--bot` (default hecate), columns default to the row drafts on `--vs-bo
 Each turn has 100k fuel (the first 200k). Running out loses the rest of the turn. hecate still has fuel gates that choose worse when fuel is short; don't add new ones: make the work cheap or bounded instead ([research/hecate/FUEL-GATES.md](research/hecate/FUEL-GATES.md) is the plan for removing the rest). [tools/fuel/bench.py](tools/fuel/bench.py) measures fuel per turn and checks fuel optimisations: with its default 100M budget no fuel gate trips, so a change that only saves fuel must leave every replay byte-identical. Use the small default map set; hundreds of maps are not needed for that check.
 
 ```
-py tools/fuel/bench.py run hecate --out replays/fuel/base.json            # 16 games vs rival, 8 maps, both sides
+py tools/fuel/bench.py run hecate --out replays/fuel/base.json            # 16 games vs nemesis, 8 maps, both sides
 py tools/fuel/bench.py run variants/x --out replays/fuel/x.json           # a modified copy of hecate
 py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # identical replays, fuel change
 py tools/fuel/bench.py run hecate --fuel 0 --out replays/fuel/real.json   # the real budget: counts shortcuts and lost turns
