@@ -144,6 +144,10 @@ struct StaticMap {
     bool from_ally_spawn_ready() const { return ally_field_.has_value(); }
     const Field& from_enemy_spawn() const { return enemy_field_ ? *enemy_field_ : make_enemy_field(); }
     const BushCluster& bush_cluster(vec2 p) const;
+    const BushCluster* found_bush_cluster(vec2 p) const { // null until p's cluster is found
+        const int i = cluster_of_[tile_index(p)];
+        return i > 0 ? &bush_clusters_[i - 1] : nullptr;
+    }
     // Tiles with a bush within ward placement range (2).
     const bitboard& near_bushes() const { return near_bushes_ ? *near_bushes_ : make_near_bushes(); }
     // Find every cluster viewers(p, radius) needs while more than `fuel_floor` fuel remains; true

@@ -480,7 +480,8 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
     const bool skipping = any_locked;
     if (any_locked) {
         for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
-            if (avoided(a)) continue;
+            // A tribute tile is within 1 of its altar: an altar this rules out needs no field.
+            if (avoided(a) || dist(here, altars[a].pos) - 1 >= best_steps) continue;
             const auto& belief = world.altars[a];
             int steps = pathing.to_altar(a).at(here);
             if (steps == unreachable) continue;
@@ -1611,7 +1612,9 @@ bool ward_bushes(const World& world, Memory& memory) {
     candidates.draw_chebyshev(here, 2.0f);
     candidates &= map.bushes;
     if (test(map.bushes, here)) drop(candidates, map.bush_cluster(here).tiles);
-    if (in_bounds(memory.ward) && test(map.bushes, memory.ward)) drop(candidates, map.bush_cluster(memory.ward).tiles);
+    // Every cluster holding a candidate is found, so an unfound one could drop nothing.
+    if (in_bounds(memory.ward) && test(map.bushes, memory.ward))
+        if (const auto* c = map.found_bush_cluster(memory.ward)) drop(candidates, c->tiles);
     if (candidates.is_empty()) {
         memory.bushes_watched = here;
         return false;
