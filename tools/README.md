@@ -23,6 +23,21 @@ py run_batched.py --watch            # live progress of the newest batch, from a
   - `run.log`, plus `*.error.log` for failed matches.
 - The exit code is non-zero if any match failed.
 
+## tools/ab.py
+
+The full A/B: CAND against REF through run_batched.py on every suite, both sides, wins counted from CAND's side.
+
+```
+py tools/ab.py orch/my-branch main --name my-change     # two git refs
+py tools/ab.py HEAD baselines/hecate-v8                  # a ref against a frozen baseline
+py tools/ab.py main nemesis --no-test-draft --suites ladder,gen
+```
+
+- **CAND / REF:** a git ref (branch, sha, `main`), whose `bots/hecate` is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` set to true; or a bot directory under `bots/`, used as it is. Refs resolve in the shared repo, so worktree branches work; run it from the primary checkout.
+- **Options:** `--name` (default `<cand>-vs-<ref>`), `--threads` (default 22), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, and each `maps/gen-s*/`; a directory of maps also works), `--no-test-draft` (leave copies untouched, e.g. against nemesis), `--fuel N`.
+- **Output:** a summary of at most 25 lines: CAND's win % with a 95% Wilson interval overall and per suite, failed matches, out-of-fuel turns per bot (`oof.py`) and wall time. `replays/ab/<name>/` gets `summary.json`, `summary.md` and each suite's run_batched log; batches go to `replays/batch-<time>-ab-<name>-<suite>/`.
+- The exit code is non-zero if any match failed.
+
 ## Maps and tools/mapgen
 
 `maps/` holds the 35 ladder maps under the names SDK updates ship them with (`00ambush`, `01big-world`, ...). Delete any uuid-suffixed copies an update adds. Ladder replays name maps without the prefix, and extract.mjs and mapgen accept either.

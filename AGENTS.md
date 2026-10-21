@@ -21,12 +21,9 @@ Don't comment unless necessary: only counterintuitive behaviour or reasoning get
 
 ## Testing
 
-```
-py run_batched.py <bot1> <bot2>          # every ladder map in maps/, both sides
-py run_batched.py <bot1> <bot2> --gen    # the 256 generated maps in maps/gen/
-```
+Full A/Bs go through `py tools/ab.py CAND REF` (git refs or bot directories; ladder, generated and fresh-seed maps, both sides).
 
-- **Judging a change:** there are no feature flags. A/B the change against a frozen baseline on ladder + `--gen` from both sides (582 games, noise about ±2.1 points). Single maps and small samples are noise.
+- **Judging a change:** there are no feature flags. A/B the change against a frozen baseline (ladder + gen alone are 582 games, noise about ±2.1 points). Single maps and small samples are noise.
 - **Confirming a gain** won on `maps/gen`: test it on a fresh-seed suite (`mapgen.mjs suite --out DIR --seed S`, then `--maps-dir DIR`).
 - **Determinism:** local games are deterministic, so rerunning the same maps adds nothing.
 - **Recording:** results go in [research/EXPERIMENTS.md](research/EXPERIMENTS.md), which also lists what has already won or lost.

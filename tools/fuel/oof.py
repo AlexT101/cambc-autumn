@@ -10,26 +10,33 @@ import zipfile
 from pathlib import Path
 
 
+def count(d):
+    """(bot paths, turns, games, phases, maps) for batch d; the counters are keyed by bot 1 and 2."""
+    d = Path(d)
+    bots = json.loads((d / "results.json").read_text())["bots"]
+    turns, games = collections.Counter(), collections.Counter()
+    phases = {1: collections.Counter(), 2: collections.Counter()}
+    maps = {1: collections.Counter(), 2: collections.Counter()}
+    for b in sorted(d.glob("*.repl26a")):
+        order = b.stem.rsplit("-", 1)[1]  # 12: bot 1 is team A
+        name = b.stem.split("-", 1)[1].rsplit("-", 1)[0]
+        with zipfile.ZipFile(b) as z:
+            for team in "ab":
+                bot = 1 if (team == "a") == (order == "12") else 2
+                out = z.read(f"team-{team}.stdout").decode("utf-8", "replace")
+                hits = [m for m in re.finditer(r"^OOF (\d+) (.+)$", out, re.M) if not m[2].startswith("draft")]
+                turns[bot] += len(hits)
+                games[bot] += bool(hits)
+                for m in hits:
+                    phases[bot][m[2].strip()] += 1
+                    maps[bot][name] += 1
+    return bots, turns, games, phases, maps
+
+
 def main():
     totals = collections.Counter()
     for d in map(Path, sys.argv[1:]):
-        bots = json.loads((d / "results.json").read_text())["bots"]
-        turns, games = collections.Counter(), collections.Counter()
-        phases = {1: collections.Counter(), 2: collections.Counter()}
-        maps = {1: collections.Counter(), 2: collections.Counter()}
-        for b in sorted(d.glob("*.repl26a")):
-            order = b.stem.rsplit("-", 1)[1]  # 12: bot 1 is team A
-            name = b.stem.split("-", 1)[1].rsplit("-", 1)[0]
-            with zipfile.ZipFile(b) as z:
-                for team in "ab":
-                    bot = 1 if (team == "a") == (order == "12") else 2
-                    out = z.read(f"team-{team}.stdout").decode("utf-8", "replace")
-                    hits = [m for m in re.finditer(r"^OOF (\d+) (.+)$", out, re.M) if not m[2].startswith("draft")]
-                    turns[bot] += len(hits)
-                    games[bot] += bool(hits)
-                    for m in hits:
-                        phases[bot][m[2].strip()] += 1
-                        maps[bot][name] += 1
+        bots, turns, games, phases, maps = count(d)
         print(f"== {d}")
         for bot in (1, 2):
             totals[bot] += turns[bot]
