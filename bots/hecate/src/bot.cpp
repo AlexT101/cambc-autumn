@@ -2512,7 +2512,8 @@ SiegeLoad siege_load(const World& world, int g) {
     float top = -1;
     for (std::size_t i = 0; i < G.members.size(); ++i) {
         load.strongest = std::max(load.strongest, G.members[i].strength);
-        const float hp = c.state == CampState::respawning ? G.members[i].max_health : c.health[i];
+        // A cleared group's health out of sight is as last seen.
+        const float hp = c.state == CampState::cleared ? 0 : c.state == CampState::respawning ? G.members[i].max_health : c.health[i];
         if (hp <= 0) continue;
         load.health += hp;
         load.hit += G.members[i].strength;
