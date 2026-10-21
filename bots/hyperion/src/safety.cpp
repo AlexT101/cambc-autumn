@@ -2150,7 +2150,8 @@ bool Safety::shape(vec2 p, const Engage& e, FightKey& k) {
 
 Trade Safety::play(const FightKey& k) {
     Trade t;
-    if (!recall(k, t)) t = run(k, k.who >> 16);
+    // fight_calibration.py reads every field of a debug_fights trade: none is settled then.
+    if (const int how = recall(k, t); how == 0 || (debug_fights && how == 2)) t = run(k, k.who >> 16);
     return t;
 }
 
@@ -2168,8 +2169,7 @@ int Safety::recall(const FightKey& k, Trade& out) {
     int by = -1;
     for (int i = 0; i < std::min(fight_count_, max_fights); ++i) {
         const auto& f = fights_[static_cast<std::size_t>(i)];
-        if (f.key.who == k.who) {
-            if (!(f.key == k)) continue;
+        if (f.key.who == k.who && f.key == k) {
             debug_block({
                 auto& m = memo_stats;
                 ++(k.mode == static_cast<std::uint8_t>(Engage::Mode::idle)     ? m.idle_hits
@@ -2181,15 +2181,23 @@ int Safety::recall(const FightKey& k, Trade& out) {
             return 1;
         }
         // Cassi and Issac fall together: one more of them can turn a fight either way.
-        if (by >= 0 || !stand || f.key.mode != k.mode || f.key.camp_q != k.camp_q || f.key.camp_turns != k.camp_turns
-            || f.key.horizon != k.horizon || ((f.key.who ^ k.who) & linked_who_))
-            continue;
-        if (const auto& t = f.trade; !t.lost && !t.self_falls ? covers(f.key.who, k.who) : t.lost && covers(k.who, f.key.who)) by = i;
+        if (by >= 0 || !stand || f.key.mode != k.mode || f.key.horizon != k.horizon || ((f.key.who ^ k.who) & linked_who_)) continue;
+        // The camps hit our weakest on each of their first camp_turns turns: more for longer only
+        // makes a fight worse, like more enemies.
+        const bool camp_worse = f.key.camp_q >= k.camp_q && f.key.camp_turns >= k.camp_turns;
+        const bool camp_milder = f.key.camp_q <= k.camp_q && f.key.camp_turns <= k.camp_turns;
+        if (const auto& t = f.trade; !t.lost && !t.self_falls ? camp_worse && covers(f.key.who, k.who)
+                                                              : t.lost && camp_milder && covers(k.who, f.key.who))
+            by = i;
     }
     if (by < 0) return 0;
-    const bool lost = fights_[static_cast<std::size_t>(by)].trade.lost;
+    const auto& settler = fights_[static_cast<std::size_t>(by)];
+    const bool lost = settler.trade.lost;
     out = {};
+    out.settled = true;
     out.lost = out.self_falls = lost;
+    // Not lost: 0 as played. Lost: k's is at most this.
+    out.turns_to_kill_us = settler.trade.turns_to_kill_us;
     out.allies = std::popcount(k.who & 0xFFFFu);
     out.enemies = std::popcount(k.who >> 16);
     debug_block({
@@ -2202,8 +2210,8 @@ int Safety::recall(const FightKey& k, Trade& out) {
         std::array<float, 4> dealt{};
         const auto [a, b] = simulate<true>(us, them, true, &falls, k.horizon, &dealt);
         if ((b > 0) != lost || falls != lost)
-            std::printf("DOMINANCE-MISMATCH %d %x %x %d %d %d %d\n", world_.round, k.who, fights_[static_cast<std::size_t>(by)].key.who,
-                        k.camp_q, lost ? 1 : 0, b > 0 ? 1 : 0, falls ? 1 : 0);
+            std::printf("DOMINANCE-MISMATCH %d %x %x %d %d %d %d %d %d %d\n", world_.round, k.who, settler.key.who, k.camp_q,
+                        settler.key.camp_q, k.camp_turns, settler.key.camp_turns, lost ? 1 : 0, b > 0 ? 1 : 0, falls ? 1 : 0);
         made_fighters = debug_fighters;
     });
     return 2;
@@ -2269,9 +2277,9 @@ std::uint64_t Safety::fight_cost_estimate() {
 }
 
 std::uint64_t Safety::query_cost_estimate() {
-    // Once listed, a visible threat's Reach is still built on its first query.
-    if (built_ && !reachable_known_) list_reachable();
-    return (built_ ? 2000 * static_cast<std::uint64_t>(std::popcount(static_cast<unsigned>(reachable_ & ~reached_))) : 0) + build_cost_estimate();
+    // A visible threat's Reach is built on its first query, built_ or not: engage() never builds.
+    if (!reachable_known_) list_reachable();
+    return 2000 * static_cast<std::uint64_t>(std::popcount(static_cast<unsigned>(reachable_ & ~reached_))) + build_cost_estimate();
 }
 
 std::uint64_t Safety::build_cost_estimate() {
@@ -2281,12 +2289,12 @@ std::uint64_t Safety::build_cost_estimate() {
 }
 
 [[gnu::noinline]] std::uint64_t Safety::estimate_build() {
-    std::uint64_t cost = 2000;
+    // A visible threat costs its Reach alone, which query_cost_estimate() counts.
+    std::uint64_t cost = 0;
     for (auto left = live_enemies() & ~std::uint32_t{threat_mask_}; left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (gone(e)) continue;
-        if (e.visible) cost += 4000; // with its Reach
-        else cost += foe(e).weight > 0 ? (costliest_unseen() ? costliest_unseen() + costliest_unseen() / 4 : 3000 + 25 * search_chunks()) : 500;
+        if (e.visible || gone(e) || foe(e).weight == 0) continue;
+        cost += costliest_unseen() ? costliest_unseen() + costliest_unseen() / 4 : 3000 + 25 * search_chunks();
     }
     build_cost_ = cost;
     return cost;
@@ -2558,11 +2566,12 @@ bool Safety::exposed(vec2 q, FightKey& k, bool& dies) {
 bool Safety::guarded(vec2 q) {
     const int s = window_slot(q);
     if (s < 0 || q == centre_) return false;
+    // Before the cache too: resumed after running out of fuel, its answers are a round old.
+    world_.throw_if_stale();
     sync_guard();
     const auto bit = std::uint64_t{1} << s;
     if (guard_asked_ & bit) return (guard_true_ & bit) != 0;
     Phase phase{"guarded"};
-    world_.throw_if_stale();
     guard_asked_ |= bit;
     FightKey k;
     bool dies = false;

@@ -213,6 +213,9 @@ struct Trade {
     int turns_to_kill_them = 0; // ours
     bool self_falls = false;    // we die before their side does, when they strike first
     bool cut = false;           // set in trade() on fight-cut; never memoised
+    // Not played: a memoised fight settled it (Safety::engage). Only lost, self_falls and the
+    // counts hold; turns_to_kill_us is the settling fight's (a bound) and the rest is 0.
+    bool settled = false;
     float our_health = 0, their_health = 0; // debug_fights only
     int allies = 0, enemies = 0;
     std::array<float, 4> dealt{}; // debug_fights only: see simulate()
@@ -331,7 +334,7 @@ public:
     std::uint64_t fight_cost_estimate();
     // The threat build and the visible threats' Reach builds still pending.
     std::uint64_t query_cost_estimate();
-    // At most what building the threats costs, 0 once built.
+    // At most what building the credible unseen threats' fields costs, 0 once built.
     std::uint64_t build_cost_estimate();
     // engage(p) pursue: lost means they win even if we stand and fight.
     Trade pursuit(vec2 p, int approach);
@@ -349,7 +352,7 @@ public:
     // arriving within the horizon, charged the camps for all of it; turns_to_kill_us, with lost
     // and self_falls set when it is not 0. Memoised by who fights, arrivals, camp charge and mode,
     // across invalidate(); a stand fight may be settled by a memoised won one at least as hard or
-    // lost one at most as hard.
+    // lost one at most as hard (Trade::settled: only lost and self_falls hold).
     Trade engage(vec2 p, Engage e);
     int idle_turns(vec2 p, int horizon);
     void set_claimed(int group); // camp group our farm/siege budgets; skipped in stand/pursue camp charge
@@ -500,9 +503,9 @@ private:
     bool shape(vec2 p, const Engage& e, FightKey& k);
     // The memo's trade, or a fight it settles, else a new one.
     Trade play(const FightKey& k);
-    // 1: k's memoised trade; 2: a stand key settled by a memoised stand fight with its camp charge,
-    // a won one with at least its enemies and at most its allies, or a lost one the reverse
-    // (lost and self_falls only); 0: neither.
+    // 1: k's memoised trade; 2: a stand key settled by a memoised stand fight, a won one with at
+    // least its enemies, at most its allies and at least its camp charge for as many turns, or a
+    // lost one the reverse (Trade::settled); 0: neither.
     int recall(const FightKey& k, Trade& out);
     // Simulates k with `enemies` as its enemies and memoises it, unless cut.
     Trade run(const FightKey& k, std::uint32_t enemies);
