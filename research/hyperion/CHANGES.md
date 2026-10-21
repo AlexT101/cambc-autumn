@@ -439,6 +439,51 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    `--phases`: 62ffe96 (the fuel fix before its review fixes) vs w2-merged 50.9% (ladder 50.0, gen 51.0), out-of-fuel
    turns 6349 vs 8278 (-23%); vs w1 49.7% (ladder 51.4, gen 49.4), 5354 vs 4982 (+7.5%). The review fixes were not
    A/B'd (bench out-of-fuel turns 188 vs 62ffe96's 181, within its ±20).
+56. 2026-10-21 (not yet submitted). Combat merge wave 3 (COMBAT-MERGE.md; branch w3-int, merged with wave 4 as w4-int
+   aed8c3e; tag w34-merged): one strike search a turn, with retreat and chase as its modes.
+   - W3-A (plan.cpp): prepare_strikes reads and grows once into static storage; price_strikes prices it by mode
+     (normal, flee, chase), each leaf recording a step class so a chase can reprice with another walk. Flee mode prices
+     each end tile's whole row (visible blows in full, unseen at their chance, camps for each round to walk out), adds
+     life_value + bag where the worst can kill us, and with no visible striker picks the least Safety::escape_cost;
+     no guarded() ban in a flee. Tiles pop from a heap by bound (C2); the capped fallback (C4) is lazy branch-and-bound.
+     prepared_current also checks our tile and health; value_casts runs once per Prepared.
+   - W3-B (bot.cpp): retreat and chase go through the one search. flee() (retreat_home's field, escape_step_value)
+     with retreat_step as the fallback; retreat_home walls camps and visible strike squares. chase reprices the turn's
+     Prepared once with prey's route field and drops its dash, stuck logic and attack/reset/cast tail. flee_camps and
+     dash_away deleted.
+   - W3-C (self_abilities.cpp, pathing): dashes rank landings by Safety's tile table (worst, then depth); travel_dash
+     keeps worst(p) <= worst(here) and no camp wake. Pathing::route_field with a KeptRoute keyed on the guard stamp
+     as step_towards' first attempt. threats_near, Hazard and danger() deleted.
+   - Caps after review: an escape tightens 3 tiles, then bounds the rest by the exit field and tightens 3 more (C8);
+     a flee prices at most 4 queries (C1), grows at most 8 strike nodes and gathers at most 4 C4 tiles; C7
+     (max_guard_asks 6) is per search, shared with the chase reprice.
+   - Merged into INT on the wave 2 fuel fix: F2 (guarded() asked of the pick alone, unban), the dist-3 lethal ban (L2)
+     and the entry stale check (L4, in prepare_strikes) were ported onto the heap search.
+   Fuel: the W3 flee fuel test failed at 100M, flee SRCH mean ~24k and p99 ~62k against the 12k/40k gate, even with
+   the tightened caps (C1 4, flee nodes 8, escape tightenings 3+3). Real-budget A/B pending.
+57. 2026-10-21 (not yet submitted). Combat merge wave 4 (COMBAT-MERGE.md; branch w4-int aed8c3e; tag w34-merged): the
+   remaining readers move onto Safety's tile table, and duplicate valuers go.
+   - W4-A mend (self_abilities.cpp, bot.cpp): one heal and shield valuer, mend(), against the real hits at our tile
+     plus members in reach of groups we hit; never a shield on our spawn. Sites mend_early (on spawn, before the
+     hits), mend_searched, mend_retreat and act's end, which judges again only when the cast is unspent and the site's
+     tile, attack state or claim changed. A reset that does not kill holds while mend_due() and a visible foe reaches
+     us. Deleted: shield_wanted, shield_if_needed, shield_danger, reset_may_kill, landing_ready, kill_pending.
+   - W4-B casts (abilities.cpp, plan.cpp): the search values its start-tile cast into Valued (slot, target or ground
+     centre, the foes it counted) and strike_after casts exactly that, falling back to cast_at_enemies when a kill or a
+     Ren's retaliation made it stale (cast_valued); cast_at_enemies refuses the searched tile. One Ren retaliation
+     rule (retaliation_kills) and one target loop for enemy casts.
+   - W4-C recall, tribute and turn order (bot.cpp, turn_order.cpp, safety): tribute_safe judges Safety::idle_turns
+     alone (memoised), the memory.damage x window line replaced by the ghost: note_hits charges last round's damage
+     that the visible strike bound and the camps cannot explain as unseen_hit within 3 of the turn-start tile.
+     continue_recall asks threatened() lazily once; recall_outruns reads engaged_within for visible enemies;
+     offer_escape and offer_channel read tile(self.pos); the turn-order fuel gate is deleted.
+   - W4-D census (bot.cpp, abilities.cpp, self_abilities.cpp, turn_order.cpp, safety): escape_cost and camp_trapped
+     share Safety::exit_damage; visible_threat reads the strike mask then tile(p).vis_mask; every claim write goes
+     through set_claim; take_hop judges the crystal channel like a tribute and a refused carrier walks home for a
+     channel's length; Heart of Ruin landings ask landing_clear lazily in rank order; finishing_camp picks from
+     Safety's awake members; offer_heal sums strike_of over live enemies; the three holds read engaged_within (reset
+     and camp cast 1, travel dash 2); one camp wake rule (World::hit_wakes).
+   A/B pending, together with wave 3.
 58. 2026-10-21 (not yet submitted). Raw engine reads, ported from 3b2edbd (claude/happy-franklin-nltty2) onto the wave
    3+4 code, behaviour-identical: util.h record_of/visible_record/is_alive/identity_of/gems_of/has_stun/champion_at,
    visible_camp/camp_has_stun and my_damage/my_heal/my_shield/my_cooldown/cast_slot/attack_champion replace
@@ -446,4 +491,5 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    copies of cambc::self().abilities(), in attack_target, heal_choice and mend, enemy_cast and camp_cast, the strike
    search's reads and actions, cast_valued and Pathing's ally swap; self_abilities' ready() returns a slot.
    avoid(), camp_area(), enemy_area(), dash_landings_from() and Pathing::dash_landings() return scratch boards.
-   Subset at 100M (8 games, below): replays 8/8 identical, total fuel -1.51%.
+   Subset at 100M (8 games, EXPERIMENTS.md): replays 8/8 identical, total fuel -1.51% on w4-int 0856156; merged into
+   INT (tag w34, 604ca30) against w34-merged, 8/8 identical again and total fuel -1.47%.

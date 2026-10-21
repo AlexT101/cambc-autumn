@@ -737,3 +737,6 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   Total fuel -1.30% (own draft) and -1.82% (forced), -1.51% together; p99 -1.5% and -1.8%; 29949 of 29957 turns
   cheaper. The games ran dashes and landings (DASH/LANDING lines), Willow heals and Varg/Heart of Ruin shields (MEND h/s)
   and the strike search; cast_valued never fired in them.
+  - Merged into INT (604ca30, tag w34) on w34-merged 55adef3: the same subset 4/4 and 4/4 identical against
+    w34-merged; total fuel -1.26% (own draft) and -1.73% (forced), -1.47% together; p99 -1.5% and -1.8%; 27852 of
+    27859 turns cheaper.
