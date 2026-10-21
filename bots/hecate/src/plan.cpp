@@ -210,8 +210,8 @@ constexpr int max_members = 48;
 constexpr int max_centres = 81;
 constexpr int max_unseen = 24;
 constexpr int max_depth = 6;
-// Reach queries per search; past it the rest keep their Strike price. Uncapped until measured.
-constexpr int max_exact_queries = 1 << 30;
+// Reach queries per search; past it the rest keep their Strike price.
+constexpr int max_exact_queries = 10;
 
 enum class Op : std::uint8_t { walk, attack, reset, dash, spell };
 struct Act {
@@ -464,6 +464,15 @@ struct Search {
 
     Node root() const;
     bool legal_at(Node& s, Grid legal) const;
+    // Whether a strike can still follow: a move with none after it is never offered.
+    bool strikes_left(const Node& s) const {
+        if (s.attack) return true;
+        if (!s.cast) return false;
+        if (s.reset || (lands && s.dash)) return true;
+        for (const auto& sp : spells)
+            if (sp.slot >= 0 && sp.unit && !sp.excl) return true;
+        return false;
+    }
 
     void grow(const Node& s);
     void settle(const Node& s);
@@ -1103,7 +1112,7 @@ void Search::grow(const Node& s) {
         const Grid dom = c.seg == walked                ? free_n
                          : s.land.x >= 0                 ? dilate(gbit(cell(s.land))) & free_ & ~gbit(cell(s.land))
                                                          : dom_dw & dilate(plain_here & s.req_d);
-        if (dom) push(c, {Op::walk});
+        if (dom && strikes_left(c)) push(c, {Op::walk});
     }
     if (s.cast && s.dash && (s.seg == at_start || s.seg == walked)) {
         const bool first = s.seg == at_start;
@@ -1116,7 +1125,7 @@ void Search::grow(const Node& s) {
         Node c = s;
         c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.req_d = reach, c.owed = true;
         c.seg = first ? dashed : walked_dashed;
-        if ((reach & ~land_hits) != 0) push(c, {Op::dash});
+        if ((reach & ~land_hits) != 0 && strikes_left(c)) push(c, {Op::dash});
         if (lands)
             each_bit(reach & land_hits, [&](int l) {
                 Node d = c;
