@@ -2025,8 +2025,13 @@ bool contesting(const World& world) {
     return world.camps[g].holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
 }
 
-// A visible enemy's blow reaches p.
-bool visible_threat(const World&, Safety& safety, vec2 p) { return safety.tile(p).vis_mask != 0; }
+// A visible enemy's blow reaches p. Strike bounds every visible blow, so with none in reach the row,
+// which builds the unseen threats too, is not needed.
+bool visible_threat(const World&, Safety& safety, vec2 p) {
+    std::uint16_t mask = 0;
+    safety.strike_sum(p, &mask);
+    return mask != 0 && safety.tile(p).vis_mask != 0;
+}
 
 // Our ground: no farther from our spawn than from theirs.
 bool own_ground(const World& world, vec2 p) {
