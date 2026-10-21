@@ -259,3 +259,12 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    dash_foot and hops are built lazily. bank_gems skips altars whose crow-flies bound cannot beat the best so far;
    ward_bushes reads only clusters already found. make_way reads the failed route's field instead of a search per
    adjacent ally; the per-altar fields are warmed before the attack tiles.
+35. 2026-10-21 (not yet submitted). Sealed altars (COORDINATION 1). AltarAccess: the tribute tiles a walk from our spawn
+   reaches with live camps as walls, rebuilt when the live camps change (camps that only died leave an open altar
+   open). altar_usable: the believed-awake fire on the best open tile times tribute_turns(bag) stays below the
+   carrier's health. bankable_bag replaces my_gems() in decide, pick_up's chaining, wants_shop, retreat's banking and
+   the siege reset: a bag no altar is usable for is farmed and shopped on as if empty. While no altar is usable for
+   the team's largest bag, the live groups beside our walk in the cut-off area and those with an awake member in reach
+   of a tribute are siege candidates with the Monolith-only limits (replaces 27's gate). chase returns false when it
+   can neither step nor hit. 49.0% vs main (582, ladder 51.4 with boss-battle 2/2, gen 48.6), out-of-fuel turns 2145
+   vs 1004 (EXPERIMENTS.md).

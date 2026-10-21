@@ -483,3 +483,12 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   max(walked, twice); Reach's ways tagged by turn and slot to match (Stellar at 3 tiles 200 -> 298). Strike bounded
   Reach on every tile asked (no REACH>STRIKE in 582 debug games). 47.1% vs main (582, ladder 52.9, gen 46.3),
   out-of-fuel turns 1219 vs 1016: worse, dropped.
+- w2-altar (2026-10-21; COORDINATION 1): an altar is usable for a bag when a tribute tile is walkable from spawn with
+  live camps as walls and the believed-awake camps' fire there over tribute_turns(bag) stays below the carrier's
+  health; bankable_bag replaces my_gems() where a bag decides to bank, and while none is usable for the team's largest
+  bag the groups sealing the altars are siege candidates (replacing CHANGES 27's gate). chase gives the turn back when
+  it can neither step nor hit. 49.0% vs main (582, ladder 51.4 with boss-battle 2/2, gen 48.6): level, kept.
+  Out-of-fuel turns 2145 vs 1004: +208 on rounds 1-2 (the first access build), ~800 on two maps
+  (gen-clusters-only-720708305, gen-huge-shared-720707817) where a carrier stood still with a bankable bag 10 steps from
+  an altar for 500 rounds and the farmer behind it spent 60-80k a turn in farm's step_towards/make_way retries. The
+  stuck carrier is on main too (a 1481-round 'B' run on gen-dense-camps-720708102).
