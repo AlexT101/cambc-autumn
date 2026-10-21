@@ -2126,17 +2126,19 @@ Prepared prepared_slot;
             };
             dead();
             total = top();
-            if (kept && shield_top > 0 && (escape || total > best_total)) {
-                sh = S.shield_at(p);
-                total = top();
-            }
-            ++priced;
-            t.exact = true;
             if (escape) {
                 t.esc = safety.escape_cost(p);
             } else {
                 debug_block({ t.esc = row.worst() + row.camp_worst * static_cast<float>(std::max(0, t.exit - 1)); });
             }
+            // The shield's worth only where it could decide the choice.
+            const bool open = escape ? t.esc < best_esc || (t.esc == best_esc && total > best_total) : total > best_total;
+            if (kept && shield_top > 0 && open) {
+                sh = S.shield_at(p);
+                total = top();
+            }
+            ++priced;
+            t.exact = true;
         } else {
             const bool far = dist(p, here) == 3;
             std::uint16_t hit_by = 0xffff, unseen_by = 0;
