@@ -2240,7 +2240,8 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
         }
         return *stand;
     };
-    if ((lethal && s().self_falls) || (visible_threat(world, safety, here) && s().lost)) return true;
+    // A fight cut short for fuel answers nothing: lethal alone sends us home then.
+    if ((lethal && s().self_falls) || (visible_threat(world, safety, here) && !s().cut && s().lost)) return true;
     // Healthy on our own ground, they have no reason to come for us.
     if (paying_soon(world) || (own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health())) return false;
     const bool linked = partner(world) != nullptr;
@@ -2275,7 +2276,7 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
     debug_block({
         if (stand) safety.debug_note_pursue(here);
     });
-    return t.lost || (linked && t.self_falls);
+    return !t.cut && (t.lost || (linked && t.self_falls));
 }
 
 // The first altar without an enemy lock that a tribute from p reaches, or -1.
