@@ -310,3 +310,10 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    memoised and shared by nodes with the same landings and foes alive, each dashed end's first mid in one pass,
    attack_viewers cached per tile by window row, our record read once, a landing reads only foes within its radius.
    Measured vs main: 51.5% (1094, ladder 54.3, gen 52.5, fresh 50.0); out-of-fuel turns 6139 vs 6545.
+42. 2026-10-21 (not yet submitted). Strike search phase 2: heal and shield as search options (strike-notes.md). A
+   leaf whose cast is unused is offered with the best heal from the start or end tile (min(amount, missing health,
+   cooldown x damage_bound at the ally), heal_ally's threshold) and with a shield priced as min(amount, duration x
+   damage_bound) at its end tile. `Planned::searched` (an exactly priced tile was carried out) makes decide skip its
+   post-plan heal and act() its end-of-turn heal and shield unless the goal walked or hit afterwards; decide's early
+   heal, shield and reset_may_kill/landing_ready gate run only on turns the search does not plan. 50.0% vs main (1094,
+   ladder 44.3, gen 52.0, fresh 48.8), 51.1% at 100M; out-of-fuel turns 7041 vs 6256.

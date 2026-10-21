@@ -1,9 +1,9 @@
 # Strike search: handoff notes
 
-Phase 1 (search core) is on main (52.6% vs main, kept). Phase 2 (heal and shield as options) is on
-`orch/strike-p2`, ported onto phase 1 as reworked. Spec: [STRIKE-SEARCH.md](STRIKE-SEARCH.md).
+Phase 1 (search core) is on main (52.6% vs main, kept), and so are phase 3a and phase 2 (heal and shield as
+options; 50.0% of 1094 vs main, 51.1% at 100M, out-of-fuel turns 7041 vs 6256). Spec: [STRIKE-SEARCH.md](STRIKE-SEARCH.md).
 
-## Phase 3a (branch `orch/strike-p3a`): Varg's splash in Reach and Strike
+## Phase 3a (on main): Varg's splash in Reach and Strike
 
 - **Rule** (cambc-rules.yaml `champions.varg`, `probe-varg-splash`): a basic attack also hits other enemy
   champions and camps within 1 of its target. An enemy Varg therefore reaches p through any unit beside p.
@@ -126,5 +126,5 @@ Phase 1 (search core) is on main (52.6% vs main, kept). Phase 2 (heal and shield
 
 ## Next
 
-Phase 2 A/B (hecate drafts HoR first, so the shield path is live; Willow and Varg only in variants). The open
-fuel step: meter grow's per-node work in Heart of Ruin fights. Phase 3a (Varg's splash, above): its A/B. Phase 4a takes retreat turns, and with them the last reset_may_kill/landing_ready use.
+Phase 2's out-of-fuel rise (+12.5% on the A/B) is unlocated. The open fuel step: meter grow's per-node work in
+Heart of Ruin fights. Phase 4a takes retreat turns, and with them the last reset_may_kill/landing_ready use.

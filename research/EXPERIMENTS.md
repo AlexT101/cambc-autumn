@@ -152,6 +152,13 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   unit beside it (our other visible champions, live camp members), with Strike +1 for Varg's basic attacks. 51.0% of
   1094 vs main (ladder 50.0, gen 50.6, fresh gen-s1 51.6), out-of-fuel turns 6551 vs 6471; at 100M 51.4% (ladder
   54.3, gen 49.8, fresh 52.5). Level; kept and merged on the keep rule (follows the rules, plays level).
+- Strike search phase 2 (2026-10-21, orch/strike-p2 ported as b76c8b4 on main f6fd561): heal and shield as search
+  options. A leaf with its cast unused is offered per end tile with the best heal (min(amount, missing health,
+  cooldown x damage_bound at the ally)) and with a shield priced once the tile's foes are priced; decide and act()
+  skip their own heal and shield on turns the search planned an exactly priced tile (decide's post-plan shield stays
+  for the goal's camp hit). 50.0% of 1094 vs main (ladder 44.3 of 70, gen 52.0, fresh gen-s1 48.8), out-of-fuel turns
+  7041 vs 6256 (+12.5%); at 100M 51.1% (ladder 54.3, gen 51.6, fresh 50.2). Level; kept and merged on the keep rule.
+  hecate drafts Heart of Ruin first, so only its shield path is live in this A/B (Willow and Varg only in test drafts).
 
 ### Fuel
 
