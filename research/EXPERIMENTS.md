@@ -541,6 +541,18 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   expected; out-of-fuel turns 6139 vs 6545 (-6%; ladder 589 vs 633, gen 2699 vs 2728, fresh 2851 vs 3184). The rest
   is the search's tail: searches start with 40-60k left after step_guard; a capped branch gave no real-budget gain
   and was dropped (strike-notes.md).
+- strike-fuel-2 (2026-10-21; landed as a850d48 on main afae02d): find_centres takes each point's 3x3 as a row mask
+  less the centres already added (same order) and clears the whole near table when over 8 points would each clear
+  around them. bench 16/16 identical at 100M on main 1264821 (total fuel -0.002%, p99 86736 -> 86620); big Ryth and
+  Stellar searches' centres 8.2k -> 7.6k. Measurement A/B vs afae02d: 50.2% of 1094 (ladder 48.6, gen 50.0, fresh
+  gen-s1 50.6), level; out-of-fuel turns 6900 vs 6865 (ladder 589 vs 609, gen 2898 vs 2917, fresh 3413 vs 3339):
+  no real-budget gain. Profile (12 worst-map games at 100M): Heart of Ruin searches over 25k average 41k (read 10k,
+  grow 20k, price 10k), but ~70k (p90 115k) is spent before the search: world 10k, decide start 12k, want_home 9.5k,
+  step_guard 37k (fights 17k at ~10.7k a new fight, Reach exposure 9.5k, fight keys 1.8k). Tried, no gain, dropped:
+  per-turn landing classes (regroups 3.6k -> 4.1k: the cost is each cell's first land_foes/land_touch), a heap for
+  the price loop's selection (its cost is the strike-share order, ~500 an iteration, plus Reach queries at ~500-700
+  on tiles step_guard never asked about). Left: step_guard's fight simulations and the read's per-foe loop (2.9k mean,
+  4-6k on big searches; 1-2.7k of it attack_viewers on uncached tiles).
 - w2-trapped (2026-10-21; WORLD-MODEL 1): Safety::trapped(p, h), every exit next turn (stay, step, a landing if our
   dash stays ready) taking the visible enemies' strike at p before our next turn plus their next strike at the exit,
   closer by their moves, plus camps, >= h (Chebyshev only); a want_home trigger, and step_guard guards trapped tiles.

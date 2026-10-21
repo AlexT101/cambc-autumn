@@ -328,3 +328,7 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    damage or landing slots beats strength.growth x attacks, falling back to the old per-cooldown formula until both
    counts are non-zero; best_emblem finishes any begun Jungle/Power (either stat) or Durability emblem first; prices()
    keys on main_stat. 56.4% vs main (1094, ladder 65.7, gen 54.7, fresh 56.8); out-of-fuel turns 9427 vs 8471.
+45. 2026-10-21 (not yet submitted). Strike search fuel 2, same choices (bench 16/16 identical at 100M): find_centres
+   takes each point's 3x3 as a row mask less the centres already added, and clears the whole near table when over 8
+   points would clear around themselves. Measured vs main: 50.2% (1094, ladder 48.6, gen 50.0, fresh 50.6); out-of-fuel
+   turns 6900 vs 6865 (level).
