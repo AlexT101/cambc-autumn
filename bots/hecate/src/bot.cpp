@@ -3208,6 +3208,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // (probe-ward-sight). Growing clusters here would starve the search: the turn end grows them.
     if (place_ward(world, memory, false)) {
         world.observe();
+        pathing.invalidate();
         // Safety's beliefs are fixed for its life: what we see changed, so it starts again.
         std::destroy_at(&safety);
         std::construct_at(&safety, world);
