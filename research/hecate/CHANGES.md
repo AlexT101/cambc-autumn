@@ -342,3 +342,9 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    tile (claimed group's centre, else the waited-at altar) than the warded cluster has. Fewer wards, longer-lived
    (median 21 -> 33 rounds on 6 games). 50.6% vs main (1094, ladder 51.4, gen 50.0, fresh 51.2); out-of-fuel turns
    10638 vs 10472.
+48. 2026-10-21 (not yet submitted). Bounded fight simulation (safety.cpp): fights play 2 * ability_cooldown + 1 = 17
+   own turns instead of 24 (each ready slot cast on turns 0, 8 and 16), and end early, exactly, once our fighter must
+   outlive the rest of the horizon (every enemy attack and ready cast, camps, Ren reflection) or once we cannot fell
+   any of theirs and their basic attacks alone beat our health, shields and heals; step_guard's fights go through the
+   same checks. 5.8% of fight verdicts flip lost -> not lost (fights first lost on their turns 18-24); decide -6.7% at
+   100M. 49.8% vs main (1094, ladder 50.0, gen 49.4, fresh 50.2), 50.6% at 100M; out-of-fuel turns 10543 vs 11337.
