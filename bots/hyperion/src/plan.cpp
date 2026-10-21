@@ -1563,6 +1563,7 @@ void Search::exhaust(const Node& s) {
 } // namespace
 
 bool strike_possible(const World& world) {
+    Phase phase{"strike_possible"};
     const auto& self = world.me();
     if (!self.alive || !enemy_seen(world)) return false;
     const auto& f = self.facts();
@@ -2004,6 +2005,7 @@ bool strike_possible(const World& world) {
 }
 
 [[gnu::flatten]] void strike_after(const World& world, Safety& safety) {
+    Phase phase{"strike_after"};
     if (!world.me().alive || world.is_stale()) return;
     const auto state = my_state();
     if (state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::recalling)
@@ -2040,6 +2042,7 @@ bool strike_possible(const World& world) {
 }
 
 [[gnu::flatten]] bool strike_enemy(const World& world) {
+    Phase phase{"strike_enemy"};
     if (!world.me().alive || !my_can_attack()) return false;
     Board b;
     const auto& f = world.me().facts();

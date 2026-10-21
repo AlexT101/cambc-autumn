@@ -88,10 +88,12 @@ py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # ide
 py tools/fuel/bench.py run hyperion --fuel 0 --out replays/fuel/real.json # the real budget: counts shortcuts and lost turns
 py tools/fuel/oof.py replays/batch-A replays/batch-B replays/batch-C       # out-of-fuel turns per bot in run_batched.py batches
 py tools/fuel/oof_phases.py replays/batch-A replays/fuel/games/real        # the same turns by Phase path (batches, bundle dirs or bundles)
+py tools/fuel/oof_costs.py replays/batch-A --by-champion                  # what spent those turns' fuel, and that of turns over 60k
 ```
 
 - hyperion prints `SHORTCUT round champion what` wherever fuel made it choose worse (`note_shortcut` in util.h), and `OOF round phase` for each turn that ran out. Both are inside `debug_block`.
-- With `debug_phases` on in util.h, the OOF line ends `path=decide/chase/prey`, the `Phase` scopes it ran out in. Phases cost ~1% fuel in local builds, so games change while it is on; off, the build is byte-identical.
+- With `debug_phases` on in util.h, the OOF line ends `path=decide/chase/prey`, the `Phase` scopes it ran out in. Phases cost about 1k fuel a turn in local builds (+2.7% on the bench at 100M fuel, identical games), so games change while it is on; off, the build is byte-identical.
+- `debug_phases` also prints, for a turn that ran out, `OOFCOST round champion total=N phases=N path=inclusive[/self] ...` (paths 3 deep, entries from 1000 fuel) and `OOFSELF ...` (self fuel by Phase name at any depth). With `debug_big_turns` on as well, a turn that spent over 60k without running out prints the same as `BIGTURN ...` (entries from 2000). Those are many: turn off the SRCH (plan.cpp `debug_search`), SLOT and D lines in that copy, or a team's stdout reaches its 1 MiB cap. `oof_costs.py` gives each path's mean and p90 fuel and its share of the turn, per champion with `--by-champion`.
 - The bench's 16 games swing by about ±20 out-of-fuel turns and include no shared-gem map, where a third of them happen. Judge out-of-fuel turns on a full A/B with `oof.py`.
 - Set `debug_fuel` in util.h for per-phase costs (`FuelMeter`, ~170 fuel per meter).
 

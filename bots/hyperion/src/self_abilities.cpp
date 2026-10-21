@@ -241,6 +241,7 @@ bool camp_in_reach(const World& world, vec2 p, int range) {
 }
 
 bool reset_and_attack_camp(const World& world, int group) {
+    Phase phase{"reset_and_attack_camp"};
     auto& me = cambc::self();
     const auto& f = world.me().facts();
     if (!f.has_attack_reset() || my_can_attack()) return false;
@@ -286,6 +287,7 @@ bool dash_towards(const World& world, Pathing& pathing, const Field& field) {
 }
 
 bool dash_across(const World& world, Pathing& pathing, const Field& field) {
+    Phase phase{"dash_across"};
     if (!world.me().facts().has_dash() || !any_within(world.map().crossable, my_position(), 1)) return false;
     const auto dash = ready(world, AbilityKind::dash);
     const vec2 here = my_position();
@@ -304,6 +306,7 @@ bool dash_across(const World& world, Pathing& pathing, const Field& field) {
 }
 
 bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps) {
+    Phase phase{"dash_towards"};
     static int paused_until = -1;
     if (world.round < paused_until) return false;
     // Most champions have no dash: check before anything costly.

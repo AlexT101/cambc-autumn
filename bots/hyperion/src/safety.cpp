@@ -1492,6 +1492,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
 }
 
 [[gnu::noinline]] void Safety::find_members() {
+    Phase phase{"find_members"};
     members_known_ = true;
     int count = 0;
     // Each monster attacks the nearest champion within range, ties to the one acting first in
@@ -1630,6 +1631,7 @@ void Safety::invalidate() {
 }
 
 void Safety::refresh() {
+    Phase phase{"safety_refresh"};
     refresh_ = true;
     gone_.fill(0);
     build_cost_ = 0;
@@ -1740,6 +1742,7 @@ void Safety::build() {
 }
 
 [[gnu::noinline]] void Safety::build_threats(std::uint32_t which) {
+    Phase phase{"build_threats"};
     FuelMeter meter{"safety"};
     // One per enemy, reused between builds: a new field allocates and clears ~13k bytes.
     static std::vector<std::unique_ptr<cambc::distance_field>> fields;
@@ -2071,6 +2074,7 @@ void Safety::drop_fights(std::uint32_t enemies) {
 }
 
 Trade Safety::fight(vec2 p) {
+    Phase phase{"fight"};
     world_.throw_if_stale();
     const auto key = fight_key(p);
     return key == no_fight ? Trade{} : fight_of(key);
@@ -2206,6 +2210,7 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
 }
 
 bool Safety::lethal(vec2 p) {
+    Phase phase{"lethal"};
     const float health = world_.me().health;
     // Most turns no enemy is near enough; skip the threat build then.
     const bool was_built = built_;

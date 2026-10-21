@@ -411,6 +411,7 @@ bool cast_at_enemies(const World& world, float walk) {
 }
 
 bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value) {
+    Phase phase{"cast_at_camp"};
     world.throw_if_stale();
     try {
         const bool cast = camp_cast(world, group, attackers_only, any_value).execute();

@@ -35,6 +35,7 @@ void Pathing::begin_turn() {
 
 const Field& Pathing::cached(Slot& slot, const bitboard& goals) {
     if (!slot) {
+        Phase phase{"field"};
         FuelMeter meter{"field"};
         // Fill the slot only once computed, so a failure leaves it empty to retry.
         slot = std::make_unique<Field>(make_field(static_walls(), goals));
@@ -151,6 +152,7 @@ const Field* Pathing::approach(int group, int range) {
 // Searched out to our tile only: it costs by our distance rather than the map's, and every tile of
 // a walk down it is labelled, so it lasts the whole way unless we leave it or a camp dies or returns.
 const Field* Pathing::search_approach(int group, int range, int steps) {
+    Phase phase{"search_approach"};
     const auto& s = map();
     const vec2 me = my_pos();
     const int layers = steps >= 0 ? steps + max_detour : s.width + s.height;
@@ -365,6 +367,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
 }
 
 [[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through) {
+    Phase phase{"route"};
     world_.throw_if_stale();
     Route r;
     route_exhausted_ = false;

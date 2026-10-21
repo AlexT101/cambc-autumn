@@ -5,7 +5,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
+#include <cstring>
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -26,10 +28,14 @@ inline constexpr bool debug_beliefs = false;
 inline constexpr int debug_beliefs_period = 10;
 // Fight-model calibration: an "FF" stdout line per turn in reach of an enemy, "FC" per chase.
 inline constexpr bool debug_fights = false;
-// Each out-of-fuel turn's OOF line (main.cpp) gets the Phases it ran out in, as path=decide/chase/prey.
-// Local builds only. A Phase's exception cleanup costs fuel outside debug_block (~1%), so games
-// change while this is on.
+// Each out-of-fuel turn's OOF line (main.cpp) gets the Phases it ran out in, as path=decide/chase/prey,
+// and a turn that runs out prints what each Phase spent (OOFCOST, OOFSELF). Local builds only. Phases
+// cost fuel outside debug_block (calls and exception cleanups, ~1k a turn: +2.7% on the fuel bench),
+// so games change while this is on.
 inline constexpr bool debug_phases = false;
+// With debug_phases, a BIGTURN line for each turn over 60k that did not run out. They are many: turn
+// off the SRCH (plan.cpp debug_search), SLOT and D lines too, or a team's stdout reaches its 1 MiB cap.
+inline constexpr bool debug_big_turns = false;
 
 // A choice made worse to save fuel: one "SHORTCUT round champion what" stdout line. debug_block
 // spends no fuel in local (non-release) builds and is compiled out of release ones.
@@ -353,19 +359,58 @@ inline std::uint32_t round_now() {
     return round;
 }
 
-// The Phases running, outermost first. Read and written only inside debug_block.
+// What each Phase spent this turn (debug_phases), on stdout:
+// - "OOFCOST round champion total=N phases=N path=inclusive[/self] ..." for a turn that ran out of
+//   fuel, and the same as BIGTURN for one that spent over big_turn_fuel. Paths go cost_depth deep;
+//   self, the part outside inner Phases, is printed where it differs from inclusive.
+// - "OOFSELF round champion total=N name=self ...": an out-of-fuel turn's self fuel by Phase name, at any depth.
+// Entries under cost_floor (big_turn_floor on BIGTURN lines, which are many) are left out: the team's
+// stdout is capped at 1 MiB. phases= counts Phase entries, each of which costs fuel.
+inline constexpr int cost_depth = 3;
+inline constexpr std::uint64_t cost_floor = 1000;
+inline constexpr std::uint64_t big_turn_floor = 2000;
+inline constexpr std::uint64_t big_turn_fuel = 60000;
+// A turn resumed after running out of fuel goes on with a fresh budget.
+inline constexpr std::uint64_t turn_budget = 100000;
+
+struct PhaseCost {
+    std::array<const char*, cost_depth> names;
+    int depth;
+    std::uint64_t inclusive, self;
+};
+
+struct NamedCost {
+    const char* name;
+    std::uint64_t self;
+};
+
+// The Phases running, outermost first, and the turn's costs. Read and written only inside debug_block.
 struct PhaseStack {
     static constexpr int capacity = 24;
+    static constexpr int max_costs = 160;
     std::array<const char*, capacity> names{};
+    // Fuel left as each was entered, and what its finished inner Phases spent.
+    std::array<std::uint64_t, capacity> entered{}, inner{};
     int depth = 0;
     std::uint32_t turn_round = 0;
-    bool resumed = false;
+    bool resumed = false; // ran out of fuel since begin_phase_turn
+    std::uint64_t turn_fuel = 0;
+    std::uint32_t entries = 0;
+    std::array<PhaseCost, max_costs> costs{};
+    int cost_count = 0;
+    std::array<NamedCost, max_costs> named{};
+    int named_count = 0;
     std::array<char, 320> path{};
 };
 
 inline PhaseStack& phase_stack() {
     static PhaseStack s;
     return s;
+}
+
+inline void reset_phase_costs(PhaseStack& s) {
+    s.cost_count = s.named_count = 0;
+    s.entries = 0;
 }
 
 // "decide/chase/prey", or "-" outside every Phase.
@@ -380,18 +425,116 @@ inline void write_phase_path(PhaseStack& s) {
     s.path[n] = 0;
 }
 
+inline void add_phase_cost(PhaseStack& s, int level, std::uint64_t inclusive, std::uint64_t self) {
+    for (int i = 0; i < s.cost_count; ++i) {
+        auto& c = s.costs[i];
+        bool same = c.depth == level + 1;
+        for (int k = 0; k <= level && same; ++k) same = std::strcmp(c.names[k], s.names[k]) == 0;
+        if (same) {
+            c.inclusive += inclusive;
+            c.self += self;
+            return;
+        }
+    }
+    if (s.cost_count == PhaseStack::max_costs) return;
+    auto& c = s.costs[s.cost_count++];
+    for (int k = 0; k <= level; ++k) c.names[k] = s.names[k];
+    c.depth = level + 1;
+    c.inclusive = inclusive;
+    c.self = self;
+}
+
+inline void add_named_cost(PhaseStack& s, const char* name, std::uint64_t self) {
+    for (int i = 0; i < s.named_count; ++i)
+        if (std::strcmp(s.named[i].name, name) == 0) {
+            s.named[i].self += self;
+            return;
+        }
+    if (s.named_count < PhaseStack::max_costs) s.named[s.named_count++] = {name, self};
+}
+
+// Ends the Phase at `level` (0 outermost) with `left` fuel remaining.
+inline void close_phase(PhaseStack& s, int level, std::uint64_t left) {
+    if (level >= PhaseStack::capacity) return;
+    const std::uint64_t inclusive = s.entered[level] > left ? s.entered[level] - left : 0;
+    const std::uint64_t self = inclusive > s.inner[level] ? inclusive - s.inner[level] : 0;
+    if (level < cost_depth) add_phase_cost(s, level, inclusive, self);
+    add_named_cost(s, s.names[level], self);
+    if (level > 0) s.inner[level - 1] += inclusive;
+}
+
+// Appends `text`, its spaces as underscores.
+inline void put_phase_text(std::array<char, 8192>& line, std::size_t& n, const char* text) {
+    for (; *text && n + 1 < line.size(); ++text) line[n++] = *text == ' ' ? '_' : *text;
+}
+
+inline void report_phase_costs(const PhaseStack& s, const char* tag, std::uint64_t spent, std::uint64_t floor) {
+    if (cambc::is_draft()) return;
+    static const std::string champion = cambc::to_string(cambc::self().champion_name());
+    static std::array<char, 8192> line;
+    std::size_t n = 0;
+    char number[48];
+    for (int i = 0; i < s.cost_count; ++i) {
+        const auto& c = s.costs[i];
+        if (c.inclusive < floor) continue;
+        if (n + 1 < line.size()) line[n++] = ' ';
+        for (int k = 0; k < c.depth; ++k) {
+            if (k && n + 1 < line.size()) line[n++] = '/';
+            put_phase_text(line, n, c.names[k]);
+        }
+        if (c.self != c.inclusive)
+            std::snprintf(number, sizeof number, "=%llu/%llu", static_cast<unsigned long long>(c.inclusive), static_cast<unsigned long long>(c.self));
+        else
+            std::snprintf(number, sizeof number, "=%llu", static_cast<unsigned long long>(c.inclusive));
+        put_phase_text(line, n, number);
+    }
+    line[n] = 0;
+    std::printf("%s %u %s total=%llu phases=%u%s\n", tag, s.turn_round, champion.c_str(), static_cast<unsigned long long>(spent),
+                s.entries, line.data());
+}
+
+inline void report_named_costs(const PhaseStack& s, std::uint64_t spent) {
+    if (cambc::is_draft()) return;
+    static const std::string champion = cambc::to_string(cambc::self().champion_name());
+    static std::array<char, 8192> line;
+    std::size_t n = 0;
+    char number[32];
+    for (int i = 0; i < s.named_count; ++i) {
+        if (s.named[i].self < cost_floor) continue;
+        if (n + 1 < line.size()) line[n++] = ' ';
+        put_phase_text(line, n, s.named[i].name);
+        std::snprintf(number, sizeof number, "=%llu", static_cast<unsigned long long>(s.named[i].self));
+        put_phase_text(line, n, number);
+    }
+    line[n] = 0;
+    std::printf("OOFSELF %u %s total=%llu%s\n", s.turn_round, champion.c_str(), static_cast<unsigned long long>(spent), line.data());
+}
+
 // The first change to the stack after the turn resumed in a later round sees it as it was when the
-// fuel ran out.
+// fuel ran out: the turn's costs are reported, and the rest of it counts towards the new round.
 inline void note_phase_resumed(PhaseStack& s) {
-    if (!s.resumed && round_now() != s.turn_round) s.resumed = true, write_phase_path(s);
+    const auto now = round_now();
+    if (now == s.turn_round) return;
+    if (!s.resumed) s.resumed = true, write_phase_path(s);
+    // The innermost Phase spent what was left.
+    const int open = std::min(s.depth, PhaseStack::capacity);
+    for (int i = open - 1; i >= 0; --i) close_phase(s, i, 0);
+    report_phase_costs(s, "OOFCOST", s.turn_fuel, cost_floor);
+    report_named_costs(s, s.turn_fuel);
+    // Since resuming, the stack has not changed: the innermost Phase spent all of it.
+    s.turn_round = now;
+    s.turn_fuel = turn_budget;
+    reset_phase_costs(s);
+    for (int i = 0; i < open; ++i) s.entered[i] = turn_budget, s.inner[i] = 0;
 }
 
 [[gnu::noinline]] inline void enter_phase(const char* name) noexcept {
     debug_block({
         auto& s = phase_stack();
         note_phase_resumed(s);
-        if (s.depth < PhaseStack::capacity) s.names[s.depth] = name;
+        if (s.depth < PhaseStack::capacity) s.names[s.depth] = name, s.entered[s.depth] = fuel(), s.inner[s.depth] = 0;
         ++s.depth;
+        ++s.entries;
     });
 }
 
@@ -399,7 +542,7 @@ inline void note_phase_resumed(PhaseStack& s) {
     debug_block({
         auto& s = phase_stack();
         note_phase_resumed(s);
-        --s.depth;
+        if (s.depth > 0) close_phase(s, --s.depth, fuel());
     });
 }
 
@@ -407,7 +550,13 @@ inline void note_phase_resumed(PhaseStack& s) {
     debug_block({
         auto& s = phase_stack();
         note_phase_resumed(s);
-        if (s.depth > 0 && s.depth <= PhaseStack::capacity) s.names[s.depth - 1] = name;
+        if (s.depth > 0 && s.depth <= PhaseStack::capacity) {
+            const int level = s.depth - 1;
+            const auto left = fuel();
+            close_phase(s, level, left);
+            s.names[level] = name, s.entered[level] = left, s.inner[level] = 0;
+            ++s.entries;
+        }
     });
 }
 
@@ -415,6 +564,11 @@ inline void begin_phase_turn(std::uint32_t round) {
     if constexpr (debug_phases) {
         debug_block({
             auto& s = phase_stack();
+            // After running out of fuel, the turn goes on in this round with its costs so far.
+            if (!s.resumed || s.turn_round != round) {
+                s.turn_fuel = fuel();
+                reset_phase_costs(s);
+            }
             s.turn_round = round;
             s.resumed = false;
             s.depth = 0;
@@ -422,9 +576,21 @@ inline void begin_phase_turn(std::uint32_t round) {
     }
 }
 
+// Before ending a turn that did not run out of fuel.
+inline void end_phase_turn() {
+    if constexpr (debug_phases && debug_big_turns) {
+        debug_block({
+            const auto& s = phase_stack();
+            const auto left = fuel();
+            if (const auto spent = s.turn_fuel > left ? s.turn_fuel - left : 0; spent > big_turn_fuel) report_phase_costs(s, "BIGTURN", spent, big_turn_floor);
+        });
+    }
+}
+
 // Inside debug_block: the Phases the turn ran out of fuel in.
 inline const char* out_of_fuel_path() {
     auto& s = phase_stack();
+    note_phase_resumed(s);
     if (!s.resumed) write_phase_path(s);
     return s.path.data();
 }

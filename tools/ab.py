@@ -162,7 +162,7 @@ def main():
     parser.add_argument("--fuel", type=int, help="Fuel per turn, passed to run_batched.py --fuel")
     parser.add_argument("--phases", action="store_true",
                         help="Switch debug_phases on in materialised copies that have it, for tools/fuel/oof_phases.py; "
-                        "it costs those copies ~1%% fuel")
+                        "it costs those copies ~1k fuel a turn")
     args = parser.parse_args()
     started = perf_counter()
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
