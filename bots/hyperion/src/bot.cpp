@@ -2353,15 +2353,21 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         }
         return best;
     };
+    // With neither a walk nor a basic attack left, chase only resets and casts where we stand: the
+    // fight at an attack tile is moot, and an enemy in their reach is the target.
+    if (n > 0 && !my_can_move() && !my_can_attack()) {
+        debug_block({
+            ++sim_stats().p4_calls;
+            ++sim_stats().p4_moot;
+        });
+        for (int i = 0; i < n; ++i)
+            if (dist(here, order[i].second->pos) <= std::max(range, ability_range)) return order[i].second;
+        return nullptr;
+    }
     // The prey stays in the key: a melee one cannot reach a ranged attack tile.
     constexpr int max_fights = 3;
-    bool moot = false;
     debug_block({
-        if (n > 0) {
-            ++sim_stats().p4_calls;
-            moot = !my_can_move() && !my_can_attack();
-            sim_stats().p4_moot += moot;
-        }
+        if (n > 0) ++sim_stats().p4_calls;
     });
     SimTag tag{SimCaller::prey, linked ? SimNeed::falls : SimNeed::lost};
     for (int i = 0, fights = 0; i < n && fights < max_fights; ++i) {
@@ -2371,10 +2377,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         ++fights;
         const auto t = safety.engage(*at, {.with_enemy = e.index});
         const bool won = !t.lost && !(linked && t.self_falls);
-        debug_block({
-            sim_stats().p4_moot_asks += moot;
-            safety.debug_note_prey(*at, e.index, won);
-        });
+        debug_block({ safety.debug_note_prey(*at, e.index, won); });
         if constexpr (debug_verdicts) {
             if (const auto old = safety.engage(e.pos, {}); won != (!old.lost && !(linked && old.self_falls))) {
                 debug_block({

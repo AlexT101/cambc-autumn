@@ -1569,7 +1569,7 @@ Safety::~Safety() {
         if (s.p1a_would) put(" p1a=%d/%d", s.p1a_would, s.p1a_flip);
         if (s.p1b_asks) put(" p1b=%d/%d", s.p1b_asks, s.p1b_clean);
         if (s.p2_asks) put(" p2=%d/%d/%d/%d", s.p2_asks, s.p2_would, s.p2_flip, s.p2_unknown);
-        if (s.p4_calls) put(" p4=%d/%d/%d", s.p4_calls, s.p4_moot, s.p4_moot_asks);
+        if (s.p4_calls) put(" p4=%d/%d", s.p4_calls, s.p4_moot);
         if (s.need_sims[0] | s.need_sims[1] | s.need_sims[2])
             put(" need=%d/%d/%d/%d/%d/%d", s.need_sims[0], s.need_after_fall[0], s.need_sims[1], s.need_after_fall[1], s.need_sims[2],
                 s.need_after_fall[2]);

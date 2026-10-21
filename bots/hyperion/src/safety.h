@@ -263,11 +263,11 @@ struct SimStats {
     // Would-settle counts (W2 fuel fix): pursue keys a clean stand settled, and how often the sim
     // disagreed; a stand with the pursuers added asked on want_home's pursue, and clean;
     // prey asks, those its start tile's exposure rule would settle, those whose sim lost anyway,
-    // and those whose start row was not known; prey() calls with candidates, those with neither
-    // walk nor attack left, and their asks.
+    // and those whose start row was not known; prey() calls with candidates, and those with neither
+    // walk nor attack left (no fight asked).
     int p1a_would = 0, p1a_flip = 0, p1b_asks = 0, p1b_clean = 0;
     int p2_asks = 0, p2_would = 0, p2_flip = 0, p2_unknown = 0;
-    int p4_calls = 0, p4_moot = 0, p4_moot_asks = 0;
+    int p4_calls = 0, p4_moot = 0;
     // By SimNeed: stand and pursue sims, and their act() calls after our fighter fell.
     std::array<int, 3> need_sims{}, need_after_fall{};
 };
