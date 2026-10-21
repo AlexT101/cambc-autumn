@@ -30,8 +30,8 @@ Move up to 2 steps, including diagonals.
 
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
-| Health | 900 | 100 |
-| Strength | 50 | 5 |
+| Health | 1000 | 100 |
+| Strength | 55 | 5 |
 | Focus | 100 | 10 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.

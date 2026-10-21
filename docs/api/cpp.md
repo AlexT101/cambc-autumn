@@ -33,7 +33,7 @@ Start with [Getting Started](../guides/cpp/first-bot.md). Other languages: [Rust
 - [cambc::consumable_info](#cambc-consumable-info) (1)
 - [cambc::consumable_type](#cambc-consumable-type) (9)
 - [cambc::debug](#cambc-debug) (2)
-- [cambc::distance_field](#cambc-distance-field) (26)
+- [cambc::distance_field](#cambc-distance-field) (28)
 - [cambc::draft](#cambc-draft) (3)
 - [cambc::draft_memory_buffer](#cambc-draft-memory-buffer) (12)
 - [cambc::enum_map](#cambc-enum-map) (10)
@@ -3835,6 +3835,39 @@ Compute distances and return the number of expansion steps.
 - `roots`: Tiles at distance zero.
 - `visited`: Receives the tiles the search reached.
 - `max_distance`: Tiles farther than this are left unreached.
+
+### copy_from
+
+```cpp
+void copy_from(const distance_field& source, const bitboard& mask)
+```
+
+Copy only tiles selected by mask, preserving every unselected value in this field. Mask padding is ignored. Reuses this field's storage; self-copy is a no-op.
+
+- `source`: Field to copy from.
+- `mask`: Tiles to copy.
+
+*Example: Update selected tiles while preserving the rest of an existing distance field.*
+
+```cpp
+destination.copy_from(source, mask);
+```
+
+### copy_from
+
+```cpp
+void copy_from(const distance_field& source)
+```
+
+Copy all distances from source into this field, reusing its storage. Self-copy is a no-op.
+
+- `source`: Field to copy from.
+
+*Example: Replace an existing distance field while reusing its storage.*
+
+```cpp
+destination.copy_from(source);
+```
 
 ### distance_field
 

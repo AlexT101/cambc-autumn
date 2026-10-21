@@ -28,9 +28,9 @@
 
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
-| Health | 750 | 75 |
+| Health | 650 | 65 |
 | Strength | 30 | 3.5 |
-| Focus | 85 | 9 |
+| Focus | 70 | 7 |
 
 Attack type: Ranged. Basic attack range: 3 tiles.
 

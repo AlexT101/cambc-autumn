@@ -20,7 +20,7 @@ Grants a 1.5 × Focus shield lasting five turns.
 
 ### Slot 1: Dash
 
-Dash to a destination within 2 tiles. Does 1.75 × Focus to the surrounding tiles on arrival and stuns enemies/camps hit. Hits within a Chebyshev radius of 1, including diagonals; stun lasts one turn. Damage is increased by the missing-health passive.
+Dash to a destination within 2 tiles. Does 1.5 × Focus to the surrounding tiles on arrival and stuns enemies/camps hit. Hits within a Chebyshev radius of 1, including diagonals; stun lasts one turn. Damage is increased by the missing-health passive.
 
 - **Target / range:** Ground · 2 tiles
 - **Walking:** Compatible
@@ -31,7 +31,7 @@ Dash to a destination within 2 tiles. Does 1.75 × Focus to the surrounding tile
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
 | Health | 1000 | 100 |
-| Strength | 40 | 4 |
+| Strength | 30 | 3.5 |
 | Focus | 100 | 12 |
 
 Attack type: Melee. Basic attack range: 1 tiles.

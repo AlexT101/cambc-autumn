@@ -5375,6 +5375,25 @@ Inputs:
 let result = Distance_field.copy value1
 ```
 
+### copy_from
+
+```ocaml
+val copy_from : ?mask:Bitboard.t -> t -> t -> unit
+```
+
+`copy_from destination source` copies every distance into existing storage. With `~mask`, only selected tiles are copied; all unselected destination values are preserved and mask padding is ignored. Self-copy is a no-op. @param mask Tiles to copy; omit to copy the entire field. @param destination Field to update. @param source Field to copy from.
+
+Update selected tiles while preserving the rest of an existing distance field.
+
+Inputs:
+- destination: existing distance field to update
+- source: distance field to copy from
+- mask: bitboard selecting the tiles to copy
+
+```ocaml
+Distance_field.copy_from ~mask destination source
+```
+
 ### create
 
 ```ocaml

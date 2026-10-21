@@ -25,7 +25,7 @@ Start with [Getting Started](../guides/python/first-bot.md). Other languages: [C
 - [cambc.Consumable](#cambc-consumable) (7)
 - [cambc.ConsumableType](#cambc-consumabletype) (6)
 - [cambc.debug](#cambc-debug) (2)
-- [cambc.DistanceField](#cambc-distancefield) (22)
+- [cambc.DistanceField](#cambc-distancefield) (23)
 - [cambc.draft](#cambc-draft) (3)
 - [cambc.DraftMemoryBuffer](#cambc-draftmemorybuffer) (7)
 - [cambc.Error](#cambc-error) (2)
@@ -2580,6 +2580,20 @@ def copy(self) -> DistanceField
 ```
 
 Return an independent copy.
+
+### copy_from
+
+```python
+def copy_from(self, source: DistanceField, mask: Optional[Bitboard] = None) -> None
+```
+
+Copy into this field, reusing its storage. Self-copy is a no-op. Without a mask, copy every value. With a mask, copy only selected tiles; all unselected destination values are preserved and mask padding is ignored. Args: source: Field to copy from. mask: Tiles to copy, or None to copy the whole field.
+
+*Example: Update selected tiles while preserving the rest of an existing distance field.*
+
+```python
+destination.copy_from(source, mask=mask)
+```
 
 ### export_linear_buffer
 

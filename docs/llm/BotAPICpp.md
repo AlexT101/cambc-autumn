@@ -6692,6 +6692,43 @@ Inputs:
 auto result = subject.compute_with_expansion_count(walls, roots, visited, max_distance);
 ```
 
+### copy_from
+
+```cpp
+void copy_from(const distance_field& source, const bitboard& mask)
+```
+
+Copy only tiles selected by mask, preserving every unselected value in this field. Mask padding is ignored. Reuses this field's storage; self-copy is a no-op. @param source Field to copy from. @param mask Tiles to copy.
+
+Update selected tiles while preserving the rest of an existing distance field.
+
+Inputs:
+- destination: existing distance field to update
+- source: distance field to copy from
+- mask: bitboard selecting the tiles to copy
+
+```cpp
+destination.copy_from(source, mask);
+```
+
+### copy_from
+
+```cpp
+void copy_from(const distance_field& source)
+```
+
+Copy all distances from source into this field, reusing its storage. Self-copy is a no-op. @param source Field to copy from.
+
+Replace an existing distance field while reusing its storage.
+
+Inputs:
+- destination: existing distance field to update
+- source: distance field to copy from
+
+```cpp
+destination.copy_from(source);
+```
+
 ### distance_field
 
 ```cpp

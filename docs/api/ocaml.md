@@ -28,7 +28,7 @@ Start with [Getting Started](../guides/ocaml/first-bot.md). Other languages: [C+
 - [Cambc.Consumable](#cambc-consumable) (7)
 - [Cambc.Consumable_counts](#cambc-consumable-counts) (5)
 - [Cambc.Debug](#cambc-debug) (2)
-- [Cambc.Distance_field](#cambc-distance-field) (21)
+- [Cambc.Distance_field](#cambc-distance-field) (22)
 - [Cambc.Draft](#cambc-draft) (3)
 - [Cambc.Draft_memory](#cambc-draft-memory) (4)
 - [Cambc.Error_code](#cambc-error-code) (3)
@@ -3304,6 +3304,24 @@ val copy : t -> t
 `copy d` is an independent copy.
 
 - `d`: Distance field.
+
+### copy_from
+
+```ocaml
+val copy_from : ?mask:Bitboard.t -> t -> t -> unit
+```
+
+`copy_from destination source` copies every distance into existing storage. With `~mask`, only selected tiles are copied; all unselected destination values are preserved and mask padding is ignored. Self-copy is a no-op.
+
+- `mask`: Tiles to copy; omit to copy the entire field.
+- `destination`: Field to update.
+- `source`: Field to copy from.
+
+*Example: Update selected tiles while preserving the rest of an existing distance field.*
+
+```ocaml
+Distance_field.copy_from ~mask destination source
+```
 
 ### create
 

@@ -30,7 +30,7 @@ Move up to 2 steps, including diagonals.
 
 | Stat | Base | Growth per matching shard |
 | --- | --- | --- |
-| Health | 800 | 100 |
+| Health | 1000 | 100 |
 | Strength | 70 | 6 |
 | Focus | 100 | 10 |
 

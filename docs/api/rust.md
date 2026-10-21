@@ -25,7 +25,7 @@ Start with [Getting Started](../guides/rust/first-bot.md). Other languages: [C++
 - [cambc::Consumables](#cambc-consumables) (1)
 - [cambc::ConsumableType](#cambc-consumabletype) (3)
 - [cambc::debug](#cambc-debug) (2)
-- [cambc::DistanceField](#cambc-distancefield) (20)
+- [cambc::DistanceField](#cambc-distancefield) (22)
 - [cambc::draft](#cambc-draft) (3)
 - [cambc::DraftMemory](#cambc-draftmemory) (4)
 - [cambc::Error](#cambc-error) (2)
@@ -2781,6 +2781,34 @@ pub fn compute_with_expansion_count( &mut self, walls: &Bitboard, roots: &Bitboa
 ```
 
 Compute distances and return the host expansion count, writing this field and `visited`. # Arguments * `walls` - Impassable tiles. * `roots` - Tiles at distance zero. * `visited` - Receives the tiles the search reached. * `max_distance` - Tiles farther than this are left unreached.
+
+### copy_from
+
+```rust
+pub fn copy_from(&mut self, source: &Self) -> Result<()>
+```
+
+Copy every distance from `source` into this field, reusing its storage. # Arguments * `source` - Field to copy from.
+
+*Example: Replace an existing distance field while reusing its storage.*
+
+```rust
+destination.copy_from(&source)?;
+```
+
+### copy_from_with_mask
+
+```rust
+pub fn copy_from_with_mask(&mut self, source: &Self, mask: &Bitboard) -> Result<()>
+```
+
+Copy only mask-selected tiles, preserving every unselected destination value. Mask padding is ignored; this field's existing storage is reused. # Arguments * `source` - Field to copy from. * `mask` - Tiles to copy.
+
+*Example: Update selected tiles while preserving the rest of an existing distance field.*
+
+```rust
+destination.copy_from_with_mask(&source, &mask)?;
+```
 
 ### export_linear_buffer
 

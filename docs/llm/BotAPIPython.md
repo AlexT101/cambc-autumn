@@ -5391,6 +5391,25 @@ Inputs:
 result = subject.copy()
 ```
 
+### copy_from
+
+```python
+def copy_from(self, source: DistanceField, mask: Optional[Bitboard] = None) -> None
+```
+
+Copy into this field, reusing its storage. Self-copy is a no-op. Without a mask, copy every value. With a mask, copy only selected tiles; all unselected destination values are preserved and mask padding is ignored. Args: source: Field to copy from. mask: Tiles to copy, or None to copy the whole field.
+
+Update selected tiles while preserving the rest of an existing distance field.
+
+Inputs:
+- destination: existing distance field to update
+- source: distance field to copy from
+- mask: bitboard selecting the tiles to copy
+
+```python
+destination.copy_from(source, mask=mask)
+```
+
 ### export_linear_buffer
 
 ```python

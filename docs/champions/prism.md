@@ -8,7 +8,7 @@
 
 **Prism**
 
-**Passive:** Prism gains 1 Focus per carried gem. Ten carried gems add 10 Focus. Tributing or losing those gems removes that bonus.
+**Passive:** Prism gains 1.5 Focus per carried gem. Ten carried gems add 15 Focus. Tributing or losing those gems removes that bonus.
 
 ### Slot 0: Damage and stun
 

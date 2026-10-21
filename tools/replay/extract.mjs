@@ -661,7 +661,12 @@ async function updateEngine() {
     const p = spawn('cambc', ['--version'], {});
     let o = ''; p.stdout.on('data', d => o += d); p.on('close', c => c ? rej(new Error('cambc --version failed')) : res(o.trim()));
   });
-  const server = spawn('cambc', ['view', '--port', String(port)], { stdio: 'ignore' });
+  // cambc view serves only with a replay to open, and looks for one only directly under replays/.
+  const replays = path.join(ROOT, 'replays');
+  const replay = fs.existsSync(replays)
+    && fs.readdirSync(replays, { recursive: true }).find(f => f.endsWith('.repl26a') && !f.startsWith('.analysis'));
+  if (!replay) throw new Error('no .repl26a under replays/ for cambc view to open; run `cambc run` first');
+  const server = spawn('cambc', ['view', '--port', String(port), path.join(replays, replay)], { stdio: 'ignore' });
   const base = `http://127.0.0.1:${port}/`;
   try {
     let html;
