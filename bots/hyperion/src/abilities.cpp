@@ -454,6 +454,7 @@ bool enemy_tribute_wins(const World& world, const ChampionBelief& e) {
 }
 
 bool cast_at_enemies(const World& world, float walk) {
+    Phase phase{"cast_at_enemies"};
     world.throw_if_stale();
     try {
         return enemy_cast(world, walk, true).execute();

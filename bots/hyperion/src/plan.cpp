@@ -1603,6 +1603,7 @@ bool strike_possible(const World& world) {
 }
 
 [[gnu::flatten]] Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent) {
+    Phase phase{"plan_strikes"};
     Planned out;
     std::uint64_t fuel_start = 0;
     if constexpr (debug_search) {
@@ -1615,10 +1616,13 @@ bool strike_possible(const World& world) {
             debug_block({ marks[i] = fuel(); });
         }
     };
+    Phase step{"read"};
     if (!S.read()) return out;
     mark(0);
+    step.next("grow");
     S.grow(S.root());
     mark(1);
+    step.next("price");
     const vec2 here = S.here;
 
     // Price the end tiles best bound first, the bound being hits and progress less the camps;
@@ -1874,6 +1878,7 @@ bool strike_possible(const World& world) {
     }
 
     // Carry it out. A move a hidden unit refuses takes the next-ranked plan from where we stand.
+    step.next("act");
     Seq seq;
     std::array<bool, 49> dropped{};
     const auto concrete = [&](const Tile& t) { return S.concrete(t.c, t.keep, t.entry, t.keep && t.shield > 0); };
