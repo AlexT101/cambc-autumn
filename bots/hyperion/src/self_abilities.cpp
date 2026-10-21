@@ -86,9 +86,10 @@ int danger(const std::vector<Hazard>& threats, vec2 p) {
     return d;
 }
 
-// A hidden unit on a landing fails the cast without spending it, so a few are tried.
+// A hidden unit on a landing fails the cast without spending it, and a guarded one is skipped, so a
+// few are tried.
 struct Landings {
-    static constexpr int tries = 3;
+    static constexpr int tries = 6;
     std::array<vec2, tries> tiles;
     int count = 0;
 };
@@ -116,7 +117,7 @@ bool wakes_camp(const World& world, vec2 p) {
 
 bool dash_to_first(const cambc::ability& dash, Pathing& pathing, const Landings& landings) {
     for (int i = 0; i < landings.count; ++i)
-        if (cast(dash, landings.tiles[i])) {
+        if (pathing.landing_clear(landings.tiles[i]) && cast(dash, landings.tiles[i])) {
             pathing.invalidate();
             return true;
         }

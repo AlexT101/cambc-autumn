@@ -88,19 +88,18 @@ public:
     void set_safety(Safety* s) { safety_ = s; }
     Safety* safety() const { return safety_; }
     // While guarding, no step or dash ends on a tile safety()->guarded() bans: routes go around them.
-    // Stub until W2-B: set_guarding(true) takes the guard source's board, run once a turn, as guard().
     void set_guarding(bool on);
     bool guarding() const { return guarding_; }
     // Until W2-D: set_guard(nullptr) is set_guarding(false).
     void set_guard(std::nullptr_t) { set_guarding(false); }
-    // Until W2-B and W2-C: the guard source's board while guarding; read_geometry ORs it.
-    const bitboard* guard() const { return guard_; }
-    // Until W2-D: decide sets step_guard as the source.
+    // Inert until W2-C and W2-D drop their calls; the integrator then deletes them.
+    const bitboard* guard() const { return nullptr; }
     using GuardSource = const bitboard* (*)(const World&, Safety&);
-    void set_guard_source(GuardSource source) { guard_source_ = source; }
+    void set_guard_source(GuardSource) {}
 
     // Unseen units can still block these.
-    bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile, off the guard
+    bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile, not known guarded
+    bool landing_clear(vec2 p) { return !guarded(p); } // asked just before a landing is tried
     bitboard teleport_targets(); // free open or bush tiles within 3, not camp tiles or enemy spawn
 
 private:
@@ -127,6 +126,25 @@ private:
     // Right after a route that found no way, with the same arguments: read from its field.
     // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.
     bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps);
+    // guarding_ && safety_ && safety_->guarded(p), each tile asked once a generation.
+    bool guarded(vec2 p);
+    // The memo's answer, asking nothing: 0 not asked this generation, 1 free (or outside the window), 2 guarded.
+    std::uint8_t guard_known(vec2 p) const;
+    std::uint8_t* guard_slot(vec2 p); // null outside the window
+    struct NeighbourGuard {
+        int free = 0, guarded = 0;
+        bool all() const { return free > 0 && guarded == free; }
+    };
+    // The free neighbours a route may take, and how many are guarded: asked, or as the memo knows.
+    NeighbourGuard neighbours_guarded(const bitboard* avoid, bool ask);
+    // After a route with `banned` guarded first steps: once all were, asks the other free neighbours
+    // too, so that one more route goes around every guarded one. True if every one is: no walk is left.
+    bool guard_retry(const Route& r, int banned, int attempt, const bitboard* avoid);
+    void mark_known_guarded(bitboard& b, bool value) const; // the memo's guarded tiles
+    bool move_to(vec2 tile, bool* refused = nullptr); // try_move once guarded() let it through
+    // The free neighbour of lowest score below `limit` (ties: compass order) that is not guarded,
+    // asking guarded() only of the leader.
+    template <class Score> std::optional<vec2> best_step(const bitboard* avoid, int limit, Score score);
     int approach_steps(int group, int range);
     const Field* search_approach(int group, int range, int steps); // approach() once known not ready
     using Slot = std::unique_ptr<Field>;
@@ -172,12 +190,14 @@ private:
     bool blocked_fresh_ = false;
     bitboard bumped_;
     bool bumped_any_ = false;
-    const bitboard* guard_ = nullptr;
     Safety* safety_ = nullptr;
     bool guarding_ = false;
-    GuardSource guard_source_ = nullptr;
-    const bitboard* source_board_ = nullptr; // the guard source's board this turn, once run
-    bool source_run_ = false;
+    // guarded()'s answers this generation, in the 7x7 window around the turn-start tile beyond which
+    // Safety guards nothing: 0 not asked, 1 free, 2 guarded.
+    std::array<std::uint8_t, 49> guard_memo_{};
+    std::uint32_t guard_generation_ = 0; // 0: none
+    vec2 guard_centre_{-1, -1};
+    int guard_count_ = 0; // tiles the memo holds guarded
     int bumped_round_ = -1;
     vec2 pos_;
     std::uint32_t pos_round_ = 0;
