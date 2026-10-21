@@ -2403,7 +2403,7 @@ bool chase(const World& world, Pathing& pathing, Safety& safety, Prepared* prepa
                        : !prepared_current(*prepared, safety) ? "stale"
                        : !walks                                 ? "nowalk"
                                                                 : nullptr;
-    bool hit = false;
+    bool hit = false, noroute = false;
     if (!skip) {
         Intent intent;
         intent.walks = true;
@@ -2414,8 +2414,10 @@ bool chase(const World& world, Pathing& pathing, Safety& safety, Prepared* prepa
             const auto planned = price_strikes(*prepared, intent);
             note_search(planned);
             hit = planned.attacked;
+            if (cambc::self().is_alive() && (!my_can_attack() || !my_can_cast())) safety.refresh();
         } else {
             skip = "noroute";
+            noroute = true;
         }
     }
     debug_block({
@@ -2423,6 +2425,13 @@ bool chase(const World& world, Pathing& pathing, Safety& safety, Prepared* prepa
         else std::printf("CHASE %d reprice\n", world.round);
     });
     if (!cambc::self().is_alive() || !my_can_move() || dist(my_position(), target->pos) <= range) return true;
+    // The step would only search the same again: just an ally beside us could make way.
+    if (noroute) {
+        const vec2 here = my_position();
+        bool beside = false;
+        for (const auto& a : world.allies) beside |= !a.is_self && a.alive && a.visible && dist(a.pos, here) == 1;
+        if (!beside) return hit;
+    }
     // No step and no hit: the target is out of our walk's reach (across live camps), so the turn goes on.
     return pathing.step_towards(goals, zone, cap) || hit;
 }
@@ -3040,8 +3049,9 @@ void mend_retreat(const World& world, Safety& safety, const Memory& memory);
 
 // Home around the camps' and the visible enemies' reach, as the shortest walk can lead along what
 // we flee. The search stops at our layer: tiles it leaves unlabelled (in that reach, or no nearer
-// than ours) gain nothing. Inside a camp's reach the search prices each tile's way out, so that
-// reach stays open within its window: our tile is labelled and the exits nearer home gain.
+// than ours) gain nothing. Inside that reach the search prices each tile's way out, so the reach
+// stays open within its window: our tile is labelled and the exits nearer home gain. With our tile
+// still unlabelled, the plain steps.
 const cambc::distance_field& retreat_home(const World& world, Pathing& pathing, Safety& safety) {
     Phase phase{"retreat_home"};
     const auto& home = pathing.to_ally_spawn();
@@ -3051,14 +3061,24 @@ const cambc::distance_field& retreat_home(const World& world, Pathing& pathing, 
     static bitboard walls{cambc::uninitialized}, window{cambc::uninitialized}, origin, visited{cambc::uninitialized};
     static cambc::distance_field around;
     static vec2 origin_at{-1, -1};
-    const auto& camps = safety.camp_area();
-    copy_into(camps, walls);
-    clear_board(window);
-    draw_square(window, here, static_cast<float>(flee_window));
-    if (test(camps, here)) drop(walls, window);
+    copy_into(safety.camp_area(), walls);
+    bool enclosed = false; // one enemy's square holds the window and the ring around it
     for (auto left = safety.seen_enemies(); left; left &= left - 1) {
         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (const int r = safety.strike_of(e).reach; r >= 0) draw_square(walls, e.pos, static_cast<float>(r));
+        if (const int r = safety.strike_of(e).reach; r >= 0) {
+            draw_square(walls, e.pos, static_cast<float>(r));
+            enclosed |= dist(e.pos, here) + flee_window + 1 <= r;
+        }
+    }
+    if (test(walls, here)) {
+        clear_board(window);
+        draw_square(window, here, static_cast<float>(flee_window));
+        drop(walls, window);
+        // Only a spawn tile inside the window could then label us.
+        if (enclosed) {
+            and_into(window, home.goals, visited);
+            if (board_empty(visited)) return home.steps;
+        }
     }
     or_into(walls, pathing.blocked(), walls);
     set_tile(walls, here, false);
@@ -3066,11 +3086,7 @@ const cambc::distance_field& retreat_home(const World& world, Pathing& pathing, 
     set_tile(origin, here);
     origin_at = here;
     around.compute_to(walls, home.goals, origin, visited, static_cast<std::uint16_t>(steps + max_detour));
-    if (steps_at(around, here) != unreachable) return around;
-    // Unlabelled here, the search ran dry or to its cap: with a window tile labelled, no tile gains
-    // rather than every step through the reach.
-    and_into(window, visited, window);
-    return board_empty(window) ? home.steps : around;
+    return steps_at(around, here) != unreachable ? around : home.steps;
 }
 
 // The retreat's walk, hits and casts, planned by the strike search when an enemy could be struck or
@@ -3080,8 +3096,6 @@ void flee(const World& world, Pathing& pathing, Safety& safety, bool may_search)
     Phase phase{"flee"};
     pathing.set_guarding(false);
     const vec2 start = my_position();
-    bool could_move = false;
-    debug_block({ could_move = my_can_move(); });
     Planned planned;
     bool ran = false;
     if (may_search && (strike_possible(world) || safety.camp_damage(start) > 0)) {
@@ -3093,22 +3107,14 @@ void flee(const World& world, Pathing& pathing, Safety& safety, bool may_search)
         note_search(planned);
         ran = true;
         if (!cambc::self().is_alive()) return;
+        if (!my_can_attack() || !my_can_cast()) safety.refresh();
     }
     const auto& home = pathing.to_ally_spawn();
     if (!planned.carried) retreat_step(world, pathing, safety, home);
+    // The search's flees print FLEE from its price.
     debug_block({
         const vec2 end = my_position();
-        const float cost = safety.escape_cost(end);
-        std::printf("FLEE %d %d %d %.0f %d %d %d\n", world.round, safety.exit_rounds(start), safety.exit_rounds(end), cost, home.at(end),
-                    planned.carried ? 1 : 0, ran ? 1 : 0);
-        // flee_camps' choice, the cheapest neighbour by escape_cost, when only camps hit us.
-        if (const TileDanger t = ran && planned.carried && could_move ? safety.tile(start) : TileDanger{}; t.camp_worst > 0 && t.vis_mask == 0) {
-            float best = safety.escape_cost(start);
-            const auto& blocked = pathing.blocked();
-            for (auto d : directions)
-                if (const vec2 p = start + d; in_bounds(p) && !test(blocked, p)) best = std::min(best, safety.escape_cost(p));
-            if (cost > best) std::printf("FLEE-CAMP-MISMATCH %d %d %d %.0f %.0f\n", world.round, end.x, end.y, cost, best);
-        }
+        if (!ran) std::printf("FLEE-WALK %d %d,%d %d,%d %d\n", world.round, start.x, start.y, end.x, end.y, home.at(end));
     });
 }
 
