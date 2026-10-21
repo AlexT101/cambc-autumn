@@ -439,7 +439,7 @@ public:
 private:
     void dump_beliefs() const;
     Moment now() const { return {round, slot(me(), round)}; }
-    // Turns the champion takes strictly between two moments.
+    // Turns the champion takes after `from`, up to and including any in `to`'s slot.
     int turns_between(const ChampionBelief& c, Moment from, Moment to) const;
     void init_beliefs();
     void rank_turns();

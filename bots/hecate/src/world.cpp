@@ -870,6 +870,18 @@ void World::update() {
     updated_round_ = round;
     if (ranks_stale_) rank_turns();
     update_champions(true);
+    // Visible champions that have acted come before us and those that have not after us, which
+    // bounds our slot; a visible enemy's modelled order against ours should match its flag.
+    debug_block({
+        int lo = 0, hi = ally_count_ + enemy_count_ - 1, wrong = 0, seen = 0;
+        for (const auto* team : {&allies, &enemies})
+            for (const auto& c : *team)
+                if (!c.is_self && c.alive && c.visible) c.acted ? ++lo : --hi;
+        for (const auto& e : enemies)
+            if (e.alive && e.visible) ++seen, wrong += (slot(e, round) < slot(me(), round)) != e.acted;
+        std::printf("SLOT %d %u %d %d %d %d %d\n", round, static_cast<std::uint32_t>(me().handle), slot(me(), round), lo, hi,
+                    seen, wrong);
+    });
     guard("camps", [&] { update_camps(); });
     guard("altars", [&] { update_altars(); });
     guard("scores", [&] { update_scores(tributing); });
@@ -1179,7 +1191,7 @@ int World::turns_between(const ChampionBelief& c, Moment from, Moment to) const 
     int turns = 0;
     for (int r = std::max(from.round, 1); r <= to.round; ++r) {
         const Moment turn{r, slot(c, r)};
-        turns += from < turn && turn < to;
+        turns += from < turn && turn <= to;
     }
     return turns;
 }
@@ -1240,7 +1252,10 @@ bool World::grow(ChampionBelief& b, int turns) {
         b.tracked = false;
         return;
     }
-    const auto to = now();
+    // Out of sight, its turn this round may come before ours whatever its rank says (ranks rest on
+    // priorities read only in sight): count it now, so `possible` grows too much rather than
+    // missing a tile, and date `possible` after that turn so the next update does not count it again.
+    const auto to = std::max(now(), Moment{round, slot(b, round)});
     const int turns = turns_between(b, b.at, to);
     // With no turns to add, every enemy of a lineage gets the same prune this pass.
     if (!turns) {

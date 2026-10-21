@@ -131,6 +131,10 @@ danger is `Safety::blow`, so better bounds improve it, and `trapped` is a tile f
 - **Change.** In `turns_between`, when the enemy's order against the moment can't be read (it is unseen, or its rank
   comes from a priority that wasn't read), count the turn, so `possible` grows too much rather than missing a tile.
   If the check shows our slot is wrong, raise our rank to the acted-flag bound.
+- **Built (orch/w2-small).** Check over 8 local games against hecate-v8: our slot broke the acted-flag bound on
+  0.14% of turns, so the 36% was dump timing. The modelled order of a visible enemy against ours was wrong 15% of
+  the time, nearly all from enemy ranks. Every priority was read on almost no turns, so an unseen enemy's turn this
+  round always counts, and `possible` is dated after it.
 - **Evidence.** 524 of the 561 misses come right after comms fixes. Whether this cuts category B (15% of kills) is
   unproven, but small ground-cast targets miss 18.6% of the time either way.
 - **A/B.** `audit_beliefs.py` misses near 0, then an A/B for win rate at least level.
