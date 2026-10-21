@@ -401,6 +401,13 @@ draft on a fresh-seed suite (512 games; 3/4/5-pick 71.1/63.1/73.8).
 - 5th: Stellar 57.9% and Willow 52.8% over Cassi (216), level with each other (49.2%, 118); Varg 47.7%, Ren and
   Vendetta lost (42%, 39%).
 
+### Camp awake state from striking members (2026-10-20)
+
+- Monsters sleep one by one (`probe-sleep-range`), but `World` read a group's state from its first visible live
+  member, often a cluster. Now the group is awake while any striking member reads awake and asleep only when every
+  live striker is seen asleep. Against hecate-v6 (main ffc6b76 without it), real budget: 295/582 = 50.7% (ladder
+  36/70, gen 259/512); out-of-fuel turns 1155 against 1152. Level; kept as a logical fix.
+
 ## koi: Fish's play on hecate (2026-10-19/20)
 
 Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh seeds 7101-7106); details in

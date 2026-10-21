@@ -306,10 +306,11 @@ struct CampBelief {
     int respawn_round = -1;  // while respawning
     StaticVector<float> health;     // per member, last seen; 0 = dead
     StaticVector<int> health_round; // per member: the last round its health was known
-    // Groups sleep until damaged and fall asleep after 2 camp phases with no champion within 3.
+    // Groups sleep until damaged; awake while any striking member is, each monster falling asleep
+    // after 2 camp phases with no champion within its own range.
     Awake awake = Awake::asleep;
     int last_damaged_round = -1; // a health drop we saw
-    int quiet_rounds = 0;        // consecutive fully observed rounds with no champion within 3
+    int quiet_rounds = 0;        // consecutive fully observed rounds with no champion within any member's range
     // Capture in progress: who holds the cleared group's tiles, and the round the hold began
     // (payout at held_since + capture_time + 1).
     std::optional<team> holder;

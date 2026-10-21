@@ -1417,8 +1417,10 @@ struct World::CampViews {
 
     // Member health; a visible camp tile with no live camp on it is a dead member. Any drop,
     // a kill included, is damage, which wakes the group, but if the health is older than a
-    // sleep it may have fallen asleep again since. A visible live member shows the group's
-    // wakefulness outright.
+    // sleep it may have fallen asleep again since. Waking is group-wide but each monster sleeps
+    // on its own range, so the group is awake while any striking member is: settled outright by
+    // one seen awake, or by every live striker seen asleep. Without strikers left, any member
+    // shows it.
     std::optional<Awake> seen_awake;
     {
         const int now = round;
@@ -1430,9 +1432,14 @@ struct World::CampViews {
         Awake awake = c.awake;
         int quiet_rounds = c.quiet_rounds;
         std::uint32_t version = c.version;
+        bool striker_awake = false, striker_asleep = false, striker_unread = false;
+        int harmless = -1;
         for (std::size_t i = 0; i < n; ++i) {
             const auto& m = members[i];
-            if (!test(visible, m.pos)) continue;
+            if (!test(visible, m.pos)) {
+                striker_unread |= m.strength > 0 && health[i] > 0;
+                continue;
+            }
             const float hp = engine::camp_health(m.handle).value_or(0.0f);
             if (hp < health[i] - 1e-3f) {
                 quiet_rounds = 0;
@@ -1446,8 +1453,19 @@ struct World::CampViews {
             version += hp != health[i];
             health[i] = hp;
             health_round[i] = now;
-            if (hp > 0 && !seen_awake && alive) seen_awake = engine::camp_awake(m.handle);
+            if (hp <= 0 || !alive || striker_awake) continue;
+            if (m.strength <= 0) {
+                if (harmless < 0) harmless = static_cast<int>(i);
+                continue;
+            }
+            const auto read = engine::camp_awake(m.handle);
+            striker_awake = read == Awake::awake;
+            striker_asleep |= read == Awake::asleep;
+            striker_unread |= !read;
         }
+        if (striker_awake) seen_awake = Awake::awake;
+        else if (striker_asleep && !striker_unread) seen_awake = Awake::asleep;
+        else if (!striker_asleep && !striker_unread && harmless >= 0) seen_awake = engine::camp_awake(members[harmless].handle);
         c.awake = awake;
         c.quiet_rounds = quiet_rounds;
         c.version = version;
@@ -1459,8 +1477,8 @@ struct World::CampViews {
         c.awake = *seen_awake;
         c.quiet_rounds = 0;
     } else if (c.awake != Awake::asleep) {
-        // Asleep after 2 camp phases with no champion within 3: count rounds where the whole
-        // threat area is visible and empty. Anything unseen there could be a champion.
+        // Asleep after 2 camp phases with no champion within any member's range: count rounds
+        // where the whole threat area is visible and empty. Anything unseen there could be a champion.
         const bool fully_seen = disjoint(G.threat(), views.hidden());
         if (fully_seen && disjoint(G.threat(), views.champs())) {
             if (++c.quiet_rounds >= 2) c.awake = Awake::asleep;
