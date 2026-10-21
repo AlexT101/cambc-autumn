@@ -29,7 +29,7 @@ namespace {
 constexpr int endgame_margin = 20;   // rounds to spare on the last trip to an altar
 constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
 constexpr float escape_step_value = 210; // a retreat's or a game-ender intercept's walk, in enemy health
-// PREY-FLIP and PURSUIT-SKIP-MISMATCH re-run the rule they replaced. The re-runs fill Safety's memos
+// PREY-FLIP re-runs the rule it replaced. The re-runs fill Safety's memos
 // and Reach and spend fuel, so games change while this is on.
 constexpr bool debug_verdicts = false;
 
@@ -2245,34 +2245,9 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
     // Healthy on our own ground, they have no reason to come for us.
     if (paying_soon(world) || (own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health())) return false;
     const bool linked = partner(world) != nullptr;
-    const Engage pursue{.mode = Engage::Mode::pursue, .approach = params::pursuit_steps};
-    // The pursuit strikes first against some of the stand fight's enemies, arriving later: a stand
-    // fight we win cleanly against all of them settles it. Its visible enemies are tile(here)'s.
-    // The stand is unsimulated only when no visible threat hits us, and then holds no pursuer.
-    const auto pursuers_standing = [&] {
-        const auto& spawn = world.map().near_enemy_spawn;
-        for (auto left = safety.seen_enemies() & ~std::uint32_t{safety.tile(here).vis_mask}; left; left &= left - 1) {
-            const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-            if (!in_square(here, e.pos, Strike::max_reach + params::pursuit_steps)) continue;
-            if (const int reach = safety.strike_of(e).reach; reach >= 0 && dist(here, e.pos) - reach <= params::pursuit_steps && !test(spawn, e.pos))
-                return false;
-        }
-        return true;
-    };
-    if (stand && !stand->lost && !stand->self_falls && pursuers_standing()) {
-        debug_block({ std::printf("WANTHOME-PURSUIT-SKIPPED %d %u\n", world.round, static_cast<std::uint32_t>(world.me().handle)); });
-        if constexpr (debug_verdicts) {
-            if (const auto t = safety.engage(here, pursue); t.lost || (linked && t.self_falls)) {
-                debug_block({
-                    std::printf("PURSUIT-SKIP-MISMATCH %d %u %d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), here.x,
-                                here.y, t.lost ? 1 : 0, t.self_falls ? 1 : 0);
-                });
-            }
-        }
-        return false;
-    }
+    // A stand fight here won cleanly against every pursuer settles the pursuit (Safety::recall).
     SimTag tag{SimCaller::wh_pursue, linked ? SimNeed::falls : SimNeed::lost};
-    const auto t = safety.engage(here, pursue);
+    const auto t = safety.engage(here, {.mode = Engage::Mode::pursue, .approach = params::pursuit_steps});
     debug_block({
         if (stand) safety.debug_note_pursue(here);
     });

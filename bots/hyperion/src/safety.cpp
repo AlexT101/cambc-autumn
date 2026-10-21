@@ -2248,13 +2248,6 @@ Trade Safety::play(const FightKey& k) {
     // fight_calibration.py reads every field of a debug_fights trade: none is settled then.
     const int how = recall(k, t);
     if (how == 0 || (debug_fights && how == 2)) t = run(k, k.who >> 16);
-    debug_block({
-        // P1A: a clean stand fight covering a pursue key would settle it.
-        if (how == 0 && k.mode == static_cast<std::uint8_t>(Engage::Mode::pursue) && debug_clean_known(k)) {
-            ++sim_stats_now.p1a_would;
-            sim_stats_now.p1a_flip += t.lost || t.self_falls;
-        }
-    });
     return t;
 }
 
@@ -2267,8 +2260,12 @@ bool covers(std::uint32_t worse, std::uint32_t key) { return (key & ~worse & 0xF
 } // namespace
 
 int Safety::recall(const FightKey& k, Trade& out) {
-    const bool stand = k.mode == static_cast<std::uint8_t>(Engage::Mode::stand);
-    if (stand && !linked_known_) note_linked();
+    constexpr auto stand_mode = static_cast<std::uint8_t>(Engage::Mode::stand);
+    const bool stand = k.mode == stand_mode;
+    // A pursuit is a stand fight we strike first, its enemies arriving no sooner: a stand fight won
+    // cleanly against at least its enemies wins it too.
+    const bool settles = stand || k.mode == static_cast<std::uint8_t>(Engage::Mode::pursue);
+    if (settles && !linked_known_) note_linked();
     int by = -1;
     for (int i = 0; i < std::min(fight_count_, max_fights); ++i) {
         const auto& f = fights_[static_cast<std::size_t>(i)];
@@ -2285,13 +2282,14 @@ int Safety::recall(const FightKey& k, Trade& out) {
             return 1;
         }
         // Cassi and Issac fall together: one more of them can turn a fight either way.
-        if (by >= 0 || !stand || f.trade.cut || f.key.mode != k.mode || f.key.horizon != k.horizon || ((f.key.who ^ k.who) & linked_who_)) continue;
+        if (by >= 0 || !settles || f.trade.cut || f.key.mode != stand_mode || f.key.horizon != k.horizon || ((f.key.who ^ k.who) & linked_who_))
+            continue;
         // The camps hit our weakest on each of their first camp_turns turns: more for longer only
         // makes a fight worse, like more enemies.
         const bool camp_worse = f.key.camp_q >= k.camp_q && f.key.camp_turns >= k.camp_turns;
         const bool camp_milder = f.key.camp_q <= k.camp_q && f.key.camp_turns <= k.camp_turns;
         if (const auto& t = f.trade; !t.lost && !t.self_falls ? camp_worse && covers(f.key.who, k.who)
-                                                              : t.lost && camp_milder && covers(k.who, f.key.who))
+                                                              : stand && t.lost && camp_milder && covers(k.who, f.key.who))
             by = i;
     }
     if (by < 0) return 0;
@@ -2312,12 +2310,14 @@ int Safety::recall(const FightKey& k, Trade& out) {
         key_sides(world_, k, k.who >> 16, us, them, made);
         bool falls = false;
         std::array<float, 4> dealt{};
-        const auto [a, b] = simulate<true>(us, them, true, &falls, k.horizon, &dealt);
-        if ((b > 0) != lost || falls != lost)
-            std::printf("DOMINANCE-MISMATCH %d %x %x %d %d %d %d %d %d %d\n", world_.round, k.who, settler.key.who, k.camp_q,
+        const auto [a, b] = simulate<true>(us, them, stand, &falls, k.horizon, &dealt);
+        const bool mismatch = (b > 0) != lost || falls != lost;
+        if (mismatch)
+            std::printf("DOMINANCE-MISMATCH %d %d %x %x %d %d %d %d %d %d %d\n", world_.round, k.mode, k.who, settler.key.who, k.camp_q,
                         settler.key.camp_q, k.camp_turns, settler.key.camp_turns, lost ? 1 : 0, b > 0 ? 1 : 0, falls ? 1 : 0);
         made_fighters = debug_fighters;
         ++sim_stats_now.dom[static_cast<std::size_t>(sim_context_now.caller)];
+        if (!stand) ++sim_stats_now.p1a_would, sim_stats_now.p1a_flip += mismatch;
     });
     return 2;
 }
