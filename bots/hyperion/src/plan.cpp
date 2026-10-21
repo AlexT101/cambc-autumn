@@ -223,16 +223,16 @@ constexpr int max_mates = 6;
 // counts each visible foe whose Strike reaches it, and its unseen blows); past it the rest keep
 // their Strike price (C4). A flee prices whole rows and every record on a tile, so it gets fewer.
 constexpr int max_exact_queries = 10;
-constexpr int max_flee_queries = 6;
+constexpr int max_flee_queries = 4;
 // A flee's C4 tiles gathered (C4's backstop).
 constexpr int max_flee_c4 = 4;
 // An escape's tightenings before its exit-field bound, and again after it (cap C8).
-constexpr int max_escape_tightens = max_exact_queries / 2;
+constexpr int max_escape_tightens = 3;
 // guarded() asks per search (cap C7); past it an unasked end tile counts as guarded.
 constexpr int max_guard_asks = 6;
 // Nodes of a flee's tree; past them only walks and plain dashes grow, so every move is still
 // recorded and only strike leaves are lost.
-constexpr int max_flee_nodes = 16;
+constexpr int max_flee_nodes = 8;
 
 enum class Op : std::uint8_t { walk, attack, reset, dash, spell, heal, shield };
 struct Act {
@@ -2108,11 +2108,11 @@ Prepared prepared_slot;
         heap[nh++] = i;
         std::push_heap(heap.begin(), heap.begin() + nh, heap_less);
     };
-    // An escape tightens at most C1/2 tiles, then C1/2 more (cap C8): an untightened tile's camps
-    // count 0, so with every end tile in a camp's reach it would tighten them all. After the first
-    // C1/2 the rest in a camp's reach (by the exit field) are bounded as tighten() would leave them
-    // with the weakest member alone hitting them, at the least weight, on each round of the walk
-    // out; after the second C1/2 they are cut.
+    // An escape tightens at most C8 tiles, then C8 more: an untightened tile's camps count 0, so
+    // with every end tile in a camp's reach it would tighten them all. After the first C8 the rest
+    // in a camp's reach (by the exit field) are bounded as tighten() would leave them with the
+    // weakest member alone hitting them, at the least weight, on each round of the walk out; after
+    // the second C8 they are cut.
     int tightened = 0;
     bool bounded = false;
     Grid cut = 0;
