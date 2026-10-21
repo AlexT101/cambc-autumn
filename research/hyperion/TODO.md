@@ -13,7 +13,11 @@
 
 From [SESSION-2026-10-21.md](SESSION-2026-10-21.md); main's out-of-fuel turns are ~5x hecate-v8's.
 
-0. In progress: merging the combat logic into one system in waves ([COMBAT-MERGE.md](COMBAT-MERGE.md)); it takes in 1 and 5.
+0. Combat merge ([COMBAT-MERGE.md](COMBAT-MERGE.md)): waves 0-2 + the wave-2 fuel fix are level with w1 at the real
+   budget (tag w2fix 4280fa0). Waves 3+4 (+ raw bindings) are on INT but lose: 45.7% vs w2fix, out-of-fuel +86%
+   (EXPERIMENTS.md). First: cut flee pricing's per-end-tile setup (fewer end tiles or cheaper setup), check chase
+   reprices, then re-A/B; if it cannot recover, revert the w4-int merge and keep the raw bindings. Then the revised
+   logic fixes (lf2) and W5-B/C (pack zone and outmatched into the verdict; avoid() onto guarded()).
 1. Strike phase 4a's retreat-search fuel (40.8% real, 52.6% at 100M; `orch/strike-p4a-wt` bdb5902 holds an untested
    partial fix), then 4b (`orch/strike-p4b` 6997211, untested).
 2. The fight simulation's cost per half-turn (~370 fuel; a sim averages ~6.3k since bounded decide's 17-turn horizon):
@@ -33,6 +37,6 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
   enemy tributes a big bag (`Altar::lock_tiles()` as goals); spell-clear pricing (`spell_clear_rounds`) tested both
   ways; probabilistic `threatened()` removed (risky: it gates recalls). Ren's specials change only on ladder evidence.
 
-## Don't remove
+## Evidence to weigh before removing
 
-These have evidence behind them: `step_guard`'s rule (since combat wave 2 it lives in `Safety::guarded()`, asked lazily by Pathing and the search), `pursuit`, `threat_strike`; Monolith sieges; kite on shared-gem maps.
+Not hard requirements (per the user): in the unified model these should collapse into the shared pieces. These have evidence behind them: `step_guard`'s rule (since combat wave 2 it lives in `Safety::guarded()`, asked lazily by Pathing and the search), `pursuit`, `threat_strike`; Monolith sieges; kite on shared-gem maps.

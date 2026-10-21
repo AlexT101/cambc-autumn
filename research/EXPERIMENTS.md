@@ -740,3 +740,16 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   - Merged into INT (604ca30, tag w34) on w34-merged 55adef3: the same subset 4/4 and 4/4 identical against
     w34-merged; total fuel -1.26% (own draft) and -1.73% (forced), -1.47% together; p99 -1.5% and -1.8%; 27852 of
     27859 turns cheaper.
+- combat waves 3+4 on INT (2026-10-21; tag w34 604ca30 = w2fix 4280fa0 + w4-int + raw bindings), real budget, ladder
+  + gen (582), no --phases: **45.7%** vs w2fix (ladder 41.4, gen 46.3; 95% CI 41.7-49.8); out-of-fuel turns 10614 in
+  481 games vs 5705 in 390 (+86%). W3's 100M flee test had already failed (flee SRCH mean ~24k, p99 ~62k vs 12k/40k;
+  ~370 fuel per flee end tile of setup before any row read). Session stopped before the 100M A/B (fuel vs logic) and
+  the diagnosis finished. Last known-good point: tag w2fix (4280fa0).
+- wave-2 logic fixes (w2/logicfix f58ab34 on w2/fuelfix 566a5ee: 1a prey refuses falls-only fights, 2 fighting_allies
+  drops leaving allies, 3a/3b exposed() judges ally loss and new unseen reach, 5 prey skips targets leaving us low,
+  1b want_home/guard_rule treat falling as losing), real budget vs w2fix: **47.9%** of 582 (ladder 55.7, gen 46.9),
+  out-of-fuel 6180 vs 5226 (+18%). Attribution (logistic fit on lf= counters, correlational): 5 and 1b's want_home
+  half cost wins (passive play, +8k retreat turns); 3a and 1b's guard half cause the OOF rise; 2 and 3a correlate with
+  wins. Revised as local branch lf2 (6be102c on INT e0ffb58: 1a, 2, 3a cheap, 3b, 1b narrowed, 5 dropped); not A/B'd.
+- W5-A (event-driven fight sim core), measure-first on w5/a-simcore: the saving bound is 13.9-19.3% of sim fuel
+  (27.7% at the guide's 15-fuel stream), under the 30% bar, so it was not built. Cut sim fuel by asking for fewer sims.
