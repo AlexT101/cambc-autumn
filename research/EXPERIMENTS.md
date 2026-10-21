@@ -661,3 +661,10 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   landings off an unseen Ren whose retaliation would kill us. The strike search's own unseen ground casts (plan.cpp
   add_unseen) stay. 49.2% vs main (1606, 95% CI 46.8-51.6; ladder 47.1, gen 46.7, fresh gen-s1 49.6, gen-s2 51.6);
   out-of-fuel turns 16157 vs 15948. Level: kept.
+- wave 0 (2026-10-21; integration branch claude/dazzling-mccarthy-4kawix f25159f on main 55e0bdc): removals (above);
+  the strike search's add_unseen now keeps only the tiles of an unseen enemy whose retaliation would kill us, as
+  banned centres, so it no longer plans ground casts at unseen enemies that cast_at_enemies never makes (CHANGES 53);
+  Phase markers (`debug_phases`, off by default). One run vs main, ladder + gen, debug builds, CAND with
+  `debug_phases` on (`ab.py --phases`, ~0.8% more fuel to CAND only): 48.6% of 582 (95% CI 44.6-52.7; ladder 52.9 of
+  70, gen 48.0 of 512); out-of-fuel turns 6198 in 418 games vs 5542 in 413 (+12%; how much of that is the phases'
+  fuel is not separated). Level: kept. Where CAND's turns ran out: FUEL-GATES.md, "Out-of-fuel paths".

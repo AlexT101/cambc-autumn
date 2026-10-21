@@ -179,3 +179,29 @@ debug output. Update AGENTS.md's Fuel section and the bench docstring (SHORTCUT 
 - Whether the queue should also pre-simulate anything. Fights cannot be reused across turns, so probably not.
 - If phase 3's limits bind often and cost wins, a single logged fuel-funded extension in `step_guard` (extra tiles
   while fuel lasts, `lethal(q)` otherwise) is the fallback option, kept in one place.
+
+## Out-of-fuel paths (2026-10-21)
+
+The Phases each out-of-fuel turn ran out in (`debug_phases`, `tools/fuel/oof_phases.py`), from the wave 0 A/B against
+main: f25159f with `ab.py --phases`, ladder + gen, 582 debug-build games at the real budget. 6198 turns in 418 games
+(main 5542 in 413).
+
+| Path | Turns | Share |
+|---|---|---|
+| decide/plan_strikes/grow | 1544 | 24.9% |
+| decide/farm | 1413 | 22.8% |
+| decide/plan_strikes/price | 1093 | 17.6% |
+| decide (outside any inner Phase) | 562 | 9.1% |
+| decide/siege | 512 | 8.3% |
+| decide/plan_strikes/act | 192 | 3.1% |
+| decide/carry_bag | 140 | 2.3% |
+| decide/chase/prey | 139 | 2.2% |
+| decide/shield_if_needed | 129 | 2.1% |
+| decide/set_turn_order | 75 | 1.2% |
+| decide/plan_strikes/read | 61 | 1.0% |
+| decide/place_ward | 56 | 0.9% |
+| 28 more | 282 | 4.5% |
+
+- The strike search is 47% (2910), almost all of it growing and pricing the tree; farm is 23% and siege 8%.
+- The fight steps that dominated phase 0's big turns rarely end one now: prey 178 (39 of them under carry_bag),
+  want_home 35, step_guard 2, Reach builds 37 wherever called.
