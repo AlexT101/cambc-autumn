@@ -357,7 +357,9 @@ public:
     bool guarded(vec2 q);          // false if no visible foe reaches q (strike_sum) or q no worse than here (mask ⊆, damage ≤);
                                    // else v.lost || (v.falls && (linked || tile(q).worst() >= health)). Radius 3 only.
                                    // Here is the turn-start tile; answers are kept for the generation.
-    const bitboard* guarded_board(); // guarded() of every tile within 3, built on first call each generation; null: none
+    // The tiles guarded() has answered true this generation, drawn when asked; null: none. Tiles
+    // nobody asked about are left out: callers ask guarded() of the tiles they would end on.
+    const bitboard* guarded_board();
     std::uint32_t guard_stamp() const; // generation << 8 | guarded count (KeptRoute key)
     // fight/pursuit/turns_to_kill_idle stay as wrappers until W4.
 
@@ -541,10 +543,11 @@ private:
     bool guard_rule(Verdict v, bool dies) const;
     // Whether guarded(q) needs a verdict, with its key and whether tile(q) can kill us.
     bool exposed(vec2 q, FightKey& k, bool& dies);
-    // guarded()'s answers (bit s: window slot s) for guarded_generation_, and guarded_board()'s.
+    // guarded()'s answers (bit s: window slot s) for guarded_generation_, and the true ones
+    // guarded_board() has drawn for board_generation_.
     void sync_guard();
     std::uint32_t guarded_generation_ = 0, board_generation_ = 0;
-    std::uint64_t guard_asked_ = 0, guard_true_ = 0;
+    std::uint64_t guard_asked_ = 0, guard_true_ = 0, board_bits_ = 0;
     std::uint64_t costliest_fight_ = 0;
     // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
     // once refreshed: reached_ only gains bits meanwhile, and gone() keeps its answers.

@@ -2573,43 +2573,16 @@ bool Safety::guarded(vec2 q) {
 
 const bitboard* Safety::guarded_board() {
     sync_guard();
+    if (!guard_true_) return nullptr;
+    // One Safety lives at a time and generations are unique: a board from another is redrawn.
     static bitboard board{cambc::uninitialized};
-    if (board_generation_ != generation_) {
-        Phase phase{"guarded_board"};
-        world_.throw_if_stale();
-        board_generation_ = generation_;
-        // The tiles not asked yet, fewest enemies first: a lost fight settles those with more.
-        constexpr int centre_slot = window_slots / 2;
-        std::array<FightKey, window_slots> keys;
-        std::array<std::uint8_t, window_slots> slots, foes;
-        std::uint64_t dying = 0;
-        int n = 0, most = 0;
-        for (int s = 0; s < window_slots; ++s) {
-            const auto bit = std::uint64_t{1} << s;
-            if (s == centre_slot || (guard_asked_ & bit)) continue;
-            guard_asked_ |= bit;
-            bool dies = false;
-            if (!exposed({centre_.x + s % 7 - 3, centre_.y + s / 7 - 3}, keys[static_cast<std::size_t>(n)], dies)) continue;
-            if (dies) dying |= bit;
-            const int count = std::popcount(keys[static_cast<std::size_t>(n)].who >> 16);
-            slots[static_cast<std::size_t>(n)] = static_cast<std::uint8_t>(s);
-            foes[static_cast<std::size_t>(n++)] = static_cast<std::uint8_t>(count);
-            most = std::max(most, count);
-        }
-        for (int count = 1; count <= most; ++count)
-            for (int i = 0; i < n; ++i)
-                if (const int s = slots[static_cast<std::size_t>(i)]; foes[static_cast<std::size_t>(i)] == count
-                    && guard_rule(judge(keys[static_cast<std::size_t>(i)]), dying >> s & 1))
-                    guard_true_ |= std::uint64_t{1} << s;
-        if (guard_true_) {
-            clear_board(board);
-            for (auto left = guard_true_; left; left &= left - 1) {
-                const int s = std::countr_zero(left);
-                set_tile(board, {centre_.x + s % 7 - 3, centre_.y + s / 7 - 3});
-            }
-        }
+    if (board_generation_ != generation_) board_generation_ = generation_, board_bits_ = 0, clear_board(board);
+    for (auto left = guard_true_ & ~board_bits_; left; left &= left - 1) {
+        const int s = std::countr_zero(left);
+        set_tile(board, {centre_.x + s % 7 - 3, centre_.y + s / 7 - 3});
     }
-    return guard_true_ ? &board : nullptr;
+    board_bits_ = guard_true_;
+    return &board;
 }
 
 std::uint32_t Safety::guard_stamp() const {
