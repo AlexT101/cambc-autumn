@@ -2207,11 +2207,13 @@ bool Safety::shape(vec2 p, const Engage& e, FightKey& k) {
         const auto& row = tile(p);
         enemies = row.vis_mask | row.unseen_mask;
         if (e.with_enemy >= 0) {
-            // The prey's escorts join once we reach it: every threat that hits its tile fights too,
-            // and only the allies near both tiles help.
+            // The prey's escorts join once we reach it: every visible foe whose Strike reaches its
+            // tile fights too (no Reach built: over the fight's turns walls only delay them), and
+            // only the allies near both tiles help.
             const vec2 q = world_.enemies[static_cast<std::size_t>(e.with_enemy)].pos;
-            const auto& prey_row = tile(q);
-            enemies |= prey_row.vis_mask | prey_row.unseen_mask | 1u << e.with_enemy;
+            std::uint16_t escorts = 0;
+            strike_sum(q, &escorts);
+            enemies |= escorts | 1u << e.with_enemy;
             allies = fighting_allies(world_, q);
         }
         if (enemies == 0) return false;
