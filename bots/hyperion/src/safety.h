@@ -242,8 +242,7 @@ public:
     }
     void list_enemies();
     bool any_threat(); // threats() is not empty, without building it
-    // Without building the threats: at least worst_damage(p), and at least their sum with each
-    // visible enemy yet to act counted twice when `double_unacted`.
+    // tile(p).worst(), with each visible enemy yet to act counted twice when `double_unacted`.
     float damage_bound(vec2 p, bool double_unacted = false);
     // At least damage_bound(p), counting every unseen threat at its most: no host queries or
     // strikes for them.
@@ -261,8 +260,8 @@ public:
     bitboard avoid();
     // any_within(avoid(), p, r), without building the threats.
     bool avoid_within(vec2 p, int r);
-    // Each threat as threats() would list it, with its blow at p, without building them: an
-    // unseen threat's distance is searched out to its radius only. Returns the count.
+    // Each threat as threats() would list it, with its blow at p as tile(p) counts it. Returns the
+    // count.
     struct ThreatAt {
         int enemy;
         Blow blow;
@@ -272,6 +271,9 @@ public:
     // The tile table: each tile's danger numbers. A row stays put until generation() changes, but
     // tiles outside the 7x7 around the turn-start tile share 4 slots: copy a row to keep it across
     // other tile() calls. Like blow(), it throws for a wall tile in a visible enemy's reach.
+    // The one unseen rule: an unseen credible threat's blow is its Threat::at(p), so the threats are
+    // built once `possible` comes within its field's radius of the window (or of p, outside it).
+    // camp_damage() and exit_rounds() fill only the camp columns, and never throw.
     const TileDanger& tile(vec2 p);
     // The visible threats' Strike bounds at p, without building their Reach; `mask` gets their bits.
     float strike_sum(vec2 p, std::uint16_t* mask = nullptr);
@@ -360,8 +362,6 @@ private:
         Strike strike;
         int tiles;
         float weight;
-        vec2 asked; // unseen: the last tile asked about, and whether `possible` is within reach of it
-        bool near;
     };
     Foe& foe(const ChampionBelief& e);
     // foe(e) with only its strike worked out: an unseen enemy's tiles and weight count its
@@ -404,27 +404,42 @@ private:
     int member_count_ = 0;
     bool members_known_ = false;
     float camp_factor_ = 0; // camp_hit_factor(), read on first need: CampHit strengths carry it
-    struct CampMemo {
-        vec2 p;
-        float damage;
-        bool valid;
-    };
-    // camp_damage() by `worst`: the last tile asked. Reset whenever the members are found.
-    union {
-        std::array<CampMemo, 2> camp_memo_;
-    };
-    // The tile table: rows_[7 * (y - centre_.y + 3) + x - centre_.x + 3] for the window, then the
-    // ring's 4 slots. Rows are left uninitialised; the known bits are dropped at a new generation.
-    void fill_row(vec2 p, TileDanger& row);
+    // The tile table: slot 7 * (y - centre_.y + 3) + x - centre_.x + 3 for the 7x7 window, then 4
+    // ring slots for tiles outside it, reused in turn. A row's columns fill lazily in groups, each
+    // with a known bit per slot (bit s: slot s); the bits are dropped at a new generation and the
+    // rows are left uninitialised.
+    static constexpr int window_slots = 49, table_slots = window_slots + 4;
+    void sync_table();
+    int window_slot(vec2 p) const; // -1 outside the window
+    int slot_of(vec2 p);           // -1 if p has no slot yet
+    int claim_slot(vec2 p);        // outside the window, takes the next ring slot
+    int threat_slot(vec2 p);       // claim_slot(p) with the row's columns filled
+    void fill_threats(vec2 p, TileDanger& row);
+    void fill_camps(vec2 p, TileDanger& row);
+    // The one unseen rule for an unseen credible enemy (see tile()).
+    Blow unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p, bool window);
+    // Inside debug_block only: the distance-0 rule the table replaced (each credible unseen threat
+    // at its strike's damage at 0 when `possible` is within its reach of p); `near`: any did.
+    float debug_old_unseen(vec2 p, bool* near);
     vec2 centre_;
     std::uint32_t table_generation_ = 0;
-    std::uint64_t window_known_ = 0;
-    std::uint8_t ring_known_ = 0, ring_next_ = 0;
+    std::uint64_t threats_known_ = 0, camps_known_ = 0, exits_known_ = 0, chances_known_ = 0;
+    // By enemy, this generation: whether `possible` comes within an unseen threat's field of the window.
+    std::uint16_t gate_asked_ = 0, gate_near_ = 0;
+    std::uint8_t ring_used_ = 0, ring_next_ = 0;
+    std::uint32_t exits_generation_ = 0; // of exit_rounds()' board
     union {
         std::array<vec2, 4> ring_at_;
     };
     union {
-        std::array<TileDanger, 53> rows_;
+        std::array<TileDanger, table_slots> rows_;
+    };
+    struct Lazy {
+        float chance;      // unseen_chance()
+        std::int8_t exit;  // exit_rounds()
+    };
+    union {
+        std::array<Lazy, table_slots> lazy_;
     };
     std::optional<bitboard> camp_area_, enemy_area_;
     // By fight_key(). A memo: past `max_fights` the oldest is replaced.
