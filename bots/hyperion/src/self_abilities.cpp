@@ -246,10 +246,18 @@ bool camp_in_reach(const World& world, vec2 p, int range) {
 
 namespace {
 
-constexpr int reset_hold_margin = 2; // an enemy this far beyond attack range keeps the reset off camps
-
-// The reset is kept off camps while an enemy may want it for a fight (W4-D: Safety::engaged_within).
-bool camp_reset_held(const World& world, Safety*, vec2 here, int range) { return enemy_within(world, here, range + reset_hold_margin); }
+// The reset is kept off camps while a visible enemy could strike us here within a turn's walk.
+bool camp_reset_held(const World& world, Safety* safety, vec2 here, int range) {
+    const bool held = safety && safety->engaged_within(here, 1);
+    debug_block({
+        static int last = -1;
+        if (const bool old = enemy_within(world, here, range + 2); old != held && last != world.round) {
+            last = world.round;
+            std::printf("HOLD-MISMATCH %d reset %d %d\n", world.round, old ? 1 : 0, held ? 1 : 0);
+        }
+    });
+    return held;
+}
 
 } // namespace
 
