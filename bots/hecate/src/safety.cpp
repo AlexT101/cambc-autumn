@@ -1337,6 +1337,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
         vec2 pos;
         const ChampionBelief* belief;
         std::int8_t first; // acts before us next round; -1 until needed
+        std::int8_t wakes; // strike reach on its turn this round, -1 if done; -2 until needed
     };
     union Others { // the first n only: the engine charges for every byte written
         std::array<Other, 2 * max_fighters> at;
@@ -1362,11 +1363,11 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             n = 0;
             for (const auto& o : world_.allies)
                 if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o))
-                    others.at[n++] = {o.pos, &o, -1};
+                    others.at[n++] = {o.pos, &o, -1, -2};
             for (auto left = seen_enemies(); left; left &= left - 1)
                 if (const auto& o = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
                     n < static_cast<int>(others.at.size()) && !gone(o))
-                    others.at[n++] = {o.pos, &o, -1};
+                    others.at[n++] = {o.pos, &o, -1, -2};
             if (camp_factor_ <= 0) camp_factor_ = camp_hit_factor();
             if (refresh_) {
                 reread = true;
@@ -1390,14 +1391,16 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             for (int k = 0; k < n; ++k) near[k_near++] = static_cast<std::uint8_t>(k);
         }
         const auto size = groups[g].members.size();
-        // An asleep member wakes only when the group is damaged: by us, which our own choices
-        // weigh, or by another champion yet to act this round near enough to hit it (a ground
-        // spell's area or a dash then a ranged attack: 5).
+        // An asleep member wakes only when the group is damaged or stunned: by us, which our own
+        // choices weigh, or by another champion yet to act this round within its strike's reach.
         bool stirred = c.asleep == 0;
-        for (int k = 0; k < n && !stirred; ++k)
-            if (!others.at[k].belief->acted)
-                for (std::size_t i = 0; i < size && !stirred; ++i)
-                    stirred = c.health[i] > 0 && dist(others.at[k].pos, groups[g].members[i].pos) <= ability_range + 1;
+        for (int k = 0; k < n && !stirred; ++k) {
+            auto& o = others.at[k];
+            if (o.wakes == -2) o.wakes = o.belief->acted ? -1 : static_cast<std::int8_t>(strike(*o.belief, world_.round).reach);
+            if (o.wakes < 0) continue;
+            for (std::size_t i = 0; i < size && !stirred; ++i)
+                stirred = c.health[i] > 0 && dist(o.pos, groups[g].members[i].pos) <= o.wakes;
+        }
         if (static_cast<std::size_t>(count) + size > members_.size()) members_.resize(static_cast<std::size_t>(count) + size);
         auto* const out = members_.data();
         for (std::size_t i = 0; i < size; ++i) {
