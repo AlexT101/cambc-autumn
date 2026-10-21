@@ -25,7 +25,7 @@ def count(d):
                 bot = 1 if (team == "a") == (order == "12") else 2
                 # The engine pads stdout with NULs at line starts, which would hide lines from ^.
                 out = z.read(f"team-{team}.stdout").replace(b"\0", b"").decode("utf-8", "replace")
-                hits = [m for m in re.finditer(r"^OOF (\d+) (.+)$", out, re.M) if not m[2].startswith("draft")]
+                hits = [m for m in re.finditer(r"^OOF (\d+) (.+?)(?: path=\S*)?$", out, re.M) if not m[2].startswith("draft")]
                 turns[bot] += len(hits)
                 games[bot] += bool(hits)
                 for m in hits:

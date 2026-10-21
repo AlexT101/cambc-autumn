@@ -43,8 +43,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("paths", nargs="+")
     ap.add_argument("--depth", type=int, default=0, help="keep the first N phases of each path (0: all)")
-    ap.add_argument("--top", type=int, default=25, help="rows per bot")
+    ap.add_argument("--top", type=int, default=25, help="rows per bot (0: all)")
     args = ap.parse_args()
+    top = args.top if args.top > 0 else None
 
     paths = collections.defaultdict(collections.Counter)
     games = collections.Counter()
@@ -71,13 +72,14 @@ def main():
         print(f"\n{bot}: {total} out-of-fuel turns in {games[bot]} games")
         if not total:
             continue
-        width = max(len("path"), *(len(p) for p, _ in tally.most_common(args.top)))
+        rows = tally.most_common(top)
+        width = max([len("path")] + [len(p) for p, _ in rows])
         print(f"  {'path':<{width}}  count   share")
-        for p, n in tally.most_common(args.top):
+        for p, n in rows:
             print(f"  {p:<{width}}  {n:5}  {n / total:6.1%}")
-        if len(tally) > args.top:
-            rest = total - sum(n for _, n in tally.most_common(args.top))
-            print(f"  {f'({len(tally) - args.top} more)':<{width}}  {rest:5}  {rest / total:6.1%}")
+        if len(tally) > len(rows):
+            rest = total - sum(n for _, n in rows)
+            print(f"  {f'({len(tally) - len(rows)} more)':<{width}}  {rest:5}  {rest / total:6.1%}")
 
 
 if __name__ == "__main__":
