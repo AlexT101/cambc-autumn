@@ -623,10 +623,13 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
         opened = true;
         if (nearest + 2 > cap) continue;
         route_exhausted_ = false;
-        auto& self = cambc::self();
-        const auto ally = cambc::vision::champion_at(a);
-        const auto mine = self.gem_count(), theirs = ally.gem_count();
-        if (mine > theirs || (mine == theirs && self.champion_name() > ally.champion_name())) return false;
+        const auto ally = champion_at(a);
+        const auto mine = my_gems(), theirs = gems_of(ally);
+        if (mine > theirs) return false;
+        if (mine == theirs) {
+            const auto my_type = static_cast<cambc::champion_type>(identity_of(static_cast<cambc::handle_champion_t>(my_handle())).type);
+            if (my_type > static_cast<cambc::champion_type>(identity_of(ally).type)) return false;
+        }
         const auto best = best_step(avoid, 0, [&](vec2 p) { return -dist(p, a); });
         return best && move_to(*best);
     }
@@ -711,30 +714,40 @@ bool Pathing::step_closer(vec2 target, const bitboard* avoid) {
     return best && move_to(*best);
 }
 
-bitboard dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also) {
+namespace {
+
+void dash_landings_into(const StaticMap& map, vec2 from, const bitboard* also, bitboard& landings) {
     static bitboard camps{cambc::uninitialized}, excluded{cambc::uninitialized}, t{cambc::uninitialized};
     camps_into(camps);
     // Dash paths cross holes, altars, allies and unseen enemies, but not walls, camps or visible
     // enemies (probe-dash-enemy).
     occupancy_into(team::enemy, t);
     or_into(map.walls, camps, excluded);
-    excluded |= t;
-    auto landings = excluded.reachable_tiles(from, 2);
-    landings &= map.open_for_us;
+    or_into(excluded, t, excluded);
+    excluded.reachable_tiles_into(from, 2, landings);
+    and_into(landings, map.open_for_us, landings);
     or_into(camps, t, excluded);
     occupancy_into(team::ally, t);
-    excluded |= t;
+    or_into(excluded, t, excluded);
     teleports_into(t);
-    excluded |= t;
-    if (also) excluded |= *also;
-    excluded &= landings;
-    landings ^= excluded;
-    landings.set(from, false);
+    or_into(excluded, t, excluded);
+    if (also) or_into(excluded, *also, excluded);
+    and_into(excluded, landings, excluded);
+    xor_into(landings, excluded, landings);
+    set_tile(landings, from, false);
+}
+
+} // namespace
+
+const bitboard& dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also) {
+    static bitboard landings{cambc::uninitialized};
+    dash_landings_into(map, from, also, landings);
     return landings;
 }
 
-bitboard Pathing::dash_landings() {
-    auto landings = dash_landings_from(map(), my_pos(), bumped_any_ ? &bumped_ : nullptr);
+const bitboard& Pathing::dash_landings() {
+    static bitboard landings{cambc::uninitialized};
+    dash_landings_into(map(), my_pos(), bumped_any_ ? &bumped_ : nullptr, landings);
     if (guarding_ && safety_) {
         if (const bitboard* board = safety_->guarded_board()) drop(landings, *board);
         mark_known_guarded(landings, false);

@@ -31,7 +31,7 @@ bool castable(const World& world, int slot) {
 struct Cast {
     int slot = -1;
     float value = 0;
-    std::optional<cambc::champion> champion;
+    std::optional<cambc::handle_champion_t> champion;
     std::optional<cambc::camp> camp;
     vec2 tile{-1, -1};
     bool dash = false; // a landing on `tile`
@@ -41,11 +41,10 @@ struct Cast {
     }
     bool execute() const {
         if (slot < 0) return false;
-        const auto ability = cambc::self().abilities()[slot];
         try {
-            if (champion) return ability.use(*champion);
-            if (camp) return ability.use(*camp);
-            const bool cast = ability.use(tile);
+            if (champion) return cast_slot_on(slot, *champion);
+            if (camp) return cast_slot_on(slot, static_cast<cambc::handle_camp_t>(*camp));
+            const bool cast = cast_slot(slot, tile);
             outside_dashes() += cast && dash;
             return cast;
         } catch (const cambc::error&) {
@@ -56,25 +55,25 @@ struct Cast {
 
 float raw_damage(int slot) {
     try {
-        return cambc::self().abilities()[slot].damage_amount();
+        return my_damage(slot);
     } catch (const cambc::error&) {
         return 0;
     }
 }
 
 // Health lost after mitigation and shields, capped at health.
-float damage_to(int slot, const cambc::champion& target, float raw) {
+float damage_to(int slot, cambc::handle_champion_t target, float raw) {
     if (raw <= 0) return 0;
     try {
-        return cambc::self().abilities()[slot].damage_amount(target);
+        return my_damage_to(slot, target);
     } catch (const cambc::error&) {
-        return std::min(raw, target.health());
+        return std::min(raw, record_of(target).health);
     }
 }
 
 bool kept_recall(const ChampionBelief& e) {
     return e.channel == Channel::recall && e.visible
-           && aph::kept_recall(e.live(), e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
+           && aph::kept_recall(e.handle, e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
 }
 
 } // namespace
@@ -280,9 +279,9 @@ Cast enemy_cast(const World& world, Pathing& pathing, float walk, bool landings)
     const auto seen = [&](Foe& x) {
         if (!x.read) {
             x.read = true;
-            const auto c = x.e->live();
-            x.seen = c.is_visible();
-            if (x.seen) x.health = c.health();
+            const auto* live = visible_record(x.e->handle);
+            x.seen = live != nullptr;
+            if (x.seen) x.health = live->health;
         }
         return x.seen;
     };
@@ -295,11 +294,10 @@ Cast enemy_cast(const World& world, Pathing& pathing, float walk, bool landings)
         // A kill takes the bag, both for Cassi and Issac; a cancelled recall counts only if damaged.
         const auto worth = [&](Foe& x) {
             const auto& e = *x.e;
-            const auto c = e.live();
-            const float damage = damage_to(s, c, raw);
+            const float damage = damage_to(s, e.handle, raw);
             float stun = 0;
             if (a.stuns && e.facts().passive != Passive::stun_immune) {
-                if (x.stunned < 0) x.stunned = c.buffs().has_stun();
+                if (x.stunned < 0) x.stunned = has_stun(e.handle);
                 if (!x.stunned) stun = stun_worth(world, e, raw > 0);
             }
             const float bag = params::gem_value * static_cast<float>(pair_gems(world, e));
@@ -342,7 +340,7 @@ Cast enemy_cast(const World& world, Pathing& pathing, float walk, bool landings)
             for (auto& x : foes) {
                 if (dist(here, x.e->pos) > a.range() || retaliation_kills(raw, x.back, health) || !seen(x)) continue;
                 const float v = worth(x);
-                if (v >= threshold && v > best.value) best = Cast{s, v, x.e->live(), std::nullopt, {}};
+                if (v >= threshold && v > best.value) best = Cast{s, v, x.e->handle, std::nullopt, {}};
             }
         }
     }
@@ -386,8 +384,9 @@ Cast camp_cast(const World& world, Pathing& pathing, int group, bool attackers_o
             || !cambc::vision::has_camp(g.members[i].pos))
             continue;
         auto c = g.camp(i);
-        if (!c.is_visible()) continue;
-        const float health = c.health();
+        const auto* live = visible_camp(c);
+        if (!live) continue;
+        const float health = live->health;
         if (health <= 0) continue;
         // A stunned monster skips its next attack, which goes to the nearest champion: one of us
         // when we are in its reach, enemies being held off above.
@@ -395,7 +394,7 @@ Cast camp_cast(const World& world, Pathing& pathing, int group, bool attackers_o
         // At a Monolith, a stun spares whichever of us it would hit.
         for (const auto& a : world.allies)
             exposed |= g.has_monolith && !exposed && a.alive && a.visible && dist(a.pos, g.members[i].pos) <= g.members[i].reach;
-        const float stun = stuns && exposed && !c.buffs().has_stun() ? g.members[i].strength : 0;
+        const float stun = stuns && exposed && !camp_has_stun(c) ? g.members[i].strength : 0;
         members.push_back({c, g.members[i].pos, health, stun});
     }
     if (members.empty()) return {};

@@ -292,7 +292,6 @@ struct ChampionBelief {
     int turns_since_fixed = 0;
 
     const ChampionFacts& facts() const { return aph::facts(type); }
-    cambc::champion live() const { return cambc::detail::handle_access::make_champion(handle); }
     bool ability_ready(int slot, int round) const { return alive && round >= ready_round[slot]; }
     // Farthest tile from which a slot ready in `round` can stun, or -1.
     int ready_stun_reach(int round) const {
@@ -548,8 +547,11 @@ inline float linked_partner_health(const World& world, const ChampionBelief& e) 
 
 // Many bots start a recall at every turn end and cancel it next turn unless wanted: only one kept
 // through a turn is likely to complete.
-inline bool kept_recall(const cambc::champion& c, int full = static_cast<int>(cambc::constants::recall_time)) {
-    return c.is_recalling() && static_cast<int>(c.remaining_channel_time()) < full - 1;
+inline bool kept_recall(cambc::handle_champion_t c, int full = static_cast<int>(cambc::constants::recall_time)) {
+    if (!cambc::champion_state::from_bits_retain(record_of(c).state).contains(cambc::champion_state::recalling)) return false;
+    static std::int32_t turns;
+    ok(cambc::detail::sdk_champion_channel_time(static_cast<std::uint32_t>(c), &turns));
+    return turns < full - 1;
 }
 
 inline bool enemy_seen(const World& world) { return world.enemy_seen(); }

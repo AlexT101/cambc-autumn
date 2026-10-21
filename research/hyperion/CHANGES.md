@@ -439,3 +439,11 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    `--phases`: 62ffe96 (the fuel fix before its review fixes) vs w2-merged 50.9% (ladder 50.0, gen 51.0), out-of-fuel
    turns 6349 vs 8278 (-23%); vs w1 49.7% (ladder 51.4, gen 49.4), 5354 vs 4982 (+7.5%). The review fixes were not
    A/B'd (bench out-of-fuel turns 188 vs 62ffe96's 181, within its ±20).
+58. 2026-10-21 (not yet submitted). Raw engine reads, ported from 3b2edbd (claude/happy-franklin-nltty2) onto the wave
+   3+4 code, behaviour-identical: util.h record_of/visible_record/is_alive/identity_of/gems_of/has_stun/champion_at,
+   visible_camp/camp_has_stun and my_damage/my_heal/my_shield/my_cooldown/cast_slot/attack_champion replace
+   cambc::champion objects (ChampionBelief::live() deleted), camp objects' double record reads and buff collections, and
+   copies of cambc::self().abilities(), in attack_target, heal_choice and mend, enemy_cast and camp_cast, the strike
+   search's reads and actions, cast_valued and Pathing's ally swap; self_abilities' ready() returns a slot.
+   avoid(), camp_area(), enemy_area(), dash_landings_from() and Pathing::dash_landings() return scratch boards.
+   Subset at 100M (8 games, below): replays 8/8 identical, total fuel -1.51%.

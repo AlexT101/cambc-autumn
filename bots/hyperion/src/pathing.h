@@ -21,7 +21,8 @@ struct StaticMap;
 
 // Tiles a dash from `from` can land on: <= 2 king steps not through walls or camps, onto a free
 // tile; off `also` too when given.
-bitboard dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also = nullptr);
+// A scratch board, valid until the next call.
+const bitboard& dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also = nullptr);
 
 class Pathing {
 public:
@@ -96,8 +97,8 @@ public:
     void set_guarding(bool on);
     bool guarding() const { return guarding_; }
 
-    // Unseen units can still block these.
-    bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile, not known guarded
+    // Unseen units can still block these. dash_landings() is a scratch board, valid until the next call.
+    const bitboard& dash_landings(); // <= 2 king steps not through walls or camps, onto a free tile, not known guarded
     bool landing_clear(vec2 p) { return !guarded(p); } // asked just before a landing is tried
     bitboard teleport_targets(); // free open or bush tiles within 3, not camp tiles or enemy spawn
 

@@ -729,3 +729,11 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
     136), 18739 memo sims (16945, 17846, 12938), mean 35860 (35352). Within the bench's +-20: ambush, expanse and lanes
     are identical, and the diverged games move both ways (01hooks-b 10 -> 36, 01hooks-a 19 -> 10, 00contest-a 88 -> 72).
     Out-of-fuel turns under chase/prey 24 -> 16. Not A/B'd.
+- raw-bindings port (2026-10-21; branch rawbind on w4-int 0856156): 3b2edbd's raw reads re-implemented on waves 1-4
+  (CHANGES 58), plus camp_cast's camp reads (one record, raw stun) and Pathing's ally swap. Checked on a subset, not
+  the full bench: bench.py at 100M vs hecate, both sides, 00interlock and gen-classic-720700000 on the own draft
+  (Heart of Ruin, Marcella, Vesper, Ryth) and gen-city-720706900, gen-caves-720700400 on a forced
+  varg,willow,ren,tavi,cassi draft. Replays 8/8 byte-identical, team stdout identical but for SRCH fuel figures.
+  Total fuel -1.30% (own draft) and -1.82% (forced), -1.51% together; p99 -1.5% and -1.8%; 29949 of 29957 turns
+  cheaper. The games ran dashes and landings (DASH/LANDING lines), Willow heals and Varg/Heart of Ruin shields (MEND h/s)
+  and the strike search; cast_valued never fired in them.
