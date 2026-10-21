@@ -469,12 +469,14 @@ ExitBounds exit_bounds(const Side& us, const Side& them) {
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does.
 // `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
-// {-1, -1} if the fuel left fell below `fuel_floor` first. With `self_falls` and not Dealt, a fight
+// {-1, -1} if the fuel left fell below `fuel_floor` first. With `stale`, a turn that ran out of fuel
+// and resumed in a later round is abandoned (World::throw_if_stale) rather than played out on that
+// round's fuel; asked where the fuel is. With `self_falls` and not Dealt, a fight
 // our fighter must outlive ends at once as {0, 0}, and one they must win as {0, horizon}; once our
 // fighter has fallen, one the rest of our side must outlive ends as {0, 0}.
 template <bool Dealt = false>
 std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = fight_horizon,
-                             std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0) {
+                             std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0, const World* stale = nullptr) {
     int ours = 0, theirs = 0;
     int watched = self_falls ? us.self : -1;
     // Asked at the start and as either side loses a member.
@@ -522,7 +524,10 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
                 });
             }
         }
-        if (fuel_floor && t % 8 == 7 && fuel() < fuel_floor) return {-1, -1};
+        if (t % 8 == 7) {
+            if (fuel_floor && fuel() < fuel_floor) return {-1, -1};
+            if (stale) stale->throw_if_stale();
+        }
         const bool their_turn = (t % 2 == 0) == they_first;
         // act()'s branch, counted here: trade()'s debug_block runs act() too, and debug blocks
         // must not nest.
@@ -563,14 +568,14 @@ constinit std::array<Side, 2> debug_sides{};
 
 // Only the order where they strike first: `lost` is all callers need.
 // Plays the fight out on the sides given, which callers discard: copying them is costly.
-Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first = true, int horizon = fight_horizon) {
+Trade trade(Side& us, Side& them, std::uint64_t fuel_floor, const World& world, bool they_first, int horizon) {
     Trade t;
     t.allies = us.count;
     t.enemies = them.count;
     if constexpr (debug_fights) t.our_health = us.health(), t.their_health = them.health();
     if (them.count == 0) return t;
     debug_block({ debug_sides = {us, them}; });
-    const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, horizon, debug_fights ? &t.dealt : nullptr, fuel_floor);
+    const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, horizon, debug_fights ? &t.dealt : nullptr, fuel_floor, &world);
     debug_block({
         // An early end (outlives, overwhelmed) must agree with the fight played out.
         bool falls = false;
@@ -2329,10 +2334,10 @@ Trade Safety::run(const FightKey& k, std::uint32_t enemies) {
     if (k.mode == static_cast<std::uint8_t>(Engage::Mode::idle)) {
         t.allies = us.count;
         t.enemies = them.count;
-        t.turns_to_kill_us = simulate(us, them, true, nullptr, k.horizon).second;
+        t.turns_to_kill_us = simulate(us, them, true, nullptr, k.horizon, nullptr, 0, &world_).second;
         t.lost = t.self_falls = t.turns_to_kill_us != 0;
     } else {
-        t = trade(us, them, end_reserve, stand, k.horizon);
+        t = trade(us, them, end_reserve, world_, stand, k.horizon);
     }
     debug_block({
         ++memo_stats.sims;
