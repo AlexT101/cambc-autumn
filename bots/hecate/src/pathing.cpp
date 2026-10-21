@@ -20,7 +20,7 @@ const StaticMap& Pathing::map() const { return world_.map(); }
 
 const bitboard& Pathing::static_walls() const { return world_.me().facts().has_dash() ? map().dash_walls : map().blocked_for_us; }
 
-const bitboard& Pathing::foot() const { return world_.me().facts().has_dash() ? map().dash_foot : map().foot; }
+const bitboard& Pathing::foot() const { return world_.me().facts().has_dash() ? map().dash_foot() : map().foot(); }
 
 void Pathing::begin_turn() {
     guard_ = nullptr; // a turn abandoned as stale left its guard set
@@ -57,12 +57,12 @@ const Field& Pathing::to_any_altar() {
     return cached(any_altar_, goals);
 }
 
-const Field& Pathing::to_hop(int hop) { return cached(entry(hop_fields_, map().hops.size(), hop), map().hops[hop].sources); }
+const Field& Pathing::to_hop(int hop) { return cached(entry(hop_fields_, map().hops().size(), hop), map().hops()[hop].sources); }
 
 int Pathing::hop_landing_steps(int hop) {
-    auto& steps = entry(hop_landing_steps_, map().hops.size(), hop);
+    auto& steps = entry(hop_landing_steps_, map().hops().size(), hop);
     if (!steps) {
-        const auto& h = map().hops[hop];
+        const auto& h = map().hops()[hop];
         const auto& field = to_altar(h.altar);
         int best = unreachable;
         for (const vec2 l : h.landings.positions()) best = std::min(best, field.at(l));

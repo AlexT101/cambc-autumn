@@ -426,9 +426,9 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory) {
     HopRoute best;
     const auto& map = world.map();
     const vec2 here = my_position();
-    if (map.hops.empty() || !test(pathing.foot(), here)) return best;
-    for (int h = 0; h < static_cast<int>(map.hops.size()); ++h) {
-        const int a = map.hops[h].altar;
+    if (map.hops().empty() || !test(pathing.foot(), here)) return best;
+    for (int h = 0; h < static_cast<int>(map.hops().size()); ++h) {
+        const int a = map.hops()[h].altar;
         if (world.altars[a].enemy_lock || (a == memory.avoid_altar && world.round < memory.avoid_until)) continue;
         const int walk = pathing.to_hop(h).at(here), inner = pathing.hop_landing_steps(h);
         if (walk == unreachable || inner == unreachable) continue;
@@ -440,7 +440,7 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory) {
 
 // Towards the hop's sources; on one, the crystal to the free landing nearest its altar.
 void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
-    const auto& hop = world.map().hops[h];
+    const auto& hop = world.map().hops()[h];
     if (test(hop.sources, my_position())) {
         auto targets = pathing.teleport_targets();
         targets &= hop.landings;

@@ -211,6 +211,26 @@ void dilate(bitboard& tiles, const bitboard& open, int steps, const bitboard& la
     }
 }
 
+// out = the tiles within Chebyshev r of `in`, terrain ignored; out must not be `in`. Shifts cost
+// less than a square drawn per tile once there are more than a few.
+void square_dilate(const bitboard& in, int r, bitboard& out) {
+    static bitboard rows{cambc::uninitialized}, shifted{cambc::uninitialized};
+    copy_into(in, rows);
+    for (int d = 1; d <= r; ++d) {
+        in.shift_right_into(d, shifted);
+        rows |= shifted;
+        in.shift_right_into(-d, shifted);
+        rows |= shifted;
+    }
+    copy_into(rows, out);
+    for (int d = 1; d <= r; ++d) {
+        rows.shift_up_into(d, shifted);
+        out |= shifted;
+        rows.shift_up_into(-d, shifted);
+        out |= shifted;
+    }
+}
+
 // Append-only text for the belief dump in a fixed buffer: std::string appends cost several times
 // more fuel per character.
 class DumpWriter {
@@ -301,6 +321,45 @@ const Field& StaticMap::make_enemy_field() const {
     return *enemy_field_;
 }
 
+const bitboard& StaticMap::make_foot() const {
+    FuelMeter meter{"foot"};
+    bitboard b;
+    if (!ally_spawn_tiles.empty()) blocked_for_us.reachable_tiles_into(ally_spawn_tiles[0], unreachable, b);
+    return foot_.emplace(std::move(b));
+}
+
+const bitboard& StaticMap::make_dash_foot() const {
+    FuelMeter meter{"dash_foot"};
+    bitboard b;
+    if (!ally_spawn_tiles.empty()) dash_walls.reachable_tiles_into(ally_spawn_tiles[0], unreachable, b);
+    return dash_foot_.emplace(std::move(b));
+}
+
+const std::vector<StaticMap::Hop>& StaticMap::make_hops() const {
+    FuelMeter meter{"hops"};
+    auto& hops = hops_.emplace();
+    if (ally_spawn_tiles.empty()) return hops;
+    static bitboard pocket{cambc::uninitialized}, near_foot{cambc::uninitialized};
+    bool near_made = false;
+    for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
+        const auto& tributes = altars[a].tribute_tiles();
+        if (tributes.is_empty() || !disjoint(tributes, foot())) continue;
+        blocked_for_us.reachable_tiles_into(first_tile(tributes), unreachable, pocket);
+        drop(pocket, camp_tiles);
+        if (!near_made) square_dilate(foot(), teleport_crystal_range, near_foot), near_made = true;
+        Hop hop;
+        hop.altar = a;
+        and_into(pocket, near_foot, hop.landings);
+        if (hop.landings.is_empty()) continue;
+        square_dilate(hop.landings, teleport_crystal_range, hop.sources);
+        hop.sources &= foot();
+        drop(hop.sources, camp_tiles);
+        hops.push_back(std::move(hop));
+    }
+    debug_block({ std::printf("HOPS %d\n", static_cast<int>(hops.size())); });
+    return hops;
+}
+
 const BushCluster& StaticMap::bush_cluster(vec2 p) const {
     for (;;) {
         if (const int i = cluster_of_[tile_index(p)]; i > 0) return bush_clusters_[i - 1];
@@ -308,56 +367,75 @@ const BushCluster& StaticMap::bush_cluster(vec2 p) const {
     }
 }
 
-[[gnu::flatten]] const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) const {
+[[gnu::flatten, gnu::noinline]] const BushCluster* StaticMap::grow_cluster(vec2 p, std::uint64_t fuel_floor) const {
     FuelMeter meter{"bush_cluster"};
-    if (!growth_ || !test(growth_->tiles, p)) {
-        // The host floods 8-connected. That cluster is edge-connected too unless it holds a pair
-        // of bushes joined only diagonally; then grow from p by edge steps within it.
-        static bitboard open{cambc::uninitialized}, linked{cambc::uninitialized};
-        static bool open_made = false;
-        if (!open_made) not_into(bushes, open), open_made = true;
-        bitboard tiles{cambc::uninitialized};
-        open.reachable_tiles_into(p, static_cast<std::uint16_t>(width * height), tiles);
-        and_into(tiles, diagonal_links(), linked);
-        growth_ = Growth{std::move(tiles), !linked.is_empty()};
+    using Phase = Growth::Phase;
+    const auto afford = [&](std::uint64_t cost) { return fuel_floor == 0 || fuel_ok(fuel_floor + cost); };
+    // The host floods 8-connected, `layers` a step from all the tiles so far. That cluster is
+    // edge-connected too unless it holds a pair of bushes joined only diagonally; then grow from
+    // the origin by edge steps within it, in WASM at ~150 fuel a tile (a host step over the whole
+    // board costs ~2k). Indexing costs ~20 fuel a tile.
+    constexpr int layers = 32, edge_batch = 64, index_batch = 512;
+    static std::array<vec2, max_tiles> listed, queue;
+    if (!growth_) {
+        growth_.emplace();
+        growth_->origin = p;
+        growth_->tiles.set(p);
     }
     auto& g = *growth_;
-    static std::array<vec2, max_tiles> flood, reached;
-    const auto n = static_cast<int>(g.tiles.positions_into(flood));
-    // Indexing costs ~20 fuel a tile, an edge-step flood in WASM ~150 (a host step over the whole
-    // board ~2k). bush_cluster() passes no floor and must finish.
-    if (fuel_floor > 0 && !fuel_ok(fuel_floor + (g.diagonal ? 170 : 20) * static_cast<std::uint64_t>(n))) return nullptr;
-    const auto index = static_cast<std::uint16_t>(bush_clusters_.size() + 1);
-    BushCluster c;
-    if (!g.diagonal) {
-        for (int i = 0; i < n; ++i) cluster_of_[tile_index(flood[i])] = index;
-        c.tiles = std::move(g.tiles);
-    } else {
-        // Tiles of the flood in no cluster yet are marked pending; those of other clusters are
-        // not edge-connected to p.
-        constexpr std::uint16_t pending = 0xFFFF;
-        for (int i = 0; i < n; ++i)
-            if (auto& k = cluster_of_[tile_index(flood[i])]; k == 0) k = pending;
-        int size = 0;
-        reached[size++] = p;
-        cluster_of_[tile_index(p)] = index;
-        c.tiles.set(p);
-        for (int head = 0; head < size; ++head)
-            for (const vec2 d : {vec2::north, vec2::east, vec2::south, vec2::west}) {
-                const vec2 q = reached[head] + d;
-                if (!in_bounds(q)) continue;
-                auto& k = cluster_of_[tile_index(q)];
-                if (k != pending) continue;
-                k = index;
-                reached[size++] = q;
-                c.tiles.set(q);
-            }
-        for (int i = 0; i < n; ++i)
-            if (auto& k = cluster_of_[tile_index(flood[i])]; k == pending) k = 0;
+    while (g.phase == Phase::flood) {
+        static cambc::distance_field field;
+        static bitboard open{cambc::uninitialized}, reached{cambc::uninitialized};
+        static bool open_made = false;
+        if (!afford(search_cost_estimate(layers))) return nullptr;
+        if (!open_made) not_into(bushes, open), open_made = true;
+        const int depth = field.compute_with_expansion_count(open, g.tiles, reached, layers);
+        g.tiles.swap(reached);
+        if (depth >= layers) continue;
+        and_into(g.tiles, diagonal_links(), reached);
+        if (reached.is_empty()) {
+            g.phase = Phase::index;
+        } else {
+            g.phase = Phase::edges;
+            g.cluster.set(g.origin);
+            queue[0] = g.origin;
+            g.size = 1;
+        }
     }
-    clustered_ |= c.tiles;
+    if (g.phase == Phase::edges) {
+        // Bits read and set in the boards' storage: a host call per tile costs more.
+        const auto stride = cambc::detail::layout().chunk_stride;
+        const std::uint64_t* flood = g.tiles.ptr();
+        std::uint64_t* reached = g.cluster.ptr();
+        while (g.head < g.size) {
+            if (!afford(150 * edge_batch)) return nullptr;
+            for (const int end = std::min(g.size, g.head + edge_batch); g.head < end; ++g.head)
+                for (const vec2 d : {vec2::north, vec2::east, vec2::south, vec2::west}) {
+                    const vec2 q = queue[g.head] + d;
+                    if (!in_bounds(q)) continue;
+                    const auto word = static_cast<std::size_t>(q.y >> 3) * stride + static_cast<std::size_t>(q.x >> 3);
+                    const std::uint64_t bit = std::uint64_t{1} << ((q.y & 7) * 8 + (q.x & 7));
+                    if (!(flood[word] & bit) || (reached[word] & bit)) continue;
+                    reached[word] |= bit;
+                    queue[g.size++] = q;
+                }
+        }
+        g.tiles.swap(g.cluster);
+        g.phase = Phase::index;
+    }
+    if (g.count == 0) {
+        if (!afford(small_cost_estimate)) return nullptr;
+        g.count = static_cast<int>(g.tiles.positions_into(listed));
+        bush_clusters_.push_back(BushCluster{std::move(g.tiles)});
+    }
+    const auto index = static_cast<std::uint16_t>(bush_clusters_.size());
+    while (g.indexed < g.count) {
+        if (!afford(20 * index_batch)) return nullptr;
+        for (const int end = std::min(g.count, g.indexed + index_batch); g.indexed < end; ++g.indexed)
+            cluster_of_[tile_index(listed[g.indexed])] = index;
+    }
+    clustered_ |= bush_clusters_.back().tiles;
     growth_.reset();
-    bush_clusters_.push_back(std::move(c));
     return &bush_clusters_.back();
 }
 
@@ -366,7 +444,6 @@ bool StaticMap::find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor)
     not_into(clustered_, left);
     left &= within(bushes, p, radius);
     while (!left.is_empty()) {
-        if (!fuel_ok(fuel_floor + (growth_ ? 0 : 20000))) return false;
         const auto* c = grow_cluster(first_tile(left), fuel_floor);
         if (!c) return false;
         not_into(c->tiles, rest);
@@ -381,31 +458,14 @@ bool StaticMap::find_all_bush_clusters(std::uint64_t fuel_floor) const {
         not_into(clustered_, left);
         left &= bushes;
         if (left.is_empty()) return true;
-        if (!fuel_ok(fuel_floor + (growth_ ? 0 : 20000)) || !grow_cluster(first_tile(left), fuel_floor)) return false;
+        if (!grow_cluster(first_tile(left), fuel_floor)) return false;
     }
 }
 
-const bitboard& StaticMap::near_bushes() const {
-    if (!near_bushes_) {
-        static bitboard rows{cambc::uninitialized}, shifted{cambc::uninitialized};
-        copy_into(bushes, rows);
-        for (int d = 1; d <= 2; ++d) {
-            bushes.shift_right_into(d, shifted);
-            rows |= shifted;
-            bushes.shift_right_into(-d, shifted);
-            rows |= shifted;
-        }
-        bitboard b{cambc::uninitialized};
-        copy_into(rows, b);
-        for (int d = 1; d <= 2; ++d) {
-            rows.shift_up_into(d, shifted);
-            b |= shifted;
-            rows.shift_up_into(-d, shifted);
-            b |= shifted;
-        }
-        near_bushes_ = std::move(b);
-    }
-    return *near_bushes_;
+const bitboard& StaticMap::make_near_bushes() const {
+    bitboard b{cambc::uninitialized};
+    square_dilate(bushes, 2, b);
+    return near_bushes_.emplace(std::move(b));
 }
 
 const bitboard& StaticMap::diagonal_links() const {
@@ -488,6 +548,10 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
         g.adjacent();
         g.threat();
     }
+    if (!foot_ && !afford(field)) return false;
+    foot();
+    if (!hops_ && !afford(field)) return false;
+    hops();
     return true;
 }
 
@@ -641,16 +705,11 @@ void find_crossings(StaticMap& s) {
     // No two may touch, or a field would walk along the line, which no dash does: keep every other
     // tile ((x + y) even), and of diagonal neighbours, which share that parity, the one on an even
     // row. Ties broken by height would chain: a diagonal run would keep only its lowest tile.
+    // Both masks are written straight into the boards' 8x8 chunks, which start on even rows and
+    // columns: (x + y) even is 0x55 on even rows and 0xAA on odd ones; odd rows are 0xFF.
+    const auto words = bitboard::raw_buffer_size() / sizeof(std::uint64_t);
     bitboard even{cambc::uninitialized}, beside{cambc::uninitialized};
-    clear_board(even);
-    for (int x = 0; x < s.width; x += 2) even.set({x, 0});
-    even.shift_right_into(1, beside);
-    beside.shift_up_into(1, t);
-    even |= t;
-    for (int rows = 2; rows < s.height; rows *= 2) {
-        even.shift_up_into(rows, t);
-        even |= t;
-    }
+    std::fill_n(even.ptr(), words, 0xAA55AA55AA55AA55ull);
     clear_board(beside);
     for (const int d : {1, -1}) {
         s.crossable.shift_right_into(d, t);
@@ -662,12 +721,7 @@ void find_crossings(StaticMap& s) {
     drop(beside, even);
     drop(s.crossable, beside);
     bitboard odd_rows{cambc::uninitialized};
-    clear_board(odd_rows);
-    for (int x = 0; x < s.width; ++x) odd_rows.set({x, 1});
-    for (int rows = 2; rows < s.height; rows *= 2) {
-        odd_rows.shift_up_into(rows, t);
-        odd_rows |= t;
-    }
+    std::fill_n(odd_rows.ptr(), words, 0xFF00FF00FF00FF00ull);
     clear_board(beside);
     for (const int dx : {1, -1})
         for (const int dy : {1, -1}) {
@@ -681,34 +735,13 @@ void find_crossings(StaticMap& s) {
     drop(s.dash_walls, s.crossable);
 }
 
-void find_hops(StaticMap& s) {
-    if (s.ally_spawn_tiles.empty()) return;
-    s.blocked_for_us.reachable_tiles_into(s.ally_spawn_tiles[0], unreachable, s.foot);
-    s.dash_walls.reachable_tiles_into(s.ally_spawn_tiles[0], unreachable, s.dash_foot);
-    bitboard pocket{cambc::uninitialized};
-    for (int a = 0; a < static_cast<int>(s.altars.size()); ++a) {
-        const auto& tributes = s.altars[a].tribute_tiles();
-        if (tributes.is_empty() || !(tributes & s.foot).is_empty()) continue;
-        s.blocked_for_us.reachable_tiles_into(tributes.positions()[0], unreachable, pocket);
-        drop(pocket, s.camp_tiles);
-        StaticMap::Hop hop;
-        hop.altar = a;
-        for (const vec2 l : pocket.positions()) {
-            if (!any_within(s.foot, l, teleport_crystal_range)) continue;
-            hop.landings.set(l);
-            hop.sources.draw_chebyshev(l, teleport_crystal_range);
-        }
-        hop.sources &= s.foot;
-        drop(hop.sources, s.camp_tiles);
-        if (!hop.landings.is_empty()) s.hops.push_back(std::move(hop));
-    }
-}
-
 } // namespace
 
 [[gnu::flatten]] std::unique_ptr<StaticMap> StaticMap::build() {
     FuelMeter meter{"build_static"};
+    std::optional<FuelMeter> part{std::in_place, "static_new"};
     auto s = std::make_unique<StaticMap>();
+    part.reset(), part.emplace("static_boards");
     s->width = cambc::map::width();
     s->height = cambc::map::height();
     s->symmetry = cambc::map::symmetry();
@@ -730,6 +763,7 @@ void find_hops(StaticMap& s) {
     for (auto t : enemy_spawn_tiles) draw_square(s->near_enemy_spawn, t, 1);
     or_into(s->walls, s->bushes, s->walls_and_bushes);
 
+    part.reset(), part.emplace("static_camps");
     const auto altar_positions = s->altar_tiles.positions();
     s->altars.resize(altar_positions.size());
     for (std::size_t i = 0; i < altar_positions.size(); ++i) {
@@ -789,9 +823,9 @@ void find_hops(StaticMap& s) {
     s->shared_gems = big && !other;
     or_into(s->camp_tiles, s->blocked_for_us, s->standable);
     not_into(s->standable, s->standable);
+    part.reset(), part.emplace("crossings");
     find_crossings(*s);
-    find_hops(*s);
-    debug_block({ std::printf("HOPS %d\n", static_cast<int>(s->hops.size())); });
+    part.reset();
 
     const auto* plan = read_draft_plan();
     if (plan && plan->steps && plan->width == s->width && plan->height == s->height && plan->groups == s->groups.size()
@@ -1387,7 +1421,7 @@ struct World::CampViews {
                 const auto& c = camps[g];
                 if (!(c.state == CampState::cleared && c.holder && round >= c.payout_round())
                     && !(c.state == CampState::respawning && round >= c.respawn_round)
-                    && !(c.awake == Awake::awake && round - c.state_round > 2))
+                    && !(c.awake == Awake::awake && round - c.state_round > cambc::constants::camp_sleep_time))
                     continue;
             }
             const auto version = camps[g].version;
@@ -1416,7 +1450,7 @@ struct World::CampViews {
             c.state = CampState::alive;
             restore(c, G, c.respawn_round - 1); // a new version
         }
-        if (c.awake == Awake::awake && round - c.state_round > 2) c.awake = Awake::unknown;
+        if (c.awake == Awake::awake && round - c.state_round > cambc::constants::camp_sleep_time) c.awake = Awake::unknown;
         return;
     }
 
