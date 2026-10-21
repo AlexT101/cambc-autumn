@@ -1,7 +1,8 @@
 # Strike search: handoff notes
 
-Phase 1 (search core) is on main (52.6% vs main, kept), and so are phase 3a and phase 2 (heal and shield as
-options; 50.0% of 1094 vs main, 51.1% at 100M, out-of-fuel turns 7041 vs 6256). Spec: [STRIKE-SEARCH.md](STRIKE-SEARCH.md).
+Phase 1 (search core) is on main (52.6% vs main, kept), and so are phase 3a, phase 2 (heal and shield as options;
+50.0% of 1094 vs main, 51.1% at 100M, out-of-fuel turns 7041 vs 6256) and phase 3b (removal; 48.9% of 1094, 51.0% at
+100M, out-of-fuel turns 8663 vs 8071). Spec: [STRIKE-SEARCH.md](STRIKE-SEARCH.md).
 
 ## Phase 3a (on main): Varg's splash in Reach and Strike
 
@@ -59,7 +60,7 @@ options; 50.0% of 1094 vs main, 51.1% at 100M, out-of-fuel turns 7041 vs 6256). 
   hit after. decide's post-plan `shield_if_needed` stays (the search cannot see the goal's hit on a farmed camp).
 - 6 games vs main: 0 EXH/DOM; OOF 46 vs 41. Search mean 11.0k vs 10.3k.
 
-## Phase 3b: removal (orch/strike-p3b)
+## Phase 3b: removal (on main)
 
 - **Rule.** A leaf's removed set (bits by enemy index) drops enemies from its end tile's danger: a killed foe and its
   Cassi/Issac partner (`Unit::drop_kill`, the partner by `linked_partner`, seen or not, so unseen threats from

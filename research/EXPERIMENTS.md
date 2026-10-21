@@ -159,6 +159,11 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   for the goal's camp hit). 50.0% of 1094 vs main (ladder 44.3 of 70, gen 52.0, fresh gen-s1 48.8), out-of-fuel turns
   7041 vs 6256 (+12.5%); at 100M 51.1% (ladder 54.3, gen 51.6, fresh 50.2). Level; kept and merged on the keep rule.
   hecate drafts Heart of Ruin first, so only its shield path is live in this A/B (Willow and Varg only in test drafts).
+- Strike search phase 3b (2026-10-21, orch/strike-p3b as 1753982 on main a850d48): removal. A leaf's killed foes
+  (with a Cassi/Issac partner, seen or not) and stunned foes (stunnable, one turn before ours) leave its end tile's
+  danger; each end tile keeps the best leaf per removed set, less those beaten by a superset. 48.9% of 1094 vs main
+  (ladder 51.4 of 70, gen 47.9, fresh gen-s1 49.6), out-of-fuel turns 8663 vs 8071 (+7.3%); at 100M 51.0% (ladder
+  48.6, gen 51.2, fresh 51.2). Level; kept and merged on the keep rule (follows the rules, plays level).
 
 ### Fuel
 

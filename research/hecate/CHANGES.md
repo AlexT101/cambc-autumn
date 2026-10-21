@@ -317,3 +317,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    post-plan heal and act() its end-of-turn heal and shield unless the goal walked or hit afterwards; decide's early
    heal, shield and reset_may_kill/landing_ready gate run only on turns the search does not plan. 50.0% vs main (1094,
    ladder 44.3, gen 52.0, fresh 48.8), 51.1% at 100M; out-of-fuel turns 7041 vs 6256.
+43. 2026-10-21 (not yet submitted). Strike search phase 3b: killed and stunned enemies leave the end tile's danger
+   (strike-notes.md). A killed foe drops out with its Cassi/Issac partner, even an unseen one; a stunned foe only if
+   stunnable with exactly one turn before ours (stun_worth stays 80). Per end tile the search keeps the best leaf per
+   removed set, less any another beats while removing a superset; pricing queries Reach only for foes some candidate
+   still faces. 48.9% vs main (1094, ladder 51.4, gen 47.9, fresh 49.6), 51.0% at 100M; out-of-fuel turns 8663 vs 8071.
