@@ -127,7 +127,7 @@ The one unseen rule: an unseen credible foe's blow at p is `Threat::at(p)` from 
 
 Merge order: B (bench byte-identical), C's tribute+ward commit (byte-identical), A, C's camp commit, D.
 A/B: `ab.py w1 w0`. Bench `--fuel 0`: OOF total, oof_phases split for want_home and step_guard.
-Verify: TABLE-MISMATCH (bound, lethal, threatened, threats_at) on the bench, expect only unseen-rule flips; `WANTHOME round n` ≤ 1 per turn; SRCH-EXH and SRCH-DOM stay 0 on 00packs, gen shared-gems, gen huge.
+Verify: TABLE-MISMATCH (bound, lethal, threatened, threats_at) on the bench, expect only unseen-rule flips; no `WANTHOME round n` line (act prints one when want_home ran n > 1 times in one decide, not counting answers a ward or shard purchase discarded: those reruns are by design); SRCH-EXH and SRCH-DOM stay 0 on 00packs, gen shared-gems, gen huge.
 On a drop below ~47%: TABLE-MISMATCH per losing map (lethal/threatened flips first, then retreat_step's lower unseen bound); camp deaths ≈ 1 per 16 games.
 
 ---

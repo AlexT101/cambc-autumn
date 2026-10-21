@@ -40,6 +40,8 @@ bool stunned_turn = false; // stunned at this turn's start
 bool searched = false; // the strike search chose this turn's cast, heals and shields included
 vec2 searched_at{};      // where the search's plan ended, and whether it had attacked by then
 bool searched_hit = false;
+// Debug only (WANTHOME): want_home's runs this decide, less the answers a ward or shards discarded.
+int home_asks = 0;
 
 // Read by tools/replay/fight_calibration.py.
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1) {
@@ -2181,6 +2183,7 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
 bool want_home(const World& world, Safety& safety, bool sieging) {
     Phase phase{"want_home"};
+    debug_block({ ++home_asks; });
     world.throw_if_stale();
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
@@ -3230,12 +3233,16 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
             std::construct_at(&safety, world);
         }
         // Even a kept Safety answers anew wherever the unseen enemies count.
+        debug_block({ home_asks -= home.has_value(); });
         home.reset();
     }
 
     // Shopping, heals and shields do not move us.
     const bool on_spawn = test(world.map().ally_spawn, my_position());
-    if ((on_spawn || world.me().facts().passive == Passive::remote_shop) && buy_shards(world)) home.reset();
+    if ((on_spawn || world.me().facts().passive == Passive::remote_shop) && buy_shards(world)) {
+        debug_block({ home_asks -= home.has_value(); });
+        home.reset();
+    }
     if (on_spawn) buy_lock(), buy_crystal(memory);
     if (!world.me().can_act(world.round)) return;
     if (const auto* ender = game_ender(world)) {
@@ -3371,7 +3378,11 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool could_attack = my_can_attack();
     prepare_walk(world, pathing, memory, walk_first_floor);
     const int claim = memory.claim;
+    debug_block({ home_asks = 0; });
     decide(world, pathing, safety, memory);
+    debug_block({
+        if (home_asks > 1) std::printf("WANTHOME %d %d\n", world.round, home_asks);
+    });
     if (decision != 'W') memory.wait_altar = -1;
     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
     // or a bag takes us away from it.
