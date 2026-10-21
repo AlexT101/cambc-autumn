@@ -65,4 +65,8 @@ bool strike_enemy(const World& world);
 // After the goal: the attack and cast still unspent, from where the walk ended.
 void strike_after(const World& world, Pathing& pathing, Safety& safety);
 
+// Whether this round's search valued the casts from where we stand: strike_after casts its choice
+// there, so cast_at_enemies does not.
+bool casts_searched(const World& world);
+
 } // namespace aph

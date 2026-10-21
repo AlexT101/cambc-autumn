@@ -10,7 +10,8 @@ class Pathing;
 struct ChampionBelief;
 
 // The best enemy-hitting cast at a visible enemy this turn, if worth it. An excludes-walking cast
-// must also be worth `walk`, the walk it forgoes.
+// must also be worth `walk`, the walk it forgoes. None from the tile this round's search priced:
+// strike_after casts the search's choice there.
 bool cast_at_enemies(const World& world, Pathing& pathing, float walk = 0);
 
 // A damage or stun cast on the group being farmed, held while enemies are near.

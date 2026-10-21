@@ -1,10 +1,12 @@
 #include "abilities.h"
 #include <algorithm>
 #include <array>
+#include <cstdio>
 #include <optional>
 #include <vector>
 #include "params.h"
 #include "pathing.h"
+#include "plan.h"
 #include "safety.h"
 #include "world.h"
 
@@ -407,6 +409,10 @@ bool enemy_tribute_wins(const World& world, const ChampionBelief& e) {
 bool cast_at_enemies(const World& world, Pathing& pathing, float walk) {
     Phase phase{"cast_at_enemies"};
     world.throw_if_stale();
+    if (my_can_cast() && casts_searched(world)) {
+        debug_block({ std::printf("CAST-WASTED %d %u\n", world.round, static_cast<unsigned>(world.me().handle)); });
+        return false;
+    }
     try {
         return enemy_cast(world, pathing, walk, true).execute();
     } catch (const cambc::error&) {
