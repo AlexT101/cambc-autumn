@@ -258,7 +258,6 @@ struct Centre {
     vec2 tile;
     std::uint16_t foes = 0;
     std::uint32_t touched = 0;
-    float unseen = 0;
     bool banned = false;
 };
 
@@ -339,16 +338,10 @@ struct Front {
     }
 };
 
-struct Unseen {
-    vec2 pos;
-    float weight, worth; // worth < 0: hitting it is suicidal
-};
-
 // What lies within 1 of a tile, for ground centres.
 struct Near {
     std::uint16_t foes;
     bool banned;
-    float unseen;
 };
 
 // Tiles within 4 of the start: a 9x9 window, index (y + 4) * 9 + x + 4 relative to it.
@@ -359,7 +352,7 @@ constexpr int win9_r = 4, win9_n = 9;
 struct Tables {
     std::array<Unit, max_units> u;
     std::array<Centre, max_centres> centres;
-    std::array<Unseen, max_unseen> unseen;
+    std::array<vec2, max_unseen> unseen;
     std::array<Member, max_members> members;
     std::array<Waker, max_members> wakers;
     std::array<Front, 49> best, kept, exh, exh_kept; // kept: the cast left for the shield; valid by has bits
@@ -538,7 +531,7 @@ struct Search {
     void read_members();
     void read_camps();
     void read_spells();
-    void add_unseen(int slot);
+    void add_unseen(int slot, float raw);
     void find_centres(int slot);
     void read_mates();
     // The heal worth most cast from cell c or, before moving, from the start; its mate in `who`.
@@ -778,36 +771,23 @@ void Search::read_spells() {
             if (sp.unit && x.cast_legal == 0) x.cast_legal = viewers(x.pos, ability_range);
         }
         if (sp.ground) {
-            add_unseen(s);
+            add_unseen(s, raw);
             find_centres(s);
         }
     }
 }
 
-// Unseen tracked enemies on few tiles, which a ground cast may hit.
-void Search::add_unseen(int s) {
-    const auto& a = f.abilities[s];
-    float raw = 0;
-    try {
-        raw = cambc::self().abilities()[s].damage_amount();
-    } catch (const cambc::error&) {
-    }
-    const auto& enemy_spawn = world.map().enemy_spawn;
+// Tiles of unseen tracked enemies on few tiles whose retaliation would kill us, which a ground
+// cast's area must not hit. Other unseen enemies are not aimed at, as cast_at_enemies does not.
+void Search::add_unseen(int s, float raw) {
     n_unseen = 0;
+    if (raw <= 0) return;
     for (const auto& e : world.enemies) {
-        if (!e.alive || e.visible || !e.tracked || board_empty(e.possible)) continue;
-        const int count = static_cast<int>(board_count(e.possible));
-        if (count > 9) continue;
-        const float hp = e.health > 0 ? e.health : e.max_health;
-        const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0.0f;
-        const bool suicidal = raw > 0 && e.retaliation() >= health;
-        for (auto p : positions_within(e.possible, here, a.reach())) {
+        if (!e.alive || e.visible || !e.tracked || board_empty(e.possible) || e.retaliation() < health) continue;
+        if (board_count(e.possible) > 9) continue;
+        for (auto p : positions_within(e.possible, here, f.abilities[s].reach())) {
             if (n_unseen == max_unseen) break;
-            const float worth = suicidal ? -1.0f
-                                         : hit_worth(std::min(raw, hp), hp, test(enemy_spawn, p),
-                                                     params::gem_value * static_cast<float>(pair_gems(world, e)),
-                                                     linked_partner_health(world, e)) + stun;
-            tables.unseen[n_unseen++] = {p, 1.0f / static_cast<float>(count), worth};
+            tables.unseen[n_unseen++] = p;
         }
     }
 }
@@ -852,7 +832,7 @@ void Search::read_mates() {
     if (n_mates == 0) heal = -1;
 }
 
-// Centres within range whose 3x3 holds a visible foe or an unseen one's tile.
+// Centres within range whose 3x3 holds a visible foe.
 void Search::find_centres(int s) {
     const int r = std::min(f.abilities[s].range(), win9_r);
     // What each tile holds within 1, scattered from the foes and unseen tiles once.
@@ -862,17 +842,11 @@ void Search::find_centres(int s) {
     if (foes + n_unseen > 8) std::memset(near.data(), 0, sizeof(near));
     else {
         for (int i = 0; i < foes; ++i) around(u[i].pos, [&](int j) { near[j] = {}; });
-        for (int k = 0; k < n_unseen; ++k) around(tables.unseen[k].pos, [&](int j) { near[j] = {}; });
+        for (int k = 0; k < n_unseen; ++k) around(tables.unseen[k], [&](int j) { near[j] = {}; });
     }
     for (int i = 0; i < foes; ++i)
         around(u[i].pos, [&](int j) { near[j].foes |= static_cast<std::uint16_t>(1u << i), near[j].banned |= u[i].suicidal[s]; });
-    for (int k = 0; k < n_unseen; ++k) {
-        const auto& un = tables.unseen[k];
-        around(un.pos, [&](int j) {
-            if (un.worth < 0) near[j].banned = true;
-            else near[j].unseen += un.weight * un.worth;
-        });
-    }
+    for (int k = 0; k < n_unseen; ++k) around(tables.unseen[k], [&](int j) { near[j].banned = true; });
     // By window row: the columns on the map and within r, less the centres already added.
     std::uint32_t cols = 0;
     std::array<std::uint32_t, win9_n> open{};
@@ -884,7 +858,6 @@ void Search::find_centres(int s) {
     // the first of each is kept in `distinct`, found by a hash of those reads.
     std::array<std::uint8_t, 128> slots{};
     std::array<std::uint64_t, max_centres> keys;
-    std::array<std::uint32_t, max_centres> unseen_bits;
     n_centres = n_distinct = 0;
     const auto add = [&](vec2 p) {
         const int x = p.x - here.x + win9_r, y = p.y - here.y + win9_r;
@@ -897,26 +870,21 @@ void Search::find_centres(int s) {
                 const int k = n_centres++;
                 auto& ce = tables.centres[k];
                 ce.tile = {here.x + xx - win9_r, here.y + yy - win9_r};
-                ce.foes = near[j].foes, ce.banned = near[j].banned, ce.unseen = near[j].unseen;
+                ce.foes = near[j].foes, ce.banned = near[j].banned;
                 ce.touched = touch1(ce.tile);
                 const std::uint64_t key = ce.foes | std::uint64_t{ce.banned} << 16 | std::uint64_t{ce.touched} << 17;
-                const auto bits = std::bit_cast<std::uint32_t>(ce.unseen);
-                std::uint32_t h = static_cast<std::uint32_t>((key * 0x9E3779B97F4A7C15ull + bits * 0xC2B2AE3Dull) >> 57);
+                std::uint32_t h = static_cast<std::uint32_t>((key * 0x9E3779B97F4A7C15ull) >> 57);
                 bool twin = false;
-                for (; slots[h] && !twin; h = (h + 1) & 127) {
-                    const int q = slots[h] - 1;
-                    twin = keys[q] == key && unseen_bits[q] == bits;
-                }
+                for (; slots[h] && !twin; h = (h + 1) & 127) twin = keys[slots[h] - 1] == key;
                 if (twin) continue;
                 slots[h] = static_cast<std::uint8_t>(n_distinct + 1);
-                keys[n_distinct] = key, unseen_bits[n_distinct] = bits;
+                keys[n_distinct] = key;
                 tables.distinct[n_distinct++] = static_cast<std::uint8_t>(k);
             }
         }
     };
     for (int i = 0; i < foes; ++i)
         if (dist(here, u[i].pos) <= r + 1) add(u[i].pos);
-    for (int k = 0; k < n_unseen; ++k) add(tables.unseen[k].pos);
 }
 
 bool Search::read() {
@@ -1111,7 +1079,7 @@ bool Search::spell_unit(const Spell& sp, int t, Node& s) {
 
 float Search::centre_value(const Centre& c, int slot, const Node& s, bool& ok) const {
     ok = !c.banned;
-    float v = c.unseen;
+    float v = 0;
     for (std::uint32_t m = c.foes; m && ok; m &= m - 1) {
         const int t = std::countr_zero(m);
         const auto& x = u[t];
