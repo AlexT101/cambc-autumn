@@ -784,7 +784,7 @@ void Search::read_spells() {
     }
 }
 
-// Unseen tracked enemies on few tiles, which a ground cast may hit, as cast_at_enemies aims.
+// Unseen tracked enemies on few tiles, which a ground cast may hit.
 void Search::add_unseen(int s) {
     const auto& a = f.abilities[s];
     float raw = 0;
