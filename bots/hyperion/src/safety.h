@@ -358,6 +358,7 @@ public:
     // across invalidate(); a stand fight may be settled by a memoised won one at least as hard or
     // lost one at most as hard (Trade::settled: only lost and self_falls hold).
     Trade engage(vec2 p, Engage e);
+    // engage(p) idle's turns_to_kill_us; the last two answers are kept for the generation.
     int idle_turns(vec2 p, int horizon);
     // The camp group our farm/siege budgets, left out of the stand/pursue camp charge. A change
     // starts a new guard_epoch(); the fight memo needs nothing, as its keys carry the charge.
@@ -387,10 +388,10 @@ public:
     // from a walk along the edge of its reach. q must not be a wall (tile()).
     float escape_cost(vec2 q);
     // Last round's damage (Memory::damage), and the part of it no visible enemy or camp explains,
-    // charged where we stood. W4-C: unseen_hit() returns 0 until it fills these.
+    // charged in idle mode on each of the enemies' turns within a turn's move of the turn-start tile `at`.
     void note_taken(float damage) { taken_ = damage; }
     void note_unseen_hit(vec2 at, float damage);
-    float unseen_hit(vec2 p) const;
+    float unseen_hit(vec2 p) const; // 0 beyond a dash and a walk from `at`
     float taken() const { return taken_; }
 
     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
@@ -591,6 +592,16 @@ private:
     // note_taken() and note_unseen_hit() (W4-C).
     float taken_ = 0, ghost_ = 0;
     vec2 ghost_at_{-1, -1};
+    // idle_turns()' last answers (bit i: idle_[i] is set) for idle_generation_.
+    struct Idle {
+        vec2 p;
+        int horizon, turns;
+    };
+    std::uint32_t idle_generation_ = 0;
+    std::uint8_t idle_known_ = 0, idle_next_ = 0;
+    union {
+        std::array<Idle, 2> idle_;
+    };
     std::uint64_t costliest_fight_ = 0;
     // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
     // once refreshed: reached_ only gains bits meanwhile, and gone() keeps its answers.

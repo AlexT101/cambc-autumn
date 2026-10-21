@@ -1,6 +1,8 @@
 #include "turn_order.h"
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <cstdio>
 #include <vector>
 #include "params.h"
 #include "safety.h"
@@ -146,34 +148,34 @@ void offer_channel(const ChampionBelief& self, cambc::champion_state state, Safe
     using cambc::champion_state;
     const bool recall = state.contains(champion_state::recalling), tribute = state.contains(champion_state::submitting_gems);
     if (!recall && self.facts().passive == Passive::stun_immune) return;
-    std::array<Safety::ThreatAt, 16> threats;
-    const int n = safety.threats_at(self.pos, threats);
-    for (int i = 0; i < n; ++i) {
-        const auto& b = threats[i].blow;
-        if (!b.hits || !(recall || b.stuns)) continue;
-        const float gems = params::gem_value * static_cast<float>(self.gems);
-        wish.offer(protect, (tribute ? params::tribute_value : params::recall_value) + gems);
-        return;
-    }
+    const auto& t = safety.tile(self.pos);
+    if (!(recall ? t.vis_mask | t.unseen_mask : t.stun_mask)) return;
+    const float gems = params::gem_value * static_cast<float>(self.gems);
+    wish.offer(protect, (tribute ? params::tribute_value : params::recall_value) + gems);
 }
 
 // Enemies yet to act this round strike before our next turn whatever the order; acting first
 // next round denies the second strike of those, and the only one of the others.
 void offer_escape(const World& world, const ChampionBelief& self, Safety& safety, Wish& wish) {
-    if (test(world.map().ally_spawn, self.pos) || safety.damage_ceiling(self.pos, true) < self.health
-        || safety.damage_bound(self.pos, true) < self.health)
-        return;
-    float damage = safety.camp_damage(self.pos);
-    bool enemy = false;
-    std::array<Safety::ThreatAt, 16> threats;
-    const int n = safety.threats_at(self.pos, threats);
-    for (int i = 0; i < n; ++i) {
-        const auto& t = threats[i];
-        if (!t.blow.hits) continue;
-        enemy = true;
-        const auto& e = world.enemies[t.enemy];
-        damage += t.blow.damage * (e.visible && !e.acted ? 2.0f : 1.0f);
-    }
+    if (test(world.map().ally_spawn, self.pos) || safety.damage_ceiling(self.pos, true) < self.health) return;
+    const auto& t = safety.tile(self.pos);
+    const bool enemy = (t.vis_mask | t.unseen_mask) != 0;
+    const float damage = t.worst() + t.vis_unacted;
+    debug_block({
+        // The old sum, threat by threat.
+        float old = safety.camp_damage(self.pos);
+        bool old_enemy = false;
+        std::array<Safety::ThreatAt, 16> threats;
+        const int n = safety.threats_at(self.pos, threats);
+        for (int i = 0; i < n; ++i) {
+            if (!threats[i].blow.hits) continue;
+            old_enemy = true;
+            const auto& e = world.enemies[threats[i].enemy];
+            old += threats[i].blow.damage * (e.visible && !e.acted ? 2.0f : 1.0f);
+        }
+        if (old_enemy != enemy || (old >= self.health) != (damage >= self.health) || std::abs(old - damage) > 0.01f)
+            std::printf("ESCAPE-MISMATCH %d %.1f %.1f\n", world.round, old_enemy ? old : -1.0f, enemy ? damage : -1.0f);
+    });
     if (enemy && damage >= self.health) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(self.gems));
 }
 
@@ -210,10 +212,6 @@ void set_turn_order(const World& world, Safety& safety) {
     world.throw_if_stale();
     auto& me = cambc::self();
     Wish wish;
-    if (world.me().alive && !fuel_ok(end_reserve)) {
-        note_shortcut("turn-order");
-        return;
-    }
     if (world.me().alive) {
         const auto& self = live_self(world);
         const auto& enemies = live_enemies(world);

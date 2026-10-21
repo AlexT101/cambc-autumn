@@ -311,15 +311,17 @@ bool break_lock(const World& world, int altar) {
 }
 
 // A tribute channel cannot act, and a kill takes the whole bag: start or keep one only if the
-// visible enemies could not kill us within the next few turns, nor damage at the rate of the last
-// round (attackers in bushes stay unseen). Judged again every turn of the channel, which is
-// cancelled once a threat comes that close: a long bag's whole channel would wait on any enemy in sight.
-bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
+// visible enemies and camps, with last round's unexplained hit going on (Safety::unseen_hit: attackers
+// in bushes stay unseen), could not kill us within the next few turns. Judged again every turn of the
+// channel, which is cancelled once a threat comes that close: a long bag's whole channel would wait on
+// any enemy in sight.
+bool tribute_safe(const World& world, Safety& safety, int turns) {
     const int window = std::min(turns, params::tribute_window);
-    const float health = my_health();
-    if (memory.damage * static_cast<float>(window) >= health) return false;
-    const int kill = safety.turns_to_kill_idle(my_position(), window + 1);
-    return kill == 0 || kill > window;
+    const vec2 here = my_position();
+    const int kill = safety.idle_turns(here, window + 1);
+    const bool safe = kill == 0 || kill > window;
+    debug_block({ std::printf("TRIBUTE %d %d %d %d %.0f\n", world.round, safe ? 1 : 0, kill, window, safety.unseen_hit(here)); });
+    return safe;
 }
 
 int tribute_turns(int gems) { return std::max(1, (gems + 9) / 10); }
@@ -580,8 +582,8 @@ bool any_risk(const World& world, int channel_turns) {
     return winning_bag(world) || rounds_left(world) <= channel_turns + endgame_slack;
 }
 
-bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int turns) {
-    return any_risk(world, turns) || tribute_safe(safety, memory, turns);
+bool tribute_ok(const World& world, Safety& safety, const Memory&, int turns) {
+    return any_risk(world, turns) || tribute_safe(world, safety, turns);
 }
 
 bool place_ward(const World& world, Memory& memory, bool grow = true);
@@ -972,22 +974,44 @@ struct Upkeep {
 };
 Upkeep upkeep;
 
-// At the turn's start: camps hit in the camp phase, from where we ended last turn.
-// What hit us since our last turn, for Safety (W4-C: the part no visible enemy or camp explains).
-void note_hits(const World&, Safety& safety, const Memory& memory) { safety.note_taken(memory.damage); }
+// The share of the damage taken since our last turn that the camps explain, the rest coming from
+// champions: the hit expected where we ended it, as an ally may since have killed the member or
+// stepped nearer it, or what can hit us now, as a group may have woken since.
+float camp_share(Safety& safety, const Memory& memory, vec2 here) {
+    return std::min(memory.damage, std::max(memory.camp_hit, safety.camp_damage(here)));
+}
 
-void note_upkeep(const World& world, Safety& safety, float damage) {
+// At the turn's start: camps hit in the camp phase, from where we ended last turn.
+void note_upkeep(const World& world, Safety& safety, const Memory& memory) {
     Phase phase{"note_upkeep"};
     const auto& map = world.map();
     const vec2 here = world.me().pos;
+    const float damage = memory.damage;
     ++upkeep.turns;
     if (damage > 0) {
-        const float camp = std::min(damage, safety.camp_damage(here));
+        const float camp = camp_share(safety, memory, here);
         upkeep.camp_taken += camp;
         upkeep.champ_taken += damage - camp;
     }
     if (map.from_ally_spawn_ready())
         if (const int s = map.from_ally_spawn().at(here); s != unreachable) upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
+}
+
+// What hit us since our last turn, for Safety. The part neither the camps nor the most the visible
+// enemies could do to our tile explain came from an unseen one, which may hit again while we stay near.
+void note_hits(const World& world, Safety& safety, const Memory& memory) {
+    Phase phase{"note_hits"};
+    const float damage = memory.damage;
+    safety.note_taken(damage);
+    if (damage <= 0 || !world.me().alive) return;
+    const vec2 here = world.me().pos;
+    const float champ = damage - camp_share(safety, memory, here);
+    // A camp's hit less its modelled share leaves float dust; no champion hits for under 1.
+    if (champ < 1.0f) return;
+    std::uint16_t visible = 0;
+    const float ghost = champ - safety.strike_sum(here, &visible);
+    debug_block({ std::printf("GHOST %d %.0f %.0f %u %.0f\n", world.round, damage, champ, static_cast<unsigned>(visible), ghost); });
+    if (ghost >= 1.0f) safety.note_unseen_hit(here, ghost);
 }
 
 // A Jungle, Power or Durability shard short of its emblem.
@@ -2449,33 +2473,40 @@ bool may_chain(const World& world, Safety& safety) {
     return !safety.any_threat(); // all credible
 }
 
+// Safety::threatened(my_position()), asked once and only when a test needs it.
+struct Threat {
+    Safety& safety;
+    std::optional<bool> known;
+    bool operator()() {
+        if (!known) known = safety.threatened(my_position());
+        return *known;
+    }
+};
+
 // A bag bound for an altar rides the recall home when that reaches an altar sooner than walking;
 // the stop also heals and shops.
-bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if (!memory.banking) return false;
-    const vec2 here = my_position();
-    if (safety.threatened(here)) return false;
-    const int walk = pathing.to_any_altar().at(here);
+bool recall_to_bank(const World& world, Pathing& pathing, const Memory& memory, Threat& threat) {
+    if (!memory.banking || threat()) return false;
+    const int walk = pathing.to_any_altar().at(my_position());
     return walk != unreachable && home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk);
 }
 
 // No enemy seen this round or last could walk into reach before the recall lands: standing
-// still to channel while a pack closes in only gets it cancelled.
+// still to channel while a pack closes in only gets it cancelled. An unseen one is judged from where
+// it was last seen: its capped field cannot see that far.
 bool recall_outruns(const World& world, Safety& safety) {
     const vec2 here = my_position();
     const int turns = static_cast<int>(my_channel_time());
     for (const auto& e : world.enemies)
-        if (e.alive && e.age(world.round) <= 1
-            && (e.visible ? safety.approach(e, here) : dist(here, e.pos) - safety.strike_of(e).reach) <= turns)
-            return false;
-    return true;
+        if (e.alive && !e.visible && e.age(world.round) <= 1 && dist(here, e.pos) - safety.strike_of(e).reach <= turns) return false;
+    return !safety.engaged_within(here, turns);
 }
 
 // Recall from a capture we hold (holding_capture), timed to land home the turn it pays: the gems
 // skip the walk when an altar is nearer by way of home, and the stop heals and shops.
-bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
+bool capture_recall(const World& world, Pathing& pathing, Threat& threat) {
     const vec2 here = my_position();
-    if (safety.threatened(here)) return false;
+    if (threat()) return false;
     const int g = world.map().group_at(here);
     const auto& c = world.camps[g];
     if (c.holder != team::ally || c.held_since < 0) return false;
@@ -2491,22 +2522,20 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
 }
 
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
-// quicker.
-[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+// quicker. Not while camps or enemies could hit us here (Safety::threatened()), nor after an unseen enemy
+// hit us since our last turn (Safety::unseen_hit).
+[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory&, Threat* threat = nullptr) {
     Phase phase{"wants_shop"};
-    if (bankable_bag(world, pathing) > 0 || memory.damage > 0 || !may_shop(world)) return false;
+    if (bankable_bag(world, pathing) > 0 || safety.unseen_hit(world.me().pos) > 0 || !may_shop(world)) return false;
     const auto gold = my_gold();
     if (gold < shard_price || (gold < emblem_price && !emblem_begun())) return false;
     const vec2 here = my_position();
-    if (test(world.map().ally_spawn, here) || safety.threatened(here)) return false;
+    if (test(world.map().ally_spawn, here) || (threat ? (*threat)() : safety.threatened(here))) return false;
     // The trip costs the recall and the walk back out; arriving by recall, the heal takes the turn.
     const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
     if (stop.short_gold > 0) return false;
     const int back = pathing.to_ally_spawn().at(here);
-    if (back != unreachable && stop.value(0) < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
-    bool awake = false;
-    world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });
-    return !awake;
+    return back == unreachable || !(stop.value(0) < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back));
 }
 
 // A ready stun of ours reaches a visible enemy whose tribute wins them the game.
@@ -2970,8 +2999,8 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
 }
 
 // A sieger stepped out of the besieged group's reach goes home to heal before it is needed again.
-bool siege_heal_trip(const Memory& memory, Safety& safety) {
-    return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !safety.threatened(my_position());
+bool siege_heal_trip(const Memory& memory, Threat& threat) {
+    return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !threat();
 }
 
 // Our tribute channel goes on unless it is unsafe and fleeing or fighting back pays. True if the
@@ -3020,20 +3049,20 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         return false;
     }
     home = want_home(world, safety, memory.siege);
-    if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, safety, memory) && recall_outruns(world, safety))
-        return true;
+    Threat threat{safety, std::nullopt};
+    if (*home && !threat() && !can_tribute_safely(world, safety, memory) && recall_outruns(world, safety)) return true;
     decision = 'k';
     if (holding_capture(world)) {
-        if (capture_recall(world, pathing, safety)) {
+        if (capture_recall(world, pathing, threat)) {
             decision = 'Q';
             return true;
         }
     } else {
         const auto shop = [&] {
-            return wants_shop(world, pathing, safety, memory) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
+            return wants_shop(world, pathing, safety, memory, &threat) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
         };
-        if (recall_to_bank(world, pathing, safety, memory) || shop()) return true;
-        if (siege_heal_trip(memory, safety)) return sieged = true; // the trip keeps the siege until home
+        if (recall_to_bank(world, pathing, memory, threat) || shop()) return true;
+        if (siege_heal_trip(memory, threat)) return sieged = true; // the trip keeps the siege until home
         // No walk leaves a pocket a crystal took us into.
         if (!test(pathing.foot(), my_position()) && my_gems() == 0) return true;
     }
@@ -3461,7 +3490,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     searched = false;
     siege_group() = -1;
     const int camp_hits_before = camp_hits();
-    if (world.me().alive) note_upkeep(world, safety, memory.damage);
+    if (world.me().alive) note_upkeep(world, safety, memory);
     note_hits(world, safety, memory);
     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
     // A failed act still posts the claim, the bag and the health that next turn's damage reads.
@@ -3476,6 +3505,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
     memory.round = world.round;
     memory.health = world.me().alive ? my_health() : 0;
+    memory.camp_hit = world.me().alive ? safety.camp_damage(my_position()) : 0;
     upkeep.camp_turns += camp_hits() != camp_hits_before;
     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), decision, memory.farm_group, memory.claim); });
 }
