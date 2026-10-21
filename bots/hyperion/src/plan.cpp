@@ -2001,8 +2001,6 @@ bool strike_possible(const World& world) {
 
     // Carry it out. A move a hidden unit refuses takes the next-ranked plan from where we stand.
     step.next("act");
-    // Priced on last round's beliefs if the turn ran out of fuel since.
-    world.throw_if_stale();
     // The end tile passed guarded(); the moves before it may cross guarded tiles.
     class Unguarded {
     public:
