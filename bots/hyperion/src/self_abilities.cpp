@@ -23,29 +23,25 @@ constexpr float dash_min_health = 0.5f;
 constexpr float chase_health = 0.4f;
 constexpr int failed_search_pause = 4; // rounds without a travel-dash search after one finds no gain
 
-std::optional<cambc::ability> ready(const World& world, AbilityKind kind) {
+// The slot of `kind` if it can be cast now, else -1.
+int ready(const World& world, AbilityKind kind) {
     const auto& self = world.me();
     const int slot = self.facts().slot_of(kind);
     // The belief is exact for ourselves at turn start; only a Vendetta kill readies a slot mid-turn.
     if (slot < 0 || !self.alive
         || (!self.ability_ready(slot, world.round) && self.facts().passive != Passive::reset_on_kill))
-        return std::nullopt;
-    auto& me = cambc::self();
-    if (!my_can_cast()) return std::nullopt;
-    auto ability = me.abilities()[slot];
-    if (ability.cooldown() > 0) return std::nullopt;
-    return ability;
+        return -1;
+    if (!my_can_cast() || my_cooldown(slot) > 0) return -1;
+    return slot;
 }
 
-template <class... Target> bool cast(const cambc::ability& ability, const Target&... target) {
+bool cast(int slot, vec2 tile = {-1, -1}) {
     try {
-        return ability.use(target...);
+        return cast_slot(slot, tile);
     } catch (const cambc::error&) {
         return false;
     }
 }
-
-float health_fraction(const cambc::champion& c) { return c.health() / c.max_health(); }
 
 struct Hazard {
     vec2 pos;
@@ -114,7 +110,7 @@ bool wakes_camp(const World& world, vec2 p) {
     return slot >= 0 && world.me().facts().abilities[slot].lands() && landing_wakes(world, p, world.me().facts().abilities[slot].radius);
 }
 
-bool dash_to_first(const cambc::ability& dash, Pathing& pathing, const Landings& landings) {
+bool dash_to_first(int dash, Pathing& pathing, const Landings& landings) {
     for (int i = 0; i < landings.count; ++i)
         if (cast(dash, landings.tiles[i])) {
             pathing.invalidate();
@@ -123,13 +119,13 @@ bool dash_to_first(const cambc::ability& dash, Pathing& pathing, const Landings&
     return false;
 }
 
-std::optional<cambc::ability> travel_dash_ready(const World& world) {
-    if (!world.me().facts().has_dash()) return std::nullopt;
-    if (enemy_within(world, my_position(), travel_dash_clearance)) return std::nullopt;
+int travel_dash_ready(const World& world) {
+    if (!world.me().facts().has_dash()) return -1;
+    if (enemy_within(world, my_position(), travel_dash_clearance)) return -1;
     return ready(world, AbilityKind::dash);
 }
 
-bool travel_dash(const World& world, Pathing& pathing, const cambc::ability& dash, int here_steps, auto steps_at) {
+bool travel_dash(const World& world, Pathing& pathing, int dash, int here_steps, auto steps_at) {
     if (here_steps == 0 || here_steps == unreachable) return false;
     const vec2 here = my_position();
     const auto& threats = threats_near(world, here);
@@ -144,7 +140,7 @@ bool travel_dash(const World& world, Pathing& pathing, const cambc::ability& das
 
 // Varg's shield, cast at the turn's end, absorbs more than a hit that does not kill.
 bool shield_wanted(const World& world) {
-    if (!ready(world, AbilityKind::shield)) return false;
+    if (ready(world, AbilityKind::shield) < 0) return false;
     const vec2 here = my_position();
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && dist(here, e.pos) <= threat_strike(world, e).reach) return true;
@@ -153,13 +149,13 @@ bool shield_wanted(const World& world) {
 
 } // namespace
 
-std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only) {
+std::optional<cambc::handle_champion_t> attack_target(const World& world, bool stunnable_only) {
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
     const bool splash = world.me().facts().passive == Passive::splash_attack;
     const auto& enemy_spawn = world.map().enemy_spawn;
     struct Seen {
-        cambc::champion c;
+        cambc::handle_champion_t c;
         vec2 pos;
         float health, retaliation;
         bool stunnable;
@@ -169,21 +165,23 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     seen.clear();
     for (auto p : positions_within(live_champion_tiles(team::enemy), here, range + (splash ? 1 : 0))) {
         try {
-            auto c = cambc::vision::champion_at(p);
-            const auto passive = facts(c.champion_name()).passive;
-            const float retaliation = passive == Passive::retaliation ? retaliation_share * c.focus() : 0.0f;
-            // Buffs are read only when asked for: building them allocates.
-            const bool stunnable = stunnable_only && passive != Passive::stun_immune && !c.buffs().has_stun();
+            const auto c = champion_at(p);
+            const auto& kind = facts(static_cast<cambc::champion_type>(identity_of(c).type));
+            const auto passive = kind.passive;
+            const auto& live = record_of(c);
+            const float health = live.health;
+            const float retaliation = passive == Passive::retaliation ? retaliation_share * live.focus : 0.0f;
+            const bool stunnable = stunnable_only && passive != Passive::stun_immune && !has_stun(c);
             float partner = 1e9f;
             if (passive == Passive::linked_pair)
                 for (const auto& e : world.enemies)
                     if (e.alive && e.visible && e.pos != p && e.facts().passive == Passive::linked_pair) partner = e.health;
             // A shield must be hit through before health: counted as health.
             float shield = 0;
-            if (facts(c.champion_name()).has(AbilityKind::shield))
+            if (kind.has(AbilityKind::shield))
                 for (const auto& e : world.enemies)
                     if (e.alive && e.visible && e.pos == p) shield = e.shield;
-            seen.push_back({c, p, c.health() + shield, retaliation, stunnable, partner});
+            seen.push_back({c, p, health + shield, retaliation, stunnable, partner});
         } catch (const cambc::error&) {
         }
     }
@@ -194,7 +192,7 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
         if (s.health <= strength) return s.health + params::life_value;
         return test(enemy_spawn, s.pos) ? 0.0f : useful_damage(strength, s.health, s.partner);
     };
-    std::optional<cambc::champion> best;
+    std::optional<cambc::handle_champion_t> best;
     float best_value = 0, best_health = 0, best_pair = 0;
     for (const auto& t : seen) {
         if (dist(here, t.pos) > range || (stunnable_only && !t.stunnable)) continue;
@@ -212,16 +210,15 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
 }
 
 bool reset_and_attack_enemy(const World& world, bool stunning_only) {
-    auto& me = cambc::self();
     const auto& f = world.me().facts();
     const int slot = f.slot_of(AbilityKind::attack_reset);
     if (slot < 0 || (stunning_only && !f.abilities[slot].stuns) || my_can_attack()) return false;
-    const auto reset = ready(world, AbilityKind::attack_reset);
-    if (!reset) return false;
+    const int reset = ready(world, AbilityKind::attack_reset);
+    if (reset < 0) return false;
     const auto target = attack_target(world, stunning_only);
-    if (!target || (!(target->health() <= me.strength()) && shield_wanted(world)) || !cast(*reset)) return false;
+    if (!target || (!(record_of(*target).health <= my_strength()) && shield_wanted(world)) || !cast(reset)) return false;
     try {
-        me.attack(*target);
+        attack_champion(*target);
     } catch (const cambc::error&) {
     }
     return true;
@@ -247,8 +244,8 @@ bool reset_and_attack_camp(const World& world, int group) {
     const vec2 here = my_position();
     const int range = f.attack_range();
     if (!camp_in_reach(world, here, range)) return false;
-    const auto reset = ready(world, AbilityKind::attack_reset);
-    if (!reset) return false;
+    const int reset = ready(world, AbilityKind::attack_reset);
+    if (reset < 0) return false;
     const auto& map = world.map();
     std::optional<cambc::camp> best;
     float best_health = 0;
@@ -270,7 +267,7 @@ bool reset_and_attack_camp(const World& world, int group) {
     // A Vendetta kill readies the reset again, so it need not be held.
     const bool refunded = f.passive == Passive::reset_on_kill && best_health <= my_strength();
     if (!refunded && enemy_within(world, here, range + reset_hold_margin)) return false;
-    if (!cast(*reset)) return false;
+    if (!cast(reset)) return false;
     try {
         me.attack(*best);
     } catch (const cambc::error&) {
@@ -280,17 +277,17 @@ bool reset_and_attack_camp(const World& world, int group) {
 }
 
 bool dash_towards(const World& world, Pathing& pathing, const Field& field) {
-    const auto dash = travel_dash_ready(world);
-    return dash
-           && travel_dash(world, pathing, *dash, field.at(my_position()), [&](vec2 p) { return field.at(p); });
+    const int dash = travel_dash_ready(world);
+    return dash >= 0
+           && travel_dash(world, pathing, dash, field.at(my_position()), [&](vec2 p) { return field.at(p); });
 }
 
 bool dash_across(const World& world, Pathing& pathing, const Field& field) {
     if (!world.me().facts().has_dash() || !any_within(world.map().crossable, my_position(), 1)) return false;
-    const auto dash = ready(world, AbilityKind::dash);
+    const int dash = ready(world, AbilityKind::dash);
     const vec2 here = my_position();
     const int here_steps = field.at(here);
-    if (!dash || here_steps == 0 || here_steps == unreachable) return false;
+    if (dash < 0 || here_steps == 0 || here_steps == unreachable) return false;
     // The walk goes into camp reach anyway; only enemies are kept from.
     static std::vector<Hazard> enemies;
     enemies.clear();
@@ -300,15 +297,15 @@ bool dash_across(const World& world, Pathing& pathing, const Field& field) {
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return field.at(p); },
         [&](vec2 p, int steps) { return steps <= here_steps - dash_steps && danger(enemies, p) <= here_danger && !wakes_camp(world, p); });
-    return dash_to_first(*dash, pathing, landings);
+    return dash_to_first(dash, pathing, landings);
 }
 
 bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps) {
     static int paused_until = -1;
     if (world.round < paused_until) return false;
     // Most champions have no dash: check before anything costly.
-    const auto dash = travel_dash_ready(world);
-    if (!dash) return false;
+    const int dash = travel_dash_ready(world);
+    if (dash < 0) return false;
     const vec2 here = my_position();
     // A goal within a dash is a walk or two away: not worth the cooldown or the search.
     if (any_within(goals, here, dash_steps)) return false;
@@ -324,7 +321,7 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, i
     set_tile(origin, here);
     field.compute_to(walls, open_goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
     if (test(visited, here)
-        && travel_dash(world, pathing, *dash, steps_at(field, here),
+        && travel_dash(world, pathing, dash, steps_at(field, here),
                        [&](vec2 p) { return test(visited, p) ? steps_at(field, p) : unreachable; }))
         return true;
     paused_until = world.round + failed_search_pause;
@@ -333,16 +330,15 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, i
 
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target) {
     if (!world.me().facts().has_dash()) return false;
-    auto& me = cambc::self();
     const bool target_given = target != nullptr;
     if (!my_can_attack() || (!target_given && my_health() < dash_min_health * my_max_health())) return false;
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
     if (enemy_within(world, here, range)) return false;
-    const auto dash = ready(world, AbilityKind::dash);
-    if (!dash) return false;
+    const int dash = ready(world, AbilityKind::dash);
+    if (dash < 0) return false;
     const float strength = my_strength() * damage_scale(world.me().facts().passive, my_health(), my_max_health());
-    const float my_fraction = health_fraction(me);
+    const float my_fraction = my_health() / my_max_health();
     for (const auto& e : world.enemies) {
         if (target_given) break;
         if (!e.alive || !e.visible || dist(here, e.pos) > range + dash_steps || test(world.map().enemy_spawn, e.pos))
@@ -352,7 +348,7 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
         if (finish && (!target || e.health < target->health)) target = &e;
     }
     // A melee walk is free of the attack: a landing a step short of range still strikes.
-    const int walk = target_given && world.me().facts().walk_and_attack_independent() && me.can_move() ? 1 : 0;
+    const int walk = target_given && world.me().facts().walk_and_attack_independent() && my_can_move() ? 1 : 0;
     if (!target || dist(here, target->pos) > range + walk + dash_steps) return false;
     const auto& threats = threats_near(world, here);
     const auto& spawn = world.map().from_ally_spawn();
@@ -361,13 +357,13 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
         within(pathing.dash_landings(), at, range + walk),
         [&](vec2 p) { return (dist(p, at) > range ? 1000000 : 0) + danger(threats, p) * 1000 + std::min<int>(spawn.at(p), 999); },
         [&](vec2 p, int) { return !wakes_camp(world, p); });
-    return dash_to_first(*dash, pathing, landings);
+    return dash_to_first(dash, pathing, landings);
 }
 
 bool dash_away(const World& world, Pathing& pathing, const Field& home) {
     if (!world.me().facts().has_dash()) return false;
-    const auto dash = ready(world, AbilityKind::dash);
-    if (!dash) return false;
+    const int dash = ready(world, AbilityKind::dash);
+    if (dash < 0) return false;
     const vec2 here = my_position();
     const auto& threats = threats_near(world, here);
     const int here_danger = danger(threats, here);
@@ -375,7 +371,7 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home) {
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return danger(threats, p) * 1000 + std::min<int>(home.at(p), 999); },
         [&](vec2 p, int score) { return score / 1000 < here_danger && !wakes_camp(world, p); });
-    return dash_to_first(*dash, pathing, landings);
+    return dash_to_first(dash, pathing, landings);
 }
 
 bool worth_healing(float amount, float gain, float fraction) {
@@ -385,43 +381,49 @@ bool worth_healing(float amount, float gain, float fraction) {
 bool heal_ally(const World& world) {
     const int slot = world.me().facts().slot_of(AbilityKind::heal);
     if (slot < 0) return false;
-    const auto heal = ready(world, AbilityKind::heal);
-    if (!heal) return false;
-    const float amount = heal->heal_amount();
+    const int heal = ready(world, AbilityKind::heal);
+    if (heal < 0) return false;
+    const float amount = my_heal(heal);
     const vec2 here = my_position();
     const int range = world.me().facts().abilities[slot].range();
-    std::optional<cambc::champion> best;
+    std::optional<cambc::handle_champion_t> best;
     float best_gain = 0, best_fraction = 0;
     // Read live: allies come into sight as we move.
     for (auto p : positions_within(live_champion_tiles(team::ally), here, range)) {
         if (p == here || test(world.map().ally_spawn, p)) continue;
         try {
-            auto c = cambc::vision::champion_at(p);
-            if (!c.is_ally()) continue;
+            const auto c = champion_at(p);
+            if (identity_of(c).team != cambc::detail::sdk_my_team()) continue;
             // Allies start a recall at every turn end and cancel it unless wanted, so only one
             // they kept going will reach spawn and heal there.
             if (kept_recall(c)) continue;
-            const float gain = std::min(amount, c.max_health() - c.health());
-            const float fraction = health_fraction(c);
+            const auto& live = record_of(c);
+            const float gain = std::min(amount, live.max_health - live.health);
+            const float fraction = live.health / live.max_health;
             if (!worth_healing(amount, gain, fraction)) continue;
             if (!best || gain > best_gain || (gain == best_gain && fraction < best_fraction))
                 best = c, best_gain = gain, best_fraction = fraction;
         } catch (const cambc::error&) {
         }
     }
-    return best && cast(*heal, *best);
+    if (!best) return false;
+    try {
+        return cast_slot_on(heal, *best);
+    } catch (const cambc::error&) {
+        return false;
+    }
 }
 
 bool shield_if_needed(const World& world, Safety& safety, int farmed) {
     const auto& f = world.me().facts();
-    const auto shield = ready(world, AbilityKind::shield);
-    if (!shield) return false;
+    const int shield = ready(world, AbilityKind::shield);
+    if (shield < 0) return false;
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
     bool danger = false;
     for (auto left = safety.seen_enemies(); left; left &= left - 1)
         danger |= safety.blow(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], here).hits;
-    if (danger) return cast(*shield);
+    if (danger) return cast(shield);
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(here, world.map().max_camp_reach)) {
         if (danger) break;
@@ -439,7 +441,7 @@ bool shield_if_needed(const World& world, Safety& safety, int farmed) {
         }
         danger = awake_in_reach || (in_reach && hitting);
     }
-    return danger && cast(*shield);
+    return danger && cast(shield);
 }
 
 } // namespace aph

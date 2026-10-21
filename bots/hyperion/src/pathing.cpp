@@ -580,29 +580,30 @@ bool Pathing::step_closer(vec2 target, const bitboard* avoid) {
     return best && try_move(*best);
 }
 
-bitboard dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also) {
-    static bitboard camps{cambc::uninitialized}, excluded{cambc::uninitialized}, t{cambc::uninitialized};
+const bitboard& dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also) {
+    static bitboard camps{cambc::uninitialized}, excluded{cambc::uninitialized}, t{cambc::uninitialized},
+        landings{cambc::uninitialized};
     camps_into(camps);
     // Dash paths cross holes, altars, allies and unseen enemies, but not walls, camps or visible
     // enemies (probe-dash-enemy).
     occupancy_into(team::enemy, t);
     or_into(map.walls, camps, excluded);
-    excluded |= t;
-    auto landings = excluded.reachable_tiles(from, 2);
-    landings &= map.open_for_us;
+    or_into(excluded, t, excluded);
+    excluded.reachable_tiles_into(from, 2, landings);
+    and_into(landings, map.open_for_us, landings);
     or_into(camps, t, excluded);
     occupancy_into(team::ally, t);
-    excluded |= t;
+    or_into(excluded, t, excluded);
     teleports_into(t);
-    excluded |= t;
-    if (also) excluded |= *also;
-    excluded &= landings;
-    landings ^= excluded;
-    landings.set(from, false);
+    or_into(excluded, t, excluded);
+    if (also) or_into(excluded, *also, excluded);
+    and_into(excluded, landings, excluded);
+    xor_into(landings, excluded, landings);
+    set_tile(landings, from, false);
     return landings;
 }
 
-bitboard Pathing::dash_landings() {
+const bitboard& Pathing::dash_landings() {
     static bitboard off{cambc::uninitialized};
     const bitboard* also = nullptr;
     if (bumped_any_ && guard_) or_into(bumped_, *guard_, off), also = &off;
