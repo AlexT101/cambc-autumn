@@ -393,10 +393,7 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours,
     return t;
 }
 
-// Own turns a fight is played for: every slot ready at the start is cast on turns 0, 8 and 16.
-// Measured at 100M on the worst maps, kills land just after those casts (peaks on turns 9 and 17),
-// and the 8% of fights still undecided at 24 turns cost 20% of the simulation fuel.
-constexpr int fight_horizon = 2 * ability_cooldown + 1;
+static_assert(fight_horizon == 2 * ability_cooldown + 1);
 
 // Whether our fighter `self` (and its linked body) must outlive their next `theirs` turns and our
 // next `ours`: every member of theirs alive now attacking each turn and casting each slot as soon
@@ -2393,6 +2390,70 @@ float Safety::unseen_chance(vec2 p) {
     lazy.chance = 1 - safe;
     chances_known_ |= bit;
     return lazy.chance;
+}
+
+// The verdict section (W2-A). Stubs over today's fight API until W2-A replaces them.
+
+Trade Safety::engage(vec2 p, Engage e) {
+    Phase phase{"engage"};
+    switch (e.mode) {
+    case Engage::Mode::pursue:
+        return pursuit(p, e.approach);
+    case Engage::Mode::idle: {
+        Trade t;
+        t.turns_to_kill_us = turns_to_kill_idle(p, e.horizon);
+        t.lost = t.self_falls = t.turns_to_kill_us != 0;
+        return t;
+    }
+    case Engage::Mode::stand:
+        break;
+    }
+    if (e.with_enemy < 0) return fight(p);
+    world_.throw_if_stale();
+    const auto with = 1u << (16 + e.with_enemy);
+    const auto key = fight_key(p);
+    return fight_of(key == no_fight ? with | fighting_allies(world_, p) : key | with);
+}
+
+int Safety::idle_turns(vec2 p, int horizon) { return turns_to_kill_idle(p, horizon); }
+
+void Safety::set_claimed(int group) { claimed_ = group; }
+
+Verdict Safety::verdict(vec2 q) {
+    Phase phase{"verdict"};
+    const auto t = fight(q);
+    return {t.lost, t.self_falls};
+}
+
+// step_guard's per-tile rule, without its fuel gates, union key or dominance list.
+bool Safety::guarded(vec2 q) {
+    const vec2 here = world_.me().pos;
+    if (q == here || !in_square(q, here, 3) || !in_bounds(q) || !test(world_.map().open_for_us, q)) return false;
+    std::uint16_t near = 0;
+    const float bound = strike_sum(q, &near);
+    if (near == 0) return false;
+    const TileDanger at_here = tile(here);
+    const auto no_worse = [&](std::uint16_t mask, float damage) {
+        return mask == 0 || ((mask & ~at_here.vis_mask) == 0 && damage <= at_here.vis);
+    };
+    if (no_worse(near, bound)) return false;
+    const auto& row = tile(q);
+    if (no_worse(row.vis_mask, row.vis)) return false;
+    const bool dies = row.worst() >= world_.me().health;
+    const auto v = verdict(q);
+    const bool linked = linked_partner(world_, world_.me()) != nullptr;
+    const bool out = v.lost || (v.falls && (linked || dies));
+    if (out) {
+        if (guarded_generation_ != generation_) guarded_generation_ = generation_, guarded_count_ = 0;
+        ++guarded_count_;
+    }
+    return out;
+}
+
+const bitboard* Safety::guarded_board() { return nullptr; }
+
+std::uint32_t Safety::guard_stamp() const {
+    return generation_ << 8 | (guarded_generation_ == generation_ ? guarded_count_ & 0xFFu : 0u);
 }
 
 } // namespace aph

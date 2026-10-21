@@ -3,6 +3,7 @@
 #pragma once
 #include <cambc.h>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -15,6 +16,7 @@ namespace aph {
 inline constexpr int max_detour = 16;
 
 class World;
+class Safety;
 struct StaticMap;
 
 // Tiles a dash from `from` can land on: <= 2 king steps not through walls or camps, onto a free
@@ -82,9 +84,20 @@ public:
     // False, spending nothing, if illegal, guarded or blocked by a hidden unit; `refused`: set
     // unless a hidden unit was the reason.
     bool try_move(vec2 tile, bool* refused = nullptr);
-    // Tiles no step or dash may end on until cleared: routes go around them.
-    void set_guard(const bitboard* guard) { guard_ = guard; }
+    // The turn's Safety: play_turn sets it at the start and clears it at the end.
+    void set_safety(Safety* s) { safety_ = s; }
+    Safety* safety() const { return safety_; }
+    // While guarding, no step or dash ends on a tile safety()->guarded() bans: routes go around them.
+    // Stub until W2-B: set_guarding(true) takes the guard source's board, run once a turn, as guard().
+    void set_guarding(bool on);
+    bool guarding() const { return guarding_; }
+    // Until W2-D: set_guard(nullptr) is set_guarding(false).
+    void set_guard(std::nullptr_t) { set_guarding(false); }
+    // Until W2-B and W2-C: the guard source's board while guarding; read_geometry ORs it.
     const bitboard* guard() const { return guard_; }
+    // Until W2-D: decide sets step_guard as the source.
+    using GuardSource = const bitboard* (*)(const World&, Safety&);
+    void set_guard_source(GuardSource source) { guard_source_ = source; }
 
     // Unseen units can still block these.
     bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile, off the guard
@@ -160,6 +173,11 @@ private:
     bitboard bumped_;
     bool bumped_any_ = false;
     const bitboard* guard_ = nullptr;
+    Safety* safety_ = nullptr;
+    bool guarding_ = false;
+    GuardSource guard_source_ = nullptr;
+    const bitboard* source_board_ = nullptr; // the guard source's board this turn, once run
+    bool source_run_ = false;
     int bumped_round_ = -1;
     vec2 pos_;
     std::uint32_t pos_round_ = 0;

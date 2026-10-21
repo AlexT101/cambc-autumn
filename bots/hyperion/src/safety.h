@@ -225,6 +225,25 @@ struct TileDanger {
     float worst() const { return vis + unseen + camp_worst; }
 };
 
+// Own turns a fight is played for: every slot ready at the start is cast on turns 0, 8 and 16.
+// Measured at 100M on the worst maps, kills land just after those casts (peaks on turns 9 and 17),
+// and the 8% of fights still undecided at 24 turns cost 20% of the simulation fuel.
+inline constexpr int fight_horizon = 17; // 2 * ability_cooldown + 1, asserted in safety.cpp
+
+// What Safety::engage() simulates at a tile: COMBAT-MERGE.md's per-mode rule table.
+struct Engage {
+    enum class Mode : std::uint8_t { stand, pursue, idle };
+    Mode mode = Mode::stand;
+    int approach = 0;          // pursue/idle
+    int horizon = fight_horizon;
+    int with_enemy = -1;       // always in the key (prey); never no_fight
+};
+
+// Whether ending the turn on a tile loses its fight there.
+struct Verdict {
+    bool lost = false, falls = false;
+};
+
 class Safety {
 public:
     explicit Safety(const World& world);
@@ -323,6 +342,19 @@ public:
     int turns_to_kill_idle(vec2 p, int horizon);
     // Could the credible threats and camps kill us at p before our next turn?
     bool lethal(vec2 p);
+
+    // The one simulation entry. Stub until W2-A: stand is fight(p) (with_enemy's bit forced into
+    // the key), pursue is pursuit(p, approach), idle is turns_to_kill_idle(p, horizon) as
+    // turns_to_kill_us, with lost and self_falls set when that is not 0.
+    Trade engage(vec2 p, Engage e);
+    int idle_turns(vec2 p, int horizon);
+    void set_claimed(int group); // camp group our farm/siege budgets; skipped in stand/pursue camp charge
+    Verdict verdict(vec2 q);
+    bool guarded(vec2 q);          // false if no visible foe reaches q (strike_sum) or q no worse than here (mask ⊆, damage ≤);
+                                   // else v.lost || (v.falls && (linked || tile(q).worst() >= health)). Radius 3 only.
+    const bitboard* guarded_board();
+    std::uint32_t guard_stamp() const; // generation << 8 | guarded count (KeptRoute key)
+    // fight/pursuit/turns_to_kill_idle stay as wrappers until W4.
 
     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
     // enough to wake, with where they would attack us from.
@@ -489,6 +521,9 @@ private:
     union {
         std::array<Viewed, 16> viewed_; // by enemy index, for viewed_enemies_
     };
+    // The verdict section (W2-A).
+    int claimed_ = -1; // set_claimed()
+    std::uint32_t guarded_generation_ = 0, guarded_count_ = 0; // guarded() answers true this generation
     std::uint64_t costliest_fight_ = 0;
     // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
     // once refreshed: reached_ only gains bits meanwhile, and gone() keeps its answers.
