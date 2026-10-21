@@ -27,6 +27,7 @@ import oof  # noqa: E402
 
 VARIANTS = ROOT / "bots" / "variants"
 TEST_DRAFT = re.compile(r"^(\s*(?:inline\s+)?constexpr\s+bool\s+test_draft\s*=\s*)(false|true)(\s*;)", re.M)
+DEBUG_PHASES = re.compile(r"^(\s*(?:inline\s+)?constexpr\s+bool\s+debug_phases\s*=\s*)(false|true)(\s*;)", re.M)
 
 
 def git(*args, binary=False):
@@ -55,7 +56,7 @@ def write_if_changed(path, data):
     path.write_bytes(data)
 
 
-def materialise(side, role, name, test_draft):
+def materialise(side, role, name, test_draft, phases):
     """Write the bot at side's commit into a variant directory, rewriting only changed files
     so its build cache stays incremental."""
     sha = side["sha"]
@@ -80,6 +81,10 @@ def materialise(side, role, name, test_draft):
                              f"'constexpr bool test_draft = false;' line (found {len(found)}); "
                              "pass --no-test-draft to use it unchanged")
         files["src/params.h"] = TEST_DRAFT.sub(r"\1true\3", text).encode("utf-8")
+    util = files.get("src/util.h", b"").decode("utf-8")
+    phases = phases and len(DEBUG_PHASES.findall(util)) == 1
+    if phases:
+        files["src/util.h"] = DEBUG_PHASES.sub(r"\1true\3", util).encode("utf-8")
     target = VARIANTS / f"ab-{name}-{role}-{sha[:7]}"
     for rel, blob in files.items():
         write_if_changed(target / rel, blob)
@@ -92,8 +97,8 @@ def materialise(side, role, name, test_draft):
         elif path.is_dir() and not any(path.iterdir()):
             path.rmdir()
     write_if_changed(target / "ab.json", (json.dumps(
-        {"spec": side["spec"], "sha": sha, "test_draft": test_draft}, indent=2) + "\n").encode("utf-8"))
-    return target
+        {"spec": side["spec"], "sha": sha, "test_draft": test_draft, "phases": phases}, indent=2) + "\n").encode("utf-8"))
+    return target, phases
 
 
 def suites(tokens):
@@ -140,7 +145,8 @@ def rel(path):
 
 
 def describe(side):
-    return f"{side['spec']} ({side['sha'][:7]})" if side["kind"] == "git" else f"{side['spec']} (dir)"
+    phases = ", debug_phases on" if side.get("phases") else ""
+    return f"{side['spec']} ({side['sha'][:7]}{phases})" if side["kind"] == "git" else f"{side['spec']} (dir)"
 
 
 def main():
@@ -154,6 +160,9 @@ def main():
     parser.add_argument("--no-test-draft", action="store_true",
                         help="Leave materialised copies' params.h untouched, so each plays its own draft")
     parser.add_argument("--fuel", type=int, help="Fuel per turn, passed to run_batched.py --fuel")
+    parser.add_argument("--phases", action="store_true",
+                        help="Switch debug_phases on in materialised copies that have it, for tools/fuel/oof_phases.py; "
+                        "it costs those copies ~1%% fuel")
     args = parser.parse_args()
     started = perf_counter()
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -165,7 +174,7 @@ def main():
             raise ValueError("No suites to play")
         for side, role in zip(sides, ("cand", "ref")):
             if side["kind"] == "git":
-                side["path"] = materialise(side, role, name, not args.no_test_draft)
+                side["path"], side["phases"] = materialise(side, role, name, not args.no_test_draft, args.phases)
                 side["test_draft"] = not args.no_test_draft
     except (ValueError, OSError) as error:
         parser.error(str(error))

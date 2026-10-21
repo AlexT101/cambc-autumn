@@ -35,6 +35,7 @@ py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen    # each on its 
 
 - **CAND / REF:** a git ref (branch, sha, `main`), whose `bots/hyperion` (`bots/hecate` in commits before the rename) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` set to true; or a bot directory under `bots/`, used as it is. Refs resolve in the shared repo, so worktree branches work; run it from the primary checkout.
 - **Options:** `--name` (default `<cand>-vs-<ref>`), `--threads` (default 22), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, and each `maps/gen-s*/`; a directory of maps also works), `--no-test-draft` (leave copies untouched, so each plays its own draft), `--fuel N`.
+- **Debug builds:** games always run local (non-`--release`) builds. `--phases` also turns `debug_phases` on in the copies that have it, so the same run gives out-of-fuel paths for `tools/fuel/oof_phases.py`; those copies then spend about 1% more fuel.
 - **Output:** a summary of at most 25 lines: CAND's win % with a 95% Wilson interval overall and per suite, failed matches, out-of-fuel turns per bot (`oof.py`) and wall time. `replays/ab/<name>/` gets `summary.json`, `summary.md` and each suite's run_batched log; batches go to `replays/batch-<time>-ab-<name>-<suite>/`.
 - The exit code is non-zero if any match failed.
 
