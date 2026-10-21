@@ -394,16 +394,16 @@ bool endgame(const World& world, Pathing& pathing) {
 
 void place_ward(const World& world, Pathing& pathing, Memory& memory);
 
-// At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else is
-// judged again.
+// At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, or at
+// an altar carry_bag gave up waiting at, is judged again.
 bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     const vec2 here = my_position();
     const auto& altars = world.map().altars;
     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
         if (world.altars[a].enemy_lock || dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
-        const int turns = tribute_turns(my_gems());
-        if (here != world.me().pos && !tribute_ok(world, safety, memory, turns)) return false;
+        const bool avoided = a == memory.avoid_altar && world.round < memory.avoid_until;
+        if ((avoided || here != world.me().pos) && !tribute_ok(world, safety, memory, tribute_turns(my_gems()))) return false;
         place_lock(world); // first: it cancels every tribute at its altar
         place_ward(world, pathing, memory); // first: no ward goes down while channelling
         try {
