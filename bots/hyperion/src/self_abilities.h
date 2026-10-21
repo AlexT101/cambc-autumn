@@ -29,16 +29,19 @@ bool reset_and_attack_camp(const World& world, Safety* safety, int group);
 // A camp tile lies within `range` of p.
 bool camp_in_reach(const World& world, vec2 p, int range);
 
-// Travel: dash to the landing nearest the goals if it gains at least 2 steps and no enemy is near
-// enough to want the dash for a fight or an escape. Goals more than `max_steps` away are not searched for.
+// Exposure, read from pathing.safety() (none: not ranked): tile(p).worst(), then the depth in the
+// reach of the visible enemies and camps that hit p.
+// Travel: dash to the landing nearest the goals if it gains at least 2 steps, no enemy is near
+// enough to want the dash for a fight or an escape, and its worst is no more than here's. Goals
+// more than `max_steps` away are not searched for.
 bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps = unreachable);
 bool dash_towards(const World& world, Pathing& pathing, const Field& field);
 // Over a hole or altar line beside us (StaticMap::crossable) where `field` gains: unlike a travel
-// dash, with enemies near, as long as the landing is no deeper in their reach.
+// dash, with enemies near, as long as the enemies (seen and unseen) hit the landing no harder.
 bool dash_across(const World& world, Pathing& pathing, const Field& field);
-// Into attack range of `target`; attack after it.
+// Into attack range of `target` (a melee walk's step short), least exposed first; attack after it.
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief& target);
-// Out of the reach of visible enemies and awake camps, tie-broken towards `home`.
+// To a landing strictly less exposed than here, least exposed first, then nearest `home`.
 bool dash_away(const World& world, Pathing& pathing, const Field& home);
 
 // Willow: the ally the heal restores most, if it restores enough or the ally is low.
