@@ -521,6 +521,14 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   47.1, gen 51.0, fresh gen-s1 49.4): level, kept as the base for stage 2. Out-of-fuel turns 7156 vs 6606 (+8%, all
   decide, spread over maps); 100M bench mean fuel +0.4%, p99 +2.1%. Suspect: prices() keys on the float share, which
   moves every round once the time cap binds, rebuilding farm's group facts.
+- strike-fuel (2026-10-21; landed as cc38946, f56b8c9 on main 55f8f6d): strike search fuel with the same choices
+  (centre/touch scatter with hashed dedup, memos for wake, landing groups and first-mid, a per-tile viewer row cache,
+  our record read once, landings read only foes within their radius). bench 16/16 identical at 100M on main 55f8f6d
+  (fuel -0.08%). Worst maps at 100M (12 games): search fuel per call mean 11.75k -> 11.2k, p99 42.5k -> 39.3k, max
+  204k -> 133k. Measurement A/B vs 55f8f6d: 51.5% of 1094 (ladder 54.3, gen 52.5, fresh gen-s1 50.0), level as
+  expected; out-of-fuel turns 6139 vs 6545 (-6%; ladder 589 vs 633, gen 2699 vs 2728, fresh 2851 vs 3184). The rest
+  is the search's tail: searches start with 40-60k left after step_guard; a capped branch gave no real-budget gain
+  and was dropped (strike-notes.md).
 - w2-trapped (2026-10-21; WORLD-MODEL 1): Safety::trapped(p, h), every exit next turn (stay, step, a landing if our
   dash stays ready) taking the visible enemies' strike at p before our next turn plus their next strike at the exit,
   closer by their moves, plus camps, >= h (Chebyshev only); a want_home trigger, and step_guard guards trapped tiles.

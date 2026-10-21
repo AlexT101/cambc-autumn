@@ -305,3 +305,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    price before the first camp hit. Deleted gold_worth, endgame, emblem_gain_rounds, params clear_share,
    endgame_shop_rounds, endgame_horizon. 50.0% vs main (1094, ladder 47.1, gen 51.0, fresh 49.4); out-of-fuel turns
    7156 vs 6606.
+41. 2026-10-21 (not yet submitted). Strike search fuel, same choices (bench 16/16 identical at 100M): ground centres
+   and camp touches scattered once with hashed dedup, wake at the start tile memoised by touched set, landing groups
+   memoised and shared by nodes with the same landings and foes alive, each dashed end's first mid in one pass,
+   attack_viewers cached per tile by window row, our record read once, a landing reads only foes within its radius.
+   Measured vs main: 51.5% (1094, ladder 54.3, gen 52.5, fresh 50.0); out-of-fuel turns 6139 vs 6545.
