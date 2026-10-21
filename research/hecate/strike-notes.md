@@ -1,129 +1,80 @@
 # Strike search: handoff notes
 
-Phase 1 (search core) on branch `orch/strike-p1`. Spec: [STRIKE-SEARCH.md](STRIKE-SEARCH.md).
+Spec: [STRIKE-SEARCH.md](STRIKE-SEARCH.md). Phase 1 (search core) is on main (52.6% vs main before it, hecate-v9).
 
-## Round 2 (after the first A/B: 38.5%, 40.5% at 100M, deaths +34%)
+## Phase 3a (branch `orch/strike-p3a`): Varg's splash in Reach and Strike
 
-What the 100M replays showed, and what changed:
-- **Refused dashes were a rules error.** Every SRCH-REFUSED (113 at 100M, all dashes) had every 2-step path through a
-  visible enemy's tile. `probe-dash-enemy` confirmed it: a dash path cannot cross a visible enemy champion
-  ("Destination is unreachable"); allies and unseen enemies do not block (`probe-allowances`). The YAML said
-  champions were crossable. Fixed in the search's `pass_` and in `dash_landings_from` (which main's retreat dashes
-  use too).
-- **Moves must lead to a strike.** The search also offered moves with no strike after them (W, D, A W, A D, A W D),
-  scored by one turn of 0.25 x blow. They overrode the goal's walk, including `intent.walks == false` turns ("the
-  fight is here") and anchored ones, and spent the dash retreat needs. Deaths after two retreat turns (RR) were
-  +74% on gen (830 vs 478), and rose for every champion type. A move is now offered only when a strike follows it
-  from where it ended (`Node::owed`, `strikes_left`). This is the old menu's "every move ends where it hits",
-  plus the orders it lacked. Hit-and-run (Vesper A D) is gone with it: it is a retreat decision.
-- **Wakes.** A woken striker hits every camp phase we stay in its reach: priced at 2 hits when our next step cannot
-  leave its reach, else 1. No landing may wake a sleeping striker or hit only camps (`land_bad`), as the old
-  menu's `landing_wakes`. Landings therefore stun no sleeper, and the landing-stun path in `wake` is gone.
-- **Fuel.**
-  - Hitting landings alike in the foes and camp groups they hit form one child (`Node::lset`), not one per tile.
-    SRCH-EXH (per tile) agrees.
-  - No move child is created without a strike left.
-  - `max_exact_queries = 10` (queries p99 9).
-  - `land_touch` memo by cell.
-  - The static `Tables` live in a union: their default member initialisers ran at start-up, charged to the first
-    turn. That made round 1 take farm shortcuts and round 2 run out of fuel on huge maps.
-- **Tools.** The engine pads stdout with NULs at line starts. `tools/fuel/oof.py` now strips them; before, its `^OOF`
-  missed lines, for main as much as for the candidate.
+- **Rule** (cambc-rules.yaml `champions.varg`, `probe-varg-splash`): a basic attack also hits other enemy
+  champions and camps within 1 of its target. An enemy Varg therefore reaches p through any unit beside p.
+- **Reach** (safety.cpp): `units_` = our visible champions other than us (`occupied`) plus live camp members in the
+  9x9 window. `splash_targets(from, range)` (per build, lazily, per tile set): the units a basic attack can hit from
+  `tiles_[from]`, with the target's sight (bush clusters, enemy wards) as for p. In `at()`, a sight way with no
+  direct attack tile still hits p when `splash_targets & box(p, 1)` is non-empty (one AND per way). Varg's sight
+  ways are all basic attacks (reset and shield add no spell way). `w.bound` grows by 1 only when `units_` is
+  non-empty, so `reach()` and `enemy_area()` grow only near units.
+- **Strike** (`compute_strike`): basic-attack entries (basic, reset, dash then attack) reach `range + 1` for Varg;
+  `threat_strike`'s second-attack widening too. Unconditional, as Strike must bound Reach; this is what widens
+  `want_home`, `step_guard`, `prey`, unseen Varg threats (`unseen_weight` uses the reach) and our own Varg's Strike.
+- **Debug check** `REACH-BOUND round e<idx> ...` (in `Safety::blow`, debug_block, once a round): Reach's reach,
+  damage or stun beyond Strike's. 0 seen.
+- **6 games** (Varg drafted 2nd by both sides: cand = this branch, ref = hecate-v9 with `test_draft` off; 00packs,
+  gen-shared-gems-720701900, gen-huge-shared-720707800, both sides): no crash, 0 REACH-BOUND/EXH/DOM.
+  - SRCH-REFUSED: cand 8, ref 6, all attacks (op 1) or dashes (op 3), on both sides, so not from this change. Most
+    are on turns whose SRCH line shows `fuel 0` and a wrapped phase counter (likely fuel running out mid-search;
+    unconfirmed). Worth a look in the fuel work: these Varg drafts make it visible.
+  - Out-of-fuel turns (oof.py): cand 46, ref 39; shared gems 37 vs 36, 00packs 9 vs 3 (one Heart of Ruin chain
+    of resumed turns at r468-470/805/901-903). Turns over 95k on 00packs 22 vs 13. After this the per-query
+    splash loop moved into the per-build `splash_targets` cache (an AND per query); not re-measured (game cap).
+    The A/B's oof.py decides. Strength not judged; the A/B should include Varg-heavy test drafts (test_draft has Varg in 8 of its 30 compositions).
 
-Measured (hecate vs main as of 0ee6ac4):
-- 6 real-budget games (00packs, gen-huge-shared-720707800, gen-monolith-720700901, both sides): 0 out-of-fuel turns
-  each side (before: 5 vs 0), 0 SRCH-REFUSED/EXH/DOM.
-- Search fuel per call: mean 9.0k, p90 12.5k, p99 27k, max 44k (round 1: mean 17.8k, p99 87k, max 281k at 100M).
-- 00packs at 100M: 0 EXH/DOM/REFUSED. Its heaviest calls are Heart of Ruin fights with 2 foes (40 nodes, 96 offers,
-  ~60k of grow): settle and offers ~16k, `land_at` ~6k, `hit_unit` ~2k; the other ~36k (~900 a node) was not
-  located. The next fuel step is to meter grow's per-node work (Node and health copies, the dash and walk set-up).
-- Strength is not judged here (no A/B run by this agent).
+## Search (plan.cpp), as of phase 1 round 2
 
-## What exists (plan.cpp)
+- `plan_strikes` = `Search::read` -> `grow` (DFS) -> pricing -> execution.
+- **Grid.** Moves end within 3 of the start: 7x7 bitboard in a `uint64` (bit (y+3)*7+x+3). `free_` (walk/land),
+  `pass_` (dash path: not wall, visible camp or visible enemy; `probe-dash-enemy`), `landings(c)` less `land_bad`.
+- **Legality** per unit as grids: `Unit::legal` (basic attack, range + sight), `cast_legal` (range 4). Sight is
+  `attack_viewers()` (safety.cpp), exact except viewers in a bush beyond a step (conservative).
+- **DFS over symbolic moves.** W and plain D are not expanded per tile: later actions AND their legality into the
+  move's requirement (`req_w`, `req_d`, `req_e`), and `settle()` resolves end tiles. Hitting landings (Heart of
+  Ruin) are expanded once per set of foes and camp groups hit (`lset`). Ground casts from the start only.
+- **Covered:** W, A, R, D, S (unit and ground), Cassi's stun anywhere, melee W A R A, ranged W R A, a move only when
+  a strike follows it (`Node::owed`), attack + cast both orders, Marcella's armed stun, Vendetta's refresh, Varg
+  splash both ways, camps as targets only for Vendetta (kill) and Varg (splash onto a foe).
+- **Wakes** (`wake`, `find_wakers`, memo `wake_at`): woken strikers hit the nearest of us, visible allies, held
+  enemies; 2 hits when a step cannot leave the reach. Bans: sleeping Monolith member; ally recalling/tributing/on a
+  cleared camp; a lethal woken hit. No landing may wake a sleeper or hit only camps (`land_bad`).
+- **Leaf score** = hits - cast 40 / dash 2*step + shield_worth(start) if the cast is unused + step if the walk is
+  unused; then + progress - camps - 0.25 x Reach blow (HoR scaled by new damage_scale) - unseen threats beyond 1.
+- **Pricing:** tiles by bound, foes by Strike share, cut once a tile cannot win; `max_exact_queries` 10.
+  Distance-3 winners must pass `Safety::lethal`.
+- **Execution:** `Search::concrete`; a walk/dash refused by a hidden unit takes the best leaf with the same prefix
+  avoiding that tile, else `strike_enemy`. `Pathing::try_move` has a `refused` out-param.
 
-- `plan_strikes` = `Search::read` -> `grow` (DFS) -> pricing -> execution. The old fixed menu is gone; it survives
-  only as `menu_shape()` (a filter over the debug enumerator) for the dominance check.
-- **Grid.** Moves end within 3 of the start: a 7x7 bitboard in a `uint64` (`Grid`, bit (y+3)*7+x+3). `free_`
-  (walk/land: `pathing.blocked()` | guard), `pass_` (dash path: not wall, visible camp or visible enemy),
-  `landings(c)` by dilation, less `land_bad`.
-- **Legality per unit** as grids: `Unit::legal` (basic attack, range + sight), `cast_legal` (unit casts, range 4).
-  Sight is `attack_viewers()` (new, safety.cpp): exact, except viewers in a bush beyond a step are dropped
-  (conservative); `Search::viewers` adds the start tile back whenever the target is in range, as it is
-  visible from there now. Our ward's sight is not used (an option lost, never a refused attack).
-- **DFS over symbolic moves.** Walk (W) and plain dashes (D) are not expanded per tile: each attack/cast after a
-  move ANDs its legality grid into the move's requirement (`req_w`, `req_d`, `req_e`), and `settle()` resolves every
-  end tile a leaf can reach (segments `at_start, walked, dashed, walked_dashed, dashed_walked`). Landings that hit
-  (Heart of Ruin, `land_hits`) are expanded once per set of foes and camp groups hit (`lset`). After a walk, a dash's landings come from the walk
-  tiles the actions so far still allow (`free_n & req_w`), stored as the dash's `req_d`. Ground casts: excluding-walking only, from the start, best
-  centre per set of foes damaged (exact: nothing can move after).
-- **Actions/rules covered:** W, A, R, D, S (unit and ground), Cassi's stun anywhere, melee W A R A and every W
-  interleaving, ranged W R A, a move only when a strike follows it, attack + cast in both orders (cast priced on health
-  after the attack), Marcella's armed attack stun (`arms`), Vendetta's kill refresh (reset and dash ready again,
-  the cast spent refunded via `pending`; one cast a turn still holds), Varg splash both ways, camps as targets only
-  for Vendetta (killable) and Varg (splash onto a foe).
-- **Wake pricing** (`wake`, `find_wakers`): touched groups' sleeping strikers target the nearest of us at E, visible
-  allies, enemies held in place (acted or channelling); bans: sleeping Monolith member, ally recalling/tributing/
-  on a cleared camp tile, a lethal woken hit. Two hits on us when a step cannot leave its reach. Memoised per end
-  tile (`wake_at`).
-- **Leaf score** = today's: hits (`hit_worth`, stun_worth) - cast 40 / dash 2*step / reset 0 + shield_worth(start)
-  if the cast is unused + step if the walk is unused; then + progress - camps - 0.25 x Reach blow (HoR foes scaled by
-  their new damage_scale) - unseen threats (`threats_at`) for end tiles 2+ away.
-- **Pricing:** tiles picked by bound (raw + progress), camps subtracted when picked, foes priced largest Strike
-  share first and cut once the tile cannot win. `max_exact_queries` is 10. Distance-3 winners
-  must pass `Safety::lethal`.
-- **Execution:** the chosen leaf's concrete sequence (`Search::concrete`). A walk/dash refused by a hidden unit
-  takes the best priced leaf with the same executed prefix that avoids that tile; else `strike_enemy`.
-  `Pathing::try_move` gained a `refused` out-param to tell hidden blockers from errors.
-- Removed: `enemy_cast_value`/`cast_chosen` (abilities.cpp); `strike_after` now re-asks `cast_at_enemies` when
-  the search valued a cast from the start tile and we are still there.
+## Debug checks (debug_block, `debug_search` in plan.cpp)
 
-## Debug checks (all in debug_block, `debug_search`)
+- `SRCH-EXH`: exhaustive enumeration per end tile must equal the search. `SRCH-DOM`: the old menu (`menu_shape()`)
+  must not beat the choice. `SRCH-REFUSED`: an action that threw or was refused other than by a hidden unit.
+  Debug code never touches Safety, Pathing or sight caches (byte-identical to release).
+- `SRCH r handle fuel .. nodes .. read .. grow .. price .. act ..` per call (read `team-*.stdout`, strip NULs).
 
-- `SRCH-EXH`: `exhaust()` enumerates every sequence on concrete tiles (no grouping) each strike turn; per end tile
-  its best raw value must equal the search's. `SRCH-DOM`: the old menu's best, scored the same way (search's danger
-  at priced tiles, camps only at unpriced ones), must not beat the choice. `SRCH-REFUSED`: an action that threw or
-  was refused other than by a hidden unit. Debug code reuses the search's grids and
-  never touches Safety, Pathing or sight caches, so the game stays byte-identical to release.
-- Result on 6 validation games (hecate vs hecate-v7: 00packs, gen-huge-shared-720707800, gen-monolith-720700901,
-  both sides) plus ~10 single packs games while optimising: 0 EXH, 0 DOM; REFUSED 0 in the last builds (3 seen
-  earlier, before belief health replaced live reads; recheck).
-- `SRCH r handle fuel .. read .. grow .. price .. act ..` per call. Summariser used: a ~40-line script reading
-  `team-*.stdout` from the replay zips (not committed; trivial to redo).
+## Fuel
 
-## Fuel in round 1 (superseded by Round 2 above)
-
-- After the review fixes (4 games: 00packs vs hecate-v7 and gen-huge-shared-720707800 vs nemesis, both sides):
-  0 EXH, 0 DOM, 1 REFUSED (a stale resume, above); out-of-fuel turns 31 on 00packs (both sides) and 8 on the
-  shared map, where some fall in rounds with no search (r1 among them); not compared with the pre-fix build.
-
-- 6 validation games, before the wake memo: per search mean 18.4k, p50 9.0k, p90 52.6k, max 60.8k (read 6.2k,
-  grow 20.6k, price 8.2k mean); **58 out-of-fuel turns vs 0 for hecate-v7** (oof.py), 45 of them on 00packs
-  (Heart of Ruin landings near wolf packs). Old planner: 6k mean, 25k max. Not ready for an A/B.
-- Fuel is ~1 per WASM instruction and 1 per byte copied: Node is 64 bytes (bitfields), legality is pre-checked
-  before a child is copied, `Tables` are static (no per-turn zeroing), offers store a leaf index, not a sequence.
-- Remaining costs, largest first: (1) HoR dash leaves: each concrete hitting landing x attack order x end tiles,
-  with wake pricing per (leaf, E) (memo added last, unmeasured); (2) fixed pricing cost ~3-8k even with 1 tile
-  (strike_of/awake_members/goal_field/field reads per tile - measure which); (3) read ~5k (geometry boards,
-  groups_near, sight windows, damage_amount reads).
-- Ideas: process leaves in falling value so each end tile is offered once when no wake applies; group HoR landing
-  leaves per landing tile; read field values only for tiles that can still win; share `blocked()`/sight with
-  step_guard. Then set `max_exact_queries` (queries were small: mean 2.8, max 19).
+- Phase 1 round 2, 6 real-budget games vs main: 0 OOF each side. Search per call mean 9k, p90 12.5k, p99 27k, max
+  44k. Heaviest: HoR fights with 2 foes (40 nodes, ~60k grow at 100M; ~36k not located). Next step: meter grow's
+  per-node work (Node and health copies, dash and walk set-up).
+- A search that runs out of fuel resumes next round and carries out its stale plan (a REFUSED source).
 
 ## Gotchas
 
 - Window (9x9, safety.cpp) vs Grid (7x7, plan.cpp) layouts differ; `to_grid` converts row by row.
 - `hit_unit` mutates `h` before it can fail: callers restore `h = saved`.
-- Cassi and Issac: `Unit::link` pairs the two bodies among the foes. All damage goes through `lose()`: a kill
-  zeroes both, and `partner(t)` reads the partner's health as hit so far. In one blow on both (splash, landing,
-  ground 3x3) `moot()` drops a body's own value when its partner, counted later in the same blow, dies to it.
-- A search that runs out of fuel resumes next round and carries out its stale plan: the one SRCH-REFUSED in
-  the post-review games (00packs r836, a dash) followed two out-of-fuel turns.
-- `land_hits` marks landings within the radius of a foe or a live camp member; other landings are "plain" and
-  stay symbolic. A Vendetta refresh enables D only when `moves` and a dash slot exist.
-- Not done: the probe that no second cast is allowed after a Vendetta refresh (modelled per the YAML: one cast);
-  the Strike-equals-Reach shortcut; stunned/capture-holding enemies as "fixed" wake targets (acted/channelling only).
+- Cassi and Issac: `Unit::link` pairs the bodies; all damage goes through `lose()`; `moot()` drops a body's own value
+  when its partner dies later in the same blow.
+- `land_hits` marks landings within the radius of a foe or live camp member; others stay symbolic.
+- Not done: the probe that no second cast follows a Vendetta refresh; the Strike-equals-Reach shortcut (now also
+  needs no units beside p for a Varg); stunned/capture-holding enemies as fixed wake targets.
 
-## Next phase needs
+## Next
 
-Fuel first (back under the old planner's OOF count on the A/B maps), then the phase 1 A/B, then phase 2 (heal and
-shield as leaf options; `shield_value` is today's start-tile shield_worth).
+Phase 3a A/B (ladder + gen, both sides, vs hecate-v9) with oof.py; then 2 (heal and shield as leaf options) and 3b
+(killed and stunned foes leave the end tile's danger).

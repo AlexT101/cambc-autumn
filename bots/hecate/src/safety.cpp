@@ -523,6 +523,8 @@ namespace {
 // Slot bit i: ability i counts.
 Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slots) {
     const int range = f.attack_range();
+    // Varg's basic attack reaches a tile through a target beside it.
+    const int basic = range + (f.passive == Passive::splash_attack ? 1 : 0);
     const int walk = f.ranged ? 0 : 1; // a ranged champion's walk spends its attack
     Strike out;
     const auto add = [&](int reach, float damage, bool stuns) {
@@ -533,17 +535,17 @@ Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slo
         }
         out.reach = std::max(out.reach, reach);
     };
-    add(range + walk, s, false);
+    add(basic + walk, s, false);
     for (int slot = 0; slot < 2; ++slot) {
         if (!(slots >> slot & 1)) continue;
         const auto& a = f.abilities[slot];
         switch (a.kind) {
         case AbilityKind::attack_reset:
-            add(range + walk, 2 * s, a.stuns);
-            if (f.ranged) add(range + 1, s, a.stuns); // walk, reset, attack
+            add(basic + walk, 2 * s, a.stuns);
+            if (f.ranged) add(basic + 1, s, a.stuns); // walk, reset, attack
             break;
         case AbilityKind::dash:
-            add(range + walk + 2, s, false);
+            add(basic + walk + 2, s, false);
             if (a.lands()) {
                 // The landing, then a basic attack from it.
                 add(walk + a.reach(), a.multiplier * focus, a.stuns);
@@ -641,7 +643,7 @@ const Strike& threat_strike(const World& world, const ChampionBelief& c) {
     if (m.widened_known) return m.widened;
     m.widened_known = true;
     const auto& f = c.facts();
-    const int basic_reach = f.attack_range() + (f.ranged ? 0 : 1);
+    const int basic_reach = f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0) + (f.ranged ? 0 : 1);
     auto& out = m.widened;
     for (int d = 0; d <= Strike::max_reach; ++d) {
         const float walked = s.at(std::max(0, d - 1));
@@ -1116,6 +1118,9 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     Window occupied;
     for (int i = 0; i < ally_count; ++i)
         if (dist(allies[i], origin_) <= win_r) occupied |= win_bit(allies[i].x - origin_.x + win_r, allies[i].y - origin_.y + win_r);
+    splash_ = f.passive == Passive::splash_attack;
+    units_ = occupied;
+    splash_known_ = 0;
     const auto kind = static_cast<std::uint8_t>(twice | dash << 1);
     if (sets_reusable_ && sets_origin_ == origin_ && sets_kind_ == kind && sets_occupied_.lo == occupied.lo
         && sets_occupied_.hi == occupied.hi) {
@@ -1132,8 +1137,10 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     for (int word = 0; word < 2; ++word)
         for (std::uint64_t bits = word ? camps.hi : camps.lo; bits; bits &= bits - 1) {
             const int i = 64 * word + std::countr_zero(bits);
-            if (live_camp(world, {origin_.x - win_r + i % win_n, origin_.y - win_r + i / win_n}))
+            if (live_camp(world, {origin_.x - win_r + i % win_n, origin_.y - win_r + i / win_n})) {
                 pass &= ~tables.bits[static_cast<std::size_t>(i)], land &= ~tables.bits[static_cast<std::size_t>(i)];
+                units_ |= tables.bits[static_cast<std::size_t>(i)];
+            }
         }
     const auto walk = [&](Window s) { return s | (dilate(s) & land); };
     const auto dash_from = [&](Window s) {
@@ -1224,9 +1231,27 @@ void Reach::set_reach() {
     auto& ws = *ways_;
     for (int i = 0; i < ws.count; ++i) {
         auto& w = ws.way[static_cast<std::size_t>(i)];
-        w.bound = static_cast<std::int8_t>(extent_[w.from] + w.range);
+        w.bound = static_cast<std::int8_t>(extent_[w.from] + w.range + (splash_ && w.sight && units_ ? 1 : 0));
         reach_ = std::max(reach_, static_cast<int>(w.bound));
     }
+}
+
+const Reach::Window& Reach::splash_targets(Tiles from, int range) const {
+    auto& m = splash_units_[from];
+    if (splash_known_ >> from & 1) return m;
+    splash_known_ |= static_cast<std::uint8_t>(1u << from);
+    m = {};
+    const auto& t = terrain(world_->map());
+    const Window units = range <= 1 ? units_ & dilate(tiles_[from]) : units_;
+    for (int word = 0; word < 2; ++word)
+        for (std::uint64_t bits = word ? units.hi : units.lo; bits; bits &= bits - 1) {
+            const int i = 64 * word + std::countr_zero(bits), ux = i % win_n, uy = i / win_n;
+            const vec2 u{origin_.x - win_r + ux, origin_.y - win_r + uy};
+            Window f = tiles_[from] & box(ux, uy, range);
+            if (f && (range > 1 || t.bush(u)) && !warded(*world_, t, u)) f &= sight_from(*world_, u, range > 1, ux - win_r, uy - win_r);
+            if (f) m |= tables.bits[static_cast<std::size_t>(i)];
+        }
+    return m;
 }
 
 Blow Reach::at(vec2 p) const {
@@ -1258,8 +1283,7 @@ Blow Reach::at(vec2 p) const {
             if (d > w.bound) continue;
             if (out.hits && w.damage <= (w.walked ? walked : single) && (!w.stuns || out.stuns) && !(twice_ && i == ws.basic)) continue;
             Window from = tiles_[w.from] & box(dx + win_r, dy + win_r, w.range);
-            if (!from) continue;
-            if (w.sight) {
+            if (from && w.sight) {
                 if (w.range <= 1) {
                     if (!near_known) {
                         // Outside bushes, all within 1 of p sees it: the box alone settles it.
@@ -1272,8 +1296,8 @@ Blow Reach::at(vec2 p) const {
                     if (!far_known) seen(true, far), far_known = true;
                     from &= far;
                 }
-                if (!from) continue;
             }
+            if (!from && !(splash_ && w.sight && (splash_targets(w.from, w.range) & box(dx + win_r, dy + win_r, 1)))) continue;
             if (w.walked) walked = std::max(walked, w.damage);
             else single = std::max(single, w.damage);
             basic |= i == ws.basic;
@@ -1626,7 +1650,18 @@ const Reach& Safety::reach_of(const ChampionBelief& e) {
 Blow Safety::blow(const ChampionBelief& e, vec2 p) {
     const auto& s = struck(e).strike;
     if (s.reach < 0 || !in_square(p, e.pos, s.reach)) return {};
-    return reach_of(e).at(p);
+    const auto& r = reach_of(e);
+    const Blow b = r.at(p);
+    debug_block({
+        // Strike must bound Reach: blow() cuts at Strike's reach.
+        static int last = -1;
+        const int d = dist(p, e.pos);
+        if (last != world_.round && (r.reach() > s.reach || b.damage > s.at(d) + 0.01f || (b.stuns && !s.stuns[d]))) {
+            last = world_.round;
+            std::printf("REACH-BOUND %d e%d reach %d/%d d %d damage %.1f/%.1f\n", world_.round, e.index, r.reach(), s.reach, d, b.damage, s.at(d));
+        }
+    });
+    return b;
 }
 
 int Safety::approach(const ChampionBelief& e, vec2 p) {

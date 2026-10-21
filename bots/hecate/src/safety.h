@@ -59,7 +59,8 @@ struct Strike {
 // open to it, past visible allies of ours) or dash to (2 king steps over anything but walls and
 // live camps, onto a free tile), and from there a basic attack or unit spell at a target in its
 // sight (walls and bushes block it; a bush tile is seen only from its own cluster, or by a visible
-// enemy ward), or a ground spell at any tile within 5. Damage as Strike's.
+// enemy ward), or a ground spell at any tile within 5; Varg's basic attacks also at a unit beside
+// the tile. Damage as Strike's.
 class Reach {
 public:
     // Its next turn, or with `twice` its next two: a walk first, or a second basic attack.
@@ -136,6 +137,15 @@ private:
     Ways* ways_ = &ways_by_[0];
     float strength_ = 0;
     bool twice_ = false;
+    // Varg: its basic attacks also hit within 1 of the target, so they reach a tile through the
+    // units beside it (`units_`: our visible champions but us, and live camp members).
+    bool splash_ = false;
+    Window units_;
+    // The units its basic attack at `range` can hit from tiles_[from]; all its basic attacks share
+    // the range. Worked out on first need each build.
+    const Window& splash_targets(Tiles from, int range) const;
+    mutable std::array<Window, tile_sets> splash_units_;
+    mutable std::uint8_t splash_known_ = 0;
     int reach_ = -1;
     // By the low 3 bits of x and y, so the tiles of any 8x8 square never collide; valid when its
     // stamp is this build's.
