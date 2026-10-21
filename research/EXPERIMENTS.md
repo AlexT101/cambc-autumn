@@ -424,6 +424,17 @@ draft on a fresh-seed suite (512 games; 3/4/5-pick 71.1/63.1/73.8).
   or tribute rounds in 70 games, the enemy usually 4-8 tiles from us. Not merged; its place is the strike search's wake
   pricing (`STRIKE-SEARCH.md`).
 
+### Quality wave 1 (2026-10-21)
+
+- Four behaviour-identical cleanups (world, safety, bot.cpp, comms/turn order/pathing) landed one at a time, each
+  16/16 identical on the fuel bench; together total fuel -0.54% (p99 80391 -> 79827).
+- Bundle of fixes and removals on top (main 07c414f): a shield read in its last round; diagonal crossing ties by row
+  parity; a camp stirred only by champions yet to act, within 5; camp members cut to reach 0 dropped; submit_here
+  judges an avoided altar; siege_load counts a cleared group as dead; offer_channel skips stun-immune tributes;
+  live max health; step_closer keeps off the guard and the farm zone; warm_up's member fuel check left to
+  prepare_member; `killable_now` and `fight`'s exclude removed; the delayed tribute stun removed. 282/582 = 48.5%
+  (ladder 30/70, gen 252/512), out-of-fuel turns 1078 against 1147. Level; kept as fixes and level removals.
+
 ## koi: Fish's play on hecate (2026-10-19/20)
 
 Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh seeds 7101-7106); details in

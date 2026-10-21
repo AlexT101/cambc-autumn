@@ -238,3 +238,13 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    (Safety's camp members, awake_over, dash and shield hazards) leaves those out unless another champion is within 4
    of the group; passing and capture-hold hits count as free only once no striker is asleep; landing_wakes and
    wake_risk ask about the asleep members. 50.0% vs hecate-v7 (582), out-of-fuel turns 1125 vs 1224.
+32. 2026-10-21 (not yet submitted). Quality wave 1. Behaviour-identical cleanups (dead code in World, Safety and
+   bot.cpp; send reuses receive's read; one approach estimate per search; searches skipped after a dry route; danger
+   walls kept per tile): fuel -0.54% on the bench. Fixes: read_shield reads a shield in its last round; crossable
+   diagonal ties keep the even-row tile, so staircase rivers keep every other crossing (fracture, shortcut,
+   starvation +2-3); an asleep camp is stirred only by champions yet to act within 5; camp members with reach 0
+   dropped; submit_here runs tribute_ok at an altar carry_bag gave up waiting at; siege_load counts a cleared group's
+   health as 0; offer_channel ignores stuns for Marcella's tribute; live_self's max health from the live record;
+   step_closer skips guard and avoid tiles (crow-flies farm passes the zone). Removed killable_now, Safety::fight's
+   exclude and the delayed tribute stun (tribute_to_stun_later, decision D, the hold parameter). 48.5% vs main (582,
+   ladder 42.9, gen 49.2), out-of-fuel turns 1078 vs 1147.
