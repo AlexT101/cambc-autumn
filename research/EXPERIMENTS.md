@@ -670,3 +670,19 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   `debug_phases` on (`ab.py --phases`, ~0.8% more fuel to CAND only): 48.6% of 582 (95% CI 44.6-52.7; ladder 52.9 of
   70, gen 48.0 of 512); out-of-fuel turns 6198 in 418 games vs 5542 in 413 (+12%; how much of that is the phases'
   fuel is not separated). Level: kept. Where CAND's turns ran out: FUEL-GATES.md, "Out-of-fuel paths".
+- wave 1 (2026-10-21; combat merge, [COMBAT-MERGE.md](hyperion/COMBAT-MERGE.md); integration branch
+  claude/dazzling-mccarthy-4kawix 36cf487, tag w1, on w0 2b7ea7e): one tile table under one unseen rule, the fight
+  memo across invalidate with pursuit/idle memos and reobserve, turn start and camp exit-rounds pricing, search pricing
+  through the table with one shield_cap, one unseen-Ren ban for cast_at_enemies and the search (CHANGES 54). One run vs
+  w0, ladder + gen, debug builds: 48.5% of 582 (95% CI 44.4-52.5; ladder 50.0 of 70, gen 48.2 of 512); out-of-fuel
+  turns 5088 vs 5736 (-11%). Level (above ~47%): kept.
+  - Diagnosis: 16 swing maps replayed as w0 mirrors; all 32 games first differ on a CAND move. The main source is
+    W1-A's unseen rule in damage_bound: tile(p).worst() takes an unseen enemy from its field capped at unseen_radius
+    instead of a full hit anywhere in full reach, an estimate rather than a bound that often reads 0 (TABLE-MISMATCH
+    bound 39297 lines in 430 games, all downward). Its users shift: shield_cap drops Heart of Ruin shields a mirror
+    cast (5 maps, 3 lost), a recall start became a walk, retreat tiles change. W2-E restores the bound. W1-C's exit
+    rounds likely cut camp deaths 15% (443 vs 519), though gems lost to camps rose (881 vs 700). W1-B, W1-D and W1-F
+    showed only fuel-shifted divergences. Champion deaths +3%, kills -2.9%, tributed gems -2%.
+  - Fuel: W1-B alone was 16/16 identical at 100M but +1.05% a turn, a fixed ~+380 (likely the per-construction
+    note_view() and memo bookkeeping, unmeasured) with savings up to 9k on memo hits. Real-budget bench vs w0: out-of-fuel
+    turns 132 vs 149 (within its ±20), mean fuel +0.8%. The tile table's camp pre-filter was reverted (Fuel, above).

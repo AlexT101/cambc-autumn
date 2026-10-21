@@ -239,3 +239,4 @@ measured outputs reached the 1 MiB cap and lost their last lines.
   want_home 10.6%, the strike search 11.6% (read 4.8%), step_guard 10.0%, want_home 6.4%, chase 6.1%.
 - Phases cost about 1k fuel a turn (+2.7% on the fuel bench at 100M, identical games); out-of-fuel turns enter 46 on
   average.
+- Where that fuel goes in detail, what the combat merge cuts and misses, and fuel-only fixes: [OOF-ANATOMY.md](OOF-ANATOMY.md).

@@ -374,3 +374,27 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    casts; since, plan.cpp's add_unseen keeps only the tiles of unseen enemies whose retaliation would kill us (they
    still ban centres), so the search no longer values a cast cast_at_enemies never makes (Centre/Near::unseen
    deleted). Not A/B'd alone; 00ambush and gen-archipelago-720706000 vs hecate byte-identical.
+54. 2026-10-21 (not yet submitted). Combat merge wave 1 (COMBAT-MERGE.md; tag w1, 36cf487): one tile table, memoised
+   fights.
+   - W1-A (safety.cpp): the per-tile readers (damage_bound, worst_damage, lethal, may_be_hit, threatened, camp_damage,
+     threats_at) read one row, tile(p), filled lazily per generation (the 7x7 window around us plus a 4-slot ring).
+     One unseen rule: an unseen enemy's blow is Threat::at(p) from its field capped at unseen_radius, built per enemy
+     only when its possible tiles are near; each_threat's distance-0 rule, Foe::asked/near, CampMemo and the threats_at
+     bisection are deleted. exit_rounds reads one wall-free field from the camp exits a generation.
+   - W1-B (safety.cpp): the fight memo survives invalidate() (keys naming an enemy found dead are dropped, a cut Trade
+     is never stored); pursuit and turns_to_kill_idle keep 2-entry memos keyed (p, argument, generation); reobserve()
+     keeps Safety when observe() left the visible enemies, allies and camps unchanged, resetting only what unseen
+     enemies decide.
+   - W1-C (bot.cpp): continue_tribute fills decide's want_home answer; a ward rebuilds Safety only when reobserve()
+     fails and always drops that answer; camp_trapped reads exit_rounds; flee_camps and retreat_step cost a step as
+     tile(q).worst() + camp_worst x max(0, exit_rounds(q) - 1) (camp_exit_rounds deleted).
+   - W1-D (plan.cpp): search pricing reads the table: tile(p).camp_exp replaces camp_at/camps[24], the distance-3 ban
+     (tile(p).worst() >= health) is checked before pricing, and one shield_cap (min(amount, duration x damage_bound))
+     serves shield_worth, Search::shield_at and read_mates' heal value.
+   - W1-F (abilities.cpp, plan.cpp): unseen_retaliators lists the tiles of a tracked unseen enemy on at most 9 tiles
+     whose retaliation would kill us; cast_at_enemies' ground casts and landings and the search's centres and landings
+     all keep off them (53 had dropped this from cast_at_enemies only).
+   48.5% vs w0 (582, 95% CI 44.4-52.5; ladder 50.0, gen 48.2); out-of-fuel turns 5088 vs 5736. Known flaw: W1-A made
+   damage_bound, the input to shield_cap, offer_escape and retreat_step's escape cost, an estimate rather than a bound
+   (an unseen enemy often reads 0 where the old rule counted a full hit), so some shields are dropped and some
+   retreats change; it also counts unknown-state camps at camp_worst instead of camp_exp. Fixed in wave 2 by W2-E.
