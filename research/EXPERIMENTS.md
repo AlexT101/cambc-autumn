@@ -716,3 +716,11 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   - Still above w1: against it 62ffe96 runs out more in chase/prey (+380 turns), farm's guarded() walks (+200) and
     want_home (+70), and less in siege (-270); the search is level. Real-budget bench (default 8 maps / 8 more ladder
     maps): w1 132 / 236, w2-merged 178 / 587, 62ffe96 176 / 347; mean 35352, p99 85854 (w2-merged 35743, 86258).
+  - Review fixes on 62ffe96 (a340ad9, 8859669): L3 dropped, as want_home branched on Trade::cut, which only a short fuel
+    sets (a fuel gate; a cut reads lost again for every reader). P4's trigger moved from prey into chase: a tribute channel
+    also clears walk and attack, so continue_tribute's prey skipped its fight and cancelled the tribute for any enemy in
+    reach. In P4's state chase now takes the turn only with a hit, so carry_bag's dash away and act()'s contest/siege/farm
+    go on. Real-budget bench (8 maps, `--phases`; oof_phases.py): 188 out-of-fuel turns (62ffe96 181, w2-merged 183, w1
+    136), 18739 memo sims (16945, 17846, 12938), mean 35860 (35352). Within the bench's +-20: ambush, expanse and lanes
+    are identical, and the diverged games move both ways (01hooks-b 10 -> 36, 01hooks-a 19 -> 10, 00contest-a 88 -> 72).
+    Out-of-fuel turns under chase/prey 24 -> 16. Not A/B'd.
