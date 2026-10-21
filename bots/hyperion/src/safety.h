@@ -281,7 +281,7 @@ public:
     const bitboard& enemy_area(); // within a credible threat's reach
     // Tiles to keep off while routing: camps and credible enemies. Our own tile is included when
     // in danger, so routing can free the region we stand in.
-    bitboard avoid();
+    const bitboard& avoid(); // a scratch board, valid until the next call
     // any_within(avoid(), p, r), without building the threats.
     bool avoid_within(vec2 p, int r);
     // Each threat as threats() would list it, with its blow at p as tile(p) counts it. Returns the
@@ -524,7 +524,8 @@ private:
     union {
         std::array<Lazy, table_slots> lazy_;
     };
-    std::optional<bitboard> camp_area_, enemy_area_;
+    // camp_area() and enemy_area() are kept in scratch boards: allocating one each turn costs ~550.
+    bool camp_area_known_ = false, enemy_area_known_ = false;
     // An engage() fight, all its simulation depends on: who fights (fight_key()'s bits), each
     // enemy's arrival turn (3 bits at 3 * i), the camp charge each of their turns in camp_step
     // units for their first `camp_turns` turns, the mode and the horizon.

@@ -172,12 +172,11 @@ bool channelling() {
 }
 
 bool attack_enemy(const World& world) {
-    auto& me = cambc::self();
     if (!my_can_attack()) return false;
     const auto target = attack_target(world);
     if (!target) return false;
     try {
-        me.attack(*target);
+        attack_champion(*target);
         return true;
     } catch (const cambc::error&) {
         return false;
@@ -246,7 +245,7 @@ void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
         pathing.step_towards(field);
         return;
     }
-    const auto avoid = safety.avoid();
+    const auto& avoid = safety.avoid();
     if (!pathing.step_towards(field, &avoid)) pathing.step_towards(field);
 }
 
@@ -262,7 +261,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         pathing.step_towards(home);
         return;
     }
-    const auto avoid = safety.avoid();
+    const auto& avoid = safety.avoid();
     if (!test(avoid, here) && pathing.step_towards(home, &avoid)) return;
     const int steps = home.at(here);
     const auto& blocked = pathing.blocked();

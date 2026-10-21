@@ -70,9 +70,8 @@ bool read_board(const World& world, Board& b, int reach) {
         if (!e.alive || !e.visible || e.stats_round != world.round || dist(b.here, e.pos) > reach) continue;
         float health = 0;
         try {
-            const auto c = e.live();
-            if (!c.is_alive()) continue;
-            health = c.health();
+            if (!is_alive(e.handle)) continue;
+            health = record_of(e.handle).health;
         } catch (const cambc::error&) {
             continue;
         }
@@ -132,7 +131,7 @@ void apply(const Board& b, const Hit& hit, Healths& h) {
 bool attack(const Board& b, const Hit& hit) {
     if (hit.target < 0) return false;
     try {
-        cambc::self().attack(b.foes[hit.target].belief->live());
+        attack_champion(b.foes[hit.target].belief->handle);
         return true;
     } catch (const cambc::error&) {
         return false;
@@ -141,7 +140,7 @@ bool attack(const Board& b, const Hit& hit) {
 
 bool use_slot(int slot) {
     try {
-        return cambc::self().abilities()[slot].use();
+        return cast_slot(slot);
     } catch (const cambc::error&) {
         return false;
     }
@@ -160,7 +159,7 @@ float shield_worth(const World& world, Safety& safety, int slot, vec2 p) {
     if (slot < 0) return 0;
     float amount = 0;
     try {
-        amount = cambc::self().abilities()[slot].shield_amount();
+        amount = my_shield(slot);
     } catch (const cambc::error&) {
         return 0;
     }
@@ -926,7 +925,7 @@ void Search::read_spells() {
             continue;
         float raw = 0;
         try {
-            raw = cambc::self().abilities()[s].damage_amount();
+            raw = my_damage(s);
         } catch (const cambc::error&) {
         }
         auto& sp = spells[s];
@@ -940,7 +939,7 @@ void Search::read_spells() {
             const auto& e = *x.belief;
             float lost = 0;
             try {
-                lost = raw > 0 ? cambc::self().abilities()[s].damage_amount(e.live()) : 0.0f;
+                lost = raw > 0 ? my_damage_to(s, e.handle) : 0.0f;
             } catch (const cambc::error&) {
                 lost = std::min(raw, e.health);
             }
@@ -968,7 +967,7 @@ void Search::read_mates() {
     if (heal < 0) return;
     float amount = 0;
     try {
-        amount = cambc::self().abilities()[heal].heal_amount();
+        amount = my_heal(heal);
     } catch (const cambc::error&) {
         heal = -1;
         return;
@@ -981,11 +980,12 @@ void Search::read_mates() {
             continue;
         float hp = 0, top = 0;
         try {
-            const auto c = a.live();
+            const auto* live = visible_record(a.handle);
+            if (!live) continue;
+            hp = live->health, top = live->max_health;
             // Allies start a recall at every turn end and cancel it unless wanted: one kept will
             // reach spawn and heal there.
-            if (!c.is_visible() || kept_recall(c)) continue;
-            hp = c.health(), top = c.max_health();
+            if (kept_recall(a.handle)) continue;
         } catch (const cambc::error&) {
             continue;
         }
@@ -1099,12 +1099,11 @@ bool Search::read() {
         if (!e.alive || !e.visible || e.stats_round != world.round || dist(here, e.pos) > reach) continue;
         bool stunned = false, recall = false;
         if (stuns || (casts && e.channel == Channel::recall)) {
-            const cambc::champion c = e.live();
             try {
-                if (!c.is_visible()) continue;
-                stunned = stuns && c.buffs().has_stun();
+                if (!visible_record(e.handle)) continue;
+                stunned = stuns && has_stun(e.handle);
                 recall = casts && e.channel == Channel::recall
-                         && aph::kept_recall(c, e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
+                         && aph::kept_recall(e.handle, e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
             } catch (const cambc::error&) {
                 continue;
             }
@@ -1141,13 +1140,12 @@ bool Search::read() {
     float land_raw = 0;
     if (lands && (dash_ready || vendetta)) {
         try {
-            const auto ability = cambc::self().abilities()[dash];
-            const float raw = land_raw = ability.damage_amount();
+            const float raw = land_raw = my_damage(dash);
             const auto& a = f.abilities[dash];
             for (int i = 0; i < foes; ++i) {
                 auto& x = u[i];
                 if (dist(here, x.pos) > grid_r + land_radius) continue;
-                const float lost = raw > 0 ? ability.damage_amount(x.belief->live()) : 0.0f, sh = x.belief->shield;
+                const float lost = raw > 0 ? my_damage_to(dash, x.belief->handle) : 0.0f, sh = x.belief->shield;
                 x.land = sh <= 0 ? lost : lost > 0 ? lost + sh : std::min(raw, sh);
                 x.land_stun = a.stuns && x.stunnable ? stun_worth(world, *x.belief, raw > 0) : 0.0f;
             }
@@ -1158,7 +1156,7 @@ bool Search::read() {
     read_mates();
     if (shield >= 0) {
         try {
-            shield_amount = cambc::self().abilities()[shield].shield_amount();
+            shield_amount = my_shield(shield);
         } catch (const cambc::error&) {
             shield = -1;
         }
@@ -2516,7 +2514,7 @@ Prepared prepared_slot;
         case Op::attack:
             try {
                 const auto& x = S.u[a.unit];
-                if (x.foe) cambc::self().attack(x.belief->live());
+                if (x.foe) attack_champion(x.belief->handle);
                 else cambc::self().attack(world.map().groups[x.group].camp(x.member));
                 ok = true;
                 out.attacked = true;
@@ -2526,13 +2524,13 @@ Prepared prepared_slot;
             break;
         case Op::reset:
             try {
-                ok = cambc::self().abilities()[S.reset].use();
+                ok = cast_slot(S.reset);
             } catch (const cambc::error&) {
             }
             break;
         case Op::dash:
             try {
-                ok = cambc::self().abilities()[S.dash].use(a.tile);
+                ok = cast_slot(S.dash, a.tile);
                 blocked = !ok;
                 pathing.invalidate();
             } catch (const cambc::error&) {
@@ -2540,15 +2538,14 @@ Prepared prepared_slot;
             break;
         case Op::spell:
             try {
-                const auto ability = cambc::self().abilities()[a.slot];
-                ok = a.unit >= 0 ? ability.use(S.u[a.unit].belief->live()) : ability.use(a.tile);
+                ok = a.unit >= 0 ? cast_slot_on(a.slot, S.u[a.unit].belief->handle) : cast_slot(a.slot, a.tile);
                 out.moved |= ok && S.spells[a.slot].excl;
             } catch (const cambc::error&) {
             }
             break;
         case Op::heal:
             try {
-                ok = cambc::self().abilities()[S.heal].use(S.mates[a.unit]->live());
+                ok = cast_slot_on(S.heal, S.mates[a.unit]->handle);
             } catch (const cambc::error&) {
             }
             break;
@@ -2743,15 +2740,14 @@ bool cast_valued(const World& world) {
     bool cast = false;
     const bool unhurt = my_health() >= valued.health;
     try {
-        const auto ability = cambc::self().abilities()[valued.slot];
         if (unhurt && valued.target >= 0) {
-            const auto c = world.enemies[static_cast<std::size_t>(valued.target)].live();
-            cast = c.is_alive() && c.is_visible() && ability.use(c);
+            const auto c = world.enemies[static_cast<std::size_t>(valued.target)].handle;
+            cast = is_alive(c) && visible_record(c) && cast_slot_on(valued.slot, c);
         } else if (unhurt) {
             bool live = valued.foes != 0;
             for (std::uint32_t m = valued.foes; m && live; m &= m - 1)
-                live = world.enemies[static_cast<std::size_t>(std::countr_zero(m))].live().is_alive();
-            cast = live && ability.use(valued.ground);
+                live = is_alive(world.enemies[static_cast<std::size_t>(std::countr_zero(m))].handle);
+            cast = live && cast_slot(valued.slot, valued.ground);
         }
     } catch (const cambc::error&) {
     }

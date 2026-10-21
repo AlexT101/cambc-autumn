@@ -15,7 +15,7 @@ struct ChampionBelief;
 // weakest, or for Varg the most value counting splash. Never one whose retaliation would kill us,
 // nor one on its spawn (it heals at its turn end) unless the hit kills it or, with
 // `stunnable_only`, stuns it; with that flag, only enemies a stun affects.
-std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only = false);
+std::optional<cambc::handle_champion_t> attack_target(const World& world, bool stunnable_only = false);
 
 // With the basic attack spent (by attacking, or by a ranged champion's walk), reset it and attack
 // again. Enemies: the weakest in range. Camps: the member nearest death (a Vendetta kill readies

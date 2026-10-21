@@ -119,6 +119,74 @@ inline const cambc::enum_map<cambc::item_type>& my_items() {
 }
 // Camps hit a Jungle emblem's owner 30% softer, and a Durability emblem's 10%.
 float camp_hit_factor();
+
+// Other champions read raw too: building a cambc::champion reads both its ability records (two
+// host calls), each accessor reads a whole record again, and buffs() allocates. Failures throw
+// the SDK's own errors, so callers catch what they caught before.
+// c.info(), valid until the next call: throws if hidden.
+[[gnu::always_inline]] inline const cambc::detail::champion_info& record_of(cambc::handle_champion_t c) {
+    static cambc::detail::champion_info record;
+    ok(cambc::detail::sdk_champion(static_cast<std::uint32_t>(c), &record));
+    return record;
+}
+// c.is_visible(), keeping the record it read: null if hidden or dead. Valid until the next call.
+[[gnu::always_inline]] inline const cambc::detail::champion_info* visible_record(cambc::handle_champion_t c) {
+    static cambc::detail::champion_info record;
+    const auto code = cambc::detail::sdk_champion(static_cast<std::uint32_t>(c), &record);
+    if (code == static_cast<std::int32_t>(cambc::error_code::api_not_in_vision)) return nullptr;
+    ok(code);
+    return record.x >= 0 && record.y >= 0 ? &record : nullptr;
+}
+inline bool is_alive(cambc::handle_champion_t c) {
+    static std::int32_t value;
+    ok(cambc::detail::sdk_champion_is_alive(static_cast<std::uint32_t>(c), &value));
+    return value != 0;
+}
+// Readable for hidden and dead champions too.
+inline const cambc::detail::champion_identity& identity_of(cambc::handle_champion_t c) {
+    static cambc::detail::champion_identity identity;
+    ok(cambc::detail::sdk_champion_identity(static_cast<std::uint32_t>(c), &identity));
+    return identity;
+}
+inline std::uint32_t gems_of(cambc::handle_champion_t c) {
+    static std::uint32_t gems;
+    ok(cambc::detail::sdk_champion_gems(static_cast<std::uint32_t>(c), &gems));
+    return gems;
+}
+inline bool has_stun(cambc::handle_champion_t c) {
+    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+    std::uint32_t n = 0;
+    ok(cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
+    return false;
+}
+// c.is_visible() for a camp, keeping the record it read: null if hidden or gone. Valid until the next call.
+inline const cambc::detail::camp_state* visible_camp(cambc::handle_camp_t c) {
+    static cambc::detail::camp_state record;
+    const auto code = cambc::detail::sdk_camp(static_cast<std::uint32_t>(c), &record);
+    if (code == static_cast<std::int32_t>(cambc::error_code::api_not_in_vision)
+        || code == static_cast<std::int32_t>(cambc::error_code::api_not_found))
+        return nullptr;
+    ok(code);
+    return &record;
+}
+// c.buffs().has_stun() for a camp, without building the collection.
+inline bool camp_has_stun(cambc::handle_camp_t c) {
+    static std::array<cambc::detail::camp_buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+    std::uint32_t n = 0;
+    ok(cambc::detail::sdk_camp_buffs(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
+    return false;
+}
+// The champion cambc::vision::champion_at(p) views: throws if none is visible there.
+inline cambc::handle_champion_t champion_at(vec2 p) {
+    static std::uint32_t c;
+    ok(cambc::detail::sdk_champion_at(p.x, p.y, &c));
+    return static_cast<cambc::handle_champion_t>(c);
+}
+
 // From our state at turn start: later, a turn that has walked, attacked and cast shows the same bits.
 inline bool my_stunned(cambc::champion_state state) {
     using cambc::champion_state;
@@ -127,12 +195,58 @@ inline bool my_stunned(cambc::champion_state state) {
         || state.contains(champion_state::recalling) || state.contains(champion_state::submitting_gems)
         || state.contains(champion_state::teleporting))
         return false;
-    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
-    std::uint32_t n = 0;
-    ok(cambc::detail::sdk_champion_buff_data(my_handle(), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
-    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
-        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
-    return false;
+    return has_stun(static_cast<cambc::handle_champion_t>(my_handle()));
+}
+
+// cambc::self().abilities()[slot] copies both our abilities: one slot's reads and casts, raw.
+[[gnu::always_inline]] inline float my_damage(int slot) {
+    static float value;
+    ok(cambc::detail::sdk_champion_ability_damage(my_handle(), static_cast<std::uint32_t>(slot), &value));
+    return value;
+}
+// After the target's mitigation and shields, capped at its health; it must be visible.
+[[gnu::always_inline]] inline float my_damage_to(int slot, cambc::handle_champion_t target) {
+    static float value;
+    ok(cambc::detail::sdk_champion_ability_damage_against(my_handle(), static_cast<std::uint32_t>(slot),
+                                                          static_cast<std::uint32_t>(target), &value));
+    return value;
+}
+inline float my_heal(int slot) {
+    static float value;
+    ok(cambc::detail::sdk_champion_ability_heal(my_handle(), static_cast<std::uint32_t>(slot), &value));
+    return value;
+}
+inline float my_shield(int slot) {
+    static float value;
+    ok(cambc::detail::sdk_champion_ability_shield(my_handle(), static_cast<std::uint32_t>(slot), &value));
+    return value;
+}
+inline int my_cooldown(int slot) {
+    static std::int32_t value;
+    ok(cambc::detail::sdk_champion_cooldown(my_handle(), static_cast<std::uint32_t>(slot), &value));
+    return value;
+}
+// ability.use(): at `tile`, or {-1, -1} for none. False for a newly revealed hidden blocker.
+inline bool cast_slot(int slot, vec2 tile = {-1, -1}) {
+    static std::int32_t cast;
+    ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), 0, 0, tile.x, tile.y, &cast));
+    return cast != 0;
+}
+inline bool cast_slot_on(int slot, cambc::handle_champion_t target) {
+    static std::int32_t cast;
+    ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), static_cast<std::uint32_t>(cambc::detail::entity_kind::champion),
+                               static_cast<std::uint32_t>(target), -1, -1, &cast));
+    return cast != 0;
+}
+inline bool cast_slot_on(int slot, cambc::handle_camp_t target) {
+    static std::int32_t cast;
+    ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), static_cast<std::uint32_t>(cambc::detail::entity_kind::camp),
+                               static_cast<std::uint32_t>(target), -1, -1, &cast));
+    return cast != 0;
+}
+// cambc::self().attack(c), without building c.
+inline void attack_champion(cambc::handle_champion_t target) {
+    ok(cambc::detail::sdk_attack(static_cast<std::uint32_t>(cambc::detail::entity_kind::champion), static_cast<std::uint32_t>(target)));
 }
 // Turn ends left of our channel.
 inline std::int32_t my_channel_time() {
