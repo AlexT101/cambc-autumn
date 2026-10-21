@@ -86,11 +86,16 @@ py tools/fuel/bench.py run variants/x --out replays/fuel/x.json           # a mo
 py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # identical replays, fuel change
 py tools/fuel/bench.py run hyperion --fuel 0 --out replays/fuel/real.json # the real budget: counts shortcuts and lost turns
 py tools/fuel/oof.py replays/batch-A replays/batch-B replays/batch-C       # out-of-fuel turns per bot in run_batched.py batches
+py tools/fuel/cap_variant.py hecate --run-fuel 10000000                   # bots/variants/hecate-cap100000-at10000000/
+py tools/ab.py main variants/hecate-cap100000-at10000000 --fuel 10000000  # CAND on 10M fuel, REF on the real 100k
 ```
 
 - hyperion prints `SHORTCUT round champion what` wherever fuel made it choose worse (`note_shortcut` in util.h), and `OOF round phase` for each turn that ran out. Both are inside `debug_block`.
 - The bench's 16 games swing by about ±20 out-of-fuel turns and include no shared-gem map, where a third of them happen. Judge out-of-fuel turns on a full A/B with `oof.py`.
 - Set `debug_fuel` in util.h for per-phase costs (`FuelMeter`, ~170 fuel per meter).
+- `--fuel` applies to both teams. cap_variant.py copies a bot that charges itself back to `--cap` (default 100k) each turn through the debug-build `fuel_adjust` import, so only the other bot gets the extra fuel.
+  - Its replays match the original's on 5 of 6 test maps; a turn that ran out of fuel resumes uncapped until the main loop charges it.
+  - Keep `--run-fuel` at or below 30M: at 100M every instance traps near round 1000 and restarts (`probe-fueladjust`).
 
 Measured host prices (50x50, 2026-10-19):
 
