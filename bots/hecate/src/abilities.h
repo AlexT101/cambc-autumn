@@ -8,10 +8,9 @@ namespace aph {
 class World;
 struct ChampionBelief;
 
-// The best enemy-hitting cast this turn, if worth it. With `keep_walk`, an excludes-walking cast
-// must be worth the walk (a kill or a cancelled tribute) or stun every visible enemy that could
-// reach us next turn; a dash landing always must, as it moves us.
-bool cast_at_enemies(const World& world, bool keep_walk = false);
+// The best enemy-hitting cast this turn, if worth it. An excludes-walking cast must also be worth
+// `walk`, the walk it forgoes, unless it stuns every visible enemy that could reach us next turn.
+bool cast_at_enemies(const World& world, float walk = 0);
 
 // A damage or stun cast on the group being farmed, held while enemies are near.
 // Call only when not walking this turn. `attackers_only`: target only members with Strength.

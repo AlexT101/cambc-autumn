@@ -28,6 +28,7 @@ namespace {
 
 constexpr int endgame_margin = 20;   // rounds to spare on the last trip to an altar
 constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
+constexpr float escape_step_value = 210; // a retreat's or a game-ender intercept's walk, in enemy health
 
 // The turn's branch, for debug_fights: Chase, Attack, Retreat, Farm, Bank, Wait at an altar,
 // Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, Shopping trip,
@@ -2620,7 +2621,7 @@ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const
     const bool tributing = e.channel == Channel::tribute;
     const auto act = [&] {
         place_lock(world);
-        cast_at_enemies(world, !tributing && dist(me.position(), e.pos) > world.me().facts().attack_range());
+        cast_at_enemies(world, !tributing && dist(me.position(), e.pos) > world.me().facts().attack_range() ? escape_step_value : 0.0f);
         if (attack_enemy(world)) reset_and_attack_enemy(world);
     };
     act();
@@ -3109,7 +3110,7 @@ void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memor
     memory.claim = -1;
     memory.banking = bankable_bag(world, pathing) > 0; // a bag in retreat goes on to an altar, by a recall if quicker
     if (world.me().facts().walk_and_attack_independent() && attack_enemy(world)) reset_and_attack_enemy(world, true);
-    cast_at_enemies(world, true);
+    cast_at_enemies(world, escape_step_value);
     if (!me.is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) safety.refresh();
     // A tribute survives damage; a recall does not.
@@ -3273,8 +3274,8 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         Intent intent;
         intent.anchored = holding;
         intent.walks = !holding && !can_tribute_here(world);
-        intent.keep_walk = my_gems() > 0 && !holding;
-        intent.step_value = my_gems() > 0 ? carried_step_value : farm_step_value(world);
+        // A carrier's step banks a turn sooner, freeing a turn of output for the farm.
+        intent.step_value = farm_step_value(world);
         // An enemy already in attack range was not worth leaving (want_home): the fight is here.
         if (enemy_within(world, my_position(), world.me().facts().attack_range())) intent.walks = false;
         // The goal most likely walks to an altar when carrying, else to the farm choice.

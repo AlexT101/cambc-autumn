@@ -21,11 +21,7 @@ struct Intent {
     bool to_altar = false;
     int group = -1;
     float step_value = 0;
-    bool keep_walk = false; // carrying: cast_at_enemies' own walk threshold prices the walk
 };
-
-// A carrier's step, as cast_at_enemies prices it: its keep-walk threshold less a cast's cost.
-inline constexpr float carried_step_value = 210;
 
 // A visible enemy near enough to strike this turn, by walk, dash and attack range.
 bool strike_possible(const World& world);
