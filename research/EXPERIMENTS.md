@@ -482,4 +482,4 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   the first turn's slot S1 (or none) of A_S1(d) + B_rest(max(0, d - m)), m = 3 after a dash else 1, replacing
   max(walked, twice); Reach's ways tagged by turn and slot to match (Stellar at 3 tiles 200 -> 298). Strike bounded
   Reach on every tile asked (no REACH>STRIKE in 582 debug games). 47.1% vs main (582, ladder 52.9, gen 46.3),
-  out-of-fuel turns 1219 vs 1016: worse, dropped. The larger two-turn threat makes us give ground more.
+  out-of-fuel turns 1219 vs 1016: worse, dropped.
