@@ -18,7 +18,6 @@ constexpr float winning_tribute_value = 5000; // a stun that stops the enemy's g
 constexpr float min_value = 40;
 constexpr float min_landing_value = 250; // a landing moves us off the goal's way
 constexpr float min_camp_value = 50;
-constexpr int hold_range = 6; // camp casts wait while a visible enemy is this close
 
 bool walked(const World& world) { return my_position() != world.me().pos; }
 
@@ -336,8 +335,19 @@ Cast enemy_cast(const World& world, Pathing& pathing, float walk, bool landings)
     return best;
 }
 
-// Camp casts wait while an enemy may want the cast for a fight (W4-D: Safety::engaged_within).
-bool camp_cast_held(const World& world, Pathing&, vec2 here) { return enemy_within(world, here, hold_range); }
+// Camp casts wait while a visible enemy could strike us here within a turn's walk.
+bool camp_cast_held(const World& world, Pathing& pathing, vec2 here) {
+    auto* safety = pathing.safety();
+    const bool held = safety && safety->engaged_within(here, 1);
+    debug_block({
+        static int last = -1;
+        if (const bool old = enemy_within(world, here, 6); old != held && last != world.round) {
+            last = world.round;
+            std::printf("HOLD-MISMATCH %d cast %d %d\n", world.round, old ? 1 : 0, held ? 1 : 0);
+        }
+    });
+    return held;
+}
 
 Cast camp_cast(const World& world, Pathing& pathing, int group, bool attackers_only, bool any_value) {
     if (!my_can_cast()) return {};
