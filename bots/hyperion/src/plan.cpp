@@ -154,6 +154,8 @@ bool use_slot(int slot) {
     }
 }
 
+float shield_cap(Safety& safety, vec2 p, float amount, int duration) { return std::min(amount, static_cast<float>(duration) * safety.damage_bound(p)); }
+
 // The shield cast left for the turn's end, over its duration, capped by what could hit us at p.
 float shield_worth(const World& world, Safety& safety, int slot, vec2 p) {
     if (slot < 0) return 0;

@@ -26,6 +26,10 @@ struct Intent {
 // A visible enemy near enough to strike this turn, by walk, dash and attack range.
 bool strike_possible(const World& world);
 
+// What a shield (or heal) of `amount` lasting `duration` turns is worth at p: no more than could
+// hit us there meanwhile.
+float shield_cap(Safety& safety, vec2 p, float amount, int duration);
+
 struct Planned {
     bool attacked = false;
     bool moved = false;    // the goal's walk is spent

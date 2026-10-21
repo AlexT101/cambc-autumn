@@ -13,6 +13,7 @@
 
 From [SESSION-2026-10-21.md](SESSION-2026-10-21.md); main's out-of-fuel turns are ~5x hecate-v8's.
 
+0. In progress: merging the combat logic into one system in waves ([COMBAT-MERGE.md](COMBAT-MERGE.md)); it takes in 1 and 5.
 1. Strike phase 4a's retreat-search fuel (40.8% real, 52.6% at 100M; `orch/strike-p4a-wt` bdb5902 holds an untested
    partial fix), then 4b (`orch/strike-p4b` 6997211, untested).
 2. The fight simulation's cost per half-turn (~370 fuel; a sim averages ~6.3k since bounded decide's 17-turn horizon):

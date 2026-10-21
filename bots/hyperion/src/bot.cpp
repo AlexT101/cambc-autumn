@@ -2171,17 +2171,7 @@ bool paying_soon(const World& world) {
 bool outmatched(const World& world) { return in_pack_zone(world, world.me().pos) && !paying_soon(world); }
 
 // Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
-int camp_exit_rounds(const World& world, Safety& safety, vec2 here) {
-    const auto& open = world.map().standable;
-    const auto out = [&](vec2 p) { return in_bounds(p) && test(open, p) && safety.camp_damage(p) <= 0; };
-    const int longest = world.map().max_camp_reach;
-    for (int r = 1; r <= longest; ++r)
-        for (int i = -r; i <= r; ++i)
-            if (out({here.x + i, here.y - r}) || out({here.x + i, here.y + r}) || out({here.x - r, here.y + i})
-                || out({here.x + r, here.y + i}))
-                return r;
-    return longest + 1;
-}
+int camp_exit_rounds(const World&, Safety& safety, vec2 here) { return safety.exit_rounds(here); }
 
 // Camps keep hitting while we walk out of their reach: leave while the health still covers that.
 // A siege (Memory::siege) keeps its own health limits for its group's hits.
