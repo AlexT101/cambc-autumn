@@ -77,7 +77,7 @@ public:
     // Cheap fallbacks without a search, when fuel is short: a step down the field, or one that
     // gets closer to the target as the crow flies.
     bool descend(const Field& field, const bitboard* avoid = nullptr);
-    bool step_closer(vec2 target);
+    bool step_closer(vec2 target, const bitboard* avoid = nullptr);
     // False, spending nothing, if illegal, guarded or blocked by a hidden unit.
     bool try_move(vec2 tile);
     // Tiles no step or dash may end on until cleared: routes go around them.

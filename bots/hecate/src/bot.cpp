@@ -1191,7 +1191,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         }
         if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone);
         note_shortcut("crow-flies-farm");
-        return pathing.step_closer(groups[g].centre);
+        return pathing.step_closer(groups[g].centre, zone);
     };
     const bool on_spawn = test(map.ally_spawn, here);
     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.

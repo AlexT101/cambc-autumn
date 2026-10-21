@@ -559,7 +559,7 @@ bool Pathing::descend(const Field& field, const bitboard* avoid) {
     return false;
 }
 
-bool Pathing::step_closer(vec2 target) {
+bool Pathing::step_closer(vec2 target, const bitboard* avoid) {
     if (!my_can_move()) return false;
     const vec2 me = my_pos();
     const auto& walls = blocked();
@@ -567,7 +567,7 @@ bool Pathing::step_closer(vec2 target) {
     int best_dist = dist(me, target);
     for (auto d : directions) {
         const vec2 p = me + d;
-        if (!in_bounds(p) || test(walls, p)) continue;
+        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard_ && test(*guard_, p))) continue;
         if (const int d2 = dist(p, target); d2 < best_dist) best = p, best_dist = d2;
     }
     return best && try_move(*best);
