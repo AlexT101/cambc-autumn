@@ -306,7 +306,8 @@ struct Unseen {
     float weight, worth; // worth < 0: hitting it is suicidal
 };
 
-// Kept in static storage: zeroing it each turn would cost more than the search.
+// Kept in static storage: zeroing it each turn would cost more than the search. In a union, so
+// its members' default initialisers never run: they cost ~50k of the first turn's fuel.
 struct Tables {
     std::array<Unit, max_units> u;
     std::array<Centre, max_centres> centres;
@@ -317,7 +318,13 @@ struct Tables {
     std::array<Leaf, 512> leaves;
     std::array<Grid, 49> land_from;
     std::array<float, 49> exh, menu;
-} tables;
+};
+union TableStorage {
+    Tables t;
+    TableStorage() {}
+    ~TableStorage() {}
+} table_storage;
+Tables& tables = table_storage.t;
 
 struct Search {
     const World& world;
@@ -355,6 +362,8 @@ struct Search {
 
     Grid free_ = 0, pass_ = 0, free_n = 0, land_here = 0, land_hits = 0, plain_here = 0, dom_dw = 0;
     Grid land_known = 0;
+    // Landings that would strike camps but no foe: a move that wakes them, never taken.
+    Grid land_bad = 0;
 
     std::array<Act, max_depth> stack;
     Grid has = 0;
@@ -374,7 +383,7 @@ struct Search {
     Grid landings(int c) {
         if (land_known & gbit(c)) return tables.land_from[c];
         const Grid s = gbit(c), one = dilate(s);
-        tables.land_from[c] = ((one | dilate(one & pass_)) & free_) & ~s;
+        tables.land_from[c] = ((one | dilate(one & pass_)) & free_) & ~s & ~land_bad;
         land_known |= gbit(c);
         return tables.land_from[c];
     }
@@ -400,6 +409,13 @@ struct Search {
         return to_grid(attack_viewers(world, p, r), p, r) | (dist(here, p) <= r ? gbit(cell(here)) : 0);
     }
 
+    // The camp groups a landing on cell c touches, by cell.
+    Grid land_touch_known = 0;
+    std::uint32_t land_touch(int c) {
+        static std::array<std::uint32_t, 49> memo; // valid by land_touch_known
+        if (!(land_touch_known & gbit(c))) memo[c] = touch_near(tile(c), land_radius), land_touch_known |= gbit(c);
+        return memo[c];
+    }
     std::uint32_t touch_near(vec2 p, int r) const {
         std::uint32_t mask = 0;
         for (int k = 0; k < n_members; ++k)
@@ -765,18 +781,19 @@ bool Search::read() {
     read_spells();
     shield_value = shield_worth(world, safety, shield, here);
     if (moves && (dash_ready || (vendetta && can_cast && dash >= 0))) {
-        land_here = landings(cell(here));
         if (lands) {
-            const auto mark = [&](vec2 at) {
+            const auto mark = [&](vec2 at, Grid& g) {
                 for (int dy = -land_radius; dy <= land_radius; ++dy)
                     for (int dx = -land_radius; dx <= land_radius; ++dx)
-                        if (const vec2 p{at.x + dx, at.y + dy}; in_grid(p)) land_hits |= gbit(cell(p));
+                        if (const vec2 p{at.x + dx, at.y + dy}; in_grid(p)) g |= gbit(cell(p));
             };
             for (int i = 0; i < foes; ++i)
-                if (u[i].land > 0 || u[i].land_stun > 0) mark(u[i].pos);
+                if (u[i].land > 0 || u[i].land_stun > 0) mark(u[i].pos, land_hits);
             for (int k = 0; k < n_members; ++k)
-                if (dist(here, tables.members[k].pos) <= grid_r + land_radius) mark(tables.members[k].pos);
+                if (dist(here, tables.members[k].pos) <= grid_r + land_radius) mark(tables.members[k].pos, land_bad);
+            land_bad &= ~land_hits;
         }
+        land_here = landings(cell(here));
         plain_here = land_here & ~land_hits;
         dom_dw = dilate(land_here) & free_;
     }
@@ -892,7 +909,7 @@ bool Search::land_at(vec2 L, Node& s) {
         lose(t, x.land);
     }
     if (retaliation >= health) return false;
-    s.touched |= touch_near(L, land_radius);
+    s.touched |= land_touch(cell(L));
     s.value += value - retaliation;
     s.land = L;
     s.owed = !struck;
