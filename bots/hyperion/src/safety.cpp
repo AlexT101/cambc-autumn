@@ -367,41 +367,6 @@ float act(Side& self, Side& other) {
     return damage;
 }
 
-// The half-turns from `t` (to `end` at most) in which both sides only make their basic attacks
-// and nobody falls, each taken off the side's weakest as act() and hurt() would; returns the next.
-int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours, int& theirs) {
-    const int wu = us.weakest(), we = them.weakest();
-    if (wu < 0 || we < 0) return t;
-    auto& u = us.fighters[wu];
-    auto& e = them.fighters[we];
-    if (u.shield != 0 || e.shield != 0) return t;
-    const float onto_them = u.retaliation > 0 ? static_cast<float>(them.quiet_hits) * u.retaliation : 0.0f;
-    const float onto_us = e.retaliation > 0 ? static_cast<float>(us.quiet_hits) * e.retaliation : 0.0f;
-    for (; t < end; ++t) {
-        if ((t % 2 == 0) == they_first) {
-            if (them.turn >= them.quiet_until || them.alive != them.quiet_alive || them.stunned != 0) break;
-            const float camp = them.turn < us.camp_until ? us.camp : 0.0f;
-            const float d = them.quiet_damage;
-            if (!(d < u.health) || !(onto_them < e.health)) break;
-            const float h = u.health - d;
-            if (camp > 0 && !(camp < h)) break;
-            u.health = camp > 0 ? h - camp : h;
-            if (onto_them > 0) e.health -= onto_them;
-            ++them.turn;
-            ++theirs;
-        } else {
-            if (us.turn >= us.quiet_until || us.alive != us.quiet_alive || us.stunned != 0) break;
-            const float d = us.quiet_damage;
-            if (!(d < e.health) || !(onto_us < u.health)) break;
-            e.health -= d;
-            if (onto_us > 0) u.health -= onto_us;
-            ++us.turn;
-            ++ours;
-        }
-    }
-    return t;
-}
-
 static_assert(fight_horizon == 2 * ability_cooldown + 1);
 
 // Whether our fighter `self` (and its linked body) must outlive their next `theirs` turns and our
@@ -484,10 +449,6 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
                 if (watched >= 0) *self_falls = true;
                 return {0, horizon};
             }
-        }
-        if (!Dealt && us.turn < us.quiet_until && them.turn < them.quiet_until) {
-            t = play_quiet(us, them, t, 2 * horizon, they_first, ours, theirs);
-            if (t == 2 * horizon) break;
         }
         if (fuel_floor && t % 8 == 7 && fuel() < fuel_floor) return {-1, -1};
         const bool their_turn = (t % 2 == 0) == they_first;
