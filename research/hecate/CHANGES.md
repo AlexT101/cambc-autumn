@@ -254,3 +254,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    turn this round whatever its modelled order, and dates `possible` after that turn so it is never counted twice
    (turns_between now includes `to`'s slot). 50.3% vs main (582, ladder 50.0, gen 50.4), out-of-fuel turns 983 vs
    1116.
+34. 2026-10-21 (not yet submitted). Quality wave 2, behaviour-identical (bench 16/16 identical at 100M; real-budget
+   out-of-fuel turns 8 -> 8, round-1 mean 182k -> 179k). Bush clusters grow in bounded, resumable steps; foot,
+   dash_foot and hops are built lazily. bank_gems skips altars whose crow-flies bound cannot beat the best so far;
+   ward_bushes reads only clusters already found. make_way reads the failed route's field instead of a search per
+   adjacent ally; the per-altar fields are warmed before the attack tiles.
