@@ -142,6 +142,11 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   against 946 (all but 0.1% in decide). At 100M fuel still 40.5% (ladder 44.3, gen 40.0): deaths 6.0 against 4.5 a game
   (+34%), captures -4%, tributed -7%. The exhaustive and old-menu checks never fired, but 113 dashes were refused with
   no fuel shortage. Lost; with unlimited fuel it still dies more, so the search or its leaf score misjudges danger.
+  Round 2 (orch/int-strike-p1 2277faf on main 0bfc997): dash paths blocked by visible enemy champions
+  (probe-dash-enemy), a move must lead to a strike, wakes priced per camp phase, no landing wakes sleepers, fuel cuts.
+  52.6% of 582 (ladder 54.3, gen 52.3), but out-of-fuel turns 3441 in 398 games against 1191 in 308 (99.5% in decide;
+  elk-arena, contest, hooks, shared-gems, diamond, lanes worst). At 100M 55.2% (ladder 55.7, gen 55.1). The idea wins;
+  not merged until decide's fuel is no higher than main's.
 
 ### Fuel
 
