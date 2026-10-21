@@ -52,8 +52,6 @@ inline constexpr float heal_trip_fraction = 0.6f;
 inline constexpr int tribute_window = 6;
 // Most rounds to wait at a camp for it to return.
 inline constexpr int max_wait = 5;
-// Share of champion-rounds spent attacking camps: the part of the game a shard's speed-up counts for.
-inline constexpr float clear_share = 0.15f;
 // Cassi's weight on gold in farm choice: it takes the gold-only groups the others pass up.
 inline constexpr float gold_farmer_weight = 4.0f;
 
