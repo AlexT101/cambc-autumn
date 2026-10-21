@@ -134,6 +134,14 @@ void send(World& world, bool moved, bool refresh) {
     const bool camp_free = !(state.fresh & camp_bits);
     bool dirty = false;
 
+    // Before anything is marked posted: an observe that runs out of fuel resumes a round late,
+    // when these bits would overwrite what teammates wrote since.
+    if (!sighted) {
+        if (refresh) world.observe();
+        else if (moved) note_shortcut("comms-stale-vision");
+        if (world.is_stale()) return;
+    }
+
     if (camp_free) {
         const auto& groups = world.map().groups;
         world.each_respawning([&](int g) {
@@ -178,8 +186,6 @@ void send(World& world, bool moved, bool refresh) {
     }
 
     if (!sighted) {
-        if (refresh) world.observe();
-        else if (moved) note_shortcut("comms-stale-vision");
         const int n = static_cast<int>(world.enemies.size());
         const int start = sight_x.get(bits) != 0 ? sight_index.get(bits) + 1 : 0;
         for (int k = 0; k < n; ++k) {
