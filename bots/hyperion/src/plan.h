@@ -48,6 +48,8 @@ struct Planned {
 struct Prepared;
 Prepared* prepare_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent);
 Planned price_strikes(Prepared& prepared, const Intent& intent);
+// Whether `prepared` still holds: safety's generation() and our state (my_state()) are as prepare_strikes found them.
+bool prepared_current(const Prepared& prepared, const Safety& safety);
 
 // Before the goal acts: prepare_strikes, then price_strikes.
 Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent);

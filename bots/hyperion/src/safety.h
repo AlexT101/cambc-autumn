@@ -380,6 +380,10 @@ public:
     bool engaged_within(vec2 p, int turns) { return arriving(p, turns, false) != 0; }
     // What the camps take from us at p until we walk out of their reach: camp_damage(p) x exit_rounds(p).
     float exit_damage(vec2 p);
+    // Ending a step on q: its hit, then the camps' hits on each further round it takes to walk out of
+    // their reach. A camp hits every tile in its reach alike, so the hit alone cannot tell the way out
+    // from a walk along the edge of its reach. q must not be a wall (tile()).
+    float escape_cost(vec2 q);
     // Last round's damage (Memory::damage), and the part of it no visible enemy or camp explains,
     // charged where we stood. W4-C: unseen_hit() returns 0 until it fills these.
     void note_taken(float damage) { taken_ = damage; }

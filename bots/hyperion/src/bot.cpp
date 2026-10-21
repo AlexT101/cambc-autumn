@@ -248,15 +248,7 @@ void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
     if (!pathing.step_towards(field, &avoid)) pathing.step_towards(field);
 }
 
-// Ending a step on q: its hit, then the camps' hits on each further round it takes to walk out of
-// their reach. A camp hits every tile in its reach alike, so the hit alone cannot tell the way out
-// from a walk along the edge of its reach. q must not be a wall (tile()).
-float escape_cost(Safety& safety, vec2 q) {
-    const auto& t = safety.tile(q);
-    const float hit = t.worst(), camp = t.camp_worst;
-    if (camp <= 0) return hit;
-    return hit + camp * static_cast<float>(std::max(0, safety.exit_rounds(q) - 1));
-}
+float escape_cost(Safety& safety, vec2 q) { return safety.escape_cost(q); }
 
 // Out of the camps' reach first, along the cheapest neighbour: walking home past an awake camp
 // takes a hit every step, while a recall started outside its reach goes home untouched.
@@ -2397,6 +2389,8 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     return nullptr;
 }
 
+float farm_step_value(const World& world);
+
 bool chase(const World& world, Pathing& pathing, Safety& safety, Prepared* prepared) {
     Phase phase{"chase"};
     const auto* target = prey(world, safety);
@@ -3031,6 +3025,8 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
     }
     return false;
 }
+
+void mend_retreat(const World& world, Safety& safety, const Memory& memory);
 
 void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     Phase phase{"retreat"};

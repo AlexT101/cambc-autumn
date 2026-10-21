@@ -5,6 +5,7 @@
 #include <vector>
 #include "params.h"
 #include "pathing.h"
+#include "safety.h"
 #include "world.h"
 
 namespace aph {

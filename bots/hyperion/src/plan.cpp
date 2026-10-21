@@ -2127,12 +2127,18 @@ struct Prepared {
     Pathing* pathing = nullptr;
     Safety* safety = nullptr;
     Intent intent;
+    std::uint32_t generation = 0; // safety->generation() when prepared
+    std::uint32_t state = 0;      // my_state()'s bits when prepared
 };
 
 Prepared* prepare_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent) {
     static Prepared prepared;
-    prepared = {&world, &pathing, &safety, intent};
+    prepared = {&world, &pathing, &safety, intent, safety.generation(), my_state().bits()};
     return &prepared;
+}
+
+bool prepared_current(const Prepared& prepared, const Safety& safety) {
+    return prepared.generation == safety.generation() && prepared.state == my_state().bits();
 }
 
 Planned price_strikes(Prepared& prepared, const Intent& intent) {
