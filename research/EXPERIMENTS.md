@@ -559,3 +559,13 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   Focus. 56.4% vs main (1094, ladder 65.7, gen 54.7, fresh gen-s1 56.8): kept. Out-of-fuel turns 9427 vs 8471 (+11%;
   ladder 794 vs 752, gen 3860 vs 3602, fresh 4773 vs 4117), not broken down. Untried: count a landing only when it
   hits something (needs a hook at the cast site, strike-search owned).
+- farm-s2 (2026-10-21; FARMING.md stage 2, one group value; branch orch/farm-s2 849239c, integrated as
+  orch/int-farm-s2 6920ca8 on main 73c9b6e): crews from arrivals (fall_time), claimers dropped when they would leave at
+  their recall line, a visible unclaimed partner with no radius, a heal price (camp_risk x damage, free on a recall
+  home) in every cycle, one lexicographic (feasible, value) pick; deleted the risky, shared and help tiers,
+  rally_radius and help_radius. 45.1% vs main (1094, ladder 54.3, gen 42.6, fresh gen-s1 46.3): worse, dropped.
+  Without the heal term in the ranking (orch/int-farm-s2-noheal 543caed): 46.2% (ladder 60.0, gen 44.5, fresh 45.9),
+  so the heal price is not the cause. Out-of-fuel turns 10842 vs 10523. Losses spread over most gen kinds (no blowup).
+  ab_compare on gen: clears +3%, capture gems -6.7%, gold -10.6%, melee camp damage -19%, capture resets +12%: melee
+  champions stop working big monster groups (the old help/shared joins), taking small groups instead. Ladder went the
+  other way (tributed +15%).
