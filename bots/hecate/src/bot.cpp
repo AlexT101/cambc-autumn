@@ -379,10 +379,10 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     a.camps_version = world.camps_version;
     const auto& live = pathing.live_camps();
     const auto& map = world.map();
-    // `ours` is the walk from our spawn with a.live as walls but for the deaths in `dead`: most
-    // changes update it without a flood from spawn.
+    // `ours` is kept as the walk from our spawn with a.live as walls: most changes update it
+    // without a flood from spawn.
     static bitboard walls{cambc::uninitialized}, ours{cambc::uninitialized}, area{cambc::uninitialized},
-        seen{cambc::uninitialized}, gone{cambc::uninitialized}, grown{cambc::uninitialized}, dead;
+        seen{cambc::uninitialized}, gone{cambc::uninitialized}, grown{cambc::uninitialized};
     bool walked = false;
     if (a.version > 0 && !map.ally_spawn_tiles.empty()) {
         copy_into(live, area);
@@ -391,29 +391,21 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
         drop(gone, live);
         const bool back = !board_empty(area), died = !board_empty(gone);
         if (!back && !died) return a;
-        // Camps that only died leave an open altar open; they can only open more.
-        if (!back && a.any_open) {
-            dead |= gone;
-            copy_into(live, a.live);
-            return a;
-        }
-        if (!back || !died) {
+        if (!back) {
             // Deaths add to the walk what each dead camp beside it reaches without crossing it.
-            or_into(pathing.static_walls(), back ? a.live : live, walls);
+            or_into(pathing.static_walls(), live, walls);
             walls |= ours;
-            dead |= gone;
             dilate_into(ours, grown);
-            dead &= grown;
-            while (!board_empty(dead)) {
-                const vec2 t = first_tile(dead);
+            gone &= grown;
+            while (!board_empty(gone)) {
+                const vec2 t = first_tile(gone);
                 walls.reachable_tiles_into(t, unreachable, seen);
                 ours |= seen;
-                drop(dead, seen);
-                set_tile(dead, t, false);
+                drop(gone, seen);
+                set_tile(gone, t, false);
             }
             walked = true;
-        }
-        if (back && !died) {
+        } else if (!died) {
             // Respawns whose walkable ring is connected cut no walk: it goes round them.
             dilate_into(area, grown);
             grown &= ours;
@@ -443,7 +435,6 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     if (!walked) {
         or_into(pathing.static_walls(), live, walls);
         walls.reachable_tiles_into(map.ally_spawn_tiles[0], unreachable, ours);
-        clear_board(dead);
     }
     // open = tributes off live camps, but for those the static walk reaches and this one does not
     copy_into(a.opened, a.open);
