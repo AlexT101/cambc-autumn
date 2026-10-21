@@ -2526,9 +2526,7 @@ float Safety::strike_sum(vec2 p, std::uint16_t* mask) {
     return total;
 }
 
-int Safety::exit_rounds(vec2 p) {
-    if (camp_damage(p) <= 0) return 0;
-    const int longest = world_.map().max_camp_reach;
+[[gnu::always_inline]] inline int Safety::exit_steps(vec2 p) {
     // Over no walls a king-step field is the Chebyshev distance to the nearest exit.
     static cambc::distance_field field;
     if (exits_generation_ != generation_) {
@@ -2537,9 +2535,22 @@ int Safety::exit_rounds(vec2 p) {
         static const bitboard none;
         or_into(world_.map().standable, camp_area(), exits);
         xor_into(exits, camp_area(), exits);
-        field.compute(none, exits, reached, static_cast<std::uint16_t>(longest));
+        field.compute(none, exits, reached, static_cast<std::uint16_t>(world_.map().max_camp_reach));
     }
-    const int r = std::clamp(steps_at(field, p), 1, longest + 1);
+    return steps_at(field, p);
+}
+
+float Safety::exit_damage_unfilled(vec2 p) {
+    float worst = 0;
+    for (const auto& m : awake_members())
+        if (in_square(p, m.pos, m.reach)) worst += m.strength;
+    return worst > 0 ? worst * static_cast<float>(std::clamp(exit_steps(p), 1, world_.map().max_camp_reach + 1)) : 0.0f;
+}
+
+int Safety::exit_rounds(vec2 p) {
+    if (camp_damage(p) <= 0) return 0;
+    const int longest = world_.map().max_camp_reach;
+    const int r = std::clamp(exit_steps(p), 1, longest + 1);
     debug_block({
         // The old ring walk, tile by tile.
         const auto out = [&](vec2 q) {
