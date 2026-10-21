@@ -1092,7 +1092,6 @@ void World::update_champion(ChampionBelief& b, bool full) {
 }
 
 void World::read_priorities(bool new_round) {
-    Phase phase{"priorities"};
     static std::int32_t priority, next_priority;
     const int now = round, ranked = ranked_round_;
     bool stale = ranks_stale_, enemy_change = enemy_priorities_change;
@@ -1404,7 +1403,6 @@ struct World::CampViews {
 };
 
 [[gnu::flatten]] void World::update_camps() {
-    Phase phase{"camps"};
     const auto& s = map();
     const std::size_t words = (s.groups.size() + 63) / 64;
     // The camp tiles in view as last turn: the same groups are.
@@ -1650,7 +1648,6 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
 }
 
 [[gnu::flatten]] void World::update_altars() {
-    Phase phase{"altars"};
     namespace raw = cambc::detail;
     const auto& s = map();
     const auto seen = [&](int a) {
@@ -1696,7 +1693,6 @@ std::uint32_t World::tributing_enemies() const {
 }
 
 [[gnu::flatten]] void World::update_scores(std::uint32_t tributing) {
-    Phase phase{"scores"};
     // cambc::global_submitted_gems, with our absolute team read once.
     static std::uint32_t submitted;
     const std::int32_t own = cambc::detail::sdk_my_team();
