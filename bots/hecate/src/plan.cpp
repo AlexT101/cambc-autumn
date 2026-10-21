@@ -1033,9 +1033,11 @@ void Search::hit_centre(const Centre& c, int slot, Node& s) {
 bool Search::land_at(vec2 L, Node& s) {
     float value = 0, retaliation = 0;
     bool struck = false;
-    for (int t = 0; t < foes; ++t) {
+    const int c = cell(L);
+    for (std::uint32_t near = land_foes(c); near; near &= near - 1) {
+        const int t = std::countr_zero(near);
         const auto& x = u[t];
-        if (h[t] <= 0 || dist(L, x.pos) > land_radius) continue;
+        if (h[t] <= 0) continue;
         struck |= x.land > 0 || x.land_stun > 0;
         const bool m = x.link >= 0 && moot(t, x.land, x.link > t && dist(L, u[x.link].pos) <= land_radius, u[x.link].land);
         if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t));
@@ -1044,7 +1046,7 @@ bool Search::land_at(vec2 L, Node& s) {
         lose(t, x.land);
     }
     if (retaliation >= health) return false;
-    s.touched |= land_touch(cell(L));
+    s.touched |= land_touch(c);
     s.value += value - retaliation;
     s.owed = !struck;
     return true;
