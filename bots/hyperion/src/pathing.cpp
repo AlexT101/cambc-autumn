@@ -28,6 +28,7 @@ void Pathing::begin_turn() {
     guarding_ = false; // a turn abandoned as stale left guarding on
     safety_ = nullptr;
     guard_epoch_ = 0;
+    kept_.goals = nullptr;
     blocked_fresh_ = false;
     pos_fresh_ = false;
     if (bumped_round_ != world_.round) {
@@ -522,7 +523,7 @@ bool Pathing::try_move(vec2 tile, bool* refused) {
     const bool kept = kept_.goals == &goals && kept_.avoid == avoid && kept_.max_steps == max_steps && kept_.round == round_now()
                       && kept_.guard == guard_key();
     debug_block({
-        if (kept_.goals) std::printf("KEPT-ROUTE %d %s\n", world_.round, kept ? "hit" : "miss");
+        if (kept_.goals && kept_.round == round_now()) std::printf("KEPT-ROUTE %d %s\n", world_.round, kept ? "hit" : "miss");
     });
     kept_.goals = nullptr;
     // Only a hidden blocker or a guarded first step makes a retry worth its search. Each rules a

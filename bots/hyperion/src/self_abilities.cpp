@@ -56,12 +56,15 @@ struct Exposure {
 Exposure exposure(const World& world, Safety& safety, vec2 p) {
     const auto& t = safety.tile(p);
     Exposure out{t.worst(), 0};
+    // camp_worst sums the strengths (all > 0) of the members reaching p: zero means none does.
+    const bool camps = t.camp_worst > 0;
     for (std::uint32_t left = t.vis_mask; left; left &= left - 1) {
         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         out.depth += safety.strike_of(e).reach - dist(p, e.pos) + 1;
     }
-    for (const auto& m : safety.awake_members())
-        if (in_square(p, m.pos, m.reach)) out.depth += 2;
+    if (camps)
+        for (const auto& m : safety.awake_members())
+            if (in_square(p, m.pos, m.reach)) out.depth += 2;
     return out;
 }
 
