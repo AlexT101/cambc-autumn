@@ -619,3 +619,13 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   wards placed -20%, median bush ward life 21 -> 33 rounds, A-B-A swaps 252 vs 283 (claim and wait_altar alternate, so
   camp-altar-camp still swaps; a persistent work tile would be farm_group, farming-owned). 50.6% vs main 695b6aa (1094,
   ladder 51.4, gen 50.0, fresh gen-s1 51.2); out-of-fuel turns 10638 vs 10472. Level and sound: kept.
+- final-clearing (2026-10-21; GAPS camp deaths; branch orch/final-clearing 93ac027, integrated as orch/int-final-clearing
+  4b907ac on main 9f89878): most camp deaths with no enemy within 5 (ladder 107 of 146, gen 714 of 898; mostly Elk and
+  Golem, half from full health) crossed the recall line, then took 3.6-4.9 more camp hits walking along the edge of the
+  camp's reach: an Elk or Golem hits every tile in reach alike, so flee_camps' one-step damage tied and "closest to
+  home" circled the camp. flee_camps now adds camp damage x the hits left before leaving every awake camp's reach
+  (Safety::camp_area minus standable, walls ignored as in camp_exit_rounds; one search from here, one board test per
+  step). 4 games 00elkring/00lanes vs 695b6aa: camp deaths 1 vs 7. 49.9% vs main (1094, ladder 47.1, gen 50.4, fresh
+  gen-s1 49.8); out-of-fuel turns 11202 vs 11361. Level and a rule fix: kept. Not fixed: retreat_step walks back into
+  an Elk's reach when the way home passes it (recall_outruns ignores camps; lanes), idle turns under a Golem
+  (dense-camps).

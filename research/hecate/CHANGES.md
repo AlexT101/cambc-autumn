@@ -348,3 +348,7 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    any of theirs and their basic attacks alone beat our health, shields and heals; step_guard's fights go through the
    same checks. 5.8% of fight verdicts flip lost -> not lost (fights first lost on their turns 18-24); decide -6.7% at
    100M. 49.8% vs main (1094, ladder 50.0, gen 49.4, fresh 50.2), 50.6% at 100M; out-of-fuel turns 10543 vs 11337.
+49. 2026-10-21 (not yet submitted). Camp flight leaves the reach (bot.cpp flee_camps): each step is judged by its own
+   damage plus the camp damage per hit times the hits still to come before leaving every awake camp's reach, instead
+   of one step's damage, which tied on every tile inside an Elk's or Golem's reach and walked the champion around the
+   camp toward home. 49.9% vs main (1094, ladder 47.1, gen 50.4, fresh 49.8); out-of-fuel turns 11202 vs 11361.
