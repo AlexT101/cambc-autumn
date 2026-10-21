@@ -2285,7 +2285,7 @@ int Safety::recall(const FightKey& k, Trade& out) {
             return 1;
         }
         // Cassi and Issac fall together: one more of them can turn a fight either way.
-        if (by >= 0 || !stand || f.key.mode != k.mode || f.key.horizon != k.horizon || ((f.key.who ^ k.who) & linked_who_)) continue;
+        if (by >= 0 || !stand || f.trade.cut || f.key.mode != k.mode || f.key.horizon != k.horizon || ((f.key.who ^ k.who) & linked_who_)) continue;
         // The camps hit our weakest on each of their first camp_turns turns: more for longer only
         // makes a fight worse, like more enemies.
         const bool camp_worse = f.key.camp_q >= k.camp_q && f.key.camp_turns >= k.camp_turns;
@@ -2358,12 +2358,10 @@ Trade Safety::run(const FightKey& k, std::uint32_t enemies) {
             if (memo_stats.fall_at >= 0) s.need_after_fall[need] += memo_stats.sim_acts - memo_stats.fall_at;
         }
     });
-    // A cut fight is a guess forced by the fuel left: asked again, it may be played out.
-    if (!t.cut) {
-        const int i = fight_count_++ % max_fights;
-        fights_[static_cast<std::size_t>(i)] = {k, t};
-        debug_block({ fight_generation[static_cast<std::size_t>(i)] = generation_; });
-    }
+    // A cut fight, a guess forced by the fuel left, answers its own key again but settles no other.
+    const int i = fight_count_++ % max_fights;
+    fights_[static_cast<std::size_t>(i)] = {k, t};
+    debug_block({ fight_generation[static_cast<std::size_t>(i)] = generation_; });
     return t;
 }
 

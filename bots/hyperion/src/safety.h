@@ -212,7 +212,7 @@ struct Trade {
     int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
     int turns_to_kill_them = 0; // ours
     bool self_falls = false;    // we die before their side does, when they strike first
-    bool cut = false;           // set in trade() on fight-cut; never memoised
+    bool cut = false;           // set in trade() on fight-cut; memoised for its own key only
     // Not played: a memoised fight settled it (Safety::engage). Only lost, self_falls and the
     // counts hold; turns_to_kill_us is the settling fight's (a bound) and the rest is 0.
     bool settled = false;
@@ -560,11 +560,11 @@ private:
     bool shape(vec2 p, const Engage& e, FightKey& k);
     // The memo's trade, or a fight it settles, else a new one.
     Trade play(const FightKey& k);
-    // 1: k's memoised trade; 2: a stand key settled by a memoised stand fight, a won one with at
-    // least its enemies, at most its allies and at least its camp charge for as many turns, or a
-    // lost one the reverse (Trade::settled); 0: neither.
+    // 1: k's memoised trade; 2: a stand key settled by a memoised stand fight not cut short, a won
+    // one with at least its enemies, at most its allies and at least its camp charge for as many
+    // turns, or a lost one the reverse (Trade::settled); 0: neither.
     int recall(const FightKey& k, Trade& out);
-    // Simulates k with `enemies` as its enemies and memoises it, unless cut.
+    // Simulates k with `enemies` as its enemies and memoises it.
     Trade run(const FightKey& k, std::uint32_t enemies);
     // Debug only: the keys shape() made lately, by tile and generation; whether a memoised stand
     // fight answers k clean, as itself or as a clean stand covering it (any mode); its sides played out.
