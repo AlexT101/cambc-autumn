@@ -29,6 +29,9 @@ namespace {
 constexpr int endgame_margin = 20;   // rounds to spare on the last trip to an altar
 constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
 constexpr float escape_step_value = 210; // a retreat's or a game-ender intercept's walk, in enemy health
+// PREY-FLIP and PURSUIT-SKIP-MISMATCH re-run the rule they replaced. The re-runs fill Safety's memos
+// and Reach and spend fuel, so games change while this is on.
+constexpr bool debug_verdicts = false;
 
 // The turn's branch, for debug_fights: Chase, Attack, Retreat, Farm, Bank, Wait at an altar,
 // Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, Shopping trip,
@@ -1332,6 +1335,14 @@ int steps_to(const CampGroup& G, vec2 p) {
     return steps;
 }
 
+// Safety's fights leave out the claimed group's camp hits, which the farm budgets: a claim made
+// mid-turn reaches it before the walk asks guarded().
+int set_claim(Memory& memory, const Pathing& pathing, int g) {
+    memory.claim = g;
+    if (auto* safety = pathing.safety()) safety->set_claimed(g);
+    return g;
+}
+
 // Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
 // allies in sight claiming it (ties to the lower index), so the others move on rather than split
 // the share. Before anything else farm does, since a ranged hit in passing would cost the step.
@@ -1355,7 +1366,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             ours &= d > steps || (d == steps && a.index > world.me().index);
         }
         if (!ours) continue;
-        memory.farm_group = memory.claim = g;
+        memory.farm_group = set_claim(memory, pathing, g);
         memory.crew = false;
         return pathing.step_towards(G.tiles(), nullptr, steps + max_detour);
     }
@@ -1409,7 +1420,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const int hit = attack_camp(world, passing);
         if (hit >= 0 && hit != memory.claim) {
             memory.crew = taken(hit);
-            memory.claim = hit;
+            set_claim(memory, pathing, hit);
         }
         // Our hit cleared the group: a melee walk onto its tile starts the capture a round sooner.
         if (hit >= 0 && melee && step_onto_cleared(world, pathing, hit)) {
@@ -1447,7 +1458,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         // Too short of fuel to search the way to a new choice: last turn's, whose way is known.
         if (previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous))) {
             note_shortcut("farm-kept-target");
-            memory.farm_group = memory.claim = previous;
+            memory.farm_group = set_claim(memory, pathing, previous);
             memory.crew = false;
             return walk(*pathing.approach(previous, walk_range(world, previous)));
         }
@@ -1760,15 +1771,15 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (bag > 0 && attack_in_range()) return true;
     if (world.is_stale()) return true;
     if (best < 0) best = risky, best_steps = risky_steps, best_value = risky_value;
-    memory.claim = best;
     memory.crew = false;
     bool spell = best >= 0 && best_spell;
     if (shared >= 0 && (best < 0 || shared_value > best_value))
-        best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false;
-    if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false;
+        best = shared, best_steps = shared_steps, memory.crew = true, spell = false;
+    if (help_group >= 0) best = help_group, best_steps = help_steps, memory.crew = true, spell = false;
+    set_claim(memory, pathing, best);
     if (best < 0) {
         // Cut short before weighing even last turn's choice: walk on towards it.
-        if (k == 0 && memory.farm_group >= 0) memory.claim = memory.farm_group, walk_on(memory.farm_group);
+        if (k == 0 && memory.farm_group >= 0) set_claim(memory, pathing, memory.farm_group), walk_on(memory.farm_group);
         return true;
     }
     memory.farm_group = best;
@@ -2217,12 +2228,15 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
         return true;
     };
     if (stand && !stand->lost && !stand->self_falls && pursuers_standing()) {
-        debug_block({
-            std::printf("WANTHOME-PURSUIT-SKIPPED %d %u\n", world.round, static_cast<std::uint32_t>(world.me().handle));
-            if (const auto t = safety.engage(here, pursue); t.lost || (linked && t.self_falls))
-                std::printf("PURSUIT-SKIP-MISMATCH %d %u %d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), here.x,
-                            here.y, t.lost ? 1 : 0, t.self_falls ? 1 : 0);
-        });
+        debug_block({ std::printf("WANTHOME-PURSUIT-SKIPPED %d %u\n", world.round, static_cast<std::uint32_t>(world.me().handle)); });
+        if constexpr (debug_verdicts) {
+            if (const auto t = safety.engage(here, pursue); t.lost || (linked && t.self_falls)) {
+                debug_block({
+                    std::printf("PURSUIT-SKIP-MISMATCH %d %u %d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), here.x,
+                                here.y, t.lost ? 1 : 0, t.self_falls ? 1 : 0);
+                });
+            }
+        }
         return false;
     }
     const auto t = safety.engage(here, pursue);
@@ -2316,19 +2330,16 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     // Where we would strike from: the open tile in range of e nearest us, then nearest the clamp of
     // our tile into its range.
     const auto& open = world.map().open_for_us;
-    const int width = world.map().width, height = world.map().height;
     const auto attack_tile = [&](vec2 e) -> std::optional<vec2> {
         const vec2 c{std::clamp(here.x, e.x - range, e.x + range), std::clamp(here.y, e.y - range, e.y + range)};
         if (test(open, c)) return c;
         std::optional<vec2> best;
         int best_here = 0, best_c = 0;
-        for (int y = std::max(0, e.y - range); y <= std::min(height - 1, e.y + range); ++y)
-            for (int x = std::max(0, e.x - range); x <= std::min(width - 1, e.x + range); ++x) {
-                const vec2 q{x, y};
-                const int to_here = dist(q, here), to_c = dist(q, c);
-                if (q == e || (best && (to_here > best_here || (to_here == best_here && to_c >= best_c))) || !test(open, q)) continue;
-                best = q, best_here = to_here, best_c = to_c;
-            }
+        for (const vec2 q : Tiles<7 * 7>{within(open, e, range)}) {
+            const int to_here = dist(q, here), to_c = dist(q, c);
+            if (q == e || (best && (to_here > best_here || (to_here == best_here && to_c >= best_c)))) continue;
+            best = q, best_here = to_here, best_c = to_c;
+        }
         return best;
     };
     // The prey stays in the key: a melee one cannot reach a ranged attack tile.
@@ -2340,11 +2351,14 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         ++fights;
         const auto t = safety.engage(*at, {.with_enemy = e.index});
         const bool won = !t.lost && !(linked && t.self_falls);
-        debug_block({
-            if (const auto old = safety.engage(e.pos, {}); won != (!old.lost && !(linked && old.self_falls)))
-                std::printf("PREY-FLIP %d %u e%d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), e.index, at->x, at->y,
-                            won ? 1 : 0);
-        });
+        if constexpr (debug_verdicts) {
+            if (const auto old = safety.engage(e.pos, {}); won != (!old.lost && !(linked && old.self_falls))) {
+                debug_block({
+                    std::printf("PREY-FLIP %d %u e%d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), e.index, at->x,
+                                at->y, won ? 1 : 0);
+                });
+            }
+        }
         if (won) return &e;
     }
     return nullptr;
@@ -2658,13 +2672,13 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         }
         memory.siege = true;
         memory.staged_since = -1;
-        memory.claim = g;
+        set_claim(memory, pathing, g);
         memory.crew = false;
         pathing.step_towards_funded(G.tiles(), end_reserve);
         return true;
     }
     memory.siege = true;
-    memory.claim = g;
+    set_claim(memory, pathing, g);
     memory.crew = ally_in;
     siege_group() = g;
     const vec2 m = load.pos;
@@ -2792,7 +2806,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
         const auto& tiles = G.tiles();
         if (enemy_on(world, tiles) || c.holder == team::enemy) {
             if (!test(tiles, here) && too_late(g)) return false;
-            memory.claim = g;
+            set_claim(memory, pathing, g);
             memory.crew = false;
             if (test(tiles, here)) return true; // our tile keeps their hold from counting
             const auto& free = free_tiles(tiles);
@@ -2800,7 +2814,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
             return true;
         }
         if (capture_taken(world, G, here) || dist(here, G.centre) > 2 * vision_radius) return false;
-        memory.claim = g;
+        set_claim(memory, pathing, g);
         memory.crew = false;
         pathing.step_towards_funded(G.tiles(), end_reserve);
         return true;
@@ -2828,7 +2842,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     // casters, for the fights and the capture.
     if (!attackers) return false;
     const bool ally_in = ally_claims(world, g);
-    memory.claim = g;
+    set_claim(memory, pathing, g);
     memory.crew = ally_in;
     clear_board(goals);
     goals |= near;
@@ -3191,7 +3205,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (attacked && !world.me().facts().walk_and_attack_independent()) return;
     if (wants_shop(world, pathing, safety, memory)) {
         decision = 'S';
-        memory.claim = -1;
+        set_claim(memory, pathing, -1);
         step_safely(pathing, pathing.to_ally_spawn(), safety);
         return;
     }
