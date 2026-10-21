@@ -369,12 +369,17 @@ float act(Side& self, Side& other) {
 
 static_assert(fight_horizon == 2 * ability_cooldown + 1);
 
+// Our fighter's health, as its linked body's falls with it.
+float watched_health(const Side& us, int self) {
+    const auto& me = us.fighters[self];
+    return me.link >= 0 ? std::min(me.health, us.fighters[me.link].health) : me.health;
+}
+
 // Whether our fighter `self` (and its linked body) must outlive their next `theirs` turns and our
 // next `ours`: every member of theirs alive now attacking each turn and casting each slot as soon
 // as it is ready, Ren hitting back at each of our hits, and the camps, still fall short of it.
 bool outlives(const Side& us, const Side& them, int self, int theirs, int ours) {
-    const auto& me = us.fighters[self];
-    const float health = me.link >= 0 ? std::min(me.health, us.fighters[me.link].health) : me.health;
+    const float health = watched_health(us, self);
     const int end = them.turn + theirs;
     float most = static_cast<float>(camp_turns(us, them, theirs)) * us.camp, back = 0;
     for (int i = 0; i < them.count; ++i) {
@@ -430,6 +435,21 @@ bool overwhelmed(const Side& us, const Side& them, int theirs, int ours) {
     return least > guard * 1.001f + 1.0f;
 }
 
+// Lower bounds on the damage outlives() and overwhelmed() sum, every other term of which is at
+// least 0: their live members' Strength each of their turns, and our arriving members' each of
+// ours, against our fighter's health and their weakest. Past its bound either is false.
+struct ExitBounds {
+    float their_strength = 0, our_strength = 0, weakest = std::numeric_limits<float>::max();
+};
+ExitBounds exit_bounds(const Side& us, const Side& them) {
+    ExitBounds b;
+    for (int i = 0; i < them.count; ++i)
+        if (const auto& f = them.fighters[i]; f.health > 0) b.their_strength += f.strength, b.weakest = std::min(b.weakest, f.health);
+    for (int i = 0; i < us.count; ++i)
+        if (const auto& f = us.fighters[i]; f.health > 0 && f.arrives_at != never) b.our_strength += f.strength;
+    return b;
+}
+
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does.
 // `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
@@ -444,10 +464,27 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
     for (int t = 0, alive = -1; t < 2 * horizon; ++t) {
         if (!Dealt && self_falls && us.alive + 16 * them.alive != alive) {
             alive = us.alive + 16 * them.alive;
-            if (watched >= 0 && outlives(us, them, watched, horizon - theirs, horizon - ours)) return {0, 0};
-            if (overwhelmed(us, them, horizon - theirs, horizon - ours)) {
-                if (watched >= 0) *self_falls = true;
-                return {0, horizon};
+            const int theirs_left = horizon - theirs, ours_left = horizon - ours;
+            const auto bound = exit_bounds(us, them);
+            if (watched >= 0) {
+                if (static_cast<float>(theirs_left) * bound.their_strength < watched_health(us, watched)) {
+                    if (outlives(us, them, watched, theirs_left, ours_left)) return {0, 0};
+                } else if constexpr (!Dealt) {
+                    debug_block({
+                        if (outlives(us, them, watched, theirs_left, ours_left))
+                            std::printf("PREFILTER-MISMATCH %d outlives\n", cambc::round_number());
+                    });
+                }
+            }
+            if (static_cast<float>(ours_left) * bound.our_strength < bound.weakest) {
+                if (overwhelmed(us, them, theirs_left, ours_left)) {
+                    if (watched >= 0) *self_falls = true;
+                    return {0, horizon};
+                }
+            } else if constexpr (!Dealt) {
+                debug_block({
+                    if (overwhelmed(us, them, theirs_left, ours_left)) std::printf("PREFILTER-MISMATCH %d overwhelmed\n", cambc::round_number());
+                });
             }
         }
         if (fuel_floor && t % 8 == 7 && fuel() < fuel_floor) return {-1, -1};
