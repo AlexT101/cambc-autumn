@@ -21,7 +21,11 @@ struct Intent {
     bool to_altar = false;
     int group = -1;
     float step_value = 0;
-    // Flee mode (W3-A): danger and death priced instead of the guarded() ban, steps along `field`.
+    // A flee (retreat): every move is the search's, each step along `field` worth `step_value`; no
+    // guarded() ban. Visible blows count in full, unseen ones at their chance, the camps' hit plus
+    // their rounds to walk out, and our death (life_value and the bag) where the worst could kill
+    // us. Inside a camp's reach only a tile out of every reach earns steps; with no visible enemy
+    // near, the least Safety::escape_cost wins.
     bool flee = false;
     // The walk's steps when set (flee: home; chase: the prey's route), else to_altar/group's.
     const cambc::distance_field* field = nullptr;
@@ -38,17 +42,22 @@ struct Planned {
     bool attacked = false;
     bool moved = false;    // the goal's walk is spent
     bool searched = false; // the search chose the turn's cast, heals and shields included
-    bool goal_free = false; // W3-A: the chosen plan leaves the goal's walk and hits to the goal
-    bool acted = false;     // W3-A: the plan spent an action
-    bool carried = false;   // W3-A: the plan was carried out
+    bool goal_free = false; // no plan ended off our tile: another walk goal would choose the same
+    bool acted = false;     // an action was taken: the turn-start beliefs no longer hold
+    bool carried = false;   // a plan was chosen and carried out
 };
 
-// One read and grow of the turn's search, priced once per mode (W3-A). Valid until the turn's
-// Safety generation or our state changes; the next prepare_strikes reuses its storage.
+// One read and grow of the turn's search, priced by mode: normal, flee (Intent::flee) or chase
+// (Intent::field). Leaves keep no step terms, so a price may use another step value or walk, but
+// a flee's pure moves exist only when prepared for a flee. Valid until the Safety generation or
+// our state changes (price_strikes then returns an empty Planned; on a turn resumed after running
+// out of fuel it throws, as World::throw_if_stale); the next prepare_strikes reuses its storage.
+// Never null.
 struct Prepared;
 Prepared* prepare_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent);
 Planned price_strikes(Prepared& prepared, const Intent& intent);
-// Whether `prepared` still holds: safety's generation() and our state (my_state()) are as prepare_strikes found them.
+// Whether `prepared` still holds: safety's generation() and our state, tile and health are as
+// prepare_strikes found them.
 bool prepared_current(const Prepared& prepared, const Safety& safety);
 
 // Before the goal acts: prepare_strikes, then price_strikes.
