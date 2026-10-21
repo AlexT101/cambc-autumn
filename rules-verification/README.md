@@ -32,7 +32,7 @@ cambc run rules-verification/probes/<A> rules-verification/probes/<B> --map <map
 | `rounds.turn_start`, buffs, shields, Marcella, Ren, Prism, Vendetta, Varg passives | `probe-effects`, `probe-effects-b` |
 | Varg's splash from a camp target | `probe-varg-splash` |
 | Heart of Ruin's landing on unseen enemies | `probe-hor-unseen` |
-| `vision`, `wards`, `teleport_crystal`, `turn.hidden_blocker` | `probe-vision`, `probe-vision-b`, `probe-pathcost`, `ward-hidden`, `probe-wardcd`, `probe-ward-walk` |
+| `vision`, `wards`, `teleport_crystal`, `turn.hidden_blocker` | `probe-vision`, `probe-vision-b`, `probe-pathcost`, `ward-hidden`, `probe-wardcd`, `probe-ward-walk`; same-turn ward sight: `probe-ward-sight` |
 | teleporting into a walled altar | `vault` |
 
 ## Facts outside the rules

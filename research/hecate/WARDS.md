@@ -69,6 +69,7 @@ Why wards have not paid off, and what to change. Measured on 70 ladder games of 
 - **Precondition:** a probe that a ward's sight counts on the turn it is placed (no probe tests it; walking and hidden
   blockers do update sight mid-turn). Add the rule to the YAML and the probe to the README's table. If the probe fails,
   drop the proposal.
+  **Met:** `probe-ward-sight` shows ward sight counts in the turn it is placed (YAML `wards.vision`).
 - **Fuel:** one observe on a ward turn (at most one turn in 10), bounded.
 - **Fits workstream A:** STRIKE-SEARCH.md lists "a ward placed first" as out of its scope. This runs before the search
   and only changes what is visible, so it feeds the search more targets.

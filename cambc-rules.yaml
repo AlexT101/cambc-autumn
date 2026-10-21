@@ -118,7 +118,7 @@ wards:
   placement: "Place on any tile within 2, unseen tiles included. Walls, holes, altars, enemy spawn and tiles with a visible allied ward are errors; an unseen allied ward is a hidden blocker (turn.hidden_blocker)."
   enemy_wards: "An enemy ward, seen or unseen, does not block: both wards share the tile."
   rate: "Each champion has one ward. One placed in round t can be placed again from round t+10; a new ward replaces the old one."
-  vision: "A 13x13 square (radius 6), shadowcast from the ward's tile."
+  vision: "A 13x13 square (radius 6), shadowcast from the ward's tile. It counts from placement: units it reveals can be read, attacked and targeted by unit spells in the same turn."
   lifetime: "Wards never expire, take no damage, outlive their owner's death and never block walking or landing."
 
 recall:
