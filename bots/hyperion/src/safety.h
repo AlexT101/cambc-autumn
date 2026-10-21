@@ -305,6 +305,9 @@ public:
     // any_within(standable & ~camp_area(), p, r), at most one more than the longest camp reach;
     // 0 if none can pick us at p.
     int exit_rounds(vec2 p);
+    // exit_rounds()' field at p, asking no camp column: 0 for a standable p out of every camp's
+    // reach, else at least 1 (and unreachable past the longest reach).
+    int exit_steps(vec2 p);
     // exit_damage(p), filling no row or slot (for checks inside debug_block).
     float exit_damage_unfilled(vec2 p);
     // Chance an unseen threat hits p: 1 - prod(1 - near / tiles * hit_given_reach) over
@@ -427,7 +430,6 @@ private:
     void invalidate();
 
     static std::vector<CampHit>& member_pool();
-    int exit_steps(vec2 p); // exit_rounds()' field at p, unclamped
     // An enemy's strike for its next turn and, unseen, its possible tiles and weight (0: not
     // credible), worked out on first use: beliefs are fixed for the turn.
     struct Foe {

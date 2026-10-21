@@ -2526,7 +2526,7 @@ float Safety::strike_sum(vec2 p, std::uint16_t* mask) {
     return total;
 }
 
-[[gnu::always_inline]] inline int Safety::exit_steps(vec2 p) {
+[[gnu::always_inline]] int Safety::exit_steps(vec2 p) {
     // Over no walls a king-step field is the Chebyshev distance to the nearest exit.
     static cambc::distance_field field;
     if (exits_generation_ != generation_) {

@@ -2095,11 +2095,31 @@ Prepared prepared_slot;
         heap[nh++] = i;
         std::push_heap(heap.begin(), heap.begin() + nh, heap_less);
     };
-    // An escape tightens at most C1 tiles (cap C8): an untightened tile's camps count 0, so with
-    // every end tile in a camp's reach it would tighten them all. The rest are then cut.
+    // An escape tightens at most C1 tiles, then C1 more (cap C8): an untightened tile's camps count
+    // 0, so with every end tile in a camp's reach it would tighten them all. After the first C1 the
+    // rest in a camp's reach (by the exit field) are bounded as tighten() would leave them with the
+    // weakest member alone hitting them, at the least weight, on each round of the walk out; after
+    // the second C1 they are cut.
     int tightened = 0;
+    bool bounded = false;
     Grid cut = 0;
-    const auto cut_rest = [&](int i) {
+    const auto cap_tighten = [&](int i) {
+        if (!bounded) {
+            bounded = true, tightened = 0;
+            float weakest = 1e30f, lightest = 1;
+            for (const auto& m : safety.awake_members()) weakest = std::min(weakest, m.strength), lightest = std::min(lightest, m.weight);
+            const int longest = world.map().max_camp_reach;
+            heap[nh++] = i;
+            for (int j = 0; j < nh; ++j)
+                if (auto& t = tiles[heap[j]]; !t.tight)
+                    if (const int k = safety.exit_steps(S.tile(t.c)); k > 0) {
+                        const float rounds = static_cast<float>(std::min(k, longest + 1));
+                        t.lb = weakest * rounds;
+                        t.bound = t.top - weakest * lightest - weakest * (rounds - 1);
+                    }
+            std::make_heap(heap.begin(), heap.begin() + nh, heap_less);
+            return;
+        }
         cut |= gbit(tiles[i].c);
         int k = 0;
         for (int j = 0; j < nh; ++j)
@@ -2120,7 +2140,7 @@ Prepared prepared_slot;
         }
         if (!t.tight) {
             if (escape && ++tightened > max_exact_queries) {
-                cut_rest(i);
+                cap_tighten(i);
                 continue;
             }
             tighten(t);
@@ -2316,7 +2336,7 @@ Prepared prepared_slot;
             auto& t = tiles[i];
             if (!t.tight) {
                 if (escape && ++tightened > max_exact_queries) {
-                    cut_rest(i);
+                    cap_tighten(i);
                     continue;
                 }
                 tighten(t);
@@ -2382,7 +2402,8 @@ Prepared prepared_slot;
                 if (chosen < 0 || lb < best_esc - 0.01f) ++cost;
                 else if (lb <= best_esc + 0.01f && bound > best_total + 0.01f) ++tie;
             }
-            std::printf("ESC-CUT %d tiles %d cut %d cost_beat %d tie_beat %d\n", world.round, nt, std::popcount(cut), cost, tie);
+            std::printf("ESC-CUT %d tiles %d cut %d cost_beat %d tie_beat %d esc %.1f lb %.1f\n", world.round, nt, std::popcount(cut), cost, tie,
+                        best_esc, chosen >= 0 ? tiles[chosen].lb : -1.0f);
         }
     });
     mark(2);
@@ -2597,14 +2618,14 @@ Prepared prepared_slot;
                         ct && (ct->exact || escape) ? ct->esc : -1.0f, st == unreachable ? -1 : st, out.carried ? 1 : 0,
                         ct ? S.tile(ct->c).x : -1, ct ? S.tile(ct->c).y : -1, escape ? 1 : 0, capped ? 1 : 0);
             // flee_camps' argmin over here and its neighbours: none may escape for less. An unpriced
-            // tile is bounded by its camps (0 before they were counted), which the search beat unless
+            // tile is bounded by its camps (0 before they were bounded), which the search beat unless
             // capped or cut (ESC-CUT judges those).
             if (escape && ct)
                 for (int i = 0; i < nt; ++i) {
                     const auto& t = tiles[i];
                     const vec2 p = S.tile(t.c);
                     if (dist(p, here) > 1 || t.empty || (!t.exact && capped) || (cut >> t.c & 1)) continue;
-                    const float e = t.exact ? t.esc : t.tight ? t.lb : 0.0f;
+                    const float e = t.exact ? t.esc : t.lb;
                     if (e < ct->esc - 0.01f)
                         std::printf("FLEE-CAMP-MISMATCH %d tile %d,%d esc %.1f exact %d chosen %d,%d esc %.1f\n", world.round, p.x, p.y, e,
                                     t.exact ? 1 : 0, S.tile(ct->c).x, S.tile(ct->c).y, ct->esc);
