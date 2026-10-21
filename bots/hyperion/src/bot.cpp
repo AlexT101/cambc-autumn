@@ -247,8 +247,7 @@ void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
 // their reach. A camp hits every tile in its reach alike, so the hit alone cannot tell the way out
 // from a walk along the edge of its reach. q must not be a wall (tile()).
 float escape_cost(Safety& safety, vec2 q) {
-    const auto& t = safety.tile(q);
-    const float hit = t.worst(), camp = t.camp_worst;
+    const float hit = safety.damage_bound(q), camp = safety.tile(q).camp_worst;
     if (camp <= 0) return hit;
     return hit + camp * static_cast<float>(std::max(0, safety.exit_rounds(q) - 1));
 }

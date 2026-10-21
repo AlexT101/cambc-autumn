@@ -1792,8 +1792,10 @@ std::span<const Threat> Safety::threats() {
     return {threats_.data(), static_cast<std::size_t>(threat_count_)};
 }
 
-// f(enemy, blow) for each enemy build() makes a threat of, with its threat's blow at p: exact if
-// visible, by the one unseen rule (tile()) if not.
+// f(enemy, blow, bound) for each enemy build() makes a threat of, with its threat's blow at p:
+// exact if visible, by the one unseen rule (tile()) if not; and, unseen, unseen_bound's share.
+// An unseen blow hits only within the radius around walls, inside the reach: a tile out of reach
+// skips it, and a hit settles the reach.
 template <class F> void Safety::each_threat(vec2 p, F&& f) {
     const bool window = window_slot(p) >= 0;
     for (auto left = live_enemies(); left; left &= left - 1) {
@@ -1801,8 +1803,15 @@ template <class F> void Safety::each_threat(vec2 p, F&& f) {
         if (gone(e)) continue;
         const auto& x = foe(e);
         if (x.strike.reach < 0) continue;
-        if (e.visible) f(e, blow(e, p));
-        else if (x.weight > 0) f(e, unseen_blow(e, x, p, window));
+        if (e.visible) {
+            f(e, blow(e, p), 0.0f);
+        } else if (x.weight > 0) {
+            int near = unseen_in_reach(e, x, p, window);
+            if (near == 0) continue;
+            const Blow b = unseen_blow(e, x, p, window);
+            if (near < 0) near = b.hits || reach_field_hit(e, x, p) ? 1 : 0;
+            f(e, b, near ? x.strike.at(0) : 0.0f);
+        }
     }
 }
 
@@ -1899,10 +1908,14 @@ bool Safety::any_threat() {
 
 float Safety::damage_bound(vec2 p, bool double_unacted) {
     const auto& row = tile(p);
-    const float bound = row.worst() + (double_unacted ? row.vis_unacted : 0.0f);
+    const float bound = row.vis + row.unseen_bound + row.camp_worst + (double_unacted ? row.vis_unacted : 0.0f);
     debug_block({
+        // The old function: camps at full strength, each credible unseen threat by the distance-0 rule.
+        float old = row.vis + (double_unacted ? row.vis_unacted : 0.0f) + debug_old_unseen(p, nullptr);
+        for (int i = 0; members_known_ && i < member_count_; ++i)
+            if (const auto& m = members_[static_cast<std::size_t>(i)]; in_square(p, m.pos, m.reach)) old += m.strength;
         static int last = -1;
-        if (const float old = bound - row.unseen + debug_old_unseen(p, nullptr); last != world_.round && std::abs(old - bound) > 0.01f) {
+        if (last != world_.round && std::abs(old - bound) > 0.01f) {
             last = world_.round;
             std::printf("TABLE-MISMATCH %d bound %d %d %.1f %.1f\n", world_.round, p.x, p.y, old, bound);
         }
@@ -2225,6 +2238,7 @@ void Safety::sync_table() {
     table_generation_ = generation_;
     threats_known_ = camps_known_ = chances_known_ = 0;
     gate_asked_ = gate_near_ = 0;
+    reach_asked_ = reach_near_ = reach_all_ = reach_built_ = 0;
     ring_used_ = 0;
 }
 
@@ -2267,8 +2281,9 @@ const TileDanger& Safety::tile(vec2 p) { return rows_[static_cast<std::size_t>(t
 [[gnu::noinline]] void Safety::fill_threats(vec2 p, TileDanger& row) {
     Phase phase{"tile"};
     std::uint16_t vis_mask = 0, stun_mask = 0, unseen_mask = 0;
-    float vis = 0, vis_unacted = 0, unseen = 0;
-    each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
+    float vis = 0, vis_unacted = 0, unseen = 0, unseen_bound = 0;
+    each_threat(p, [&](const ChampionBelief& e, const Blow& b, float bound) {
+        unseen_bound += bound;
         if (!b.hits) return;
         const auto bit = static_cast<std::uint16_t>(1u << e.index);
         if (b.stuns) stun_mask |= bit;
@@ -2280,7 +2295,7 @@ const TileDanger& Safety::tile(vec2 p) { return rows_[static_cast<std::size_t>(t
         }
     });
     row.vis_mask = vis_mask, row.stun_mask = stun_mask, row.unseen_mask = unseen_mask;
-    row.vis = vis, row.vis_unacted = vis_unacted, row.unseen = unseen;
+    row.vis = vis, row.vis_unacted = vis_unacted, row.unseen = unseen, row.unseen_bound = unseen_bound;
 }
 
 void Safety::fill_camps(vec2 p, TileDanger& row) {
@@ -2311,6 +2326,50 @@ Blow Safety::unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p, bool win
     for (int i = 0; i < threat_count_; ++i)
         if (const auto& t = threats_[static_cast<std::size_t>(i)]; t.enemy == e.index) return t.at(p);
     return {};
+}
+
+// Window tiles lie within 3 of the centre. Out of the reach + 3 it is out of the radius + 3 too,
+// which answers unseen_blow's gate.
+int Safety::unseen_in_reach(const ChampionBelief& e, const Foe& x, vec2 p, bool window) {
+    const auto bit = static_cast<std::uint16_t>(1u << e.index);
+    const int reach = x.strike.reach;
+    if (!window) return (reach_built_ & bit ? reach_field_hit(e, x, p) : any_within(e.possible, p, reach)) ? 1 : 0;
+    if (!(reach_asked_ & bit)) {
+        reach_asked_ |= bit;
+        if (!any_within(e.possible, centre_, reach + 3)) {
+            gate_asked_ |= bit;
+        } else {
+            reach_near_ |= bit;
+            if (unseen_radius(reach, x.tiles) == reach) gate_asked_ |= bit, gate_near_ |= bit;
+            if (reach >= 3 && any_within(e.possible, centre_, reach - 3)) reach_all_ |= bit;
+        }
+    }
+    if (!(reach_near_ & bit)) return 0;
+    return reach_all_ & bit ? 1 : -1;
+}
+
+namespace {
+
+// One per enemy, reused between turns.
+cambc::distance_field& reach_field(int i) {
+    static std::array<std::unique_ptr<cambc::distance_field>, 16> fields;
+    auto& field = fields[static_cast<std::size_t>(i)];
+    if (!field) field = std::make_unique<cambc::distance_field>();
+    return *field;
+}
+
+} // namespace
+
+// Over no walls a king-step field is the Chebyshev distance.
+bool Safety::reach_field_hit(const ChampionBelief& e, const Foe& x, vec2 p) {
+    auto& field = reach_field(e.index);
+    if (const auto bit = static_cast<std::uint16_t>(1u << e.index); !(reach_built_ & bit)) {
+        reach_built_ |= bit;
+        static bitboard reached{cambc::uninitialized};
+        static const bitboard none;
+        field.compute(none, e.possible, reached, static_cast<std::uint16_t>(x.strike.reach));
+    }
+    return steps_at(field, p) <= x.strike.reach;
 }
 
 float Safety::debug_old_unseen(vec2 p, bool* near) {
