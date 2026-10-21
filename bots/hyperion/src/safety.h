@@ -271,8 +271,8 @@ public:
     // The tile table: each tile's danger numbers. A row stays put until generation() changes, but
     // tiles outside the 7x7 around the turn-start tile share 4 slots: copy a row to keep it across
     // other tile() calls. Like blow(), it throws for a wall tile in a visible enemy's reach.
-    // The one unseen rule: an unseen credible threat's blow is its Threat::at(p), so the threats are
-    // built once `possible` comes within its field's radius of the window (or of p, outside it).
+    // The one unseen rule: an unseen credible threat's blow is its Threat::at(p), so that threat
+    // alone is built once `possible` comes within its field's radius of the window (or of p, outside it).
     // camp_damage() and exit_rounds() fill only the camp columns, and never throw.
     const TileDanger& tile(vec2 p);
     // The visible threats' Strike bounds at p, without building their Reach; `mask` gets their bits.
@@ -369,7 +369,8 @@ private:
     Foe& struck(const ChampionBelief& e);
     void strike_foe(const ChampionBelief& e, Foe& x);
     void count_foe(const ChampionBelief& e, Foe& x);
-    void build_threats();
+    // Appends the threats of the enemies in `which` that have none yet.
+    void build_threats(std::uint32_t which);
     void find_members();
     void count_champions();
     void list_reachable();
@@ -423,11 +424,11 @@ private:
     float debug_old_unseen(vec2 p, bool* near);
     vec2 centre_;
     std::uint32_t table_generation_ = 0;
-    std::uint64_t threats_known_ = 0, camps_known_ = 0, exits_known_ = 0, chances_known_ = 0;
+    std::uint64_t threats_known_ = 0, camps_known_ = 0, chances_known_ = 0;
     // By enemy, this generation: whether `possible` comes within an unseen threat's field of the window.
     std::uint16_t gate_asked_ = 0, gate_near_ = 0;
     std::uint8_t ring_used_ = 0, ring_next_ = 0;
-    std::uint32_t exits_generation_ = 0; // of exit_rounds()' board
+    std::uint32_t exits_generation_ = 0; // of exit_rounds()' field
     union {
         std::array<vec2, 4> ring_at_;
     };
@@ -435,8 +436,7 @@ private:
         std::array<TileDanger, table_slots> rows_;
     };
     struct Lazy {
-        float chance;      // unseen_chance()
-        std::int8_t exit;  // exit_rounds()
+        float chance; // unseen_chance()
     };
     union {
         std::array<Lazy, table_slots> lazy_;
