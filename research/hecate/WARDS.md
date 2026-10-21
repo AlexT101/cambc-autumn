@@ -71,6 +71,8 @@ Why wards have not paid off, and what to change. Measured on 70 ladder games of 
   drop the proposal.
   **Met:** `probe-ward-sight` shows ward sight counts in the turn it is placed (YAML `wards.vision`).
 - **Fuel:** one observe on a ward turn (at most one turn in 10), bounded.
+- **Result:** 49.5% vs main (582), out-of-fuel turns 1487 vs 1154: dropped. At turn start `ward_bushes` grows
+  bush clusters down to the end reserve, starving decide (EXPERIMENTS.md, w2-ward-early).
 - **Fits workstream A:** STRIKE-SEARCH.md lists "a ward placed first" as out of its scope. This runs before the search
   and only changes what is visible, so it feeds the search more targets.
 - **A/B:** on top of 1. Expect +0 to +1 (the defensive ceiling is about 900 damage a team-game). In `ward_value.py`:

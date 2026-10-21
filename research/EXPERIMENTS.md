@@ -503,3 +503,9 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   Screened well offline (fires on 3.0% / 1.2% of healthy in-sight turn-ends, catches 74% / 71% of point-of-no-return
   turns). 46.7% vs main (582, ladder 48.6, gen 46.5): worse, dropped. Out-of-fuel turns 1926 vs 1201 (350 vs 293
   games, spread over maps, not one blowup): step_guard asks it about up to 24 tiles a turn, ~3-4k each when trapped.
+- w2-ward-early (2026-10-21; WARDS.md proposal 2): place_ward between comms receive and decide, then observe, so a
+  ward's sight reaches this turn's strike and casts; the turn-end call kept. 49.5% vs main (582, ladder 55.7, gen
+  48.6): level, dropped for fuel. Out-of-fuel turns 1487 vs 1154, all in decide (gen-huge-shared 158 vs 27): at turn
+  start ward_bushes grows bush clusters down to small_cost_estimate + end_reserve, so decide starts nearly empty
+  (ward-no-bushes-clusters shortcuts 1997 in REF, near 0 in CAND). Retry only with clusters already found (warm-up's
+  find_all_bush_clusters) or the search moved after decide.
