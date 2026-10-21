@@ -11,7 +11,7 @@ namespace aph::comms {
 namespace detail {
 // The latest bags and claims: teammates' as they posted them, by ally index, and ours.
 struct Posts {
-    std::array<int, 8> bags{-1, -1, -1, -1, -1, -1, -1, -1};
+    std::array<int, 8> bags{};
     std::array<int, 8> claims{-1, -1, -1, -1, -1, -1, -1, -1};
     int my_bag = 0, mine = -1;
 };
@@ -26,7 +26,7 @@ void receive(World& world);
 void send(World& world, bool moved, bool refresh);
 // The gems we carry, posted when it changes.
 void bag(int gems);
-// The gems an ally (by index) carries as it last posted, -1 if never, 0 while dead.
+// The gems an ally (by index) carries as it last posted, 0 if never or while dead.
 inline int bag_of(const World& world, int ally) {
     const auto& a = world.allies[ally];
     if (a.is_self) return detail::posts.my_bag;

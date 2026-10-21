@@ -1,7 +1,6 @@
 #include "comms.h"
 #include <algorithm>
 #include <array>
-#include <span>
 #include "world.h"
 
 namespace aph::comms {
@@ -63,6 +62,7 @@ void put_sighting(std::uint64_t& bits, const ChampionBelief& e, int round, bool 
 
 struct State {
     std::uint64_t last = 0; // the bits as we left them at the end of our previous turn
+    std::uint64_t now = 0;  // this turn's, as receive() read them and send() leaves them
     int last_round = -1;
     std::uint64_t fresh = 0; // records written since then
     int posted_bag = -1;
@@ -80,7 +80,7 @@ std::uint64_t read_bits() {
 
 void write_bits(std::uint64_t bits, int round) {
     ok(cambc::detail::sdk_write_shared_memory(0, &bits, sizeof bits));
-    state.last = bits;
+    state.last = state.now = bits;
     state.last_round = round;
 }
 
@@ -109,7 +109,7 @@ int dated(int parity) {
 
 [[gnu::flatten]] void receive(World& world) {
     state.fighting = -1;
-    const auto bits = read_bits();
+    const auto bits = state.now = read_bits();
     const int round = world.round;
     state.fresh = changes(bits);
     if ((state.fresh & sighting_bits) && sight_x.get(bits) != 0) {
@@ -130,8 +130,9 @@ int dated(int parity) {
     state.last_round = round;
 }
 
+// No teammate acts during our turn: the bits are still those receive() read.
 void send(World& world, bool moved, bool refresh) {
-    auto bits = read_bits();
+    auto bits = state.now;
     const int round = world.round;
     const bool sighted = (state.fresh & sighting_bits) && sight_parity.get(bits) == (round & 1) && sight_x.get(bits) != 0;
     // A capture someone posted since our last turn stays up for the rest of the team.

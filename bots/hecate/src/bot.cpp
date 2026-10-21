@@ -356,7 +356,7 @@ int race_left(const World& world) {
     int short_by = gems_short(world);
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive && !(a.visible && a.channel == Channel::tribute))
-            short_by -= std::max(0, comms::bag_of(world, a.index));
+            short_by -= comms::bag_of(world, a.index);
     if (short_by <= 0) return 0;
     const float rate = world.ally_rate();
     return rate > 0 ? static_cast<int>(static_cast<float>(short_by) / rate) : rounds_left(world);
