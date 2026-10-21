@@ -241,35 +241,30 @@ void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
     if (!pathing.step_towards(field, &avoid)) pathing.step_towards(field);
 }
 
+// Ending a step on q: its hit, then the camps' hits on each further round it takes to walk out of
+// their reach. A camp hits every tile in its reach alike, so the hit alone cannot tell the way out
+// from a walk along the edge of its reach. q must not be a wall (tile()).
+float escape_cost(Safety& safety, vec2 q) {
+    const auto& t = safety.tile(q);
+    const float hit = t.worst(), camp = t.camp_worst;
+    if (camp <= 0) return hit;
+    return hit + camp * static_cast<float>(std::max(0, safety.exit_rounds(q) - 1));
+}
+
 // Out of the camps' reach first, along the cheapest neighbour: walking home past an awake camp
 // takes a hit every step, while a recall started outside its reach goes home untouched.
-bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+bool flee_camps(const World&, Pathing& pathing, Safety& safety, const Field& home) {
     if (!my_can_move()) return false;
     const vec2 here = my_position();
     if (safety.camp_damage(here) <= 0) return false;
-    // A camp hits every tile in its reach alike, so one step's damage cannot tell the way out from
-    // a walk along the edge of its reach: count the hits still to come before leaving it.
-    static bitboard exits{cambc::uninitialized};
-    or_into(world.map().standable, safety.camp_area(), exits);
-    exits ^= safety.camp_area();
-    const int longest = world.map().max_camp_reach;
-    int walk_out = 1;
-    while (walk_out <= longest && !any_within(exits, here, walk_out)) ++walk_out;
-    // A step changes the walk out by at most one: only a step that shortens it needs telling apart.
-    const auto cost = [&](vec2 p) {
-        const float camp = safety.camp_damage(p);
-        float damage = safety.damage_bound(p);
-        if (camp > 0 && walk_out > 1) damage += camp * static_cast<float>(p != here && any_within(exits, p, walk_out - 1) ? walk_out - 2 : walk_out - 1);
-        return damage;
-    };
-    const auto& blocked = pathing.blocked();
+    const auto& blocked = pathing.blocked(); // walls included
     std::optional<vec2> best;
-    float best_damage = cost(here);
+    float best_damage = escape_cost(safety, here);
     int best_home = home.at(here);
     for (auto d : directions) {
         const vec2 p = here + d;
         if (!in_bounds(p) || test(blocked, p)) continue;
-        const float damage = cost(p);
+        const float damage = escape_cost(safety, p);
         const int steps = home.at(p);
         if (damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
     }
@@ -277,8 +272,8 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
 }
 
 // Inside danger a route home is only the shortest walk, ties in compass order, which can lead
-// along the enemies we flee: take the homeward step that can be hit least, then the nearest home,
-// then the farthest from them. A sideways step goes first only when it can be hit less.
+// along the enemies we flee: take the homeward step that costs least (escape_cost), then the
+// nearest home, then the farthest from them. A sideways step goes first only when it costs less.
 void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
     if (!my_can_move()) return;
     const vec2 here = my_position();
@@ -306,7 +301,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         int gap = unreachable;
         for (const auto& e : world.enemies)
             if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
-        options[n++] = {p, safety.damage_bound(p), s, gap};
+        options[n++] = {p, escape_cost(safety, p), s, gap};
     }
     std::stable_sort(options.begin(), options.begin() + n, [](const Option& a, const Option& b) {
         if (a.damage != b.damage) return a.damage < b.damage;
@@ -2170,9 +2165,6 @@ bool paying_soon(const World& world) {
 
 bool outmatched(const World& world) { return in_pack_zone(world, world.me().pos) && !paying_soon(world); }
 
-// Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
-int camp_exit_rounds(const World&, Safety& safety, vec2 here) { return safety.exit_rounds(here); }
-
 // Camps keep hitting while we walk out of their reach: leave while the health still covers that.
 // A siege (Memory::siege) keeps its own health limits for its group's hits.
 bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, bool sieging) {
@@ -2183,7 +2175,7 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
     // The exit takes 1 to max_camp_reach + 1 rounds: the bounds settle most cases without the search.
     if (health > exit_cost(world.map().max_camp_reach + 1)) return false;
     if (health <= exit_cost(1)) return true;
-    return health <= exit_cost(camp_exit_rounds(world, safety, here));
+    return health <= exit_cost(safety.exit_rounds(here));
 }
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
