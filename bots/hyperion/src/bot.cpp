@@ -3050,8 +3050,9 @@ void mend_retreat(const World& world, Safety& safety, const Memory& memory);
 // Home around the camps' and the visible enemies' reach, as the shortest walk can lead along what
 // we flee. The search stops at our layer: tiles it leaves unlabelled (in that reach, or no nearer
 // than ours) gain nothing. Inside that reach the search prices each tile's way out, so the reach
-// stays open within its window: our tile is labelled and the exits nearer home gain. With our tile
-// still unlabelled, the plain steps.
+// stays open within its window: our tile is labelled and the exits nearer home gain. Only the reach
+// we stand in opens: from an enemy's square alone the camps stay walls, so no step into them gains.
+// With our tile still unlabelled, the plain steps.
 const cambc::distance_field& retreat_home(const World& world, Pathing& pathing, Safety& safety) {
     Phase phase{"retreat_home"};
     const auto& home = pathing.to_ally_spawn();
@@ -3074,6 +3075,7 @@ const cambc::distance_field& retreat_home(const World& world, Pathing& pathing, 
         clear_board(window);
         draw_square(window, here, static_cast<float>(flee_window));
         drop(walls, window);
+        if (!test(safety.camp_area(), here)) or_into(walls, safety.camp_area(), walls);
         // Only a spawn tile inside the window could then label us.
         if (enclosed) {
             and_into(window, home.goals, visited);

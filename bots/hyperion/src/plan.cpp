@@ -218,8 +218,13 @@ constexpr int max_depth = 6;
 constexpr int max_mates = 6;
 // Exact queries per price (cap C1: Reach blows, threats_at calls, distance-3 rows; a flee's row
 // counts each visible foe whose Strike reaches it, and its unseen blows); past it the rest keep
-// their Strike price (C4).
+// their Strike price (C4). A flee prices whole rows and every record on a tile, so it gets fewer.
 constexpr int max_exact_queries = 10;
+constexpr int max_flee_queries = 6;
+// A flee's C4 tiles gathered (C4's backstop).
+constexpr int max_flee_c4 = 4;
+// An escape's tightenings before its exit-field bound, and again after it (cap C8).
+constexpr int max_escape_tightens = max_exact_queries / 2;
 // guarded() asks per search (cap C7); past it an unasked end tile counts as guarded.
 constexpr int max_guard_asks = 6;
 // Nodes of a flee's tree; past them only walks and plain dashes grow, so every move is still
@@ -1937,7 +1942,7 @@ Prepared prepared_slot;
     struct Tile {
         float top, bound, total, danger, shield, gain, camp, worst, lb, esc;
         int c;
-        std::int8_t entry, mate, exit;
+        std::int8_t entry, mate, exit, d; // d: steps from here
         bool exact, c4, done, keep, pend, first, tight, empty;
     };
     struct Cand {
@@ -2002,6 +2007,7 @@ Prepared prepared_slot;
         steps_of[nt] = field ? steps_at(*field, S.tile(c)) : static_cast<int>(unreachable);
         auto& t = tiles[nt++];
         t.c = c, t.top = top, t.lb = t.esc = 0;
+        t.d = static_cast<std::int8_t>(dist(S.tile(c), here));
         t.keep = !(S.has >> c & 1);
         t.exact = t.c4 = t.done = t.pend = t.tight = t.empty = false;
     });
@@ -2041,16 +2047,24 @@ Prepared prepared_slot;
         return (guard_banned & bit) != 0;
     };
     // The camps at a tile: their expected hit, and in a flee the rounds to walk out of their reach.
+    // A flee never steps into a camp's reach for home progress: from outside every reach such a
+    // tile gains nothing (the field may run through the reach when retreat_home fell back).
+    const bitboard* camp_area = safety.awake_members().empty() ? nullptr : &safety.camp_area();
     const auto tighten = [&](Tile& t) {
         t.tight = true;
         const vec2 p = S.tile(t.c);
+        if (!camp_area || !test(*camp_area, p)) {
+            t.camp = t.worst = t.lb = t.danger = 0, t.exit = 0;
+            t.bound = t.total = t.top + t.gain;
+            return;
+        }
         t.camp = safety.camp_damage(p, false);
         t.worst = t.lb = 0, t.exit = 0;
         if (flee && (t.worst = safety.camp_damage(p)) > 0) {
             t.exit = static_cast<std::int8_t>(safety.exit_rounds(p));
             t.camp += t.worst * static_cast<float>(std::max(0, t.exit - 1));
             t.lb = t.worst * static_cast<float>(t.exit);
-            if (inside) t.gain = 0;
+            t.gain = inside ? 0.0f : std::min(t.gain, 0.0f);
         }
         t.bound = t.total = t.top + t.gain - t.camp;
         t.danger = t.camp;
@@ -2060,8 +2074,7 @@ Prepared prepared_slot;
         const Tile &x = tiles[a], &y = tiles[b];
         if (escape && x.lb != y.lb) return x.lb < y.lb;
         if (x.bound != y.bound) return x.bound > y.bound;
-        if (flee)
-            if (const int dx = dist(S.tile(x.c), here), dy = dist(S.tile(y.c), here); dx != dy) return dx < dy;
+        if (flee && x.d != y.d) return x.d < y.d;
         return x.c < y.c;
     };
     const auto heap_less = [&](int a, int b) { return before(b, a); };
@@ -2077,11 +2090,11 @@ Prepared prepared_slot;
         heap[nh++] = i;
         std::push_heap(heap.begin(), heap.begin() + nh, heap_less);
     };
-    // An escape tightens at most C1 tiles, then C1 more (cap C8): an untightened tile's camps count
-    // 0, so with every end tile in a camp's reach it would tighten them all. After the first C1 the
-    // rest in a camp's reach (by the exit field) are bounded as tighten() would leave them with the
-    // weakest member alone hitting them, at the least weight, on each round of the walk out; after
-    // the second C1 they are cut.
+    // An escape tightens at most C1/2 tiles, then C1/2 more (cap C8): an untightened tile's camps
+    // count 0, so with every end tile in a camp's reach it would tighten them all. After the first
+    // C1/2 the rest in a camp's reach (by the exit field) are bounded as tighten() would leave them
+    // with the weakest member alone hitting them, at the least weight, on each round of the walk
+    // out; after the second C1/2 they are cut.
     int tightened = 0;
     bool bounded = false;
     Grid cut = 0;
@@ -2121,7 +2134,7 @@ Prepared prepared_slot;
             break;
         }
         if (!t.tight) {
-            if (escape && ++tightened > max_exact_queries) {
+            if (escape && ++tightened > max_escape_tightens) {
                 cap_tighten(i);
                 continue;
             }
@@ -2144,11 +2157,13 @@ Prepared prepared_slot;
             for (int k = 0; k < ns; ++k) row_cost += strikers[k].strike->hits(dist(p, strikers[k].e->pos)) ? 1 : 0;
             row_cost = std::max(1, row_cost);
         }
-        if (queries + row_cost > max_exact_queries) {
+        if (queries + row_cost > (flee ? max_flee_queries : max_exact_queries)) {
             capped = true;
             requeue(i);
             break;
         }
+        // Resumed after running out of fuel: the round's own turn plays next.
+        S.world.throw_if_stale();
         t.done = true;
         const float base = t.gain - t.camp;
         const int nk = gather(t.c);
@@ -2311,13 +2326,42 @@ Prepared prepared_slot;
             if (escape) return t.lb > best_lb || (t.lb == best_lb && (exact_best || t.bound <= best_total));
             return t.bound <= best_total;
         };
+        // A flee's C4 blows land whole and no plan removes a foe outside every plan's removed set:
+        // a tile whose bound less those foes' blows cannot beat the choice is dropped untightened.
+        const bool prune = flee && !escape;
+        std::uint16_t rm_union = 0;
+        if (prune) {
+            each_bit(S.has, [&](int c) {
+                for (int i = 0; i < S.best[c].n; ++i) rm_union |= S.best[c].e[i].removed;
+            });
+            each_bit(S.kept_has, [&](int c) {
+                for (int i = 0; i < tables.kept[c].n; ++i) rm_union |= tables.kept[c].e[i].removed;
+            });
+            for (int g = 0; g < S.n_pend; ++g) rm_union |= tables.pend[g].removed;
+        }
+        int gathers = 0;
         while (nh > 0 && !c4_lost(tiles[heap[0]])) {
+            S.world.throw_if_stale();
             const int i = heap[0];
             std::pop_heap(heap.begin(), heap.begin() + nh, heap_less);
             --nh;
             auto& t = tiles[i];
+            if (prune) {
+                if (t.d == 3) {
+                    t.done = true;
+                    continue;
+                }
+                const vec2 q = S.tile(t.c);
+                float sure = 0;
+                for (int k = 0; k < ns; ++k)
+                    if (!(rm_union >> strikers[k].e->index & 1)) sure += strikers[k].strike->at(dist(q, strikers[k].e->pos));
+                if (t.bound - sure <= best_total) {
+                    t.done = true;
+                    continue;
+                }
+            }
             if (!t.tight) {
-                if (escape && ++tightened > max_exact_queries) {
+                if (escape && ++tightened > max_escape_tightens) {
                     cap_tighten(i);
                     continue;
                 }
@@ -2331,9 +2375,14 @@ Prepared prepared_slot;
                     continue;
                 }
             }
+            if (flee && t.d == 3) {
+                t.done = true;
+                continue;
+            }
+            if (flee && gathers == max_flee_c4) break;
+            ++gathers;
             t.done = true;
             const vec2 p = S.tile(t.c);
-            if (flee && dist(p, here) == 3) continue;
             const int nk = gather(t.c);
             if (nk == 0) {
                 t.empty = true;
