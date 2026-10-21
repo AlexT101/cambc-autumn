@@ -213,6 +213,9 @@ struct Trade {
     int turns_to_kill_them = 0; // ours
     bool self_falls = false;    // we die before their side does, when they strike first
     bool cut = false;           // set in trade() on fight-cut; never memoised
+    // Not played: a memoised fight settled it (Safety::engage). Only lost, self_falls and the
+    // counts hold; turns_to_kill_us is the settling fight's (a bound) and the rest is 0.
+    bool settled = false;
     float our_health = 0, their_health = 0; // debug_fights only
     int allies = 0, enemies = 0;
     std::array<float, 4> dealt{}; // debug_fights only: see simulate()
@@ -306,8 +309,8 @@ public:
     // tile(p).unseen_mask.
     float unseen_chance(vec2 p);
 
-    // Us and the allies we see within `fight_ally_radius`, against every credible threat that
-    // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
+    // engage(p) stand: us and the allies we see within `fight_ally_radius`, against every credible
+    // threat that could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
     Trade fight(vec2 p);
     // Who would fight at p: bit i of the low half for allies[i], of the high half for enemies[i];
     // no_fight if no threat hits p.
@@ -315,10 +318,10 @@ public:
     std::uint32_t fight_key(vec2 p);
     // fight_key(p) given `visible`: the bits of every visible threat that hits p, at least one.
     std::uint32_t fight_key_with(vec2 p, std::uint32_t visible);
-    // The fight of a key, memoised.
+    // The stand fight of a key with no camp charge, memoised.
     Trade fight_of(std::uint32_t key);
     // fight_of(key) if memoised, else null.
-    const Trade* known_fight_of(std::uint32_t key) const { return memo(key); }
+    const Trade* known_fight_of(std::uint32_t key) const { return memo(uint_key(key)); }
     // fight_of(key) when known_fight_of(key) is null.
     Trade new_fight(std::uint32_t key);
     // threat_strike(), kept for the turn.
@@ -333,27 +336,34 @@ public:
     std::uint64_t fight_cost_estimate();
     // The threat build and the visible threats' Reach builds still pending.
     std::uint64_t query_cost_estimate();
-    // At most what building the threats costs, 0 once built.
+    // At most what building the credible unseen threats' fields costs, 0 once built.
     std::uint64_t build_cost_estimate();
-    // Us and the allies we see near p, striking first, against every visible enemy within
-    // `approach` steps of its reach, each joining once it has walked into reach, while the camps
-    // in reach of p keep hitting us: lost means they win even if we stand and fight.
+    // engage(p) pursue: lost means they win even if we stand and fight.
     Trade pursuit(vec2 p, int approach);
-    // Their turns for the visible enemies and camps to kill us at p if we never act (channelling),
-    // each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
+    // engage(p) idle: their turns for the visible enemies and camps to kill us at p if we never act
+    // (channelling); 0 if not within `horizon` turns.
     int turns_to_kill_idle(vec2 p, int horizon);
     // Could the credible threats and camps kill us at p before our next turn?
     bool lethal(vec2 p);
 
-    // The one simulation entry. Stub until W2-A: stand is fight(p) (with_enemy's bit forced into
-    // the key), pursue is pursuit(p, approach), idle is turns_to_kill_idle(p, horizon) as
-    // turns_to_kill_us, with lost and self_falls set when that is not 0.
+    // The one simulation entry, by COMBAT-MERGE.md's rule table. Stand: us and the allies near p,
+    // they first, against tile(p)'s visible and credible unseen threats (and with_enemy). Pursue:
+    // we first, against the visible enemies off their spawn within `approach` walks, each joining
+    // as it arrives. Both are charged the camps' expected damage at p, less the claimed group, for
+    // exit_rounds(p) of their turns. Idle: we never act (a channel) against the visible enemies
+    // arriving within the horizon, charged the camps for all of it; turns_to_kill_us, with lost
+    // and self_falls set when it is not 0. Memoised by who fights, arrivals, camp charge and mode,
+    // across invalidate(); a stand fight may be settled by a memoised won one at least as hard or
+    // lost one at most as hard (Trade::settled: only lost and self_falls hold).
     Trade engage(vec2 p, Engage e);
     int idle_turns(vec2 p, int horizon);
     void set_claimed(int group); // camp group our farm/siege budgets; skipped in stand/pursue camp charge
-    Verdict verdict(vec2 q);
+    Verdict verdict(vec2 q);       // engage(q) stand's lost and self_falls
     bool guarded(vec2 q);          // false if no visible foe reaches q (strike_sum) or q no worse than here (mask ⊆, damage ≤);
                                    // else v.lost || (v.falls && (linked || tile(q).worst() >= health)). Radius 3 only.
+                                   // Here is the turn-start tile; answers are kept for the generation.
+    // The tiles guarded() has answered true this generation, drawn when asked; null: none. Tiles
+    // nobody asked about are left out: callers ask guarded() of the tiles they would end on.
     const bitboard* guarded_board();
     std::uint32_t guard_stamp() const; // generation << 8 | guarded count (KeptRoute key)
     // fight/pursuit/turns_to_kill_idle stay as wrappers until W4.
@@ -486,40 +496,47 @@ private:
         std::array<Lazy, table_slots> lazy_;
     };
     std::optional<bitboard> camp_area_, enemy_area_;
-    // By fight_key(). A memo: past `max_fights` the oldest is replaced. Kept across generations:
-    // a key's trade depends only on its fighters, made once a turn.
+    // An engage() fight, all its simulation depends on: who fights (fight_key()'s bits), each
+    // enemy's arrival turn (3 bits at 3 * i), the camp charge each of their turns in camp_step
+    // units for their first `camp_turns` turns, the mode and the horizon.
+    struct FightKey {
+        std::uint32_t who;
+        std::uint64_t arrive;
+        std::uint16_t camp_q;
+        std::uint8_t camp_turns, mode, horizon;
+        bool operator==(const FightKey&) const = default;
+    };
+    // A uint32 key's: stand, no camp charge.
+    static constexpr FightKey uint_key(std::uint32_t who) {
+        return {who, 0, 0, 0, static_cast<std::uint8_t>(Engage::Mode::stand), static_cast<std::uint8_t>(fight_horizon)};
+    }
+    // False if there is no fight: no enemy (and, idle, no camp charge).
+    bool shape(vec2 p, const Engage& e, FightKey& k);
+    // The memo's trade, or a fight it settles, else a new one.
+    Trade play(const FightKey& k);
+    // 1: k's memoised trade; 2: a stand key settled by a memoised stand fight, a won one with at
+    // least its enemies, at most its allies and at least its camp charge for as many turns, or a
+    // lost one the reverse (Trade::settled); 0: neither.
+    int recall(const FightKey& k, Trade& out);
+    // Simulates k with `enemies` as its enemies and memoises it, unless cut.
+    Trade run(const FightKey& k, std::uint32_t enemies);
+    void note_linked();
+    std::uint32_t linked_who_ = 0; // Cassi and Issac, as FightKey::who bits
+    bool linked_known_ = false;
+    // A memo: past `max_fights` the oldest is replaced. Kept across generations: a key's trade
+    // depends only on its fighters, made once a turn.
     struct FightMemo {
-        std::uint32_t key;
+        FightKey key;
         Trade trade;
     };
-    static constexpr int max_fights = 32;
-    const Trade* memo(std::uint32_t key) const;
+    static constexpr int max_fights = 48;
+    const Trade* memo(const FightKey& key) const;
     // Forgets the fights of keys naming any of `enemies` (bit i: enemies[i]).
     void drop_fights(std::uint32_t enemies);
     std::uint32_t generation_;
     int fight_count_ = 0;
     union {
         std::array<FightMemo, max_fights> fights_;
-    };
-    // pursuit() and turns_to_kill_idle(), two each by tile and argument, for one generation.
-    struct PursuitMemo {
-        vec2 p;
-        int approach;
-        std::uint32_t generation;
-        Trade trade;
-    };
-    struct IdleMemo {
-        vec2 p;
-        int horizon;
-        std::uint32_t generation;
-        int turns;
-    };
-    int pursuit_count_ = 0, idle_count_ = 0; // written so far; slot count % 2 is next
-    union {
-        std::array<PursuitMemo, 2> pursuits_;
-    };
-    union {
-        std::array<IdleMemo, 2> idles_;
     };
     // What reobserve() compares: the champions in view and the camps at construction.
     void note_view();
@@ -534,7 +551,17 @@ private:
     };
     // The verdict section (W2-A).
     int claimed_ = -1; // set_claimed()
-    std::uint32_t guarded_generation_ = 0, guarded_count_ = 0; // guarded() answers true this generation
+    // camp_damage(p, false) less the claimed group's members.
+    float stand_camp(vec2 p);
+    Verdict judge(const FightKey& k);
+    bool guard_rule(Verdict v, bool dies) const;
+    // Whether guarded(q) needs a verdict, with its key and whether tile(q) can kill us.
+    bool exposed(vec2 q, FightKey& k, bool& dies);
+    // guarded()'s answers (bit s: window slot s) for guarded_generation_, and the true ones
+    // guarded_board() has drawn for board_generation_.
+    void sync_guard();
+    std::uint32_t guarded_generation_ = 0, board_generation_ = 0;
+    std::uint64_t guard_asked_ = 0, guard_true_ = 0, board_bits_ = 0;
     std::uint64_t costliest_fight_ = 0;
     // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
     // once refreshed: reached_ only gains bits meanwhile, and gone() keeps its answers.
