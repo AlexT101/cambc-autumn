@@ -1748,10 +1748,12 @@ bool strike_possible(const World& world) {
         if (!guarding || tiles[i].c == S.cell(here)) return false;
         if (!(guard_asked & bit)) {
             guard_asked |= bit;
-            bool out = guard_asks >= max_guard_asks;
+            const vec2 p = S.tile(tiles[i].c);
+            // Pricing's lethal ban at distance 3, for a tile it did not price.
+            bool out = guard_asks >= max_guard_asks || (!tiles[i].exact && dist(p, here) == 3 && safety.tile(p).worst() >= S.health);
             if (!out) {
                 SimTag tag{SimCaller::srch_guard};
-                ++guard_asks, out = safety.guarded(S.tile(tiles[i].c));
+                ++guard_asks, out = safety.guarded(p);
             }
             if (out) guard_banned |= bit, ++guard_skips;
         }
@@ -1784,6 +1786,8 @@ bool strike_possible(const World& world) {
             // End tiles are open, so the row never asks Reach about a wall.
             const auto& row = safety.tile(p);
             ++queries;
+            // guarded() judges visible foes' fights: camps and unseen threats that can kill us ban it here.
+            if (row.worst() >= S.health) continue;
             hit_by = row.vis_mask, unseen_by = row.unseen_mask;
         }
         const float base = gain_to(p) - camp;
