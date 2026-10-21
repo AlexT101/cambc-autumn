@@ -247,6 +247,82 @@ A/B: `ab.py w4 w3`. On a drop: recall cancels by damage, shield timing, tribute 
 
 ---
 
+## Waves 3-4 ownership
+
+Interface commit `w34-iface` (branch from tag w2-merged) serves both waves: every builder branches from it. Where the W3/W4 porting guides correct the plan, the guides win; this table then fixes who edits what. Ownership is by function: a builder edits only the bodies (and file-local constants) it owns. In someone else's function it may change only the **arguments** of a call line it needs. Every line a W3/W4 change needs inside another builder's function was turned into a call to a helper the right builder owns (the stubs keep today's behaviour). Lines not listed belong to nobody: leave them.
+
+Off limits for all seven (the fuel-fix branch w2/fuelfix owns them until it merges): `want_home`, `prey`, and the sim core's internals (safety.cpp play/run/simulate/play_quiet/outlives/overwhelmed, the fight memo). Exceptions, call-line arguments only: W4-D adds `safety` to want_home's `finishing_camp(world)` call. B5 (want_home's pursuers_standing lambda) waits for fuelfix.
+
+### What the interface pinned (stubs forward to today's code; bench.py compare at 100M: identical)
+
+| Item | Where | Stub | Body owner |
+|---|---|---|---|
+| `Intent::flee`, `Intent::field`; `Planned::goal_free/acted/carried` | plan.h | unread / left false | W3-A |
+| `struct Prepared`, `prepare_strikes`, `price_strikes` | plan.h, plan.cpp | prepare stores world/pathing/safety/intent; price calls plan_strikes | W3-A |
+| `prepared_current(const Prepared&, const Safety&)`: prepare also stores safety.generation() and my_state()'s bits, and this compares them | plan.h, plan.cpp | real, unread | W3-A |
+| bot.cpp forward declarations: `farm_step_value` above chase, `mend_retreat` above retreat; abilities.cpp includes safety.h | bot.cpp, abilities.cpp | declarations only | (the definitions' owners) |
+| decide: `prepared = prepare_strikes(...)`, `price_strikes(*prepared, intent)`; `Prepared*` threaded into `chase(...)` and `carry_bag(...)` | bot.cpp | as today | W3-B |
+| `route_field(goals, avoid, max_steps)`, `KeptRoute kept_`, `guard_key()` (= guarding && safety ? guard_stamp() : 0), kept route as step_towards' attempt 0, cleared in invalidate() | pathing | real (port of 4b); nobody calls route_field yet | W3-C |
+| `dash_to_attack(const World&, Pathing&, const ChampionBelief&)`; chase passes `*target`, stop_game_ender `e` | self_abilities | the old body, target always given | W3-C |
+| `Safety::arriving(p, turns, off_spawn, arrive*)`, `pursuers`, `engaged_within`; shape() calls arriving | safety | real (extracted unchanged) | W4-D |
+| `Safety::exit_damage(p)` = camp_damage(p) x exit_rounds(p) | safety | real, unread | W4-D |
+| `Safety::escape_cost(q)` = tile(q).worst() + camp_worst x max(0, exit_rounds(q) - 1); bot.cpp's `escape_cost(safety, q)` forwards to it (W3-A's flee price, W3-B's retreat_home) | safety, bot.cpp | real (bot.cpp's old body) | W4-D |
+| `Safety::note_taken/taken`, `note_unseen_hit/unseen_hit`; shape()'s idle charge is `camp_damage(p, false) + unseen_hit(p)` | safety | taken = Memory::damage; unseen_hit returns 0 | W4-C |
+| bot.cpp `note_hits(world, safety, memory)`, called in play_turn and after the ward block rebuilds Safety | bot.cpp | `safety.note_taken(memory.damage)` | W4-C |
+| carry_bag's altar-hit trigger and continue_tribute read `safety.taken()` instead of `memory.damage` | bot.cpp | same value | (lines stay as they are) |
+| `mend(world, safety, farmed)`, `mend_due(...)`; shield_if_needed split into `shield_danger` + cast | self_abilities | mend = heal_ally then shield_if_needed; mend_due = shield test, no cast | W4-A |
+| bot.cpp `mend_early`, `mend_searched`, `mend_spawn`, `mend_retreat` | bot.cpp | decide's old heal/shield lines; mend_spawn empty; mend_retreat unused | W4-A |
+| `reset_and_attack_enemy(world, stunning_only, Safety*)`, `reset_and_attack_camp(world, Safety*, group)`; every caller passes `&safety` or `pathing.safety()` | self_abilities, bot.cpp | param ignored | W4-A |
+| `cast_at_enemies(world, Pathing&, walk)`, `cast_at_camp(world, Pathing&, group, ...)`, `enemy_cast`/`camp_cast` take pathing; all call lines updated | abilities, bot.cpp, plan.cpp | param unused | W4-B |
+| `hit_worth(damage, health, spawn, bag, partner, recall = 0)` moved from plan.cpp to abilities.h; abilities.cpp's `hit_worth(world, e, ...)` wraps it | abilities | same values | W4-B |
+| `Valued{round, at, any, slot, target, ground}`; the valued block extracted to `value_casts(world, S, here)` (called from plan_strikes) | plan.cpp | as today; new fields unset | W4-B (W3-A owns the call line) |
+| `strike_after(world, Pathing&, safety)` | plan.h/.cpp, act | as today | W4-B |
+| `hold_capture(world, Pathing&, memory, attacked)` | bot.cpp | as today | W4-D |
+| `write_claim(memory, pathing, g)` at the five raw claim writes (stop_game_ender, contest_capture, retreat, hold_capture, decide's dead branch) | bot.cpp | `memory.claim = g` | W4-D |
+| `camp_reset_held(world, safety, here, range)` (reset_and_attack_camp), `travel_dash_held(world, pathing)` (travel_dash_ready, which now takes pathing), `camp_cast_held(world, pathing, here)` (camp_cast) | self_abilities, abilities | today's enemy_within tests | W4-D |
+| `best_landing(Pathing&, ...)` | abilities.cpp | param unused | W4-D |
+| `take_hop(world, pathing, safety, const Memory&, h)` | bot.cpp | memory unused | W4-D |
+| `offer_heal(world, self, enemies, Safety&, wish)` | turn_order.cpp | param unused | W4-D |
+
+### Owners
+
+| Builder | Owns (function bodies; new functions go next to them) |
+|---|---|
+| **W3-A** search modes | plan.h: Intent, Planned, Prepared, prepare_strikes, price_strikes, plan_strikes, strike_possible. plan.cpp: everything not listed for W4-A/W4-B below: the Search struct and all its methods (read*, add_unseen, find_centres, hit_unit, spell_unit, centre_value, hit_centre, land_at, find_wakers, wake, leaf_value, root, offer, settle, legal_at, grow, menu_shape, offer_exh, exhaust), Tables, terrain_grid, goal_field, the Grid helpers and search constants (max_exact_queries, max_guard_asks = cap C7), plan_strikes, Prepared, prepare_strikes, price_strikes, prepared_current. |
+| **W3-B** bot.cpp flow | decide (every line but the helper bodies below; it owns the gate on the `mend_early` call line, which becomes `mend \|\| (!strikes && !leave)`), retreat, carry_bag, chase, stop_game_ender (no edit expected), flee_camps (delete), retreat_step, step_safely, and the new flee, retreat_home, note_search. `planned_turn` is reset at decide's start (play_turn is W4-C's). |
+| **W3-C** dashes + pathing | self_abilities.cpp: ready, cast, Hazard, threats_near, danger, Landings, ranked, dash_to_first, travel_dash_ready, travel_dash, both dash_towards, dash_across, dash_to_attack, dash_away (until W3-B removes its callers), dash_min_health, chase_health, failed_search_pause, the new depth helper. pathing.h/.cpp whole: route_field, KeptRoute, guard_key, step_towards, dash_landings, landing_clear, the guard memo. |
+| **W4-A** mend | self_abilities.cpp: heal_ally, worth_healing, shield_danger, shield_if_needed, shield_wanted, mend, mend_due, reset_and_attack_enemy, reset_and_attack_camp, camp_in_reach, heal_min_share, heal_low_health. plan.cpp: shield_cap, reset_may_kill and landing_ready (delete). bot.cpp: mend_early, mend_searched, mend_spawn, mend_retreat, act. |
+| **W4-B** search owns casts | abilities.cpp except W4-D's four: kept_recall, damage_to, both hit_worth, stun_worth, enemy_tribute_wins, unseen_retaliators, Target, draw_alive_members, best_ground, enemy_cast, camp_cast, cast_at_enemies, cast_at_camp, the value constants (stun_value, min_value, min_landing_value, min_camp_value), walked, castable, Cast. self_abilities.cpp: attack_target. plan.cpp: Foe/Board/Healths, ready_slot, read_board, Hit, best_hit, apply, attack, use_slot, strike_enemy, shield_worth, Valued/valued, value_casts, strike_after. The one Ren retaliation helper (new, abilities.h) and its use in those functions; Search's copies (read_spells, read, hit_unit, land_at) stay W3-A's (W5). |
+| **W4-C** recall/tribute/turn order | bot.cpp: tribute_safe, tribute_ok, submit_here, can_tribute_safely, continue_tribute, continue_recall, recall_to_bank, recall_outruns, capture_recall, wants_shop (its `threat` parameter defaults, so decide's call line stays), siege_heal_trip, note_upkeep (hoist the damage split), note_hits, play_turn. bot.h: Memory. turn_order.cpp: everything but offer_heal (offer_escape, offer_channel, offer_kills, offer_engaged, set_turn_order and its gate). safety.h/.cpp: note_taken, taken, note_unseen_hit, unseen_hit, the ghost members, idle_turns. |
+| **W4-D** census cleanups | bot.cpp: write_claim, set_claim, take_hop, hop_route, hold_capture, farm (the passing wake rule only), awake_over, finishing_camp, visible_threat (B10: body becomes `tile(p).vis_mask != 0`, so want_home stays untouched), camp_trapped, escape_cost. abilities.cpp: best_landing, landing_wakes, wake_risk, camp_cast_held, hold_range. self_abilities.cpp: camp_reset_held, travel_dash_held, wakes_camp, reset_hold_margin, travel_dash_clearance. turn_order.cpp: offer_heal. safety.h/.cpp: arriving, pursuers, engaged_within, exit_damage, escape_cost, set_claimed, guard_epoch, guard_stamp (the epoch fix already landed in 3c0d970). world.h/.cpp: the new wake-rule helper (B13). |
+
+### Shared names: the one owner, and what the others may touch (call-line arguments only)
+
+| Function | Owner | Others |
+|---|---|---|
+| decide | W3-B | W4-A: none (its lines are mend_* calls). W4-B: the mend branch's cast_at_enemies arguments. W4-C: none (wants_shop's new parameter defaults). W4-D: none (write_claim). |
+| retreat | W3-B | W4-A: none; W3-B adds the `if (!searched) mend_retreat(...)` line. W4-B: cast_at_enemies arguments until W3-B deletes the line. W4-D: none. |
+| carry_bag | W3-B | W4-C: none (the trigger reads safety.taken()). |
+| chase | W3-B | W3-C: dash_to_attack arguments (W3-B deletes the dash). W4-A, W4-B: arguments of the reset/cast tail until W3-B deletes it. |
+| stop_game_ender | W3-B | W3-C: dash_to_attack arguments. W4-A: the reset line's arguments. W4-B: cast_at_enemies arguments. W4-D: none. |
+| plan_strikes / price_strikes | W3-A | W4-B: none (value_casts' body); W3-A keeps one value_casts call per price, its arguments W3-A's. |
+| strike_after | W4-B | W4-A: none (its reset-vs-shield test stays). |
+| act | W4-A | W4-B: strike_after arguments. |
+| play_turn | W4-C | W3-B: none (planned_turn resets in decide). W4-D: none. |
+| reset_and_attack_camp | W4-A | W4-D: none (camp_reset_held's body). |
+| travel_dash_ready | W3-C | W4-D: none (travel_dash_held's body). |
+| camp_cast, enemy_cast | W4-B | W4-D: none (camp_cast_held, best_landing, landing_wakes bodies). |
+| shape (safety.cpp) | nobody (iface) | W4-C: none (unseen_hit's body). |
+| want_home | fuelfix | W4-D: `finishing_camp(world)` gains `safety`. Nobody else. |
+| hold_capture | W4-D | W4-A: reset_and_attack_camp arguments. W4-B: cast_at_camp arguments. |
+| farm, spell_clear, siege, kite | farm: W4-D; the others nobody | W4-A/W4-B: reset/cast call arguments. |
+| set_turn_order | W4-C | W4-D: offer_heal arguments. |
+| bank_gems, wants_shop callers | nobody / W4-C | W4-D: take_hop arguments. |
+
+Header sections: each declaration belongs to the owner of its definition. New declarations: W4-B's Ren helper in abilities.h after hit_worth; W4-D's wake helper at the end of world.h; W3-B, W3-C new file-local functions next to the functions they serve. The integrator resolves header merges.
+
+Merge order: W3-A, W3-C, W3-B (gate: W3 guide section 5), then W4-D commit 1 (refactor, bench compare), W4-A, W4-B, W4-C, W4-D commit 2, the [B7] engaged_within commits last. After W3-B lands, the integrator deletes dash_away; after W4-C lands, awake_over if finishing_camp no longer needs it; after both waves, the stub-only helpers that ended as one-line forwards (write_claim, the *_held helpers, mend_early if W4-A emptied it) may be inlined in a cleanup commit.
+
 ## Wave 5 (stretch)
 
 - W5-A (safety.cpp sim core): only if W1-B's act-branch counters show the general path dominant. Event-driven quiet jumps; FIGHT-EXIT-MISMATCH clean, flips ≈ 0.

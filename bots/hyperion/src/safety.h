@@ -351,6 +351,11 @@ public:
     // any_within(standable & ~camp_area(), p, r), at most one more than the longest camp reach;
     // 0 if none can pick us at p.
     int exit_rounds(vec2 p);
+    // exit_rounds()' field at p, asking no camp column: 0 for a standable p out of every camp's
+    // reach, else at least 1 (and unreachable past the longest reach).
+    int exit_steps(vec2 p);
+    // exit_damage(p), filling no row or slot (for checks inside debug_block).
+    float exit_damage_unfilled(vec2 p);
     // Chance an unseen threat hits p: 1 - prod(1 - near / tiles * hit_given_reach) over
     // tile(p).unseen_mask.
     float unseen_chance(vec2 p);
@@ -400,6 +405,7 @@ public:
     // engage(), starting a new simulation only while `sims` is above 0 (each takes one); null where
     // the memo cannot answer it then.
     std::optional<Trade> engage_if(vec2 p, Engage e, int& sims);
+    // engage(p) idle's turns_to_kill_us; the last two answers are kept for the generation.
     int idle_turns(vec2 p, int horizon);
     // The camp group our farm/siege budgets, left out of the stand/pursue camp charge. A change
     // starts a new guard_epoch(); the fight memo needs nothing, as its keys carry the charge.
@@ -415,6 +421,25 @@ public:
     std::uint32_t guard_epoch() const;
     std::uint32_t guard_stamp() const; // guard_epoch() << 8 | distinct guarded tiles (KeptRoute key)
     // fight/pursuit/turns_to_kill_idle stay as wrappers until W4.
+
+    // The visible enemies, seen and not gone, with a known strike, that can strike p within `turns`
+    // walks (approach()), off their spawn when `off_spawn`. `arrive` gets 3 bits per enemy,
+    // min(walk, 7), as engage()'s pursue and idle keys.
+    std::uint16_t arriving(vec2 p, int turns, bool off_spawn, std::uint64_t* arrive = nullptr);
+    std::uint16_t pursuers(vec2 p, int steps) { return arriving(p, steps, true); }
+    bool engaged_within(vec2 p, int turns) { return arriving(p, turns, false) != 0; }
+    // What the camps take from us at p until we walk out of their reach: camp_damage(p) x exit_rounds(p).
+    float exit_damage(vec2 p);
+    // Ending a step on q: its hit, then the camps' hits on each further round it takes to walk out of
+    // their reach. A camp hits every tile in its reach alike, so the hit alone cannot tell the way out
+    // from a walk along the edge of its reach. q must not be a wall (tile()).
+    float escape_cost(vec2 q);
+    // Last round's damage (Memory::damage), and the part of it no visible enemy or camp explains,
+    // charged in idle mode on each of the enemies' turns within a turn's move of the turn-start tile `at`.
+    void note_taken(float damage) { taken_ = damage; }
+    void note_unseen_hit(vec2 at, float damage);
+    float unseen_hit(vec2 p) const; // 0 beyond a dash and a walk from `at`
+    float taken() const { return taken_; }
 
     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
     // enough to wake, with where they would attack us from.
@@ -622,6 +647,19 @@ private:
     void sync_guard();
     std::uint32_t guarded_generation_ = 0, guard_epoch_ = 0, board_generation_ = 0;
     std::uint64_t guard_asked_ = 0, guard_true_ = 0, board_bits_ = 0;
+    // note_taken() and note_unseen_hit() (W4-C).
+    float taken_ = 0, ghost_ = 0;
+    vec2 ghost_at_{-1, -1};
+    // idle_turns()' last answers (bit i: idle_[i] is set) for idle_generation_.
+    struct Idle {
+        vec2 p;
+        int horizon, turns;
+    };
+    std::uint32_t idle_generation_ = 0;
+    std::uint8_t idle_known_ = 0, idle_next_ = 0;
+    union {
+        std::array<Idle, 2> idle_;
+    };
 };
 
 } // namespace aph

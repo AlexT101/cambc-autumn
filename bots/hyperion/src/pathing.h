@@ -74,6 +74,11 @@ public:
     // A hidden blocker fails a move without spending the walk; the other first steps are tried,
     // then the route is replanned.
     bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable);
+    // That step's route: steps to `goals`, labelled out to our tile, or null if none reaches us or we
+    // stand on a goal. The next step_towards with the same arguments takes it as its first attempt
+    // unless we moved, the round changed or guarded()'s answers did (Safety::guard_stamp()).
+    // Valid until the next route of any kind.
+    const cambc::distance_field* route_field(const bitboard& goals, const bitboard* avoid, int max_steps);
     bool step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor);
     // A live route within `max_detour` of the static distance, else greedy descent of the field.
     bool step_towards(const Field& field, const bitboard* avoid = nullptr);
@@ -112,6 +117,16 @@ private:
         std::array<vec2, 8> first_steps; // the first `count`: all equally short, in compass order
     };
     Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, vec2 through = {-1, -1});
+    // route_field()'s route, for step_towards with the same arguments; goals null: none.
+    struct KeptRoute {
+        Route route;
+        const bitboard *goals = nullptr, *avoid = nullptr;
+        std::uint32_t guard = 0; // guard_key() when kept
+        int max_steps = 0;
+        std::uint32_t round = 0;
+    } kept_;
+    // What route() reads of guarded(): whether it is on, and Safety's answers so far.
+    std::uint32_t guard_key() const;
     // The latest route's search: its distances from the goals, and whether it found no way
     // although it stopped short of its cap, so that no wider search finds one either.
     cambc::distance_field route_field_;

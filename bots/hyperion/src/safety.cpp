@@ -2232,29 +2232,34 @@ bool Safety::shape(vec2 p, const Engage& e, FightKey& k) {
     } else {
         // Pursue: within `approach` walks and off their spawn; idle: arriving within the horizon.
         const bool pursue = e.mode == Mode::pursue;
-        const int limit = pursue ? e.approach : e.horizon - 1;
-        const auto& spawn = world_.map().near_enemy_spawn;
-        for (auto left = seen_enemies(); left; left &= left - 1) {
-            const auto& c = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-            if (gone(c) || (pursue && test(spawn, c.pos))) continue;
-            const int reach = struck(c).strike.reach;
-            if (reach < 0 || dist(p, c.pos) - reach > limit) continue;
-            const int walk = approach(c, p);
-            if (walk > limit) continue;
-            enemies |= 1u << c.index;
-            // Arrivals past 7 (horizons above 8) count as 7.
-            k.arrive |= static_cast<std::uint64_t>(std::min(walk, 7)) << (3 * c.index);
-        }
+        enemies = arriving(p, pursue ? e.approach : e.horizon - 1, pursue, &k.arrive);
         if (enemies == 0 && pursue) return false;
     }
     const bool idle = e.mode == Mode::idle;
-    const float camp = idle ? camp_damage(p, false) : stand_camp(p);
+    const float camp = idle ? camp_damage(p, false) + unseen_hit(p) : stand_camp(p);
     k.camp_q = static_cast<std::uint16_t>(std::clamp(static_cast<int>(camp / camp_step + 0.5f), 0, 0xFFFF));
     if (enemies == 0 && k.camp_q == 0) return false;
     k.camp_turns = k.camp_q == 0 ? 0 : idle ? k.horizon : static_cast<std::uint8_t>(std::clamp(exit_rounds(p), 0, 255));
     k.who = (idle ? 1u << world_.me().index : fighting_allies(world_, p) & allies) | enemies << 16;
     debug_block({ debug_keys_[debug_key_next_++ % debug_keys_.size()] = {p, generation_, k}; });
     return true;
+}
+
+std::uint16_t Safety::arriving(vec2 p, int turns, bool off_spawn, std::uint64_t* arrive) {
+    std::uint16_t enemies = 0;
+    const auto& spawn = world_.map().near_enemy_spawn;
+    for (auto left = seen_enemies(); left; left &= left - 1) {
+        const auto& c = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(c) || (off_spawn && test(spawn, c.pos))) continue;
+        const int reach = struck(c).strike.reach;
+        if (reach < 0 || dist(p, c.pos) - reach > turns) continue;
+        const int walk = approach(c, p);
+        if (walk > turns) continue;
+        enemies |= static_cast<std::uint16_t>(1u << c.index);
+        // Arrivals past 7 (horizons above 8) count as 7.
+        if (arrive) *arrive |= static_cast<std::uint64_t>(std::min(walk, 7)) << (3 * c.index);
+    }
+    return enemies;
 }
 
 namespace {
@@ -2574,9 +2579,7 @@ float Safety::strike_sum(vec2 p, std::uint16_t* mask) {
     return total;
 }
 
-int Safety::exit_rounds(vec2 p) {
-    if (camp_damage(p) <= 0) return 0;
-    const int longest = world_.map().max_camp_reach;
+[[gnu::always_inline]] int Safety::exit_steps(vec2 p) {
     // Over no walls a king-step field is the Chebyshev distance to the nearest exit.
     static cambc::distance_field field;
     if (exits_generation_ != generation_) {
@@ -2585,9 +2588,22 @@ int Safety::exit_rounds(vec2 p) {
         static const bitboard none;
         or_into(world_.map().standable, camp_area(), exits);
         xor_into(exits, camp_area(), exits);
-        field.compute(none, exits, reached, static_cast<std::uint16_t>(longest));
+        field.compute(none, exits, reached, static_cast<std::uint16_t>(world_.map().max_camp_reach));
     }
-    const int r = std::clamp(steps_at(field, p), 1, longest + 1);
+    return steps_at(field, p);
+}
+
+float Safety::exit_damage_unfilled(vec2 p) {
+    float worst = 0;
+    for (const auto& m : awake_members())
+        if (in_square(p, m.pos, m.reach)) worst += m.strength;
+    return worst > 0 ? worst * static_cast<float>(std::clamp(exit_steps(p), 1, world_.map().max_camp_reach + 1)) : 0.0f;
+}
+
+int Safety::exit_rounds(vec2 p) {
+    if (camp_damage(p) <= 0) return 0;
+    const int longest = world_.map().max_camp_reach;
+    const int r = std::clamp(exit_steps(p), 1, longest + 1);
     debug_block({
         // The old ring walk, tile by tile.
         const auto out = [&](vec2 q) {
@@ -2628,12 +2644,28 @@ float Safety::unseen_chance(vec2 p) {
 
 // The verdict section (W2-A).
 
-int Safety::idle_turns(vec2 p, int horizon) { return turns_to_kill_idle(p, horizon); }
+int Safety::idle_turns(vec2 p, int horizon) {
+    // Before the memo too: resumed after running out of fuel, its answers are a round old.
+    world_.throw_if_stale();
+    if (idle_generation_ != generation_) idle_generation_ = generation_, idle_known_ = 0;
+    for (int i = 0; i < 2; ++i)
+        if (const auto& m = idle_[static_cast<std::size_t>(i)]; (idle_known_ >> i & 1) && m.p == p && m.horizon == horizon) return m.turns;
+    Phase phase{"idle_turns"};
+    SimTag tag{SimCaller::idle};
+    const int turns = engage(p, {.mode = Engage::Mode::idle, .horizon = horizon}).turns_to_kill_us;
+    const int i = idle_next_++ & 1;
+    idle_[static_cast<std::size_t>(i)] = {p, horizon, turns};
+    idle_known_ |= static_cast<std::uint8_t>(1u << i);
+    return turns;
+}
 
 void Safety::set_claimed(int group) {
     if (group == claimed_) return;
+    if (guarded_generation_ == generation_ && guard_asked_) {
+        debug_block({ std::printf("CLAIM-GUARD-DROP %d %d %d %d\n", world_.round, claimed_, group, std::popcount(guard_asked_)); });
+        guard_asked_ = guard_true_ = 0, guard_epoch_ = next_generation();
+    }
     claimed_ = group;
-    if (guarded_generation_ == generation_ && guard_asked_) guard_asked_ = guard_true_ = 0, guard_epoch_ = next_generation();
 }
 
 float Safety::stand_camp(vec2 p) {
@@ -2733,6 +2765,26 @@ const bitboard* Safety::guarded_board() {
     board_bits_ = guard_true_;
     return &board;
 }
+
+float Safety::exit_damage(vec2 p) {
+    const float worst = camp_damage(p);
+    return worst > 0 ? worst * static_cast<float>(exit_rounds(p)) : 0.0f;
+}
+
+float Safety::escape_cost(vec2 q) {
+    const auto& t = tile(q);
+    const float hit = t.worst(), camp = t.camp_worst;
+    if (camp <= 0) return hit;
+    return hit + std::max(0.0f, exit_damage(q) - camp);
+}
+
+void Safety::note_unseen_hit(vec2 at, float damage) {
+    ghost_at_ = at, ghost_ = damage;
+    idle_known_ = 0;
+}
+
+// A tribute can start after this turn's dash and walk; the hitter can follow us that far.
+float Safety::unseen_hit(vec2 p) const { return dist(p, ghost_at_) <= 3 ? ghost_ : 0.0f; }
 
 std::uint32_t Safety::guard_epoch() const { return guarded_generation_ == generation_ ? guard_epoch_ : generation_; }
 

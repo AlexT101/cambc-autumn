@@ -28,6 +28,7 @@ void Pathing::begin_turn() {
     guarding_ = false; // a turn abandoned as stale left guarding on
     safety_ = nullptr;
     guard_epoch_ = 0;
+    kept_.goals = nullptr;
     blocked_fresh_ = false;
     pos_fresh_ = false;
     if (bumped_round_ != world_.round) {
@@ -335,6 +336,7 @@ const bitboard& Pathing::blocked() {
 }
 
 void Pathing::invalidate() {
+    kept_.goals = nullptr;
     blocked_fresh_ = false;
     pos_fresh_ = false;
     dashes_seen_ = outside_dashes();
@@ -517,10 +519,16 @@ bool Pathing::try_move(vec2 tile, bool* refused) {
         route_exhausted_ = true;
         return false;
     }
+    const bool kept = kept_.goals == &goals && kept_.avoid == avoid && kept_.max_steps == max_steps && kept_.round == round_now()
+                      && kept_.guard == guard_key();
+    debug_block({
+        if (kept_.goals && kept_.round == round_now()) std::printf("KEPT-ROUTE %d %s\n", world_.round, kept ? "hit" : "miss");
+    });
+    kept_.goals = nullptr;
     // Only a hidden blocker or a guarded first step makes a retry worth its search. Each rules a
     // neighbour out of the next route, so the cap covers all eight.
     for (int attempt = 0; attempt < 8; ++attempt) {
-        const auto r = route(goals, avoid, max_steps);
+        const auto r = attempt == 0 && kept ? kept_.route : route(goals, avoid, max_steps);
         bool retry = false;
         int banned = 0;
         for (int i = 0; i < r.count; ++i) {
@@ -539,6 +547,16 @@ bool Pathing::try_move(vec2 tile, bool* refused) {
     }
     return false;
 }
+
+const cambc::distance_field* Pathing::route_field(const bitboard& goals, const bitboard* avoid, int max_steps) {
+    kept_.goals = nullptr;
+    const auto r = route(goals, avoid, max_steps);
+    if (r.steps == 0 || r.steps == unreachable || r.count == 0) return nullptr;
+    kept_ = {r, &goals, avoid, guard_key(), max_steps, round_now()};
+    return &route_field_;
+}
+
+std::uint32_t Pathing::guard_key() const { return guarding_ && safety_ ? safety_->guard_stamp() : 0; }
 
 Pathing::NeighbourGuard Pathing::neighbours_guarded(const bitboard* avoid, bool ask) {
     NeighbourGuard out;
