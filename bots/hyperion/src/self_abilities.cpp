@@ -124,9 +124,12 @@ bool dash_to_first(const cambc::ability& dash, Pathing& pathing, const Landings&
     return false;
 }
 
-std::optional<cambc::ability> travel_dash_ready(const World& world) {
+// A travel dash waits while an enemy may want it for a fight or an escape (W4-D: Safety::engaged_within).
+bool travel_dash_held(const World& world, Pathing&) { return enemy_within(world, my_position(), travel_dash_clearance); }
+
+std::optional<cambc::ability> travel_dash_ready(const World& world, Pathing& pathing) {
     if (!world.me().facts().has_dash()) return std::nullopt;
-    if (enemy_within(world, my_position(), travel_dash_clearance)) return std::nullopt;
+    if (travel_dash_held(world, pathing)) return std::nullopt;
     return ready(world, AbilityKind::dash);
 }
 
@@ -212,7 +215,7 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     return best;
 }
 
-bool reset_and_attack_enemy(const World& world, bool stunning_only) {
+bool reset_and_attack_enemy(const World& world, bool stunning_only, Safety*) {
     auto& me = cambc::self();
     const auto& f = world.me().facts();
     const int slot = f.slot_of(AbilityKind::attack_reset);
@@ -241,7 +244,14 @@ bool camp_in_reach(const World& world, vec2 p, int range) {
     return tiles->is_set(p);
 }
 
-bool reset_and_attack_camp(const World& world, int group) {
+namespace {
+
+// The reset is kept off camps while an enemy may want it for a fight (W4-D: Safety::engaged_within).
+bool camp_reset_held(const World& world, Safety*, vec2 here, int range) { return enemy_within(world, here, range + reset_hold_margin); }
+
+} // namespace
+
+bool reset_and_attack_camp(const World& world, Safety* safety, int group) {
     Phase phase{"reset_and_attack_camp"};
     auto& me = cambc::self();
     const auto& f = world.me().facts();
@@ -271,7 +281,7 @@ bool reset_and_attack_camp(const World& world, int group) {
     if (!best) return false;
     // A Vendetta kill readies the reset again, so it need not be held.
     const bool refunded = f.passive == Passive::reset_on_kill && best_health <= my_strength();
-    if (!refunded && enemy_within(world, here, range + reset_hold_margin)) return false;
+    if (!refunded && camp_reset_held(world, safety, here, range)) return false;
     if (!cast(*reset)) return false;
     try {
         me.attack(*best);
@@ -282,7 +292,7 @@ bool reset_and_attack_camp(const World& world, int group) {
 }
 
 bool dash_towards(const World& world, Pathing& pathing, const Field& field) {
-    const auto dash = travel_dash_ready(world);
+    const auto dash = travel_dash_ready(world, pathing);
     return dash
            && travel_dash(world, pathing, *dash, field.at(my_position()), [&](vec2 p) { return field.at(p); });
 }
@@ -311,7 +321,7 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, i
     static int paused_until = -1;
     if (world.round < paused_until) return false;
     // Most champions have no dash: check before anything costly.
-    const auto dash = travel_dash_ready(world);
+    const auto dash = travel_dash_ready(world, pathing);
     if (!dash) return false;
     const vec2 here = my_position();
     // A goal within a dash is a walk or two away: not worth the cooldown or the search.
@@ -335,7 +345,8 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, i
     return false;
 }
 
-bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target) {
+bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief& target_belief) {
+    const ChampionBelief* target = &target_belief;
     if (!world.me().facts().has_dash()) return false;
     auto& me = cambc::self();
     const bool target_given = target != nullptr;
@@ -417,17 +428,16 @@ bool heal_ally(const World& world) {
     return best && cast(*heal, *best);
 }
 
-bool shield_if_needed(const World& world, Safety& safety, int farmed) {
-    Phase phase{"shield_if_needed"};
+namespace {
+
+// shield_if_needed's test at here, with the shield ready.
+bool shield_danger(const World& world, Safety& safety, int farmed, vec2 here) {
     const auto& f = world.me().facts();
-    const auto shield = ready(world, AbilityKind::shield);
-    if (!shield) return false;
-    const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
     bool danger = false;
     for (auto left = safety.seen_enemies(); left; left &= left - 1)
         danger |= safety.blow(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], here).hits;
-    if (danger) return cast(*shield);
+    if (danger) return true;
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(here, world.map().max_camp_reach)) {
         if (danger) break;
@@ -445,7 +455,25 @@ bool shield_if_needed(const World& world, Safety& safety, int farmed) {
         }
         danger = awake_in_reach || (in_reach && hitting);
     }
-    return danger && cast(*shield);
+    return danger;
+}
+
+} // namespace
+
+bool shield_if_needed(const World& world, Safety& safety, int farmed) {
+    Phase phase{"shield_if_needed"};
+    const auto shield = ready(world, AbilityKind::shield);
+    if (!shield) return false;
+    return shield_danger(world, safety, farmed, my_position()) && cast(*shield);
+}
+
+bool mend(const World& world, Safety& safety, int farmed) {
+    const bool healed = heal_ally(world);
+    return shield_if_needed(world, safety, farmed) || healed;
+}
+
+bool mend_due(const World& world, Safety& safety, int farmed) {
+    return ready(world, AbilityKind::shield) && shield_danger(world, safety, farmed, my_position());
 }
 
 } // namespace aph

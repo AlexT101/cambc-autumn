@@ -178,7 +178,7 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
 }
 
 // A heal before the enemies' turns keeps an ally alive whom they would otherwise kill.
-void offer_heal(const World& world, const ChampionBelief& self, const std::vector<Enemy>& enemies, Wish& wish) {
+void offer_heal(const World& world, const ChampionBelief& self, const std::vector<Enemy>& enemies, Safety&, Wish& wish) {
     const int slot = self.facts().slot_of(AbilityKind::heal);
     if (slot < 0 || !self.ability_ready(slot, world.round + 1)) return;
     const auto& a = self.facts().abilities[slot];
@@ -220,7 +220,7 @@ void set_turn_order(const World& world, Safety& safety) {
         offer_engaged(self, enemies, wish);
         const Strike ours = strike(self, world.round + 1);
         offer_kills(world, self, ours, enemies, wish);
-        offer_heal(world, self, enemies, wish);
+        offer_heal(world, self, enemies, safety, wish);
         // With no enemy in sight our turn only removed camp members, so the threats before a refresh
         // overstate those after: when they cannot kill us and no channel ends, nothing needs it.
         const auto state = my_state();

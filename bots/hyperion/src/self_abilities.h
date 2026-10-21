@@ -22,9 +22,10 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
 // both abilities), held back while an enemy is close enough to want the reset for a fight.
 // `stunning_only`: only a reset whose attack stuns (Marcella), on an enemy it would stun; call it
 // before abilities.cpp's casts, which share the one cast per turn, and the plain one after.
-// `group`: only that group's camps.
-bool reset_and_attack_enemy(const World& world, bool stunning_only = false);
-bool reset_and_attack_camp(const World& world, int group);
+// `group`: only that group's camps. `safety`: the turn's Safety (W4-A's holds read it); null holds
+// as without it.
+bool reset_and_attack_enemy(const World& world, bool stunning_only = false, Safety* safety = nullptr);
+bool reset_and_attack_camp(const World& world, Safety* safety, int group);
 // A camp tile lies within `range` of p.
 bool camp_in_reach(const World& world, vec2 p, int range);
 
@@ -35,8 +36,8 @@ bool dash_towards(const World& world, Pathing& pathing, const Field& field);
 // Over a hole or altar line beside us (StaticMap::crossable) where `field` gains: unlike a travel
 // dash, with enemies near, as long as the landing is no deeper in their reach.
 bool dash_across(const World& world, Pathing& pathing, const Field& field);
-// Into attack range of `target`, else of a visible enemy we can finish or are beating; attack after it.
-bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target = nullptr);
+// Into attack range of `target`; attack after it.
+bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief& target);
 // Out of the reach of visible enemies and awake camps, tie-broken towards `home`.
 bool dash_away(const World& world, Pathing& pathing, const Field& home);
 
@@ -48,5 +49,10 @@ bool worth_healing(float amount, float gain, float fraction);
 // the group farm chose, which we hit from attack range; another group's camp in attack range is
 // hit only if our attack is spent.
 bool shield_if_needed(const World& world, Safety& safety, int farmed);
+// The one heal and shield valuer (W4-A): casts the heal or shield due here, if any. Until W4-A,
+// heal_ally then shield_if_needed.
+bool mend(const World& world, Safety& safety, int farmed);
+// Whether mend() would cast here, casting nothing. Until W4-A, shield_if_needed's test.
+bool mend_due(const World& world, Safety& safety, int farmed);
 
 } // namespace aph

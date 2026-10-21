@@ -6,16 +6,22 @@
 namespace aph {
 
 class World;
+class Pathing;
 struct ChampionBelief;
 
 // The best enemy-hitting cast at a visible enemy this turn, if worth it. An excludes-walking cast
 // must also be worth `walk`, the walk it forgoes.
-bool cast_at_enemies(const World& world, float walk = 0);
+bool cast_at_enemies(const World& world, Pathing& pathing, float walk = 0);
 
 // A damage or stun cast on the group being farmed, held while enemies are near.
 // Call only when not walking this turn. `attackers_only`: target only members with Strength.
 // `any_value`: even a cast worth less than usual, as on a group's last hit points.
-bool cast_at_camp(const World& world, int group, bool attackers_only = false, bool any_value = false);
+bool cast_at_camp(const World& world, Pathing& pathing, int group, bool attackers_only = false, bool any_value = false);
+
+// What a hit of `damage` on an enemy at `health` is worth in enemy health points: a kill takes the
+// bag (`bag`, gems x gem_value) and its life; other damage counts only off its spawn (it heals at
+// its turn end), as far as it takes Cassi or Issac below `partner`, plus `recall` for a cancelled recall.
+float hit_worth(float damage, float health, bool spawn, float bag, float partner, float recall = 0);
 
 // A visible enemy tributing a bag that wins them the game.
 bool enemy_tribute_wins(const World& world, const ChampionBelief& e);

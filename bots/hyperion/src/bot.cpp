@@ -658,7 +658,7 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory) {
 }
 
 // Towards the hop's sources; on one, the crystal to the free landing nearest its altar.
-void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
+void take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h) {
     const auto& hop = world.map().hops()[h];
     if (test(hop.sources, my_position())) {
         auto targets = pathing.teleport_targets();
@@ -715,7 +715,7 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
     if (const auto hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
         memory.wants_crystal = true;
         if (carries_crystal()) {
-            take_hop(world, pathing, safety, hop.hop);
+            take_hop(world, pathing, safety, memory, hop.hop);
             return;
         }
     }
@@ -999,6 +999,9 @@ struct Upkeep {
 Upkeep upkeep;
 
 // At the turn's start: camps hit in the camp phase, from where we ended last turn.
+// What hit us since our last turn, for Safety (W4-C: the part no visible enemy or camp explains).
+void note_hits(const World&, Safety& safety, const Memory& memory) { safety.note_taken(memory.damage); }
+
 void note_upkeep(const World& world, Safety& safety, float damage) {
     Phase phase{"note_upkeep"};
     const auto& map = world.map();
@@ -1327,9 +1330,9 @@ bool spell_clear(const World& world, Pathing& pathing, int g, const bitboard* zo
     if (zone) drop(goals, *zone);
     if (goals.is_empty()) return false;
     const auto hit = [&]() __attribute__((always_inline)) {
-        cast_at_camp(world, g, true);
+        cast_at_camp(world, pathing, g, true);
         attack_camp(world, [&](int h) { return h == g || world.map().groups[h].strength <= 0; });
-        reset_and_attack_camp(world, g);
+        reset_and_attack_camp(world, pathing.safety(), g);
     };
     if (test(goals, my_position())) {
         hit();
@@ -1355,6 +1358,9 @@ int set_claim(Memory& memory, const Pathing& pathing, int g) {
     if (auto* safety = pathing.safety()) safety->set_claimed(g);
     return g;
 }
+
+// A claim outside farm and siege, written past Safety until W4-D routes it through set_claim.
+void write_claim(Memory& memory, const Pathing&, int g) { memory.claim = g; }
 
 // Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
 // allies in sight claiming it (ties to the lower index), so the others move on rather than split
@@ -1443,8 +1449,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             return true;
         }
         if (hit < 0 || melee) return false; // walk on
-        cast_at_camp(world, hit);
-        reset_and_attack_camp(world, hit);
+        cast_at_camp(world, pathing, hit);
+        reset_and_attack_camp(world, pathing.safety(), hit);
         return true;
     };
     if (bag == 0 && attack_in_range()) return true;
@@ -1848,8 +1854,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     }
     const auto& goals = refused ? *refused : *tiles;
     if (test(goals, here)) { // attacked from here; stay
-        cast_at_camp(world, best);
-        reset_and_attack_camp(world, best);
+        cast_at_camp(world, pathing, best);
+        reset_and_attack_camp(world, pathing.safety(), best);
         if (melee) step_onto_cleared(world, pathing, best);
         return true;
     }
@@ -1862,8 +1868,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (walked) {
         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
         if (!strike_enemy(world)) attack_camp(world, passing);
-        cast_at_camp(world, best); // only casts that allow walking remain
-        reset_and_attack_camp(world, best);
+        cast_at_camp(world, pathing, best); // only casts that allow walking remain
+        reset_and_attack_camp(world, pathing.safety(), best);
     }
     return true;
 }
@@ -2391,7 +2397,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     return nullptr;
 }
 
-bool chase(const World& world, Pathing& pathing, Safety& safety) {
+bool chase(const World& world, Pathing& pathing, Safety& safety, Prepared* prepared) {
     Phase phase{"chase"};
     const auto* target = prey(world, safety);
     if (!target) return false;
@@ -2399,7 +2405,7 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
     const int range = world.me().facts().attack_range();
     // A walk alone cannot reach range this turn; a melee walk can follow the dash.
-    if (dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
+    if (dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, *target);
     bool stuck = false;
     if (dist(my_position(), target->pos) > range && my_can_move()) {
         const auto* zone = pack_zone(world);
@@ -2411,8 +2417,8 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
         stuck = !pathing.step_towards(goals, zone, 2 * vision_radius) && dist(my_position(), target->pos) > range;
     }
     bool hit = attack_enemy(world);
-    hit |= reset_and_attack_enemy(world); // after an attack, or a ranged walk
-    hit |= cast_at_enemies(world);
+    hit |= reset_and_attack_enemy(world, false, &safety); // after an attack, or a ranged walk
+    hit |= cast_at_enemies(world, pathing);
     // No step and no hit: the target is out of our walk's reach (across live camps), so the turn goes on.
     return hit || !stuck;
 }
@@ -2531,13 +2537,13 @@ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const
     Phase phase{"stop_game_ender"};
     auto& me = cambc::self();
     decision = 'E';
-    memory.claim = -1;
+    write_claim(memory, pathing, -1);
     pathing.set_guarding(false);
     const bool tributing = e.channel == Channel::tribute;
     const auto act = [&] {
         place_lock(world);
-        cast_at_enemies(world, !tributing && dist(me.position(), e.pos) > world.me().facts().attack_range() ? escape_step_value : 0.0f);
-        if (attack_enemy(world)) reset_and_attack_enemy(world);
+        cast_at_enemies(world, pathing, !tributing && dist(me.position(), e.pos) > world.me().facts().attack_range() ? escape_step_value : 0.0f);
+        if (attack_enemy(world)) reset_and_attack_enemy(world, false, pathing.safety());
     };
     act();
     if (!me.can_move()) return;
@@ -2550,7 +2556,7 @@ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const
     if (const int a = tributing ? tribute_altar(world, e.pos) : -1; a >= 0 && carried_locks() > 0) goals |= world.map().altars[a].lock_tiles();
     goals &= world.map().open_for_us;
     if (test(goals, me.position())) return;
-    if (dist(me.position(), e.pos) > range + 1) dash_to_attack(world, pathing, &e);
+    if (dist(me.position(), e.pos) > range + 1) dash_to_attack(world, pathing, e);
     if (!test(goals, me.position())) pathing.step_towards_funded(goals, end_reserve);
     act();
 }
@@ -2798,15 +2804,15 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     if (!test(goals, here)) {
         pathing.step_towards_funded(goals, end_reserve);
         if (engaged && !low) attack_camp(world, [&](int h) { return h == g; });
-        if (engaged) cast_at_camp(world, g);
-        if (engaged && !low) reset_and_attack_camp(world, g);
+        if (engaged) cast_at_camp(world, pathing, g);
+        if (engaged && !low) reset_and_attack_camp(world, pathing.safety(), g);
         return true;
     }
     if (!engaged) return true;
-    cast_at_camp(world, g);
+    cast_at_camp(world, pathing, g);
     if (!low) {
         attack_camp(world, [&](int h) { return h == g; });
-        reset_and_attack_camp(world, g);
+        reset_and_attack_camp(world, pathing.safety(), g);
     }
     return true;
 }
@@ -2887,9 +2893,9 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     const bool safe_here = !test(threat, here);
     const auto hit = [&] {
         if (fresh) return false;
-        const bool cast = cast_at_camp(world, g, false, true);
+        const bool cast = cast_at_camp(world, pathing, g, false, true);
         const bool attacked = attack_camp(world, [&](int h) { return h == g; }) >= 0;
-        if (attacked) reset_and_attack_camp(world, g);
+        if (attacked) reset_and_attack_camp(world, pathing.safety(), g);
         return cast || attacked;
     };
     const auto& first = basic_first ? basic : goals;
@@ -2945,7 +2951,7 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
     if (best < 0) return false;
     const auto& free = free_tiles(map.groups[best].tiles());
     if (free.is_empty() || !pathing.step_towards(free, nullptr, best_steps + max_detour)) return false;
-    memory.claim = best;
+    write_claim(memory, pathing, best);
     memory.crew = false;
     return true;
 }
@@ -2972,7 +2978,7 @@ bool continue_tribute(const World& world, Safety& safety, Memory& memory, std::o
     }
     if (tribute_ok(world, safety, memory, my_channel_time())) return true;
     // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
-    if (memory.damage <= 0) {
+    if (safety.taken() <= 0) {
         home = want_home(world, safety, memory.siege);
         if (!*home && !attack_target(world) && (winning_bag(world) || !prey(world, safety))) return true;
     }
@@ -3031,10 +3037,10 @@ void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memor
     world.throw_if_stale();
     auto& me = cambc::self();
     decision = 'R';
-    memory.claim = -1;
+    write_claim(memory, pathing, -1);
     memory.banking = bankable_bag(world, pathing) > 0; // a bag in retreat goes on to an altar, by a recall if quicker
-    if (world.me().facts().walk_and_attack_independent() && attack_enemy(world)) reset_and_attack_enemy(world, true);
-    cast_at_enemies(world, escape_step_value);
+    if (world.me().facts().walk_and_attack_independent() && attack_enemy(world)) reset_and_attack_enemy(world, true, &safety);
+    cast_at_enemies(world, pathing, escape_step_value);
     if (!me.is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) safety.refresh();
     // A tribute survives damage; a recall does not.
@@ -3044,17 +3050,17 @@ void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memor
     }
     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
     dash_away(world, pathing, pathing.to_ally_spawn());
-    reset_and_attack_enemy(world);
+    reset_and_attack_enemy(world, false, &safety);
     if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
-    reset_and_attack_enemy(world);
+    reset_and_attack_enemy(world, false, &safety);
 }
 
 // On a capture we hold or contest: the hold needs no turn, so hit another group in reach that
 // cannot hit back or already does.
-void hold_capture(const World& world, Memory& memory, bool attacked) {
+void hold_capture(const World& world, Pathing& pathing, Memory& memory, bool attacked) {
     Phase phase{"hold_capture"};
     const int held = world.map().group_at(my_position());
-    memory.claim = held;
+    write_claim(memory, pathing, held);
     memory.crew = false;
     if (attacked) return;
     const auto& groups = world.map().groups;
@@ -3063,18 +3069,18 @@ void hold_capture(const World& world, Memory& memory, bool attacked) {
         return g != held && (groups[g].strength <= 0 || (c.awake != Awake::asleep && c.asleep == 0));
     };
     if (const int hit = attack_camp(world, free_hit); hit >= 0) {
-        cast_at_camp(world, hit);
-        reset_and_attack_camp(world, hit);
+        cast_at_camp(world, pathing, hit);
+        reset_and_attack_camp(world, pathing.safety(), hit);
     }
 }
 
 // Carrying: chase a kill worth the risk, bank, wait at an altar until it is safe, or chain another
 // capture on the way.
-void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked) {
+void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked, Prepared* prepared) {
     Phase phase{"carry_bag"};
     const bool safe = can_tribute_safely(world, safety, memory);
     const bool close = closing(world, pathing);
-    if (!safe && !close && !winning_bag(world) && chase(world, pathing, safety)) return;
+    if (!safe && !close && !winning_bag(world) && chase(world, pathing, safety, prepared)) return;
     if (safe) {
         decision = 'B';
         memory.banking = true;
@@ -3083,7 +3089,7 @@ void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& mem
     }
     if (can_tribute_here(world)) {
         // Hit with nothing to hit back: waiting here only takes more.
-        if (memory.damage > 0 && !attack_target(world)) {
+        if (safety.taken() > 0 && !attack_target(world)) {
             decision = 'R';
             pathing.set_guarding(false);
             dash_away(world, pathing, pathing.to_ally_spawn());
@@ -3134,11 +3140,36 @@ float farm_step_value(const World& world) {
 }
 
 
+// The turn's heals and shields where decide judges them (W4-A: one valuer, mend()). Before the
+// search or the goal, on the turns the search does not plan.
+void mend_early(const World& world, Safety& safety, const Memory& memory, bool strikes) {
+    heal_ally(world);
+    if (!strikes || !(reset_may_kill(world) || landing_ready(world))) shield_if_needed(world, safety, memory.claim);
+}
+
+// After the search, before the goal.
+void mend_searched(const World& world, Safety& safety, const Memory& memory, bool strikes) {
+    if (!strikes) return;
+    if (!searched) heal_ally(world);
+    // A cast the search left priced the shield at nothing, blind to the goal's coming camp hit:
+    // judged here, before farm's camp reset or dash takes it.
+    shield_if_needed(world, safety, memory.claim);
+}
+
+// On spawn healing, after the hits.
+void mend_spawn(const World&, Safety&, const Memory&) {}
+
+// In a retreat the search did not plan (W3-B calls it).
+void mend_retreat(const World& world, Safety& safety, const Memory& memory) {
+    heal_ally(world);
+    shield_if_needed(world, safety, memory.claim);
+}
+
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     if (!world.me().alive || bankable_bag(world, pathing) == 0) memory.banking = false;
     if (!world.me().alive) {
-        memory.claim = -1;
+        write_claim(memory, pathing, -1);
         buy_shards(world); // the dead can only shop
         buy_lock();
         buy_crystal(memory);
@@ -3161,6 +3192,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
             std::destroy_at(&safety);
             std::construct_at(&safety, world);
             safety.set_claimed(memory.claim);
+            note_hits(world, safety, memory);
         }
         // Even a kept Safety answers anew wherever the unseen enemies count.
         debug_block({ home_asks -= home.has_value(); });
@@ -3184,16 +3216,14 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool mend = on_spawn && my_health() < my_max_health();
     const bool leave = !mend && (home ? *home : want_home(world, safety, memory.siege));
     // On the turns the search plans, it weighs heals and shields against its other casts.
-    if (!strikes || mend || leave) {
-        heal_ally(world);
-        if (!strikes || !(reset_may_kill(world) || landing_ready(world))) shield_if_needed(world, safety, memory.claim);
-    }
+    if (!strikes || mend || leave) mend_early(world, safety, memory, strikes);
     if (mend) {
         decision = 'H';
         const bool attacked = attack_enemy(world);
-        if (attacked) reset_and_attack_enemy(world, true);
-        cast_at_enemies(world);
-        if (attacked) reset_and_attack_enemy(world);
+        if (attacked) reset_and_attack_enemy(world, true, &safety);
+        cast_at_enemies(world, pathing);
+        if (attacked) reset_and_attack_enemy(world, false, &safety);
+        mend_spawn(world, safety, memory);
         return;
     }
     if (leave) {
@@ -3204,6 +3234,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     pathing.set_guarding(true);
     const bool holding = holding_capture(world) || contesting(world);
     bool attacked = false;
+    Prepared* prepared = nullptr;
     if (strikes) {
         Intent intent;
         intent.anchored = holding;
@@ -3215,25 +3246,23 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         // The goal most likely walks to an altar when carrying, else to the farm choice.
         intent.to_altar = bankable_bag(world, pathing) > 0;
         intent.group = memory.farm_group;
-        const auto planned = plan_strikes(world, pathing, safety, intent);
+        prepared = prepare_strikes(world, pathing, safety, intent);
+        const auto planned = price_strikes(*prepared, intent);
         attacked = planned.attacked;
         searched = planned.searched;
         searched_at = my_position();
         searched_hit = !my_can_attack();
-        if (!searched) heal_ally(world);
-        // A cast the search left priced the shield at nothing, blind to the goal's coming camp hit:
-        // judged here, before farm's camp reset or dash takes it.
-        shield_if_needed(world, safety, memory.claim);
     }
+    mend_searched(world, safety, memory, strikes);
     decision = holding ? 'P' : attacked ? 'A' : decision;
     if (!me.is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) safety.refresh();
     if (holding) {
-        hold_capture(world, memory, attacked);
+        hold_capture(world, pathing, memory, attacked);
         return;
     }
     if (bankable_bag(world, pathing) > 0) {
-        carry_bag(world, pathing, safety, memory, attacked);
+        carry_bag(world, pathing, safety, memory, attacked, prepared);
         return;
     }
     if (attacked && !world.me().facts().walk_and_attack_independent()) return;
@@ -3243,7 +3272,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         step_safely(pathing, pathing.to_ally_spawn(), safety);
         return;
     }
-    if (chase(world, pathing, safety)) return;
+    if (chase(world, pathing, safety, prepared)) return;
     if (contest_capture(world, pathing, memory)) {
         decision = 'X';
         return;
@@ -3322,7 +3351,7 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         memory.siege = false;
         memory.staged_since = -1;
     }
-    strike_after(world, safety);
+    strike_after(world, pathing, safety);
     pathing.set_guarding(false);
     if constexpr (debug_fights)
         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))
@@ -3351,6 +3380,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     siege_group() = -1;
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage);
+    note_hits(world, safety, memory);
     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
     // A failed act still posts the claim, the bag and the health that next turn's damage reads.
     try {

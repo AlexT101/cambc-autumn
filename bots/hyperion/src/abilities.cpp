@@ -79,11 +79,9 @@ bool kept_recall(const ChampionBelief& e) {
 // enemy on its spawn heals at its turn end, and damage to the healthier of Cassi and Issac only
 // counts once it takes that body below the other.
 float hit_worth(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
-    if (health > 0 && damage >= health - 0.01f) {
-        return health + params::life_value + params::gem_value * static_cast<float>(pair_gems(world, e));
-    }
-    if (on_spawn || damage <= 0) return 0;
-    return useful_damage(damage, health, linked_partner_health(world, e)) + (kept_recall(e) ? params::recall_value : 0);
+    if (damage <= 0 && !(health > 0 && damage >= health - 0.01f)) return 0;
+    return aph::hit_worth(damage, health, on_spawn, params::gem_value * static_cast<float>(pair_gems(world, e)), linked_partner_health(world, e),
+                     kept_recall(e) ? params::recall_value : 0);
 }
 
 } // namespace
@@ -198,8 +196,9 @@ Cast best_ground(int slot, float min_value, const std::vector<Target>& targets, 
 }
 
 // The landing that `keep` accepts whose `radius` around it hits most, nearest `here` on ties.
+// W4-D: also landing_clear() and the tile's danger.
 template <class Keep>
-Cast best_landing(int slot, float min_value, const std::vector<Target>& targets, const bitboard& landings, vec2 here,
+Cast best_landing(Pathing&, int slot, float min_value, const std::vector<Target>& targets, const bitboard& landings, vec2 here,
                   int radius, Keep keep) {
     Cast best;
     if (targets.empty()) return best;
@@ -215,7 +214,7 @@ Cast best_landing(int slot, float min_value, const std::vector<Target>& targets,
     return best;
 }
 
-Cast enemy_cast(const World& world, float walk, bool landings) {
+Cast enemy_cast(const World& world, Pathing& pathing, float walk, bool landings) {
     Cast best;
     if (!my_can_cast()) return best;
     const vec2 here = my_position();
@@ -265,7 +264,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
             }
             if (targets.empty()) continue;
             keep_off_unseen(a, raw, a.radius, off);
-            best.offer(best_landing(s, min_landing_value, targets, dash_landings_from(world.map(), here, &off), here, a.radius,
+            best.offer(best_landing(pathing, s, min_landing_value, targets, dash_landings_from(world.map(), here, &off), here, a.radius,
                                     [&](vec2 p) { return !landing_wakes(world, p, a.radius); }));
         } else if (a.target == Targeting::unit) {
             for (const auto& e : world.enemies) {
@@ -305,7 +304,10 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
     return best;
 }
 
-Cast camp_cast(const World& world, int group, bool attackers_only, bool any_value) {
+// Camp casts wait while an enemy may want the cast for a fight (W4-D: Safety::engaged_within).
+bool camp_cast_held(const World& world, Pathing&, vec2 here) { return enemy_within(world, here, hold_range); }
+
+Cast camp_cast(const World& world, Pathing& pathing, int group, bool attackers_only, bool any_value) {
     if (!my_can_cast()) return {};
     const auto& f = world.me().facts();
     const std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};
@@ -314,7 +316,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     const vec2 here = my_position();
     const auto& g = world.map().groups[group];
     if ((g.has_monolith && group != siege_group()) || world.camps[group].state != CampState::alive) return {};
-    if (enemy_within(world, here, hold_range)) return {};
+    if (camp_cast_held(world, pathing, here)) return {};
 
     struct Member {
         cambc::camp camp;
@@ -386,7 +388,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
                 }
                 return true;
             };
-            best.offer(best_landing(s, any_value ? 1.0f : min_camp_value, targets, dash_landings_from(world.map(), here, &skip),
+            best.offer(best_landing(pathing, s, any_value ? 1.0f : min_camp_value, targets, dash_landings_from(world.map(), here, &skip),
                                     here, a.radius, keep));
         }
     }
@@ -400,21 +402,29 @@ bool enemy_tribute_wins(const World& world, const ChampionBelief& e) {
            && world.score.enemy + e.gems >= static_cast<int>(cambc::constants::winning_gems);
 }
 
-bool cast_at_enemies(const World& world, float walk) {
+bool cast_at_enemies(const World& world, Pathing& pathing, float walk) {
     Phase phase{"cast_at_enemies"};
     world.throw_if_stale();
     try {
-        return enemy_cast(world, walk, true).execute();
+        return enemy_cast(world, pathing, walk, true).execute();
     } catch (const cambc::error&) {
         return false;
     }
 }
 
-bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value) {
+// A kill takes the bag; other damage on its spawn heals at its turn end.
+float hit_worth(float damage, float health, bool spawn, float bag, float partner, float recall) {
+    if (health <= 0) return 0;
+    if (damage >= health - 0.01f) return health + params::life_value + bag;
+    if (spawn) return 0;
+    return useful_damage(damage, health, partner) + recall;
+}
+
+bool cast_at_camp(const World& world, Pathing& pathing, int group, bool attackers_only, bool any_value) {
     Phase phase{"cast_at_camp"};
     world.throw_if_stale();
     try {
-        const bool cast = camp_cast(world, group, attackers_only, any_value).execute();
+        const bool cast = camp_cast(world, pathing, group, attackers_only, any_value).execute();
         camp_hits() += cast;
         return cast;
     } catch (const cambc::error&) {

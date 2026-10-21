@@ -2151,28 +2151,33 @@ bool Safety::shape(vec2 p, const Engage& e, FightKey& k) {
     } else {
         // Pursue: within `approach` walks and off their spawn; idle: arriving within the horizon.
         const bool pursue = e.mode == Mode::pursue;
-        const int limit = pursue ? e.approach : e.horizon - 1;
-        const auto& spawn = world_.map().near_enemy_spawn;
-        for (auto left = seen_enemies(); left; left &= left - 1) {
-            const auto& c = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-            if (gone(c) || (pursue && test(spawn, c.pos))) continue;
-            const int reach = struck(c).strike.reach;
-            if (reach < 0 || dist(p, c.pos) - reach > limit) continue;
-            const int walk = approach(c, p);
-            if (walk > limit) continue;
-            enemies |= 1u << c.index;
-            // Arrivals past 7 (horizons above 8) count as 7.
-            k.arrive |= static_cast<std::uint64_t>(std::min(walk, 7)) << (3 * c.index);
-        }
+        enemies = arriving(p, pursue ? e.approach : e.horizon - 1, pursue, &k.arrive);
         if (enemies == 0 && pursue) return false;
     }
     const bool idle = e.mode == Mode::idle;
-    const float camp = idle ? camp_damage(p, false) : stand_camp(p);
+    const float camp = idle ? camp_damage(p, false) + unseen_hit(p) : stand_camp(p);
     k.camp_q = static_cast<std::uint16_t>(std::clamp(static_cast<int>(camp / camp_step + 0.5f), 0, 0xFFFF));
     if (enemies == 0 && k.camp_q == 0) return false;
     k.camp_turns = k.camp_q == 0 ? 0 : idle ? k.horizon : static_cast<std::uint8_t>(std::clamp(exit_rounds(p), 0, 255));
     k.who = (idle ? 1u << world_.me().index : fighting_allies(world_, p)) | enemies << 16;
     return true;
+}
+
+std::uint16_t Safety::arriving(vec2 p, int turns, bool off_spawn, std::uint64_t* arrive) {
+    std::uint16_t enemies = 0;
+    const auto& spawn = world_.map().near_enemy_spawn;
+    for (auto left = seen_enemies(); left; left &= left - 1) {
+        const auto& c = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(c) || (off_spawn && test(spawn, c.pos))) continue;
+        const int reach = struck(c).strike.reach;
+        if (reach < 0 || dist(p, c.pos) - reach > turns) continue;
+        const int walk = approach(c, p);
+        if (walk > turns) continue;
+        enemies |= static_cast<std::uint16_t>(1u << c.index);
+        // Arrivals past 7 (horizons above 8) count as 7.
+        if (arrive) *arrive |= static_cast<std::uint64_t>(std::min(walk, 7)) << (3 * c.index);
+    }
+    return enemies;
 }
 
 Trade Safety::play(const FightKey& k) {
@@ -2670,6 +2675,15 @@ const bitboard* Safety::guarded_board() {
     board_bits_ = guard_true_;
     return &board;
 }
+
+float Safety::exit_damage(vec2 p) {
+    const float worst = camp_damage(p);
+    return worst > 0 ? worst * static_cast<float>(exit_rounds(p)) : 0.0f;
+}
+
+void Safety::note_unseen_hit(vec2 at, float damage) { ghost_at_ = at, ghost_ = damage; }
+
+float Safety::unseen_hit(vec2) const { return 0; }
 
 std::uint32_t Safety::guard_epoch() const { return guarded_generation_ == generation_ ? guard_epoch_ : generation_; }
 

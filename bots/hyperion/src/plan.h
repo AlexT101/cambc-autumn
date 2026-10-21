@@ -21,6 +21,10 @@ struct Intent {
     bool to_altar = false;
     int group = -1;
     float step_value = 0;
+    // Flee mode (W3-A): danger and death priced instead of the guarded() ban, steps along `field`.
+    bool flee = false;
+    // The walk's steps when set (flee: home; chase: the prey's route), else to_altar/group's.
+    const cambc::distance_field* field = nullptr;
 };
 
 // A visible enemy near enough to strike this turn, by walk, dash and attack range.
@@ -34,9 +38,18 @@ struct Planned {
     bool attacked = false;
     bool moved = false;    // the goal's walk is spent
     bool searched = false; // the search chose the turn's cast, heals and shields included
+    bool goal_free = false; // W3-A: the chosen plan leaves the goal's walk and hits to the goal
+    bool acted = false;     // W3-A: the plan spent an action
+    bool carried = false;   // W3-A: the plan was carried out
 };
 
-// Before the goal acts.
+// One read and grow of the turn's search, priced once per mode (W3-A). Valid until the turn's
+// Safety generation or our state changes; the next prepare_strikes reuses its storage.
+struct Prepared;
+Prepared* prepare_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent);
+Planned price_strikes(Prepared& prepared, const Intent& intent);
+
+// Before the goal acts: prepare_strikes, then price_strikes.
 Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent);
 
 // Turns the search does not plan (a retreat, a heal on spawn): a reset's second attack could kill
@@ -48,6 +61,6 @@ bool landing_ready(const World& world);
 bool strike_enemy(const World& world);
 
 // After the goal: the attack and cast still unspent, from where the walk ended.
-void strike_after(const World& world, Safety& safety);
+void strike_after(const World& world, Pathing& pathing, Safety& safety);
 
 } // namespace aph

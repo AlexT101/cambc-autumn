@@ -89,14 +89,6 @@ bool read_board(const World& world, Board& b, int reach) {
     return true;
 }
 
-// A kill takes the bag; other damage on its spawn heals at its turn end.
-float hit_worth(float damage, float health, bool spawn, float bag, float partner) {
-    if (health <= 0) return 0;
-    if (damage >= health - 0.01f) return health + params::life_value + bag;
-    if (spawn) return 0;
-    return useful_damage(damage, health, partner);
-}
-
 struct Hit {
     float value = 0;
     int target = -1;
@@ -178,6 +170,10 @@ struct Valued {
     int round = -1;
     vec2 at{-1, -1};
     bool any = false;
+    // W4-B: the cast itself, a slot at a unit target (enemies[target]) or at a ground tile.
+    int slot = -1;
+    int target = -1;
+    vec2 ground{-1, -1};
 } valued;
 
 const Field* goal_field(const World& world, Pathing& pathing, const Intent& intent) {
@@ -1633,6 +1629,23 @@ void Search::exhaust(const Node& s) {
         }
 }
 
+// A cast worth its price from the start tile, for strike_after (W4-B).
+void value_casts(const World& world, const Search& S, vec2 here) {
+    valued = {world.round, here, false};
+    for (const auto& sp : S.spells) {
+        if (sp.slot < 0) continue;
+        for (int t = 0; t < S.foes && sp.unit; ++t)
+            valued.any |= (S.u[t].cast_legal & gbit(S.cell(here))) && !S.u[t].suicidal[sp.slot]
+                          && S.u[t].spell[sp.slot] + S.u[t].spell_stun[sp.slot] > cast_cost;
+        if (!sp.ground) continue;
+        const Node root = S.root();
+        for (int q = 0; q < S.n_distinct && !valued.any; ++q) {
+            bool ok;
+            valued.any |= S.centre_value(tables.centres[tables.distinct[q]], sp.slot, root, ok) > cast_cost && ok;
+        }
+    }
+}
+
 } // namespace
 
 bool strike_possible(const World& world) {
@@ -1905,20 +1918,7 @@ bool strike_possible(const World& world) {
     }
 
     mark(2);
-    // A cast worth its price from the start tile.
-    valued = {world.round, here, false};
-    for (const auto& sp : S.spells) {
-        if (sp.slot < 0) continue;
-        for (int t = 0; t < S.foes && sp.unit; ++t)
-            valued.any |= (S.u[t].cast_legal & gbit(S.cell(here))) && !S.u[t].suicidal[sp.slot]
-                          && S.u[t].spell[sp.slot] + S.u[t].spell_stun[sp.slot] > cast_cost;
-        if (!sp.ground) continue;
-        const Node root = S.root();
-        for (int q = 0; q < S.n_distinct && !valued.any; ++q) {
-            bool ok;
-            valued.any |= S.centre_value(tables.centres[tables.distinct[q]], sp.slot, root, ok) > cast_cost && ok;
-        }
-    }
+    value_casts(world, S, here);
 
     if constexpr (debug_search) {
         debug_block({
@@ -2121,7 +2121,25 @@ bool strike_possible(const World& world) {
     return out;
 }
 
-[[gnu::flatten]] void strike_after(const World& world, Safety& safety) {
+// W3-A replaces these stubs: prepare keeps the turn's read and grow, price runs one mode over it.
+struct Prepared {
+    const World* world = nullptr;
+    Pathing* pathing = nullptr;
+    Safety* safety = nullptr;
+    Intent intent;
+};
+
+Prepared* prepare_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent) {
+    static Prepared prepared;
+    prepared = {&world, &pathing, &safety, intent};
+    return &prepared;
+}
+
+Planned price_strikes(Prepared& prepared, const Intent& intent) {
+    return plan_strikes(*prepared.world, *prepared.pathing, *prepared.safety, intent);
+}
+
+[[gnu::flatten]] void strike_after(const World& world, Pathing& pathing, Safety& safety) {
     Phase phase{"strike_after"};
     if (!world.me().alive || world.is_stale()) return;
     const auto state = my_state();
@@ -2148,14 +2166,14 @@ bool strike_possible(const World& world) {
     // A cast the search valued for a walk the goal did not take, or one a walk allows.
     const vec2 here = my_position();
     if (valued.round == world.round && valued.at == here) {
-        if (valued.any) cast_at_enemies(world);
+        if (valued.any) cast_at_enemies(world, pathing);
         return;
     }
     if (here == world.me().pos) return;
     bool walk_allows = false;
     for (int s = 0; s < 2; ++s)
         walk_allows |= f.abilities[s].hits_enemies() && !f.abilities[s].excludes_walking && world.me().ability_ready(s, world.round);
-    if (walk_allows) cast_at_enemies(world);
+    if (walk_allows) cast_at_enemies(world, pathing);
 }
 
 [[gnu::flatten]] bool strike_enemy(const World& world) {

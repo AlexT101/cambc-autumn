@@ -372,6 +372,21 @@ public:
     std::uint32_t guard_stamp() const; // guard_epoch() << 8 | distinct guarded tiles (KeptRoute key)
     // fight/pursuit/turns_to_kill_idle stay as wrappers until W4.
 
+    // The visible enemies, seen and not gone, with a known strike, that can strike p within `turns`
+    // walks (approach()), off their spawn when `off_spawn`. `arrive` gets 3 bits per enemy,
+    // min(walk, 7), as engage()'s pursue and idle keys.
+    std::uint16_t arriving(vec2 p, int turns, bool off_spawn, std::uint64_t* arrive = nullptr);
+    std::uint16_t pursuers(vec2 p, int steps) { return arriving(p, steps, true); }
+    bool engaged_within(vec2 p, int turns) { return arriving(p, turns, false) != 0; }
+    // What the camps take from us at p until we walk out of their reach: camp_damage(p) x exit_rounds(p).
+    float exit_damage(vec2 p);
+    // Last round's damage (Memory::damage), and the part of it no visible enemy or camp explains,
+    // charged where we stood. W4-C: unseen_hit() returns 0 until it fills these.
+    void note_taken(float damage) { taken_ = damage; }
+    void note_unseen_hit(vec2 at, float damage);
+    float unseen_hit(vec2 p) const;
+    float taken() const { return taken_; }
+
     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
     // enough to wake, with where they would attack us from.
     struct CampHit {
@@ -566,6 +581,9 @@ private:
     void sync_guard();
     std::uint32_t guarded_generation_ = 0, guard_epoch_ = 0, board_generation_ = 0;
     std::uint64_t guard_asked_ = 0, guard_true_ = 0, board_bits_ = 0;
+    // note_taken() and note_unseen_hit() (W4-C).
+    float taken_ = 0, ghost_ = 0;
+    vec2 ghost_at_{-1, -1};
     std::uint64_t costliest_fight_ = 0;
     // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
     // once refreshed: reached_ only gains bits meanwhile, and gone() keeps its answers.
