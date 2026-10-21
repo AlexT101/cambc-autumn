@@ -136,6 +136,12 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   85, lethal 55. Time in rounds 1-300: walking to camps 33%, attacking camps 25%, walking to altars 8%. Weak families
   against other bots: huge, large-open, islands, Monolith-only, maze, rows.
 - Single-map flips between versions (corners, interlock) follow fuel trajectories, not regressions.
+- Strike search phase 1 (2026-10-21, orch/int-strike-p1 dbab204, not merged): plan_strikes' fixed menu replaced by one
+  search over every legal walk/attack/reset/dash/cast sequence, camps as targets with wake pricing, bound-ordered Reach
+  pricing (research/hecate/strike-notes.md). Against main: 38.5% of 582 (ladder 30.0, gen 39.6), out-of-fuel turns 16282
+  against 946 (all but 0.1% in decide). At 100M fuel still 40.5% (ladder 44.3, gen 40.0): deaths 6.0 against 4.5 a game
+  (+34%), captures -4%, tributed -7%. The exhaustive and old-menu checks never fired, but 113 dashes were refused with
+  no fuel shortage. Lost; with unlimited fuel it still dies more, so the search or its leaf score misjudges danger.
 
 ### Fuel
 
