@@ -1994,13 +1994,8 @@ bool contesting(const World& world) {
     return world.camps[g].holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
 }
 
-// The threats' visible part, without building the unseen ones' fields.
-bool visible_threat(const World& world, Safety& safety, vec2 p) {
-    Phase phase{"visible_threat"};
-    for (auto left = safety.seen_enemies(); left; left &= left - 1)
-        if (safety.blow(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], p).hits) return true;
-    return false;
-}
+// A visible enemy's blow reaches p.
+bool visible_threat(const World&, Safety& safety, vec2 p) { return safety.tile(p).vis_mask != 0; }
 
 // Our ground: no farther from our spawn than from theirs.
 bool own_ground(const World& world, vec2 p) {
