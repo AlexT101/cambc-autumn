@@ -936,14 +936,19 @@ float fastest_clear(const World& world, int g, float strength) {
     return rounds;
 }
 
-// Our share of the gems still to farm before either team reaches the win (ours `short_by` away)
-// or the game ends at the team's tribute rate, each worth `per_gem`.
-float gems_share(const World& world, int short_by, float per_gem) {
+// Our share of the gems still to farm takes about rounds_per_gem each.
+constexpr float rounds_per_gem = 2.3f;
+
+// Our share of the gems still to farm before either team reaches the win or the game ends, at the
+// team's tribute rate and at our own pace.
+float gems_share(const World& world) {
     int alive = 0;
     for (const auto& a : world.allies) alive += a.alive;
-    int left = std::min(short_by, static_cast<int>(cambc::constants::winning_gems) - world.score.enemy);
-    if (const float rate = world.ally_rate(); rate > 0) left = std::min(left, static_cast<int>(rate * static_cast<float>(bag_rounds_left(world))));
-    return per_gem * static_cast<float>(std::max(0, left)) / static_cast<float>(std::max(1, alive));
+    const int rounds = bag_rounds_left(world);
+    int left = std::min(gems_short(world), static_cast<int>(cambc::constants::winning_gems) - world.score.enemy);
+    if (const float rate = world.ally_rate(); rate > 0) left = std::min(left, static_cast<int>(rate * static_cast<float>(rounds)));
+    return std::min(static_cast<float>(std::max(0, left)) / static_cast<float>(std::max(1, alive)),
+                    static_cast<float>(rounds) / rounds_per_gem);
 }
 
 // Our upkeep so far, over the turns we were alive: turns spent damaging camps, damage taken from
@@ -1102,30 +1107,26 @@ bool buy_shards(const World& world) {
     return gold < start;
 }
 
-// Our share of the gems still to farm takes about rounds_per_gem each.
-constexpr float rounds_per_gem = 2.3f;
-
 // The next emblem (best_emblem), the rounds it saves us over our share of the gems still to farm,
-// and the gems a gold is worth (its part of that saving). Kept while the gems short and our stats
-// hold: the upkeep counters under them move every turn, and every farm value would be rebuilt.
+// and the gems a gold is worth (its part of that saving). Kept while our share and stats hold: the
+// upkeep counters under them move every turn, and every farm value would be rebuilt.
 struct Prices {
     Emblem next;
     float gain, per_gold;
 };
 const Prices& prices(const World& world) {
     struct Key {
-        int short_by, enemy_score;
-        float strength, focus, max_health;
+        float share, strength, focus, max_health;
         bool operator==(const Key&) const = default;
     };
     static Key last{-1};
     static Prices kept;
     const auto& self = world.me();
-    if (const Key now{gems_short(world), world.score.enemy, self.strength, self.focus, self.max_health}; !(now == last)) {
+    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health}; !(now == last)) {
         last = now;
         kept.next = best_emblem(world);
-        kept.gain = gems_share(world, now.short_by, kept.next.saved * rounds_per_gem);
-        kept.per_gold = gems_share(world, now.short_by, kept.next.saved / static_cast<float>(std::max(1u, kept.next.cost)));
+        kept.gain = now.share * kept.next.saved * rounds_per_gem;
+        kept.per_gold = now.share * kept.next.saved / static_cast<float>(std::max(1u, kept.next.cost));
     }
     return kept;
 }
@@ -1134,21 +1135,23 @@ const Prices& prices(const World& world) {
 // (`overlap` of them spent anyway on a capture's remaining rounds), the heal turn when hurt (a
 // recall lands at turn start, healing waits for the turn's end) and the walk from spawn, less what
 // the stop is worth: the heal, and the next emblem once `gold_in` more gold completes it; nothing
-// once the bag wins. Below `walk` when the recall wins.
+// once the bag wins or the end is close. Below `walk` when the recall wins; never a recall that
+// reaches the altar too late to tribute the bag by `deadline` rounds from now.
 struct HomeTrip {
-    int channel, from_spawn, hurt;
+    int channel, from_spawn, hurt, deadline;
     float heal = 0, emblem = 0;
     std::uint32_t short_gold = ~0u;
     float value(std::uint32_t gold_in) const { return heal + (gold_in >= short_gold ? emblem : 0.0f); }
     float rounds(int walk, int overlap, std::uint32_t gold_in) const {
-        if (from_spawn == unreachable) return static_cast<float>(walk);
-        const float recall = static_cast<float>(std::max(0, channel - overlap) + hurt + from_spawn) - value(gold_in);
-        return std::min(static_cast<float>(walk), std::max(0.0f, recall));
+        const int arrive = std::max(0, channel - overlap) + hurt + from_spawn;
+        if (from_spawn == unreachable || arrive > deadline) return static_cast<float>(walk);
+        return std::min(static_cast<float>(walk), std::max(0.0f, static_cast<float>(arrive) - value(gold_in)));
     }
 };
 HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins) {
-    HomeTrip t{channel, pathing.to_any_altar().at(world.map().ally_spawn_centre), my_health() < my_max_health() ? 1 : 0};
-    if (wins) return t;
+    HomeTrip t{channel, pathing.to_any_altar().at(world.map().ally_spawn_centre), my_health() < my_max_health() ? 1 : 0,
+               bag_rounds_left(world) - tribute_turns(my_gems())};
+    if (wins || closing(world, pathing)) return t;
     t.heal = heal_rounds(world, my_max_health() - my_health(), spawn_steps());
     if (!may_shop(world)) return t;
     const auto& p = prices(world);
