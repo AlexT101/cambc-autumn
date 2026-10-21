@@ -14,8 +14,8 @@
 Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle removals and keep them if level.
 
 - Removals: `keep_walk`'s free-stun logic in `enemy_cast`, replaced by a plain threshold; ground casts at unseen
-  enemies (`max_unseen_tiles`); the rally bit (`post_rally`, `sight_fight`), which nothing reads; big-group sieges on
-  normal maps (`big_rounds`, `big_respawn_wait`; sieges there lost 39.6%).
+  enemies (`max_unseen_tiles`); big-group sieges on normal maps (`big_rounds`, `big_respawn_wait`; sieges there
+  lost 39.6%).
 - Behaviour: one `run_home()` for `retreat()` and `carry_bag`'s retreat; give kite's stations line of sight, as
   `spell_clear` has; drop kite's contested branch; pack-zone ratio `(home || hurt) ? 2.0 : none`;
   `Safety::expected_damage` as a tie-break in `retreat_step` and `flee_camps`; walk to lock an altar where a visible

@@ -179,8 +179,8 @@ Each phase is one commit:
      `banking`. `dash_away`, `flee_camps` and `retreat_step` go on these turns.
    - **4b, chase.** `prey()` still picks the target and `decide` still reaches `chase()` at the same point. The
      search plans the turn with `prey`'s attack tiles as the goal field and the normal step value, not steps priced
-     at the kill's worth. That is neither half of the lost test. `decision = 'C'` and the rally post stay.
-     `dash_to_attack` and the fixed step, attack, reset, cast order go.
+     at the kill's worth. That is neither half of the lost test. `decision = 'C'` stays; the rally post is gone
+     (COORDINATION 2). `dash_to_attack` and the fixed step, attack, reset, cast order go.
    - `step_guard`, `pursuit` and `threat_strike` stay (TODO.md "Don't remove").
 5. **One danger model: separate design, after 1-4 are measured.**
    - Folding `want_home`, `step_guard` and `prey` into the search must carry everything they decide:

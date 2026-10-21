@@ -15,13 +15,12 @@ namespace {
 //   [20, 21)  round parity
 //   [21, 28)  bag in fours, rounded up
 //   [28, 31)  carrying ally's index
-//   [31, 32)  the sighting is an enemy its poster fights: a rally
 //   [32, 40)  captured group + 1, 0 = none
 //   [40, 48)  its respawn round mod 256
 //   [48, 56)  claimed group + 1, 0 = none
 //   [56, 59)  claiming ally's index
 //   [59, 62)  sighting write count
-//   [62, 64)  unused
+//   [31, 32), [62, 64)  unused
 // The write count makes a sighting rewritten unchanged, with the same parity, still read as new.
 // A claim or a bag is a standing state, rewritten only when it changes or as a reminder.
 struct BitField {
@@ -38,10 +37,9 @@ constexpr BitField bag_fours{21, 7}, bag_body{28, 3};
 constexpr BitField camp_group{32, 8}, camp_respawn{40, 8};
 constexpr BitField claim_group{48, 8}, claim_body{56, 3};
 constexpr BitField sight_count{59, 3};
-constexpr BitField sight_fight{31, 1};
 constexpr int max_group = (1 << 8) - 1; // camp_group and claim_group hold the group + 1
 constexpr std::uint64_t sighting_bits = sight_x.mask() | sight_y.mask() | sight_index.mask() | sight_health.mask() | sight_parity.mask()
-                                        | sight_count.mask() | sight_fight.mask();
+                                        | sight_count.mask();
 constexpr std::uint64_t bag_bits = bag_fours.mask() | bag_body.mask();
 constexpr std::uint64_t camp_bits = camp_group.mask() | camp_respawn.mask();
 constexpr std::uint64_t claim_bits = claim_group.mask() | claim_body.mask();
@@ -49,14 +47,13 @@ static_assert((sighting_bits & bag_bits) == 0 && ((sighting_bits | bag_bits) & c
               && ((sighting_bits | bag_bits | camp_bits) & claim_bits) == 0);
 
 // The write count makes a sighting rewritten unchanged still read as new.
-void put_sighting(std::uint64_t& bits, const ChampionBelief& e, int round, bool fight) {
+void put_sighting(std::uint64_t& bits, const ChampionBelief& e, int round) {
     sight_x.set(bits, e.pos.x + 1);
     sight_y.set(bits, e.pos.y);
     sight_index.set(bits, e.index);
     const float fraction = e.max_health > 0 ? e.health / e.max_health : 1.0f;
     sight_health.set(bits, fraction >= 1.0f ? 7 : std::clamp(static_cast<int>(fraction * 7.0f), 0, 6));
     sight_parity.set(bits, round & 1);
-    sight_fight.set(bits, fight ? 1 : 0);
     sight_count.set(bits, sight_count.get(bits) + 1);
 }
 
@@ -67,7 +64,6 @@ struct State {
     std::uint64_t fresh = 0; // records written since then
     int posted_bag = -1;
     int posted = -1;
-    int fighting = -1; // enemy index to post as a rally this turn
 };
 State state;
 
@@ -108,7 +104,6 @@ int dated(int parity) {
 }
 
 [[gnu::flatten]] void receive(World& world) {
-    state.fighting = -1;
     const auto bits = state.now = read_bits();
     const int round = world.round;
     state.fresh = changes(bits);
@@ -182,13 +177,7 @@ void send(World& world, bool moved, bool refresh) {
         dirty = true;
     }
 
-    // A fight of ours takes the slot over a plain sighting: it calls allies in.
-    const auto* rally = state.fighting >= 0 && state.fighting < static_cast<int>(world.enemies.size()) ? &world.enemies[state.fighting] : nullptr;
-    state.fighting = -1;
-    if (rally && rally->alive && rally->visible && !(sighted && sight_fight.get(bits))) {
-        put_sighting(bits, *rally, round, true);
-        dirty = true;
-    } else if (!sighted) {
+    if (!sighted) {
         if (refresh) world.observe();
         else if (moved) note_shortcut("comms-stale-vision");
         const int n = static_cast<int>(world.enemies.size());
@@ -196,7 +185,7 @@ void send(World& world, bool moved, bool refresh) {
         for (int k = 0; k < n; ++k) {
             const auto& e = world.enemies[(start + k) % n];
             if (!e.visible) continue;
-            put_sighting(bits, e, round, false);
+            put_sighting(bits, e, round);
             dirty = true;
             break;
         }
@@ -205,8 +194,6 @@ void send(World& world, bool moved, bool refresh) {
 }
 
 void bag(int gems) { detail::posts.my_bag = gems; }
-
-void post_rally(int enemy) { state.fighting = enemy; }
 
 void claim(int group) { detail::posts.mine = group < max_group ? group : -1; }
 

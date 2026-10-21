@@ -2213,7 +2213,6 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     const auto* target = prey(world, safety);
     if (!target) return false;
     decision = 'C';
-    comms::post_rally(target->index);
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
     auto& me = cambc::self();
     const int range = world.me().facts().attack_range();
