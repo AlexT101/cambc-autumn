@@ -212,7 +212,7 @@ struct Trade {
     int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
     int turns_to_kill_them = 0; // ours
     bool self_falls = false;    // we die before their side does, when they strike first
-    bool cut = false;           // set in trade() on fight-cut; never memoised
+    bool cut = false;           // set in trade() on fight-cut; memoised for its own key only
     // Not played: a memoised fight settled it (Safety::engage). Only lost, self_falls and the
     // counts hold; turns_to_kill_us is the settling fight's (a bound) and the rest is 0.
     bool settled = false;
@@ -239,13 +239,59 @@ struct Engage {
     Mode mode = Mode::stand;
     int approach = 0;          // pursue/idle
     int horizon = fight_horizon;
-    int with_enemy = -1;       // always in the key (prey); never no_fight
+    int with_enemy = -1;       // in the key with its escorts (prey); never no_fight
 };
 
 // Whether ending the turn on a tile loses its fight there.
 struct Verdict {
     bool lost = false, falls = false;
 };
+
+// Debug only (the SIMS line): who asks the fight engine, and which of a fight's answers it reads.
+enum class SimCaller : std::uint8_t { other, wh_stand, wh_pursue, prey, srch_guard, path_guard, idle, count };
+enum class SimNeed : std::uint8_t { lost, falls, both };
+struct SimContext {
+    SimCaller caller = SimCaller::other;
+    SimNeed need = SimNeed::both;
+};
+SimContext& sim_context();
+// Debug only: the SIMS line's counts for one Safety, printed and reset by its destructor.
+struct SimStats {
+    static constexpr int callers = static_cast<int>(SimCaller::count);
+    std::array<int, callers> sims{}, memo{}, dom{}, acts{};
+    std::array<std::uint64_t, callers> fuel{};
+    // Would-settle counts (W2 fuel fix): pursue keys a clean stand settled, and how often the sim
+    // disagreed; a stand with the pursuers added asked on want_home's pursue, and clean;
+    // prey asks, those its start tile's exposure rule would settle, those whose sim lost anyway,
+    // and those whose start row was not known; prey() calls with candidates, and those with neither
+    // walk nor attack left (no fight asked).
+    int p1a_would = 0, p1a_flip = 0, p1b_asks = 0, p1b_clean = 0;
+    int p2_asks = 0, p2_would = 0, p2_flip = 0, p2_unknown = 0;
+    int p4_calls = 0, p4_moot = 0;
+    // By SimNeed: stand and pursue sims, and their act() calls after our fighter fell.
+    std::array<int, 3> need_sims{}, need_after_fall{};
+};
+SimStats& sim_stats();
+class TracedSimTag {
+public:
+    explicit TracedSimTag(SimCaller caller, SimNeed need = SimNeed::both) {
+        debug_block({
+            prev_ = sim_context();
+            sim_context() = {caller, need};
+        });
+    }
+    ~TracedSimTag() { debug_block({ sim_context() = prev_; }); }
+    TracedSimTag(const TracedSimTag&) = delete;
+    TracedSimTag& operator=(const TracedSimTag&) = delete;
+
+private:
+    SimContext prev_;
+};
+struct NoSimTag {
+    explicit constexpr NoSimTag(SimCaller, SimNeed = SimNeed::both) {}
+};
+// Names the engine's asker to the end of its scope, like Phase (debug_phases builds only).
+using SimTag = std::conditional_t<phases_traced, TracedSimTag, NoSimTag>;
 
 class Safety {
 public:
@@ -331,13 +377,6 @@ public:
     // A visible enemy's turns of walking before it can strike p: 0 if it can now, else at least 1
     // and at least its Chebyshev distance past its reach.
     int approach(const ChampionBelief& e, vec2 p);
-    // Enough for most fights, by the champions in sight and this turn's costliest simulation;
-    // plus query_cost_estimate().
-    std::uint64_t fight_cost_estimate();
-    // The threat build and the visible threats' Reach builds still pending.
-    std::uint64_t query_cost_estimate();
-    // At most what building the credible unseen threats' fields costs, 0 once built.
-    std::uint64_t build_cost_estimate();
     // engage(p) pursue: lost means they win even if we stand and fight.
     Trade pursuit(vec2 p, int approach);
     // engage(p) idle: their turns for the visible enemies and camps to kill us at p if we never act
@@ -347,15 +386,20 @@ public:
     bool lethal(vec2 p);
 
     // The one simulation entry, by COMBAT-MERGE.md's rule table. Stand: us and the allies near p,
-    // they first, against tile(p)'s visible and credible unseen threats (and with_enemy). Pursue:
+    // they first, against tile(p)'s visible and credible unseen threats; with_enemy adds it and the
+    // visible foes whose Strike reaches its tile, and keeps only the allies near it too. Pursue:
     // we first, against the visible enemies off their spawn within `approach` walks, each joining
     // as it arrives. Both are charged the camps' expected damage at p, less the claimed group, for
     // exit_rounds(p) of their turns. Idle: we never act (a channel) against the visible enemies
     // arriving within the horizon, charged the camps for all of it; turns_to_kill_us, with lost
     // and self_falls set when it is not 0. Memoised by who fights, arrivals, camp charge and mode,
     // across invalidate(); a stand fight may be settled by a memoised won one at least as hard or
-    // lost one at most as hard (Trade::settled: only lost and self_falls hold).
+    // lost one at most as hard, and a pursuit by a won stand one at least as hard (Trade::settled:
+    // only lost and self_falls hold).
     Trade engage(vec2 p, Engage e);
+    // engage(), starting a new simulation only while `sims` is above 0 (each takes one); null where
+    // the memo cannot answer it then.
+    std::optional<Trade> engage_if(vec2 p, Engage e, int& sims);
     int idle_turns(vec2 p, int horizon);
     // The camp group our farm/siege budgets, left out of the stand/pursue camp charge. A change
     // starts a new guard_epoch(); the fight memo needs nothing, as its keys carry the charge.
@@ -396,6 +440,11 @@ public:
     // A visible enemy's Reach, built on first use this turn: blow(e, p) where its strike reaches p.
     const Reach& reach_of(const ChampionBelief& e);
 
+    // Inside debug_block only, after the engine answered: the SIMS line's would-settle counts for a
+    // prey ask at `at` (P2) and for want_home's pursue at p once its stand was asked (P1B).
+    void debug_note_prey(vec2 at, int enemy, bool won);
+    void debug_note_pursue(vec2 p);
+
 private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
     // Every credible threat at full damage, plus camps.
@@ -421,9 +470,6 @@ private:
     // Appends the threats of the enemies in `which` that have none yet.
     void build_threats(std::uint32_t which);
     void find_members();
-    void count_champions();
-    void list_reachable();
-    std::uint64_t estimate_build();
     bool still_alive(const ChampionBelief& c);
     void build_reach(const ChampionBelief& e, Reach& r);
     void build();
@@ -516,14 +562,24 @@ private:
     }
     // False if there is no fight: no enemy (and, idle, no camp charge).
     bool shape(vec2 p, const Engage& e, FightKey& k);
-    // The memo's trade, or a fight it settles, else a new one.
-    Trade play(const FightKey& k);
-    // 1: k's memoised trade; 2: a stand key settled by a memoised stand fight, a won one with at
-    // least its enemies, at most its allies and at least its camp charge for as many turns, or a
-    // lost one the reverse (Trade::settled); 0: neither.
+    // 1: k's memoised trade; 2: a stand or pursue key settled by a memoised stand fight not cut
+    // short, a won one with at least its enemies, at most its allies and at least its camp charge
+    // for as many turns, or (stand keys only) a lost one the reverse (Trade::settled); 0: neither.
     int recall(const FightKey& k, Trade& out);
-    // Simulates k with `enemies` as its enemies and memoises it, unless cut.
+    // Simulates k with `enemies` as its enemies and memoises it.
     Trade run(const FightKey& k, std::uint32_t enemies);
+    // Debug only: the keys shape() made lately, by tile and generation; whether a memoised stand
+    // fight answers k clean, as itself or as a clean stand covering it (any mode); its sides played out.
+    struct DebugKey {
+        vec2 p;
+        std::uint32_t generation;
+        FightKey key;
+    };
+    static std::array<DebugKey, 8> debug_keys_;
+    static unsigned debug_key_next_;
+    const FightKey* debug_key_at(vec2 p, std::uint8_t mode) const;
+    bool debug_clean_known(const FightKey& k) const;
+    bool debug_clean_played(const FightKey& k, bool they_first);
     void note_linked();
     std::uint32_t linked_who_ = 0; // Cassi and Issac, as FightKey::who bits
     bool linked_known_ = false;
@@ -566,13 +622,6 @@ private:
     void sync_guard();
     std::uint32_t guarded_generation_ = 0, guard_epoch_ = 0, board_generation_ = 0;
     std::uint64_t guard_asked_ = 0, guard_true_ = 0, board_bits_ = 0;
-    std::uint64_t costliest_fight_ = 0;
-    // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
-    // once refreshed: reached_ only gains bits meanwhile, and gone() keeps its answers.
-    std::uint16_t reachable_ = 0;
-    bool reachable_known_ = false;
-    int champions_ = -1;            // in sight, for fight_cost_estimate(); beliefs are fixed for the turn
-    std::uint64_t build_cost_ = 0;  // build_cost_estimate() until built, refreshed or invalidated; 0: unknown
 };
 
 } // namespace aph

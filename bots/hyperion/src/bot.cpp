@@ -29,7 +29,7 @@ namespace {
 constexpr int endgame_margin = 20;   // rounds to spare on the last trip to an altar
 constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
 constexpr float escape_step_value = 210; // a retreat's or a game-ender intercept's walk, in enemy health
-// PREY-FLIP and PURSUIT-SKIP-MISMATCH re-run the rule they replaced. The re-runs fill Safety's memos
+// PREY-FLIP re-runs the rule it replaced. The re-runs fill Safety's memos
 // and Reach and spend fuel, so games change while this is on.
 constexpr bool debug_verdicts = false;
 
@@ -344,6 +344,7 @@ bool tribute_safe(Safety& safety, const Memory& memory, int turns) {
     const int window = std::min(turns, params::tribute_window);
     const float health = my_health();
     if (memory.damage * static_cast<float>(window) >= health) return false;
+    SimTag tag{SimCaller::idle};
     const int kill = safety.turns_to_kill_idle(my_position(), window + 1);
     return kill == 0 || kill > window;
 }
@@ -2233,40 +2234,22 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
     if (!lethal && !enemy_seen(world)) return false;
     std::optional<Trade> stand;
     const auto s = [&]() -> const Trade& {
-        if (!stand) stand = safety.engage(here, {});
+        if (!stand) {
+            SimTag tag{SimCaller::wh_stand};
+            stand = safety.engage(here, {});
+        }
         return *stand;
     };
     if ((lethal && s().self_falls) || (visible_threat(world, safety, here) && s().lost)) return true;
     // Healthy on our own ground, they have no reason to come for us.
     if (paying_soon(world) || (own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health())) return false;
     const bool linked = partner(world) != nullptr;
-    const Engage pursue{.mode = Engage::Mode::pursue, .approach = params::pursuit_steps};
-    // The pursuit strikes first against some of the stand fight's enemies, arriving later: a stand
-    // fight we win cleanly against all of them settles it. Its visible enemies are tile(here)'s.
-    // The stand is unsimulated only when no visible threat hits us, and then holds no pursuer.
-    const auto pursuers_standing = [&] {
-        const auto& spawn = world.map().near_enemy_spawn;
-        for (auto left = safety.seen_enemies() & ~std::uint32_t{safety.tile(here).vis_mask}; left; left &= left - 1) {
-            const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-            if (!in_square(here, e.pos, Strike::max_reach + params::pursuit_steps)) continue;
-            if (const int reach = safety.strike_of(e).reach; reach >= 0 && dist(here, e.pos) - reach <= params::pursuit_steps && !test(spawn, e.pos))
-                return false;
-        }
-        return true;
-    };
-    if (stand && !stand->lost && !stand->self_falls && pursuers_standing()) {
-        debug_block({ std::printf("WANTHOME-PURSUIT-SKIPPED %d %u\n", world.round, static_cast<std::uint32_t>(world.me().handle)); });
-        if constexpr (debug_verdicts) {
-            if (const auto t = safety.engage(here, pursue); t.lost || (linked && t.self_falls)) {
-                debug_block({
-                    std::printf("PURSUIT-SKIP-MISMATCH %d %u %d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), here.x,
-                                here.y, t.lost ? 1 : 0, t.self_falls ? 1 : 0);
-                });
-            }
-        }
-        return false;
-    }
-    const auto t = safety.engage(here, pursue);
+    // A stand fight here won cleanly against every pursuer settles the pursuit (Safety::recall).
+    SimTag tag{SimCaller::wh_pursue, linked ? SimNeed::falls : SimNeed::lost};
+    const auto t = safety.engage(here, {.mode = Engage::Mode::pursue, .approach = params::pursuit_steps});
+    debug_block({
+        if (stand) safety.debug_note_pursue(here);
+    });
     return t.lost || (linked && t.self_falls);
 }
 
@@ -2316,9 +2299,11 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
 }
 
 // The visible enemy whose kill pays most a turn to reach and kill it, among those whose fight at
-// the tile we would strike it from we win even when they strike first; never one on or next to its
-// spawn, where it heals.
-const ChampionBelief* prey(const World& world, Safety& safety) {
+// the tile we would strike it from, its escorts included, we win even when they strike first;
+// never one on or next to its spawn, where it heals. Moot (chase with neither a walk nor a basic
+// attack left): chase only resets and casts where we stand, so the fight at an attack tile is moot
+// and the best candidate in their reach is the target.
+const ChampionBelief* prey(const World& world, Safety& safety, bool moot = false) {
     Phase phase{"prey"};
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
@@ -2369,15 +2354,33 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         }
         return best;
     };
+    if (n > 0 && moot) {
+        debug_block({
+            ++sim_stats().p4_calls;
+            ++sim_stats().p4_moot;
+        });
+        for (int i = 0; i < n; ++i)
+            if (dist(here, order[i].second->pos) <= std::max(range, ability_range)) return order[i].second;
+        return nullptr;
+    }
     // The prey stays in the key: a melee one cannot reach a ranged attack tile.
     constexpr int max_fights = 3;
+    debug_block({
+        if (n > 0) ++sim_stats().p4_calls;
+    });
+    SimTag tag{SimCaller::prey, linked ? SimNeed::falls : SimNeed::lost};
+    // One new simulation a call: later candidates only as the memo answers them.
+    int sims = 1;
     for (int i = 0, fights = 0; i < n && fights < max_fights; ++i) {
         const auto& e = *order[i].second;
         const auto at = attack_tile(e.pos);
         if (!at) continue;
+        const auto known = safety.engage_if(*at, {.with_enemy = e.index}, sims);
+        if (!known) continue;
         ++fights;
-        const auto t = safety.engage(*at, {.with_enemy = e.index});
+        const auto& t = *known;
         const bool won = !t.lost && !(linked && t.self_falls);
+        debug_block({ safety.debug_note_prey(*at, e.index, won); });
         if constexpr (debug_verdicts) {
             if (const auto old = safety.engage(e.pos, {}); won != (!old.lost && !(linked && old.self_falls))) {
                 debug_block({
@@ -2393,7 +2396,10 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
 
 bool chase(const World& world, Pathing& pathing, Safety& safety) {
     Phase phase{"chase"};
-    const auto* target = prey(world, safety);
+    // Both spent: a channel clears them too, but chase never runs in one (continue_tribute asks prey).
+    const auto state = my_state();
+    const bool moot = !state.contains(cambc::champion_state::can_move) && !state.contains(cambc::champion_state::can_attack);
+    const auto* target = prey(world, safety, moot);
     if (!target) return false;
     decision = 'C';
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
@@ -2414,7 +2420,8 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     hit |= reset_and_attack_enemy(world); // after an attack, or a ranged walk
     hit |= cast_at_enemies(world);
     // No step and no hit: the target is out of our walk's reach (across live camps), so the turn goes on.
-    return hit || !stuck;
+    // Moot, no fight was asked: only a hit takes the turn from the caller's retreat or farm.
+    return hit || (!moot && !stuck);
 }
 
 bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory) {

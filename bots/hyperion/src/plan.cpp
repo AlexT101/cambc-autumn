@@ -1646,6 +1646,7 @@ bool strike_possible(const World& world) {
 
 [[gnu::flatten]] Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent) {
     Phase phase{"plan_strikes"};
+    world.throw_if_stale();
     Planned out;
     std::uint64_t fuel_start = 0;
     if constexpr (debug_search) {
@@ -1706,6 +1707,8 @@ bool strike_possible(const World& world) {
         float bound, total, danger, shield;
         bool exact, done, keep;
         std::int8_t entry;
+        float bound0; // before the camps
+        int rank;     // order priced exactly
     };
     struct Cand {
         float raw, d;
@@ -1733,13 +1736,13 @@ bool strike_possible(const World& world) {
         if (S.has >> c & 1) top = S.top(c, false);
         if (S.kept_has >> c & 1) top = std::max(top, S.top(c, true) + shield_top);
         const float bound = top + gain_to(S.tile(c));
-        tiles[nt++] = {c, bound, bound, 0, 0, false, false, !(S.has >> c & 1), 0};
+        tiles[nt++] = {c, bound, bound, 0, 0, false, false, !(S.has >> c & 1), 0, bound, 0};
     });
     float best_total = -1e30f;
     int chosen = -1, queries = 0, priced = 0, share_stops = 0, bound_stops = 0;
     bool capped = false;
-    // Only the end tile is stood on between turns: guarded() is asked only of a tile about to be
-    // chosen, on the turn-start state whatever the plan kills or stuns.
+    // Only the end tile is stood on between turns: guarded() is asked only of the tile chosen, on
+    // the turn-start state whatever the plan kills or stuns.
     const bool guarding = pathing.guarding();
     std::uint64_t guard_asked = 0, guard_banned = 0; // bit i: tiles[i]
     int guard_asks = 0, guard_skips = 0;
@@ -1748,19 +1751,42 @@ bool strike_possible(const World& world) {
         if (!guarding || tiles[i].c == S.cell(here)) return false;
         if (!(guard_asked & bit)) {
             guard_asked |= bit;
-            bool out = guard_asks >= max_guard_asks;
-            if (!out) ++guard_asks, out = safety.guarded(S.tile(tiles[i].c));
+            const vec2 p = S.tile(tiles[i].c);
+            // Pricing's lethal ban at distance 3, for a tile it did not price.
+            bool out = guard_asks >= max_guard_asks || (!tiles[i].exact && dist(p, here) == 3 && safety.tile(p).worst() >= S.health);
+            if (!out) {
+                SimTag tag{SimCaller::srch_guard};
+                ++guard_asks, out = safety.guarded(p);
+            }
             if (out) guard_banned |= bit, ++guard_skips;
         }
         return (guard_banned & bit) != 0;
+    };
+    // A banned pick gives way to the next best tile priced, first priced on ties as if it had never
+    // led, and reopens the tiles priced short against it. Returns whether it was banned.
+    const auto unban = [&] {
+        if (chosen < 0 || !banned(chosen)) return false;
+        best_total = -1e30f, chosen = -1;
+        for (int k = 0; k < nt; ++k)
+            if (const auto& t = tiles[k]; t.exact && !(guard_banned >> k & 1)
+                && (t.total > best_total || (chosen >= 0 && t.total == best_total && t.rank < tiles[chosen].rank)))
+                best_total = t.total, chosen = k;
+        for (int k = 0; k < nt; ++k)
+            if (auto& t = tiles[k]; t.done && !t.exact && !(guard_banned >> k & 1) && t.total > best_total) t.done = false, t.bound = t.bound0;
+        return true;
     };
     for (;;) {
         int i = -1;
         for (int k = 0; k < nt; ++k)
             if (!tiles[k].done && (i < 0 || tiles[k].bound > tiles[i].bound)) i = k;
-        if (i < 0 || tiles[i].bound <= best_total) break;
+        if (i < 0 || tiles[i].bound <= best_total) {
+            if (unban()) continue;
+            break;
+        }
         if (queries >= max_exact_queries) {
             capped = true;
+            while (unban()) {
+            }
             break;
         }
         auto& t = tiles[i];
@@ -1781,6 +1807,11 @@ bool strike_possible(const World& world) {
             // End tiles are open, so the row never asks Reach about a wall.
             const auto& row = safety.tile(p);
             ++queries;
+            // guarded() judges visible foes' fights: camps and unseen threats that can kill us ban it here.
+            if (row.worst() >= S.health) {
+                guard_asked |= std::uint64_t{1} << i, guard_banned |= std::uint64_t{1} << i;
+                continue;
+            }
             hit_by = row.vis_mask, unseen_by = row.unseen_mask;
         }
         const float base = gain_to(p) - camp;
@@ -1855,7 +1886,8 @@ bool strike_possible(const World& world) {
         t.keep = cand[arg].keep;
         t.entry = cand[arg].entry;
         t.shield = t.keep ? sh : 0.0f;
-        if (total > best_total && !banned(i)) best_total = total, chosen = i;
+        t.rank = priced;
+        if (total > best_total) best_total = total, chosen = i;
     }
     // Unpriced tiles keep their Strike price, and no shield. Camps only lower a total, so they are
     // summed only for a tile that could still win without them, best first; until then `total`

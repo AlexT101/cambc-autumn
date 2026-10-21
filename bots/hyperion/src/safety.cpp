@@ -28,8 +28,12 @@ struct MemoStats {
     std::array<int, 3> act{}; // act() calls by branch: quiet, plain, general
     // The VERDICT line: verdicts asked, and those answered by a simulation, the memo or dominance.
     int verdicts = 0, verdict_sims = 0, verdict_memo = 0, verdict_dom = 0;
+    int sim_acts = 0, fall_at = -1; // the simulation running: act() calls, and how many before our fighter fell
+    std::array<int, 3> exits{};     // simulate()'s early ends: outlives, overwhelmed, our side outliving them
 };
 constinit MemoStats memo_stats{};
+constinit SimContext sim_context_now{};
+constinit SimStats sim_stats_now{};
 // Debug only: the generation each Safety::fights_ slot was simulated in.
 constinit std::array<std::uint32_t, 64> fight_generation{};
 
@@ -364,49 +368,18 @@ float act(Side& self, Side& other) {
     return damage;
 }
 
-// The half-turns from `t` (to `end` at most) in which both sides only make their basic attacks
-// and nobody falls, each taken off the side's weakest as act() and hurt() would; returns the next.
-int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours, int& theirs) {
-    const int wu = us.weakest(), we = them.weakest();
-    if (wu < 0 || we < 0) return t;
-    auto& u = us.fighters[wu];
-    auto& e = them.fighters[we];
-    if (u.shield != 0 || e.shield != 0) return t;
-    const float onto_them = u.retaliation > 0 ? static_cast<float>(them.quiet_hits) * u.retaliation : 0.0f;
-    const float onto_us = e.retaliation > 0 ? static_cast<float>(us.quiet_hits) * e.retaliation : 0.0f;
-    for (; t < end; ++t) {
-        if ((t % 2 == 0) == they_first) {
-            if (them.turn >= them.quiet_until || them.alive != them.quiet_alive || them.stunned != 0) break;
-            const float camp = them.turn < us.camp_until ? us.camp : 0.0f;
-            const float d = them.quiet_damage;
-            if (!(d < u.health) || !(onto_them < e.health)) break;
-            const float h = u.health - d;
-            if (camp > 0 && !(camp < h)) break;
-            u.health = camp > 0 ? h - camp : h;
-            if (onto_them > 0) e.health -= onto_them;
-            ++them.turn;
-            ++theirs;
-        } else {
-            if (us.turn >= us.quiet_until || us.alive != us.quiet_alive || us.stunned != 0) break;
-            const float d = us.quiet_damage;
-            if (!(d < e.health) || !(onto_us < u.health)) break;
-            e.health -= d;
-            if (onto_us > 0) u.health -= onto_us;
-            ++us.turn;
-            ++ours;
-        }
-    }
-    return t;
-}
-
 static_assert(fight_horizon == 2 * ability_cooldown + 1);
 
-// Whether our fighter `self` (and its linked body) must outlive their next `theirs` turns and our
-// next `ours`: every member of theirs alive now attacking each turn and casting each slot as soon
-// as it is ready, Ren hitting back at each of our hits, and the camps, still fall short of it.
-bool outlives(const Side& us, const Side& them, int self, int theirs, int ours) {
+// Our fighter's health, as its linked body's falls with it.
+float watched_health(const Side& us, int self) {
     const auto& me = us.fighters[self];
-    const float health = me.link >= 0 ? std::min(me.health, us.fighters[me.link].health) : me.health;
+    return me.link >= 0 ? std::min(me.health, us.fighters[me.link].health) : me.health;
+}
+
+// The most we can take in their next `theirs` turns and our next `ours`: every member of theirs
+// alive now attacking each turn and casting each slot as soon as it is ready, Ren hitting back at
+// each of our hits, and the camps.
+float most_taken(const Side& us, const Side& them, int theirs, int ours) {
     const int end = them.turn + theirs;
     float most = static_cast<float>(camp_turns(us, them, theirs)) * us.camp, back = 0;
     for (int i = 0; i < them.count; ++i) {
@@ -419,7 +392,23 @@ bool outlives(const Side& us, const Side& them, int self, int theirs, int ours) 
                 most += static_cast<float>((end - first + ability_cooldown - 1) / ability_cooldown) * f.kit->cast[s].damage;
     }
     if (back > 0) most += static_cast<float>(2 * ours * us.alive) * back;
-    return most * 1.001f + 1.0f < health;
+    return most;
+}
+
+// Whether our fighter `self` (and its linked body) must outlive their next `theirs` turns and our
+// next `ours`: most_taken() falls short of it.
+bool outlives(const Side& us, const Side& them, int self, int theirs, int ours) {
+    return most_taken(us, them, theirs, ours) * 1.001f + 1.0f < watched_health(us, self);
+}
+
+// What their side must deal to fell all of ours: damage lands on the weakest and spills over, and
+// a linked pair falls with its lower body. Shields and heals left out only lower it.
+float side_health(const Side& us) {
+    float total = 0;
+    for (int i = 0; i < us.count; ++i)
+        if (const auto& f = us.fighters[i]; f.health > 0 && (f.link < 0 || f.link > i))
+            total += f.link >= 0 ? std::min(f.health, us.fighters[f.link].health) : f.health;
+    return total;
 }
 
 // Whether their side must take all of ours within their next `theirs` turns. We cannot fell any of
@@ -462,31 +451,83 @@ bool overwhelmed(const Side& us, const Side& them, int theirs, int ours) {
     return least > guard * 1.001f + 1.0f;
 }
 
+// Lower bounds on the damage outlives() and overwhelmed() sum, every other term of which is at
+// least 0: their live members' Strength each of their turns, and our arriving members' each of
+// ours, against our fighter's health and their weakest. Past its bound either is false.
+struct ExitBounds {
+    float their_strength = 0, our_strength = 0, weakest = std::numeric_limits<float>::max();
+};
+ExitBounds exit_bounds(const Side& us, const Side& them) {
+    ExitBounds b;
+    for (int i = 0; i < them.count; ++i)
+        if (const auto& f = them.fighters[i]; f.health > 0) b.their_strength += f.strength, b.weakest = std::min(b.weakest, f.health);
+    for (int i = 0; i < us.count; ++i)
+        if (const auto& f = us.fighters[i]; f.health > 0 && f.arrives_at != never) b.our_strength += f.strength;
+    return b;
+}
+
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does.
 // `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
-// {-1, -1} if the fuel left fell below `fuel_floor` first. With `self_falls` and not Dealt, a fight
-// our fighter must outlive ends at once as {0, 0}, and one they must win as {0, horizon}.
+// {-1, -1} if the fuel left fell below `fuel_floor` first. With `stale`, a turn that ran out of fuel
+// and resumed in a later round is abandoned (World::throw_if_stale) rather than played out on that
+// round's fuel; asked where the fuel is. With `self_falls` and not Dealt, a fight
+// our fighter must outlive ends at once as {0, 0}, and one they must win as {0, horizon}; once our
+// fighter has fallen, one the rest of our side must outlive ends as {0, 0}.
 template <bool Dealt = false>
 std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = fight_horizon,
-                             std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0) {
+                             std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0, const World* stale = nullptr) {
     int ours = 0, theirs = 0;
     int watched = self_falls ? us.self : -1;
     // Asked at the start and as either side loses a member.
     for (int t = 0, alive = -1; t < 2 * horizon; ++t) {
         if (!Dealt && self_falls && us.alive + 16 * them.alive != alive) {
             alive = us.alive + 16 * them.alive;
-            if (watched >= 0 && outlives(us, them, watched, horizon - theirs, horizon - ours)) return {0, 0};
-            if (overwhelmed(us, them, horizon - theirs, horizon - ours)) {
-                if (watched >= 0) *self_falls = true;
-                return {0, horizon};
+            const int theirs_left = horizon - theirs, ours_left = horizon - ours;
+            const auto bound = exit_bounds(us, them);
+            if (watched >= 0) {
+                if (static_cast<float>(theirs_left) * bound.their_strength < watched_health(us, watched)) {
+                    if (outlives(us, them, watched, theirs_left, ours_left)) {
+                        if constexpr (!Dealt) {
+                            debug_block({ ++memo_stats.exits[0]; });
+                        }
+                        return {0, 0};
+                    }
+                } else if constexpr (!Dealt) {
+                    debug_block({
+                        if (outlives(us, them, watched, theirs_left, ours_left))
+                            std::printf("PREFILTER-MISMATCH %d outlives\n", cambc::round_number());
+                    });
+                }
+            } else if (us.alive > 0) {
+                // Our fighter fell: the rest of our side outliving them is all that is left to know.
+                const float health = side_health(us);
+                if (static_cast<float>(theirs_left) * bound.their_strength < health
+                    && most_taken(us, them, theirs_left, ours_left) * 1.001f + 1.0f < health) {
+                    if constexpr (!Dealt) {
+                        debug_block({ ++memo_stats.exits[2]; });
+                    }
+                    return {0, 0};
+                }
+            }
+            if (static_cast<float>(ours_left) * bound.our_strength < bound.weakest) {
+                if (overwhelmed(us, them, theirs_left, ours_left)) {
+                    if (watched >= 0) *self_falls = true;
+                    if constexpr (!Dealt) {
+                        debug_block({ ++memo_stats.exits[1]; });
+                    }
+                    return {0, horizon};
+                }
+            } else if constexpr (!Dealt) {
+                debug_block({
+                    if (overwhelmed(us, them, theirs_left, ours_left)) std::printf("PREFILTER-MISMATCH %d overwhelmed\n", cambc::round_number());
+                });
             }
         }
-        if (!Dealt && us.turn < us.quiet_until && them.turn < them.quiet_until) {
-            t = play_quiet(us, them, t, 2 * horizon, they_first, ours, theirs);
-            if (t == 2 * horizon) break;
+        if (t % 8 == 7) {
+            if (fuel_floor && fuel() < fuel_floor) return {-1, -1};
+            if (stale) stale->throw_if_stale();
         }
-        if (fuel_floor && t % 8 == 7 && fuel() < fuel_floor) return {-1, -1};
         const bool their_turn = (t % 2 == 0) == they_first;
         // act()'s branch, counted here: trade()'s debug_block runs act() too, and debug blocks
         // must not nest.
@@ -494,6 +535,8 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             debug_block({
                 const Side& s = their_turn ? them : us;
                 ++memo_stats.act[s.stunned == 0 && s.turn < s.quiet_until && s.alive == s.quiet_alive ? 0 : s.plain ? 1 : 2];
+                ++memo_stats.sim_acts;
+                ++sim_stats_now.acts[static_cast<std::size_t>(sim_context_now.caller)];
             });
         }
         if (their_turn) {
@@ -509,7 +552,12 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             ++ours;
         }
         // Ren's reflection can fell the side whose turn it is.
-        if (watched >= 0 && us.fighters[watched].health <= 0) *self_falls = true, watched = -1;
+        if (watched >= 0 && us.fighters[watched].health <= 0) {
+            *self_falls = true, watched = -1;
+            if constexpr (!Dealt) {
+                debug_block({ memo_stats.fall_at = memo_stats.sim_acts; });
+            }
+        }
         if (us.alive == 0) return {0, std::max(1, theirs)};
         if (them.count > 0 && them.alive == 0) return {std::max(1, ours), 0};
     }
@@ -520,14 +568,14 @@ constinit std::array<Side, 2> debug_sides{};
 
 // Only the order where they strike first: `lost` is all callers need.
 // Plays the fight out on the sides given, which callers discard: copying them is costly.
-Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first = true, int horizon = fight_horizon) {
+Trade trade(Side& us, Side& them, std::uint64_t fuel_floor, const World& world, bool they_first, int horizon) {
     Trade t;
     t.allies = us.count;
     t.enemies = them.count;
     if constexpr (debug_fights) t.our_health = us.health(), t.their_health = them.health();
     if (them.count == 0) return t;
     debug_block({ debug_sides = {us, them}; });
-    const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, horizon, debug_fights ? &t.dealt : nullptr, fuel_floor);
+    const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, horizon, debug_fights ? &t.dealt : nullptr, fuel_floor, &world);
     debug_block({
         // An early end (outlives, overwhelmed) must agree with the fight played out.
         bool falls = false;
@@ -1457,12 +1505,6 @@ int unseen_radius(int reach, int tiles) {
 
 namespace {
 
-// The most an unseen enemy's threat has cost to build so far, 0 before the first.
-std::uint64_t& costliest_unseen() {
-    static std::uint64_t cost = 0;
-    return cost;
-}
-
 std::vector<Threat>& threat_pool() {
     static std::vector<Threat> pool;
     return pool;
@@ -1487,6 +1529,12 @@ std::uint32_t next_generation() {
 
 } // namespace
 
+SimContext& sim_context() { return sim_context_now; }
+SimStats& sim_stats() { return sim_stats_now; }
+
+constinit std::array<Safety::DebugKey, 8> Safety::debug_keys_{};
+constinit unsigned Safety::debug_key_next_ = 0;
+
 std::vector<Safety::CampHit>& Safety::member_pool() {
     static std::vector<CampHit> pool;
     return pool;
@@ -1502,11 +1550,31 @@ Safety::~Safety() {
     debug_block({
         auto& m = memo_stats;
         if (m.sims | m.hits | m.idle_hits | m.pursuit_hits | m.act[0] | m.act[1] | m.act[2])
-            std::printf("MEMO %d %d %d %d %d %d %d %d %d\n", world_.round, m.sims, m.hits, m.kept, m.idle_hits, m.pursuit_hits,
-                        m.act[0], m.act[1], m.act[2]);
+            std::printf("MEMO %d %d %d %d %d %d %d %d %d exits=%d/%d/%d\n", world_.round, m.sims, m.hits, m.kept, m.idle_hits, m.pursuit_hits,
+                        m.act[0], m.act[1], m.act[2], m.exits[0], m.exits[1], m.exits[2]);
         if (m.verdicts)
             std::printf("VERDICT %d %d %d %d %d\n", world_.round, m.verdicts, m.verdict_sims, m.verdict_memo, m.verdict_dom);
         m = {};
+        auto& s = sim_stats_now;
+        static constexpr std::array<const char*, SimStats::callers> names{"other", "wh_stand", "wh_pursue", "prey", "srch_guard", "path_guard", "idle"};
+        static std::array<char, 1024> line;
+        int n = 0;
+        const auto put = [&](const char* format, auto... v) {
+            if (n < static_cast<int>(line.size())) n += std::snprintf(line.data() + n, line.size() - static_cast<std::size_t>(n), format, v...);
+        };
+        for (int c = 0; c < SimStats::callers; ++c)
+            if (s.sims[c] | s.memo[c] | s.dom[c])
+                put(" %s=%d/%d/%d/%d/%llu", names[static_cast<std::size_t>(c)], s.sims[c], s.memo[c], s.dom[c], s.acts[c],
+                    static_cast<unsigned long long>(s.fuel[c]));
+        if (s.p1a_would) put(" p1a=%d/%d", s.p1a_would, s.p1a_flip);
+        if (s.p1b_asks) put(" p1b=%d/%d", s.p1b_asks, s.p1b_clean);
+        if (s.p2_asks) put(" p2=%d/%d/%d/%d", s.p2_asks, s.p2_would, s.p2_flip, s.p2_unknown);
+        if (s.p4_calls) put(" p4=%d/%d", s.p4_calls, s.p4_moot);
+        if (s.need_sims[0] | s.need_sims[1] | s.need_sims[2])
+            put(" need=%d/%d/%d/%d/%d/%d", s.need_sims[0], s.need_after_fall[0], s.need_sims[1], s.need_after_fall[1], s.need_sims[2],
+                s.need_after_fall[2]);
+        if (n > 0) std::printf("SIMS %d %u%s\n", world_.round, static_cast<std::uint32_t>(world_.me().handle), line.data());
+        s = {};
     });
 }
 
@@ -1644,22 +1712,18 @@ void Safety::invalidate() {
     built_ = false;
     refresh_ = true;
     reached_ = 0;
-    build_cost_ = 0;
     threat_count_ = 0;
     threat_mask_ = 0;
     members_known_ = false;
     camp_area_.reset();
     enemy_area_.reset();
     gone_.fill(0);
-    reachable_known_ = false;
 }
 
 void Safety::refresh() {
     Phase phase{"safety_refresh"};
     refresh_ = true;
     gone_.fill(0);
-    build_cost_ = 0;
-    reachable_known_ = false;
     // Fights outlive invalidate() and reobserve(), so a kill must still drop those naming the dead.
     if (!built_ && !members_known_ && fight_count_ == 0) return;
     bool changed = false;
@@ -1712,8 +1776,6 @@ bool Safety::reobserve() {
     known_ &= enemies;
     counted_ &= enemies;
     listed_ = false;
-    build_cost_ = 0;
-    reachable_known_ = false;
     // Every mode's key: pursue and idle keys name only visible enemies, so they all stay.
     drop_fights(unseen);
     generation_ = next_generation();
@@ -1795,7 +1857,6 @@ void Safety::build() {
         const int tiles = x.tiles;
         const float weight = x.weight;
         if (weight == 0) continue;
-        const auto before = fuel();
         auto& t = next_threat(threats_, threat_count_);
         threat_mask_ |= static_cast<std::uint16_t>(1u << e.index);
         t.enemy = e.index;
@@ -1809,7 +1870,6 @@ void Safety::build() {
         clear_board(t.area);
         field.compute(world_.map().walls, e.possible, t.area, static_cast<std::uint16_t>(radius));
         t.steps = &field;
-        if (const auto after = fuel(); after < before) costliest_unseen() = std::max(costliest_unseen(), before - after);
     }
 }
 
@@ -2130,10 +2190,22 @@ Trade Safety::new_fight(std::uint32_t key) {
 }
 
 Trade Safety::engage(vec2 p, Engage e) {
+    int sims = 1;
+    return *engage_if(p, e, sims);
+}
+
+std::optional<Trade> Safety::engage_if(vec2 p, Engage e, int& sims) {
     Phase phase{"engage"};
     world_.throw_if_stale();
     FightKey k;
-    return shape(p, e, k) ? play(k) : Trade{};
+    if (!shape(p, e, k)) return Trade{};
+    Trade t;
+    // fight_calibration.py reads every field of a debug_fights trade: none is settled then.
+    const int how = recall(k, t);
+    if (how == 0 && sims <= 0) return std::nullopt;
+    if (how == 0) --sims;
+    if (how == 0 || (debug_fights && how == 2)) t = run(k, k.who >> 16);
+    return t;
 }
 
 // Per COMBAT-MERGE.md's rule table.
@@ -2142,11 +2214,20 @@ bool Safety::shape(vec2 p, const Engage& e, FightKey& k) {
     k.arrive = 0;
     k.mode = static_cast<std::uint8_t>(e.mode);
     k.horizon = static_cast<std::uint8_t>(std::clamp(e.horizon, 1, 255));
-    std::uint32_t enemies = 0;
+    std::uint32_t enemies = 0, allies = ~0u;
     if (e.mode == Mode::stand) {
         const auto& row = tile(p);
         enemies = row.vis_mask | row.unseen_mask;
-        if (e.with_enemy >= 0) enemies |= 1u << e.with_enemy;
+        if (e.with_enemy >= 0) {
+            // The prey's escorts join once we reach it: every visible foe whose Strike reaches its
+            // tile fights too (no Reach built: over the fight's turns walls only delay them), and
+            // only the allies near both tiles help.
+            const vec2 q = world_.enemies[static_cast<std::size_t>(e.with_enemy)].pos;
+            std::uint16_t escorts = 0;
+            strike_sum(q, &escorts);
+            enemies |= escorts | 1u << e.with_enemy;
+            allies = fighting_allies(world_, q);
+        }
         if (enemies == 0) return false;
     } else {
         // Pursue: within `approach` walks and off their spawn; idle: arriving within the horizon.
@@ -2171,15 +2252,9 @@ bool Safety::shape(vec2 p, const Engage& e, FightKey& k) {
     k.camp_q = static_cast<std::uint16_t>(std::clamp(static_cast<int>(camp / camp_step + 0.5f), 0, 0xFFFF));
     if (enemies == 0 && k.camp_q == 0) return false;
     k.camp_turns = k.camp_q == 0 ? 0 : idle ? k.horizon : static_cast<std::uint8_t>(std::clamp(exit_rounds(p), 0, 255));
-    k.who = (idle ? 1u << world_.me().index : fighting_allies(world_, p)) | enemies << 16;
+    k.who = (idle ? 1u << world_.me().index : fighting_allies(world_, p) & allies) | enemies << 16;
+    debug_block({ debug_keys_[debug_key_next_++ % debug_keys_.size()] = {p, generation_, k}; });
     return true;
-}
-
-Trade Safety::play(const FightKey& k) {
-    Trade t;
-    // fight_calibration.py reads every field of a debug_fights trade: none is settled then.
-    if (const int how = recall(k, t); how == 0 || (debug_fights && how == 2)) t = run(k, k.who >> 16);
-    return t;
 }
 
 namespace {
@@ -2191,8 +2266,12 @@ bool covers(std::uint32_t worse, std::uint32_t key) { return (key & ~worse & 0xF
 } // namespace
 
 int Safety::recall(const FightKey& k, Trade& out) {
-    const bool stand = k.mode == static_cast<std::uint8_t>(Engage::Mode::stand);
-    if (stand && !linked_known_) note_linked();
+    constexpr auto stand_mode = static_cast<std::uint8_t>(Engage::Mode::stand);
+    const bool stand = k.mode == stand_mode;
+    // A pursuit is a stand fight we strike first, its enemies arriving no sooner: a stand fight won
+    // cleanly against at least its enemies wins it too.
+    const bool settles = stand || k.mode == static_cast<std::uint8_t>(Engage::Mode::pursue);
+    if (settles && !linked_known_) note_linked();
     int by = -1;
     for (int i = 0; i < std::min(fight_count_, max_fights); ++i) {
         const auto& f = fights_[static_cast<std::size_t>(i)];
@@ -2203,18 +2282,20 @@ int Safety::recall(const FightKey& k, Trade& out) {
                    : k.mode == static_cast<std::uint8_t>(Engage::Mode::pursue) ? m.pursuit_hits
                                                                                 : m.hits);
                 m.kept += fight_generation[static_cast<std::size_t>(i)] != generation_;
+                ++sim_stats_now.memo[static_cast<std::size_t>(sim_context_now.caller)];
             });
             out = f.trade;
             return 1;
         }
         // Cassi and Issac fall together: one more of them can turn a fight either way.
-        if (by >= 0 || !stand || f.key.mode != k.mode || f.key.horizon != k.horizon || ((f.key.who ^ k.who) & linked_who_)) continue;
+        if (by >= 0 || !settles || f.trade.cut || f.key.mode != stand_mode || f.key.horizon != k.horizon || ((f.key.who ^ k.who) & linked_who_))
+            continue;
         // The camps hit our weakest on each of their first camp_turns turns: more for longer only
         // makes a fight worse, like more enemies.
         const bool camp_worse = f.key.camp_q >= k.camp_q && f.key.camp_turns >= k.camp_turns;
         const bool camp_milder = f.key.camp_q <= k.camp_q && f.key.camp_turns <= k.camp_turns;
         if (const auto& t = f.trade; !t.lost && !t.self_falls ? camp_worse && covers(f.key.who, k.who)
-                                                              : t.lost && camp_milder && covers(k.who, f.key.who))
+                                                              : stand && t.lost && camp_milder && covers(k.who, f.key.who))
             by = i;
     }
     if (by < 0) return 0;
@@ -2235,39 +2316,58 @@ int Safety::recall(const FightKey& k, Trade& out) {
         key_sides(world_, k, k.who >> 16, us, them, made);
         bool falls = false;
         std::array<float, 4> dealt{};
-        const auto [a, b] = simulate<true>(us, them, true, &falls, k.horizon, &dealt);
-        if ((b > 0) != lost || falls != lost)
-            std::printf("DOMINANCE-MISMATCH %d %x %x %d %d %d %d %d %d %d\n", world_.round, k.who, settler.key.who, k.camp_q,
+        const auto [a, b] = simulate<true>(us, them, stand, &falls, k.horizon, &dealt);
+        const bool mismatch = (b > 0) != lost || falls != lost;
+        if (mismatch)
+            std::printf("DOMINANCE-MISMATCH %d %d %x %x %d %d %d %d %d %d %d\n", world_.round, k.mode, k.who, settler.key.who, k.camp_q,
                         settler.key.camp_q, k.camp_turns, settler.key.camp_turns, lost ? 1 : 0, b > 0 ? 1 : 0, falls ? 1 : 0);
         made_fighters = debug_fighters;
+        ++sim_stats_now.dom[static_cast<std::size_t>(sim_context_now.caller)];
+        if (!stand) ++sim_stats_now.p1a_would, sim_stats_now.p1a_flip += mismatch;
     });
     return 2;
 }
 
 Trade Safety::run(const FightKey& k, std::uint32_t enemies) {
-    Phase phase{"new_fight"};
+    Phase phase{k.mode == static_cast<std::uint8_t>(Engage::Mode::stand)    ? "new_fight/stand"
+                : k.mode == static_cast<std::uint8_t>(Engage::Mode::pursue) ? "new_fight/pursue"
+                                                                             : "new_fight/idle"};
+    std::uint64_t debug_start = 0;
+    std::uint32_t debug_round = 0;
+    debug_block({
+        debug_start = fuel();
+        debug_round = round_now();
+        memo_stats.sim_acts = 0;
+        memo_stats.fall_at = -1;
+    });
     Side us, them;
     key_sides(world_, k, enemies, us, them, made_);
     const bool stand = k.mode == static_cast<std::uint8_t>(Engage::Mode::stand);
     Trade t;
-    const auto before = stand ? fuel() : 0;
     if (k.mode == static_cast<std::uint8_t>(Engage::Mode::idle)) {
         t.allies = us.count;
         t.enemies = them.count;
-        t.turns_to_kill_us = simulate(us, them, true, nullptr, k.horizon).second;
+        t.turns_to_kill_us = simulate(us, them, true, nullptr, k.horizon, nullptr, 0, &world_).second;
         t.lost = t.self_falls = t.turns_to_kill_us != 0;
     } else {
-        t = trade(us, them, end_reserve, stand, k.horizon);
+        t = trade(us, them, end_reserve, world_, stand, k.horizon);
     }
-    debug_block({ ++memo_stats.sims; });
-    // A cut fight is a guess forced by the fuel left: asked again, it may be played out.
-    if (!t.cut) {
-        const int i = fight_count_++ % max_fights;
-        fights_[static_cast<std::size_t>(i)] = {k, t};
-        debug_block({ fight_generation[static_cast<std::size_t>(i)] = generation_; });
-    }
-    if (stand)
-        if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
+    debug_block({
+        ++memo_stats.sims;
+        auto& s = sim_stats_now;
+        const auto c = static_cast<std::size_t>(sim_context_now.caller);
+        ++s.sims[c];
+        if (round_now() == debug_round) s.fuel[c] += debug_start - std::min(debug_start, fuel());
+        if (k.mode != static_cast<std::uint8_t>(Engage::Mode::idle)) {
+            const auto need = static_cast<std::size_t>(sim_context_now.need);
+            ++s.need_sims[need];
+            if (memo_stats.fall_at >= 0) s.need_after_fall[need] += memo_stats.sim_acts - memo_stats.fall_at;
+        }
+    });
+    // A cut fight, a guess forced by the fuel left, answers its own key again but settles no other.
+    const int i = fight_count_++ % max_fights;
+    fights_[static_cast<std::size_t>(i)] = {k, t};
+    debug_block({ fight_generation[static_cast<std::size_t>(i)] = generation_; });
     return t;
 }
 
@@ -2279,52 +2379,6 @@ Trade Safety::run(const FightKey& k, std::uint32_t enemies) {
     for (std::size_t i = 0; i < world_.enemies.size() && i < 16; ++i)
         if (world_.enemies[i].facts().passive == Passive::linked_pair) bits |= 1u << (16 + i);
     linked_who_ = bits;
-}
-
-[[gnu::noinline]] void Safety::count_champions() {
-    champions_ = 0;
-    for (const auto& a : world_.allies) champions_ += a.alive && (a.is_self || a.visible);
-    champions_ += std::popcount(seen_enemies());
-}
-
-std::uint64_t Safety::fight_cost_estimate() {
-    if (champions_ < 0) count_champions();
-    const auto champions = static_cast<std::uint64_t>(champions_);
-    const auto simulation = std::max(std::max(std::uint64_t{10000}, 2000 + 2000 * champions), costliest_fight_ + costliest_fight_ / 4);
-    return simulation + query_cost_estimate();
-}
-
-[[gnu::noinline]] void Safety::list_reachable() {
-    reachable_known_ = true;
-    reachable_ = 0;
-    for (auto left = seen_enemies(); left; left &= left - 1)
-        if (const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-            !(reached_ >> e.index & 1) && !gone(e) && struck(e).strike.reach >= 0)
-            reachable_ |= static_cast<std::uint16_t>(1u << e.index);
-}
-
-std::uint64_t Safety::query_cost_estimate() {
-    // A visible threat's Reach is built on its first query, built_ or not: engage() never builds.
-    if (!reachable_known_) list_reachable();
-    return 2000 * static_cast<std::uint64_t>(std::popcount(static_cast<unsigned>(reachable_ & ~reached_))) + build_cost_estimate();
-}
-
-std::uint64_t Safety::build_cost_estimate() {
-    if (built_) return 0;
-    if (build_cost_) return build_cost_;
-    return estimate_build();
-}
-
-[[gnu::noinline]] std::uint64_t Safety::estimate_build() {
-    // A visible threat costs its Reach alone, which query_cost_estimate() counts.
-    std::uint64_t cost = 0;
-    for (auto left = live_enemies() & ~std::uint32_t{threat_mask_}; left; left &= left - 1) {
-        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (e.visible || gone(e) || foe(e).weight == 0) continue;
-        cost += costliest_unseen() ? costliest_unseen() + costliest_unseen() / 4 : 3000 + 25 * search_chunks();
-    }
-    build_cost_ = cost;
-    return cost;
 }
 
 Trade Safety::pursuit(vec2 p, int approach) {
@@ -2443,7 +2497,6 @@ Blow Safety::unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p, bool win
         }
         world_.throw_if_stale();
         build_threats(bit);
-        build_cost_ = 0;
     }
     for (int i = 0; i < threat_count_; ++i)
         if (const auto& t = threats_[static_cast<std::size_t>(i)]; t.enemy == e.index) return t.at(p);
@@ -2652,7 +2705,17 @@ bool Safety::guarded(vec2 q) {
     guard_asked_ |= bit;
     FightKey k;
     bool dies = false;
-    if (!exposed(q, k, dies) || !guard_rule(judge(k), dies)) return false;
+    if (!exposed(q, k, dies)) return false;
+    SimNeed outer{};
+    debug_block({
+        outer = sim_context_now.need;
+        sim_context_now.need = dies || linked_partner(world_, world_.me()) ? SimNeed::falls : SimNeed::lost;
+    });
+    const Verdict v = judge(k);
+    debug_block({ sim_context_now.need = outer; });
+    // Its sim may run out of fuel: a resumed turn must not act on last round's beliefs.
+    world_.throw_if_stale();
+    if (!guard_rule(v, dies)) return false;
     guard_true_ |= bit;
     return true;
 }
@@ -2672,6 +2735,74 @@ const bitboard* Safety::guarded_board() {
 }
 
 std::uint32_t Safety::guard_epoch() const { return guarded_generation_ == generation_ ? guard_epoch_ : generation_; }
+
+const Safety::FightKey* Safety::debug_key_at(vec2 p, std::uint8_t mode) const {
+    for (unsigned j = 1; j <= debug_keys_.size(); ++j)
+        if (const auto& d = debug_keys_[(debug_key_next_ - j) % debug_keys_.size()]; d.generation == generation_ && d.p == p && d.key.mode == mode)
+            return &d.key;
+    return nullptr;
+}
+
+bool Safety::debug_clean_known(const FightKey& k) const {
+    std::uint32_t linked = 0;
+    for (std::size_t i = 0; i < world_.allies.size() && i < 16; ++i)
+        if (world_.allies[i].facts().passive == Passive::linked_pair) linked |= 1u << i;
+    for (std::size_t i = 0; i < world_.enemies.size() && i < 16; ++i)
+        if (world_.enemies[i].facts().passive == Passive::linked_pair) linked |= 1u << (16 + i);
+    for (int i = 0; i < std::min(fight_count_, max_fights); ++i) {
+        const auto& f = fights_[static_cast<std::size_t>(i)];
+        if (f.key.who == 0 || f.key.mode != static_cast<std::uint8_t>(Engage::Mode::stand) || f.key.horizon != k.horizon
+            || ((f.key.who ^ k.who) & linked) || f.trade.lost || f.trade.self_falls)
+            continue;
+        if (f.key.camp_q >= k.camp_q && f.key.camp_turns >= k.camp_turns && covers(f.key.who, k.who)) return true;
+    }
+    return false;
+}
+
+bool Safety::debug_clean_played(const FightKey& k, bool they_first) {
+    debug_fighters = made_fighters;
+    std::uint32_t made = made_;
+    Side us, them;
+    key_sides(world_, k, k.who >> 16, us, them, made);
+    bool falls = false;
+    std::array<float, 4> dealt{};
+    const auto [a, b] = simulate<true>(us, them, they_first, &falls, k.horizon, &dealt);
+    made_fighters = debug_fighters;
+    return b == 0 && !falls;
+}
+
+void Safety::debug_note_prey(vec2 at, int enemy, bool won) {
+    auto& s = sim_stats_now;
+    ++s.p2_asks;
+    const int sa = table_generation_ == generation_ ? slot_of(at) : -1, sc = window_slot(centre_);
+    if (sa < 0 || sc < 0 || !(threats_known_ >> sa & 1) || !(threats_known_ >> sc & 1)) {
+        ++s.p2_unknown;
+        return;
+    }
+    const auto& ra = rows_[static_cast<std::size_t>(sa)];
+    const auto& rc = rows_[static_cast<std::size_t>(sc)];
+    if (((ra.vis_mask | 1u << enemy) & ~std::uint32_t{rc.vis_mask}) != 0 || ra.vis > rc.vis) return;
+    const auto* key = debug_key_at(centre_, static_cast<std::uint8_t>(Engage::Mode::stand));
+    if (!key) {
+        ++s.p2_unknown;
+        return;
+    }
+    if (!debug_clean_known(*key)) return;
+    ++s.p2_would;
+    s.p2_flip += !won;
+}
+
+void Safety::debug_note_pursue(vec2 p) {
+    const auto* pursue = debug_key_at(p, static_cast<std::uint8_t>(Engage::Mode::pursue));
+    if (!pursue) return;
+    const auto* stand = debug_key_at(p, static_cast<std::uint8_t>(Engage::Mode::stand));
+    FightKey k = stand ? *stand : *pursue;
+    k.who |= pursue->who & 0xFFFF0000u;
+    k.arrive = 0;
+    k.mode = static_cast<std::uint8_t>(Engage::Mode::stand);
+    ++sim_stats_now.p1b_asks;
+    sim_stats_now.p1b_clean += debug_clean_played(k, true);
+}
 
 // guard_true_ gains a bit once per tile an epoch: asking again changes nothing.
 std::uint32_t Safety::guard_stamp() const {
