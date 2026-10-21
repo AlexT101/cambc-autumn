@@ -653,3 +653,15 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   out-of-fuel turns 9223 in 743 games vs 1853 in 522. On gen-s1 alone 65.2% of 512 (61.0-69.2), out-of-fuel turns
   4786 vs 837. Against nemesis, both on their own drafts: 93.0% of 1606 (91.6-94.1; ladder 92.9, gen 94.1, gen-s1
   92.2, gen-s2 92.6); out-of-fuel turns 11516 in 1153 games vs 0. v8 stays (under the 80% bar).
+- raw-bindings (2026-10-21; a dev confirmed bots may call the engine's host imports directly): the runner (cambc
+  3.0.4, read from its binary) links the imports.h set plus a few undeclared ones: `champion_movement_mask` (our own
+  1-step walk tiles this turn, visible champions removed), `bc_Bitboard_DrawManhattan`, `champion_respawn_timer`
+  (unprobed: would read hidden state if it works for enemies), a host-handle board API and control-ward imports. None
+  saves fuel. `fuel_pause`/`fuel_resume`/`fuel_adjust` link only in debug builds (release refuses the module) and the
+  GC fuel windows only for Python. Host imports charge for their work (`charge_fuel`), as the measured prices show.
+  So the gain left was the SDK wrappers still on hot paths: enemies and allies read raw instead of building a
+  cambc::champion (two ability_props calls, a record per accessor, buffs() allocating) in attack_target, enemy_cast,
+  the strike search's reads and its actions; our abilities read and cast by slot instead of copying
+  cambc::self().abilities(); avoid(), camp_area(), enemy_area() and the dash landings in scratch boards. bench 16/16
+  identical at 100M; total fuel -1.12% (mean a turn -395), p90 -1.4%, p99 -1.5%; turns over 90k -1.12% (-1.5k each),
+  turns over 100k 663 -> 625; every bench map -0.7% to -1.7%. No A/B or real-budget run (fuel-only, byte-identical).

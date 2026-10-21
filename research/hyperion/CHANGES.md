@@ -366,3 +366,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    partner_radius, since it only sizes pick_up's partner check.
 52. 2026-10-21 (not yet submitted). Unused code clang flagged: plan.cpp's inside_map, to_grid and an unused E, and
    the unused `me` locals in prey and chase. Bench 16/16 identical.
+53. 2026-10-21 (not yet submitted). Raw engine reads on the targeting and strike paths, behaviour-identical (bench
+   16/16 identical at 100M, total fuel -1.12%, p99 -1.5%): util.h record_of/visible_record/has_stun/champion_at and
+   my_damage/my_heal/my_shield/my_cooldown/cast_slot/attack_champion replace cambc::champion objects
+   (ChampionBelief::live() deleted) and copies of cambc::self().abilities(); self_abilities' ready() returns a slot.
+   avoid(), camp_area(), enemy_area() and dash_landings_from() return scratch boards instead of allocating.
