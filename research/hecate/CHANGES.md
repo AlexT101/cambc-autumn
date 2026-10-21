@@ -332,3 +332,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    takes each point's 3x3 as a row mask less the centres already added, and clears the whole near table when over 8
    points would clear around themselves. Measured vs main: 50.2% (1094, ladder 48.6, gen 50.0, fresh 50.6); out-of-fuel
    turns 6900 vs 6865 (level).
+46. 2026-10-21 (not yet submitted). Turn-start ward (GAPS 2, WARDS.md proposal 2): decide places the ward right after
+   continue_recall cancels our recall (ward and recall share one channel, so earlier calls were always refused), reading
+   only bush clusters already found (`StaticMap::bush_clusters_found`); the turn-end call stays and grows them. After an
+   early ward it observes again, rebuilds Safety and drops Pathing's cached occupancy, so the strike and casts see
+   through it this turn. 50.7% vs main (1094, ladder 50.0, gen 48.0, fresh 53.5); out-of-fuel turns 10112 vs 10123.

@@ -564,7 +564,14 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   48.6): level, dropped for fuel. Out-of-fuel turns 1487 vs 1154, all in decide (gen-huge-shared 158 vs 27): at turn
   start ward_bushes grows bush clusters down to small_cost_estimate + end_reserve, so decide starts nearly empty
   (ward-no-bushes-clusters shortcuts 1997 in REF, near 0 in CAND). Retry only with clusters already found (warm-up's
-  find_all_bush_clusters) or the search moved after decide.
+  find_all_bush_clusters) or the search moved after decide. Correction (gaps-ward-early-2's trace): this version placed
+  no ward at turn start at all (all 39,946 calls refused: start_recall leaves us channelling into the next turn); turn
+  start held at most 4.2k fuel, and the shortcuts were 1,122 vs 1,997, not near 0.
+- gaps-ward-early-2 (2026-10-21; GAPS 2): the ward placed in decide right after continue_recall cancels the recall,
+  from bush clusters already found only (bush_clusters_found; the turn-end call grows them); after a ward, observe,
+  rebuild Safety (refresh() keeps the seen/unseen lists and cached strikes, so newly revealed enemies would stay
+  modelled from turn-start beliefs) and invalidate Pathing's occupancy. 13 turn-start wards on 00ambush (main 0).
+  50.7% vs main (1094, ladder 50.0, gen 48.0, fresh 53.5); out-of-fuel turns 10112 vs 10123. Level and sound: kept.
 - gaps-stat-by-use (2026-10-21; GAPS.md, landed as 278a531): main stat from our counted basic attacks and casts
   (count_use at act()'s end) instead of the per-cooldown formula, which stays until both counts are non-zero; a begun
   emblem is finished in the stat it was begun in. Travel dashes count as landing casts, so Heart of Ruin flips to
