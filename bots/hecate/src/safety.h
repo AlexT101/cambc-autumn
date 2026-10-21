@@ -303,8 +303,8 @@ private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
     // Every credible threat at full damage, plus camps.
     float worst_damage(vec2 p);
-    // Where a live member of an awake (or maybe awake) group would attack us: within 3, and no
-    // visible champion nearer it (or as near with a lower id).
+    // Where a live member of an awake (or maybe awake) group would attack us: within its range, and
+    // no visible champion nearer it (or as near and acting first).
     const bitboard& camp_area();
     // Drop everything cached, after something this turn changed the fight: a kill, a stun or a
     // camp kill. Later queries recheck the engine for champions and monsters that died.

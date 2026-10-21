@@ -1408,7 +1408,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
                 auto& o = others.at[near[k]];
                 if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o));
             }
-            if (reach >= 0) out[count++] = {m.pos, m.strength, w, reach};
+            if (reach > 0) out[count++] = {m.pos, m.strength, w, reach};
         }
     });
     member_count_ = count;
@@ -1728,7 +1728,7 @@ const bitboard& Safety::camp_area() {
     if (!camp_area_) {
         bitboard b;
         for (const auto& m : awake_members())
-            if (m.reach > 0) draw_square(b, m.pos, static_cast<float>(m.reach));
+            draw_square(b, m.pos, static_cast<float>(m.reach));
         camp_area_ = std::move(b);
     }
     return *camp_area_;
@@ -1752,7 +1752,7 @@ bitboard Safety::avoid() { return camp_area() | enemy_area(); }
 // its radius, so it comes within r of p exactly when `possible` comes within radius + r.
 bool Safety::avoid_within(vec2 p, int r) {
     for (const auto& m : awake_members())
-        if (m.reach > 0 && dist(p, m.pos) <= m.reach + r) return true;
+        if (dist(p, m.pos) <= m.reach + r) return true;
     if (built_) return any_within(enemy_area(), p, r);
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
