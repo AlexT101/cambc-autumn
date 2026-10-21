@@ -2,12 +2,50 @@
 
 Phase 1 (search core) on branch `orch/strike-p1`. Spec: [STRIKE-SEARCH.md](STRIKE-SEARCH.md).
 
+## Round 2 (after the first A/B: 38.5%, 40.5% at 100M, deaths +34%)
+
+What the 100M replays showed, and what changed:
+- **Refused dashes were a rules error.** Every SRCH-REFUSED (113 at 100M, all dashes) had every 2-step path through a
+  visible enemy's tile. `probe-dash-enemy` confirmed it: a dash path cannot cross a visible enemy champion
+  ("Destination is unreachable"); allies and unseen enemies do not block (`probe-allowances`). The YAML said
+  champions were crossable. Fixed in the search's `pass_` and in `dash_landings_from` (which main's retreat dashes
+  use too).
+- **Moves must lead to a strike.** The search also offered moves with no strike after them (W, D, A W, A D, A W D),
+  scored by one turn of 0.25 x blow. They overrode the goal's walk, including `intent.walks == false` turns ("the
+  fight is here") and anchored ones, and spent the dash retreat needs. Deaths after two retreat turns (RR) were
+  +74% on gen (830 vs 478), and rose for every champion type. A move is now offered only when a strike follows it
+  from where it ended (`Node::owed`, `strikes_left`). This is the old menu's "every move ends where it hits",
+  plus the orders it lacked. Hit-and-run (Vesper A D) is gone with it: it is a retreat decision.
+- **Wakes.** A woken striker hits every camp phase we stay in its reach: priced at 2 hits when our next step cannot
+  leave its reach, else 1. No landing may wake a sleeping striker or hit only camps (`land_bad`), as the old
+  menu's `landing_wakes`. Landings therefore stun no sleeper, and the landing-stun path in `wake` is gone.
+- **Fuel.**
+  - Hitting landings alike in the foes and camp groups they hit form one child (`Node::lset`), not one per tile.
+    SRCH-EXH (per tile) agrees.
+  - No move child is created without a strike left.
+  - `max_exact_queries = 10` (queries p99 9).
+  - `land_touch` memo by cell.
+  - The static `Tables` live in a union: their default member initialisers ran at start-up, charged to the first
+    turn. That made round 1 take farm shortcuts and round 2 run out of fuel on huge maps.
+- **Tools.** The engine pads stdout with NULs at line starts. `tools/fuel/oof.py` now strips them; before, its `^OOF`
+  missed lines, for main as much as for the candidate.
+
+Measured (hecate vs main as of 0ee6ac4):
+- 6 real-budget games (00packs, gen-huge-shared-720707800, gen-monolith-720700901, both sides): 0 out-of-fuel turns
+  each side (before: 5 vs 0), 0 SRCH-REFUSED/EXH/DOM.
+- Search fuel per call: mean 9.0k, p90 12.5k, p99 27k, max 44k (round 1: mean 17.8k, p99 87k, max 281k at 100M).
+- 00packs at 100M: 0 EXH/DOM/REFUSED. Its heaviest calls are Heart of Ruin fights with 2 foes (40 nodes, 96 offers,
+  ~60k of grow): settle and offers ~16k, `land_at` ~6k, `hit_unit` ~2k; the other ~36k (~900 a node) was not
+  located. The next fuel step is to meter grow's per-node work (Node and health copies, the dash and walk set-up).
+- Strength is not judged here (no A/B run by this agent).
+
 ## What exists (plan.cpp)
 
 - `plan_strikes` = `Search::read` -> `grow` (DFS) -> pricing -> execution. The old fixed menu is gone; it survives
   only as `menu_shape()` (a filter over the debug enumerator) for the dominance check.
 - **Grid.** Moves end within 3 of the start: a 7x7 bitboard in a `uint64` (`Grid`, bit (y+3)*7+x+3). `free_`
-  (walk/land: `pathing.blocked()` | guard), `pass_` (dash path: not wall or visible camp), `landings(c)` by dilation.
+  (walk/land: `pathing.blocked()` | guard), `pass_` (dash path: not wall, visible camp or visible enemy),
+  `landings(c)` by dilation, less `land_bad`.
 - **Legality per unit** as grids: `Unit::legal` (basic attack, range + sight), `cast_legal` (unit casts, range 4).
   Sight is `attack_viewers()` (new, safety.cpp): exact, except viewers in a bush beyond a step are dropped
   (conservative); `Search::viewers` adds the start tile back whenever the target is in range, as it is
@@ -15,22 +53,23 @@ Phase 1 (search core) on branch `orch/strike-p1`. Spec: [STRIKE-SEARCH.md](STRIK
 - **DFS over symbolic moves.** Walk (W) and plain dashes (D) are not expanded per tile: each attack/cast after a
   move ANDs its legality grid into the move's requirement (`req_w`, `req_d`, `req_e`), and `settle()` resolves every
   end tile a leaf can reach (segments `at_start, walked, dashed, walked_dashed, dashed_walked`). Landings that hit
-  (Heart of Ruin, `land_hits`) are expanded concretely. After a walk, a dash's landings come from the walk
+  (Heart of Ruin, `land_hits`) are expanded once per set of foes and camp groups hit (`lset`). After a walk, a dash's landings come from the walk
   tiles the actions so far still allow (`free_n & req_w`), stored as the dash's `req_d`. Ground casts: excluding-walking only, from the start, best
   centre per set of foes damaged (exact: nothing can move after).
 - **Actions/rules covered:** W, A, R, D, S (unit and ground), Cassi's stun anywhere, melee W A R A and every W
-  interleaving, ranged W R A, A then D (Vesper), A W D / A D W, attack + cast in both orders (cast priced on health
+  interleaving, ranged W R A, a move only when a strike follows it, attack + cast in both orders (cast priced on health
   after the attack), Marcella's armed attack stun (`arms`), Vendetta's kill refresh (reset and dash ready again,
   the cast spent refunded via `pending`; one cast a turn still holds), Varg splash both ways, camps as targets only
   for Vendetta (killable) and Varg (splash onto a foe).
 - **Wake pricing** (`wake`, `find_wakers`): touched groups' sleeping strikers target the nearest of us at E, visible
   allies, enemies held in place (acted or channelling); bans: sleeping Monolith member, ally recalling/tributing/
-  on a cleared camp tile, a lethal woken hit. Landing-stunned members skip. Memoised per end tile (`wake_at`).
+  on a cleared camp tile, a lethal woken hit. Two hits on us when a step cannot leave its reach. Memoised per end
+  tile (`wake_at`).
 - **Leaf score** = today's: hits (`hit_worth`, stun_worth) - cast 40 / dash 2*step / reset 0 + shield_worth(start)
   if the cast is unused + step if the walk is unused; then + progress - camps - 0.25 x Reach blow (HoR foes scaled by
   their new damage_scale) - unseen threats (`threats_at`) for end tiles 2+ away.
 - **Pricing:** tiles picked by bound (raw + progress), camps subtracted when picked, foes priced largest Strike
-  share first and cut once the tile cannot win. `max_exact_queries` is uncapped (`1 << 30`). Distance-3 winners
+  share first and cut once the tile cannot win. `max_exact_queries` is 10. Distance-3 winners
   must pass `Safety::lethal`.
 - **Execution:** the chosen leaf's concrete sequence (`Search::concrete`). A walk/dash refused by a hidden unit
   takes the best priced leaf with the same executed prefix that avoids that tile; else `strike_enemy`.
@@ -51,7 +90,7 @@ Phase 1 (search core) on branch `orch/strike-p1`. Spec: [STRIKE-SEARCH.md](STRIK
 - `SRCH r handle fuel .. read .. grow .. price .. act ..` per call. Summariser used: a ~40-line script reading
   `team-*.stdout` from the replay zips (not committed; trivial to redo).
 
-## Fuel (the blocker)
+## Fuel in round 1 (superseded by Round 2 above)
 
 - After the review fixes (4 games: 00packs vs hecate-v7 and gen-huge-shared-720707800 vs nemesis, both sides):
   0 EXH, 0 DOM, 1 REFUSED (a stale resume, above); out-of-fuel turns 31 on 00packs (both sides) and 8 on the
