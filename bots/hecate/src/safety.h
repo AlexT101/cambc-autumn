@@ -148,6 +148,11 @@ private:
     std::uint32_t stamp_ = 0;
 };
 
+// Tiles within `range` (at most 4) of `target` from which our basic attack or unit cast sees it, as
+// a Reach::Window around it: exact, but for viewers in bushes beyond a step, who are left out.
+// `store`: keep the terrain's sight mask for the game (debug checks pass false).
+Reach::Window attack_viewers(const World& world, vec2 target, int range, bool store = true);
+
 // With fuel above `fuel_floor` at the turn's end: Reach's static terrain around the tiles visible
 // enemies may step to, so fights find it ready. Sight masks are not warmed: in bench games only 1
 // in 20 of those warmed was ever read.

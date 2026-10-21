@@ -79,8 +79,9 @@ public:
     // gets closer to the target as the crow flies.
     bool descend(const Field& field, const bitboard* avoid = nullptr);
     bool step_closer(vec2 target, const bitboard* avoid = nullptr);
-    // False, spending nothing, if illegal, guarded or blocked by a hidden unit.
-    bool try_move(vec2 tile);
+    // False, spending nothing, if illegal, guarded or blocked by a hidden unit; `refused`: set
+    // unless a hidden unit was the reason.
+    bool try_move(vec2 tile, bool* refused = nullptr);
     // Tiles no step or dash may end on until cleared: routes go around them.
     void set_guard(const bitboard* guard) { guard_ = guard; }
     const bitboard* guard() const { return guard_; }

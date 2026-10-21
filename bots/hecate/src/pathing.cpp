@@ -433,7 +433,8 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     return r;
 }
 
-[[gnu::flatten]] bool Pathing::try_move(vec2 tile) {
+[[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
+    if (refused) *refused = true;
     if (guard_ && test(*guard_, tile)) return false;
     try {
         if (cambc::self().move_absolute(tile)) {
@@ -441,6 +442,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
             return true;
         }
         // A hidden unit was there: the tile is now revealed to us for the rest of the round.
+        if (refused) *refused = false;
         set_tile(bumped_, tile);
         bumped_any_ = true;
         invalidate();

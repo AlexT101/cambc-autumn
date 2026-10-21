@@ -465,31 +465,6 @@ bool cast_at_enemies(const World& world, bool keep_walk) {
     }
 }
 
-Cast& chosen_cast() {
-    static Cast chosen;
-    return chosen;
-}
-
-float enemy_cast_value(const World& world, bool keep_walk, bool& exclusive) {
-    auto& chosen = chosen_cast();
-    try {
-        chosen = enemy_cast(world, keep_walk, false);
-    } catch (const cambc::error&) {
-        chosen = {};
-    }
-    exclusive = chosen.slot >= 0 && world.me().facts().abilities[chosen.slot].excludes_walking;
-    return chosen.slot >= 0 ? chosen.value : 0.0f;
-}
-
-bool cast_chosen() {
-    const Cast cast = std::exchange(chosen_cast(), Cast{});
-    try {
-        return cast.execute();
-    } catch (const cambc::error&) {
-        return false;
-    }
-}
-
 bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value) {
     world.throw_if_stale();
     try {

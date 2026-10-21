@@ -913,7 +913,7 @@ std::array<std::uint8_t, 100 * 100> sight_known;
 
 // Who sees p, laid out around p: within 1 (`far` false) or within win_r. Far masks depend only on
 // terrain, so they are kept for the game.
-Window sight(const World& world, vec2 p, bool far) {
+Window sight(const World& world, vec2 p, bool far, bool store = true) {
     const auto& t = terrain(world.map());
     if (!far) {
         if (!t.bush(p)) return tables.square[1];
@@ -960,9 +960,25 @@ Window sight(const World& world, vec2 p, bool far) {
                 m |= tables.bits[static_cast<std::size_t>((q.y - p.y + win_r) * win_n + q.x - p.x + win_r)];
         }
     }
-    if (i < known.size()) masks[i] = m, known[i] = 1;
+    if (i < known.size() && store) masks[i] = m, known[i] = 1;
     return m;
 }
+
+} // namespace
+
+Reach::Window attack_viewers(const World& world, vec2 target, int range, bool store) {
+    range = std::clamp(range, 0, win_r);
+    const Window near = sight(world, target, false) & tables.square[std::min(range, 1)];
+    if (range <= 1) return near;
+    const auto& t = terrain(world.map());
+    if (!t.packed) return near;
+    Window bush;
+    for (int r = 0; r < win_n; ++r)
+        if (const std::uint32_t bits = t.row(t.bushes, target.x - win_r, target.y - win_r + r)) bush |= Window{bits, 0}.shl(win_n * r);
+    return (sight(world, target, true, store) & tables.square[range] & ~bush) | near;
+}
+
+namespace {
 
 // sight() laid out around the enemy at p - (dx, dy). Out of line: inlined, the shift's constants
 // were worked out on every Reach::at() call.
