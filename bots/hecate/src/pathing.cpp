@@ -583,14 +583,15 @@ bool Pathing::step_closer(vec2 target, const bitboard* avoid) {
 bitboard dash_landings_from(const StaticMap& map, vec2 from, const bitboard* also) {
     static bitboard camps{cambc::uninitialized}, excluded{cambc::uninitialized}, t{cambc::uninitialized};
     camps_into(camps);
-    // Dash paths cross holes, altars and champions but not walls or camps.
+    // Dash paths cross holes, altars, allies and unseen enemies, but not walls, camps or visible
+    // enemies (probe-dash-enemy).
+    occupancy_into(team::enemy, t);
     or_into(map.walls, camps, excluded);
+    excluded |= t;
     auto landings = excluded.reachable_tiles(from, 2);
     landings &= map.open_for_us;
-    copy_into(camps, excluded);
+    or_into(camps, t, excluded);
     occupancy_into(team::ally, t);
-    excluded |= t;
-    occupancy_into(team::enemy, t);
     excluded |= t;
     teleports_into(t);
     excluded |= t;

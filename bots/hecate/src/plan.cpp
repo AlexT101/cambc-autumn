@@ -277,6 +277,9 @@ struct Node {
     bool walk : 1 = false, attack : 1 = false, cast : 1 = false, excl : 1 = false;
     bool reset : 1 = false, dash : 1 = false, armed : 1 = false;
     bool moved : 1 = false; // exhaustive enumerator: walked
+    // A walk or dash not yet followed by a strike from where it ended: a move with none is the
+    // goal's walk or retreat's dash, which price what the leaf score cannot (later turns).
+    bool owed : 1 = false;
     std::int8_t depth = 0;
     std::uint16_t stunned = 0;     // units stunned this turn
     float value = 0, pending = 0; // pending: a cast's price a Vendetta kill would refund
@@ -501,7 +504,11 @@ void Search::read_geometry() {
     if (const bitboard* guard = pathing.guard()) or_into(pathing.blocked(), *guard, t);
     else copy_into(pathing.blocked(), t);
     read_into(blocked);
+    // Dash paths are blocked by walls, camps and visible enemies (probe-dash-enemy).
+    static bitboard foes_seen{cambc::uninitialized};
     camps_into(t);
+    occupancy_into(team::enemy, foes_seen);
+    or_into(t, foes_seen, t);
     or_into(t, world.map().walls, t);
     read_into(walls);
     free_ = inside & ~blocked;
@@ -802,6 +809,7 @@ bool Search::hit_unit(int t, Node& s) {
     s.value += value;
     s.armed = false;
     s.attack = false;
+    s.owed = false;
     if (!melee) s.walk = false;
     if (vendetta && kill) {
         // Both cooldowns end; the turn's one cast still stands, and the cast spent comes back.
@@ -825,6 +833,7 @@ bool Search::spell_unit(const Spell& sp, int t, Node& s) {
     s.value += v - cast_cost;
     s.pending = cast_cost;
     s.cast = false;
+    s.owed = false;
     if (sp.excl) s.excl = true, s.walk = false;
     return true;
 }
@@ -862,9 +871,11 @@ void Search::hit_centre(const Centre& c, int slot, Node& s) {
 
 bool Search::land_at(vec2 L, Node& s) {
     float value = 0, retaliation = 0;
+    bool struck = false;
     for (int t = 0; t < foes; ++t) {
         const auto& x = u[t];
         if (h[t] <= 0 || dist(L, x.pos) > land_radius) continue;
+        struck |= x.land > 0 || x.land_stun > 0;
         const bool m = x.link >= 0 && moot(t, x.land, x.link > t && dist(L, u[x.link].pos) <= land_radius, u[x.link].land);
         if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t));
         if (!m && x.land_stun > 0 && !(s.stunned >> t & 1)) value += x.land_stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
@@ -875,6 +886,7 @@ bool Search::land_at(vec2 L, Node& s) {
     s.touched |= touch_near(L, land_radius);
     s.value += value - retaliation;
     s.land = L;
+    s.owed = !struck;
     return true;
 }
 
@@ -924,12 +936,15 @@ bool Search::wake(std::uint32_t touched, vec2 E, vec2 stunned_at, float& cost) {
             const auto& w = tables.wakers[i];
             if (w.monolith) return false;
             // Our landing's stun makes it skip the first phase.
-            if (stunned_at.x >= 0 && dist(stunned_at, w.pos) <= land_radius) continue;
+            const bool stunned = stunned_at.x >= 0 && dist(stunned_at, w.pos) <= land_radius;
             const int d = dist(E, w.pos);
             if (d <= w.reach && (d < w.other_d || (d == w.other_d && self_slot < w.other_slot))) {
-                cost += w.strength;
-                on_us += w.strength;
-            } else if (w.other_d <= w.reach && w.ally >= 0) {
+                // Awake, it hits us every camp phase we are in its reach: the next one unless
+                // stunned, and the one after unless our next step can leave its reach.
+                const float hits = (stunned ? 0.0f : 1.0f) + (d < w.reach ? 1.0f : 0.0f);
+                cost += w.strength * hits;
+                on_us += w.strength * hits;
+            } else if (!stunned && w.other_d <= w.reach && w.ally >= 0) {
                 const auto& o = world.allies[static_cast<std::size_t>(w.ally)];
                 if (o.channel == Channel::recall || o.channel == Channel::tribute) return false;
                 if (const int at = world.map().group_at(o.pos); at >= 0 && world.camps[at].state == CampState::cleared) return false;
@@ -987,6 +1002,7 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& 
 
 // Each end tile a leaf's moves can reach, offered once.
 void Search::settle(const Node& s) {
+    if (s.owed) return;
     const float v = leaf_value(s);
     int leaf = -1;
     switch (s.seg) {
@@ -1081,7 +1097,7 @@ void Search::grow(const Node& s) {
     }
     if (s.walk && !s.excl && (melee || s.attack) && (s.seg == at_start || s.seg == dashed)) {
         Node c = s;
-        c.walk = false;
+        c.walk = false, c.owed = true;
         if (!melee) c.attack = false;
         c.seg = s.seg == at_start ? walked : dashed_walked;
         const Grid dom = c.seg == walked                ? free_n
@@ -1098,7 +1114,7 @@ void Search::grow(const Node& s) {
             each_bit(free_n & s.req_w, [&](int m) { reach |= landings(m); });
         }
         Node c = s;
-        c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.req_d = reach;
+        c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.req_d = reach, c.owed = true;
         c.seg = first ? dashed : walked_dashed;
         if ((reach & ~land_hits) != 0) push(c, {Op::dash});
         if (lands)
@@ -1173,6 +1189,7 @@ bool Search::menu_shape(int depth) const {
 }
 
 void Search::offer_exh(const Node& s) {
+    if (s.owed) return;
     float v = leaf_value(s);
     if (s.touched) {
         float cost;
@@ -1210,14 +1227,14 @@ void Search::exhaust(const Node& s) {
     if (s.walk && !s.excl && (melee || s.attack))
         each_bit(dilate(gbit(at)) & free_ & ~gbit(at), [&](int e) {
             Node c = s;
-            c.walk = false, c.moved = true, c.pos = tile(e);
+            c.walk = false, c.moved = true, c.owed = true, c.pos = tile(e);
             if (!melee) c.attack = false;
             push(c, 'W');
         });
     if (s.cast && s.dash && dist(s.pos, here) <= 1)
         each_bit(landings(at), [&](int l) {
             Node c = s;
-            c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.pos = tile(l);
+            c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.owed = true, c.pos = tile(l);
             if (lands && (land_hits & gbit(l)) && !land_at(tile(l), c)) {
                 h = saved;
                 return;

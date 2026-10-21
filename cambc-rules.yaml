@@ -60,7 +60,7 @@ abilities:
   ground_target: "Any tile in range, including walls and unseen tiles. The 3x3 area around it hits enemy champions (even unseen ones) and camps, never allies or the caster, once on cast."
   exclusive: "An excludes-walking spell cannot be cast after walking this turn, and walking is forbidden after it. No ability spends the walk or the basic attack."
   attack_reset: "Self-cast. Restores a spent basic attack, never the walk, and fails while the attack is unspent. A ranged champion can walk, reset, then attack."
-  dash: "Move to a free tile by a path of at most 2 king steps. The path may cross holes, altars and champions, but not walls or camps."
+  dash: "Move to a free tile by a path of at most 2 king steps. The path may cross holes, altars, allies and unseen enemy champions, but not walls, camps or visible enemy champions."
   stun: "Removes the target's next turn (no walking, attacking, casting, shopping, consumables, wards or recall start; priority can still be set) and cancels its recall, tribute or teleport. Stuns do not stack: extra stuns before that turn are wasted; one landing after it removes the following turn. A stunned camp skips its next attack."
 
 combat:
