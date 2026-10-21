@@ -154,7 +154,11 @@ bool use_slot(int slot) {
     }
 }
 
+} // namespace
+
 float shield_cap(Safety& safety, vec2 p, float amount, int duration) { return std::min(amount, static_cast<float>(duration) * safety.damage_bound(p)); }
+
+namespace {
 
 // The shield cast left for the turn's end, over its duration, capped by what could hit us at p.
 float shield_worth(const World& world, Safety& safety, int slot, vec2 p) {
@@ -165,7 +169,7 @@ float shield_worth(const World& world, Safety& safety, int slot, vec2 p) {
     } catch (const cambc::error&) {
         return 0;
     }
-    return std::min(amount, static_cast<float>(world.me().facts().abilities[slot].duration) * safety.damage_bound(p));
+    return shield_cap(safety, p, amount, world.me().facts().abilities[slot].duration);
 }
 
 // Whether the search valued an enemy cast from its start tile this turn: strike_after casts there
@@ -215,7 +219,8 @@ constexpr int max_centres = 81;
 constexpr int max_unseen = 24;
 constexpr int max_depth = 6;
 constexpr int max_mates = 6;
-// Reach queries per search; past it the rest keep their Strike price.
+// Exact queries per search (Reach blows, threats_at calls, distance-3 row reads); past it the rest
+// keep their Strike price.
 constexpr int max_exact_queries = 10;
 
 enum class Op : std::uint8_t { walk, attack, reset, dash, spell, heal, shield };
@@ -544,9 +549,7 @@ struct Search {
         return tables.heal_at[first ? h0 : c];
     }
     // What the shield would absorb at p over its turns, as shield_worth prices it.
-    float shield_at(vec2 p) const {
-        return std::min(shield_amount, static_cast<float>(f.abilities[shield].duration) * safety.damage_bound(p));
-    }
+    float shield_at(vec2 p) const { return shield_cap(safety, p, shield_amount, f.abilities[shield].duration); }
 
     // Health left to t's partner, whose death is t's.
     float partner(int t) const {
@@ -823,7 +826,7 @@ void Search::read_mates() {
         }
         const float gain = std::min(amount, top - hp);
         if (!worth_healing(amount, gain, hp / top)) continue;
-        const float value = std::min(gain, static_cast<float>(ability_cooldown) * safety.damage_bound(a.pos));
+        const float value = shield_cap(safety, a.pos, gain, ability_cooldown);
         if (value <= 0) continue;
         const auto k = static_cast<std::int8_t>(n_mates);
         mates[n_mates++] = &a;
@@ -1618,10 +1621,6 @@ bool strike_possible(const World& world) {
                 if (S.hors[k] == &e) hor = k;
             strikers[ns++] = {&e, &safety.strike_of(e), hor};
         }
-    std::array<Safety::CampHit, 24> camps;
-    int nc = 0;
-    for (const auto& m : safety.awake_members())
-        if (nc < 24 && dist(here, m.pos) <= m.reach + grid_r) camps[nc++] = m;
     // An enemy Heart of Ruin hurt but not killed hits harder.
     const auto factor = [&](int leaf, int hor) {
         if (hor < 0 || leaf < 0) return 1.0f;
@@ -1629,12 +1628,6 @@ bool strike_possible(const World& world) {
         const float hp = std::min(e.health, S.hor_health(leaf, hor));
         if (hp <= 0 || e.damage_scale() <= 0) return 1.0f;
         return damage_scale(Passive::missing_health, hp, e.max_health) / e.damage_scale();
-    };
-    const auto camp_at = [&](vec2 p) {
-        float camp = 0;
-        for (int k = 0; k < nc; ++k)
-            if (dist(p, camps[k].pos) <= camps[k].reach) camp += camps[k].strength * camps[k].weight;
-        return camp;
     };
     // Picked by their bound before the camps, which can only lower it. Each tile's candidates are
     // its best leaves per set of enemies removed, with the cast spent (or on a heal) or kept for
@@ -1688,13 +1681,23 @@ bool strike_possible(const World& world) {
         auto& t = tiles[i];
         t.done = true;
         const vec2 p = S.tile(t.c);
-        const float camp = camp_at(p);
+        const bool far = dist(p, here) == 3;
+        // The row's camp column only: a full row read would ask every visible blow first.
+        const float camp = safety.camp_damage(p, false);
         t.bound -= camp;
         t.total = t.bound;
         t.danger = camp;
         if (t.bound <= best_total) {
             ++bound_stops;
             continue;
+        }
+        std::uint16_t hit_by = 0xffff, unseen_by = 0;
+        if (far) {
+            // End tiles are open, so the row never asks Reach about a wall.
+            const auto& row = safety.tile(p);
+            ++queries;
+            if (row.worst() >= S.health) continue; // the step guard covers radius 1-2 only
+            hit_by = row.vis_mask, unseen_by = row.unseen_mask;
         }
         const float base = gain_to(p) - camp;
         const int nk = gather(t.c);
@@ -1715,6 +1718,7 @@ bool strike_possible(const World& world) {
         std::array<std::pair<float, int>, 16> order;
         int no = 0;
         for (int k = 0; k < ns; ++k) {
+            if (!(hit_by >> strikers[k].e->index & 1)) continue;
             float most = 0;
             for (int j = 0; j < nk; ++j)
                 if (!(cand[j].removed >> strikers[k].e->index & 1)) most = std::max(most, factor(cand[j].leaf, strikers[k].hor));
@@ -1750,8 +1754,11 @@ bool strike_possible(const World& world) {
             ++share_stops;
             continue;
         }
-        if (dist(p, here) >= 2) {
+        // threats_at's unseen hits are a subset of the row's; at distance 2 the row's blows were asked above.
+        if (dist(p, here) == 2) unseen_by = safety.tile(p).unseen_mask;
+        if (unseen_by) {
             std::array<Safety::ThreatAt, 16> at;
+            ++queries;
             const int k = safety.threats_at(p, at);
             for (int m = 0; m < k; ++m)
                 if (!world.enemies[static_cast<std::size_t>(at[m].enemy)].visible)
@@ -1764,19 +1771,31 @@ bool strike_possible(const World& world) {
         t.keep = cand[arg].keep;
         t.entry = cand[arg].entry;
         t.shield = t.keep ? sh : 0.0f;
-        // The step guard covers radius 1-2 only.
-        if (dist(p, here) == 3 && safety.lethal(p)) continue;
         if (total > best_total) best_total = total, chosen = i;
     }
-    // Unpriced tiles keep their Strike price, and no shield.
-    if (capped)
+    // Unpriced tiles keep their Strike price, and no shield. Camps only lower a total, so they are
+    // summed only for a tile that could still win without them, best first; until then `total`
+    // leaves them out.
+    std::uint64_t camped = 0; // bit i: tiles[i].total has its camps
+    const auto camp_out = [&](int i) {
+        if (camped >> i & 1) return;
+        camped |= std::uint64_t{1} << i;
+        tiles[i].total -= safety.camp_damage(S.tile(tiles[i].c), false);
+    };
+    if (capped) {
         for (int i = 0; i < nt; ++i) {
             auto& t = tiles[i];
+            if (t.done) continue;
             const vec2 p = S.tile(t.c);
-            if (t.done || dist(p, here) == 3) continue;
+            // Unguarded: its ban's row read is past the cap.
+            if (dist(p, here) == 3) {
+                t.done = true;
+                continue;
+            }
             const int nk = gather(t.c);
             for (int k = 0; k < ns; ++k) {
                 const float b = safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].e->pos));
+                if (b <= 0) continue;
                 for (int j = 0; j < nk; ++j)
                     if (!(cand[j].removed >> strikers[k].e->index & 1)) cand[j].d += b * factor(cand[j].leaf, strikers[k].hor);
             }
@@ -1786,9 +1805,17 @@ bool strike_possible(const World& world) {
             t.keep = cand[arg].keep;
             t.entry = cand[arg].entry;
             t.shield = 0;
-            t.total = cand[arg].raw - cand[arg].d + gain_to(p) - camp_at(p);
-            if (t.total > best_total) best_total = t.total, chosen = i;
+            t.total = cand[arg].raw - cand[arg].d + gain_to(p);
         }
+        for (;;) {
+            int i = -1;
+            for (int k = 0; k < nt; ++k)
+                if (!tiles[k].done && !(camped >> k & 1) && tiles[k].total > best_total && (i < 0 || tiles[k].total > tiles[i].total)) i = k;
+            if (i < 0) break;
+            camp_out(i);
+            if (tiles[i].total > best_total) best_total = tiles[i].total, chosen = i;
+        }
+    }
 
     mark(2);
     // A cast worth its price from the start tile.
@@ -1837,8 +1864,14 @@ bool strike_possible(const World& world) {
                     const int c = tiles[i].c;
                     const vec2 p = S.tile(c);
                     if (!(S.menu_has >> c & 1) || dist(p, here) == 3) continue;
-                    // Priced (or cut short): the larger candidate's danger found there; unpriced: the camps only.
-                    const float danger = tiles[i].done ? tiles[i].danger : camp_at(p);
+                    // Priced (or cut short): the larger candidate's danger found there; unpriced: the camps
+                    // only, summed here: asking the table would change fuel outside debug_block.
+                    float danger = tiles[i].danger;
+                    if (!tiles[i].done) {
+                        danger = 0;
+                        for (const auto& m : safety.awake_members())
+                            if (in_square(p, m.pos, m.reach)) danger += m.strength * m.weight;
+                    }
                     const float old = tables.menu[c] + gain_to(p) - danger;
                     if (old > best_total + 0.5f)
                         std::printf("SRCH-DOM %d %u tile %d,%d menu %.1f search %.1f\n", world.round, static_cast<unsigned>(world.me().handle),
@@ -1925,8 +1958,12 @@ bool strike_possible(const World& world) {
         int alt = -1;
         float alt_total = -1e30f;
         for (int i = 0; i < nt; ++i) {
+            if (dropped[tiles[i].c] || !(tiles[i].exact || (capped && !tiles[i].done)) || tiles[i].total <= alt_total) continue;
+            if (!tiles[i].exact) {
+                camp_out(i);
+                if (tiles[i].total <= alt_total) continue;
+            }
             const auto& t = tiles[i];
-            if (dropped[t.c] || !(t.exact || (capped && !t.done)) || t.total <= alt_total) continue;
             const Seq q = concrete(t);
             bool same = q.n > done;
             for (int k = 0; k < done && same; ++k) same = q.a[k] == seq.a[k];
