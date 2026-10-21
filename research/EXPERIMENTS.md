@@ -164,6 +164,12 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   danger; each end tile keeps the best leaf per removed set, less those beaten by a superset. 48.9% of 1094 vs main
   (ladder 51.4 of 70, gen 47.9, fresh gen-s1 49.6), out-of-fuel turns 8663 vs 8071 (+7.3%); at 100M 51.0% (ladder
   48.6, gen 51.2, fresh 51.2). Level; kept and merged on the keep rule (follows the rules, plays level).
+- Strike search phase 4a (2026-10-21, orch/int-strike-p4a 058f55b on main 971c68b, not merged): retreat turns planned
+  by the search under plan3's retreat score (dash_away, flee_camps, retreat_step deleted), unseen threats priced near
+  the start and walk tiles. 40.8% of 1094 vs main (ladder 31.4 of 70, gen 41.8, fresh gen-s1 41.0), out-of-fuel turns
+  24816 in 897 games vs 10570 in 759 (+135%, 98% in decide); at 100M 52.6% (ladder 55.7, gen 53.5, fresh 51.2).
+  Dropped: the play is sound and the 12-point loss is fuel, so the retreat search's cost (builder: mean 21.6k, max
+  83.5k) must come down before it is retried.
 
 ### Fuel
 
