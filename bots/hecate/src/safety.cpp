@@ -1389,11 +1389,18 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             for (int k = 0; k < n; ++k) near[k_near++] = static_cast<std::uint8_t>(k);
         }
         const auto size = groups[g].members.size();
+        // An asleep member wakes only when the group is damaged: by us, which our own choices
+        // weigh, or by another champion near enough to hit it before the camp phase.
+        bool stirred = c.asleep == 0;
+        for (int k = 0; k < n && !stirred; ++k)
+            for (std::size_t i = 0; i < size && !stirred; ++i)
+                stirred = c.health[i] > 0 && dist(others.at[k].pos, groups[g].members[i].pos) <= ability_range;
         if (static_cast<std::size_t>(count) + size > members_.size()) members_.resize(static_cast<std::size_t>(count) + size);
         auto* const out = members_.data();
         for (std::size_t i = 0; i < size; ++i) {
             const auto& m = groups[g].members[i];
             if (c.health[i] <= 0 || m.strength <= 0 || (reread && test(seen, m.pos) && !test(camps, m.pos))) continue;
+            if (!stirred && c.member_asleep(i)) continue;
             int reach = m.reach;
             for (int k = 0; k < k_near; ++k) {
                 auto& o = others.at[near[k]];

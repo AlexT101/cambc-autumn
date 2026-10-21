@@ -233,3 +233,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    changed ([DRAFT.md](DRAFT.md)): the trio beats Ren/Stellar/Cassi 72.5% on all 3-pick maps; Ryth as 4th 53.2%
    over Cassi on 4-pick maps; Stellar as 5th 57.9% over Cassi on 5-pick maps. On a fresh-seed suite (8101, 512
    games) the new draft beats the old 69.3% (3-pick 71.1, 4-pick 63.1, 5-pick 73.8). Submitted as version 32.
+31. 2026-10-21 (not yet submitted). Monsters sleep one by one: a camp group is awake while any striker is (5a33e52),
+   and CampBelief::asleep keeps the strikers read asleep inside an awake group until a hit wakes them. Danger
+   (Safety's camp members, awake_over, dash and shield hazards) leaves those out unless another champion is within 4
+   of the group; passing and capture-hold hits count as free only once no striker is asleep; landing_wakes and
+   wake_risk ask about the asleep members. 50.0% vs hecate-v7 (582), out-of-fuel turns 1125 vs 1224.

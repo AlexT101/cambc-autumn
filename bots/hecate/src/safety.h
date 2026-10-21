@@ -288,7 +288,8 @@ public:
     // Could the credible threats and camps kill us at p before our next turn?
     bool lethal(vec2 p);
 
-    // Live members of awake (or maybe awake) groups, with where they would attack us from.
+    // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
+    // enough to wake, with where they would attack us from.
     struct CampHit {
         vec2 pos;
         float strength;

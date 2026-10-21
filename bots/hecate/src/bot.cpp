@@ -1139,12 +1139,12 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const bool gold_farmer = world.me().facts().passive == Passive::linked_pair && !melee;
     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear. A
     // group that hits back and that we will not finish is only woken by it: hit one only while an
-    // ally clears it or, melee, once it is awake anyway.
+    // ally clears it or, melee, once every striker is awake anyway.
     const auto passing = [&](int g) __attribute__((always_inline)) {
         if (!affordable(g)) return false;
         if (g == memory.farm_group) return true;
         if (taken(g)) return false;
-        if (groups[g].strength > 0) return ally_engaged(world, g) || (melee && world.camps[g].awake == Awake::awake);
+        if (groups[g].strength > 0) return ally_engaged(world, g) || (melee && world.camps[g].fully_awake());
         return melee || groups[g].gems > 0 || gold_farmer;
     };
     const auto attack_in_range = [&]() __attribute__((always_inline)) {
@@ -1669,10 +1669,15 @@ void place_ward(const World& world, Pathing& pathing, Memory& memory) {
     if (best) try_ward(*best, memory);
 }
 
-// A live group, awake or maybe, whose monsters reach p.
+// A live group, awake or maybe, whose monsters not read asleep reach p.
 bool awake_over(const World& world, int g, vec2 p) {
     const auto& c = world.camps[g];
-    return c.state == CampState::alive && c.awake != Awake::asleep && test(world.map().groups[g].threat(), p);
+    const auto& G = world.map().groups[g];
+    if (c.state != CampState::alive || c.awake == Awake::asleep || !test(G.threat(), p)) return false;
+    if (c.asleep == 0) return true;
+    for (std::size_t i = 0; i < G.members.size(); ++i)
+        if (c.health[i] > 0 && G.members[i].strength > 0 && !c.member_asleep(i) && dist(p, G.members[i].pos) <= G.members[i].reach) return true;
+    return false;
 }
 
 // Retreating from an awake camp takes its hits anyway, and the clear is lost. Every awake group in
@@ -2941,7 +2946,10 @@ void hold_capture(const World& world, Memory& memory, bool attacked) {
     memory.crew = false;
     if (attacked) return;
     const auto& groups = world.map().groups;
-    const auto free_hit = [&](int g) { return g != held && (groups[g].strength <= 0 || world.camps[g].awake != Awake::asleep); };
+    const auto free_hit = [&](int g) {
+        const auto& c = world.camps[g];
+        return g != held && (groups[g].strength <= 0 || (c.awake != Awake::asleep && c.asleep == 0));
+    };
     if (const int hit = attack_camp(world, free_hit); hit >= 0) {
         cast_at_camp(world, hit);
         reset_and_attack_camp(world, hit);

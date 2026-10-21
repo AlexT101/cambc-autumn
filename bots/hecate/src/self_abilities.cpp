@@ -69,7 +69,7 @@ const std::vector<Hazard>& threats_near(const World& world, vec2 here) {
         if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
         for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
             const auto& m = groups[g].members[i];
-            if (c.health[i] > 0 && m.strength > 0 && dist(here, m.pos) <= m.reach + dash_steps)
+            if (c.health[i] > 0 && m.strength > 0 && !c.member_asleep(i) && dist(here, m.pos) <= m.reach + dash_steps)
                 out.push_back({m.pos, m.reach, true});
         }
     }
@@ -426,14 +426,16 @@ bool shield_if_needed(const World& world, Safety& safety, int farmed) {
         const auto& c = world.camps[g];
         if (c.state != CampState::alive || groups[g].strength <= 0) continue;
         const bool hit = g == farmed || !my_can_attack();
-        bool in_reach = false, hitting = false;
+        bool in_reach = false, awake_in_reach = false, hitting = false;
         for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
             if (c.health[i] <= 0) continue;
             const int d = dist(here, groups[g].members[i].pos);
-            in_reach |= d <= groups[g].members[i].reach && groups[g].members[i].strength > 0;
+            const bool reaches = d <= groups[g].members[i].reach && groups[g].members[i].strength > 0;
+            in_reach |= reaches;
+            awake_in_reach |= reaches && !c.member_asleep(i);
             hitting |= hit && d <= f.attack_range();
         }
-        danger = in_reach && (c.awake != Awake::asleep || hitting);
+        danger = awake_in_reach || (in_reach && hitting);
     }
     return danger && cast(*shield);
 }

@@ -1079,6 +1079,7 @@ void World::note_capture(int group, int respawn_round) {
     c.state = CampState::respawning;
     c.respawn_round = respawn_round;
     c.awake = Awake::asleep;
+    c.asleep = 0;
     c.holder.reset();
     c.held_since = -1;
     note_stirring(group);
@@ -1307,6 +1308,7 @@ void restore(CampBelief& c, const CampGroup& G, int since) {
     c.health_round.assign(G.members.size(), since);
     for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
     c.awake = Awake::asleep;
+    c.asleep = 0;
     ++c.version;
 }
 } // namespace
@@ -1430,14 +1432,20 @@ struct World::CampViews {
         const CampMember* members = G.members.data();
         const std::size_t n = G.members.size();
         Awake awake = c.awake;
+        const bool any_asleep = awake == Awake::asleep || c.asleep != 0;
         int quiet_rounds = c.quiet_rounds;
         std::uint32_t version = c.version;
-        bool striker_awake = false, striker_asleep = false, striker_unread = false;
+        bool striker_awake = false, striker_asleep = false, striker_unread = false, woke = false;
+        std::uint64_t read_asleep = 0, read_awake = 0, unseen = 0;
         int harmless = -1;
         for (std::size_t i = 0; i < n; ++i) {
             const auto& m = members[i];
+            const std::uint64_t bit = i < 64 ? std::uint64_t{1} << i : 0;
             if (!test(visible, m.pos)) {
-                striker_unread |= m.strength > 0 && health[i] > 0;
+                if (m.strength > 0 && health[i] > 0) {
+                    unseen |= bit;
+                    striker_unread |= bit == 0;
+                }
                 continue;
             }
             const float hp = engine::camp_health(m.handle).value_or(0.0f);
@@ -1446,23 +1454,33 @@ struct World::CampViews {
                 if (now - health_round[i] < cambc::constants::camp_sleep_time) {
                     c.last_damaged_round = now;
                     awake = Awake::awake;
+                    woke = true;
                 } else if (awake == Awake::asleep) {
                     awake = Awake::unknown;
+                    woke = true;
                 }
             }
             version += hp != health[i];
             health[i] = hp;
             health_round[i] = now;
-            if (hp <= 0 || !alive || striker_awake) continue;
+            if (hp <= 0 || !alive) continue;
             if (m.strength <= 0) {
                 if (harmless < 0) harmless = static_cast<int>(i);
                 continue;
             }
             const auto read = engine::camp_awake(m.handle);
-            striker_awake = read == Awake::awake;
+            striker_awake |= read == Awake::awake;
             striker_asleep |= read == Awake::asleep;
             striker_unread |= !read;
+            if (read == Awake::asleep) read_asleep |= bit;
+            else read_awake |= bit;
         }
+        // A member known asleep that reads awake was woken by damage, which woke the rest too.
+        woke |= (c.awake == Awake::asleep ? read_awake : c.asleep & read_awake) != 0;
+        if (woke && any_asleep) c.woken_round = now;
+        c.asleep = woke ? read_asleep : (c.asleep & ~read_awake) | read_asleep;
+        striker_unread |= (unseen & ~c.asleep) != 0;
+        striker_asleep |= (unseen & c.asleep) != 0;
         if (striker_awake) seen_awake = Awake::awake;
         else if (striker_asleep && !striker_unread) seen_awake = Awake::asleep;
         else if (!striker_asleep && !striker_unread && harmless >= 0) seen_awake = engine::camp_awake(members[harmless].handle);
@@ -1479,13 +1497,17 @@ struct World::CampViews {
     } else if (c.awake != Awake::asleep) {
         // Asleep after 2 camp phases with no champion within any member's range: count rounds
         // where the whole threat area is visible and empty. Anything unseen there could be a champion.
+        // A streak from the round a member was woken also spans the phase after it, which counts
+        // as occupied.
         const bool fully_seen = disjoint(G.threat(), views.hidden());
         if (fully_seen && disjoint(G.threat(), views.champs())) {
-            if (++c.quiet_rounds >= 2) c.awake = Awake::asleep;
+            ++c.quiet_rounds;
+            if (c.quiet_rounds >= (round - c.quiet_rounds < c.woken_round ? 3 : 2)) c.awake = Awake::asleep;
         } else {
             c.quiet_rounds = 0;
         }
     }
+    if (c.awake == Awake::asleep) c.asleep = 0;
 
     if (c.state == CampState::cleared) {
         if (disjoint(G.tiles(), views.hidden())) {

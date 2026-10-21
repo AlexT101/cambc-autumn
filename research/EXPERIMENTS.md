@@ -407,6 +407,22 @@ draft on a fresh-seed suite (512 games; 3/4/5-pick 71.1/63.1/73.8).
   member, often a cluster. Now the group is awake while any striking member reads awake and asleep only when every
   live striker is seen asleep. Against hecate-v6 (main ffc6b76 without it), real budget: 295/582 = 50.7% (ladder
   36/70, gen 259/512); out-of-fuel turns 1155 against 1152. Level; kept as a logical fix.
+- Per-member sleep. `CampBelief::asleep` keeps the strikers read asleep while their group is awake; only damage
+  wakes them, so one seen awake again clears the rest. Safety's camp members, `awake_over`, the dash and shield
+  hazards, passing and capture-hold "free" hits, `landing_wakes` and `wake_risk` read members, not the group; an asleep
+  member counts as a threat only while another champion is within 4 of the group. A blind quiet streak that starts by
+  the round a member was woken needs 3 rounds. A traced packs game read a partly awake group on 44 turns.
+  Against hecate-v7 (main 5a33e52): 291/582 = 50.0% (ladder 30/70, gen 261/512; flips vs the v7 mirror 5-10 and
+  49-44); out-of-fuel turns 1125 against 1224. Level; kept.
+- Waking sleeping groups onto enemies (`wake_camps`, never shipped): a damage or stun spell on a group whose asleep
+  strikers then reach only enemies, valued by `hit_worth` on reach - distance (+1 once the enemy has acted) phases,
+  or the rounds left in a tribute or capture hold. At turn end it fired in 17 of 582 games (25 wakes, almost all
+  boss-battle's centre elks), 296/582 = 50.9% against the bot without it; a pre-walk version for walk-excluding
+  spells (all of our draft's) when the wake beats `keep_walk_value` never fired, 285/582. Basic-attack wakes (on a
+  harmless member, the only way out of reach) never fired. Too rare to measure. A visible enemy held in an asleep
+  striker's reach is common locally, but those are mostly self-play recalls (above): ladder games showed 109 capture
+  or tribute rounds in 70 games, the enemy usually 4-8 tiles from us. Not merged; its place is the strike search's wake
+  pricing (`STRIKE-SEARCH.md`).
 
 ## koi: Fish's play on hecate (2026-10-19/20)
 
