@@ -81,27 +81,15 @@ int Pathing::centre_to_altar(int group) {
 const bitboard& Pathing::live_camps() {
     if (live_camps_version_ != world_.camps_version) {
         live_camps_version_ = world_.camps_version;
-        // Only the groups whose belief changed are read, and only the members whose bit flips are written.
+        // Only the groups whose belief changed are rewritten.
         const auto& groups = map().groups;
-        if (live_groups_.size() != groups.size()) {
-            live_groups_.assign(groups.size(), {});
-            copy_into(map().camp_tiles, live_camps_);
-        }
+        if (live_versions_.size() != groups.size()) live_versions_.assign(groups.size(), ~0u);
         for (std::size_t g = 0; g < groups.size(); ++g) {
             const auto& c = world_.camps[g];
-            auto& live = live_groups_[g];
-            if (live.version == c.version) continue;
-            live.version = c.version;
-            const auto& members = groups[g].members;
-            for (std::size_t i = 0; i < members.size(); ++i) {
-                const bool alive = c.state == CampState::alive && c.health[i] > 0;
-                if (i < 64) {
-                    const std::uint64_t bit = std::uint64_t{1} << i;
-                    if (((live.bits & bit) != 0) == alive) continue;
-                    live.bits ^= bit;
-                }
-                live_camps_.set(members[i].pos, alive);
-            }
+            if (live_versions_[g] == c.version) continue;
+            live_versions_[g] = c.version;
+            for (std::size_t i = 0; i < groups[g].members.size(); ++i)
+                live_camps_.set(groups[g].members[i].pos, c.state == CampState::alive && c.health[i] > 0);
         }
     }
     return live_camps_;

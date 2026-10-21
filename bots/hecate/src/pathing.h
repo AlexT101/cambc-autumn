@@ -149,11 +149,7 @@ private:
     std::vector<std::vector<std::unique_ptr<Approach>>> approach_fields_; // by range, then group
     bitboard live_camps_;
     std::uint32_t live_camps_version_ = ~0u; // the World::camps_version it was built for
-    struct LiveGroup {
-        std::uint32_t version = ~0u;        // the CampBelief::version written
-        std::uint64_t bits = ~std::uint64_t{0}; // bit i: members[i] as written to live_camps_
-    };
-    std::vector<LiveGroup> live_groups_;
+    std::vector<std::uint32_t> live_versions_; // per group: the CampBelief::version written
     bool centres_ready_ = false;
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
     // By attack range, then group, then member.
