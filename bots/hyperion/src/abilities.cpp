@@ -99,10 +99,9 @@ float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
 bool landing_wakes(const World& world, vec2 p, int radius) {
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(p, radius)) {
-        const auto& c = world.camps[g];
-        if (c.state != CampState::alive || c.fully_awake() || groups[g].strength <= 0 || g == siege_group()) continue;
+        if (g == siege_group() || !hit_wakes(world, g)) continue;
         for (std::size_t i = 0; i < groups[g].members.size(); ++i)
-            if (c.health[i] > 0 && dist(p, groups[g].members[i].pos) <= radius) return true;
+            if (world.camps[g].health[i] > 0 && dist(p, groups[g].members[i].pos) <= radius) return true;
     }
     return false;
 }
@@ -144,13 +143,8 @@ const bitboard& wake_risk(const World& world, vec2 here, int reach) {
     static bitboard risk{cambc::uninitialized};
     clear_board(risk);
     for (int g : world.map().groups_near(here, reach)) {
-        const auto& c = world.camps[g];
-        if (c.state != CampState::alive || c.fully_awake() || groups[g].strength <= 0) continue;
-        bool near = groups[g].has_monolith && g != siege_group();
-        for (std::size_t i = 0; i < groups[g].members.size() && !near; ++i)
-            near = c.health[i] > 0 && groups[g].members[i].strength > 0 && c.maybe_asleep(i)
-                   && dist(here, groups[g].members[i].pos) <= groups[g].members[i].reach;
-        if (near) draw_alive_members(world, g, risk);
+        const bool monolith = groups[g].has_monolith && g != siege_group();
+        if (monolith ? hit_wakes(world, g) : hit_wakes(world, g, here)) draw_alive_members(world, g, risk);
     }
     return risk;
 }

@@ -1438,7 +1438,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         if (!affordable(g)) return false;
         if (g == memory.farm_group) return true;
         if (taken(g)) return false;
-        if (groups[g].strength > 0) return ally_engaged(world, g) || (melee && world.camps[g].fully_awake());
+        if (groups[g].strength > 0) return ally_engaged(world, g) || (melee && !hit_wakes(world, g));
         return melee || groups[g].gems > 0 || gold_farmer;
     };
     const auto attack_in_range = [&]() __attribute__((always_inline)) {
@@ -3071,11 +3071,7 @@ void hold_capture(const World& world, Pathing& pathing, Memory& memory, bool att
     write_claim(memory, pathing, held);
     memory.crew = false;
     if (attacked) return;
-    const auto& groups = world.map().groups;
-    const auto free_hit = [&](int g) {
-        const auto& c = world.camps[g];
-        return g != held && (groups[g].strength <= 0 || (c.awake != Awake::asleep && c.asleep == 0));
-    };
+    const auto free_hit = [&](int g) { return g != held && !hit_wakes(world, g); };
     if (const int hit = attack_camp(world, free_hit); hit >= 0) {
         cast_at_camp(world, pathing, hit);
         reset_and_attack_camp(world, pathing.safety(), hit);
