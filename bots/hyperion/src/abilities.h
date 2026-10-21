@@ -8,8 +8,8 @@ namespace aph {
 class World;
 struct ChampionBelief;
 
-// The best enemy-hitting cast this turn, if worth it. An excludes-walking cast must also be worth
-// `walk`, the walk it forgoes, unless it stuns every visible enemy that could reach us next turn.
+// The best enemy-hitting cast at a visible enemy this turn, if worth it. An excludes-walking cast
+// must also be worth `walk`, the walk it forgoes.
 bool cast_at_enemies(const World& world, float walk = 0);
 
 // A damage or stun cast on the group being farmed, held while enemies are near.

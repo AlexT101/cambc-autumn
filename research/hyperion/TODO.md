@@ -26,8 +26,6 @@ From [SESSION-2026-10-21.md](SESSION-2026-10-21.md); main's out-of-fuel turns ar
 
 Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle removals and keep them if level.
 
-- Removals: `keep_walk`'s free-stun logic in `enemy_cast` (still used by retreat and the game-ender intercept),
-  replaced by a plain threshold; ground casts at unseen enemies (`max_unseen_tiles`).
 - Behaviour: one `run_home()` for `retreat()` and `carry_bag`'s retreat; give kite's stations line of sight, as
   `spell_clear` has; drop kite's contested branch; pack-zone ratio `(home || hurt) ? 2.0 : none`;
   walk to lock an altar where a visible
