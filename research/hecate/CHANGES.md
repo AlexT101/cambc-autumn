@@ -337,3 +337,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    only bush clusters already found (`StaticMap::bush_clusters_found`); the turn-end call stays and grows them. After an
    early ward it observes again, rebuilds Safety and drops Pathing's cached occupancy, so the strike and casts see
    through it this turn. 50.7% vs main (1094, ladder 50.0, gen 48.0, fresh 53.5); out-of-fuel turns 10112 vs 10123.
+47. 2026-10-21 (not yet submitted). Ward churn (GAPS 3, WARDS.md proposal 3): our one ward never expires, so
+   ward_bushes replaces it only by a cluster with strictly more tiles within ability_range of here plus of the work
+   tile (claimed group's centre, else the waited-at altar) than the warded cluster has. Fewer wards, longer-lived
+   (median 21 -> 33 rounds on 6 games). 50.6% vs main (1094, ladder 51.4, gen 50.0, fresh 51.2); out-of-fuel turns
+   10638 vs 10472.

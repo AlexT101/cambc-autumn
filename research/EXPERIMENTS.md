@@ -588,3 +588,9 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   ab_compare on gen: clears +3%, capture gems -6.7%, gold -10.6%, melee camp damage -19%, capture resets +12%: melee
   champions stop working big monster groups (the old help/shared joins), taking small groups instead. Ladder went the
   other way (tributed +15%).
+- gaps-ward-churn (2026-10-21; GAPS 3, WARDS.md proposal 3; landed as c04907d): ward_bushes replaces our ward only
+  by a cluster scoring strictly more than the warded one, a score being its tiles within ability_range of here plus
+  within ability_range of the work tile (claimed group's centre, else the waited-at altar). On 6 games vs main afae02d:
+  wards placed -20%, median bush ward life 21 -> 33 rounds, A-B-A swaps 252 vs 283 (claim and wait_altar alternate, so
+  camp-altar-camp still swaps; a persistent work tile would be farm_group, farming-owned). 50.6% vs main 695b6aa (1094,
+  ladder 51.4, gen 50.0, fresh gen-s1 51.2); out-of-fuel turns 10638 vs 10472. Level and sound: kept.
