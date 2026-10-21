@@ -248,3 +248,9 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    step_closer skips guard and avoid tiles (crow-flies farm passes the zone). Removed killable_now, Safety::fight's
    exclude and the delayed tribute stun (tribute_to_stun_later, decision D, the hold parameter). 48.5% vs main (582,
    ladder 42.9, gen 49.2), out-of-fuel turns 1078 vs 1147.
+33. 2026-10-21 (not yet submitted). Deletions and a world-model fix. place_ward is the guards plus ward_bushes: the
+   periodic off-bush ward (params::ward_period, Pathing::ward_targets) is gone. The rally is gone (post_rally,
+   sight_fight; comms bit 31 free), so sightings rotate on fight turns too. World::track counts an unseen enemy's
+   turn this round whatever its modelled order, and dates `possible` after that turn so it is never counted twice
+   (turns_between now includes `to`'s slot). 50.3% vs main (582, ladder 50.0, gen 50.4), out-of-fuel turns 983 vs
+   1116.

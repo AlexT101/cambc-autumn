@@ -474,3 +474,7 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   Stellar: −4 to −5. hecate's upkeep builds instead of Fish's table: +2. The final koi (those fight changes with
   hecate's builds): 54.0% over 1986 games (53.4% over 2698), nemesis 63.3, rival 73.6, morgana 74.9, aphelios 92.6
   against hecate-v1's 61.5, 69.0, 74.9, 90.3. Code: [koi/koi.patch](koi/koi.patch) against hecate 110e338.
+- w2-small bundle (2026-10-21): the periodic ward deleted (off-bush wards every 20 rounds; WARDS.md proposal 1), the
+  rally deleted (COORDINATION 2; nothing read it), and `possible` counting an unseen enemy's turn this round at once
+  (WORLD-MODEL 3, a superset fix). 50.3% vs main (582, ladder 50.0, gen 50.4), out-of-fuel turns 983 vs 1116:
+  level, kept.
