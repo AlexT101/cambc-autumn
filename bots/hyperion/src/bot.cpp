@@ -29,6 +29,7 @@ namespace {
 constexpr int endgame_margin = 20;   // rounds to spare on the last trip to an altar
 constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
 constexpr float escape_step_value = 210; // a retreat's or a game-ender intercept's walk, in enemy health
+constexpr int flee_window = 3;           // the strike search's end tiles: within a walk and a dash
 // PREY-FLIP and PURSUIT-SKIP-MISMATCH re-run the rule they replaced. The re-runs fill Safety's memos
 // and Reach and spend fuel, so games change while this is on.
 constexpr bool debug_verdicts = false;
@@ -41,6 +42,7 @@ char decision = '-';
 bool sieged = false; // siege() ran this turn
 bool stunned_turn = false; // stunned at this turn's start
 bool searched = false; // the strike search chose this turn's cast, heals and shields included
+bool planned_turn = false; // a search this turn acted, or chose a plan the walk's goal cannot change
 vec2 searched_at{};      // where the search's plan ended, and whether it had attacked by then
 bool searched_hit = false;
 // Debug only (WANTHOME): want_home's runs this decide, less the answers a ward or shards discarded.
@@ -249,26 +251,6 @@ void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
 }
 
 float escape_cost(Safety& safety, vec2 q) { return safety.escape_cost(q); }
-
-// Out of the camps' reach first, along the cheapest neighbour: walking home past an awake camp
-// takes a hit every step, while a recall started outside its reach goes home untouched.
-bool flee_camps(const World&, Pathing& pathing, Safety& safety, const Field& home) {
-    if (!my_can_move()) return false;
-    const vec2 here = my_position();
-    if (safety.camp_damage(here) <= 0) return false;
-    const auto& blocked = pathing.blocked(); // walls included
-    std::optional<vec2> best;
-    float best_damage = escape_cost(safety, here);
-    int best_home = home.at(here);
-    for (auto d : directions) {
-        const vec2 p = here + d;
-        if (!in_bounds(p) || test(blocked, p)) continue;
-        const float damage = escape_cost(safety, p);
-        const int steps = home.at(p);
-        if (damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
-    }
-    return best && pathing.try_move(*best);
-}
 
 // Inside danger a route home is only the shortest walk, ties in compass order, which can lead
 // along the enemies we flee: take the homeward step that costs least (escape_cost), then the
@@ -2391,6 +2373,14 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
 
 float farm_step_value(const World& world);
 
+void note_search(const Planned& planned) {
+    searched = planned.searched;
+    planned_turn = planned.goal_free || planned.acted;
+    searched_at = my_position();
+    searched_hit = !my_can_attack();
+}
+
+// The walk towards the tiles where our attack reaches the prey; strike_after hits from where it ends.
 bool chase(const World& world, Pathing& pathing, Safety& safety, Prepared* prepared) {
     Phase phase{"chase"};
     const auto* target = prey(world, safety);
@@ -2398,23 +2388,43 @@ bool chase(const World& world, Pathing& pathing, Safety& safety, Prepared* prepa
     decision = 'C';
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
     const int range = world.me().facts().attack_range();
-    // A walk alone cannot reach range this turn; a melee walk can follow the dash.
-    if (dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, *target);
-    bool stuck = false;
-    if (dist(my_position(), target->pos) > range && my_can_move()) {
-        const auto* zone = pack_zone(world);
-        static bitboard goals{cambc::uninitialized};
-        clear_board(goals);
-        draw_square(goals, target->pos, static_cast<float>(range));
-        and_into(goals, world.map().open_for_us, goals);
-        if (zone) drop(goals, *zone);
-        stuck = !pathing.step_towards(goals, zone, 2 * vision_radius) && dist(my_position(), target->pos) > range;
+    const auto* zone = pack_zone(world);
+    static bitboard goals{cambc::uninitialized};
+    clear_board(goals);
+    draw_square(goals, target->pos, static_cast<float>(range));
+    and_into(goals, world.map().open_for_us, goals);
+    if (zone) drop(goals, *zone);
+    const int cap = 2 * vision_radius;
+    // The turn's search priced again with the prey's route as the walk's goal, only where that can
+    // change its choice: nothing acted since, it did not act, some plan left here, and a walk is left.
+    const bool walks = my_can_move() && dist(my_position(), target->pos) > range;
+    const char* skip = !prepared                                ? "nosearch"
+                       : planned_turn                           ? "planned"
+                       : !prepared_current(*prepared, safety) ? "stale"
+                       : !walks                                 ? "nowalk"
+                                                                : nullptr;
+    bool hit = false;
+    if (!skip) {
+        Intent intent;
+        intent.walks = true;
+        intent.step_value = farm_step_value(world);
+        // The step below takes the same goals, avoid and cap, so it follows this field's route.
+        intent.field = pathing.route_field(goals, zone, cap);
+        if (intent.field) {
+            const auto planned = price_strikes(*prepared, intent);
+            note_search(planned);
+            hit = planned.attacked;
+        } else {
+            skip = "noroute";
+        }
     }
-    bool hit = attack_enemy(world);
-    hit |= reset_and_attack_enemy(world, false, &safety); // after an attack, or a ranged walk
-    hit |= cast_at_enemies(world, pathing);
+    debug_block({
+        if (skip) std::printf("CHASE %d skip %s\n", world.round, skip);
+        else std::printf("CHASE %d reprice\n", world.round);
+    });
+    if (!cambc::self().is_alive() || !my_can_move() || dist(my_position(), target->pos) <= range) return true;
     // No step and no hit: the target is out of our walk's reach (across live camps), so the turn goes on.
-    return hit || !stuck;
+    return pathing.step_towards(goals, zone, cap) || hit;
 }
 
 bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory) {
@@ -3028,27 +3038,100 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
 
 void mend_retreat(const World& world, Safety& safety, const Memory& memory);
 
+// Home around the camps' and the visible enemies' reach, as the shortest walk can lead along what
+// we flee. The search stops at our layer: tiles it leaves unlabelled (in that reach, or no nearer
+// than ours) gain nothing. Inside a camp's reach the search prices each tile's way out, so that
+// reach stays open within its window: our tile is labelled and the exits nearer home gain.
+const cambc::distance_field& retreat_home(const World& world, Pathing& pathing, Safety& safety) {
+    Phase phase{"retreat_home"};
+    const auto& home = pathing.to_ally_spawn();
+    const vec2 here = my_position();
+    const int steps = home.at(here);
+    if (steps == unreachable || steps == 0) return home.steps;
+    static bitboard walls{cambc::uninitialized}, window{cambc::uninitialized}, origin, visited{cambc::uninitialized};
+    static cambc::distance_field around;
+    static vec2 origin_at{-1, -1};
+    const auto& camps = safety.camp_area();
+    copy_into(camps, walls);
+    clear_board(window);
+    draw_square(window, here, static_cast<float>(flee_window));
+    if (test(camps, here)) drop(walls, window);
+    for (auto left = safety.seen_enemies(); left; left &= left - 1) {
+        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (const int r = safety.strike_of(e).reach; r >= 0) draw_square(walls, e.pos, static_cast<float>(r));
+    }
+    or_into(walls, pathing.blocked(), walls);
+    set_tile(walls, here, false);
+    if (in_bounds(origin_at)) set_tile(origin, origin_at, false);
+    set_tile(origin, here);
+    origin_at = here;
+    around.compute_to(walls, home.goals, origin, visited, static_cast<std::uint16_t>(steps + max_detour));
+    if (steps_at(around, here) != unreachable) return around;
+    // Unlabelled here, the search ran dry or to its cap: with a window tile labelled, no tile gains
+    // rather than every step through the reach.
+    and_into(window, visited, window);
+    return board_empty(window) ? home.steps : around;
+}
+
+// The retreat's walk, hits and casts, planned by the strike search when an enemy could be struck or
+// a camp hits us here; else, or when its plan was not carried out, the cheapest step home.
+// Unguarded: a retreat prices its danger instead of banning tiles.
+void flee(const World& world, Pathing& pathing, Safety& safety, bool may_search) {
+    Phase phase{"flee"};
+    pathing.set_guarding(false);
+    const vec2 start = my_position();
+    bool could_move = false;
+    debug_block({ could_move = my_can_move(); });
+    Planned planned;
+    bool ran = false;
+    if (may_search && (strike_possible(world) || safety.camp_damage(start) > 0)) {
+        Intent intent;
+        intent.flee = true;
+        intent.step_value = escape_step_value;
+        intent.field = &retreat_home(world, pathing, safety);
+        planned = price_strikes(*prepare_strikes(world, pathing, safety, intent), intent);
+        note_search(planned);
+        ran = true;
+        if (!cambc::self().is_alive()) return;
+    }
+    const auto& home = pathing.to_ally_spawn();
+    if (!planned.carried) retreat_step(world, pathing, safety, home);
+    debug_block({
+        const vec2 end = my_position();
+        const float cost = safety.escape_cost(end);
+        std::printf("FLEE %d %d %d %.0f %d %d %d\n", world.round, safety.exit_rounds(start), safety.exit_rounds(end), cost, home.at(end),
+                    planned.carried ? 1 : 0, ran ? 1 : 0);
+        // flee_camps' choice, the cheapest neighbour by escape_cost, when only camps hit us.
+        if (const TileDanger t = ran && planned.carried && could_move ? safety.tile(start) : TileDanger{}; t.camp_worst > 0 && t.vis_mask == 0) {
+            float best = safety.escape_cost(start);
+            const auto& blocked = pathing.blocked();
+            for (auto d : directions)
+                if (const vec2 p = start + d; in_bounds(p) && !test(blocked, p)) best = std::min(best, safety.escape_cost(p));
+            if (cost > best) std::printf("FLEE-CAMP-MISMATCH %d %d %d %.0f %.0f\n", world.round, end.x, end.y, cost, best);
+        }
+    });
+}
+
 void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     Phase phase{"retreat"};
     world.throw_if_stale();
-    auto& me = cambc::self();
     decision = 'R';
     write_claim(memory, pathing, -1);
     memory.banking = bankable_bag(world, pathing) > 0; // a bag in retreat goes on to an altar, by a recall if quicker
-    if (world.me().facts().walk_and_attack_independent() && attack_enemy(world)) reset_and_attack_enemy(world, true, &safety);
-    cast_at_enemies(world, pathing, escape_step_value);
-    if (!me.is_alive()) return;
-    if (!my_can_attack() || !my_can_cast()) safety.refresh();
-    // A tribute survives damage; a recall does not.
+    // A tribute survives damage; a recall does not. It starts after the hits from here.
     if (can_tribute_safely(world, safety, memory)) {
+        if (strike_possible(world)) {
+            Intent stay;
+            stay.anchored = true;
+            note_search(price_strikes(*prepare_strikes(world, pathing, safety, stay), stay));
+            if (!cambc::self().is_alive()) return;
+        }
+        if (!searched) mend_retreat(world, safety, memory);
+        if (!my_can_attack() || !my_can_cast()) safety.refresh();
         bank_gems(world, pathing, safety, memory);
         return;
     }
-    // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
-    dash_away(world, pathing, pathing.to_ally_spawn());
-    reset_and_attack_enemy(world, false, &safety);
-    if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
-    reset_and_attack_enemy(world, false, &safety);
+    flee(world, pathing, safety, true);
 }
 
 // On a capture we hold or contest: the hold needs no turn, so hit another group in reach that
@@ -3084,12 +3167,11 @@ void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& mem
         return;
     }
     if (can_tribute_here(world)) {
-        // Hit with nothing to hit back: waiting here only takes more.
+        // Hit with nothing to hit back: waiting here only takes more. decide's flee catches this
+        // before its search; after one, a second search costs too much, so the step is the table's.
         if (safety.taken() > 0 && !attack_target(world)) {
             decision = 'R';
-            pathing.set_guarding(false);
-            dash_away(world, pathing, pathing.to_ally_spawn());
-            retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+            flee(world, pathing, safety, !prepared);
             return;
         }
         const vec2 here = cambc::self().position();
@@ -3163,6 +3245,7 @@ void mend_retreat(const World& world, Safety& safety, const Memory& memory) {
 
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
+    planned_turn = false;
     if (!world.me().alive || bankable_bag(world, pathing) == 0) memory.banking = false;
     if (!world.me().alive) {
         write_claim(memory, pathing, -1);
@@ -3211,8 +3294,8 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     const bool mend = on_spawn && my_health() < my_max_health();
     const bool leave = !mend && (home ? *home : want_home(world, safety, memory.siege));
-    // On the turns the search plans, it weighs heals and shields against its other casts.
-    if (!strikes || mend || leave) mend_early(world, safety, memory, strikes);
+    // On the turns the search plans (strikes, retreats), it weighs heals and shields against its other casts.
+    if (mend || (!strikes && !leave)) mend_early(world, safety, memory, strikes);
     if (mend) {
         decision = 'H';
         const bool attacked = attack_enemy(world);
@@ -3227,8 +3310,17 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         return;
     }
 
-    pathing.set_guarding(true);
     const bool holding = holding_capture(world) || contesting(world);
+    // A carrier hit at its altar with nothing to hit back leaves (carry_bag): the retreat's search
+    // plans the whole turn, unguarded.
+    if (!holding && safety.taken() > 0 && can_tribute_here(world) && bankable_bag(world, pathing) > 0 && !attack_target(world)
+        && !can_tribute_safely(world, safety, memory)) {
+        decision = 'R';
+        flee(world, pathing, safety, true);
+        return;
+    }
+
+    pathing.set_guarding(true);
     bool attacked = false;
     Prepared* prepared = nullptr;
     if (strikes) {
@@ -3245,9 +3337,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         prepared = prepare_strikes(world, pathing, safety, intent);
         const auto planned = price_strikes(*prepared, intent);
         attacked = planned.attacked;
-        searched = planned.searched;
-        searched_at = my_position();
-        searched_hit = !my_can_attack();
+        note_search(planned);
     }
     mend_searched(world, safety, memory, strikes);
     decision = holding ? 'P' : attacked ? 'A' : decision;
