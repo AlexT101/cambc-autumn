@@ -873,11 +873,12 @@ void World::update() {
 
 namespace {
 
-// An enemy shielder's or our own active shield, read only while the cast is recent enough: it outlasts
-// the cast by its duration, the cooldown by 8.
+// An enemy shielder's or our own active shield, read only while the cast is recent enough. Shield
+// and cooldown tick together, so it has cd - (8 - duration) turn ends left, and at 0 it still
+// absorbs until its owner's next turn start.
 [[gnu::noinline]] void read_shield(ChampionBelief& b, const std::array<int, 2>& cds) {
     b.shield = 0, b.shield_turns = 0;
-    if (cds[b.shield_slot] > ability_cooldown - b.facts().abilities[b.shield_slot].duration)
+    if (cds[b.shield_slot] >= ability_cooldown - b.facts().abilities[b.shield_slot].duration)
         std::tie(b.shield, b.shield_turns) = engine::shield(engine::id(b.handle));
 }
 
