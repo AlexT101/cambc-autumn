@@ -123,7 +123,6 @@ inline bool my_stunned(cambc::champion_state state) {
 }
 // Turn ends left of our channel.
 inline std::int32_t my_channel_time() {
-    (void)my_record();
     static std::int32_t turns;
     ok(cambc::detail::sdk_champion_channel_time(my_handle(), &turns));
     return turns;

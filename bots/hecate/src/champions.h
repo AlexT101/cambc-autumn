@@ -80,8 +80,6 @@ struct AbilityFacts {
 };
 
 struct ChampionFacts {
-    cambc::champion_type type;
-    const char* name;
     bool ranged;
     Stat health, strength, focus;
     Passive passive;
@@ -117,34 +115,34 @@ inline constexpr AbilityFacts dash{K::dash, T::self};
 constexpr AbilityFacts damage(T target, float mult, bool stuns = false) { return {K::damage, target, mult, stuns, true}; }
 } // namespace facts_detail
 
-// Indexed by cambc::champion_type.
+// Indexed by cambc::champion_type: ryth, vesper_vale, vendetta, cassi, issac, stellar, prism, marcella,
+// willow, ren, varg, tavi, heart_of_ruin.
 inline constexpr std::array<ChampionFacts, 13> champion_table = [] {
     using namespace facts_detail;
-    using C = cambc::champion_type;
     using P = Passive;
     return std::array<ChampionFacts, 13>{{
-        {C::ryth, "ryth", false, {1200, 100}, {45, 5}, {100, 10}, P::health_strength,
+        {false, {1200, 100}, {45, 5}, {100, 10}, P::health_strength,
          {damage(T::ground, 1, true), reset}},
-        {C::vesper_vale, "vesper_vale", true, {1000, 100}, {55, 5}, {100, 10}, P::bonus_gold, {reset, dash}},
-        {C::vendetta, "vendetta", false, {1000, 100}, {70, 6}, {100, 10}, P::reset_on_kill, {reset, dash}},
-        {C::cassi, "cassi", true, {600, 65}, {30, 3}, {70, 13}, P::linked_pair,
+        {true, {1000, 100}, {55, 5}, {100, 10}, P::bonus_gold, {reset, dash}},
+        {false, {1000, 100}, {70, 6}, {100, 10}, P::reset_on_kill, {reset, dash}},
+        {true, {600, 65}, {30, 3}, {70, 13}, P::linked_pair,
          {damage(T::unit, 2), AbilityFacts{K::stun, T::unit, 0, true, false}}},
-        {C::issac, "issac", false, {900, 80}, {40, 3}, {100, 10}, P::linked_pair, {reset, dash}},
-        {C::stellar, "stellar", true, {650, 65}, {30, 3.5f}, {70, 7}, P::none,
+        {false, {900, 80}, {40, 3}, {100, 10}, P::linked_pair, {reset, dash}},
+        {true, {650, 65}, {30, 3.5f}, {70, 7}, P::none,
          {damage(T::unit, 2), damage(T::ground, 1.4f)}},
-        {C::prism, "prism", true, {700, 60}, {35, 2.5f}, {80, 8}, P::gem_focus,
+        {true, {700, 60}, {35, 2.5f}, {80, 8}, P::gem_focus,
          {damage(T::unit, 1.5f, true), damage(T::ground, 1)}},
-        {C::marcella, "marcella", false, {1200, 100}, {45, 5}, {60, 15}, P::stun_immune,
+        {false, {1200, 100}, {45, 5}, {60, 15}, P::stun_immune,
          {AbilityFacts{K::attack_reset, T::self, 0, true}, damage(T::unit, 2)}},
-        {C::willow, "willow", true, {700, 50}, {55, 3}, {120, 5}, P::none,
+        {true, {700, 50}, {55, 3}, {120, 5}, P::none,
          {AbilityFacts{K::heal, T::ally, 3}, reset}},
-        {C::ren, "ren", false, {900, 100}, {35, 5}, {100, 9}, P::retaliation,
+        {false, {900, 100}, {35, 5}, {100, 9}, P::retaliation,
          {damage(T::unit, 0.75f, true), dash}},
-        {C::varg, "varg", false, {1000, 100}, {40, 5}, {100, 10}, P::splash_attack,
+        {false, {1000, 100}, {40, 5}, {100, 10}, P::splash_attack,
          {reset, AbilityFacts{K::shield, T::self, 2.5f, false, false, 5}}},
-        {C::tavi, "tavi", true, {900, 75}, {45, 5}, {110, 10}, P::remote_shop,
+        {true, {900, 75}, {45, 5}, {110, 10}, P::remote_shop,
          {reset, damage(T::unit, 1.4f, true)}},
-        {C::heart_of_ruin, "heart_of_ruin", false, {1000, 100}, {30, 3.5f}, {100, 12}, P::missing_health,
+        {false, {1000, 100}, {30, 3.5f}, {100, 12}, P::missing_health,
          {AbilityFacts{K::shield, T::self, 1.5f, false, false, 5}, AbilityFacts{K::dash, T::self, 1.5f, true, false, 0, 1}}},
     }};
 }();
