@@ -745,6 +745,7 @@ void find_crossings(StaticMap& s) {
 } // namespace
 
 [[gnu::flatten]] std::unique_ptr<StaticMap> StaticMap::build() {
+    Phase phase{"static_map"};
     FuelMeter meter{"build_static"};
     std::optional<FuelMeter> part{std::in_place, "static_new"};
     auto s = std::make_unique<StaticMap>();
@@ -845,6 +846,7 @@ void find_crossings(StaticMap& s) {
 }
 
 [[gnu::flatten]] void World::init_beliefs() {
+    Phase phase{"init_beliefs"};
     FuelMeter meter{"init_beliefs"};
     const auto& s = map();
     const auto self_handle = static_cast<cambc::handle_champion_t>(cambc::self());
@@ -929,6 +931,7 @@ void World::update() {
 }
 
 [[gnu::flatten]] void World::observe() {
+    Phase phase{"observe"};
     FuelMeter meter{"observe"};
     read_vision();
     update_champions(false);
@@ -948,6 +951,7 @@ namespace {
 } // namespace
 
 void World::update_champions(bool full) {
+    Phase phase{"update_champions"};
     tracked_count_ = 0;
     // Allies read this round have not changed but for our own move and heals, and nothing reads
     // those before the next update.
@@ -1080,6 +1084,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
 }
 
 void World::read_priorities(bool new_round) {
+    Phase phase{"priorities"};
     static std::int32_t priority, next_priority;
     const int now = round, ranked = ranked_round_;
     bool stale = ranks_stale_, enemy_change = enemy_priorities_change;
@@ -1400,6 +1405,7 @@ struct World::CampViews {
 };
 
 [[gnu::flatten]] void World::update_camps() {
+    Phase phase{"camps"};
     const auto& s = map();
     const std::size_t words = (s.groups.size() + 63) / 64;
     // The camp tiles in view as last turn: the same groups are.
@@ -1611,6 +1617,7 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
 }
 
 [[gnu::flatten]] void World::update_altars() {
+    Phase phase{"altars"};
     namespace raw = cambc::detail;
     const auto& s = map();
     const auto seen = [&](int a) {
@@ -1656,6 +1663,7 @@ std::uint32_t World::tributing_enemies() const {
 }
 
 [[gnu::flatten]] void World::update_scores(std::uint32_t tributing) {
+    Phase phase{"scores"};
     // cambc::global_submitted_gems, with our absolute team read once.
     static std::uint32_t submitted;
     const std::int32_t own = cambc::detail::sdk_my_team();

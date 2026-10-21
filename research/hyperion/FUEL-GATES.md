@@ -205,3 +205,37 @@ main: f25159f with `ab.py --phases`, ladder + gen, 582 debug-build games at the 
 - The strike search is 47% (2910), almost all of it growing and pricing the tree; farm is 23% and siege 8%.
 - The fight steps that dominated phase 0's big turns rarely end one now: prey 178 (39 of them under carry_bag),
   want_home 35, step_guard 2, Reach builds 37 wherever called.
+
+## Out-of-fuel anatomy (2026-10-21)
+
+What spent the fuel of those turns, rather than where they ended (`debug_phases` costs, `tools/fuel/oof_costs.py`;
+branch oof/anatomy). A copy of hyperion with `debug_phases` and `debug_big_turns` on (SRCH, SLOT and D lines off to stay
+under the stdout cap) against the integration branch's hyperion (2b7ea7e), both on test drafts, real budget, both sides
+of the 40 gen and 10 ladder maps with the most out-of-fuel turns in the wave 0 A/B: 100 games, 3240 out-of-fuel turns
+(the reference 3289), 84884 turns over 60k that did not run out. First turns (200k) are left out; 3 of the 100
+measured outputs reached the 1 MiB cap and lost their last lines.
+
+| Path (out-of-fuel turns) | Ran | Mean | p90 | Share |
+|---|---|---|---|---|
+| decide/plan_strikes | 98% | 39.9k | 64.6k | 39.9% |
+| decide/plan_strikes/grow | 97% | 21.2k | 45.1k | 21.2% |
+| decide/plan_strikes/read | 95% | 9.5k | 16.6k | 9.5% |
+| decide/plan_strikes/price | 78% | 7.8k | 17.9k | 7.8% |
+| decide/step_guard (exposure 9.5%, fights 7.0%) | 68% | 17.0k | 41.5k | 17.0% |
+| decide/want_home (fight 5.7%, lethal 3.4%, pursuit 3.0%) | 61% | 14.6k | 36.6k | 14.6% |
+| decide/continue_recall/want_home | 36% | 8.4k | 29.3k | 8.4% |
+| decide/farm | 19% | 1.4k | 3.6k | 1.4% |
+| decide/siege (siege_candidate) | 25% | 1.3k | 3.7k | 1.3% |
+| decide, its own code | | 1.5k | | 1.5% |
+| world (update_champions 3.7%, camps 3.7%) | 99% | 10.0k | 14.5k | 10.0% |
+| outside any listed Phase | | 1.0k | 2.9k | 1.0% |
+
+- Farm and siege end 31% of these turns (wave 0) but spend under 3% of their fuel: they get what the fight models
+  leave. The strike search, step_guard and want_home (with continue_recall's) spend 80%. By Phase name at any depth:
+  grow 21%, new_fight 13.4%, read 9.5%, step_guard's exposure 8.5%, price 7.4%, pursuit 4.9%, Reach::build 3.3%.
+- Heart of Ruin has 59% of these turns (1905 of 3226) but 27% of the big turns; its search's grow alone is 28% of
+  its out-of-fuel fuel (2-13% for the others).
+- Turns over 60k (mean 74.9k): world 14.5%, farm 12.7% (its own evaluation loop 5.4%, route 1.9%), continue_recall's
+  want_home 10.6%, the strike search 11.6% (read 4.8%), step_guard 10.0%, want_home 6.4%, chase 6.1%.
+- Phases cost about 1k fuel a turn (+2.7% on the fuel bench at 100M, identical games); out-of-fuel turns enter 46 on
+  average.

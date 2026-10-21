@@ -122,6 +122,7 @@ int main() {
             aph::note_shortcut("out-of-fuel");
             continue;
         }
+        aph::end_phase_turn();
         cambc::end_turn();
     }
 }
