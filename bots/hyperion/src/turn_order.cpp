@@ -185,13 +185,12 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
     const auto& a = self.facts().abilities[slot];
     const float heal = a.multiplier * self.focus;
     const auto& spawn = world.map().ally_spawn;
-    bool refreshed = false;
     for (const auto& ally : world.allies) {
         if (ally.is_self || !ally.alive || !ally.visible || test(spawn, ally.pos) || dist(self.pos, ally.pos) > a.range() + 1)
             continue;
-        // Enemies we killed this turn strike nobody.
-        if (!refreshed) safety.refresh(), refreshed = true;
-        const float damage = safety.strike_sum(ally.pos);
+        // strike_sum(ally.pos) over the enemies still alive, without the refresh its gone() needs.
+        float damage = 0;
+        for (const auto& [e, health] : enemies) damage += safety.strike_of(*e).at(dist(e->pos, ally.pos));
         if (damage >= ally.health && damage < ally.health + heal)
             wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(ally.gems));
     }
