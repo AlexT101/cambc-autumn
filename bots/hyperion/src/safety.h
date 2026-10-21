@@ -418,11 +418,6 @@ private:
     int threat_slot(vec2 p);       // claim_slot(p) with the row's columns filled
     void fill_threats(vec2 p, TileDanger& row);
     void fill_camps(vec2 p, TileDanger& row);
-    // The awake members that can reach a window tile (within reach + 3 of centre_), in
-    // awake_members() order so fill_camps sums alike; found once a generation.
-    std::span<const CampHit> window_members();
-    int window_member_count_ = 0;
-    std::uint32_t window_members_generation_ = 0;
     // The one unseen rule for an unseen credible enemy (see tile()).
     Blow unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p, bool window);
     // Inside debug_block only: the distance-0 rule the table replaced (each credible unseen threat

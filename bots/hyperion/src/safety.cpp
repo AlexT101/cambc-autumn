@@ -2288,23 +2288,9 @@ const TileDanger& Safety::tile(vec2 p) { return rows_[static_cast<std::size_t>(t
 
 void Safety::fill_camps(vec2 p, TileDanger& row) {
     float worst = 0, expected = 0;
-    for (const auto& m : window_slot(p) >= 0 ? window_members() : awake_members())
+    for (const auto& m : awake_members())
         if (in_square(p, m.pos, m.reach)) worst += m.strength, expected += m.strength * m.weight;
     row.camp_worst = worst, row.camp_exp = expected;
-}
-
-std::span<const Safety::CampHit> Safety::window_members() {
-    static std::vector<CampHit> pool; // kept across turns, as member_pool()
-    if (window_members_generation_ != generation_) {
-        window_members_generation_ = generation_;
-        const auto all = awake_members();
-        if (pool.size() < all.size()) pool.resize(all.size());
-        int n = 0;
-        for (const auto& m : all)
-            if (in_square(centre_, m.pos, m.reach + 3)) pool[static_cast<std::size_t>(n++)] = m;
-        window_member_count_ = n;
-    }
-    return {pool.data(), static_cast<std::size_t>(window_member_count_)};
 }
 
 // Its field is capped at the radius, so only `possible` within the radius of p can hit p: within

@@ -181,7 +181,9 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
   - Tried and slower or no gain: raw bitboard reads instead of `is_set`, WASM bitmask searches, a stalemate early-out
     in `simulate`, damage-bound settling before simulating, a per-side cast plan (+37%), a farm straight-line
     prefilter, field steps read from WASM memory, per-group camp-damage boxes, Reach as per-enemy host boards, no
-    warm_reach at all (more out-of-fuel turns).
+    warm_reach at all (more out-of-fuel turns), the tile table's camp columns summed over only the members within
+    reach + 3 of its centre (wave 1: +0.36% as a pass a generation, +0.12% listed in find_members and inlined, on
+    the bench and on 7 camp-heavy maps: 0-6 awake members a turn, never more).
 - What runs out: fight turns. `step_guard`'s exact tile looks (Reach queries on new tiles, ~850-1200 each) and its
   simulations, then `want_home` and `prey` simulations, the planner, and farm on cold 100x100 starts (centre warm-up
   takes 19-54 rounds there). An out-of-fuel turn resumes next round on stale beliefs and can chain; the cascade
