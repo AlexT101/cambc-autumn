@@ -1834,7 +1834,8 @@ bool try_ward(vec2 p, Memory& memory) {
 }
 
 // Attackers in a bush stay unseen from outside it, and a ward inside sees across its cluster.
-// Ward the cluster in reach with the most tiles near us, unless our own ward already watches it.
+// Our one ward never expires, so replace it only by a cluster with more tiles in ability range of
+// here and of our work (claimed group or waited-at altar), where we will be again.
 // Without `grow`, only if every cluster that needs is found already.
 bool ward_bushes(const World& world, Memory& memory, bool grow) {
     const auto& map = world.map();
@@ -1853,15 +1854,16 @@ bool ward_bushes(const World& world, Memory& memory, bool grow) {
         return false;
     }
     // Scratch boards: allocating one costs more than the host operations on it.
-    static bitboard candidates{cambc::uninitialized}, near{cambc::uninitialized}, inner{cambc::uninitialized},
-        scratch{cambc::uninitialized}, best{cambc::uninitialized};
+    static bitboard candidates{cambc::uninitialized}, inner{cambc::uninitialized}, scratch{cambc::uninitialized},
+        best{cambc::uninitialized};
     candidates.clear();
     candidates.draw_chebyshev(here, 2.0f);
     candidates &= map.bushes;
     if (test(map.bushes, here)) drop(candidates, map.bush_cluster(here).tiles);
-    // Every cluster holding a candidate is found, so an unfound one could drop nothing.
-    if (in_bounds(memory.ward) && test(map.bushes, memory.ward))
-        if (const auto* c = map.found_bush_cluster(memory.ward)) drop(candidates, c->tiles);
+    // Found when it was placed; as a candidate it could only tie with itself.
+    const BushCluster* warded =
+        in_bounds(memory.ward) && test(map.bushes, memory.ward) ? map.found_bush_cluster(memory.ward) : nullptr;
+    if (warded) drop(candidates, warded->tiles);
     if (candidates.is_empty()) {
         memory.bushes_watched = here;
         return false;
@@ -1869,18 +1871,21 @@ bool ward_bushes(const World& world, Memory& memory, bool grow) {
     drop(candidates, map.enemy_spawn);
     cambc::vision::ward_tiles_into(team::ally, scratch);
     drop(candidates, scratch);
-    near.clear();
-    near.draw_chebyshev(here, static_cast<float>(ability_range)); // an ability reaches farther than any basic attack
+    const vec2 work = memory.claim >= 0        ? map.groups[memory.claim].centre
+                      : memory.wait_altar >= 0 ? map.altars[memory.wait_altar].pos
+                                               : vec2{-1, -1};
+    // An ability reaches farther than any basic attack.
+    const auto score = [&](const bitboard& tiles) {
+        const int n = static_cast<int>(count_within(tiles, here, ability_range));
+        return in_bounds(work) ? n + static_cast<int>(count_within(tiles, work, ability_range)) : n;
+    };
     inner.clear();
     inner.draw_chebyshev(here, 1.0f);
     bool found = false;
-    int best_tiles = 0;
+    int best_tiles = warded ? score(warded->tiles) : 0;
     while (!candidates.is_empty()) {
         const auto& c = map.bush_cluster(first_tile(candidates));
-        scratch.clear();
-        scratch |= c.tiles;
-        scratch &= near;
-        const int tiles = static_cast<int>(scratch.count());
+        const int tiles = score(c.tiles);
         if (tiles > best_tiles) {
             best.clear();
             best |= c.tiles;
