@@ -352,3 +352,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    damage plus the camp damage per hit times the hits still to come before leaving every awake camp's reach, instead
    of one step's damage, which tied on every tile inside an Elk's or Golem's reach and walked the champion around the
    camp toward home. 49.9% vs main (1094, ladder 47.1, gen 50.4, fresh 49.8); out-of-fuel turns 11202 vs 11361.
+50. 2026-10-21 (not yet submitted). A carrier's step is the farm step (bot.cpp decide, abilities.cpp enemy_cast): the
+   step search priced a carrier's walk at a fixed 210 (250 less a cast), so walk-blocking casts and strikes while
+   carrying needed 250 and Stellar's nuke never fired; it now uses farm_step_value as when not carrying.
+   cast_at_enemies takes the walk's worth instead of a bool; retreat and the game-ender intercept pass 210 and are
+   unchanged. 52.1% vs main (1094, ladder 51.4, gen 52.1, fresh 52.1); out-of-fuel turns 11027 vs 11206.

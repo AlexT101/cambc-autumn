@@ -629,3 +629,11 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   gen-s1 49.8); out-of-fuel turns 11202 vs 11361. Level and a rule fix: kept. Not fixed: retreat_step walks back into
   an Elk's reach when the way home passes it (recall_outruns ignores camps; lanes), idle turns under a Golem
   (dense-camps).
+- final-keepwalk (2026-10-21; GAPS derived thresholds; branch orch/final-keepwalk 06e74a6, integrated as
+  orch/int-final-keepwalk 6db8557 on main 4cfb395): the step search priced a carrier's walk at carried_step_value 210
+  (keep_walk_value 250 less a cast's 40), so a carrier cast a walk-blocking spell only above 250 and Stellar's nuke (140)
+  never did; Intent::keep_walk was set but unread. A carrier's step is now farm_step_value (a step home banks a turn
+  sooner, freeing a turn of farming); cast_at_enemies takes the forgone walk's worth (threshold min_value + walk) in
+  place of a bool, and retreat and the game-ender intercept pass escape_step_value 210, so those paths keep 250 and
+  free stun. Works against the earlier "ranged carriers hold fire to keep walking" loss (47.9%). 52.1% vs main (1094,
+  ladder 51.4, gen 52.1, fresh gen-s1 52.1); out-of-fuel turns 11027 vs 11206. Kept.
