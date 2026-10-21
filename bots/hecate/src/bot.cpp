@@ -1929,61 +1929,22 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
     return health <= exit_cost(camp_exit_rounds(world, safety, here));
 }
 
-// A visible enemy that our basic attack and best ready cast kill this turn, after which the rest (and
-// the camps) could not kill us before our next turn; -1 if none. Cassi and Issac fall together.
-int killable_now(const World& world, Safety& safety) {
-    if (!enemy_seen(world)) return -1;
-    const auto& self = world.me();
-    const auto& f = self.facts();
-    const vec2 here = my_position();
-    const float health = my_health();
-    const int range = f.attack_range();
-    const float scale = damage_scale(f.passive, health, my_max_health());
-    const float strength = self.strength * scale, focus = self.focus * scale;
-    for (auto left = safety.seen_enemies(); left; left &= left - 1) {
-        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        const int d = dist(here, e.pos);
-        float cast = 0;
-        for (int s = 0; s < 2; ++s) {
-            const auto& a = f.abilities[s];
-            if (!self.ability_ready(s, world.round)) continue;
-            if (a.kind == AbilityKind::attack_reset && d <= range) cast = std::max(cast, strength);
-            if (a.kind == AbilityKind::damage && d <= a.range()) cast = std::max(cast, a.multiplier * focus);
-            // The landing, then the attack from beside it.
-            if (a.lands() && d <= a.reach()) cast = std::max(cast, a.multiplier * focus + (d > range ? strength : 0.0f));
-        }
-        if ((d <= range ? strength : 0.0f) + cast < e.health + e.shield || test(world.map().enemy_spawn, e.pos)) continue;
-        const bool linked = e.facts().passive == Passive::linked_pair;
-        float rest = safety.camp_damage(here);
-        for (const auto& t : safety.threats())
-            if (t.enemy != e.index && !(linked && world.enemies[t.enemy].facts().passive == Passive::linked_pair))
-                rest += t.at(here).damage;
-        if (rest < health) return e.index;
-    }
-    return -1;
-}
-
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
 bool want_home(const World& world, Safety& safety, bool sieging) {
     world.throw_if_stale();
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
     const float health = my_health();
-    const int kill = killable_now(world, safety);
     const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world);
-    if ((low && kill < 0)
-        || outmatched(world) || camp_trapped(world, safety, here, health, sieging))
-        return true;
+    if (low || outmatched(world) || camp_trapped(world, safety, here, health, sieging)) return true;
     // Out of sight and not lethal, nobody can win a fight here or pursue us.
     const bool lethal = safety.lethal(here);
     if (!lethal && !enemy_seen(world)) return false;
     // Short of fuel for the simulation, a lethal tile counts as a lost fight.
     const bool simulate = fuel_ok(safety.fight_cost_estimate() + end_reserve);
     if (!simulate && lethal) note_shortcut("home-no-fight-sim");
-    if ((kill < 0 && lethal && (!simulate || safety.fight(here).self_falls))
-        || (simulate && visible_threat(world, safety, here) && safety.fight(here, kill).lost))
+    if ((lethal && (!simulate || safety.fight(here).self_falls)) || (simulate && visible_threat(world, safety, here) && safety.fight(here).lost))
         return true;
-    if (kill >= 0) return false;
     if (!simulate || !fuel_ok(2 * safety.fight_cost_estimate() + end_reserve)) {
         note_shortcut("home-no-pursuit");
         return false;

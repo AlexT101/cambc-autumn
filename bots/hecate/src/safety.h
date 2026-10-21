@@ -245,12 +245,11 @@ public:
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
-    // `exclude`: an enemy (by index) left out, as when our hit kills it first.
-    Trade fight(vec2 p, int exclude = -1);
+    Trade fight(vec2 p);
     // Who would fight at p: bit i of the low half for allies[i], of the high half for enemies[i];
     // no_fight if no threat hits p.
     static constexpr std::uint32_t no_fight = ~0u;
-    std::uint32_t fight_key(vec2 p, int exclude = -1);
+    std::uint32_t fight_key(vec2 p);
     // fight_key(p) given `visible`: the bits of every visible threat that hits p, at least one.
     std::uint32_t fight_key_with(vec2 p, std::uint32_t visible);
     // The fight of a key, memoised.

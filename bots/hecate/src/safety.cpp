@@ -1769,11 +1769,11 @@ bool Safety::avoid_within(vec2 p, int r) {
     return false;
 }
 
-std::uint32_t Safety::fight_key(vec2 p, int exclude) {
+std::uint32_t Safety::fight_key(vec2 p) {
     std::uint32_t key = 0;
     bool hit = false;
     for (const auto& t : threats()) {
-        if (t.enemy == exclude || !t.at(p).hits) continue;
+        if (!t.at(p).hits) continue;
         hit = true;
         key |= 1u << (16 + t.enemy);
     }
@@ -1794,9 +1794,9 @@ const Trade* Safety::memo(std::uint32_t key) const {
     return nullptr;
 }
 
-Trade Safety::fight(vec2 p, int exclude) {
+Trade Safety::fight(vec2 p) {
     world_.throw_if_stale();
-    const auto key = fight_key(p, exclude);
+    const auto key = fight_key(p);
     return key == no_fight ? Trade{} : fight_of(key);
 }
 

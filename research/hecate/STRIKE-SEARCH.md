@@ -190,10 +190,9 @@ Each phase is one commit:
      - pursuit beyond reach;
      - Cassi and Issac's linked death;
      - `paying_soon` and `own_ground`;
-     - `killable_now`;
      - turns with enemies seen beyond strike reach.
-   - Two fight-simulation limits to fix first: fights at leaves need health in the memo key (fighters use
-     turn-start health), and `fight(p, exclude)` excludes only one enemy.
+   - A fight-simulation limit to fix first: fights at leaves need health in the memo key (fighters use
+     turn-start health).
    - Reconcile with FUEL-GATES phase 3, which sets limits on those same functions.
 
 ## Not in this plan
