@@ -10,11 +10,13 @@ Phase 1 (search core) on branch `orch/strike-p1`. Spec: [STRIKE-SEARCH.md](STRIK
   (walk/land: `pathing.blocked()` | guard), `pass_` (dash path: not wall or visible camp), `landings(c)` by dilation.
 - **Legality per unit** as grids: `Unit::legal` (basic attack, range + sight), `cast_legal` (unit casts, range 4).
   Sight is `attack_viewers()` (new, safety.cpp): exact, except viewers in a bush beyond a step are dropped
-  (conservative). Our ward's sight is not used (an option lost, never a refused attack).
+  (conservative); `Search::viewers` adds the start tile back whenever the target is in range, as it is
+  visible from there now. Our ward's sight is not used (an option lost, never a refused attack).
 - **DFS over symbolic moves.** Walk (W) and plain dashes (D) are not expanded per tile: each attack/cast after a
   move ANDs its legality grid into the move's requirement (`req_w`, `req_d`, `req_e`), and `settle()` resolves every
   end tile a leaf can reach (segments `at_start, walked, dashed, walked_dashed, dashed_walked`). Landings that hit
-  (Heart of Ruin, `land_hits`) are expanded concretely. Ground casts: excluding-walking only, from the start, best
+  (Heart of Ruin, `land_hits`) are expanded concretely. After a walk, a dash's landings come from the walk
+  tiles the actions so far still allow (`free_n & req_w`), stored as the dash's `req_d`. Ground casts: excluding-walking only, from the start, best
   centre per set of foes damaged (exact: nothing can move after).
 - **Actions/rules covered:** W, A, R, D, S (unit and ground), Cassi's stun anywhere, melee W A R A and every W
   interleaving, ranged W R A, A then D (Vesper), A W D / A D W, attack + cast in both orders (cast priced on health
@@ -51,6 +53,10 @@ Phase 1 (search core) on branch `orch/strike-p1`. Spec: [STRIKE-SEARCH.md](STRIK
 
 ## Fuel (the blocker)
 
+- After the review fixes (4 games: 00packs vs hecate-v7 and gen-huge-shared-720707800 vs nemesis, both sides):
+  0 EXH, 0 DOM, 1 REFUSED (a stale resume, above); out-of-fuel turns 31 on 00packs (both sides) and 8 on the
+  shared map, where some fall in rounds with no search (r1 among them); not compared with the pre-fix build.
+
 - 6 validation games, before the wake memo: per search mean 18.4k, p50 9.0k, p90 52.6k, max 60.8k (read 6.2k,
   grow 20.6k, price 8.2k mean); **58 out-of-fuel turns vs 0 for hecate-v7** (oof.py), 45 of them on 00packs
   (Heart of Ruin landings near wolf packs). Old planner: 6k mean, 25k max. Not ready for an A/B.
@@ -68,6 +74,11 @@ Phase 1 (search core) on branch `orch/strike-p1`. Spec: [STRIKE-SEARCH.md](STRIK
 
 - Window (9x9, safety.cpp) vs Grid (7x7, plan.cpp) layouts differ; `to_grid` converts row by row.
 - `hit_unit` mutates `h` before it can fail: callers restore `h = saved`.
+- Cassi and Issac: `Unit::link` pairs the two bodies among the foes. All damage goes through `lose()`: a kill
+  zeroes both, and `partner(t)` reads the partner's health as hit so far. In one blow on both (splash, landing,
+  ground 3x3) `moot()` drops a body's own value when its partner, counted later in the same blow, dies to it.
+- A search that runs out of fuel resumes next round and carries out its stale plan: the one SRCH-REFUSED in
+  the post-review games (00packs r836, a dash) followed two out-of-fuel turns.
 - `land_hits` marks landings within the radius of a foe or a live camp member; other landings are "plain" and
   stay symbolic. A Vendetta refresh enables D only when `moves` and a dash slot exist.
 - Not done: the probe that no second cast is allowed after a Vendetta refresh (modelled per the YAML: one cast);

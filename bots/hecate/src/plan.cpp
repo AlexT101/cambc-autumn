@@ -127,6 +127,11 @@ void apply(const Board& b, const Hit& hit, Healths& h) {
     const vec2 at = b.foes[hit.target].pos;
     for (int j = 0; j < b.n; ++j)
         if (j == hit.target || (b.splash && h[j] > 0 && dist(b.foes[j].pos, at) <= 1)) h[j] -= b.strength;
+    // Cassi and Issac die together.
+    for (int j = 0; j < b.n; ++j)
+        if (h[j] <= 0.01f && b.foes[j].belief->facts().passive == Passive::linked_pair)
+            for (int k = 0; k < b.n; ++k)
+                if (b.foes[k].belief->facts().passive == Passive::linked_pair) h[k] = 0;
 }
 
 bool attack(const Board& b, const Hit& hit) {
@@ -239,6 +244,7 @@ struct Unit {
     std::array<bool, 2> suicidal{};             // per slot: its retaliation would kill us
     int group = -1, member = -1, local = -1;    // camps
     std::int8_t hor = -1;                       // its index among enemy Hearts of Ruin
+    std::int8_t link = -1;                      // Cassi's or Issac's partner among the foes
     Grid legal = 0, cast_legal = 0; // where our attack, or a unit cast, reaches and sees it
 };
 
@@ -344,7 +350,7 @@ struct Search {
     std::array<const ChampionBelief*, 2> hors{};
     int n_hors = 0;
 
-    Grid free_ = 0, pass_ = 0, free_n = 0, land_here = 0, land_hits = 0, plain_here = 0, dom_wd = 0, dom_dw = 0;
+    Grid free_ = 0, pass_ = 0, free_n = 0, land_here = 0, land_hits = 0, plain_here = 0, dom_dw = 0;
     Grid land_known = 0;
 
     std::array<Act, max_depth> stack;
@@ -385,6 +391,12 @@ struct Search {
         return g;
     }
 
+    // Tiles within r of the visible unit at p that see it. attack_viewers leaves out bushes beyond
+    // a step, but the start tile is exact: the unit is visible from there now.
+    Grid viewers(vec2 p, int r) const {
+        return to_grid(attack_viewers(world, p, r), p, r) | (dist(here, p) <= r ? gbit(cell(here)) : 0);
+    }
+
     std::uint32_t touch_near(vec2 p, int r) const {
         std::uint32_t mask = 0;
         for (int k = 0; k < n_members; ++k)
@@ -399,6 +411,24 @@ struct Search {
     void read_spells();
     void add_unseen(int slot);
     void find_centres(int slot);
+
+    // Health left to t's partner, whose death is t's.
+    float partner(int t) const {
+        const int k = u[t].link;
+        return k < 0 ? u[t].partner : std::min(h[k], u[k].belief->health);
+    }
+    // A kill takes the partner with it.
+    void lose(int t, float d) {
+        if ((h[t] -= d) > 0.01f) return;
+        h[t] = 0;
+        if (u[t].link >= 0) h[u[t].link] = 0;
+    }
+    // Whether t's partner, hit later by the same blow (not yet counted), dies to it while t would
+    // not: t's hit is then worth nothing beyond the partner's kill.
+    bool moot(int t, float d, bool partner_hit, float partner_d) const {
+        const int k = u[t].link;
+        return partner_hit && h[k] > 0 && partner_d >= h[k] - 0.01f && d < h[t] - 0.01f;
+    }
 
     bool hit_unit(int t, Node& s);
     bool spell_unit(const Spell& sp, int t, Node& s);
@@ -523,7 +553,7 @@ void Search::read_camps() {
             x.pos = m.pos;
             x.health = hp;
             x.group = g, x.member = i, x.local = k;
-            x.legal = to_grid(attack_viewers(world, m.pos, range), m.pos, range);
+            x.legal = viewers(m.pos, range);
             h[n++] = hp;
         }
     }
@@ -560,7 +590,7 @@ void Search::read_spells() {
             x.spell[s] = e.shield <= 0 ? lost : lost > 0 ? lost + e.shield : std::min(raw, e.shield);
             x.spell_stun[s] = a.stuns && x.stunnable ? stun_worth(world, e, raw > 0) : 0.0f;
             x.suicidal[s] = raw > 0 && x.retaliation >= health;
-            if (sp.unit && x.cast_legal == 0) x.cast_legal = to_grid(attack_viewers(world, x.pos, ability_range), x.pos, ability_range);
+            if (sp.unit && x.cast_legal == 0) x.cast_legal = viewers(x.pos, ability_range);
         }
         if (sp.ground) {
             add_unseen(s);
@@ -689,11 +719,14 @@ bool Search::read() {
         x.recall = recall;
         x.stun = arms && x.stunnable ? stun_worth(world, e, true) : 0.0f;
         if (e.facts().passive == Passive::missing_health && n_hors < 2) x.hor = static_cast<std::int8_t>(n_hors), hors[n_hors++] = &e;
-        x.legal = can_attack && dist(here, e.pos) <= grid_r + range ? to_grid(attack_viewers(world, e.pos, range), e.pos, range) : 0;
+        x.legal = can_attack && dist(here, e.pos) <= grid_r + range ? viewers(e.pos, range) : 0;
         h[foes++] = x.health;
     }
     n = foes;
     if (foes == 0) return false;
+    for (int i = 0; i < foes; ++i)
+        for (int j = 0; j < foes && u[i].belief->facts().passive == Passive::linked_pair; ++j)
+            if (j != i && u[j].belief->facts().passive == Passive::linked_pair) u[i].link = static_cast<std::int8_t>(j);
     read_geometry();
     // Camps matter only to what can touch them.
     if (touches) read_members();
@@ -729,7 +762,6 @@ bool Search::read() {
                 if (dist(here, tables.members[k].pos) <= grid_r + land_radius) mark(tables.members[k].pos);
         }
         plain_here = land_here & ~land_hits;
-        each_bit(free_n, [&](int m) { dom_wd |= landings(m); });
         dom_dw = dilate(land_here) & free_;
     }
     return true;
@@ -741,23 +773,26 @@ bool Search::hit_unit(int t, Node& s) {
     const auto& x = u[t];
     float value = 0, retaliation = 0;
     const bool kill = strength >= h[t] - 0.01f;
+    const auto splashed = [&](int k) { return splash && k != t && dist(u[k].pos, x.pos) <= 1; };
     if (x.foe) {
-        value += hit_worth(strength, h[t], x.spawn, x.bag, x.partner);
-        if (s.armed && x.stunnable && !(s.stunned >> t & 1)) value += x.stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
+        const bool m = x.link >= 0 && moot(t, strength, splashed(x.link), strength);
+        if (!m) value += hit_worth(strength, h[t], x.spawn, x.bag, partner(t));
+        if (!m && s.armed && x.stunnable && !(s.stunned >> t & 1)) value += x.stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
         retaliation += x.retaliation;
     } else {
         s.touched |= 1u << x.local;
     }
-    h[t] -= strength;
+    lose(t, strength);
     if (splash) {
         for (int j = 0; j < n; ++j) {
             if (j == t || h[j] <= 0 || dist(u[j].pos, x.pos) > 1) continue;
             const auto& o = u[j];
             if (o.foe) {
-                value += hit_worth(strength, h[j], o.spawn, o.bag, o.partner);
+                const bool m = o.link >= 0 && moot(j, strength, splashed(o.link) && o.link > j, strength);
+                if (!m) value += hit_worth(strength, h[j], o.spawn, o.bag, partner(j));
                 retaliation += o.retaliation;
             }
-            h[j] -= strength;
+            lose(j, strength);
         }
         s.touched |= touch_near(x.pos, 1);
     }
@@ -782,11 +817,11 @@ bool Search::spell_unit(const Spell& sp, int t, Node& s) {
     const auto& x = u[t];
     const float d = x.spell[sp.slot];
     if (x.suicidal[sp.slot]) return false;
-    float v = hit_worth(d, h[t], x.spawn, x.bag, x.partner);
+    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t));
     if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
     if (x.spell_stun[sp.slot] > 0 && !(s.stunned >> t & 1)) v += x.spell_stun[sp.slot], s.stunned |= static_cast<std::uint16_t>(1u << t);
     if (d <= 0 && v <= 0) return false;
-    h[t] -= d;
+    lose(t, d);
     s.value += v - cast_cost;
     s.pending = cast_cost;
     s.cast = false;
@@ -802,7 +837,8 @@ float Search::centre_value(const Centre& c, int slot, const Node& s, bool& ok) c
         const auto& x = u[t];
         if (h[t] <= 0) continue;
         const float d = x.spell[slot];
-        v += hit_worth(d, h[t], x.spawn, x.bag, x.partner);
+        if (x.link >= 0 && moot(t, d, x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])) continue;
+        v += hit_worth(d, h[t], x.spawn, x.bag, partner(t));
         if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
         if (!(s.stunned >> t & 1)) v += x.spell_stun[slot];
     }
@@ -816,7 +852,7 @@ void Search::hit_centre(const Centre& c, int slot, Node& s) {
         const int t = std::countr_zero(m);
         if (h[t] <= 0) continue;
         if (u[t].spell_stun[slot] > 0) s.stunned |= static_cast<std::uint16_t>(1u << t);
-        h[t] -= u[t].spell[slot];
+        lose(t, u[t].spell[slot]);
     }
     s.touched |= c.touched;
     s.pending = cast_cost;
@@ -829,10 +865,11 @@ bool Search::land_at(vec2 L, Node& s) {
     for (int t = 0; t < foes; ++t) {
         const auto& x = u[t];
         if (h[t] <= 0 || dist(L, x.pos) > land_radius) continue;
-        value += hit_worth(x.land, h[t], x.spawn, x.bag, x.partner);
-        if (x.land_stun > 0 && !(s.stunned >> t & 1)) value += x.land_stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
+        const bool m = x.link >= 0 && moot(t, x.land, x.link > t && dist(L, u[x.link].pos) <= land_radius, u[x.link].land);
+        if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t));
+        if (!m && x.land_stun > 0 && !(s.stunned >> t & 1)) value += x.land_stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
         retaliation += x.land > 0 ? x.retaliation : 0.0f;
-        h[t] -= x.land;
+        lose(t, x.land);
     }
     if (retaliation >= health) return false;
     s.touched |= touch_near(L, land_radius);
@@ -998,7 +1035,7 @@ bool Search::legal_at(Node& s, Grid legal) const {
         return (plain_here & (s.req_d &= legal)) != 0;
     case walked_dashed:
         if (s.land.x >= 0) return legal & gbit(cell(s.land));
-        return (dom_wd & ~land_hits & (s.req_d &= legal)) != 0;
+        return (~land_hits & (s.req_d &= legal)) != 0;
     case dashed_walked: {
         const Grid dom = s.land.x >= 0 ? dilate(gbit(cell(s.land))) & free_ & ~gbit(cell(s.land)) : dom_dw;
         return (dom & (s.req_e &= legal)) != 0;
@@ -1025,7 +1062,7 @@ void Search::grow(const Node& s) {
         case at_start: return (legal & here_bit) != 0;
         case walked: return (free_n & s.req_w & legal) != 0;
         case dashed: return s.land.x >= 0 ? (legal & gbit(cell(s.land))) != 0 : (plain_here & s.req_d & legal) != 0;
-        case walked_dashed: return s.land.x >= 0 ? (legal & gbit(cell(s.land))) != 0 : (dom_wd & ~land_hits & s.req_d & legal) != 0;
+        case walked_dashed: return s.land.x >= 0 ? (legal & gbit(cell(s.land))) != 0 : (~land_hits & s.req_d & legal) != 0;
         case dashed_walked: return true;
         }
         return false;
@@ -1054,12 +1091,18 @@ void Search::grow(const Node& s) {
     }
     if (s.cast && s.dash && (s.seg == at_start || s.seg == walked)) {
         const bool first = s.seg == at_start;
+        // Landings from the walk tiles the actions so far still allow.
+        Grid reach = land_here;
+        if (!first) {
+            reach = 0;
+            each_bit(free_n & s.req_w, [&](int m) { reach |= landings(m); });
+        }
         Node c = s;
-        c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost;
+        c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.req_d = reach;
         c.seg = first ? dashed : walked_dashed;
-        if ((first ? plain_here : dom_wd & ~land_hits) != 0) push(c, {Op::dash});
+        if ((reach & ~land_hits) != 0) push(c, {Op::dash});
         if (lands)
-            each_bit((first ? land_here : dom_wd) & land_hits, [&](int l) {
+            each_bit(reach & land_hits, [&](int l) {
                 Node d = c;
                 if (land_at(tile(l), d)) push(d, {Op::dash});
                 else h = saved;
