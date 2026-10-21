@@ -1981,20 +1981,24 @@ bool awake_over(const World& world, int g, vec2 p) {
     return false;
 }
 
-// Retreating from an awake camp takes its hits anyway, and the clear is lost. Every awake group in
-// reach counts: a nearly cleared harmless one next to an elk that is hitting us is no reason to stay.
-bool finishing_camp(const World& world) {
+// Retreating from an awake camp takes its hits anyway, and the clear is lost. Every group with a
+// member that would hit us here counts: a nearly cleared harmless one next to an elk that is
+// hitting us is no reason to stay.
+bool finishing_camp(const World& world, Safety& safety) {
     if (winning_bag(world)) return false;
     const vec2 here = my_position();
     bool any = false;
     float damage = 0, soften = 0, strength = 0, reflect = 0;
-    world.each_stirring([&](int g) {
-        if (!awake_over(world, g, here)) return;
+    int last = -1;
+    // Listed group by group.
+    for (const auto& m : safety.awake_members()) {
+        if (m.group == last || !in_square(here, m.pos, m.reach)) continue;
+        last = m.group;
         if (!any) soften = camp_hit_factor(), strength = floored_output(world.me()), reflect = world.me().retaliation();
         float rounds = 0;
-        damage += soften * min_camp_damage(world, g, strength, &rounds, reflect);
+        damage += soften * min_camp_damage(world, m.group, strength, &rounds, reflect);
         any = true;
-    });
+    }
     return any && damage < params::finish_camp_health_fraction * my_health();
 }
 
@@ -2232,7 +2236,7 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
     const float health = my_health();
-    const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world);
+    const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world, safety) && !holding_capture(world);
     if (low || outmatched(world) || camp_trapped(world, safety, here, health, sieging)) return true;
     // Out of sight and not lethal, nobody can win a fight here or pursue us.
     const bool lethal = safety.lethal(here);
