@@ -63,6 +63,19 @@ Spec: [STRIKE-SEARCH.md](STRIKE-SEARCH.md). Phase 1 (search core) is on main (52
   44k. Heaviest: HoR fights with 2 foes (40 nodes, ~60k grow at 100M; ~36k not located). Next step: meter grow's
   per-node work (Node and health copies, dash and walk set-up).
 - A search that runs out of fuel resumes next round and carries out its stale plan (a REFUSED source).
+- **Fuel follow-up (orch/strike-fuel, same choices).** At 100M on the six worst A/B maps vs hecate-v8, main has
+  no more over-100k turns than hecate-v8 (2.9% vs 3.1%): the real-budget OOF rise is not turn demand. SRCH lines
+  now print `left` (fuel at the search's start): searches start with ~40-60k left, after step_guard's fights
+  spend down to `act_reserve` (20k) plus an estimate, and the OOF turns are those whose search costs 25-50k.
+  The tail matters, not the mean. Tail sources: Heart of Ruin trees (30-56 nodes, ~1.5k a node outside settle),
+  ground centres with many unseen tiles (find_centres and the per-node centre loop), pricing at the query cap.
+  Saved: per call mean 11.75k -> 11.2k, p99 42.5k -> 39.3k, max 204k -> 133k (12 games at 100M, identical).
+- **Caps tried and dropped:** at most 3 landing groups a node (never bound: groups rarely exceed 3), at most 4
+  centre kinds, 16 nodes and 6 Reach queries a search. The last changed 8 of 12 games at 100M and cut calls over
+  50k from 44 to 26, but real-budget OOF did not fall (16 bench games 82 vs main 82; 6 worst-map games 58 vs 51
+  for the same-choice branch). Bounding the tail needs cheaper nodes, not fewer.
+- WASM costs: raw bitboard reads (`chunk_window`-style) cost more than host ops plus `positions_into` for a 7x7
+  window; 128-bit Window shifts per row are dear (cache rows as `uint16`).
 
 ## Gotchas
 
