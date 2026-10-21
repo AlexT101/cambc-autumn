@@ -907,9 +907,12 @@ void World::update() {
     FuelMeter meter{"update"};
     read_vision();
     const auto tributing = tributing_enemies(); // before update_champions ends their channels
-    guard("priorities", [&] { read_priorities(updated_round_ != round); });
-    updated_round_ = round;
-    if (ranks_stale_) rank_turns();
+    {
+        Phase phase{"read_priorities"};
+        guard("priorities", [&] { read_priorities(updated_round_ != round); });
+        updated_round_ = round;
+        if (ranks_stale_) rank_turns();
+    }
     update_champions(true);
     // Visible champions that have acted come before us and those that have not after us, which
     // bounds our slot; a visible enemy's modelled order against ours should match its flag.
@@ -923,8 +926,11 @@ void World::update() {
         std::printf("SLOT %d %u %d %d %d %d %d\n", round, static_cast<std::uint32_t>(me().handle), slot(me(), round), lo, hi,
                     seen, wrong);
     });
+    Phase phase{"update_camps"};
     guard("camps", [&] { update_camps(); });
+    phase.next("update_altars");
     guard("altars", [&] { update_altars(); });
+    phase.next("update_scores");
     guard("scores", [&] { update_scores(tributing); });
 }
 
@@ -948,11 +954,14 @@ namespace {
 } // namespace
 
 void World::update_champions(bool full) {
+    Phase phase{"update_champions"};
     tracked_count_ = 0;
+    Phase side{"allies"};
     // Allies read this round have not changed but for our own move and heals, and nothing reads
     // those before the next update.
     for (auto& b : allies)
         if (full || b.stats_round != round) guard("champion", [&] { update_champion(b, full); });
+    side.next("enemies");
     for (auto& b : enemies) guard("champion", [&] { update_champion(b, full); });
 }
 
@@ -1289,6 +1298,7 @@ bool World::grow(ChampionBelief& b, int turns) {
 }
 
 [[gnu::flatten]] void World::track(ChampionBelief& b) {
+    Phase phase{"track"};
     if (round - b.fixed.round > params::track_horizon) {
         b.tracked = false;
         return;
@@ -1374,10 +1384,9 @@ void restore(CampBelief& c, const CampGroup& G, int since) {
 }
 } // namespace
 
-// update_camps' boards, read on first use: most turns no visible group is awake or cleared.
+// update_camps' board, read on first use: most turns no visible group is cleared.
 struct World::CampViews {
-    const World& world;
-    bool champs_read = false, hidden_made = false;
+    bool champs_read = false;
     const bitboard& champs() {
         static bitboard ally{cambc::uninitialized}, enemy{cambc::uninitialized}, both{cambc::uninitialized};
         if (!champs_read) {
@@ -1387,15 +1396,6 @@ struct World::CampViews {
             or_into(ally, enemy, both);
         }
         return both;
-    }
-    // Where a champion could stand unseen: ~(visible | impassable).
-    const bitboard& hidden() {
-        static bitboard b{cambc::uninitialized};
-        if (!hidden_made) {
-            hidden_made = true;
-            and_into(world.unseen_, world.map().passable, b);
-        }
-        return b;
     }
 };
 
@@ -1415,7 +1415,7 @@ struct World::CampViews {
     }
     seen.swap(before);
     const auto* group_visible = group_visible_.data();
-    CampViews views{*this};
+    CampViews views;
 
     camps_pending_.resize(words);
     for (std::size_t w = 0; w < words; ++w) {
@@ -1484,6 +1484,7 @@ struct World::CampViews {
     // one seen awake, or by every live striker seen asleep. Without strikers left, any member
     // shows it.
     std::optional<Awake> seen_awake;
+    bool hidden_tile = false; // a camp tile out of view where a champion could stand
     {
         const int now = round;
         const bool alive = c.state == CampState::alive;
@@ -1496,42 +1497,75 @@ struct World::CampViews {
         bool striker_awake = false, striker_asleep = false, striker_unread = false, woke = false;
         std::uint64_t read_asleep = 0, read_awake = 0, unseen = 0;
         int harmless = -1;
-        for (std::size_t i = 0; i < n; ++i) {
-            const auto& m = members[i];
-            const std::uint64_t bit = i < 64 ? std::uint64_t{1} << i : 0;
-            if (!test(visible, m.pos)) {
-                if (m.strength > 0 && health[i] > 0) {
-                    unseen |= bit;
-                    striker_unread |= bit == 0;
+        const bool cleared = c.state == CampState::cleared;
+        // One loop per liveness: a group cleared or respawning has no live member to read.
+        const auto read_members = [&](auto live_group) {
+            constexpr bool live = decltype(live_group)::value;
+            for (std::size_t i = 0; i < n; ++i) {
+                const auto& m = members[i];
+                const std::uint64_t bit = i < 64 ? std::uint64_t{1} << i : 0;
+                if (!test(visible, m.pos)) {
+                    if constexpr (!live) {
+                        if (cleared && !hidden_tile) hidden_tile = test(map().passable, m.pos);
+                    }
+                    if (m.strength > 0 && health[i] > 0) {
+                        unseen |= bit;
+                        striker_unread |= bit == 0;
+                    }
+                    continue;
                 }
-                continue;
-            }
-            const float hp = engine::camp_health(m.handle).value_or(0.0f);
-            if (hp < health[i] - 1e-3f) {
-                if (now - health_round[i] < cambc::constants::camp_sleep_time) {
-                    c.last_damaged_round = now;
-                    awake = Awake::awake;
-                    woke = true;
-                } else if (awake == Awake::asleep) {
-                    awake = Awake::unknown;
-                    woke = true;
+                const float hp = live ? engine::camp_health(m.handle).value_or(0.0f) : 0.0f;
+                if (hp < health[i] - 1e-3f) {
+                    if (now - health_round[i] < cambc::constants::camp_sleep_time) {
+                        c.last_damaged_round = now;
+                        awake = Awake::awake;
+                        woke = true;
+                    } else if (awake == Awake::asleep) {
+                        awake = Awake::unknown;
+                        woke = true;
+                    }
                 }
+                version += hp != health[i];
+                health[i] = hp;
+                health_round[i] = now;
+                if (hp <= 0 || !live) continue;
+                if (m.strength <= 0) {
+                    if (harmless < 0) harmless = static_cast<int>(i);
+                    continue;
+                }
+                const auto read = engine::camp_awake(m.handle);
+                striker_awake |= read == Awake::awake;
+                striker_asleep |= read == Awake::asleep;
+                striker_unread |= !read;
+                if (read == Awake::asleep) read_asleep |= bit;
+                else if (read == Awake::awake) read_awake |= bit;
             }
-            version += hp != health[i];
-            health[i] = hp;
-            health_round[i] = now;
-            if (hp <= 0 || !alive) continue;
-            if (m.strength <= 0) {
-                if (harmless < 0) harmless = static_cast<int>(i);
-                continue;
-            }
-            const auto read = engine::camp_awake(m.handle);
-            striker_awake |= read == Awake::awake;
-            striker_asleep |= read == Awake::asleep;
-            striker_unread |= !read;
-            if (read == Awake::asleep) read_asleep |= bit;
-            else if (read == Awake::awake) read_awake |= bit;
-        }
+        };
+        if (alive) read_members(std::true_type{});
+        else read_members(std::false_type{});
+        debug_block({
+            // The vision boards of awake and asleep camps (unused: a host read per member costs less
+            // than a board read in place) and the not-alive shortcut, against the per-camp reads.
+            namespace raw = cambc::detail;
+            static bitboard awake_tiles{cambc::uninitialized}, asleep_tiles{cambc::uninitialized};
+            static std::uint32_t state;
+            static std::int32_t on_awake, on_asleep, seen;
+            static raw::camp_state record;
+            if (raw::sdk_awake_camp_occupancy(awake_tiles.ptr()) == 0 && raw::sdk_asleep_camp_occupancy(asleep_tiles.ptr()) == 0)
+                for (std::size_t i = 0; i < n; ++i) {
+                    const vec2 p = members[i].pos;
+                    if (raw::sdk_Bitboard_Test(visible.ptr(), p.x, p.y, &seen) != 0 || !seen
+                        || raw::sdk_Bitboard_Test(awake_tiles.ptr(), p.x, p.y, &on_awake) != 0
+                        || raw::sdk_Bitboard_Test(asleep_tiles.ptr(), p.x, p.y, &on_asleep) != 0)
+                        continue;
+                    const int read = raw::sdk_camp_state(members[i].handle, &state) == 0 && (state == 1 || state == 2) ? static_cast<int>(state) : 0;
+                    const int board = on_awake ? 1 : on_asleep ? 2 : 0;
+                    const float hp = raw::sdk_camp(members[i].handle, &record) == 0 ? record.health : 0.0f;
+                    if (read != board || (on_awake && on_asleep) || (!alive && hp != 0.0f))
+                        std::printf("CAMP-AWAKE-MISMATCH %d %d %d state %d board %d alive %d hp %g\n", now, static_cast<int>(g),
+                                    static_cast<int>(i), read, on_awake + 2 * on_asleep, alive, static_cast<double>(hp));
+                }
+        });
         // A member known asleep that reads awake was woken by damage, which woke the rest too.
         woke |= (c.awake == Awake::asleep ? read_awake : c.asleep & read_awake) != 0;
         c.asleep = woke ? read_asleep : (c.asleep & ~read_awake) | read_asleep;
@@ -1552,7 +1586,7 @@ struct World::CampViews {
     if (c.awake == Awake::asleep) c.asleep = 0;
 
     if (c.state == CampState::cleared) {
-        if (disjoint(G.tiles(), views.hidden())) {
+        if (!hidden_tile) {
             std::uint32_t occupants = 0;
             if (!disjoint(G.tiles(), views.champs())) {
                 for (const auto& b : allies)
