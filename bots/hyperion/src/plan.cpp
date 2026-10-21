@@ -1682,12 +1682,8 @@ bool strike_possible(const World& world) {
         t.done = true;
         const vec2 p = S.tile(t.c);
         const bool far = dist(p, here) == 3;
-        // End tiles are open, so the row never asks Reach about a wall.
-        const auto& row = safety.tile(p);
-        const float camp = row.camp_exp;
-        const bool banned = far && row.worst() >= S.health; // the step guard covers radius 1-2 only
-        const std::uint16_t hit_by = row.vis_mask, unseen_by = row.unseen_mask;
-        queries += far;
+        // The row's camp column only: a full row read would ask every visible blow first.
+        const float camp = safety.camp_damage(p, false);
         t.bound -= camp;
         t.total = t.bound;
         t.danger = camp;
@@ -1695,7 +1691,14 @@ bool strike_possible(const World& world) {
             ++bound_stops;
             continue;
         }
-        if (banned) continue;
+        std::uint16_t hit_by = 0xffff, unseen_by = 0;
+        if (far) {
+            // End tiles are open, so the row never asks Reach about a wall.
+            const auto& row = safety.tile(p);
+            ++queries;
+            if (row.worst() >= S.health) continue; // the step guard covers radius 1-2 only
+            hit_by = row.vis_mask, unseen_by = row.unseen_mask;
+        }
         const float base = gain_to(p) - camp;
         const int nk = gather(t.c);
         bool kept = false;
@@ -1751,7 +1754,9 @@ bool strike_possible(const World& world) {
             ++share_stops;
             continue;
         }
-        if (dist(p, here) >= 2 && unseen_by) {
+        // threats_at's unseen hits are a subset of the row's; at distance 2 the row's blows were asked above.
+        if (dist(p, here) == 2) unseen_by = safety.tile(p).unseen_mask;
+        if (unseen_by) {
             std::array<Safety::ThreatAt, 16> at;
             ++queries;
             const int k = safety.threats_at(p, at);
@@ -1768,34 +1773,31 @@ bool strike_possible(const World& world) {
         t.shield = t.keep ? sh : 0.0f;
         if (total > best_total) best_total = total, chosen = i;
     }
-    // Unpriced tiles keep their Strike price, and no shield. Camps only lower a total, so a row is
-    // read only for a tile that could still win without them, best first; until then `total`
+    // Unpriced tiles keep their Strike price, and no shield. Camps only lower a total, so they are
+    // summed only for a tile that could still win without them, best first; until then `total`
     // leaves them out.
     std::uint64_t camped = 0; // bit i: tiles[i].total has its camps
     const auto camp_out = [&](int i) {
         if (camped >> i & 1) return;
         camped |= std::uint64_t{1} << i;
-        tiles[i].total -= safety.tile(S.tile(tiles[i].c)).camp_exp;
+        tiles[i].total -= safety.camp_damage(S.tile(tiles[i].c), false);
     };
     if (capped) {
         for (int i = 0; i < nt; ++i) {
             auto& t = tiles[i];
             if (t.done) continue;
             const vec2 p = S.tile(t.c);
-            // Unguarded, and a row read is past the cap.
+            // Unguarded: its ban's row read is past the cap.
             if (dist(p, here) == 3) {
                 t.done = true;
                 continue;
             }
-            std::array<std::pair<float, int>, 16> share;
-            int no = 0;
-            for (int k = 0; k < ns; ++k)
-                if (const float b = safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].e->pos)); b > 0) share[no++] = {b, k};
             const int nk = gather(t.c);
-            for (int m = 0; m < no; ++m) {
-                const auto& sk = strikers[share[m].second];
+            for (int k = 0; k < ns; ++k) {
+                const float b = safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].e->pos));
+                if (b <= 0) continue;
                 for (int j = 0; j < nk; ++j)
-                    if (!(cand[j].removed >> sk.e->index & 1)) cand[j].d += share[m].first * factor(cand[j].leaf, sk.hor);
+                    if (!(cand[j].removed >> strikers[k].e->index & 1)) cand[j].d += b * factor(cand[j].leaf, strikers[k].hor);
             }
             int arg = 0;
             for (int j = 1; j < nk; ++j)
@@ -1863,7 +1865,7 @@ bool strike_possible(const World& world) {
                     const vec2 p = S.tile(c);
                     if (!(S.menu_has >> c & 1) || dist(p, here) == 3) continue;
                     // Priced (or cut short): the larger candidate's danger found there; unpriced: the camps
-                    // only, summed here: a row read would change fuel outside debug_block.
+                    // only, summed here: asking the table would change fuel outside debug_block.
                     float danger = tiles[i].danger;
                     if (!tiles[i].done) {
                         danger = 0;
