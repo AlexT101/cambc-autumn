@@ -490,7 +490,7 @@ float access_fire(const World& world, const AltarAccess& a) {
         }
         if (near[g]) stirring.push_back(g);
     });
-    for (const vec2 t : Tiles<64>{a.open}) {
+    for (const vec2 t : a.open.positions()) {
         float f = 0;
         for (const int g : stirring) {
             if (!test(groups[g].threat(), t)) continue;
