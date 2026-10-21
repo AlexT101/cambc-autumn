@@ -727,12 +727,7 @@ void Search::read_geometry() {
         for (std::uint32_t i = 0; i < k; ++i) out |= gbit(cell(at[i]));
     };
     Grid blocked = 0, walls = 0;
-    if (const bitboard* guard = pathing.guard()) {
-        or_into(pathing.blocked(), *guard, t);
-        read_into(t, blocked);
-    } else {
-        read_into(pathing.blocked(), blocked);
-    }
+    read_into(pathing.blocked(), blocked);
     // Dash paths are blocked by walls, camps and visible enemies (probe-dash-enemy).
     static bitboard foes_seen{cambc::uninitialized};
     camps_into(t);
@@ -1718,6 +1713,21 @@ bool strike_possible(const World& world) {
     float best_total = -1e30f;
     int chosen = -1, queries = 0, priced = 0, share_stops = 0, bound_stops = 0;
     bool capped = false;
+    // Only the end tile is stood on between turns: guarded() is asked only of a tile about to be
+    // chosen, on the turn-start state whatever the plan kills or stuns.
+    const bool guarding = pathing.guarding();
+    std::uint64_t guard_asked = 0, guard_banned = 0; // bit i: tiles[i]
+    int guard_asks = 0, guard_skips = 0;
+    const auto banned = [&](int i) {
+        const auto bit = std::uint64_t{1} << i;
+        if (!guarding || tiles[i].c == S.cell(here)) return false;
+        if (!(guard_asked & bit)) {
+            guard_asked |= bit;
+            ++guard_asks;
+            if (safety.guarded(S.tile(tiles[i].c))) guard_banned |= bit, ++guard_skips;
+        }
+        return (guard_banned & bit) != 0;
+    };
     for (;;) {
         int i = -1;
         for (int k = 0; k < nt; ++k)
@@ -1745,7 +1755,6 @@ bool strike_possible(const World& world) {
             // End tiles are open, so the row never asks Reach about a wall.
             const auto& row = safety.tile(p);
             ++queries;
-            if (row.worst() >= S.health) continue; // the step guard covers radius 1-2 only
             hit_by = row.vis_mask, unseen_by = row.unseen_mask;
         }
         const float base = gain_to(p) - camp;
@@ -1820,7 +1829,7 @@ bool strike_possible(const World& world) {
         t.keep = cand[arg].keep;
         t.entry = cand[arg].entry;
         t.shield = t.keep ? sh : 0.0f;
-        if (total > best_total) best_total = total, chosen = i;
+        if (total > best_total && !banned(i)) best_total = total, chosen = i;
     }
     // Unpriced tiles keep their Strike price, and no shield. Camps only lower a total, so they are
     // summed only for a tile that could still win without them, best first; until then `total`
@@ -1836,11 +1845,6 @@ bool strike_possible(const World& world) {
             auto& t = tiles[i];
             if (t.done) continue;
             const vec2 p = S.tile(t.c);
-            // Unguarded: its ban's row read is past the cap.
-            if (dist(p, here) == 3) {
-                t.done = true;
-                continue;
-            }
             const int nk = gather(t.c);
             for (int k = 0; k < ns; ++k) {
                 const float b = safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].e->pos));
@@ -1859,10 +1863,18 @@ bool strike_possible(const World& world) {
         for (;;) {
             int i = -1;
             for (int k = 0; k < nt; ++k)
-                if (!tiles[k].done && !(camped >> k & 1) && tiles[k].total > best_total && (i < 0 || tiles[k].total > tiles[i].total)) i = k;
+                if (!tiles[k].done && tiles[k].total > best_total && (i < 0 || tiles[k].total > tiles[i].total)) i = k;
             if (i < 0) break;
-            camp_out(i);
-            if (tiles[i].total > best_total) best_total = tiles[i].total, chosen = i;
+            if (!(camped >> i & 1)) {
+                camp_out(i);
+                continue;
+            }
+            if (banned(i)) {
+                tiles[i].done = true;
+                continue;
+            }
+            best_total = tiles[i].total, chosen = i;
+            break;
         }
     }
 
@@ -1912,7 +1924,7 @@ bool strike_possible(const World& world) {
                 for (int i = 0; i < nt; ++i) {
                     const int c = tiles[i].c;
                     const vec2 p = S.tile(c);
-                    if (!(S.menu_has >> c & 1) || dist(p, here) == 3) continue;
+                    if (!(S.menu_has >> c & 1) || dist(p, here) == 3 || (guard_banned >> i & 1)) continue;
                     // Priced (or cut short): the larger candidate's danger found there; unpriced: the camps
                     // only, summed here: asking the table would change fuel outside debug_block.
                     float danger = tiles[i].danger;
@@ -1931,6 +1943,16 @@ bool strike_possible(const World& world) {
 
     // Carry it out. A move a hidden unit refuses takes the next-ranked plan from where we stand.
     step.next("act");
+    // The end tile passed guarded(); the moves before it may cross guarded tiles.
+    class Unguarded {
+    public:
+        explicit Unguarded(Pathing& p) : p_(p), was_(p.guarding()) { p.set_guarding(false); }
+        ~Unguarded() { p_.set_guarding(was_); }
+
+    private:
+        Pathing& p_;
+        bool was_;
+    } unguarded{pathing};
     Seq seq;
     std::array<bool, 49> dropped{};
     const auto concrete = [&](const Tile& t) { return S.concrete(t.c, t.keep, t.entry, t.keep && t.shield > 0); };
@@ -2005,19 +2027,24 @@ bool strike_possible(const World& world) {
         }
         // The next-ranked plan that took the same actions so far, avoiding the revealed tile.
         int alt = -1;
-        float alt_total = -1e30f;
-        for (int i = 0; i < nt; ++i) {
-            if (dropped[tiles[i].c] || !(tiles[i].exact || (capped && !tiles[i].done)) || tiles[i].total <= alt_total) continue;
-            if (!tiles[i].exact) {
-                camp_out(i);
-                if (tiles[i].total <= alt_total) continue;
+        for (;;) {
+            alt = -1;
+            float alt_total = -1e30f;
+            for (int i = 0; i < nt; ++i) {
+                if (dropped[tiles[i].c] || !(tiles[i].exact || (capped && !tiles[i].done)) || tiles[i].total <= alt_total) continue;
+                if (!tiles[i].exact) {
+                    camp_out(i);
+                    if (tiles[i].total <= alt_total) continue;
+                }
+                const auto& t = tiles[i];
+                const Seq q = concrete(t);
+                bool same = q.n > done;
+                for (int k = 0; k < done && same; ++k) same = q.a[k] == seq.a[k];
+                for (int k = done; k < q.n && same; ++k) same = !((q.a[k].op == Op::walk || q.a[k].op == Op::dash) && q.a[k].tile == a.tile);
+                if (same) alt = i, alt_total = t.total;
             }
-            const auto& t = tiles[i];
-            const Seq q = concrete(t);
-            bool same = q.n > done;
-            for (int k = 0; k < done && same; ++k) same = q.a[k] == seq.a[k];
-            for (int k = done; k < q.n && same; ++k) same = !((q.a[k].op == Op::walk || q.a[k].op == Op::dash) && q.a[k].tile == a.tile);
-            if (same) alt = i, alt_total = t.total;
+            if (alt < 0 || !banned(alt)) break;
+            dropped[tiles[alt].c] = true;
         }
         if (alt < 0) {
             failed = true;
@@ -2028,6 +2055,9 @@ bool strike_possible(const World& world) {
         seq = concrete(tiles[alt]);
     }
     mark(3);
+    debug_block({
+        if (guard_asks) std::printf("SRCH-GUARD %d %d %d\n", world.round, guard_asks, guard_skips);
+    });
     if (failed) out.attacked |= strike_enemy(world);
     // A tile left unpriced by the query cap had no shield priced: the turn's end decides it.
     out.searched = chosen >= 0 && !failed && tiles[chosen].exact;
