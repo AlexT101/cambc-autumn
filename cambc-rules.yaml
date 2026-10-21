@@ -77,8 +77,8 @@ camps:
     gold_cluster: {health: 120, strength: 0, gold: 20, gems: 0, respawn: 50}
     monolith: {health: 20000, strength: 200, range: 5, gold: 300, gems: 200, respawn: 150}
   groups: "Cardinally connected monsters form a group. A group wakes together and shares one reward, the sum of its members'. Its camp tiles (SDK: spawn tiles) are its monsters' spawn positions."
-  wake: "A sleeping group wakes when any member takes damage or is stunned."
-  sleep: "Each awake monster sleeps after 2 consecutive camp phases with no champion within its own range, so a group can be part asleep. Damage does not keep it awake. Camps never regenerate."
+  wake: "Damage or a stun to any member, awake or asleep, wakes every asleep member of its group."
+  sleep: "Each awake monster sleeps after 2 consecutive camp phases with no champion within its own range, so a group can be part asleep. The phase after a monster wakes counts as occupied. Damage does not keep it awake. Camps never regenerate."
   attack: "Each awake monster attacks once per camp phase, dealing Strength damage to the nearest champion of either team within its range; ties go to the champion that acts first in that round's turn order (rounds.champion_order, rounds.team_order), not the lowest id. Bushes do not hide champions from camps. Monsters never move."
   state: "Bots can read whether a camp is dead, awake or asleep while its tile (its last tile, if dead) is in vision. They cannot read how far a capture has progressed."
 
