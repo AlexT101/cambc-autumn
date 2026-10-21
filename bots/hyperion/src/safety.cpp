@@ -1635,7 +1635,8 @@ void Safety::refresh() {
     gone_.fill(0);
     build_cost_ = 0;
     reachable_known_ = false;
-    if (!built_ && !members_known_) return;
+    // Fights outlive invalidate() and reobserve(), so a kill must still drop those naming the dead.
+    if (!built_ && !members_known_ && fight_count_ == 0) return;
     bool changed = false;
     for (auto left = seen_enemies(); left; left &= left - 1) changed |= gone(world_.enemies[static_cast<std::size_t>(std::countr_zero(left))]);
     if (!changed && members_known_ && member_count_ > 0) {
@@ -2038,6 +2039,13 @@ const Trade* Safety::memo(std::uint32_t key) const {
 
 void Safety::drop_fights(std::uint32_t enemies) {
     const std::uint32_t named = enemies << 16;
+    // Once wrapped, slot order is not age order: blank the keys in place (every key has our bit, so
+    // 0 never matches) to keep replacing the oldest first.
+    if (fight_count_ > max_fights) {
+        for (auto& f : fights_)
+            if (f.key & named) f.key = 0;
+        return;
+    }
     const int count = std::min(fight_count_, max_fights);
     int i = 0;
     while (i < count && !(fights_[i].key & named)) ++i;
