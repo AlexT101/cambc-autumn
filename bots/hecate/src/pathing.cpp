@@ -137,18 +137,20 @@ std::uint64_t Pathing::approach_cost(int group, int range) {
 
 [[gnu::flatten]] const Field* Pathing::prepare_approach(int group, int range, std::uint64_t fuel_floor) {
     if (approach_ready(group, range)) return &approach_slot(group, range)->field;
+    const int steps = approach_steps(group, range);
     // With no distance known, the search may run to width + height layers.
-    const auto cost = approach_steps(group, range) >= 0 ? approach_cost(group, range) : max_approach_cost();
-    if (!fuel_ok(fuel_floor + cost)) return nullptr;
-    return approach(group, range);
+    if (!fuel_ok(fuel_floor + search_cost_estimate(steps >= 0 ? steps : map().width + map().height))) return nullptr;
+    return search_approach(group, range, steps);
 }
 
 const Field* Pathing::approach(int group, int range) {
     if (approach_ready(group, range)) return &approach_slot(group, range)->field;
-    // Searched out to our tile only: it costs by our distance rather than the map's, and every
-    // tile of a walk down it is labelled, so it lasts the whole way unless we leave it or a camp
-    // dies or returns.
-    const int steps = approach_steps(group, range);
+    return search_approach(group, range, approach_steps(group, range));
+}
+
+// Searched out to our tile only: it costs by our distance rather than the map's, and every tile of
+// a walk down it is labelled, so it lasts the whole way unless we leave it or a camp dies or returns.
+const Field* Pathing::search_approach(int group, int range, int steps) {
     const auto& s = map();
     const vec2 me = my_pos();
     const int layers = steps >= 0 ? steps + max_detour : s.width + s.height;
@@ -365,13 +367,14 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
 [[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through) {
     world_.throw_if_stale();
     Route r;
+    route_exhausted_ = false;
     const vec2 me = my_pos();
     if (test(goals, me)) {
         r.steps = 0;
         return r;
     }
     // Scratch kept between calls: the host overwrites every output in full.
-    static bitboard walls{cambc::uninitialized}, origin, visited{cambc::uninitialized};
+    static bitboard walls{cambc::uninitialized}, origin;
     static vec2 origin_at{-1, -1};
     static cambc::distance_field field;
     // A route is mostly followed by a step, which makes blocked() stale: unless it is fresh, the
@@ -380,12 +383,19 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     else occupied_into(walls);
     if (in_bounds(through)) set_tile(walls, through, false);
     if (avoid && test(*avoid, me)) {
-        // Inside danger every neighbour is in it too: free the connected region we stand in.
-        static bitboard outside{cambc::uninitialized}, region{cambc::uninitialized}, danger{cambc::uninitialized};
-        not_into(*avoid, outside);
-        outside.reachable_tiles_into(me, static_cast<std::uint16_t>(map().width + map().height), region);
-        copy_into(*avoid, danger);
-        drop(danger, region);
+        // Inside danger every neighbour is in it too: free the connected region we stand in. Kept
+        // for the next route from this tile around the same danger.
+        static bitboard outside{cambc::uninitialized}, region{cambc::uninitialized}, danger{cambc::uninitialized},
+            danger_of{cambc::uninitialized};
+        static vec2 danger_at{-1, -1};
+        if (me != danger_at || !boards_equal(*avoid, danger_of)) {
+            not_into(*avoid, outside);
+            outside.reachable_tiles_into(me, static_cast<std::uint16_t>(map().width + map().height), region);
+            copy_into(*avoid, danger);
+            drop(danger, region);
+            copy_into(*avoid, danger_of);
+            danger_at = me;
+        }
         or_into(walls, danger, walls);
     } else if (avoid) {
         or_into(walls, *avoid, walls);
@@ -399,9 +409,14 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     set_tile(origin, me);
     origin_at = me;
     // Goals on walls are no roots; with none left we stay unreachable.
-    field.compute_to(walls, goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
+    const int cap = std::min<int>(max_steps, unreachable);
+    // A search that runs dry counts one layer past its last; one cut off at the cap counts the cap.
+    const int layers = field.compute_to_with_expansion_count(walls, goals, origin, route_reached_, static_cast<std::uint16_t>(cap));
     const int here = steps_at(field, me);
-    if (here == unreachable) return r;
+    if (here == unreachable) {
+        route_exhausted_ = layers < cap;
+        return r;
+    }
     r.steps = here;
     // As distance_field::next_moves_from, without its vector: the nearest neighbours, north first.
     std::array<std::uint16_t, 8> around{};
@@ -451,12 +466,24 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
 
 bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_steps) {
     const vec2 me = my_pos();
-    static bitboard allies{cambc::uninitialized};
+    static bitboard allies{cambc::uninitialized}, reached{cambc::uninitialized};
     occupancy_into(team::ally, allies);
+    // After a search that ran dry, freeing an ally's tile changes nothing unless the goals' side
+    // reached a neighbour of it.
+    const bool dry = route_exhausted_;
+    if (dry) copy_into(route_reached_, reached);
+    const auto unconnected = [&](vec2 a) {
+        if (test(goals, a)) return false;
+        for (auto e : directions)
+            if (in_bounds(a + e) && test(reached, a + e)) return false;
+        return true;
+    };
+    bool exhausted = dry;
     for (auto d : directions) {
         const vec2 a = me + d;
-        if (!in_bounds(a) || !test(allies, a)) continue;
+        if (!in_bounds(a) || !test(allies, a) || (dry && unconnected(a))) continue;
         const auto r = route(goals, avoid, max_steps, a);
+        exhausted &= route_exhausted_;
         if (r.steps == unreachable || r.steps < 2 || std::find(r.first_steps.begin(), r.first_steps.begin() + r.count, a) == r.first_steps.begin() + r.count) continue;
         auto& self = cambc::self();
         const auto ally = cambc::vision::champion_at(a);
@@ -472,6 +499,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
         }
         return best && try_move(*best);
     }
+    route_exhausted_ = exhausted;
     return false;
 }
 
@@ -520,8 +548,8 @@ bool Pathing::step_towards(const Field& field, const bitboard* avoid) {
     }
     if (descend(field, avoid)) return true;
     // Live camps can block the static way for longer than max_detour (a dead-end pocket whose way
-    // out a camp holds): a wider search walks round them.
-    return searched && step_towards(field.goals, avoid, here + 6 * max_detour);
+    // out a camp holds): a wider search walks round them, unless the last ran dry.
+    return searched && !route_exhausted_ && step_towards(field.goals, avoid, here + 6 * max_detour);
 }
 
 bool Pathing::descend(const Field& field, const bitboard* avoid) {
@@ -576,9 +604,16 @@ bitboard Pathing::dash_landings() {
 }
 
 bitboard Pathing::teleport_targets() {
+    static bitboard t{cambc::uninitialized};
     auto targets = square(my_pos(), 3);
-    targets &= ~(map().impassable | map().enemy_spawn | map().camp_tiles | cambc::vision::champion_tiles()
-                 | cambc::vision::teleport_tiles() | bumped_);
+    targets &= map().standable;
+    occupancy_into(team::ally, t);
+    drop(targets, t);
+    occupancy_into(team::enemy, t);
+    drop(targets, t);
+    teleports_into(t);
+    drop(targets, t);
+    if (bumped_any_) drop(targets, bumped_);
     return targets;
 }
 

@@ -106,9 +106,15 @@ private:
         std::array<vec2, 8> first_steps; // the first `count`: all equally short, in compass order
     };
     Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, vec2 through = {-1, -1});
+    // The latest route's search: the tiles it reached from the goals, and whether it found no way
+    // although it stopped short of its cap, so that no wider search finds one either.
+    bitboard route_reached_{cambc::uninitialized};
+    bool route_exhausted_ = false;
     // Two allies head-on with no way past: the one with fewer gems (ties: lower champion) backs off.
+    // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.
     bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps);
     int approach_steps(int group, int range);
+    const Field* search_approach(int group, int range, int steps); // approach() once known not ready
     using Slot = std::unique_ptr<Field>;
     const Field& cached(Slot& slot, const bitboard& goals);
     Slot& altar_slot(int altar);
