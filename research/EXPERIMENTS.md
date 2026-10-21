@@ -686,3 +686,33 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   - Fuel: W1-B alone was 16/16 identical at 100M but +1.05% a turn, a fixed ~+380 (likely the per-construction
     note_view() and memo bookkeeping, unmeasured) with savings up to 9k on memo hits. Real-budget bench vs w0: out-of-fuel
     turns 132 vs 149 (within its ±20), mean fuel +0.8%. The tile table's camp pre-filter was reverted (Fuel, above).
+- wave 2 fuel fix (2026-10-21; branch w2/fuelfix on w2-merged a9db454; brief W2 fuel fix plus the W2 review's
+  findings). Real-budget A/Bs below are ladder + gen (582), both bots with `--phases`.
+  - Byte-identical at 100M against a9db454 (16/16, 0 FIGHT-EXIT, PREFILTER and DOMINANCE mismatches): the SIMS line,
+    E5 (dead cost estimates), E4 (play_quiet), E1 (a Strength bound before outlives/overwhelmed), E2 (a sim ends once
+    the rest of our side must outlive them), B6 (a sim reads the round at its fuel check and abandons a resumed
+    turn): total fuel -0.47%, p99 -3.3%. L4, F1 (cut fights memoised for their own key only), F2 (the search asks
+    guarded() of its pick alone, reopening tiles priced short against a banned pick) and P1A (a clean stand fight
+    settles a pursuit in recall(); pursuers_standing() deleted) were each 16/16 identical at 100M too.
+  - Logic: L1 prey's key adds the prey's escorts and keeps only the allies near both tiles; L2 the search's dist-3
+    lethal ban; L3 want_home takes a cut fight as no answer; L4 stale checks after guarded()'s verdict and on the
+    search's entry. A stale check before the search acts was dropped: resumed turns paid grow and price, then planned
+    again, and cascades (an out-of-fuel turn after the same champion's in the round before) rose to 265 of 456.
+  - The 16-game bench cannot judge out-of-fuel turns: an instrumented but otherwise identical w2-merged gave 244
+    against 178, and 00contest alone swung 74 -> 336. Paired runs decide: on 32 games (bench maps + 8 ladder maps)
+    the L1 tip and the fuel-only commits ran out 952 vs 918 times in the same games.
+  - L1 as specified (the prey tile's row) built Reach for every threat near the prey: chase/prey/engage/tile went
+    14 -> 68 on 32 bench games. Escorts are now the visible foes whose Strike reaches the prey's tile (strike_sum).
+  - Dropped: P2 (prey "no worse than here", escorts included): settled 876 of ~7.8k prey asks at 100M, 37 of them
+    fights the sim lost, and +0.09% fuel in identical games. P1B: once P1A settles clean stands, only 601 of 1390
+    remaining stand+pursuers asks are clean (0.43). E3: falls-only sims 2 of 16.5k.
+  - Results vs w2-merged: tip f14a8a5 (L1-L4, F1, F2, P1A) 50.0% (ladder 45.7, gen 50.6), out-of-fuel turns 7109 vs
+    8137; + P4 (prey with neither walk nor attack left targets an enemy in reach, no fight) 51.0% (54.3, 50.6), 6339
+    vs 7762; + B2 (prey starts at most one new fight a call) 62ffe96 50.9% (50.0, 51.0), 6349 vs 8278. 62ffe96 vs
+    w1: 49.7% (51.4, 49.4), 5354 vs 4982 (+7.5%); P4 alone vs w1 49.1%, 5477 vs 4910. Kept: 62ffe96.
+  - B1+B3 (three new fights a turn for prey and guarded(), past which guarded() bans exposed tiles; max_guard_asks
+    6 -> 3) on 62ffe96: 50.7% vs w2-merged (5871 vs 7952), 49.8% vs w1 (5070 vs 4609, +10%). Pooled over both its
+    out-of-fuel ratio to REF is 0.871 against 62ffe96's 0.883: level, and it restricts play. Dropped.
+  - Still above w1: against it 62ffe96 runs out more in chase/prey (+380 turns), farm's guarded() walks (+200) and
+    want_home (+70), and less in siege (-270); the search is level. Real-budget bench (default 8 maps / 8 more ladder
+    maps): w1 132 / 236, w2-merged 178 / 587, 62ffe96 176 / 347; mean 35352, p99 85854 (w2-merged 35743, 86258).
