@@ -460,8 +460,6 @@ bool Pathing::guarded(vec2 p) {
     if (slot && *slot) return *slot == 2;
     SimTag tag{SimCaller::path_guard};
     const bool out = safety_->guarded(p);
-    // Its sims may run out of fuel: a resumed turn must not walk on last round's beliefs.
-    world_.throw_if_stale();
     if (slot) *slot = out ? 2 : 1, guard_count_ += out;
     return out;
 }

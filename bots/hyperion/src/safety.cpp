@@ -2709,6 +2709,8 @@ bool Safety::guarded(vec2 q) {
     });
     const Verdict v = judge(k);
     debug_block({ sim_context_now.need = outer; });
+    // Its sim may run out of fuel: a resumed turn must not act on last round's beliefs.
+    world_.throw_if_stale();
     if (!guard_rule(v, dies)) return false;
     guard_true_ |= bit;
     return true;
