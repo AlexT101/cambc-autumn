@@ -190,8 +190,8 @@ Cast best_ground(int slot, float min_value, const std::vector<Target>& targets, 
 }
 
 // The landing that `keep` and pathing.landing_clear() accept whose `radius` around it hits most, then
-// the least in danger (tile().worst()), then nearest `here`. Only the best few by value are ranked
-// by danger and asked landing_clear().
+// the least in danger (tile().worst()), then nearest `here`. Both are asked in that order, only until
+// one passes; landing_clear() asks and tile() reads stop at max_asks each.
 template <class Keep>
 Cast best_landing(Pathing& pathing, int slot, float min_value, const std::vector<Target>& targets, const bitboard& landings, vec2 here,
                   int radius, Keep keep) {
@@ -199,48 +199,59 @@ Cast best_landing(Pathing& pathing, int slot, float min_value, const std::vector
     if (targets.empty()) return best;
     struct Option {
         vec2 p;
-        float value, worst;
+        float value, worst; // worst: -1 until read
         int dist;
     };
-    constexpr int max_options = 6;
-    std::array<Option, max_options> top;
+    constexpr int max_asks = 6;
+    std::array<Option, 5 * 5> left, tied;
     int n = 0;
     for (auto p : Tiles<5 * 5>{landings}) {
         float v = 0;
         for (const auto& t : targets)
             if (dist(p, t.pos) <= radius) v += t.worth;
-        if (v < min_value) continue;
-        const int d = dist(p, here);
-        const auto before = [&](const Option& o) { return v > o.value || (v == o.value && d < o.dist); };
-        if (n == max_options && !before(top[max_options - 1])) continue;
-        if (!keep(p)) continue;
-        int i = n < max_options ? n++ : max_options - 1;
-        for (; i > 0 && before(top[i - 1]); --i) top[i] = top[i - 1];
-        top[i] = {p, v, -1, d};
+        if (v >= min_value) left[n++] = {p, v, -1, dist(p, here)};
     }
-    // Danger orders only landings of equal value, already nearest first: the others need no row.
-    if (auto* safety = pathing.safety(); safety && n > 1) {
-        for (int i = 0; i < n; ++i)
-            if ((i > 0 && top[i - 1].value == top[i].value) || (i + 1 < n && top[i + 1].value == top[i].value))
-                top[i].worst = safety->tile(top[i].p).worst();
-        const auto first = [](const Option& a, const Option& b) {
-            return a.value == b.value && (a.worst < b.worst || (a.worst == b.worst && a.dist < b.dist));
-        };
-        for (int i = 1; i < n; ++i)
-            for (int j = i; j > 0 && first(top[j], top[j - 1]); --j) std::swap(top[j], top[j - 1]);
-    }
-    int banned = 0;
-    for (int i = 0; i < n && best.slot < 0; ++i) {
-        if (!pathing.landing_clear(top[i].p)) {
-            ++banned;
-            continue;
+    const int options = n;
+    auto* safety = pathing.safety();
+    const auto safer = [](const Option& a, const Option& b) { return a.worst >= 0 && (b.worst < 0 || a.worst < b.worst); };
+    int asks = 0, reads = 0, banned = 0;
+    float chosen = -1;
+    while (n > 0 && asks < max_asks && best.slot < 0) {
+        // The best value left moves to `tied`, nearest first.
+        float top = left[0].value;
+        for (int i = 1; i < n; ++i) top = std::max(top, left[i].value);
+        int run = 0, rest = 0;
+        for (int i = 0; i < n; ++i) {
+            if (left[i].value != top) {
+                left[rest++] = left[i];
+                continue;
+            }
+            int j = run++;
+            for (; j > 0 && left[i].dist < tied[j - 1].dist; --j) tied[j] = tied[j - 1];
+            tied[j] = left[i];
         }
-        best.slot = slot, best.value = top[i].value, best.tile = top[i].p, best.dash = true;
+        n = rest;
+        // Danger orders only ties: the nearest are read first, and unread ones stay last.
+        if (safety && run > 1) {
+            for (int i = 0; i < run && reads < max_asks; ++i, ++reads) tied[i].worst = safety->tile(tied[i].p).worst();
+            for (int i = 1; i < run; ++i)
+                for (int j = i; j > 0 && safer(tied[j], tied[j - 1]); --j) std::swap(tied[j], tied[j - 1]);
+        }
+        for (int i = 0; i < run && asks < max_asks; ++i) {
+            if (!keep(tied[i].p)) continue;
+            ++asks;
+            if (!pathing.landing_clear(tied[i].p)) {
+                ++banned;
+                continue;
+            }
+            best.slot = slot, best.value = top, best.tile = tied[i].p, best.dash = true, chosen = tied[i].worst;
+            break;
+        }
     }
     debug_block({
-        if (n > 0)
+        if (options > 0)
             std::printf("LANDING %u %c %d %d %.0f %d\n", cambc::round_number(), min_value == min_landing_value ? 'e' : 'c', best.tile.x,
-                        best.tile.y, best.slot >= 0 ? top[banned].worst : -1.0f, banned);
+                        best.tile.y, chosen, banned);
     });
     return best;
 }
