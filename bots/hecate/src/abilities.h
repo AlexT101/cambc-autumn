@@ -10,12 +10,11 @@ struct ChampionBelief;
 
 // The best enemy-hitting cast this turn, if worth it. With `keep_walk`, an excludes-walking cast
 // must be worth the walk (a kill or a cancelled tribute) or stun every visible enemy that could
-// reach us next turn; a dash landing always must, as it moves us. `hold`: a tributer hit only to
-// kill it.
-bool cast_at_enemies(const World& world, bool keep_walk = false, const ChampionBelief* hold = nullptr);
+// reach us next turn; a dash landing always must, as it moves us.
+bool cast_at_enemies(const World& world, bool keep_walk = false);
 // cast_at_enemies' choice from here, kept unexecuted for cast_chosen(): its value (0: none worth
 // casting), and whether it excludes walking. Dash landings are left to the planner's dashes.
-float enemy_cast_value(const World& world, bool keep_walk, const ChampionBelief* hold, bool& exclusive);
+float enemy_cast_value(const World& world, bool keep_walk, bool& exclusive);
 bool cast_chosen();
 
 // A damage or stun cast on the group being farmed, held while enemies are near.

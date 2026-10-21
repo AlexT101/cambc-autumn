@@ -31,12 +31,11 @@ constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
 
 // The turn's branch, for debug_fights: Chase, Attack, Retreat, Farm, Bank, Wait at an altar,
 // Tribute kept / t cancelled, recall Kept / k cancelled, Healing on spawn, Shopping trip,
-// holding (P), Delaying a stun, capture recall (Q), siege or kite of a big group (G), contest (X),
+// holding (P), capture recall (Q), siege or kite of a big group (G), contest (X),
 // stopping a game-ending bag (E).
 char decision = '-';
 bool sieged = false; // siege() ran this turn
 bool stunned_turn = false; // stunned at this turn's start
-const ChampionBelief* strike_hold = nullptr; // this turn's tributer to hit only for a kill
 
 // Read by tools/replay/fight_calibration.py.
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1) {
@@ -1571,7 +1570,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (!walked && dasher) walk_on(best);
     if (walked) {
         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
-        if (!strike_enemy(world, strike_hold)) attack_camp(world, passing);
+        if (!strike_enemy(world)) attack_camp(world, passing);
         cast_at_camp(world, best); // only casts that allow walking remain
         reset_and_attack_camp(world, best);
     }
@@ -2326,38 +2325,6 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     return !awake;
 }
 
-bool alive_now(const ChampionBelief& b) {
-    try {
-        return b.live().is_alive();
-    } catch (const cambc::error&) {
-        return false;
-    }
-}
-
-// A tribute stunned on its last turn wastes the whole channel: the visible tributer a ready stun
-// reaches to wait for, left alone meanwhile, since a hit can make its owner cancel and act. None if
-// a tribute in reach could land before our next turn, another enemy could stun or kill us before
-// it, or our own bag can go in now.
-const ChampionBelief* tribute_to_stun_later(const World& world, Safety& safety, const Memory& memory) {
-    if (!enemy_seen(world)) return nullptr;
-    const auto& self = world.me();
-    const int reach = self.ready_stun_reach(world.round);
-    const ChampionBelief* target = nullptr;
-    for (const auto& e : world.enemies) {
-        if (!e.alive || !e.visible || e.channel != Channel::tribute || e.facts().passive == Passive::stun_immune
-            || dist(self.pos, e.pos) > reach)
-            continue;
-        // It lands at its owner's next turn start, which can come before ours next round. One that
-        // wins them the game is stunned at once.
-        if (e.channel_end_round <= world.round + 1 || enemy_tribute_wins(world, e)) return nullptr;
-        target = &e;
-    }
-    if (!target || safety.lethal(self.pos) || can_tribute_safely(world, safety, memory)) return nullptr;
-    for (const auto& t : safety.threats())
-        if (&world.enemies[t.enemy] != target && t.at(self.pos).stuns) return nullptr;
-    return target;
-}
-
 // A ready stun of ours reaches a visible enemy whose tribute wins them the game.
 bool can_stop_winning_tribute(const World& world) {
     if (!enemy_seen(world)) return false;
@@ -3021,13 +2988,11 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
 
     pathing.set_guard(step_guard(world, safety));
     const bool holding = holding_capture(world) || contesting(world);
-    const auto* stun_later = tribute_to_stun_later(world, safety, memory);
-    strike_hold = stun_later;
     bool attacked = false;
     if (strikes) {
         Intent intent;
         intent.anchored = holding;
-        intent.walks = !holding && !(stun_later && alive_now(*stun_later)) && !can_tribute_here(world);
+        intent.walks = !holding && !can_tribute_here(world);
         intent.keep_walk = my_gems() > 0 && !holding;
         intent.step_value = my_gems() > 0 ? carried_step_value : farm_step_value(world);
         // An enemy already in attack range was not worth leaving (want_home): the fight is here.
@@ -3035,7 +3000,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         // The goal most likely walks to an altar when carrying, else to the farm choice.
         intent.to_altar = my_gems() > 0;
         intent.group = memory.farm_group;
-        attacked = plan_strikes(world, pathing, safety, intent, stun_later).attacked;
+        attacked = plan_strikes(world, pathing, safety, intent).attacked;
         // A cast the plan left unused: before farm's camp reset takes it.
         shield_if_needed(world, safety, memory.claim);
     }
@@ -3044,11 +3009,6 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
     if (!my_can_attack() || !my_can_cast()) safety.refresh();
     if (holding) {
         hold_capture(world, memory, attacked);
-        return;
-    }
-    // A tributer cannot walk out of the stun's reach.
-    if (stun_later && alive_now(*stun_later)) {
-        decision = 'D';
         return;
     }
     if (my_gems() > 0) {
@@ -3115,7 +3075,7 @@ void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         memory.siege = false;
         memory.staged_since = -1;
     }
-    strike_after(world, safety, strike_hold);
+    strike_after(world, safety);
     pathing.set_guard(nullptr);
     if constexpr (debug_fights)
         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))
@@ -3134,7 +3094,6 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
     decision = '-';
     sieged = false;
-    strike_hold = nullptr;
     siege_group() = -1;
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage);

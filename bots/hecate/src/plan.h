@@ -11,7 +11,6 @@ namespace aph {
 class World;
 class Pathing;
 class Safety;
-struct ChampionBelief;
 
 // What the turn's goal does after the strikes: stays (holding a capture, at an altar), or walks a
 // step along `field` (null: a way the planner cannot read), each step worth `step_value`.
@@ -36,9 +35,8 @@ struct Planned {
     bool moved = false; // the goal's walk is spent
 };
 
-// Before the goal acts. `hold`: a tributer hit only to kill it.
-Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent,
-                     const ChampionBelief* hold);
+// Before the goal acts.
+Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent);
 
 // A reset's second attack could kill an enemy this turn: a cast worth keeping for the plan.
 bool reset_may_kill(const World& world);
@@ -46,9 +44,9 @@ bool reset_may_kill(const World& world);
 bool landing_ready(const World& world);
 
 // The basic attack from here on the enemy it is worth most against, if any.
-bool strike_enemy(const World& world, const ChampionBelief* hold);
+bool strike_enemy(const World& world);
 
 // After the goal: the attack and cast still unspent, from where the walk ended.
-void strike_after(const World& world, Safety& safety, const ChampionBelief* hold);
+void strike_after(const World& world, Safety& safety);
 
 } // namespace aph

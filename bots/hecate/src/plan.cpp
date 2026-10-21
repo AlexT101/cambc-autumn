@@ -22,7 +22,7 @@ struct Foe {
     const ChampionBelief* belief;
     vec2 pos;
     float health, retaliation, partner, bag;
-    bool spawn, hold;
+    bool spawn;
     float land, stun; // a ready dash landing's damage to it, and its stun's worth
 };
 
@@ -66,7 +66,7 @@ int strike_reach(const ChampionFacts& f, bool dash) {
 }
 
 // `live`: health read from the engine, after our own hits this turn; else this turn's beliefs.
-bool read_board(const World& world, const ChampionBelief* hold, Board& b, int reach, bool live) {
+bool read_board(const World& world, Board& b, int reach, bool live) {
     const auto& f = world.me().facts();
     b.here = my_position();
     b.range = f.attack_range();
@@ -93,7 +93,7 @@ bool read_board(const World& world, const ChampionBelief* hold, Board& b, int re
                 if (&o != &e && o.alive && o.visible && o.facts().passive == Passive::linked_pair) partner = o.health;
         // A shield absorbs before health: to kill, the hits must go through both.
         b.foes[b.n++] = {&e, e.pos, health + e.shield, e.retaliation(), partner,
-                         params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), &e == hold, 0, 0};
+                         params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), 0, 0};
     }
     if (b.n == 0) return false;
     const auto state = my_state();
@@ -153,7 +153,6 @@ Hit best_hit(const Board& b, vec2 p, const Healths& h, int only = -1) {
         if (only >= 0 && i != only) continue;
         const auto& f = b.foes[i];
         if (h[i] <= 0 || dist(p, f.pos) > b.range) continue;
-        if (f.hold && b.strength < h[i] - 0.01f) continue;
         float value = hit_worth(f, b.strength, h[i]), retaliation = f.retaliation;
         if (b.splash)
             for (int j = 0; j < b.n; ++j)
@@ -168,14 +167,13 @@ Hit best_hit(const Board& b, vec2 p, const Healths& h, int only = -1) {
     return best;
 }
 
-// A landing at p on the foes within its radius, taken off h; its worth, or -1 if it would hit a held
-// tributer without killing it or its retaliation would kill us.
+// A landing at p on the foes within its radius, taken off h; its worth, or -1 if its retaliation
+// would kill us.
 float land_at(const Board& b, vec2 p, Healths& h) {
     float value = 0, retaliation = 0;
     for (int i = 0; i < b.n; ++i) {
         const auto& f = b.foes[i];
         if (h[i] <= 0 || dist(p, f.pos) > b.land_radius) continue;
-        if (f.hold && f.land < h[i] - 0.01f) return -1;
         value += hit_worth(f, f.land, h[i]) + f.stun;
         retaliation += f.land > 0 ? f.retaliation : 0.0f;
         h[i] -= f.land;
@@ -266,11 +264,11 @@ bool strike_possible(const World& world) {
     return enemy_within(world, here, std::max(ability_range + 1, strike_reach(self.facts(), self.facts().has_dash())));
 }
 
-[[gnu::flatten]] Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent, const ChampionBelief* hold) {
+[[gnu::flatten]] Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent) {
     Planned out;
     Board b;
     const auto& f = world.me().facts();
-    if (!read_board(world, hold, b, std::max(ability_range + 1, strike_reach(f, f.has_dash())), false)) return out;
+    if (!read_board(world, b, std::max(ability_range + 1, strike_reach(f, f.has_dash())), false)) return out;
     read_landing(world, b);
     const bool walks = intent.walks && b.move;
     const float step = intent.step_value;
@@ -290,7 +288,7 @@ bool strike_possible(const World& world) {
             best = {Kind::stay, first.value + second.value + walk_after, {}, {}, false, true};
     if (b.cast) {
         bool exclusive = false;
-        const float cast = enemy_cast_value(world, intent.keep_walk, hold, exclusive);
+        const float cast = enemy_cast_value(world, intent.keep_walk, exclusive);
         valued = {world.round, b.here, cast > 0};
         if (cast > 0) {
             const float walk = exclusive && !intent.keep_walk ? 0.0f : walk_after;
@@ -520,7 +518,7 @@ bool strike_possible(const World& world) {
     case Kind::stay:
         strike_here(best.reset);
         // Our attack may have killed its target.
-        if (best.enemy_cast && !cast_chosen()) cast_at_enemies(world, intent.keep_walk, hold);
+        if (best.enemy_cast && !cast_chosen()) cast_at_enemies(world, intent.keep_walk);
         break;
     case Kind::walk:
         if (best.attack_first) strike_here(false);
@@ -555,7 +553,7 @@ bool strike_possible(const World& world) {
     return out;
 }
 
-[[gnu::flatten]] void strike_after(const World& world, Safety& safety, const ChampionBelief* hold) {
+[[gnu::flatten]] void strike_after(const World& world, Safety& safety) {
     if (!world.me().alive || world.is_stale()) return;
     const auto state = my_state();
     if (state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::recalling)
@@ -564,7 +562,7 @@ bool strike_possible(const World& world) {
     if (!state.contains(cambc::champion_state::can_attack) && !state.contains(cambc::champion_state::can_cast)) return;
     Board b;
     const auto& f = world.me().facts();
-    if (enemy_seen(world) && read_board(world, hold, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0), true)) {
+    if (enemy_seen(world) && read_board(world, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0), true)) {
         Healths h = b.healths();
         bool attacked = !b.attack;
         if (b.attack) {
@@ -588,14 +586,14 @@ bool strike_possible(const World& world) {
     bool walk_allows = false;
     for (int s = 0; s < 2; ++s)
         walk_allows |= f.abilities[s].hits_enemies() && !f.abilities[s].excludes_walking && world.me().ability_ready(s, world.round);
-    if (walk_allows) cast_at_enemies(world, false, hold);
+    if (walk_allows) cast_at_enemies(world);
 }
 
-[[gnu::flatten]] bool strike_enemy(const World& world, const ChampionBelief* hold) {
+[[gnu::flatten]] bool strike_enemy(const World& world) {
     if (!world.me().alive || !my_can_attack()) return false;
     Board b;
     const auto& f = world.me().facts();
-    if (!read_board(world, hold, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0), true)) return false;
+    if (!read_board(world, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0), true)) return false;
     return attack(b, best_hit(b, b.here, b.healths()));
 }
 

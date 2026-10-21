@@ -14,18 +14,16 @@ struct ChampionBelief;
 // The enemy a basic attack from here should hit, read live as vision changes when we move: the
 // weakest, or for Varg the most value counting splash. Never one whose retaliation would kill us,
 // nor one on its spawn (it heals at its turn end) unless the hit kills it or, with
-// `stunnable_only`, stuns it; with that flag, only enemies a stun affects. `hold`: a tributer
-// hit only to kill it.
-std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only = false,
-                                             const ChampionBelief* hold = nullptr);
+// `stunnable_only`, stuns it; with that flag, only enemies a stun affects.
+std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only = false);
 
 // With the basic attack spent (by attacking, or by a ranged champion's walk), reset it and attack
 // again. Enemies: the weakest in range. Camps: the member nearest death (a Vendetta kill readies
 // both abilities), held back while an enemy is close enough to want the reset for a fight.
 // `stunning_only`: only a reset whose attack stuns (Marcella), on an enemy it would stun; call it
 // before abilities.cpp's casts, which share the one cast per turn, and the plain one after.
-// `hold` as for attack_target. `group`: only that group's camps.
-bool reset_and_attack_enemy(const World& world, bool stunning_only = false, const ChampionBelief* hold = nullptr);
+// `group`: only that group's camps.
+bool reset_and_attack_enemy(const World& world, bool stunning_only = false);
 bool reset_and_attack_camp(const World& world, int group);
 // A camp tile lies within `range` of p.
 bool camp_in_reach(const World& world, vec2 p, int range);
@@ -37,10 +35,8 @@ bool dash_towards(const World& world, Pathing& pathing, const Field& field);
 // Over a hole or altar line beside us (StaticMap::crossable) where `field` gains: unlike a travel
 // dash, with enemies near, as long as the landing is no deeper in their reach.
 bool dash_across(const World& world, Pathing& pathing, const Field& field);
-// Into attack range of `target`, else of a visible enemy we can finish or are beating (`hold` only
-// if we can finish it); attack after it.
-bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target = nullptr,
-                    const ChampionBelief* hold = nullptr);
+// Into attack range of `target`, else of a visible enemy we can finish or are beating; attack after it.
+bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target = nullptr);
 // Out of the reach of visible enemies and awake camps, tie-broken towards `home`.
 bool dash_away(const World& world, Pathing& pathing, const Field& home);
 
