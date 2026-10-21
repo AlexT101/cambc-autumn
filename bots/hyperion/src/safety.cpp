@@ -2584,8 +2584,11 @@ int Safety::idle_turns(vec2 p, int horizon) { return turns_to_kill_idle(p, horiz
 
 void Safety::set_claimed(int group) {
     if (group == claimed_) return;
+    if (guarded_generation_ == generation_ && guard_asked_) {
+        debug_block({ std::printf("CLAIM-GUARD-DROP %d %d %d %d\n", world_.round, claimed_, group, std::popcount(guard_asked_)); });
+        guard_asked_ = guard_true_ = 0, guard_epoch_ = next_generation();
+    }
     claimed_ = group;
-    if (guarded_generation_ == generation_ && guard_asked_) guard_asked_ = guard_true_ = 0, guard_epoch_ = next_generation();
 }
 
 float Safety::stand_camp(vec2 p) {

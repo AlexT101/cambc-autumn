@@ -1351,8 +1351,8 @@ int set_claim(Memory& memory, const Pathing& pathing, int g) {
     return g;
 }
 
-// A claim outside farm and siege, written past Safety until W4-D routes it through set_claim.
-void write_claim(Memory& memory, const Pathing&, int g) { memory.claim = g; }
+// A claim outside farm and siege.
+void write_claim(Memory& memory, const Pathing& pathing, int g) { set_claim(memory, pathing, g); }
 
 // Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
 // allies in sight claiming it (ties to the lower index), so the others move on rather than split
