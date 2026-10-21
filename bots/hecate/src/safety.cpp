@@ -1365,7 +1365,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
                     others.at[n++] = {o.pos, &o, -1};
             for (auto left = seen_enemies(); left; left &= left - 1)
                 if (const auto& o = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-                    n < static_cast<int>(others.at.size()) && !o.is_self && !gone(o))
+                    n < static_cast<int>(others.at.size()) && !gone(o))
                     others.at[n++] = {o.pos, &o, -1};
             if (refresh_) {
                 reread = true;
@@ -1686,14 +1686,6 @@ bool Safety::may_be_hit(vec2 p) {
     return hit;
 }
 
-float Safety::chance_in_reach(const Threat& t, vec2 p) {
-    if (t.visible) return t.at(p).hits ? 1.0f : 0.0f;
-    if (!test(t.area, p)) return 0.0f;
-    const auto& possible = world_.enemies[t.enemy].possible;
-    const auto near = count_within(possible, p, t.strike.reach);
-    return std::min(1.0f, static_cast<float>(near) / static_cast<float>(t.tiles));
-}
-
 float Safety::camp_damage(vec2 p, bool worst) {
     const auto& members = awake_members();
     if (members.empty()) return 0;
@@ -1713,23 +1705,20 @@ float Safety::worst_damage(vec2 p) {
     return total;
 }
 
-float Safety::expected_damage(vec2 p) {
-    float total = camp_damage(p, false);
-    for (const auto& t : threats())
-        if (const auto b = t.at(p); b.hits) total += chance_in_reach(t, p) * hit_given_reach * b.damage;
-    return total;
-}
-
-// The chance of being hit only grows with each factor, so the answer is settled as soon as it
-// reaches the line: often by a camp, before the threats are built.
+// Any camp member or visible threat in reach is enough on its own. An unseen threat's chance is
+// uniform over its possible tiles; it hits p only within its field, capped inside its reach.
 bool Safety::threatened(vec2 p) {
-    float safe = 1;
-    for (const auto& m : awake_members())
-        if (in_square(p, m.pos, m.reach) && 1 - (safe *= 1 - m.weight) >= recall_risk) return true;
+    static_assert(unknown_camp_weight >= recall_risk && hit_given_reach >= recall_risk);
+    if (camp_damage(p) > 0) return true;
     if (!built_ && !may_be_hit(p)) return false;
-    for (const auto& t : threats())
-        if (t.at(p).hits && 1 - (safe *= 1 - chance_in_reach(t, p) * hit_given_reach) >= recall_risk)
-            return true;
+    float safe = 1;
+    for (const auto& t : threats()) {
+        if (!t.at(p).hits) continue;
+        if (t.visible) return true;
+        const auto near = count_within(world_.enemies[t.enemy].possible, p, t.strike.reach);
+        const float chance = std::min(1.0f, static_cast<float>(near) / static_cast<float>(t.tiles));
+        if (1 - (safe *= 1 - chance * hit_given_reach) >= recall_risk) return true;
+    }
     return false;
 }
 
@@ -1801,15 +1790,6 @@ const Trade* Safety::memo(std::uint32_t key) const {
     for (int i = 0; i < std::min(fight_count_, max_fights); ++i)
         if (fights_[i].key == key) return &fights_[i].trade;
     return nullptr;
-}
-
-const Trade* Safety::known_fight(vec2 p) {
-    const auto key = fight_key(p, -1);
-    if (key == no_fight) {
-        static const Trade none{};
-        return &none;
-    }
-    return memo(key);
 }
 
 Trade Safety::fight(vec2 p, int exclude) {

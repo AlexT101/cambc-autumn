@@ -207,7 +207,6 @@ public:
     explicit Safety(const World& world);
 
     std::span<const Threat> threats();
-    bool built() const { return built_; }
     // Bit i: enemies[i] is alive and visible (seen) or alive, unseen and tracked (unseen).
     // Beliefs are fixed for the turn, so these are listed once.
     std::uint32_t seen_enemies() {
@@ -227,8 +226,6 @@ public:
     // strikes for them.
     float damage_ceiling(vec2 p, bool double_unacted = false);
     float camp_damage(vec2 p, bool worst = true);
-    // Each threat by chance in reach times `hit_given_reach`, plus camps.
-    float expected_damage(vec2 p);
     // Chance of taking any damage or a stun at p before our next turn (cancelling a recall).
     bool threatened(vec2 p);
 
@@ -262,8 +259,6 @@ public:
     const Trade* known_fight_of(std::uint32_t key) const { return memo(key); }
     // fight_of(key) when known_fight_of(key) is null.
     Trade new_fight(std::uint32_t key);
-    // fight(p) if it needs no simulation, else null.
-    const Trade* known_fight(vec2 p);
     // threat_strike(), kept for the turn.
     const Strike& strike_of(const ChampionBelief& e) { return struck(e).strike; }
     // What a visible enemy could do to p before our next turn (threat_strike placed on the map).
@@ -306,8 +301,6 @@ public:
 
 private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
-    // Chance the threat could be within reach of p; uniform over its possible tiles.
-    float chance_in_reach(const Threat& t, vec2 p);
     // Every credible threat at full damage, plus camps.
     float worst_damage(vec2 p);
     // Where a live member of an awake (or maybe awake) group would attack us: within 3, and no
