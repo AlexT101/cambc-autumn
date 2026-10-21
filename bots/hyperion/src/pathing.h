@@ -88,7 +88,7 @@ public:
     void set_safety(Safety* s) { safety_ = s; }
     Safety* safety() const { return safety_; }
     // While guarding, no step or dash ends on a tile safety()->guarded() bans: routes go around them.
-    void set_guarding(bool on) { guarding_ = on; }
+    void set_guarding(bool on);
     bool guarding() const { return guarding_; }
     // Until W2-D: set_guard(nullptr) is set_guarding(false).
     void set_guard(std::nullptr_t) { set_guarding(false); }
@@ -98,7 +98,8 @@ public:
     void set_guard_source(GuardSource) {}
 
     // Unseen units can still block these.
-    bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile, not guarded
+    bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile, not known guarded
+    bool landing_clear(vec2 p) { return !guarded(p); } // asked just before a landing is tried
     bitboard teleport_targets(); // free open or bush tiles within 3, not camp tiles or enemy spawn
 
 private:
@@ -130,9 +131,16 @@ private:
     // The memo's answer, asking nothing: 0 not asked this generation, 1 free (or outside the window), 2 guarded.
     std::uint8_t guard_known(vec2 p) const;
     std::uint8_t* guard_slot(vec2 p); // null outside the window
+    struct NeighbourGuard {
+        int free = 0, guarded = 0;
+        bool all() const { return free > 0 && guarded == free; }
+    };
+    // The free neighbours a route may take, and how many are guarded: asked, or as the memo knows.
+    NeighbourGuard neighbours_guarded(const bitboard* avoid, bool ask);
     // After a route with `banned` guarded first steps: once all were, asks the other free neighbours
-    // too, so that one more route goes around every guarded one.
-    void guard_retry(const Route& r, int banned, int attempt, const bitboard* avoid);
+    // too, so that one more route goes around every guarded one. True if every one is: no walk is left.
+    bool guard_retry(const Route& r, int banned, int attempt, const bitboard* avoid);
+    void mark_known_guarded(bitboard& b, bool value) const; // the memo's guarded tiles
     bool move_to(vec2 tile, bool* refused = nullptr); // try_move once guarded() let it through
     // The free neighbour of lowest score below `limit` (ties: compass order) that is not guarded,
     // asking guarded() only of the leader.

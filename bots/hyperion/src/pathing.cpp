@@ -406,9 +406,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     }
     if (guarding_ && safety_) {
         if (const bitboard* board = safety_->guarded_board()) or_into(walls, *board, walls);
-        if (guard_count_ > 0 && guard_generation_ == safety_->generation())
-            for (int i = 0; i < static_cast<int>(guard_memo_.size()); ++i)
-                if (guard_memo_[static_cast<std::size_t>(i)] == 2) set_tile(walls, {guard_centre_.x + i % 7 - 3, guard_centre_.y + i / 7 - 3});
+        mark_known_guarded(walls, true);
     }
     set_tile(walls, me, false);
     // Search outwards from the goals until it reaches us: every tile one layer nearer than ours
@@ -456,18 +454,34 @@ std::uint8_t* Pathing::guard_slot(vec2 p) {
 bool Pathing::guarded(vec2 p) {
     if (!guarding_ || !safety_) return false;
     auto* slot = guard_slot(p);
-    if (!slot) return safety_->guarded(p);
-    if (*slot == 0) {
-        *slot = safety_->guarded(p) ? 2 : 1;
-        guard_count_ += *slot == 2;
-    }
-    return *slot == 2;
+    if (slot && *slot) return *slot == 2;
+    const bool out = safety_->guarded(p);
+    // Its sims may run out of fuel: a resumed turn must not walk on last round's beliefs.
+    world_.throw_if_stale();
+    if (slot) *slot = out ? 2 : 1, guard_count_ += out;
+    return out;
 }
 
 std::uint8_t Pathing::guard_known(vec2 p) const {
     if (!safety_ || safety_->generation() != guard_generation_) return 0;
     if (!in_square(p, guard_centre_, 3)) return 1;
     return guard_memo_[static_cast<std::size_t>((p.y - guard_centre_.y + 3) * 7 + p.x - guard_centre_.x + 3)];
+}
+
+void Pathing::mark_known_guarded(bitboard& b, bool value) const {
+    if (guard_count_ == 0 || !safety_ || guard_generation_ != safety_->generation()) return;
+    for (int i = 0; i < static_cast<int>(guard_memo_.size()); ++i)
+        if (guard_memo_[static_cast<std::size_t>(i)] == 2) set_tile(b, {guard_centre_.x + i % 7 - 3, guard_centre_.y + i / 7 - 3}, value);
+}
+
+void Pathing::set_guarding(bool on) {
+    // Guarding stops where the turn ends (act) or before an unguarded walk; only the memo is read.
+    debug_block({
+        if (guarding_ && !on)
+            if (const vec2 at = my_position(); guard_known(at) == 2)
+                std::printf("GUARD-RETRY %d %u assert %d %d\n", world_.round, static_cast<std::uint32_t>(world_.me().handle), at.x, at.y);
+    });
+    guarding_ = on;
 }
 
 bool Pathing::try_move(vec2 tile, bool* refused) {
@@ -482,10 +496,6 @@ bool Pathing::try_move(vec2 tile, bool* refused) {
     if (refused) *refused = true;
     try {
         if (cambc::self().move_absolute(tile)) {
-            debug_block({
-                if (guarding_ && safety_ && guard_known(tile) != 1)
-                    std::printf("GUARD-RETRY %d %u assert %d %d\n", world_.round, static_cast<std::uint32_t>(world_.me().handle), tile.x, tile.y);
-            });
             invalidate();
             return true;
         }
@@ -501,6 +511,10 @@ bool Pathing::try_move(vec2 tile, bool* refused) {
 
 [[gnu::flatten]] bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps) {
     if (!my_can_move()) return false;
+    if (guarding_ && guard_count_ > 0 && neighbours_guarded(avoid, false).all()) {
+        route_exhausted_ = true;
+        return false;
+    }
     // Only a hidden blocker or a guarded first step makes a retry worth its search. Each rules a
     // neighbour out of the next route, so the cap covers all eight.
     for (int attempt = 0; attempt < 8; ++attempt) {
@@ -515,26 +529,37 @@ bool Pathing::try_move(vec2 tile, bool* refused) {
             if (move_to(r.first_steps[i])) return true;
             retry |= test(bumped_, r.first_steps[i]);
         }
-        if (banned > 0) guard_retry(r, banned, attempt, avoid);
+        if (banned > 0 && guard_retry(r, banned, attempt, avoid)) {
+            route_exhausted_ = true;
+            return false;
+        }
         if (!retry && banned == 0) return r.steps == unreachable && make_way(goals, avoid, max_steps);
     }
     return false;
 }
 
-void Pathing::guard_retry(const Route& r, int banned, int attempt, const bitboard* avoid) {
-    int swept = 0;
-    if (banned == r.count) {
-        const vec2 me = my_pos();
-        const auto& walls = blocked();
-        const bool inside = avoid && test(*avoid, me);
-        for (auto d : directions) {
-            const vec2 p = me + d;
-            if (in_bounds(p) && !test(walls, p) && (!avoid || inside || !test(*avoid, p))) swept += guarded(p);
-        }
+Pathing::NeighbourGuard Pathing::neighbours_guarded(const bitboard* avoid, bool ask) {
+    NeighbourGuard out;
+    const vec2 me = my_pos();
+    const auto& walls = blocked();
+    // As route(): inside danger, our neighbours are all in our own region.
+    const bool inside = avoid && test(*avoid, me);
+    for (auto d : directions) {
+        const vec2 p = me + d;
+        if (!in_bounds(p) || test(walls, p) || (avoid && !inside && test(*avoid, p))) continue;
+        ++out.free;
+        out.guarded += ask ? guarded(p) : guard_known(p) == 2;
     }
+    return out;
+}
+
+bool Pathing::guard_retry(const Route& r, int banned, int attempt, const bitboard* avoid) {
+    const auto swept = banned == r.count ? neighbours_guarded(avoid, true) : NeighbourGuard{};
     debug_block({
-        std::printf("GUARD-RETRY %d %u %d %d %d\n", world_.round, static_cast<std::uint32_t>(world_.me().handle), attempt, banned, swept);
+        std::printf("GUARD-RETRY %d %u %d %d %d\n", world_.round, static_cast<std::uint32_t>(world_.me().handle), attempt, banned,
+                    swept.guarded);
     });
+    return swept.all();
 }
 
 template <class Score> std::optional<vec2> Pathing::best_step(const bitboard* avoid, int limit, Score score) {
@@ -594,6 +619,10 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
     const auto round = cambc::round_number();
     if (world_.round != round) return false;
     if (!my_can_move() || test(goals, my_pos())) return false;
+    if (guarding_ && guard_count_ > 0 && neighbours_guarded(nullptr, false).all()) {
+        route_exhausted_ = true;
+        return false;
+    }
     const auto fixed = search_cost_estimate(0) + small_cost_estimate;
     const auto chunks = search_chunks();
     for (int attempt = 0; attempt < 3; ++attempt) {
@@ -618,12 +647,16 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
                 ++banned;
                 continue;
             }
+            if (cambc::round_number() != round) return false;
             const auto before_move = fuel();
             if (before_move < fuel_floor || before_move - fuel_floor < last_reserve) return false;
             if (move_to(r.first_steps[i])) return true;
             retry |= test(bumped_, r.first_steps[i]);
         }
-        if (banned > 0) guard_retry(r, banned, attempt, nullptr);
+        if (banned > 0 && guard_retry(r, banned, attempt, nullptr)) {
+            route_exhausted_ = true;
+            return false;
+        }
         if (!retry && banned == 0) return false;
     }
     return false;
@@ -682,9 +715,10 @@ bitboard dash_landings_from(const StaticMap& map, vec2 from, const bitboard* als
 
 bitboard Pathing::dash_landings() {
     auto landings = dash_landings_from(map(), my_pos(), bumped_any_ ? &bumped_ : nullptr);
-    if (guarding_ && safety_)
-        for (auto p : Tiles<5 * 5>{landings})
-            if (guarded(p)) set_tile(landings, p, false);
+    if (guarding_ && safety_) {
+        if (const bitboard* board = safety_->guarded_board()) drop(landings, *board);
+        mark_known_guarded(landings, false);
+    }
     return landings;
 }
 
