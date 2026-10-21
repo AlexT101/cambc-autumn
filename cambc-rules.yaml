@@ -154,21 +154,21 @@ champions:
     abilities: [{damage: 1, stun: true, target: ground, exclusive: true}, attack_reset]
   vesper_vale:
     attack: ranged
-    stats: {health: [900, 100], strength: [50, 5], focus: [100, 10]}
+    stats: {health: [1000, 100], strength: [55, 5], focus: [100, 10]}
     passive: "+33% gold."
     abilities: [attack_reset, dash]
   prism:
     attack: ranged
     stats: {health: [700, 60], strength: [35, 2.5], focus: [80, 8]}
-    passive: "+1 Focus per carried gem."
+    passive: "+1.5 Focus per carried gem."
     abilities: [{damage: 1.5, stun: true, target: unit, exclusive: true}, {damage: 1, target: ground, exclusive: true}]
   stellar:
     attack: ranged
-    stats: {health: [750, 75], strength: [30, 3.5], focus: [85, 9]}
+    stats: {health: [650, 65], strength: [30, 3.5], focus: [70, 7]}
     abilities: [{damage: 2, target: unit, exclusive: true}, {damage: 1.4, target: ground, exclusive: true}]
   vendetta:
     attack: melee
-    stats: {health: [800, 100], strength: [70, 6], focus: [100, 10]}
+    stats: {health: [1000, 100], strength: [70, 6], focus: [100, 10]}
     passive: "Killing a champion or monster readies both abilities."
     abilities: [attack_reset, dash]
   marcella:
@@ -178,7 +178,7 @@ champions:
     abilities: ["attack_reset; her next basic attack this turn also stuns", {damage: 2, target: unit, exclusive: true}]
   tavi:
     attack: ranged
-    stats: {health: [750, 75], strength: [45, 5], focus: [100, 10]}
+    stats: {health: [900, 75], strength: [45, 5], focus: [110, 10]}
     passive: "Buys shards anywhere; consumables still need spawn or death. On spawn, sells items for their full price (shard 30, emblem 150); refunds are not earned gold."
     abilities: [attack_reset, {damage: 1.4, stun: true, target: unit, exclusive: true}]
   willow:
@@ -189,7 +189,7 @@ champions:
     attack: melee
     stats: {health: [900, 100], strength: [35, 5], focus: [100, 9]}
     passive: "When damaged, deals 0.2x Focus to the attacker (monsters included), even while dying."
-    abilities: [{damage: 1.25, stun: true, target: unit, exclusive: true}, dash]
+    abilities: [{damage: 0.75, stun: true, target: unit, exclusive: true}, dash]
   varg:
     attack: melee
     stats: {health: [1000, 100], strength: [40, 5], focus: [100, 10]}
@@ -198,9 +198,9 @@ champions:
     shield: "Absorbs damage before health; leftover is lost on expiry."
   heart_of_ruin:
     attack: melee
-    stats: {health: [1000, 100], strength: [40, 4], focus: [100, 12]}
+    stats: {health: [1000, 100], strength: [30, 3.5], focus: [100, 12]}
     passive: "All its damage x (1 + 0.5 x missing health fraction): +50% at 0 health, +25% at half. Shields do not count as health."
-    abilities: [{shield: 1.5, target: self, duration: 5}, "dash; on landing, 1.75 damage and a stun to enemy champions and camps within 1 of the landing tile"]
+    abilities: [{shield: 1.5, target: self, duration: 5}, "dash; on landing, 1.5 damage and a stun to enemy champions and camps within 1 of the landing tile"]
   cassi_and_issac:
     passive: "One pick, two bodies with separate turns, positions, bags and abilities. If either dies, both die, giving one kill reward and both bags."
     cassi:

@@ -2,6 +2,50 @@
 
 *Balance changes to champions and the game, newest first.*
 
+## Patch 1.0.2 Notes (2026-10-21)
+
+![Champion Changelog](./images/patch-12a2ff69.png)
+
+### Stellar
+- Health: 750 → 650
+- Health per shard: 75 → 65
+- Focus: 85 → 70
+- Focus per shard: 9 → 7
+
+
+### Heart of Ruin
+- Strength: 40 → 30
+- Strength per shard: 4 → 3.5
+- Dash landing damage (S2): 1.75 x Focus → 1.5 x Focus
+
+
+### Ren
+- Stun damage (S1): 1.25 x Focus → 0.75 x Focus
+
+Focus champions have a lot of front loaded damage, which has been hard to play around. These champions also have extremely high pick rates all across the board and so we are lowering their output.
+
+---
+
+### Vesper Vale
+- Health: 900 → 1000
+- Strength: 50 → 55
+
+### Vendetta
+- Health: 800 → 1000
+
+### Tavi
+- Health: 750 → 900
+- Focus: 100 → 110
+
+Strength champions are struggling to endure the amount of burst in the game, so we are giving them a bit more health to help them through early game combats
+
+---
+
+### Prism
+- Passive focus per gem: 1 → 1.5
+
+Prism has not seen any usage in higher ranked play, hopefully these changes will encourage teams to build a specialist strategy around them
+
 ## Patch 1.0.1 Notes (2026-10-20)
 
 ![Champion Changelog](./images/patch-344ae1e0.png)

@@ -1,6 +1,6 @@
 # CAMBC 2026a documentation (local mirror)
 
-Mirror of the online handbook at https://2026a.battlecode.co.uk/game/docs and the Bot API reference at https://2026a.battlecode.co.uk/game/api, synced 2026-10-20. Regenerate with `cd tools/docs-sync && npm install && node sync.mjs`.
+Mirror of the online handbook at https://2026a.battlecode.co.uk/game/docs and the Bot API reference at https://2026a.battlecode.co.uk/game/api, synced 2026-10-21. Regenerate with `cd tools/docs-sync && npm install && node sync.mjs`.
 
 ## Game rules
 

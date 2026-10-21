@@ -28,7 +28,7 @@ enum class Passive : std::uint8_t {
     none,
     health_strength,   // Ryth: +1% of bonus max health as Strength
     bonus_gold,        // Vesper Vale: +33% gold
-    gem_focus,         // Prism: +1 Focus per carried gem
+    gem_focus,         // Prism: +1.5 Focus per carried gem
     reset_on_kill,     // Vendetta: killing a champion or monster readies both abilities
     stun_immune,       // Marcella; also 2 gold per gem she tributes
     remote_shop,       // Tavi: buys shards anywhere, sells at full price on spawn
@@ -123,12 +123,12 @@ inline constexpr std::array<ChampionFacts, 13> champion_table = [] {
     return std::array<ChampionFacts, 13>{{
         {C::ryth, "ryth", false, {1200, 100}, {45, 5}, {100, 10}, P::health_strength,
          {damage(T::ground, 1, true), reset}},
-        {C::vesper_vale, "vesper_vale", true, {900, 100}, {50, 5}, {100, 10}, P::bonus_gold, {reset, dash}},
-        {C::vendetta, "vendetta", false, {800, 100}, {70, 6}, {100, 10}, P::reset_on_kill, {reset, dash}},
+        {C::vesper_vale, "vesper_vale", true, {1000, 100}, {55, 5}, {100, 10}, P::bonus_gold, {reset, dash}},
+        {C::vendetta, "vendetta", false, {1000, 100}, {70, 6}, {100, 10}, P::reset_on_kill, {reset, dash}},
         {C::cassi, "cassi", true, {600, 65}, {30, 3}, {70, 13}, P::linked_pair,
          {damage(T::unit, 2), AbilityFacts{K::stun, T::unit, 0, true, false}}},
         {C::issac, "issac", false, {900, 80}, {40, 3}, {100, 10}, P::linked_pair, {reset, dash}},
-        {C::stellar, "stellar", true, {750, 75}, {30, 3.5f}, {85, 9}, P::none,
+        {C::stellar, "stellar", true, {650, 65}, {30, 3.5f}, {70, 7}, P::none,
          {damage(T::unit, 2), damage(T::ground, 1.4f)}},
         {C::prism, "prism", true, {700, 60}, {35, 2.5f}, {80, 8}, P::gem_focus,
          {damage(T::unit, 1.5f, true), damage(T::ground, 1)}},
@@ -137,12 +137,12 @@ inline constexpr std::array<ChampionFacts, 13> champion_table = [] {
         {C::willow, "willow", true, {700, 50}, {55, 3}, {120, 5}, P::none,
          {AbilityFacts{K::heal, T::ally, 3}, reset}},
         {C::ren, "ren", false, {900, 100}, {35, 5}, {100, 9}, P::retaliation,
-         {damage(T::unit, 1.25f, true), dash}},
+         {damage(T::unit, 0.75f, true), dash}},
         {C::varg, "varg", false, {1000, 100}, {40, 5}, {100, 10}, P::splash_attack,
          {reset, AbilityFacts{K::shield, T::self, 2.5f, false, false, 5}}},
-        {C::tavi, "tavi", true, {750, 75}, {45, 5}, {100, 10}, P::remote_shop,
+        {C::tavi, "tavi", true, {900, 75}, {45, 5}, {110, 10}, P::remote_shop,
          {reset, damage(T::unit, 1.4f, true)}},
-        {C::heart_of_ruin, "heart_of_ruin", false, {1000, 100}, {40, 4}, {100, 12}, P::missing_health,
+        {C::heart_of_ruin, "heart_of_ruin", false, {1000, 100}, {30, 3.5f}, {100, 12}, P::missing_health,
          {AbilityFacts{K::shield, T::self, 1.5f, false, false, 5}, dash}},
     }};
 }();
