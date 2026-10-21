@@ -27,4 +27,10 @@ float stun_worth(const World& world, const ChampionBelief& e, bool damaging);
 // A dash landing at p would hit a member of a sleeping group that strikes, waking it.
 bool landing_wakes(const World& world, vec2 p, int radius);
 
+// The tiles within `reach` of `here` that a tracked unseen enemy on at most 9 tiles may hold whose
+// retaliation would kill us, none if the cast deals no `raw` damage: its ground or landing area must
+// not hit them, though unseen enemies are never aimed at. Up to `size` into `out`; returns how many.
+// cast_at_enemies and the strike search share it, so both ban the same centres.
+int unseen_retaliators(const World& world, vec2 here, int reach, float raw, vec2* out, int size);
+
 } // namespace aph

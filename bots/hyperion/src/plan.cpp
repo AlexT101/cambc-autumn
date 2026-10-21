@@ -779,19 +779,9 @@ void Search::read_spells() {
     }
 }
 
-// Tiles of unseen tracked enemies on few tiles whose retaliation would kill us, which a ground
-// cast's area must not hit. Other unseen enemies are not aimed at, as cast_at_enemies does not.
+// The tiles cast_at_enemies keeps a ground cast's area off.
 void Search::add_unseen(int s, float raw) {
-    n_unseen = 0;
-    if (raw <= 0) return;
-    for (const auto& e : world.enemies) {
-        if (!e.alive || e.visible || !e.tracked || board_empty(e.possible) || e.retaliation() < health) continue;
-        if (board_count(e.possible) > 9) continue;
-        for (auto p : positions_within(e.possible, here, f.abilities[s].reach())) {
-            if (n_unseen == max_unseen) break;
-            tables.unseen[n_unseen++] = p;
-        }
-    }
+    n_unseen = unseen_retaliators(world, here, f.abilities[s].reach(), raw, tables.unseen.data(), max_unseen);
 }
 
 // Allies a heal could reach from some tile, each worth what it restores, capped by what could hit
