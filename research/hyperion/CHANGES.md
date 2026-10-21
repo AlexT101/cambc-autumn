@@ -398,3 +398,44 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    damage_bound, the input to shield_cap, offer_escape and retreat_step's escape cost, an estimate rather than a bound
    (an unseen enemy often reads 0 where the old rule counted a full hit), so some shields are dropped and some
    retreats change; it also counts unknown-state camps at camp_worst instead of camp_exp. Fixed in wave 2 by W2-E.
+55. 2026-10-21 (not yet submitted). Combat merge wave 2 and its fuel fix (COMBAT-MERGE.md; tags w2-merged, a9db454,
+   and w2fix): one fight engine and one lazy verdict; step_guard is gone.
+   - W2-A (safety.cpp): engage(p, Engage) plays stand, pursue and idle fights by COMBAT-MERGE.md's rule table, charging
+     camp_exp(p) less the claimed group (set_claimed) for exit_rounds(p) of their turns. One 48-slot FightKey memo
+     (who, arrivals, camp charge, mode, horizon) serves every mode and survives invalidate; a stand key is settled by
+     dominance over enemies, allies and the camp charge. verdict(q) and guarded(q) (step_guard's rule within 3, asked
+     lazily, answers kept per guard epoch, a new claimed group starting one); guarded_board() draws only the tiles
+     found guarded. fight, pursuit and turns_to_kill_idle are wrappers.
+   - W2-B (pathing.cpp): every guard site asks guarded() per tile while guarding (memoised per epoch). step_towards'
+     attempt loop checks the chosen first steps and routes again (one cap of 8 with hidden blockers) and stops when
+     every free neighbour is guarded; a dash asks only the landing it casts. set_guard and guard() are deleted.
+   - W2-C (plan.cpp): the guard no longer blocks walks and dashes; the search asks guarded() of its end tile (at most
+     max_guard_asks 6 new asks a search) and carries out its plan with guarding off. Its terrain window is kept per
+     centre tile (fuel only).
+   - W2-D (bot.cpp): step_guard, open_bits and their three fuel gates are deleted. want_home: engage(here) stand, home
+     if lethal and we fall or a visible threat and lost; prey judges engage(attack tile, with_enemy) at the open tile
+     in range nearest us, at most 3 verdicts (prey-cut-short deleted). set_claim moves memory.claim and Safety's
+     claimed group together.
+   - W2-E (safety.cpp): damage_bound is an upper bound again, fixing 54's known flaw: TileDanger::unseen_bound counts
+     an unseen credible foe at a full hit wherever its possible tiles are within reach, walls ignored (w0's rule),
+     computed on damage_bound's first read of a slot. shield_cap and offer_escape read it; escape_cost stays on
+     tile(q).worst().
+   - F1 (plan.cpp) and F2 (world.cpp), fuel only: grow's landing classes per alive set, a walk-dash reach memo, the
+     leaf cap once per leaf; update_camp reads members in one loop per liveness. Byte-identical at 100M.
+   - Fuel fix (branch w2/fuelfix). Byte-identical at 100M (total -0.47%, p99 -3.3%): E1 a Strength bound before
+     outlives() and overwhelmed(), E2 a sim ends once the rest of our side must outlive them, E4 play_quiet deleted,
+     E5 the dead fight and build cost estimates deleted, B6 a sim abandons a turn resumed in a later round. Logic: L1
+     prey's key adds the prey's escorts (the visible foes whose Strike reaches its tile, by strike_sum) and keeps only
+     the allies near both tiles, the whole of W2's regression at 100M; L2 the search bans a dist-3 end tile camps or
+     unseen threats can kill us on; L4 guarded() and the search's entry drop a turn resumed after running out of fuel;
+     F1 a fight cut short is memoised for its own key, never settling others; F2 the search prices without asking and
+     asks guarded() of its pick alone, reopening tiles priced short against a banned pick; P1A a clean stand fight
+     settles a pursuit it covers in the engine (pursuers_standing() deleted); P4 with neither walk nor attack left,
+     chase targets an enemy in reach without a fight; B2 prey starts at most one new fight a call (engage_if).
+   - Review fixes: P4 is decided in chase, so not during a tribute channel (continue_tribute's prey keeps its fight),
+     and chase then claims the turn only when it hit; want_home no longer reads Trade::cut (L3 dropped: a cut reads
+     lost for every reader).
+   Logic at 100M, w2-merged vs w1: 52.4% of 582 (95% CI 48.3-56.4; ladder 47.1, gen 53.1). Real budget, both sides
+   `--phases`: 62ffe96 (the fuel fix before its review fixes) vs w2-merged 50.9% (ladder 50.0, gen 51.0), out-of-fuel
+   turns 6349 vs 8278 (-23%); vs w1 49.7% (ladder 51.4, gen 49.4), 5354 vs 4982 (+7.5%). The review fixes were not
+   A/B'd (bench out-of-fuel turns 188 vs 62ffe96's 181, within its ±20).

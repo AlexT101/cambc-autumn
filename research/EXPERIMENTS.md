@@ -686,6 +686,11 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   - Fuel: W1-B alone was 16/16 identical at 100M but +1.05% a turn, a fixed ~+380 (likely the per-construction
     note_view() and memo bookkeeping, unmeasured) with savings up to 9k on memo hits. Real-budget bench vs w0: out-of-fuel
     turns 132 vs 149 (within its ±20), mean fuel +0.8%. The tile table's camp pre-filter was reverted (Fuel, above).
+- wave 2 (2026-10-21; combat merge, [COMBAT-MERGE.md](hyperion/COMBAT-MERGE.md); integration branch
+  claude/dazzling-mccarthy-4kawix a9db454, tag w2-merged, on w1 36cf487): one fight engine (engage, FightKey memo,
+  dominance) and a lazy guarded() in place of step_guard (W2-A..D), damage_bound an upper bound again (W2-E), fuel-only
+  F1/F2 (CHANGES 55). Logic A/B at 100M fuel vs w1 (replays/ab/w2-100M/summary.md): 52.4% of 582 (95% CI 48.3-56.4;
+  ladder 47.1 of 70, gen 53.1 of 512). At the real budget it ran out of fuel more than w1: fuel fix below.
 - wave 2 fuel fix (2026-10-21; branch w2/fuelfix on w2-merged a9db454; brief W2 fuel fix plus the W2 review's
   findings). Real-budget A/Bs below are ladder + gen (582), both bots with `--phases`.
   - Byte-identical at 100M against a9db454 (16/16, 0 FIGHT-EXIT, PREFILTER and DOMINANCE mismatches): the SIMS line,
