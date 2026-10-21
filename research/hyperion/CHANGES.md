@@ -366,3 +366,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    partner_radius, since it only sizes pick_up's partner check.
 52. 2026-10-21 (not yet submitted). Unused code clang flagged: plan.cpp's inside_map, to_grid and an unused E, and
    the unused `me` locals in prey and chase. Bench 16/16 identical.
+53. 2026-10-21 (not yet submitted). Removals in cast_at_enemies (abilities.cpp enemy_cast): an excludes-walking cast
+   now needs min_value + walk alone, without the free stun (a stun on every visible enemy able to reach us next turn
+   needed only min_value); ground and landing casts no longer aim at tracked unseen enemies spread over their
+   possible tiles (max_unseen_tiles and Target::weight deleted). The strike search's unseen ground casts stay. 49.2%
+   vs main (1606, ladder 47.1, gen 46.7, fresh gen-s1 49.6, gen-s2 51.6); out-of-fuel turns 16157 vs 15948.

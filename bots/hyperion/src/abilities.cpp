@@ -3,7 +3,6 @@
 #include <array>
 #include <optional>
 #include <vector>
-#include "safety.h"
 #include "params.h"
 #include "pathing.h"
 #include "world.h"
@@ -18,8 +17,7 @@ constexpr float winning_tribute_value = 5000; // a stun that stops the enemy's g
 constexpr float min_value = 40;
 constexpr float min_landing_value = 250; // a landing moves us off the goal's way
 constexpr float min_camp_value = 50;
-constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
-constexpr int hold_range = 6;       // camp casts wait while a visible enemy is this close
+constexpr int hold_range = 6; // camp casts wait while a visible enemy is this close
 
 bool walked(const World& world) { return my_position() != world.me().pos; }
 
@@ -114,8 +112,7 @@ namespace {
 
 struct Target {
     vec2 pos;
-    float weight; // chance the enemy is on this tile
-    float worth;  // if hit
+    float worth; // if hit
 };
 
 // The scratch vectors and boards here are kept across calls: allocating costs more than the work.
@@ -146,7 +143,7 @@ const bitboard& wake_risk(const World& world, vec2 here, int reach) {
 }
 
 // Centres within `range` of `here`, off `skip`.
-Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& targets, vec2 here, int range,
+Cast best_ground(int slot, float min_value, const std::vector<Target>& targets, vec2 here, int range,
                  const bitboard& skip) {
     constexpr int max_range = 5; // ability ranges are 4
     Cast best;
@@ -170,7 +167,7 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
     clear_board(centres);
     for (const auto& t : targets) {
         draw_square(centres, t.pos, 1);
-        around(t, [&](float& v) { v += t.weight * t.worth; });
+        around(t, [&](float& v) { v += t.worth; });
     }
     static bitboard box{cambc::uninitialized};
     clear_board(box);
@@ -181,7 +178,7 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
     // In board order, which breaks ties.
     for (auto c : Tiles<17 * 17>{centres}) {
         const float v = value[(c.y - here.y + range) * side + (c.x - here.x + range)];
-        if (v > best.value && v >= min_weight_value) best.slot = slot, best.value = v, best.tile = c;
+        if (v > best.value && v >= min_value) best.slot = slot, best.value = v, best.tile = c;
     }
     return best;
 }
@@ -196,7 +193,7 @@ Cast best_landing(int slot, float min_value, const std::vector<Target>& targets,
     for (auto p : Tiles<5 * 5>{landings}) {
         float v = 0;
         for (const auto& t : targets)
-            if (dist(p, t.pos) <= radius) v += t.weight * t.worth;
+            if (dist(p, t.pos) <= radius) v += t.worth;
         const int d = dist(p, here);
         if (v < min_value || v < best.value || (v == best.value && d >= best_dist) || !keep(p)) continue;
         best.slot = slot, best.value = v, best.tile = p, best.dash = true, best_dist = d;
@@ -211,47 +208,13 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
     const auto& f = world.me().facts();
     // Most turns no enemy is in reach: skip the engine reads below.
     int reach = -1;
-    bool ground = false;
     for (const auto& a : f.abilities)
-        if (a.hits_enemies() && (landings || !a.lands()))
-            reach = std::max(reach, a.reach()), ground |= a.target == Targeting::ground || a.lands();
-    int visible = 0, unseen = 0;
-    for (const auto& e : world.enemies) {
-        if (!e.alive) continue;
-        if (e.visible) visible += dist(here, e.pos) <= reach;
-        else unseen += ground && e.tracked;
-    }
-    if (visible + unseen == 0) return best;
+        if (a.hits_enemies() && (landings || !a.lands())) reach = std::max(reach, a.reach());
+    int visible = 0;
+    for (const auto& e : world.enemies) visible += e.alive && e.visible && dist(here, e.pos) <= reach;
+    if (visible == 0) return best;
     const auto& enemy_spawn = world.map().enemy_spawn;
     if (!my_can_move()) walk = 0;
-    // A stun takes its target's walk as the cast takes ours: with every visible enemy that could
-    // reach us next turn stunned, keeping the walk gains nothing. `free_stun`: centres that do so.
-    std::array<const ChampionBelief*, 16> reaching;
-    int n_reaching = 0;
-    bool unstoppable = false;
-    if (walk > 0)
-        for (const auto& e : world.enemies) {
-            if (n_reaching == 16) break;
-            if (!e.alive || !e.visible || !strike(e, next_turn_round(world, e)).hits(dist(here, e.pos))) continue;
-            const auto c = e.live();
-            if (!c.is_visible() || c.buffs().has_stun()) continue;
-            unstoppable |= e.facts().passive == Passive::stun_immune;
-            reaching[n_reaching++] = &e;
-        }
-    const bool walk_matters = n_reaching == 0 || unstoppable;
-    static bitboard not_free{cambc::uninitialized}; // ~free_stun
-    if (!walk_matters) {
-        static bitboard free_stun{cambc::uninitialized};
-        free_stun.fill();
-        static bitboard around{cambc::uninitialized};
-        for (int i = 0; i < n_reaching; ++i) {
-            clear_board(around);
-            draw_square(around, reaching[i]->pos, 1);
-            and_into(free_stun, around, free_stun);
-        }
-        not_free.fill();
-        xor_into(not_free, free_stun, not_free);
-    }
     const bitboard* risk = nullptr;
     for (int s = 0; s < 2; ++s) {
         if (!castable(world, s)) continue;
@@ -267,33 +230,16 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
             static bitboard off{cambc::uninitialized};
             clear_board(off);
             for (const auto& e : world.enemies) {
-                if (!e.alive) continue;
-                if (e.visible) {
-                    if (dist(here, e.pos) > a.reach()) continue;
-                    const auto c = e.live();
-                    if (!c.is_visible()) continue;
-                    const float damage = damage_to(s, c, raw);
-                    if (suicidal(e)) {
-                        draw_square(off, e.pos, static_cast<float>(a.radius));
-                        continue;
-                    }
-                    const float stun = a.stuns && !c.buffs().has_stun() ? stun_worth(world, e, raw > 0) : 0;
-                    targets.push_back({e.pos, 1, hit_worth(world, e, damage, c.health(), test(enemy_spawn, e.pos)) + stun});
-                } else if (e.tracked && !board_empty(e.possible)) {
-                    const int n = static_cast<int>(board_count(e.possible));
-                    if (n > max_unseen_tiles) continue;
-                    const auto near = positions_within(e.possible, here, a.reach());
-                    if (near.empty()) continue;
-                    if (suicidal(e)) {
-                        for (auto p : near) draw_square(off, p, static_cast<float>(a.radius));
-                        continue;
-                    }
-                    const float health = e.health > 0 ? e.health : e.max_health;
-                    const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0;
-                    for (auto p : near)
-                        targets.push_back({p, 1.0f / static_cast<float>(n),
-                                           hit_worth(world, e, std::min(raw, health), health, test(enemy_spawn, p)) + stun});
+                if (!e.alive || !e.visible || dist(here, e.pos) > a.reach()) continue;
+                const auto c = e.live();
+                if (!c.is_visible()) continue;
+                const float damage = damage_to(s, c, raw);
+                if (suicidal(e)) {
+                    draw_square(off, e.pos, static_cast<float>(a.radius));
+                    continue;
                 }
+                const float stun = a.stuns && !c.buffs().has_stun() ? stun_worth(world, e, raw > 0) : 0;
+                targets.push_back({e.pos, hit_worth(world, e, damage, c.health(), test(enemy_spawn, e.pos)) + stun});
             }
             if (targets.empty()) continue;
             best.offer(best_landing(s, min_landing_value, targets, dash_landings_from(world.map(), here, &off), here, a.radius,
@@ -305,54 +251,31 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                 if (!c.is_visible()) continue;
                 float v = hit_worth(world, e, damage_to(s, c, raw), c.health(), test(enemy_spawn, e.pos));
                 if (a.stuns && !c.buffs().has_stun()) v += stun_worth(world, e, raw > 0);
-                const bool free = a.stuns && !walk_matters && n_reaching == 1 && reaching[0] == &e;
-                if (v >= (free ? min_value : threshold) && v > best.value) best = Cast{s, v, c, std::nullopt, {}};
+                if (v >= threshold && v > best.value) best = Cast{s, v, c, std::nullopt, {}};
             }
         } else if (a.target == Targeting::ground) {
             static std::vector<Target> targets;
             targets.clear();
-            // The area hits every enemy in it, unseen too: keep it off a Ren whose retaliation kills us.
+            // The area hits every enemy in it: keep it off a Ren whose retaliation kills us.
             static bitboard off{cambc::uninitialized};
             clear_board(off);
             for (const auto& e : world.enemies) {
-                if (!e.alive) continue;
-                if (e.visible) {
-                    if (dist(here, e.pos) > a.reach()) continue;
-                    if (suicidal(e)) {
-                        draw_square(off, e.pos, 1);
-                        continue;
-                    }
-                    const auto c = e.live();
-                    if (!c.is_visible()) continue;
-                    const float stun = a.stuns && !c.buffs().has_stun() ? stun_worth(world, e, raw > 0) : 0;
-                    const float hit = hit_worth(world, e, damage_to(s, c, raw), c.health(), test(enemy_spawn, e.pos));
-                    targets.push_back({e.pos, 1, hit + stun});
-                } else if (e.tracked && !board_empty(e.possible)) {
-                    const int n = static_cast<int>(board_count(e.possible));
-                    if (n > max_unseen_tiles) continue;
-                    const auto near = positions_within(e.possible, here, a.reach());
-                    if (near.empty()) continue;
-                    if (suicidal(e)) {
-                        for (auto p : near) draw_square(off, p, 1);
-                        continue;
-                    }
-                    const float health = e.health > 0 ? e.health : e.max_health;
-                    const float hit = std::min(raw, health);
-                    const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0;
-                    for (auto p : near)
-                        targets.push_back({p, 1.0f / static_cast<float>(n),
-                                           hit_worth(world, e, hit, health, test(enemy_spawn, p)) + stun});
+                if (!e.alive || !e.visible || dist(here, e.pos) > a.reach()) continue;
+                if (suicidal(e)) {
+                    draw_square(off, e.pos, 1);
+                    continue;
                 }
+                const auto c = e.live();
+                if (!c.is_visible()) continue;
+                const float stun = a.stuns && !c.buffs().has_stun() ? stun_worth(world, e, raw > 0) : 0;
+                const float hit = hit_worth(world, e, damage_to(s, c, raw), c.health(), test(enemy_spawn, e.pos));
+                targets.push_back({e.pos, hit + stun});
             }
             if (targets.empty()) continue;
             if (!risk) risk = &wake_risk(world, here, a.reach());
             static bitboard skip{cambc::uninitialized};
             or_into(*risk, off, skip);
             best.offer(best_ground(s, threshold, targets, here, a.range(), skip));
-            if (a.stuns && threshold > min_value && !walk_matters) {
-                or_into(skip, not_free, skip);
-                best.offer(best_ground(s, min_value, targets, here, a.range(), skip));
-            }
         }
     }
     return best;
@@ -411,7 +334,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         } else if (a.target == Targeting::ground) {
             static std::vector<Target> targets;
             targets.clear();
-            for (const auto& m : members) targets.push_back({m.pos, 1, std::min(raw, m.health) + (a.stuns ? m.stun : 0)});
+            for (const auto& m : members) targets.push_back({m.pos, std::min(raw, m.health) + (a.stuns ? m.stun : 0)});
             static bitboard skip{cambc::uninitialized};
             clear_board(skip);
             for (int other : world.map().groups_near(here, a.reach()))
@@ -422,7 +345,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             if (const int at = world.map().group_at(here); at >= 0 && world.camps[at].state == CampState::cleared) continue;
             static std::vector<Target> targets;
             targets.clear();
-            for (const auto& m : members) targets.push_back({m.pos, 1, std::min(raw, m.health) + (a.stuns ? m.stun : 0)});
+            for (const auto& m : members) targets.push_back({m.pos, std::min(raw, m.health) + (a.stuns ? m.stun : 0)});
             static bitboard skip{cambc::uninitialized};
             clear_board(skip);
             for (int other : world.map().groups_near(here, a.reach()))
