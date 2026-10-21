@@ -9,7 +9,8 @@ class Pathing;
 struct Memory {
     int round = -1;    // of our previous turn
     float health = 0;  // at its end
-    float damage = 0;  // taken since, as of this turn's start
+    float damage = 0;  // taken since, as of this turn's start; read through Safety::taken() and unseen_hit()
+    float camp_hit = 0; // at its end, the camps' hit Safety expected on our tile (Safety::camp_damage)
     bool banking = false; // our bag headed for an altar rather than another capture last turn
     int farm_group = -1;  // farm's latest choice: kept when near tied, walked to on short fuel
     int claim = -1;       // the group we told allies we work towards, or -1

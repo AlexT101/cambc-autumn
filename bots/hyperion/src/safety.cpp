@@ -2580,7 +2580,19 @@ float Safety::unseen_chance(vec2 p) {
 
 // The verdict section (W2-A).
 
-int Safety::idle_turns(vec2 p, int horizon) { return turns_to_kill_idle(p, horizon); }
+int Safety::idle_turns(vec2 p, int horizon) {
+    // Before the memo too: resumed after running out of fuel, its answers are a round old.
+    world_.throw_if_stale();
+    if (idle_generation_ != generation_) idle_generation_ = generation_, idle_known_ = 0;
+    for (int i = 0; i < 2; ++i)
+        if (const auto& m = idle_[static_cast<std::size_t>(i)]; (idle_known_ >> i & 1) && m.p == p && m.horizon == horizon) return m.turns;
+    Phase phase{"idle_turns"};
+    const int turns = engage(p, {.mode = Engage::Mode::idle, .horizon = horizon}).turns_to_kill_us;
+    const int i = idle_next_++ & 1;
+    idle_[static_cast<std::size_t>(i)] = {p, horizon, turns};
+    idle_known_ |= static_cast<std::uint8_t>(1u << i);
+    return turns;
+}
 
 void Safety::set_claimed(int group) {
     if (group == claimed_) return;
@@ -2688,9 +2700,12 @@ float Safety::escape_cost(vec2 q) {
     return hit + camp * static_cast<float>(std::max(0, exit_rounds(q) - 1));
 }
 
-void Safety::note_unseen_hit(vec2 at, float damage) { ghost_at_ = at, ghost_ = damage; }
+void Safety::note_unseen_hit(vec2 at, float damage) {
+    ghost_at_ = at, ghost_ = damage;
+    idle_known_ = 0;
+}
 
-float Safety::unseen_hit(vec2) const { return 0; }
+float Safety::unseen_hit(vec2 p) const { return p == ghost_at_ ? ghost_ : 0.0f; }
 
 std::uint32_t Safety::guard_epoch() const { return guarded_generation_ == generation_ ? guard_epoch_ : generation_; }
 
