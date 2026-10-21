@@ -222,6 +222,8 @@ constexpr int max_mates = 6;
 // Exact queries per search (Reach blows, threats_at calls, distance-3 row reads); past it the rest
 // keep their Strike price.
 constexpr int max_exact_queries = 10;
+// guarded() asks per search; past it an unasked end tile counts as guarded.
+constexpr int max_guard_asks = 6;
 
 enum class Op : std::uint8_t { walk, attack, reset, dash, spell, heal, shield };
 struct Act {
@@ -1723,8 +1725,9 @@ bool strike_possible(const World& world) {
         if (!guarding || tiles[i].c == S.cell(here)) return false;
         if (!(guard_asked & bit)) {
             guard_asked |= bit;
-            ++guard_asks;
-            if (safety.guarded(S.tile(tiles[i].c))) guard_banned |= bit, ++guard_skips;
+            bool out = guard_asks >= max_guard_asks;
+            if (!out) ++guard_asks, out = safety.guarded(S.tile(tiles[i].c));
+            if (out) guard_banned |= bit, ++guard_skips;
         }
         return (guard_banned & bit) != 0;
     };
@@ -1959,6 +1962,7 @@ bool strike_possible(const World& world) {
     if (chosen >= 0) seq = concrete(tiles[chosen]), dropped[tiles[chosen].c] = true;
     int done = 0;
     bool failed = false;
+    vec2 cur = here;
     while (done < seq.n) {
         const Act a = seq.a[done];
         bool ok = false, blocked = false;
@@ -2012,6 +2016,7 @@ bool strike_possible(const World& world) {
         case Op::shield: ok = use_slot(S.shield); break;
         }
         if (ok) {
+            if (a.op == Op::walk || a.op == Op::dash) cur = a.tile;
             ++done;
             continue;
         }
@@ -2025,13 +2030,17 @@ bool strike_possible(const World& world) {
             failed = true;
             break;
         }
-        // The next-ranked plan that took the same actions so far, avoiding the revealed tile.
-        int alt = -1;
+        // The next-ranked plan that took the same actions so far, avoiding the revealed tile. If every
+        // other ends on a guarded tile, one ending where we stand is taken: we stay there either way.
+        const int cur_c = S.cell(cur);
+        int alt = -1, stay = -1;
         for (;;) {
             alt = -1;
             float alt_total = -1e30f;
             for (int i = 0; i < nt; ++i) {
-                if (dropped[tiles[i].c] || !(tiles[i].exact || (capped && !tiles[i].done)) || tiles[i].total <= alt_total) continue;
+                if (dropped[tiles[i].c] || ((guard_banned >> i & 1) && tiles[i].c != cur_c) || !(tiles[i].exact || (capped && !tiles[i].done))
+                    || tiles[i].total <= alt_total)
+                    continue;
                 if (!tiles[i].exact) {
                     camp_out(i);
                     if (tiles[i].total <= alt_total) continue;
@@ -2045,7 +2054,9 @@ bool strike_possible(const World& world) {
             }
             if (alt < 0 || !banned(alt)) break;
             dropped[tiles[alt].c] = true;
+            if (tiles[alt].c == cur_c) stay = alt;
         }
+        if (alt < 0) alt = stay;
         if (alt < 0) {
             failed = true;
             break;
