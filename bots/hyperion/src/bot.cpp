@@ -45,6 +45,13 @@ bool searched = false; // the strike search chose this turn's cast, heals and sh
 bool planned_turn = false; // a search this turn acted, or chose a plan the walk's goal cannot change
 vec2 searched_at{};      // where the search's plan ended, and whether it had attacked by then
 bool searched_hit = false;
+// Where mend() last judged this round, with our attack state and claim then.
+struct Mended {
+    int round = -1;
+    vec2 at{-1, -1};
+    bool hit = false;
+    int claim = -1;
+} mended;
 // Debug only (WANTHOME): want_home's runs this decide, less the answers a ward or shards discarded.
 int home_asks = 0;
 
@@ -635,8 +642,8 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory) {
 
 // Towards the hop's sources; on one, the crystal to the free landing nearest its altar, the least
 // dangerous on ties. The channel is judged as a tribute's (death cancels it, a camp kill takes the
-// bag), and a stun cancels it after the crystal is spent; a refused carrier walks home meanwhile.
-void take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory&, int h) {
+// bag), and a stun cancels it after the crystal is spent; a refused carrier walks home (true).
+bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory&, int h) {
     const auto& hop = world.map().hops()[h];
     const vec2 here = my_position();
     if (test(hop.sources, here)) {
@@ -668,17 +675,18 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
         debug_block({ std::printf("HOP %d %d %d %d %d %.0f\n", world.round, safe ? 1 : 0, stun ? 1 : 0, best.x, best.y, best_worst); });
         if (best.x >= 0) {
             try {
-                if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return;
+                if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return false;
             } catch (const cambc::error&) {
             }
         }
         // to_hop is 0 on a source: standing there would wait out the threat in its reach.
         if (!safe) {
             step_safely(pathing, pathing.to_ally_spawn(), safety);
-            return;
+            return true;
         }
     }
     step_safely(pathing, pathing.to_hop(h), safety);
+    return false;
 }
 
 [[gnu::flatten]] void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
@@ -718,7 +726,11 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
     if (const auto hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
         memory.wants_crystal = true;
         if (carries_crystal()) {
-            take_hop(world, pathing, safety, memory, hop.hop);
+            // Refused at a source: home for a channel's length, where a recall or an altar can take
+            // the bag, before trying the hop again (else it walks back to the source next turn).
+            if (world.round < memory.hop_refused_until) step_safely(pathing, pathing.to_ally_spawn(), safety);
+            else if (take_hop(world, pathing, safety, memory, hop.hop))
+                memory.hop_refused_until = world.round + static_cast<int>(cambc::constants::tp_crystal_time);
             return;
         }
     }
@@ -3274,19 +3286,24 @@ float farm_step_value(const World& world) {
 // Heals and shields have one valuer, mend(), judged here on spawn, in mend_searched, mend_retreat
 // and at the turn's end (act). Off spawn nothing acts before mend_searched's call. On spawn, before
 // the hits: a shield is worth nothing there, and a reset would take the heal's cast.
+void mend_noted(const World& world, Safety& safety, const Memory& memory, char site) {
+    mend(world, safety, memory.claim, site);
+    mended = {world.round, my_position(), !my_can_attack(), memory.claim};
+}
+
 void mend_early(const World& world, Safety& safety, const Memory& memory, bool) {
-    if (test(world.map().ally_spawn, my_position())) mend(world, safety, memory.claim, 'm');
+    if (test(world.map().ally_spawn, my_position())) mend_noted(world, safety, memory, 'm');
 }
 
 // Before the goal, whether or not the search ran: the search is blind to the goal's coming camp
 // hit, and farm's camp reset or dash would take the cast.
-void mend_searched(const World& world, Safety& safety, const Memory& memory, bool) { mend(world, safety, memory.claim, 'd'); }
+void mend_searched(const World& world, Safety& safety, const Memory& memory, bool) { mend_noted(world, safety, memory, 'd'); }
 
 // mend_early judged the heal before the hits, which change nothing it reads.
 void mend_spawn(const World&, Safety&, const Memory&) {}
 
 // In a retreat the search did not plan.
-void mend_retreat(const World& world, Safety& safety, const Memory& memory) { mend(world, safety, memory.claim, 'r'); }
+void mend_retreat(const World& world, Safety& safety, const Memory& memory) { mend_noted(world, safety, memory, 'r'); }
 
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
@@ -3487,9 +3504,15 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if constexpr (debug_fights)
         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))
             if (const auto t = safety.fight(start); t.enemies > 0) log_fight("FF", world, safety, start, t);
-    // Where the search's plan ended, it and mend_searched judged already; a later walk or hit by
-    // the goal changes what is due.
-    if (!searched || my_position() != searched_at || !my_can_attack() != searched_hit) mend(world, safety, memory.claim);
+    // Where mend last judged (else where the search's plan ended), it judged already; a later walk,
+    // hit or claim by the goal changes what is due.
+    if (my_can_cast()) {
+        const vec2 at = my_position();
+        const bool hit = !my_can_attack();
+        const bool judged = mended.round == world.round ? mended.at == at && mended.hit == hit && mended.claim == memory.claim
+                                                        : searched && at == searched_at && hit == searched_hit;
+        if (!judged) mend(world, safety, memory.claim);
+    }
     place_ward(world, memory); // where we end the turn
     place_lock(world);
     start_recall(world);

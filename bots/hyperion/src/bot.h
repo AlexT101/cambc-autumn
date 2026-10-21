@@ -20,6 +20,7 @@ struct Memory {
     int wait_altar = -1, wait_since = -1;   // the altar we wait at for a safe tribute, since when
     int avoid_altar = -1, avoid_until = -1; // one we gave up waiting at, skipped until that round
     bool wants_crystal = false; // a crystal hop to an altar would have beaten walking to bank
+    int hop_refused_until = -1; // a hop refused at its source: walk home until this round
     vec2 ward{-1, -1};    // our latest ward
     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
 };
