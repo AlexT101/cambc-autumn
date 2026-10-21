@@ -295,3 +295,13 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    live_camps writes only the member bits that flip (-0.001%). Fixes on top: camp deaths reopen altars at once (no
    deferral while an altar is open), and access_fire reads every open tribute tile (was the first 64). 50.6% vs main
    (1094, ladder 48.6, gen 51.4, fresh 50.2); out-of-fuel turns 6276 vs 6106.
+40. 2026-10-21 (not yet submitted). Farming stage 1, shared prices (FARMING.md, farming-notes.md). heal_rounds(damage,
+   out) is the one heal price; HomeTrip prices every trip home (farm's bank trips, recall_to_bank, capture_recall,
+   wants_shop): a recall wins when its arrival less the heal and, once the gold completes it, the next emblem's gain
+   beats the walk, never past the bag's tribute deadline and worth nothing once closing. prices() holds the next emblem,
+   its gain and gold in gems from gems_share (capped by gems short, the enemy's distance, tribute rate and our pace
+   over bag_rounds_left). closing covers endgame(); too_late applies at any horizon; holders() replaces the single
+   taker in ally_holding, step_onto_cleared and pick_up. The clearing share counts from one turn in one, so gold has a
+   price before the first camp hit. Deleted gold_worth, endgame, emblem_gain_rounds, params clear_share,
+   endgame_shop_rounds, endgame_horizon. 50.0% vs main (1094, ladder 47.1, gen 51.0, fresh 49.4); out-of-fuel turns
+   7156 vs 6606.

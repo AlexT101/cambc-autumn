@@ -512,6 +512,15 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   an altar is open, and access_fire reads every open tribute tile instead of the first 64. 50.6% vs main (1094, ladder
   48.6, gen 51.4, fresh gen-s1 50.2): level, kept as fixes. Out-of-fuel turns 6276 vs 6106 (ladder+gen 3265 vs 3072,
   against the q2 bundle's 1136: strike search's decide).
+- farm-s1 (2026-10-21; FARMING.md stage 1, shared prices): one heal_rounds, one HomeTrip price for every trip home
+  (farm's bank trips, recall_to_bank, capture_recall, wants_shop: heal plus the next emblem once the gold completes
+  it, no recall that arrives too late to tribute, nothing once closing), gems_share capped by the tribute rate and our
+  pace over bag_rounds_left, gold priced by the emblem's saving (about 2x the old per_gold), closing absorbs endgame(),
+  holders() for cleared groups; deletes gold_worth, endgame, emblem_gain_rounds and 3 params. upkeep_cost's clearing
+  share counts from (camp_turns+1)/(turns+1): at 0 gold was worthless and stampede idled. 50.0% vs main (1094, ladder
+  47.1, gen 51.0, fresh gen-s1 49.4): level, kept as the base for stage 2. Out-of-fuel turns 7156 vs 6606 (+8%, all
+  decide, spread over maps); 100M bench mean fuel +0.4%, p99 +2.1%. Suspect: prices() keys on the float share, which
+  moves every round once the time cap binds, rebuilding farm's group facts.
 - w2-trapped (2026-10-21; WORLD-MODEL 1): Safety::trapped(p, h), every exit next turn (stay, step, a landing if our
   dash stays ready) taking the visible enemies' strike at p before our next turn plus their next strike at the exit,
   closer by their moves, plus camps, >= h (Chebyshev only); a want_home trigger, and step_guard guards trapped tiles.
