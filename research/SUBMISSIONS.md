@@ -32,6 +32,6 @@ The public API returns a null submission id and version, so `replays/mine` games
 | 29 | 2026-10-19 19:42 | hecate d72c1c2 | as #26 |
 | 30 | 2026-10-19 19:49 | hecate 65d5605 | as #19 |
 | 31 | 2026-10-20 16:28 | hecate 284eb73 (SDK 3.0.1 / week 2 patch: new stats, Heart of Ruin and golem out-of-bounds fixes, camp reach per monster type 54.3% vs hecate-v7, gem limits rescaled 52.8% on top) | as #19 |
-| 32 | 2026-10-20 22:29 | hecate cb5b461 (SDK 3.0.2 / Heart of Ruin nerf, Heart of Ruin played and modelled, dash crossings, crystal hops, holders by tribute length; new draft from research/hecate/DRAFT.md) | heart_of_ruin, marcella, vesper_vale, ryth, stellar |
+| 32 | 2026-10-20 22:29 | hecate cb5b461 (SDK 3.0.2 / Heart of Ruin nerf, Heart of Ruin played and modelled, dash crossings, crystal hops, holders by tribute length; new draft from research/hyperion/DRAFT.md) | heart_of_ruin, marcella, vesper_vale, ryth, stellar |
 
 Add a row with each new submission.

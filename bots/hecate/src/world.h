@@ -93,16 +93,15 @@ struct StaticMap {
     // stampede's shared block.
     bool shared_gems = false;
     int max_camp_reach = 0; // longest reach of any camp member on the map
-    // Walkable from our spawn, every camp counted as cleared; the same through dash_walls.
-    const bitboard& foot() const { return foot_ ? *foot_ : make_foot(); }
-    const bitboard& dash_foot() const { return dash_foot_ ? *dash_foot_ : make_dash_foot(); }
+    bitboard foot;      // walkable from our spawn, every camp counted as cleared
+    bitboard dash_foot; // the same through dash_walls
     // An altar no walk reaches but a teleport crystal does: from a source tile on foot to a landing
     // tile within its range, terrain ignored, then the walk.
     struct Hop {
         int altar = -1;
         bitboard sources, landings;
     };
-    const std::vector<Hop>& hops() const { return hops_ ? *hops_ : make_hops(); }
+    std::vector<Hop> hops;
 
     // The SDK's own boards, read once at start-up.
     const bitboard& walls = cambc::map::walls();
@@ -144,17 +143,11 @@ struct StaticMap {
     bool from_ally_spawn_ready() const { return ally_field_.has_value(); }
     const Field& from_enemy_spawn() const { return enemy_field_ ? *enemy_field_ : make_enemy_field(); }
     const BushCluster& bush_cluster(vec2 p) const;
-    const BushCluster* found_bush_cluster(vec2 p) const { // null until p's cluster is found
-        const int i = cluster_of_[tile_index(p)];
-        return i > 0 ? &bush_clusters_[i - 1] : nullptr;
-    }
-    // Tiles with a bush within ward placement range (2).
-    const bitboard& near_bushes() const { return near_bushes_ ? *near_bushes_ : make_near_bushes(); }
+    const bitboard& near_bushes() const; // tiles with a bush within ward placement range (2)
     // Find every cluster viewers(p, radius) needs while more than `fuel_floor` fuel remains; true
     // once all are. A large cluster can take ~100k, so the work carries over between calls.
     bool find_bush_clusters(vec2 p, int radius, std::uint64_t fuel_floor) const;
     bool find_all_bush_clusters(std::uint64_t fuel_floor) const; // the same for the whole map
-    bool bush_clusters_found(vec2 p, int radius) const; // find_bush_clusters' answer, finding none
     // Tiles from which p is in sight within Chebyshev `radius`: the engine's shadowcast, with
     // walls and every bush cluster but the viewer's own opaque.
     bitboard viewers(vec2 p, int radius) const;
@@ -184,31 +177,17 @@ private:
     inline static std::array<std::uint16_t, max_tiles> group_lookup_{}; // group index + 1, or 0
     inline static std::array<std::uint16_t, max_tiles> altar_lookup_{}; // altar index + 1, or 0
     mutable std::optional<Field> ally_field_, enemy_field_;
-    mutable std::optional<bitboard> foot_, dash_foot_;
-    mutable std::optional<std::vector<Hop>> hops_;
-    const bitboard& make_foot() const;
-    const bitboard& make_dash_foot() const;
-    const std::vector<Hop>& make_hops() const;
     mutable std::deque<BushCluster> bush_clusters_; // found so far; references stay valid
     mutable bitboard clustered_;                     // their tiles
     inline static std::array<std::uint16_t, max_tiles> cluster_of_{}; // cluster index + 1, or 0
-    // A cluster found in bounded steps, each priced before it runs, so that it can pause when the
-    // fuel runs low and resume in a later call.
     struct Growth {
-        enum class Phase : std::uint8_t { flood, edges, index } phase = Phase::flood;
-        vec2 origin;
-        bitboard tiles;    // the 8-connected flood so far, then the cluster
-        bitboard cluster;  // edges: the tiles reached by edge steps from the origin
-        int head = 0, size = 0; // edges: the queue in static storage
-        int count = 0, indexed = 0; // index: the cluster's tiles, in static storage, and those done;
-                                    // the cluster is in bush_clusters_ from the start of the phase
+        bitboard tiles;        // the 8-connected flood
+        bool diagonal = false; // the flood joins bushes only diagonally somewhere: grow by edges
     };
-    mutable std::optional<Growth> growth_;
-    // Advances the growth in progress, or one from p, while the fuel stays above `fuel_floor` (0:
-    // no limit); the cluster it completes, which holds p only if the growth began there, or null.
+    mutable std::optional<Growth> growth_; // a flood whose cluster was not found for lack of fuel
+    // The cluster grown from p; null if the fuel fell to the floor first.
     const BushCluster* grow_cluster(vec2 p, std::uint64_t fuel_floor) const;
     mutable std::optional<bitboard> diagonal_links_, near_bushes_;
-    const bitboard& make_near_bushes() const;
     const Field& make_ally_field() const;
     const Field& make_enemy_field() const;
     const bitboard& diagonal_links() const; // bushes with a bush diagonal neighbour joined only diagonally
@@ -460,7 +439,7 @@ public:
 private:
     void dump_beliefs() const;
     Moment now() const { return {round, slot(me(), round)}; }
-    // Turns the champion takes after `from`, up to and including any in `to`'s slot.
+    // Turns the champion takes strictly between two moments.
     int turns_between(const ChampionBelief& c, Moment from, Moment to) const;
     void init_beliefs();
     void rank_turns();

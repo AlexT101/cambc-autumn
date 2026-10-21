@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <optional>
+#include <utility>
 #include <vector>
 #include "safety.h"
 #include "params.h"
@@ -16,7 +17,7 @@ namespace {
 constexpr float stun_value = 80;
 constexpr float winning_tribute_value = 5000; // a stun that stops the enemy's game-winning tribute
 constexpr float min_value = 40;
-constexpr float min_landing_value = 250; // a landing moves us off the goal's way
+constexpr float keep_walk_value = 250;
 constexpr float min_camp_value = 50;
 constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
 constexpr int hold_range = 6;       // camp casts wait while a visible enemy is this close
@@ -204,7 +205,8 @@ Cast best_landing(int slot, float min_value, const std::vector<Target>& targets,
     return best;
 }
 
-Cast enemy_cast(const World& world, float walk, bool landings) {
+Cast enemy_cast(const World& world, bool keep_walk, const ChampionBelief* hold, bool landings) {
+    auto& me = cambc::self();
     Cast best;
     if (!my_can_cast()) return best;
     const vec2 here = my_position();
@@ -223,13 +225,13 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
     }
     if (visible + unseen == 0) return best;
     const auto& enemy_spawn = world.map().enemy_spawn;
-    if (!my_can_move()) walk = 0;
+    keep_walk = keep_walk && my_can_move();
     // A stun takes its target's walk as the cast takes ours: with every visible enemy that could
     // reach us next turn stunned, keeping the walk gains nothing. `free_stun`: centres that do so.
     std::array<const ChampionBelief*, 16> reaching;
     int n_reaching = 0;
     bool unstoppable = false;
-    if (walk > 0)
+    if (keep_walk)
         for (const auto& e : world.enemies) {
             if (n_reaching == 16) break;
             if (!e.alive || !e.visible || !strike(e, next_turn_round(world, e)).hits(dist(here, e.pos))) continue;
@@ -256,9 +258,10 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
     for (int s = 0; s < 2; ++s) {
         if (!castable(world, s)) continue;
         const auto& a = f.abilities[s];
-        const float threshold = min_value + (a.excludes_walking ? walk : 0.0f);
+        const float threshold = a.excludes_walking && keep_walk ? keep_walk_value : min_value;
         const float raw = raw_damage(s);
         const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= my_health(); };
+        const auto spared = [&](const ChampionBelief& e, float damage, float health) { return &e == hold && damage < health - 0.01f; };
         if (a.lands()) {
             if (!landings) continue;
             // It moves us: worth only what an excludes-walking cast must be worth to keep the walk.
@@ -273,7 +276,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                     const auto c = e.live();
                     if (!c.is_visible()) continue;
                     const float damage = damage_to(s, c, raw);
-                    if (suicidal(e)) {
+                    if (suicidal(e) || spared(e, damage, c.health())) {
                         draw_square(off, e.pos, static_cast<float>(a.radius));
                         continue;
                     }
@@ -296,14 +299,16 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                 }
             }
             if (targets.empty()) continue;
-            best.offer(best_landing(s, min_landing_value, targets, dash_landings_from(world.map(), here, &off), here, a.radius,
+            best.offer(best_landing(s, keep_walk_value, targets, dash_landings_from(world.map(), here, &off), here, a.radius,
                                     [&](vec2 p) { return !landing_wakes(world, p, a.radius); }));
         } else if (a.target == Targeting::unit) {
             for (const auto& e : world.enemies) {
                 if (!e.alive || !e.visible || dist(here, e.pos) > a.range() || suicidal(e)) continue;
                 const auto c = e.live();
                 if (!c.is_visible()) continue;
-                float v = hit_worth(world, e, damage_to(s, c, raw), c.health(), test(enemy_spawn, e.pos));
+                const float damage = damage_to(s, c, raw);
+                if (spared(e, damage, c.health())) continue;
+                float v = hit_worth(world, e, damage, c.health(), test(enemy_spawn, e.pos));
                 if (a.stuns && !c.buffs().has_stun()) v += stun_worth(world, e, raw > 0);
                 const bool free = a.stuns && !walk_matters && n_reaching == 1 && reaching[0] == &e;
                 if (v >= (free ? min_value : threshold) && v > best.value) best = Cast{s, v, c, std::nullopt, {}};
@@ -311,7 +316,8 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
         } else if (a.target == Targeting::ground) {
             static std::vector<Target> targets;
             targets.clear();
-            // The area hits every enemy in it, unseen too: keep it off a Ren whose retaliation kills us.
+            // The area hits every enemy in it, unseen too: keep it off a Ren whose retaliation kills
+            // us and off a held tributer it does not kill.
             static bitboard off{cambc::uninitialized};
             clear_board(off);
             for (const auto& e : world.enemies) {
@@ -324,8 +330,13 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                     }
                     const auto c = e.live();
                     if (!c.is_visible()) continue;
+                    const float damage = damage_to(s, c, raw);
+                    if (spared(e, damage, c.health())) {
+                        draw_square(off, e.pos, 1);
+                        continue;
+                    }
                     const float stun = a.stuns && !c.buffs().has_stun() ? stun_worth(world, e, raw > 0) : 0;
-                    const float hit = hit_worth(world, e, damage_to(s, c, raw), c.health(), test(enemy_spawn, e.pos));
+                    const float hit = hit_worth(world, e, damage, c.health(), test(enemy_spawn, e.pos));
                     targets.push_back({e.pos, 1, hit + stun});
                 } else if (e.tracked && !board_empty(e.possible)) {
                     const int n = static_cast<int>(board_count(e.possible));
@@ -359,6 +370,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
 }
 
 Cast camp_cast(const World& world, int group, bool attackers_only, bool any_value) {
+    auto& me = cambc::self();
     if (!my_can_cast()) return {};
     const auto& f = world.me().facts();
     const std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};
@@ -453,10 +465,35 @@ bool enemy_tribute_wins(const World& world, const ChampionBelief& e) {
            && world.score.enemy + e.gems >= static_cast<int>(cambc::constants::winning_gems);
 }
 
-bool cast_at_enemies(const World& world, float walk) {
+bool cast_at_enemies(const World& world, bool keep_walk, const ChampionBelief* hold) {
     world.throw_if_stale();
     try {
-        return enemy_cast(world, walk, true).execute();
+        return enemy_cast(world, keep_walk, hold, true).execute();
+    } catch (const cambc::error&) {
+        return false;
+    }
+}
+
+Cast& chosen_cast() {
+    static Cast chosen;
+    return chosen;
+}
+
+float enemy_cast_value(const World& world, bool keep_walk, const ChampionBelief* hold, bool& exclusive) {
+    auto& chosen = chosen_cast();
+    try {
+        chosen = enemy_cast(world, keep_walk, hold, false);
+    } catch (const cambc::error&) {
+        chosen = {};
+    }
+    exclusive = chosen.slot >= 0 && world.me().facts().abilities[chosen.slot].excludes_walking;
+    return chosen.slot >= 0 ? chosen.value : 0.0f;
+}
+
+bool cast_chosen() {
+    const Cast cast = std::exchange(chosen_cast(), Cast{});
+    try {
+        return cast.execute();
     } catch (const cambc::error&) {
         return false;
     }

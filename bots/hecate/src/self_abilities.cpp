@@ -153,7 +153,8 @@ bool shield_wanted(const World& world) {
 
 } // namespace
 
-std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only) {
+std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only, const ChampionBelief* hold) {
+    auto& me = cambc::self();
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
     const bool splash = world.me().facts().passive == Passive::splash_attack;
@@ -197,7 +198,8 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     std::optional<cambc::champion> best;
     float best_value = 0, best_health = 0, best_pair = 0;
     for (const auto& t : seen) {
-        if (dist(here, t.pos) > range || (stunnable_only && !t.stunnable)) continue;
+        if (dist(here, t.pos) > range || (stunnable_only && !t.stunnable) || (hold && t.pos == hold->pos && t.health > strength))
+            continue;
         float value = worth(t), retaliation = t.retaliation;
         if (splash)
             for (const auto& o : seen)
@@ -211,14 +213,14 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     return best;
 }
 
-bool reset_and_attack_enemy(const World& world, bool stunning_only) {
+bool reset_and_attack_enemy(const World& world, bool stunning_only, const ChampionBelief* hold) {
     auto& me = cambc::self();
     const auto& f = world.me().facts();
     const int slot = f.slot_of(AbilityKind::attack_reset);
     if (slot < 0 || (stunning_only && !f.abilities[slot].stuns) || my_can_attack()) return false;
     const auto reset = ready(world, AbilityKind::attack_reset);
     if (!reset) return false;
-    const auto target = attack_target(world, stunning_only);
+    const auto target = attack_target(world, stunning_only, hold);
     if (!target || (!(target->health() <= me.strength()) && shield_wanted(world)) || !cast(*reset)) return false;
     try {
         me.attack(*target);
@@ -331,7 +333,7 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, i
     return false;
 }
 
-bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target) {
+bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target, const ChampionBelief* hold) {
     if (!world.me().facts().has_dash()) return false;
     auto& me = cambc::self();
     const bool target_given = target != nullptr;
@@ -348,7 +350,7 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
         if (!e.alive || !e.visible || dist(here, e.pos) > range + dash_steps || test(world.map().enemy_spawn, e.pos))
             continue;
         const float fraction = e.health / e.max_health;
-        const bool finish = e.health <= strength || (fraction < chase_health && fraction < my_fraction);
+        const bool finish = e.health <= strength || (fraction < chase_health && fraction < my_fraction && &e != hold);
         if (finish && (!target || e.health < target->health)) target = &e;
     }
     // A melee walk is free of the attack: a landing a step short of range still strikes.
@@ -378,10 +380,6 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home) {
     return dash_to_first(*dash, pathing, landings);
 }
 
-bool worth_healing(float amount, float gain, float fraction) {
-    return gain > 0 && (gain >= heal_min_share * amount || fraction < heal_low_health);
-}
-
 bool heal_ally(const World& world) {
     const int slot = world.me().facts().slot_of(AbilityKind::heal);
     if (slot < 0) return false;
@@ -403,7 +401,7 @@ bool heal_ally(const World& world) {
             if (kept_recall(c)) continue;
             const float gain = std::min(amount, c.max_health() - c.health());
             const float fraction = health_fraction(c);
-            if (!worth_healing(amount, gain, fraction)) continue;
+            if (gain <= 0 || (gain < heal_min_share * amount && fraction >= heal_low_health)) continue;
             if (!best || gain > best_gain || (gain == best_gain && fraction < best_fraction))
                 best = c, best_gain = gain, best_fraction = fraction;
         } catch (const cambc::error&) {

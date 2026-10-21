@@ -1,4 +1,4 @@
-// probe-facts: hecate's champion table (bots/hecate/src/champions.h, transcribed from cambc-rules.yaml)
+// probe-facts: hyperion's champion table (bots/hyperion/src/champions.h, transcribed from cambc-rules.yaml)
 // against the engine's champion designs. On its first play turn it prints "facts mismatch <name>: ..."
 // for each champion that differs, then "facts checked: N mismatches". Its draft picks are left random.
 //   cambc run rules-verification/probes/probe-facts rules-verification/probes/probe-facts --map corners --rounds 1 -o <dir>
@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <string>
 #include <variant>
-#include "../../../../bots/hecate/src/champions.h"
+#include "../../../../bots/hyperion/src/champions.h"
 
 namespace aph {
 
@@ -65,7 +65,7 @@ int check_facts() {
         }
         if (!why.empty()) {
             ++mismatches;
-            std::printf("facts mismatch %s:%s\n", f.name, why.c_str());
+            std::printf("facts mismatch %s:%s\n", cambc::to_string(design.champion_name()).c_str(), why.c_str());
         }
     }
     return mismatches;

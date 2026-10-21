@@ -1,12 +1,12 @@
 """Full A/B of two bots through run_batched.py: ladder, generated and fresh-seed maps, both sides.
 
     py tools/ab.py orch/my-branch main --name my-change
-    py tools/ab.py HEAD baselines/hecate-v8
+    py tools/ab.py HEAD hecate
     py tools/ab.py main nemesis --no-test-draft --suites ladder,gen
 
-CAND and REF are each a git ref (branch, sha, main), whose bots/hecate is materialised with git
-archive into bots/variants/ab-<name>-<cand|ref>-<sha7>/ with params::test_draft switched on, or a
-bot directory under bots/ (baselines/hecate-v8, nemesis) used as it is. Wins are CAND's.
+CAND and REF are each a git ref (branch, sha, main), whose bots/hyperion (bots/hecate before the
+2026-10-21 rename) is materialised with git archive into bots/variants/ab-<name>-<cand|ref>-<sha7>/
+with params::test_draft switched on, or a bot directory under bots/ (hecate, nemesis) used as it is. Wins are CAND's.
 Suites: ladder (maps/), gen (maps/gen), fresh (every maps/gen-s*/), or any directory of maps."""
 
 import argparse
@@ -56,12 +56,16 @@ def write_if_changed(path, data):
 
 
 def materialise(side, role, name, test_draft):
-    """Write bots/hecate at side's commit into a variant directory, rewriting only changed files
+    """Write the bot at side's commit into a variant directory, rewriting only changed files
     so its build cache stays incremental."""
     sha = side["sha"]
-    data = git("archive", "--format=tar", f"{sha}:bots/hecate", binary=True)
-    if not data:
-        raise ValueError(f"git archive found no bots/hecate at {side['spec']} ({sha[:7]})")
+    # bots/hecate was the worked-on bot until it was renamed hyperion; since then it is the pre-rename reference.
+    for bot in ("bots/hyperion", "bots/hecate"):
+        data = git("archive", "--format=tar", f"{sha}:{bot}", binary=True)
+        if data:
+            break
+    else:
+        raise ValueError(f"git archive found neither bots/hyperion nor bots/hecate at {side['spec']} ({sha[:7]})")
     files = {}
     with tarfile.open(fileobj=io.BytesIO(data)) as tar:
         for member in tar.getmembers():
@@ -72,7 +76,7 @@ def materialise(side, role, name, test_draft):
         text = files.get("src/params.h", b"").decode("utf-8")
         found = TEST_DRAFT.findall(text)
         if len(found) != 1:
-            raise ValueError(f"bots/hecate/src/params.h at {side['spec']} ({sha[:7]}) needs exactly one "
+            raise ValueError(f"{bot}/src/params.h at {side['spec']} ({sha[:7]}) needs exactly one "
                              f"'constexpr bool test_draft = false;' line (found {len(found)}); "
                              "pass --no-test-draft to use it unchanged")
         files["src/params.h"] = TEST_DRAFT.sub(r"\1true\3", text).encode("utf-8")

@@ -11,7 +11,7 @@ inline constexpr cambc::champion_draft draft_preference[] = {
 };
 // Test copies only (tools/ab.py): draft a common ladder composition chosen by the map and side
 // (draft.cpp test_compositions) instead of draft_preference.
-constexpr bool test_draft = false;
+constexpr bool test_draft = true;
 
 // Rounds out of sight after which an enemy could be anywhere.
 inline constexpr int track_horizon = 10;
@@ -26,8 +26,9 @@ inline constexpr float finish_camp_health_fraction = 0.6f;
 inline constexpr float camp_risk = 0.35f;
 // Enemy-ground discount: a group's weight is min(1, 2 d_enemy / (d_ally + d_enemy)) to this power.
 inline constexpr float home_power = 2.0f;
+inline constexpr int ward_period = 20;
 // An ally this near with no claim of its own can partner on a group too costly for us alone.
-inline constexpr int partner_radius = 12;
+inline constexpr int rally_radius = 12;
 // Help a struggling teammate clear its damaging group within this many steps.
 inline constexpr int help_radius = 8;
 
@@ -46,17 +47,22 @@ inline constexpr float home_retreat_ratio = 2.0f;
 // Leave before contact when the visible enemies within this many steps of their reach would win
 // even if we struck first (Safety::pursuit).
 inline constexpr int pursuit_steps = 3;
-// Below this health a sieger out of the besieged group's reach recalls, and a caster stages farther.
+// A capture recall still pays when hurt if it costs at most this many more rounds to an altar.
+inline constexpr int recall_heal_bonus = 6;
+// Below this health a trip home also heals: a shopping trip goes whatever the emblem is worth, a
+// capture recall counts the heal, and a sieger out of the big group's reach recalls.
 inline constexpr float heal_trip_fraction = 0.6f;
 // Turns ahead a tribute's safety is judged over, each turn of the channel.
 inline constexpr int tribute_window = 6;
 // Most rounds to wait at a camp for it to return.
 inline constexpr int max_wait = 5;
+// Share of champion-rounds spent attacking camps: the part of the game a shard's speed-up counts for.
+inline constexpr float clear_share = 0.15f;
 // Cassi's weight on gold in farm choice: it takes the gold-only groups the others pass up.
 inline constexpr float gold_farmer_weight = 4.0f;
 
-// Sieges (bot.cpp siege) of a Monolith on maps whose only gems are Monoliths, or of a group sealing
-// the altars: the team goes once its output clears the group within this many rounds and the hits, by this share after stuns
+// Monolith sieges (bot.cpp siege), only on maps whose only gems are Monoliths: the team goes once
+// its output clears the Monolith within this many rounds and the hits, by this share after stuns
 // and spells from out of reach, cost at most this share of the team's health; a siege under way
 // keeps going within the slack.
 inline constexpr int siege_rounds = 60;

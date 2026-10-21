@@ -59,8 +59,7 @@ struct Strike {
 // open to it, past visible allies of ours) or dash to (2 king steps over anything but walls and
 // live camps, onto a free tile), and from there a basic attack or unit spell at a target in its
 // sight (walls and bushes block it; a bush tile is seen only from its own cluster, or by a visible
-// enemy ward), or a ground spell at any tile within 5; Varg's basic attacks also at a unit beside
-// the tile. Damage as Strike's.
+// enemy ward), or a ground spell at any tile within 5. Damage as Strike's.
 class Reach {
 public:
     // Its next turn, or with `twice` its next two: a walk first, or a second basic attack.
@@ -137,15 +136,6 @@ private:
     Ways* ways_ = &ways_by_[0];
     float strength_ = 0;
     bool twice_ = false;
-    // Varg: its basic attacks also hit within 1 of the target, so they reach a tile through the
-    // units beside it (`units_`: our visible champions but us, and live camp members).
-    bool splash_ = false;
-    Window units_;
-    // The units its basic attack at `range` can hit from tiles_[from]; all its basic attacks share
-    // the range. Worked out on first need each build.
-    const Window& splash_targets(Tiles from, int range) const;
-    mutable std::array<Window, tile_sets> splash_units_;
-    mutable std::uint8_t splash_known_ = 0;
     int reach_ = -1;
     // By the low 3 bits of x and y, so the tiles of any 8x8 square never collide; valid when its
     // stamp is this build's.
@@ -157,11 +147,6 @@ private:
     mutable std::array<Memo, 64> memo_;
     std::uint32_t stamp_ = 0;
 };
-
-// Tiles within `range` (at most 4) of `target` from which our basic attack or unit cast sees it, as
-// a Reach::Window around it: exact, but for viewers in bushes beyond a step, who are left out.
-// `store`: keep the terrain's sight mask for the game (debug checks pass false).
-Reach::Window attack_viewers(const World& world, vec2 target, int range, bool store = true);
 
 // With fuel above `fuel_floor` at the turn's end: Reach's static terrain around the tiles visible
 // enemies may step to, so fights find it ready. Sight masks are not warmed: in bench games only 1
@@ -241,9 +226,6 @@ public:
     // strikes for them.
     float damage_ceiling(vec2 p, bool double_unacted = false);
     float camp_damage(vec2 p, bool worst = true);
-    // Where a live member of an awake (or maybe awake) group would attack us: within its range, and
-    // no visible champion nearer it (or as near and acting first).
-    const bitboard& camp_area();
     // Chance of taking any damage or a stun at p before our next turn (cancelling a recall).
     bool threatened(vec2 p);
 
@@ -263,11 +245,12 @@ public:
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
-    Trade fight(vec2 p);
+    // `exclude`: an enemy (by index) left out, as when our hit kills it first.
+    Trade fight(vec2 p, int exclude = -1);
     // Who would fight at p: bit i of the low half for allies[i], of the high half for enemies[i];
     // no_fight if no threat hits p.
     static constexpr std::uint32_t no_fight = ~0u;
-    std::uint32_t fight_key(vec2 p);
+    std::uint32_t fight_key(vec2 p, int exclude = -1);
     // fight_key(p) given `visible`: the bits of every visible threat that hits p, at least one.
     std::uint32_t fight_key_with(vec2 p, std::uint32_t visible);
     // The fight of a key, memoised.
@@ -304,7 +287,7 @@ public:
     // enough to wake, with where they would attack us from.
     struct CampHit {
         vec2 pos;
-        float strength; // softened by our emblems: its damage to us
+        float strength;
         float weight;
         int reach; // farthest distance at which it would pick us
     };
@@ -320,6 +303,9 @@ private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
     // Every credible threat at full damage, plus camps.
     float worst_damage(vec2 p);
+    // Where a live member of an awake (or maybe awake) group would attack us: within 3, and no
+    // visible champion nearer it (or as near with a lower id).
+    const bitboard& camp_area();
     // Drop everything cached, after something this turn changed the fight: a kill, a stun or a
     // camp kill. Later queries recheck the engine for champions and monsters that died.
     void invalidate();
@@ -374,7 +360,6 @@ private:
     std::vector<CampHit>& members_; // likewise, the first `member_count_`; valid once `members_known_`
     int member_count_ = 0;
     bool members_known_ = false;
-    float camp_factor_ = 0; // camp_hit_factor(), read on first need: CampHit strengths carry it
     struct CampMemo {
         vec2 p;
         float damage;

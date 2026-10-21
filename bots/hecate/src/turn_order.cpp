@@ -61,8 +61,8 @@ const ChampionBelief& live_self(const World& world) {
     b.is_self = true;
     b.alive = now.alive;
     b.visible = now.visible;
+    b.max_health = now.max_health;
     const auto& info = my_record();
-    b.max_health = info.max_health;
     b.pos = {info.x, info.y};
     b.health = info.health;
     b.strength = info.strength;
@@ -141,11 +141,10 @@ bool channel_ending(cambc::champion_state state) {
 }
 
 // Our ending channel completes at our next turn's start, unless an enemy acting first cancels it:
-// any damage cancels a recall, only a stun (Marcella is immune) a tribute or a teleport.
+// any damage cancels a recall, only a stun a tribute or a teleport.
 void offer_channel(const ChampionBelief& self, cambc::champion_state state, Safety& safety, Wish& wish) {
     using cambc::champion_state;
     const bool recall = state.contains(champion_state::recalling), tribute = state.contains(champion_state::submitting_gems);
-    if (!recall && self.facts().passive == Passive::stun_immune) return;
     std::array<Safety::ThreatAt, 16> threats;
     const int n = safety.threats_at(self.pos, threats);
     for (int i = 0; i < n; ++i) {

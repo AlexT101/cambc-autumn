@@ -1,9 +1,9 @@
-"""Fight-model calibration: hecate's fight predictions against what happened.
+"""Fight-model calibration: hyperion's fight predictions against what happened.
 
-Build a copy of hecate with `debug_fights = true` (src/util.h), play batches with replays as
+Build a copy of hyperion with `debug_fights = true` (src/util.h), play batches with replays as
 bot 1, extract them, then:
 
-    py run_batched.py variants/hecate-cal hecate --gen
+    py run_batched.py variants/hyperion-cal hyperion --gen
     node tools/replay/extract.mjs replays/batch-X
     py tools/replay/fight_calibration.py replays/batch-X [more batches...] [--by FIELD,...]
 

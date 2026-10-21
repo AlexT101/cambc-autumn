@@ -60,7 +60,7 @@ struct Instance {
                             m.drafted() ? "ok" : "missing");
             }
         });
-        if (!updated || !world->ready() || world->is_stale()) return;
+        if (!updated || !world->ready()) return;
 
         run("comms receive", [&] { aph::comms::receive(*world); });
         run("decide", [&] {

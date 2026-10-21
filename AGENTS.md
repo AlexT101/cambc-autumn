@@ -11,8 +11,9 @@ Read the rest of `docs/` (generated; WebFetch can't read the site) or `rules-ver
 ## Bots
 
 C++ only; ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ docs.
-- **hecate** is the bot we work on: shipped changes in [CHANGES.md](research/hecate/CHANGES.md), direction and the keep rule in [TODO.md](research/hecate/TODO.md).
-- **nemesis** is its predecessor.
+- **hyperion** is the bot we work on: shipped changes in [CHANGES.md](research/hyperion/CHANGES.md), direction and the keep rule in [TODO.md](research/hyperion/TODO.md). It was named hecate until 2026-10-21.
+- **hecate** is now hyperion as it was at the 2026-10-21 session start (the former baseline hecate-v8), kept as the pre-changes reference. Its `params::test_draft` is on, so `py tools/ab.py main hecate` gives both bots the same test drafts.
+- **nemesis** is the predecessor of both.
 - Each bot's draft is compiled in (`params::draft_preference`).
 - A/B baselines are frozen copies in `bots/baselines/<bot>-vN/`: never edit them, and delete one once the current bots beat it about 80% of the time.
 - When copying a bot, leave out `.cambc/`, whose CMake cache breaks the build.
@@ -32,7 +33,7 @@ Full A/Bs go through `py tools/ab.py CAND REF` (git refs or bot directories; lad
 ## Fuel
 
 Each turn has 100k fuel (the first 200k); running out loses the rest of the turn.
-- **No new fuel gates** (code that chooses worse when fuel is short): make work cheap or bounded instead ([FUEL-GATES.md](research/hecate/FUEL-GATES.md)).
+- **No new fuel gates** (code that chooses worse when fuel is short): make work cheap or bounded instead ([FUEL-GATES.md](research/hyperion/FUEL-GATES.md)).
 - **Fuel-only changes** must leave `tools/fuel/bench.py`'s replays byte-identical.
 - **Tracing:** wrap output in `debug_block({ ... });` and run without `--release`. It is then free and the game stays byte-identical; plain printf changes the game. Output lands in the replay zip as `team-a.stdout` / `team-b.stdout`.
 - **Costs:**

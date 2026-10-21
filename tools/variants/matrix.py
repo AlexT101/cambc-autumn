@@ -274,7 +274,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("specs", nargs="*", help="Row specs: [BOT@]DRAFT, or BOT@")
     parser.add_argument("--cols", nargs="+", metavar="SPEC", help="Column specs (default: the row drafts on --vs-bot)")
-    parser.add_argument("--bot", default="hecate", help="Default row bot (default: hecate)")
+    parser.add_argument("--bot", default="hyperion", help="Default row bot (default: hyperion)")
     parser.add_argument("--vs-bot", help="Default column bot (default: --bot)")
     parser.add_argument("--focus", nargs="?", const="", metavar="CHAMPS",
                         help="One row per champion (default all), each first pick before --filler")

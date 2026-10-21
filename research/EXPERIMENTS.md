@@ -57,7 +57,7 @@ hints, not rules. Git history has the branches, commits and per-suite numbers be
 
 ## hecate (2026-10-18 on)
 
-Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
+Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
 
 ### Strategy and economy
 
@@ -138,7 +138,7 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
 - Single-map flips between versions (corners, interlock) follow fuel trajectories, not regressions.
 - Strike search phase 1 (2026-10-21, orch/int-strike-p1 dbab204, not merged): plan_strikes' fixed menu replaced by one
   search over every legal walk/attack/reset/dash/cast sequence, camps as targets with wake pricing, bound-ordered Reach
-  pricing (research/hecate/strike-notes.md). Against main: 38.5% of 582 (ladder 30.0, gen 39.6), out-of-fuel turns 16282
+  pricing (research/hyperion/strike-notes.md). Against main: 38.5% of 582 (ladder 30.0, gen 39.6), out-of-fuel turns 16282
   against 946 (all but 0.1% in decide). At 100M fuel still 40.5% (ladder 44.3, gen 40.0): deaths 6.0 against 4.5 a game
   (+34%), captures -4%, tributed -7%. The exhaustive and old-menu checks never fired, but 113 dashes were refused with
   no fuel shortage. Lost; with unlimited fuel it still dies more, so the search or its leaf score misjudges danger.
@@ -190,7 +190,7 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
   the fight-simulation gates from 83/67 to 150/176: a "skip when short" gate adds work exactly when fuel is short.
   Kept removals: turn order without a threat build, a capped chase route, altar fields on demand, fight memo 32. Round
   3 added `step_guard`'s 20k reserve and per-tile check and skipped the turn end, comms send and prepare below 1500.
-- Fuel-gate removal 1a on hecate-v5 ([hecate/FUEL-GATES.md](hecate/FUEL-GATES.md)): enemy-cast, camp-cast,
+- Fuel-gate removal 1a on hecate-v5 ([hecate/FUEL-GATES.md](hyperion/FUEL-GATES.md)): enemy-cast, camp-cast,
   route-retry, crow-flies-kite and travel-dash gates gone; `approach` no longer sizes its search by fuel.
   Byte-identical at 100M; head-to-head vs hecate-v5 on all maps 49.7%, out-of-fuel turns 187 vs 169 in 390 games. The
   costlier gates (turn-order, farm-no-route, farm-kept-target, static-descend) raised out-of-fuel turns 48/36 ->
@@ -442,7 +442,7 @@ on hecate 1251236 and rebased onto d70138d (Heart of Ruin) afterwards.
 
 ### Draft search after the Heart of Ruin nerf (2026-10-20)
 
-Details in [hecate/DRAFT.md](hecate/DRAFT.md). Each pick scored on maps of its pick count (ladder + gen), screened on
+Details in [hecate/DRAFT.md](hyperion/DRAFT.md). Each pick scored on maps of its pick count (ladder + gen), screened on
 45% of them and confirmed on the rest. Kept: Heart of Ruin, Marcella, Vesper, Ryth, Stellar, ...: 69.3% vs the old
 draft on a fresh-seed suite (512 games; 3/4/5-pick 71.1/63.1/73.8).
 

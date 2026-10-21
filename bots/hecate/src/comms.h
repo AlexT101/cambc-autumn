@@ -41,4 +41,7 @@ inline int claim_of(const World& world, int ally) {
     return a.alive ? detail::posts.claims[ally] : -1;
 }
 
+// Post the enemy (by index) we fight this turn: it takes the sighting slot over plain sightings.
+void post_rally(int enemy);
+
 } // namespace aph::comms

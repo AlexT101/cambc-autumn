@@ -17,7 +17,7 @@ cambc run rules-verification/probes/<A> rules-verification/probes/<B> --map <map
 
 | YAML | Probes |
 |---|---|
-| `champions` (stats, abilities, modifiers), `camps.types`, settings, items | `probe-designs` (all designs from the engine); `probe-facts` (hecate's champions.h against the engine) |
+| `champions` (stats, abilities, modifiers), `camps.types`, settings, items | `probe-designs` (all designs from the engine); `probe-facts` (hyperion's champions.h against the engine) |
 | `result.round_limit`, `fuel` | `probe-fuel`, `probe-fuel-b..e`; `probe-firstturn` |
 | `map.coordinates`, `map.symmetry` | `probe-introspect` |
 | `map.corners`, diagonal sight | `probe-corner` |

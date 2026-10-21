@@ -126,7 +126,7 @@ Offline reports over the extracted tables: Markdown plus CSVs, no viewer. Python
 
 ```
 py tools/replay/analyze.py                                    # ladder (replays/ladder), default reports
-py tools/replay/analyze.py replays/batch-X --vs replays/ladder --team hecate   # adds the gap report
+py tools/replay/analyze.py replays/batch-X --vs replays/ladder --team hyperion   # adds the gap report
 py tools/replay/analyze.py [SOURCES...] [--vs SOURCES...] [--team NAME] [--map NAME] [--since ISO] [--out DIR] [--reports tempo,fights,audits,draft,economy,camps,gap,sensitivity] [--threads N]
 ```
 

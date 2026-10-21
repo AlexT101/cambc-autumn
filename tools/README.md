@@ -29,11 +29,11 @@ The full A/B: CAND against REF through run_batched.py on every suite, both sides
 
 ```
 py tools/ab.py orch/my-branch main --name my-change     # two git refs
-py tools/ab.py HEAD baselines/hecate-v8                  # a ref against a frozen baseline
+py tools/ab.py HEAD hecate                              # a ref against hecate (hyperion at the 2026-10-21 session start)
 py tools/ab.py main nemesis --no-test-draft --suites ladder,gen
 ```
 
-- **CAND / REF:** a git ref (branch, sha, `main`), whose `bots/hecate` is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` set to true; or a bot directory under `bots/`, used as it is. Refs resolve in the shared repo, so worktree branches work; run it from the primary checkout.
+- **CAND / REF:** a git ref (branch, sha, `main`), whose `bots/hyperion` (`bots/hecate` in commits before the rename) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` set to true; or a bot directory under `bots/`, used as it is. Refs resolve in the shared repo, so worktree branches work; run it from the primary checkout.
 - **Options:** `--name` (default `<cand>-vs-<ref>`), `--threads` (default 22), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, and each `maps/gen-s*/`; a directory of maps also works), `--no-test-draft` (leave copies untouched, e.g. against nemesis), `--fuel N`.
 - **Output:** a summary of at most 25 lines: CAND's win % with a 95% Wilson interval overall and per suite, failed matches, out-of-fuel turns per bot (`oof.py`) and wall time. `replays/ab/<name>/` gets `summary.json`, `summary.md` and each suite's run_batched log; batches go to `replays/batch-<time>-ab-<name>-<suite>/`.
 - The exit code is non-zero if any match failed.
@@ -67,7 +67,7 @@ node tools/mapgen/mapgen.mjs suite [--out DIR --seed S]            # rebuild map
 The draft is compiled in (`params::draft_preference`), so a forced draft is a separate bot copy.
 - [make_variant.py](variants/make_variant.py) copies a bot to `bots/variants/<name>/` (gitignored) with a given pick order. Drafts under 5 are padded in enum order (the name ends `-pad`); `manifest.json` records the source, git state and draft.
 - [matrix.py](variants/matrix.py) plays variants against each other through run_batched.py, one batch per distinct pair. It writes a win-rate matrix to `replays/matrix-TIMESTAMP/`.
-- Rows use `--bot` (default hecate); columns default to the row drafts on `--vs-bot`.
+- Rows use `--bot` (default hyperion); columns default to the row drafts on `--vs-bot`.
 - Identical row and column entries play mirror matches, reported as team A's win rate.
 
 ```
@@ -80,14 +80,14 @@ py tools/variants/matrix.py --resume replays/matrix-TIMESTAMP # finish unfinishe
 ## Fuel: tools/fuel
 
 ```
-py tools/fuel/bench.py run hecate --out replays/fuel/base.json            # 16 games vs nemesis, 8 maps, both sides, 100M fuel
-py tools/fuel/bench.py run variants/x --out replays/fuel/x.json           # a modified copy of hecate
+py tools/fuel/bench.py run hyperion --out replays/fuel/base.json          # 16 games vs nemesis, 8 maps, both sides, 100M fuel
+py tools/fuel/bench.py run variants/x --out replays/fuel/x.json           # a modified copy of hyperion
 py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # identical replays, fuel change
-py tools/fuel/bench.py run hecate --fuel 0 --out replays/fuel/real.json   # the real budget: counts shortcuts and lost turns
+py tools/fuel/bench.py run hyperion --fuel 0 --out replays/fuel/real.json # the real budget: counts shortcuts and lost turns
 py tools/fuel/oof.py replays/batch-A replays/batch-B replays/batch-C       # out-of-fuel turns per bot in run_batched.py batches
 ```
 
-- hecate prints `SHORTCUT round champion what` wherever fuel made it choose worse (`note_shortcut` in util.h), and `OOF round phase` for each turn that ran out. Both are inside `debug_block`.
+- hyperion prints `SHORTCUT round champion what` wherever fuel made it choose worse (`note_shortcut` in util.h), and `OOF round phase` for each turn that ran out. Both are inside `debug_block`.
 - The bench's 16 games swing by about ±20 out-of-fuel turns and include no shared-gem map, where a third of them happen. Judge out-of-fuel turns on a full A/B with `oof.py`.
 - Set `debug_fuel` in util.h for per-phase costs (`FuelMeter`, ~170 fuel per meter).
 
@@ -140,7 +140,7 @@ py scrim_ladder.py --resume replays/scrims/TIMESTAMP
 ```
 node tools/replay/extract.mjs replays/ladder replays/batch-TIMESTAMP   # decode into replays/.analysis/; skips games already done
 node tools/replay/extract.mjs --update-engine                          # refresh engine/ after a cambc update
-py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team hecate   # reports; --reports economy,camps for a subset
+py tools/replay/analyze.py replays/batch-TIMESTAMP --vs replays/ladder --team hyperion   # reports; --reports economy,camps for a subset
 py tools/replay/ab_compare.py <variant name> batch-A batch-B batch-C   # both bots of an A/B in the same games, after extracting
 ```
 

@@ -63,7 +63,6 @@ public:
     // Our static fields' walls: a dasher's leave out the hole and altar lines a dash crosses.
     const bitboard& static_walls() const;
     const bitboard& foot() const;
-    const bitboard& live_camps(); // members believed alive
     // Static walls, visible units and teleport reservations, and tiles bumped this round.
     const bitboard& blocked();
     void occupied_into(bitboard& out); // blocked() with our own tile set
@@ -78,10 +77,9 @@ public:
     // Cheap fallbacks without a search, when fuel is short: a step down the field, or one that
     // gets closer to the target as the crow flies.
     bool descend(const Field& field, const bitboard* avoid = nullptr);
-    bool step_closer(vec2 target, const bitboard* avoid = nullptr);
-    // False, spending nothing, if illegal, guarded or blocked by a hidden unit; `refused`: set
-    // unless a hidden unit was the reason.
-    bool try_move(vec2 tile, bool* refused = nullptr);
+    bool step_closer(vec2 target);
+    // False, spending nothing, if illegal, guarded or blocked by a hidden unit.
+    bool try_move(vec2 tile);
     // Tiles no step or dash may end on until cleared: routes go around them.
     void set_guard(const bitboard* guard) { guard_ = guard; }
     const bitboard* guard() const { return guard_; }
@@ -89,6 +87,8 @@ public:
     // Unseen units can still block these.
     bitboard dash_landings();    // <= 2 king steps not through walls or camps, onto a free tile, off the guard
     bitboard teleport_targets(); // free open or bush tiles within 3, not camp tiles or enemy spawn
+    // Within 2, not wall, hole, altar, enemy spawn or one of our wards.
+    bitboard ward_targets();
 
 private:
     vec2 my_pos(); // our tile, read again after invalidate() or in a new round
@@ -106,12 +106,11 @@ private:
         std::array<vec2, 8> first_steps; // the first `count`: all equally short, in compass order
     };
     Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, vec2 through = {-1, -1});
-    // The latest route's search: its distances from the goals, and whether it found no way
+    // The latest route's search: the tiles it reached from the goals, and whether it found no way
     // although it stopped short of its cap, so that no wider search finds one either.
-    cambc::distance_field route_field_;
+    bitboard route_reached_{cambc::uninitialized};
     bool route_exhausted_ = false;
     // Two allies head-on with no way past: the one with fewer gems (ties: lower champion) backs off.
-    // Right after a route that found no way, with the same arguments: read from its field.
     // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.
     bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps);
     int approach_steps(int group, int range);
@@ -132,6 +131,7 @@ private:
         bool ready = false;
     } ready_check_;
     std::unique_ptr<Approach> spare_approach_; // a replaced one, refilled by the next search
+    const bitboard& live_camps(); // members believed alive
     std::optional<bitboard>& attack_slot(int group, int member, int range);
     bool prepare_member(int group, int member, int range, std::uint64_t fuel_floor);
     const StaticMap& map() const;

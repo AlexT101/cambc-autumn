@@ -55,8 +55,8 @@ inline const char*& fuel_phase() {
     return phase;
 }
 
-// The group the team is besieging this turn, a Monolith or a group sealing the altars (seals()),
-// or -1: camp actions skip every other Monolith.
+// The Monolith the team is besieging this turn, or -1: camp actions skip every other
+// Monolith.
 inline int& siege_group() {
     static int g = -1;
     return g;
@@ -106,8 +106,6 @@ inline const cambc::enum_map<cambc::item_type>& my_items() {
     ok(cambc::detail::sdk_champion_items(my_handle(), items.ptr()));
     return items;
 }
-// Camps hit a Jungle emblem's owner 30% softer, and a Durability emblem's 10%.
-float camp_hit_factor();
 // From our state at turn start: later, a turn that has walked, attacked and cast shows the same bits.
 inline bool my_stunned(cambc::champion_state state) {
     using cambc::champion_state;
