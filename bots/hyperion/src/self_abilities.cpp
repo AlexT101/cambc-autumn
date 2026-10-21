@@ -17,8 +17,6 @@ namespace aph {
 namespace {
 
 constexpr int dash_steps = 2;
-constexpr int reset_hold_margin = 2;      // an enemy this far beyond attack range keeps the reset off camps
-constexpr int travel_dash_clearance = 10; // no visible enemy this close for a travel dash
 constexpr float heal_min_share = 0.6f;    // of the heal amount restored
 constexpr float heal_low_health = 0.5f;
 constexpr int failed_search_pause = 4; // rounds without a travel-dash search after one finds no gain
@@ -125,8 +123,21 @@ bool dash_to_first(const World& world, const cambc::ability& dash, Pathing& path
     return false;
 }
 
-// A travel dash waits while an enemy may want it for a fight or an escape (W4-D: Safety::engaged_within).
-bool travel_dash_held(const World& world, Pathing&) { return enemy_within(world, my_position(), travel_dash_clearance); }
+// A travel dash waits, kept for a fight or an escape, while a visible enemy could strike us here
+// within two turns' walk.
+bool travel_dash_held(const World& world, Pathing& pathing) {
+    const vec2 here = my_position();
+    auto* safety = pathing.safety();
+    const bool held = safety && safety->engaged_within(here, 2);
+    debug_block({
+        static int last = -1;
+        if (const bool old = enemy_within(world, here, 10); old != held && last != world.round) {
+            last = world.round;
+            std::printf("HOLD-MISMATCH %d dash %d %d\n", world.round, old ? 1 : 0, held ? 1 : 0);
+        }
+    });
+    return held;
+}
 
 std::optional<cambc::ability> travel_dash_ready(const World& world, Pathing& pathing) {
     if (!world.me().facts().has_dash()) return std::nullopt;
@@ -253,8 +264,18 @@ bool camp_in_reach(const World& world, vec2 p, int range) {
 
 namespace {
 
-// The reset is kept off camps while an enemy may want it for a fight (W4-D: Safety::engaged_within).
-bool camp_reset_held(const World& world, Safety*, vec2 here, int range) { return enemy_within(world, here, range + reset_hold_margin); }
+// The reset is kept off camps while a visible enemy could strike us here within a turn's walk.
+bool camp_reset_held(const World& world, Safety* safety, vec2 here, int range) {
+    const bool held = safety && safety->engaged_within(here, 1);
+    debug_block({
+        static int last = -1;
+        if (const bool old = enemy_within(world, here, range + 2); old != held && last != world.round) {
+            last = world.round;
+            std::printf("HOLD-MISMATCH %d reset %d %d\n", world.round, old ? 1 : 0, held ? 1 : 0);
+        }
+    });
+    return held;
+}
 
 } // namespace
 

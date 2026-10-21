@@ -566,4 +566,17 @@ inline float useful_damage(float damage, float health, float partner) {
     return partner >= health ? damage : std::max(0.0f, damage - (health - partner));
 }
 
+// The camp wake rule: damage or a stun on any member of group g wakes all its asleep members. True
+// if that wakes a live member with Strength (one believed asleep or maybe asleep); with `at`, only
+// one whose reach covers it.
+inline bool hit_wakes(const World& world, int g, vec2 at = {-1, -1}) {
+    const auto& c = world.camps[static_cast<std::size_t>(g)];
+    if (c.state != CampState::alive || c.fully_awake()) return false;
+    const auto& members = world.map().groups[static_cast<std::size_t>(g)].members;
+    for (std::size_t i = 0; i < members.size(); ++i)
+        if (c.health[i] > 0 && members[i].strength > 0 && c.maybe_asleep(i) && (at.x < 0 || dist(at, members[i].pos) <= members[i].reach))
+            return true;
+    return false;
+}
+
 } // namespace aph

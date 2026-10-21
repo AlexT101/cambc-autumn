@@ -633,22 +633,49 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory) {
     return best;
 }
 
-// Towards the hop's sources; on one, the crystal to the free landing nearest its altar.
+// Towards the hop's sources; on one, the crystal to the free landing nearest its altar, the least
+// dangerous on ties. The channel is judged as a tribute's (death cancels it, a camp kill takes the
+// bag), and a stun cancels it after the crystal is spent; a refused carrier walks home meanwhile.
 void take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h) {
     const auto& hop = world.map().hops()[h];
-    if (test(hop.sources, my_position())) {
-        auto targets = pathing.teleport_targets();
-        targets &= hop.landings;
-        const auto& field = pathing.to_altar(hop.altar);
+    const vec2 here = my_position();
+    if (test(hop.sources, here)) {
+        const int channel = cambc::constants::tp_crystal_time;
+        const bool risk = any_risk(world, channel);
+        bool stun = false;
+        if (!risk && world.me().facts().passive != Passive::stun_immune) {
+            const auto& t = safety.tile(here);
+            stun = (t.stun_mask & t.vis_mask)
+                   || ((t.stun_mask & t.unseen_mask) && safety.unseen_chance(here) >= safety_params::recall_risk);
+        }
+        const bool safe = risk || (!stun && tribute_safe(safety, memory, channel));
+        // The idle sim may run out of fuel: a resumed turn must not spend the crystal on last round's beliefs.
+        world.throw_if_stale();
         vec2 best{-1, -1};
-        int best_steps = unreachable;
-        for (const vec2 l : targets.positions())
-            if (const int s = field.at(l); s < best_steps) best = l, best_steps = s;
+        float best_worst = 0;
+        if (safe) {
+            auto targets = pathing.teleport_targets();
+            targets &= hop.landings;
+            const auto& field = pathing.to_altar(hop.altar);
+            int best_steps = unreachable;
+            for (const vec2 l : targets.positions()) {
+                const int s = field.at(l);
+                if (s == unreachable || s > best_steps) continue;
+                const float worst = safety.tile(l).worst();
+                if (s < best_steps || worst < best_worst) best = l, best_steps = s, best_worst = worst;
+            }
+        }
+        debug_block({ std::printf("HOP %d %d %d %d %d %.0f\n", world.round, safe ? 1 : 0, stun ? 1 : 0, best.x, best.y, best_worst); });
         if (best.x >= 0) {
             try {
                 if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return;
             } catch (const cambc::error&) {
             }
+        }
+        // to_hop is 0 on a source: standing there would wait out the threat in its reach.
+        if (!safe) {
+            step_safely(pathing, pathing.to_ally_spawn(), safety);
+            return;
         }
     }
     step_safely(pathing, pathing.to_hop(h), safety);
@@ -1357,8 +1384,8 @@ int set_claim(Memory& memory, const Pathing& pathing, int g) {
     return g;
 }
 
-// A claim outside farm and siege, written past Safety until W4-D routes it through set_claim.
-void write_claim(Memory& memory, const Pathing&, int g) { memory.claim = g; }
+// A claim outside farm and siege.
+void write_claim(Memory& memory, const Pathing& pathing, int g) { set_claim(memory, pathing, g); }
 
 // Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
 // allies in sight claiming it (ties to the lower index), so the others move on rather than split
@@ -1431,7 +1458,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         if (!affordable(g)) return false;
         if (g == memory.farm_group) return true;
         if (taken(g)) return false;
-        if (groups[g].strength > 0) return ally_engaged(world, g) || (melee && world.camps[g].fully_awake());
+        if (groups[g].strength > 0) return ally_engaged(world, g) || (melee && !hit_wakes(world, g));
         return melee || groups[g].gems > 0 || gold_farmer;
     };
     const auto attack_in_range = [&]() __attribute__((always_inline)) {
@@ -1974,20 +2001,24 @@ bool awake_over(const World& world, int g, vec2 p) {
     return false;
 }
 
-// Retreating from an awake camp takes its hits anyway, and the clear is lost. Every awake group in
-// reach counts: a nearly cleared harmless one next to an elk that is hitting us is no reason to stay.
-bool finishing_camp(const World& world) {
+// Retreating from an awake camp takes its hits anyway, and the clear is lost. Every group with a
+// member that would hit us here counts: a nearly cleared harmless one next to an elk that is
+// hitting us is no reason to stay.
+bool finishing_camp(const World& world, Safety& safety) {
     if (winning_bag(world)) return false;
     const vec2 here = my_position();
     bool any = false;
     float damage = 0, soften = 0, strength = 0, reflect = 0;
-    world.each_stirring([&](int g) {
-        if (!awake_over(world, g, here)) return;
+    int last = -1;
+    // Listed group by group.
+    for (const auto& m : safety.awake_members()) {
+        if (m.group == last || !in_square(here, m.pos, m.reach)) continue;
+        last = m.group;
         if (!any) soften = camp_hit_factor(), strength = floored_output(world.me()), reflect = world.me().retaliation();
         float rounds = 0;
-        damage += soften * min_camp_damage(world, g, strength, &rounds, reflect);
+        damage += soften * min_camp_damage(world, m.group, strength, &rounds, reflect);
         any = true;
-    });
+    }
     return any && damage < params::finish_camp_health_fraction * my_health();
 }
 
@@ -2000,12 +2031,12 @@ bool contesting(const World& world) {
     return world.camps[g].holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
 }
 
-// The threats' visible part, without building the unseen ones' fields.
-bool visible_threat(const World& world, Safety& safety, vec2 p) {
-    Phase phase{"visible_threat"};
-    for (auto left = safety.seen_enemies(); left; left &= left - 1)
-        if (safety.blow(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], p).hits) return true;
-    return false;
+// A visible enemy's blow reaches p. Strike bounds every visible blow, so with none in reach the row,
+// which builds the unseen threats too, is not needed.
+bool visible_threat(const World&, Safety& safety, vec2 p) {
+    std::uint16_t mask = 0;
+    safety.strike_sum(p, &mask);
+    return mask != 0 && safety.tile(p).vis_mask != 0;
 }
 
 // Our ground: no farther from our spawn than from theirs.
@@ -2215,11 +2246,11 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
     if (sieging) return false;
     const float dps = safety.camp_damage(here);
     if (dps <= 0) return false;
-    const auto exit_cost = [&](int rounds) { return dps * (1.5f * static_cast<float>(rounds) + 1.0f); };
+    const auto exit_cost = [&](float damage) { return 1.5f * damage + dps; };
     // The exit takes 1 to max_camp_reach + 1 rounds: the bounds settle most cases without the search.
-    if (health > exit_cost(world.map().max_camp_reach + 1)) return false;
-    if (health <= exit_cost(1)) return true;
-    return health <= exit_cost(safety.exit_rounds(here));
+    if (health > exit_cost(dps * static_cast<float>(world.map().max_camp_reach + 1))) return false;
+    if (health <= exit_cost(dps)) return true;
+    return health <= exit_cost(safety.exit_damage(here));
 }
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
@@ -2230,7 +2261,7 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
     const float health = my_health();
-    const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world);
+    const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world, safety) && !holding_capture(world);
     if (low || outmatched(world) || camp_trapped(world, safety, here, health, sieging)) return true;
     // Out of sight and not lethal, nobody can win a fight here or pursue us.
     const bool lethal = safety.lethal(here);
@@ -3177,11 +3208,7 @@ void hold_capture(const World& world, Pathing& pathing, Memory& memory, bool att
     write_claim(memory, pathing, held);
     memory.crew = false;
     if (attacked) return;
-    const auto& groups = world.map().groups;
-    const auto free_hit = [&](int g) {
-        const auto& c = world.camps[g];
-        return g != held && (groups[g].strength <= 0 || (c.awake != Awake::asleep && c.asleep == 0));
-    };
+    const auto free_hit = [&](int g) { return g != held && !hit_wakes(world, g); };
     if (const int hit = attack_camp(world, free_hit); hit >= 0) {
         cast_at_camp(world, pathing, hit);
         reset_and_attack_camp(world, pathing.safety(), hit);

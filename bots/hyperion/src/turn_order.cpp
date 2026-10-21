@@ -179,19 +179,20 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
     if (enemy && damage >= self.health) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(self.gems));
 }
 
-// A heal before the enemies' turns keeps an ally alive whom they would otherwise kill.
-void offer_heal(const World& world, const ChampionBelief& self, const std::vector<Enemy>& enemies, Safety&, Wish& wish) {
+// A heal before the enemies' turns keeps an ally alive whom they would otherwise kill: the visible
+// enemies' strikes before our next turn, as Safety bounds them.
+void offer_heal(const World& world, const ChampionBelief& self, const std::vector<Enemy>& enemies, Safety& safety, Wish& wish) {
     const int slot = self.facts().slot_of(AbilityKind::heal);
-    if (slot < 0 || !self.ability_ready(slot, world.round + 1)) return;
+    if (slot < 0 || enemies.empty() || !self.ability_ready(slot, world.round + 1)) return;
     const auto& a = self.facts().abilities[slot];
     const float heal = a.multiplier * self.focus;
     const auto& spawn = world.map().ally_spawn;
-    Strikes strikes;
     for (const auto& ally : world.allies) {
         if (ally.is_self || !ally.alive || !ally.visible || test(spawn, ally.pos) || dist(self.pos, ally.pos) > a.range() + 1)
             continue;
+        // strike_sum(ally.pos) over the enemies still alive, without the refresh its gone() needs.
         float damage = 0;
-        for (const auto& [e, health] : enemies) damage += next_strike(world, *e, strikes).at(dist(e->pos, ally.pos));
+        for (const auto& [e, health] : enemies) damage += safety.strike_of(*e).at(dist(e->pos, ally.pos));
         if (damage >= ally.health && damage < ally.health + heal)
             wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(ally.gems));
     }

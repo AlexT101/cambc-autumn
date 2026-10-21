@@ -2607,8 +2607,11 @@ int Safety::idle_turns(vec2 p, int horizon) {
 
 void Safety::set_claimed(int group) {
     if (group == claimed_) return;
+    if (guarded_generation_ == generation_ && guard_asked_) {
+        debug_block({ std::printf("CLAIM-GUARD-DROP %d %d %d %d\n", world_.round, claimed_, group, std::popcount(guard_asked_)); });
+        guard_asked_ = guard_true_ = 0, guard_epoch_ = next_generation();
+    }
     claimed_ = group;
-    if (guarded_generation_ == generation_ && guard_asked_) guard_asked_ = guard_true_ = 0, guard_epoch_ = next_generation();
 }
 
 float Safety::stand_camp(vec2 p) {
@@ -2708,7 +2711,7 @@ float Safety::escape_cost(vec2 q) {
     const auto& t = tile(q);
     const float hit = t.worst(), camp = t.camp_worst;
     if (camp <= 0) return hit;
-    return hit + camp * static_cast<float>(std::max(0, exit_rounds(q) - 1));
+    return hit + std::max(0.0f, exit_damage(q) - camp);
 }
 
 void Safety::note_unseen_hit(vec2 at, float damage) {

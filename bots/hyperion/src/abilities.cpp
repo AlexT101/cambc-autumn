@@ -20,7 +20,6 @@ constexpr float winning_tribute_value = 5000; // a stun that stops the enemy's g
 constexpr float min_value = 40;
 constexpr float min_landing_value = 250; // a landing moves us off the goal's way
 constexpr float min_camp_value = 50;
-constexpr int hold_range = 6; // camp casts wait while a visible enemy is this close
 
 bool walked(const World& world) { return my_position() != world.me().pos; }
 
@@ -92,10 +91,9 @@ float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
 bool landing_wakes(const World& world, vec2 p, int radius) {
     const auto& groups = world.map().groups;
     for (int g : world.map().groups_near(p, radius)) {
-        const auto& c = world.camps[g];
-        if (c.state != CampState::alive || c.fully_awake() || groups[g].strength <= 0 || g == siege_group()) continue;
+        if (g == siege_group() || !hit_wakes(world, g)) continue;
         for (std::size_t i = 0; i < groups[g].members.size(); ++i)
-            if (c.health[i] > 0 && dist(p, groups[g].members[i].pos) <= radius) return true;
+            if (world.camps[g].health[i] > 0 && dist(p, groups[g].members[i].pos) <= radius) return true;
     }
     return false;
 }
@@ -137,13 +135,8 @@ const bitboard& wake_risk(const World& world, vec2 here, int reach) {
     static bitboard risk{cambc::uninitialized};
     clear_board(risk);
     for (int g : world.map().groups_near(here, reach)) {
-        const auto& c = world.camps[g];
-        if (c.state != CampState::alive || c.fully_awake() || groups[g].strength <= 0) continue;
-        bool near = groups[g].has_monolith && g != siege_group();
-        for (std::size_t i = 0; i < groups[g].members.size() && !near; ++i)
-            near = c.health[i] > 0 && groups[g].members[i].strength > 0 && c.maybe_asleep(i)
-                   && dist(here, groups[g].members[i].pos) <= groups[g].members[i].reach;
-        if (near) draw_alive_members(world, g, risk);
+        const bool monolith = groups[g].has_monolith && g != siege_group();
+        if (monolith ? hit_wakes(world, g) : hit_wakes(world, g, here)) draw_alive_members(world, g, risk);
     }
     return risk;
 }
@@ -189,22 +182,70 @@ Cast best_ground(int slot, float min_value, const std::vector<Target>& targets, 
     return best;
 }
 
-// The landing that `keep` accepts whose `radius` around it hits most, nearest `here` on ties.
-// W4-D: also landing_clear() and the tile's danger.
+// The landing that `keep` and pathing.landing_clear() accept whose `radius` around it hits most, then
+// the least in danger (tile().worst()), then nearest `here`. Both are asked in that order, only until
+// one passes; landing_clear() asks and tile() reads stop at max_asks each.
 template <class Keep>
-Cast best_landing(Pathing&, int slot, float min_value, const std::vector<Target>& targets, const bitboard& landings, vec2 here,
+Cast best_landing(Pathing& pathing, int slot, float min_value, const std::vector<Target>& targets, const bitboard& landings, vec2 here,
                   int radius, Keep keep) {
     Cast best;
     if (targets.empty()) return best;
-    int best_dist = 0;
+    struct Option {
+        vec2 p;
+        float value, worst; // worst: -1 until read
+        int dist;
+    };
+    constexpr int max_asks = 6;
+    std::array<Option, 5 * 5> left, tied;
+    int n = 0;
     for (auto p : Tiles<5 * 5>{landings}) {
         float v = 0;
         for (const auto& t : targets)
             if (dist(p, t.pos) <= radius) v += t.worth;
-        const int d = dist(p, here);
-        if (v < min_value || v < best.value || (v == best.value && d >= best_dist) || !keep(p)) continue;
-        best.slot = slot, best.value = v, best.tile = p, best.dash = true, best_dist = d;
+        if (v >= min_value) left[n++] = {p, v, -1, dist(p, here)};
     }
+    const int options = n;
+    auto* safety = pathing.safety();
+    const auto safer = [](const Option& a, const Option& b) { return a.worst >= 0 && (b.worst < 0 || a.worst < b.worst); };
+    int asks = 0, reads = 0, banned = 0;
+    float chosen = -1;
+    while (n > 0 && asks < max_asks && best.slot < 0) {
+        // The best value left moves to `tied`, nearest first.
+        float top = left[0].value;
+        for (int i = 1; i < n; ++i) top = std::max(top, left[i].value);
+        int run = 0, rest = 0;
+        for (int i = 0; i < n; ++i) {
+            if (left[i].value != top) {
+                left[rest++] = left[i];
+                continue;
+            }
+            int j = run++;
+            for (; j > 0 && left[i].dist < tied[j - 1].dist; --j) tied[j] = tied[j - 1];
+            tied[j] = left[i];
+        }
+        n = rest;
+        // Danger orders only ties: the nearest are read first, and unread ones stay last.
+        if (safety && run > 1) {
+            for (int i = 0; i < run && reads < max_asks; ++i, ++reads) tied[i].worst = safety->tile(tied[i].p).worst();
+            for (int i = 1; i < run; ++i)
+                for (int j = i; j > 0 && safer(tied[j], tied[j - 1]); --j) std::swap(tied[j], tied[j - 1]);
+        }
+        for (int i = 0; i < run && asks < max_asks; ++i) {
+            if (!keep(tied[i].p)) continue;
+            ++asks;
+            if (!pathing.landing_clear(tied[i].p)) {
+                ++banned;
+                continue;
+            }
+            best.slot = slot, best.value = top, best.tile = tied[i].p, best.dash = true, chosen = tied[i].worst;
+            break;
+        }
+    }
+    debug_block({
+        if (options > 0)
+            std::printf("LANDING %u %c %d %d %.0f %d\n", cambc::round_number(), min_value == min_landing_value ? 'e' : 'c', best.tile.x,
+                        best.tile.y, chosen, banned);
+    });
     return best;
 }
 
@@ -308,8 +349,19 @@ Cast enemy_cast(const World& world, Pathing& pathing, float walk, bool landings)
     return best;
 }
 
-// Camp casts wait while an enemy may want the cast for a fight (W4-D: Safety::engaged_within).
-bool camp_cast_held(const World& world, Pathing&, vec2 here) { return enemy_within(world, here, hold_range); }
+// Camp casts wait while a visible enemy could strike us here within a turn's walk.
+bool camp_cast_held(const World& world, Pathing& pathing, vec2 here) {
+    auto* safety = pathing.safety();
+    const bool held = safety && safety->engaged_within(here, 1);
+    debug_block({
+        static int last = -1;
+        if (const bool old = enemy_within(world, here, 6); old != held && last != world.round) {
+            last = world.round;
+            std::printf("HOLD-MISMATCH %d cast %d %d\n", world.round, old ? 1 : 0, held ? 1 : 0);
+        }
+    });
+    return held;
+}
 
 Cast camp_cast(const World& world, Pathing& pathing, int group, bool attackers_only, bool any_value) {
     if (!my_can_cast()) return {};
