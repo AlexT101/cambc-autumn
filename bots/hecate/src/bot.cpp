@@ -35,6 +35,9 @@ constexpr int endgame_slack = 2;     // rounds to spare on a last-chance tribute
 char decision = '-';
 bool sieged = false; // siege() ran this turn
 bool stunned_turn = false; // stunned at this turn's start
+bool searched = false; // the strike search chose this turn's cast, heals and shields included
+vec2 searched_at{};      // where the search's plan ended, and whether it had attacked by then
+bool searched_hit = false;
 
 // Read by tools/replay/fight_calibration.py.
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1) {
@@ -3193,12 +3196,16 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         stop_game_ender(world, pathing, memory, *ender);
         return;
     }
-    heal_ally(world);
-    // A reset that may kill, or a dash landing, is weighed against the shield by the plan.
     const bool strikes = strike_possible(world);
-    if (!strikes || !(reset_may_kill(world) || landing_ready(world))) shield_if_needed(world, safety, memory.claim);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
-    if (on_spawn && my_health() < my_max_health()) {
+    const bool mend = on_spawn && my_health() < my_max_health();
+    const bool leave = !mend && (home ? *home : want_home(world, safety, memory.siege));
+    // On the turns the search plans, it weighs heals and shields against its other casts.
+    if (!strikes || mend || leave) {
+        heal_ally(world);
+        if (!strikes || !(reset_may_kill(world) || landing_ready(world))) shield_if_needed(world, safety, memory.claim);
+    }
+    if (mend) {
         decision = 'H';
         const bool attacked = attack_enemy(world);
         if (attacked) reset_and_attack_enemy(world, true);
@@ -3206,7 +3213,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         if (attacked) reset_and_attack_enemy(world);
         return;
     }
-    if (home ? *home : want_home(world, safety, memory.siege)) {
+    if (leave) {
         retreat(world, pathing, safety, memory);
         return;
     }
@@ -3225,8 +3232,14 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         // The goal most likely walks to an altar when carrying, else to the farm choice.
         intent.to_altar = bankable_bag(world, pathing) > 0;
         intent.group = memory.farm_group;
-        attacked = plan_strikes(world, pathing, safety, intent).attacked;
-        // A cast the plan left unused: before farm's camp reset takes it.
+        const auto planned = plan_strikes(world, pathing, safety, intent);
+        attacked = planned.attacked;
+        searched = planned.searched;
+        searched_at = my_position();
+        searched_hit = !my_can_attack();
+        if (!searched) heal_ally(world);
+        // A cast the search left priced the shield at nothing, blind to the goal's coming camp hit:
+        // judged here, before farm's camp reset or dash takes it.
         shield_if_needed(world, safety, memory.claim);
     }
     decision = holding ? 'P' : attacked ? 'A' : decision;
@@ -3305,8 +3318,11 @@ void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if constexpr (debug_fights)
         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))
             if (const auto t = safety.fight(start); t.enemies > 0) log_fight("FF", world, safety, start, t);
-    heal_ally(world); // allies in reach after walking
-    shield_if_needed(world, safety, memory.claim);
+    // The search priced heal and shield where its plan ended, not a later walk or hit by the goal.
+    if (!searched || my_position() != searched_at || !my_can_attack() != searched_hit) {
+        heal_ally(world); // allies in reach after walking
+        shield_if_needed(world, safety, memory.claim);
+    }
     place_ward(world, memory); // where we end the turn
     place_lock(world);
     start_recall(world);
@@ -3319,6 +3335,7 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
     decision = '-';
     sieged = false;
+    searched = false;
     siege_group() = -1;
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage);

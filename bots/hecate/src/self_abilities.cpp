@@ -379,6 +379,10 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home) {
     return dash_to_first(*dash, pathing, landings);
 }
 
+bool worth_healing(float amount, float gain, float fraction) {
+    return gain > 0 && (gain >= heal_min_share * amount || fraction < heal_low_health);
+}
+
 bool heal_ally(const World& world) {
     const int slot = world.me().facts().slot_of(AbilityKind::heal);
     if (slot < 0) return false;
@@ -400,7 +404,7 @@ bool heal_ally(const World& world) {
             if (kept_recall(c)) continue;
             const float gain = std::min(amount, c.max_health() - c.health());
             const float fraction = health_fraction(c);
-            if (gain <= 0 || (gain < heal_min_share * amount && fraction >= heal_low_health)) continue;
+            if (!worth_healing(amount, gain, fraction)) continue;
             if (!best || gain > best_gain || (gain == best_gain && fraction < best_fraction))
                 best = c, best_gain = gain, best_fraction = fraction;
         } catch (const cambc::error&) {

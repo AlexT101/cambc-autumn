@@ -42,6 +42,8 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home);
 
 // Willow: the ally the heal restores most, if it restores enough or the ally is low.
 bool heal_ally(const World& world);
+// A heal restoring `gain` of `amount` to an ally at `fraction` of its health is worth the cooldown.
+bool worth_healing(float amount, float gain, float fraction);
 // Varg: before damage from an awake camp, a camp we are hitting or an enemy in reach. `farmed`:
 // the group farm chose, which we hit from attack range; another group's camp in attack range is
 // hit only if our attack is spent.
