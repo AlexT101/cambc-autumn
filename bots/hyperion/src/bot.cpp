@@ -649,17 +649,30 @@ HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory) {
     return best;
 }
 
-// Towards the hop's sources; on one, the crystal to the free landing nearest its altar.
+// Towards the hop's sources; on one, the crystal to the free landing nearest its altar, the least
+// dangerous on ties. The channel is judged as a tribute's (death cancels it, a camp kill takes the
+// bag), and a stun cancels it after the crystal is spent.
 void take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h) {
     const auto& hop = world.map().hops()[h];
-    if (test(hop.sources, my_position())) {
-        auto targets = pathing.teleport_targets();
-        targets &= hop.landings;
-        const auto& field = pathing.to_altar(hop.altar);
+    const vec2 here = my_position();
+    if (test(hop.sources, here)) {
+        const bool stun = world.me().facts().passive != Passive::stun_immune && safety.tile(here).stun_mask != 0;
+        const bool safe = !stun && tribute_ok(world, safety, memory, cambc::constants::tp_crystal_time);
         vec2 best{-1, -1};
-        int best_steps = unreachable;
-        for (const vec2 l : targets.positions())
-            if (const int s = field.at(l); s < best_steps) best = l, best_steps = s;
+        float best_worst = 0;
+        if (safe) {
+            auto targets = pathing.teleport_targets();
+            targets &= hop.landings;
+            const auto& field = pathing.to_altar(hop.altar);
+            int best_steps = unreachable;
+            for (const vec2 l : targets.positions()) {
+                const int s = field.at(l);
+                if (s == unreachable || s > best_steps) continue;
+                const float worst = safety.tile(l).worst();
+                if (s < best_steps || worst < best_worst) best = l, best_steps = s, best_worst = worst;
+            }
+        }
+        debug_block({ std::printf("HOP %d %d %d %d %d %.0f\n", world.round, safe ? 1 : 0, stun ? 1 : 0, best.x, best.y, best_worst); });
         if (best.x >= 0) {
             try {
                 if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return;
