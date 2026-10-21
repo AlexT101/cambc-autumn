@@ -63,6 +63,7 @@ public:
     // Our static fields' walls: a dasher's leave out the hole and altar lines a dash crosses.
     const bitboard& static_walls() const;
     const bitboard& foot() const;
+    const bitboard& live_camps(); // members believed alive
     // Static walls, visible units and teleport reservations, and tiles bumped this round.
     const bitboard& blocked();
     void occupied_into(bitboard& out); // blocked() with our own tile set
@@ -130,7 +131,6 @@ private:
         bool ready = false;
     } ready_check_;
     std::unique_ptr<Approach> spare_approach_; // a replaced one, refilled by the next search
-    const bitboard& live_camps(); // members believed alive
     std::optional<bitboard>& attack_slot(int group, int member, int range);
     bool prepare_member(int group, int member, int range, std::uint64_t fuel_floor);
     const StaticMap& map() const;

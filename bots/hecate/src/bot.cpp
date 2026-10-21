@@ -8,6 +8,7 @@
 #include <array>
 #include <bit>
 #include <cmath>
+#include <limits>
 #include <optional>
 #include <vector>
 #include "abilities.h"
@@ -344,6 +345,145 @@ int bag_at_stake(const World& world) {
     const auto* p = partner(world);
     const int other = !p || !p->alive ? 0 : p->visible ? p->gems : std::max(p->gems, comms::bag_of(world, p->index));
     return static_cast<int>(my_gems()) + other;
+}
+
+float camp_hit_factor();
+
+// The tribute tiles a walk from our spawn reaches with live camps as walls; those only a crystal
+// reaches stay in. With none, `opened` gets those live camps cut off and `blocks` the groups beside
+// our walk in the same area as one: a thicker wall of camps is opened a layer at a time.
+struct AltarAccess {
+    bitboard live, open, opened;
+    bool any_open = false;
+    std::vector<int> blocks;
+    int version = 0;          // bumped on each rebuild
+    std::uint32_t camps_version = 0;
+};
+
+const AltarAccess& altar_access(const World& world, Pathing& pathing) {
+    static AltarAccess a;
+    if (a.version > 0 && a.camps_version == world.camps_version) return a;
+    a.camps_version = world.camps_version;
+    const auto& live = pathing.live_camps();
+    static bitboard walls{cambc::uninitialized}, ours{cambc::uninitialized}, area{cambc::uninitialized},
+        seen{cambc::uninitialized};
+    if (a.version > 0) {
+        // Camps that only died leave an open altar open; they can only open more.
+        copy_into(live, area);
+        drop(area, a.live);
+        if (area.is_empty() && (a.any_open || a.live == live)) {
+            copy_into(live, a.live);
+            return a;
+        }
+    }
+    ++a.version;
+    copy_into(live, a.live);
+    const auto& map = world.map();
+    a.blocks.clear();
+    clear_board(a.open);
+    clear_board(a.opened);
+    a.any_open = false;
+    if (map.ally_spawn_tiles.empty()) return a;
+    for (const auto& t : map.altars) a.opened |= t.tribute_tiles();
+    or_into(pathing.static_walls(), live, walls);
+    walls.reachable_tiles_into(map.ally_spawn_tiles[0], unreachable, ours);
+    // open = tributes off live camps, but for those the static walk reaches and this one does not
+    copy_into(a.opened, a.open);
+    drop(a.open, live);
+    copy_into(pathing.foot(), area);
+    drop(area, ours);
+    drop(a.open, area);
+    a.any_open = !a.open.is_empty();
+    if (a.any_open) {
+        copy_into(a.open, a.opened);
+        return a;
+    }
+    a.opened &= area;
+    // The live camps beside our walk, by growing it a tile each way.
+    static bitboard grown{cambc::uninitialized}, shifted{cambc::uninitialized};
+    copy_into(ours, grown);
+    for (const int d : {1, -1}) {
+        ours.shift_right_into(d, shifted);
+        grown |= shifted;
+    }
+    copy_into(grown, area);
+    for (const int d : {1, -1}) {
+        area.shift_up_into(d, shifted);
+        grown |= shifted;
+    }
+    grown &= live;
+    or_into(pathing.static_walls(), ours, walls);
+    clear_board(seen);
+    for (const vec2 t : a.opened.positions()) {
+        if (test(seen, t)) continue;
+        walls.reachable_tiles_into(t, unreachable, area);
+        seen |= area;
+        area &= grown;
+        for (const vec2 p : area.positions())
+            if (const int g = map.group_at(p); g >= 0 && std::find(a.blocks.begin(), a.blocks.end(), g) == a.blocks.end())
+                a.blocks.push_back(g);
+    }
+    return a;
+}
+
+// The camp damage a phase on the best open tribute tile, from the members believed awake: an asleep
+// one wakes only when damaged. Huge with no open tile.
+float access_fire(const World& world, const AltarAccess& a) {
+    static int round = -1, version = 0;
+    static float fire = 0;
+    if (round == world.round && version == a.version) return fire;
+    round = world.round;
+    version = a.version;
+    fire = std::numeric_limits<float>::max();
+    const auto& groups = world.map().groups;
+    for (const vec2 t : Tiles<64>{a.open}) {
+        float f = 0;
+        world.each_stirring([&](int g) {
+            if (!test(groups[g].threat(), t)) return;
+            const auto& c = world.camps[g];
+            for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
+                const auto& m = groups[g].members[i];
+                if (c.health[i] > 0 && !c.maybe_asleep(i) && in_square(t, m.pos, m.reach)) f += m.strength;
+            }
+        });
+        if ((fire = std::min(fire, f)) <= 0) break;
+    }
+    return fire;
+}
+
+// A tribute of `bag` on an open tribute tile ends before the camps' fire there takes `health`.
+bool altar_usable(const World& world, Pathing& pathing, int bag, float health) {
+    const auto& a = altar_access(world, pathing);
+    return a.any_open && camp_hit_factor() * access_fire(world, a) * static_cast<float>(tribute_turns(bag)) < health;
+}
+
+// The bag a tribute could score: one no altar is usable for is held back, and we farm and shop as
+// if empty-handed.
+int bankable_bag(const World& world, Pathing& pathing) {
+    const int bag = static_cast<int>(my_gems());
+    return bag > 0 && altar_usable(world, pathing, bag, my_health()) ? bag : 0;
+}
+
+// No altar is usable for the team's largest bag (an unseen ally's as posted).
+bool altars_sealed(const World& world, Pathing& pathing) {
+    int bag = static_cast<int>(my_gems());
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive) bag = std::max(bag, a.visible ? a.gems : comms::bag_of(world, a.index));
+    return !altar_usable(world, pathing, bag, my_max_health());
+}
+
+// While the altars are sealed, a live group whose clear opens a walk to one, or with a member
+// believed awake in reach of one, seals them.
+bool seals(const World& world, const AltarAccess& access, int g) {
+    const auto& c = world.camps[g];
+    if (c.state != CampState::alive) return false;
+    if (std::find(access.blocks.begin(), access.blocks.end(), g) != access.blocks.end()) return true;
+    const auto& members = world.map().groups[g].members;
+    for (std::size_t i = 0; i < members.size(); ++i)
+        if (c.health[i] > 0 && members[i].strength > 0 && !c.maybe_asleep(i)
+            && any_within(access.opened, members[i].pos, members[i].reach))
+            return true;
+    return false;
 }
 
 // Tributing the bag wins: more gems are worth nothing, only the tribute is.
@@ -1113,7 +1253,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const float strength = floored_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
     const float max_health = my_max_health();
     const float spare_health = (my_health() - params::recall_health_fraction * max_health) / params::camp_risk;
-    const int bag = my_gems();
+    const int bag = bankable_bag(world, pathing);
     const int short_by = gems_short(world);
     if (world.is_stale()) return true;
     // Groups in passing pay too (gold clusters are never chosen below), but not one whose clear
@@ -2221,6 +2361,7 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     const int range = world.me().facts().attack_range();
     // A walk alone cannot reach range this turn; a melee walk can follow the dash.
     if (dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
+    bool stuck = false;
     if (dist(my_position(), target->pos) > range && my_can_move()) {
         const auto* zone = pack_zone(world);
         static bitboard goals{cambc::uninitialized};
@@ -2228,12 +2369,13 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
         draw_square(goals, target->pos, static_cast<float>(range));
         and_into(goals, world.map().open_for_us, goals);
         if (zone) drop(goals, *zone);
-        pathing.step_towards(goals, zone, 2 * vision_radius);
+        stuck = !pathing.step_towards(goals, zone, 2 * vision_radius) && dist(my_position(), target->pos) > range;
     }
-    attack_enemy(world);
-    reset_and_attack_enemy(world); // after an attack, or a ranged walk
-    cast_at_enemies(world);
-    return true;
+    bool hit = attack_enemy(world);
+    hit |= reset_and_attack_enemy(world); // after an attack, or a ranged walk
+    hit |= cast_at_enemies(world);
+    // No step and no hit: the target is out of our walk's reach (across live camps), so the turn goes on.
+    return hit || !stuck;
 }
 
 bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory) {
@@ -2305,7 +2447,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
 // quicker.
 [[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if (my_gems() > 0 || memory.damage > 0 || !may_shop(world)) return false;
+    if (bankable_bag(world, pathing) > 0 || memory.damage > 0 || !may_shop(world)) return false;
     const auto gold = my_gold();
     if (gold < shard_price || (gold < emblem_price && !emblem_begun())) return false;
     const vec2 here = my_position();
@@ -2447,42 +2589,57 @@ SiegeLoad siege_load(const World& world, int g) {
     return load;
 }
 
-// The Monolith to siege; one the enemy holds or that returns too late is skipped.
-int siege_candidate(const World& world, const Memory& memory) {
+// The Monolith or sealing group (seals()) to siege; one the enemy holds or that returns too late is
+// skipped. `sealing` tells which.
+int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, bool& sealing) {
     const auto& map = world.map();
-    static std::vector<int> sieged; // the Monoliths, in group order
+    static std::vector<int> monoliths; // in group order
     static bool listed = false;
     if (!listed) {
         listed = true;
         for (int g = 0; g < static_cast<int>(map.groups.size()); ++g)
-            if (map.groups[g].has_monolith) sieged.push_back(g);
+            if (map.groups[g].has_monolith) monoliths.push_back(g);
     }
     int best = -1;
     float best_cost = 0;
-    for (const int g : sieged) {
+    const auto consider = [&](int g, bool seal) {
         const auto& c = world.camps[g];
-        // siege_ready never passes a live Monolith off Monolith-only maps: only a cleared one counts.
-        if (!map.monolith_only && c.state != CampState::cleared) continue;
+        // siege_ready never passes a live Monolith off Monolith-only maps unless it seals: only a
+        // cleared one counts.
+        if (!map.monolith_only && !seal && c.state != CampState::cleared) return;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
-        if (wait > params::siege_respawn_wait) continue;
-        if (c.state == CampState::cleared && c.holder == team::enemy) continue;
+        if (wait > params::siege_respawn_wait) return;
+        if (c.state == CampState::cleared && c.holder == team::enemy) return;
         const int steps = map.ally_steps(g);
-        if (steps == unreachable) continue;
+        if (steps == unreachable) return;
         // The walk there and the wait for its return, with the team's current target kept until
         // another is clearly sooner: switching turns everyone around.
         float cost = static_cast<float>(std::max(steps, wait));
         if (memory.siege && memory.claim == g) cost -= static_cast<float>(params::siege_stickiness);
-        if (best < 0 || cost < best_cost) best = g, best_cost = cost;
+        if (best < 0 || cost < best_cost) best = g, best_cost = cost, sealing = seal;
+    };
+    const bool sealed = altars_sealed(world, pathing);
+    const auto& access = altar_access(world, pathing);
+    for (const int g : monoliths) consider(g, sealed && seals(world, access, g));
+    if (sealed) {
+        // Other sealing groups: those blocking, and those awake.
+        for (const int g : access.blocks)
+            if (!map.groups[g].has_monolith) consider(g, true);
+        world.each_stirring([&](int g) {
+            if (!map.groups[g].has_monolith && seals(world, access, g)
+                && std::find(access.blocks.begin(), access.blocks.end(), g) == access.blocks.end())
+                consider(g, true);
+        });
     }
     return best;
 }
 
 // The team's clear, at its current output, costs no more health than it can take in turns.
-bool siege_ready(const World& world, const SiegeLoad& load, bool committed) {
+bool siege_ready(const World& world, const SiegeLoad& load, bool committed, bool sealing) {
     if (load.health <= 0) return true;
     const float rounds = load.health / team_power(world);
     const float slack = committed ? params::siege_commit_slack : 1.0f;
-    const float limit = world.map().monolith_only ? params::siege_rounds : 0;
+    const float limit = world.map().monolith_only || sealing ? params::siege_rounds : 0;
     if (rounds > limit * slack) return false;
     float pool = 0;
     for (const auto& a : world.allies)
@@ -2496,10 +2653,11 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     world.throw_if_stale();
     sieged = true;
     const auto& map = world.map();
-    const int g = siege_candidate(world, memory);
+    bool sealing = false;
+    const int g = siege_candidate(world, pathing, memory, sealing);
     const bool ally_in = g >= 0 && ally_claims(world, g);
     const auto load = g >= 0 ? siege_load(world, g) : SiegeLoad{};
-    if (g < 0 || !siege_ready(world, load, (memory.siege && memory.claim == g) || ally_in)) {
+    if (g < 0 || !siege_ready(world, load, (memory.siege && memory.claim == g) || ally_in, sealing)) {
         memory.siege = false;
         memory.staged_since = -1;
         return false;
@@ -2837,7 +2995,7 @@ void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memor
     auto& me = cambc::self();
     decision = 'R';
     memory.claim = -1;
-    memory.banking = my_gems() > 0; // a bag in retreat goes on to an altar, by a recall if quicker
+    memory.banking = bankable_bag(world, pathing) > 0; // a bag in retreat goes on to an altar, by a recall if quicker
     if (world.me().facts().walk_and_attack_independent() && attack_enemy(world)) reset_and_attack_enemy(world, true);
     cast_at_enemies(world, true);
     if (!me.is_alive()) return;
@@ -2940,7 +3098,7 @@ float farm_step_value(const World& world) {
 
 void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
-    if (my_gems() == 0 || !world.me().alive) memory.banking = false;
+    if (!world.me().alive || bankable_bag(world, pathing) == 0) memory.banking = false;
     if (!world.me().alive) {
         memory.claim = -1;
         buy_shards(world); // the dead can only shop
@@ -2995,7 +3153,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         // An enemy already in attack range was not worth leaving (want_home): the fight is here.
         if (enemy_within(world, my_position(), world.me().facts().attack_range())) intent.walks = false;
         // The goal most likely walks to an altar when carrying, else to the farm choice.
-        intent.to_altar = my_gems() > 0;
+        intent.to_altar = bankable_bag(world, pathing) > 0;
         intent.group = memory.farm_group;
         attacked = plan_strikes(world, pathing, safety, intent).attacked;
         // A cast the plan left unused: before farm's camp reset takes it.
@@ -3008,7 +3166,7 @@ void decide(const World& world, Pathing& pathing, Safety& safety, Memory& memory
         hold_capture(world, memory, attacked);
         return;
     }
-    if (my_gems() > 0) {
+    if (bankable_bag(world, pathing) > 0) {
         carry_bag(world, pathing, safety, memory, attacked);
         return;
     }
@@ -3068,7 +3226,7 @@ void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (decision != 'W') memory.wait_altar = -1;
     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
     // or a bag takes us away from it.
-    if (!sieged && (memory.claim != claim || decision == 'C' || my_gems() > 0)) {
+    if (!sieged && (memory.claim != claim || decision == 'C' || bankable_bag(world, pathing) > 0)) {
         memory.siege = false;
         memory.staged_since = -1;
     }
