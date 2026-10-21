@@ -22,8 +22,8 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
 // both abilities), held back while an enemy is close enough to want the reset for a fight.
 // `stunning_only`: only a reset whose attack stuns (Marcella), on an enemy it would stun; call it
 // before abilities.cpp's casts, which share the one cast per turn, and the plain one after.
-// `group`: only that group's camps. `safety`: the turn's Safety (W4-A's holds read it); null holds
-// as without it.
+// `group`: only that group's camps. `safety`: the turn's Safety; with it, a reset that does not
+// kill is held while a visible enemy can hit us and mend_due() (null: never held).
 bool reset_and_attack_enemy(const World& world, bool stunning_only = false, Safety* safety = nullptr);
 bool reset_and_attack_camp(const World& world, Safety* safety, int group);
 // A camp tile lies within `range` of p.
@@ -41,18 +41,17 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief& 
 // Out of the reach of visible enemies and awake camps, tie-broken towards `home`.
 bool dash_away(const World& world, Pathing& pathing, const Field& home);
 
-// Willow: the ally the heal restores most, if it restores enough or the ally is low.
-bool heal_ally(const World& world);
 // A heal restoring `gain` of `amount` to an ally at `fraction` of its health is worth the cooldown.
 bool worth_healing(float amount, float gain, float fraction);
-// Varg: before damage from an awake camp, a camp we are hitting or an enemy in reach. `farmed`:
-// the group farm chose, which we hit from attack range; another group's camp in attack range is
-// hit only if our attack is spent.
-bool shield_if_needed(const World& world, Safety& safety, int farmed);
-// The one heal and shield valuer (W4-A): casts the heal or shield due here, if any. Until W4-A,
-// heal_ally then shield_if_needed.
-bool mend(const World& world, Safety& safety, int farmed);
-// Whether mend() would cast here, casting nothing. Until W4-A, shield_if_needed's test.
+// The one heal and shield valuer: casts the heal or shield due here, if any. A heal is due on the
+// ally it restores most, if worth_healing; a shield while shield_cap against the real hits here is
+// above 0: visible enemies' blows, camps that pick us (Safety::tile), and every member in reach of
+// a group we hit this turn (`farmed`, the group farm chose, hit from attack range; once our attack
+// is spent, any group in attack range). Never a shield on our spawn. `site` (debug MEND lines):
+// d before the goal, m on spawn after the hits, r a retreat the search did not plan (a reset that
+// may kill holds the shield), a the turn's end.
+bool mend(const World& world, Safety& safety, int farmed, char site = 'a');
+// Whether mend() would cast here, casting nothing.
 bool mend_due(const World& world, Safety& safety, int farmed);
 
 } // namespace aph

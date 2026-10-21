@@ -7,6 +7,7 @@
 #include "champions.h"
 #include "params.h"
 #include "pathing.h"
+#include "plan.h"
 #include "safety.h"
 #include "world.h"
 
@@ -146,15 +147,6 @@ bool travel_dash(const World& world, Pathing& pathing, const cambc::ability& das
     return dash_to_first(dash, pathing, landings);
 }
 
-// Varg's shield, cast at the turn's end, absorbs more than a hit that does not kill.
-bool shield_wanted(const World& world) {
-    if (!ready(world, AbilityKind::shield)) return false;
-    const vec2 here = my_position();
-    for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(here, e.pos) <= threat_strike(world, e).reach) return true;
-    return false;
-}
-
 } // namespace
 
 std::optional<cambc::champion> attack_target(const World& world, bool stunnable_only) {
@@ -215,7 +207,7 @@ std::optional<cambc::champion> attack_target(const World& world, bool stunnable_
     return best;
 }
 
-bool reset_and_attack_enemy(const World& world, bool stunning_only, Safety*) {
+bool reset_and_attack_enemy(const World& world, bool stunning_only, Safety* safety) {
     auto& me = cambc::self();
     const auto& f = world.me().facts();
     const int slot = f.slot_of(AbilityKind::attack_reset);
@@ -223,7 +215,11 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only, Safety*) {
     const auto reset = ready(world, AbilityKind::attack_reset);
     if (!reset) return false;
     const auto target = attack_target(world, stunning_only);
-    if (!target || (!(target->health() <= me.strength()) && shield_wanted(world)) || !cast(*reset)) return false;
+    if (!target) return false;
+    // Under visible fire, the heal or shield due here is worth more than a hit that does not kill.
+    const bool kills = target->health() <= me.strength();
+    if (!kills && safety && mend_due(world, *safety, -1) && safety->tile(my_position()).vis_mask) return false;
+    if (!cast(*reset)) return false;
     try {
         me.attack(*target);
     } catch (const cambc::error&) {
@@ -397,18 +393,18 @@ bool worth_healing(float amount, float gain, float fraction) {
     return gain > 0 && (gain >= heal_min_share * amount || fraction < heal_low_health);
 }
 
-bool heal_ally(const World& world) {
-    Phase phase{"heal_ally"};
-    const int slot = world.me().facts().slot_of(AbilityKind::heal);
-    if (slot < 0) return false;
-    const auto heal = ready(world, AbilityKind::heal);
-    if (!heal) return false;
-    const float amount = heal->heal_amount();
+namespace {
+
+// Willow: the ally the heal restores most (`gain`), if it restores enough or the ally is low.
+// Read live: allies come into sight as we move.
+std::optional<cambc::champion> heal_choice(const World& world, const cambc::ability& heal, float& gain) {
+    const auto& f = world.me().facts();
+    const float amount = heal.heal_amount();
     const vec2 here = my_position();
-    const int range = world.me().facts().abilities[slot].range();
+    const int range = f.abilities[f.slot_of(AbilityKind::heal)].range();
     std::optional<cambc::champion> best;
-    float best_gain = 0, best_fraction = 0;
-    // Read live: allies come into sight as we move.
+    float best_fraction = 0;
+    gain = 0;
     for (auto p : positions_within(live_champion_tiles(team::ally), here, range)) {
         if (p == here || test(world.map().ally_spawn, p)) continue;
         try {
@@ -417,63 +413,128 @@ bool heal_ally(const World& world) {
             // Allies start a recall at every turn end and cancel it unless wanted, so only one
             // they kept going will reach spawn and heal there.
             if (kept_recall(c)) continue;
-            const float gain = std::min(amount, c.max_health() - c.health());
+            const float g = std::min(amount, c.max_health() - c.health());
             const float fraction = health_fraction(c);
-            if (!worth_healing(amount, gain, fraction)) continue;
-            if (!best || gain > best_gain || (gain == best_gain && fraction < best_fraction))
-                best = c, best_gain = gain, best_fraction = fraction;
+            if (!worth_healing(amount, g, fraction)) continue;
+            if (!best || g > gain || (g == gain && fraction < best_fraction)) best = c, gain = g, best_fraction = fraction;
         } catch (const cambc::error&) {
         }
     }
-    return best && cast(*heal, *best);
+    return best;
 }
 
-namespace {
+// The real hits at p the shield would absorb: the visible enemies' blows and the camps that pick
+// us (tile(p)), plus every member in reach of a group we hit this turn, asleep ones included:
+// `farmed`, hit from attack range, or once our attack is spent any group in attack range.
+struct ShieldHits {
+    float vis = 0, camp = 0, hit = 0;
+};
 
-// shield_if_needed's test at here, with the shield ready.
-bool shield_danger(const World& world, Safety& safety, int farmed, vec2 here) {
-    const auto& f = world.me().facts();
-    if (test(world.map().ally_spawn, here)) return false;
-    bool danger = false;
-    for (auto left = safety.seen_enemies(); left; left &= left - 1)
-        danger |= safety.blow(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], here).hits;
-    if (danger) return true;
-    const auto& groups = world.map().groups;
-    for (int g : world.map().groups_near(here, world.map().max_camp_reach)) {
-        if (danger) break;
-        const auto& c = world.camps[g];
-        if (c.state != CampState::alive || groups[g].strength <= 0) continue;
-        const bool hit = g == farmed || !my_can_attack();
-        bool in_reach = false, awake_in_reach = false, hitting = false;
-        for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
-            if (c.health[i] <= 0) continue;
-            const int d = dist(here, groups[g].members[i].pos);
-            const bool reaches = d <= groups[g].members[i].reach && groups[g].members[i].strength > 0;
-            in_reach |= reaches;
-            awake_in_reach |= reaches && !c.member_asleep(i);
-            hitting |= hit && d <= f.attack_range();
-        }
-        danger = awake_in_reach || (in_reach && hitting);
+ShieldHits shield_hits(const World& world, Safety& safety, int farmed, vec2 p) {
+    const bool attacked = !my_can_attack();
+    const int hit_group = attacked ? -2 : farmed;
+    static int memo_round = -1, memo_group = -1;
+    static std::uint32_t memo_generation = 0;
+    static vec2 memo_p{-1, -1};
+    static ShieldHits memo;
+    if (memo_round == world.round && memo_generation == safety.generation() && memo_p == p && memo_group == hit_group) return memo;
+    ShieldHits h;
+    if (!test(world.map().ally_spawn, p)) {
+        h.camp = safety.camp_damage(p);
+        // Strike bounds Reach: with no visible foe's Strike reaching p, tile(p)'s row stays unfilled.
+        std::uint16_t reaching_foes = 0;
+        safety.strike_sum(p, &reaching_foes);
+        if (reaching_foes) h.vis = safety.tile(p).vis;
+        const auto& groups = world.map().groups;
+        const int range = world.me().facts().attack_range();
+        const auto add_hit = [&](int g) {
+            const auto& c = world.camps[g];
+            if (c.state != CampState::alive || groups[g].strength <= 0) return;
+            const auto& members = groups[g].members;
+            bool hitting = false;
+            float reaching = 0;
+            for (std::size_t i = 0; i < members.size(); ++i) {
+                if (c.health[i] <= 0) continue;
+                const int d = dist(p, members[i].pos);
+                hitting |= d <= range;
+                if (d <= members[i].reach) reaching += members[i].strength;
+            }
+            if (hitting) h.hit += reaching;
+        };
+        if (attacked)
+            for (int g : world.map().groups_near(p, world.map().max_camp_reach)) add_hit(g);
+        else if (farmed >= 0 && farmed < static_cast<int>(groups.size()))
+            add_hit(farmed);
     }
-    return danger;
+    memo_round = world.round, memo_generation = safety.generation(), memo_p = p, memo_group = hit_group, memo = h;
+    return h;
+}
+
+// Before the hits, the shield waits for a reset that may kill: a visible enemy within reach that
+// our attack (if unspent) and the reset's could finish.
+bool kill_pending(const World& world) {
+    if (!enemy_seen(world) || !ready(world, AbilityKind::attack_reset)) return false;
+    const auto& f = world.me().facts();
+    const int reach = f.attack_range() + (f.walk_and_attack_independent() && my_can_move() ? 1 : 0);
+    const float hits = (my_can_attack() ? 2.0f : 1.0f) * my_strength();
+    const vec2 here = my_position();
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && dist(here, e.pos) <= reach && e.health <= hits) return true;
+    return false;
+}
+
+// The one heal and shield valuer: the heal's gain on the ally it picks, else shield_cap against
+// shield_hits. No champion has both.
+struct Mending {
+    std::optional<cambc::ability> ability;
+    std::optional<cambc::champion> ally; // the heal's
+    float value = 0;
+    ShieldHits hits;
+};
+
+Mending judge(const World& world, Safety& safety, int farmed) {
+    Mending m;
+    if (const auto heal = ready(world, AbilityKind::heal)) {
+        float gain = 0;
+        if (auto ally = heal_choice(world, *heal, gain)) {
+            m.ability = heal, m.ally = ally, m.value = gain;
+            return m;
+        }
+    }
+    const auto shield = ready(world, AbilityKind::shield);
+    if (!shield) return m;
+    float amount = 0;
+    try {
+        amount = shield->shield_amount();
+    } catch (const cambc::error&) {
+        return m;
+    }
+    const auto& f = world.me().facts();
+    m.ability = shield;
+    m.hits = shield_hits(world, safety, farmed, my_position());
+    m.value = shield_cap(amount, f.abilities[f.slot_of(AbilityKind::shield)].duration, m.hits.vis + m.hits.camp + m.hits.hit);
+    return m;
 }
 
 } // namespace
 
-bool shield_if_needed(const World& world, Safety& safety, int farmed) {
-    Phase phase{"shield_if_needed"};
-    const auto shield = ready(world, AbilityKind::shield);
-    if (!shield) return false;
-    return shield_danger(world, safety, farmed, my_position()) && cast(*shield);
-}
+bool mend_due(const World& world, Safety& safety, int farmed) { return judge(world, safety, farmed).value > 0; }
 
-bool mend(const World& world, Safety& safety, int farmed) {
-    const bool healed = heal_ally(world);
-    return shield_if_needed(world, safety, farmed) || healed;
-}
-
-bool mend_due(const World& world, Safety& safety, int farmed) {
-    return ready(world, AbilityKind::shield) && shield_danger(world, safety, farmed, my_position());
+bool mend(const World& world, Safety& safety, int farmed, char site) {
+    Phase phase{"mend"};
+    const auto m = judge(world, safety, farmed);
+    if (m.value <= 0) return false;
+    // In a retreat the search did not plan, the hits come after: a kill outranks the shield.
+    const bool held = !m.ally && site == 'r' && kill_pending(world);
+    const bool cast_ok = !held && (m.ally ? cast(*m.ability, *m.ally) : cast(*m.ability));
+    debug_block({
+        static int mended_round = -1;
+        std::printf("MEND %d %c %c %.0f %.0f %.0f %.0f\n", world.round, site, cast_ok ? (m.ally ? 'h' : 's') : '-', m.value,
+                    m.hits.vis, m.hits.camp, m.hits.hit);
+        if (cast_ok && mended_round == world.round) std::printf("MEND-TWICE %d\n", world.round);
+        if (cast_ok) mended_round = world.round;
+    });
+    return cast_ok;
 }
 
 } // namespace aph

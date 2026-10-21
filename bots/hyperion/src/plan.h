@@ -30,8 +30,9 @@ struct Intent {
 // A visible enemy near enough to strike this turn, by walk, dash and attack range.
 bool strike_possible(const World& world);
 
-// What a shield (or heal) of `amount` lasting `duration` turns is worth at p: no more than could
-// hit us there meanwhile.
+// What a shield (or heal) of `amount` lasting `duration` turns is worth against `damage` a turn:
+// no more than could hit meanwhile. At p, against damage_bound(p).
+float shield_cap(float amount, int duration, float damage);
 float shield_cap(Safety& safety, vec2 p, float amount, int duration);
 
 struct Planned {
@@ -53,11 +54,6 @@ bool prepared_current(const Prepared& prepared, const Safety& safety);
 
 // Before the goal acts: prepare_strikes, then price_strikes.
 Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent);
-
-// Turns the search does not plan (a retreat, a heal on spawn): a reset's second attack could kill
-// an enemy, or a dash that lands on enemies is ready, so the cast is not spent on a shield first.
-bool reset_may_kill(const World& world);
-bool landing_ready(const World& world);
 
 // The basic attack from here on the enemy it is worth most against, if any.
 bool strike_enemy(const World& world);
