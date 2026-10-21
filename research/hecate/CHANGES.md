@@ -322,3 +322,9 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    stunnable with exactly one turn before ours (stun_worth stays 80). Per end tile the search keeps the best leaf per
    removed set, less any another beats while removing a superset; pricing queries Reach only for foes some candidate
    still faces. 48.9% vs main (1094, ladder 51.4, gen 47.9, fresh 49.6), 51.0% at 100M; out-of-fuel turns 8663 vs 8071.
+44. 2026-10-21 (not yet submitted). Main stat by counted use (GAPS.md). bot.cpp counts our basic attacks and casts per
+   slot at each turn's end (count_use: a slot whose cooldown is still 8 was cast this turn; attacks = attack spent +
+   resets - a ranged walk without a dash). main_stat picks Focus when focus.growth x sum(multiplier x casts) over
+   damage or landing slots beats strength.growth x attacks, falling back to the old per-cooldown formula until both
+   counts are non-zero; best_emblem finishes any begun Jungle/Power (either stat) or Durability emblem first; prices()
+   keys on main_stat. 56.4% vs main (1094, ladder 65.7, gen 54.7, fresh 56.8); out-of-fuel turns 9427 vs 8471.

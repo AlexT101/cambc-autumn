@@ -553,3 +553,9 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   start ward_bushes grows bush clusters down to small_cost_estimate + end_reserve, so decide starts nearly empty
   (ward-no-bushes-clusters shortcuts 1997 in REF, near 0 in CAND). Retry only with clusters already found (warm-up's
   find_all_bush_clusters) or the search moved after decide.
+- gaps-stat-by-use (2026-10-21; GAPS.md, landed as 278a531): main stat from our counted basic attacks and casts
+  (count_use at act()'s end) instead of the per-cooldown formula, which stays until both counts are non-zero; a begun
+  emblem is finished in the stat it was begun in. Travel dashes count as landing casts, so Heart of Ruin flips to
+  Focus. 56.4% vs main (1094, ladder 65.7, gen 54.7, fresh gen-s1 56.8): kept. Out-of-fuel turns 9427 vs 8471 (+11%;
+  ladder 794 vs 752, gen 3860 vs 3602, fresh 4773 vs 4117), not broken down. Untried: count a landing only when it
+  hits something (needs a hook at the cast site, strike-search owned).
