@@ -418,8 +418,9 @@ struct Search {
 
     Grid free_ = 0, pass_ = 0, free_n = 0, land_here = 0, land_hits = 0, plain_here = 0, dom_dw = 0;
     Grid land_known = 0;
-    // Landings never taken: those striking camps but no foe, and those waking a sleeping striker
-    // (as the old menu's landing_wakes; a woken pack keeps hitting while the fight stays).
+    // Landings never taken: those striking camps but no foe, those waking a sleeping striker (as the
+    // old menu's landing_wakes; a woken pack keeps hitting while the fight stays), and those that may
+    // hit an unseen Ren whose retaliation kills us (as cast_at_enemies).
     Grid land_bad = 0;
 
     std::array<Act, max_depth> stack;
@@ -782,19 +783,9 @@ void Search::read_spells() {
     }
 }
 
-// Tiles of unseen tracked enemies on few tiles whose retaliation would kill us, which a ground
-// cast's area must not hit. Other unseen enemies are not aimed at, as cast_at_enemies does not.
+// The tiles cast_at_enemies keeps a ground cast's area off.
 void Search::add_unseen(int s, float raw) {
-    n_unseen = 0;
-    if (raw <= 0) return;
-    for (const auto& e : world.enemies) {
-        if (!e.alive || e.visible || !e.tracked || board_empty(e.possible) || e.retaliation() < health) continue;
-        if (board_count(e.possible) > 9) continue;
-        for (auto p : positions_within(e.possible, here, f.abilities[s].reach())) {
-            if (n_unseen == max_unseen) break;
-            tables.unseen[n_unseen++] = p;
-        }
-    }
+    n_unseen = unseen_retaliators(world, here, f.abilities[s].reach(), raw, health, tables.unseen.data(), max_unseen);
 }
 
 // Allies a heal could reach from some tile, each worth what it restores, capped by what could hit
@@ -971,10 +962,11 @@ bool Search::read() {
     // Camps matter only to what can touch them.
     if (touches) read_members();
     read_camps();
+    float land_raw = 0;
     if (lands && (dash_ready || vendetta)) {
         try {
             const auto ability = cambc::self().abilities()[dash];
-            const float raw = ability.damage_amount();
+            const float raw = land_raw = ability.damage_amount();
             const auto& a = f.abilities[dash];
             for (int i = 0; i < foes; ++i) {
                 auto& x = u[i];
@@ -1010,6 +1002,9 @@ bool Search::read() {
             for (int k = 0; k < n_members; ++k)
                 if (tables.members[k].sleeper && dist(here, tables.members[k].pos) <= grid_r + land_radius)
                     mark(tables.members[k].pos, land_bad);
+            std::array<vec2, max_unseen_tiles> ren;
+            const int n_ren = unseen_retaliators(world, here, grid_r + land_radius, land_raw, health, ren.data(), max_unseen_tiles);
+            for (int i = 0; i < n_ren; ++i) mark(ren[i], land_bad);
         }
         land_here = landings(cell(here));
         plain_here = land_here & ~land_hits;

@@ -108,6 +108,20 @@ bool landing_wakes(const World& world, vec2 p, int radius) {
     return false;
 }
 
+int unseen_retaliators(const World& world, vec2 here, int reach, float raw, float health, vec2* out, int size) {
+    int n = 0;
+    if (raw <= 0) return n;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || e.visible || !e.tracked || e.retaliation() < health) continue;
+        if (const auto count = board_count(e.possible); count == 0 || count > max_unseen_tiles) continue;
+        for (auto p : positions_within(e.possible, here, reach)) {
+            if (n == size) return n;
+            out[n++] = p;
+        }
+    }
+    return n;
+}
+
 namespace {
 
 struct Target {
@@ -213,15 +227,22 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
     int visible = 0;
     for (const auto& e : world.enemies) visible += e.alive && e.visible && dist(here, e.pos) <= reach;
     if (visible == 0) return best;
+    const float health = my_health();
     const auto& enemy_spawn = world.map().enemy_spawn;
     if (!my_can_move()) walk = 0;
     const bitboard* risk = nullptr;
+    const auto keep_off_unseen = [&](const AbilityFacts& a, float raw, int radius, bitboard& off) {
+        // Ren alone retaliates and picks are unique: one enemy's tiles at most.
+        std::array<vec2, max_unseen_tiles> unseen;
+        const int n = unseen_retaliators(world, here, a.reach(), raw, health, unseen.data(), max_unseen_tiles);
+        for (int k = 0; k < n; ++k) draw_square(off, unseen[k], static_cast<float>(radius));
+    };
     for (int s = 0; s < 2; ++s) {
         if (!castable(world, s)) continue;
         const auto& a = f.abilities[s];
         const float threshold = min_value + (a.excludes_walking ? walk : 0.0f);
         const float raw = raw_damage(s);
-        const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= my_health(); };
+        const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= health; };
         if (a.lands()) {
             if (!landings) continue;
             // It moves us: worth only what an excludes-walking cast must be worth to keep the walk.
@@ -231,17 +252,19 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
             clear_board(off);
             for (const auto& e : world.enemies) {
                 if (!e.alive || !e.visible || dist(here, e.pos) > a.reach()) continue;
-                const auto c = e.live();
-                if (!c.is_visible()) continue;
-                const float damage = damage_to(s, c, raw);
+                // Before the sight check: after a walk the area still hits a Ren seen at turn start.
                 if (suicidal(e)) {
                     draw_square(off, e.pos, static_cast<float>(a.radius));
                     continue;
                 }
+                const auto c = e.live();
+                if (!c.is_visible()) continue;
+                const float damage = damage_to(s, c, raw);
                 const float stun = a.stuns && !c.buffs().has_stun() ? stun_worth(world, e, raw > 0) : 0;
                 targets.push_back({e.pos, hit_worth(world, e, damage, c.health(), test(enemy_spawn, e.pos)) + stun});
             }
             if (targets.empty()) continue;
+            keep_off_unseen(a, raw, a.radius, off);
             best.offer(best_landing(s, min_landing_value, targets, dash_landings_from(world.map(), here, &off), here, a.radius,
                                     [&](vec2 p) { return !landing_wakes(world, p, a.radius); }));
         } else if (a.target == Targeting::unit) {
@@ -256,7 +279,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
         } else if (a.target == Targeting::ground) {
             static std::vector<Target> targets;
             targets.clear();
-            // The area hits every enemy in it: keep it off a Ren whose retaliation kills us.
+            // The area hits every enemy in it, unseen too: keep it off a Ren whose retaliation kills us.
             static bitboard off{cambc::uninitialized};
             clear_board(off);
             for (const auto& e : world.enemies) {
@@ -272,6 +295,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                 targets.push_back({e.pos, hit + stun});
             }
             if (targets.empty()) continue;
+            keep_off_unseen(a, raw, 1, off);
             if (!risk) risk = &wake_risk(world, here, a.reach());
             static bitboard skip{cambc::uninitialized};
             or_into(*risk, off, skip);
