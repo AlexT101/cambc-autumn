@@ -2300,8 +2300,10 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
 
 // The visible enemy whose kill pays most a turn to reach and kill it, among those whose fight at
 // the tile we would strike it from, its escorts included, we win even when they strike first;
-// never one on or next to its spawn, where it heals.
-const ChampionBelief* prey(const World& world, Safety& safety) {
+// never one on or next to its spawn, where it heals. Moot (chase with neither a walk nor a basic
+// attack left): chase only resets and casts where we stand, so the fight at an attack tile is moot
+// and the best candidate in their reach is the target.
+const ChampionBelief* prey(const World& world, Safety& safety, bool moot = false) {
     Phase phase{"prey"};
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
@@ -2352,9 +2354,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         }
         return best;
     };
-    // With neither a walk nor a basic attack left, chase only resets and casts where we stand: the
-    // fight at an attack tile is moot, and an enemy in their reach is the target.
-    if (n > 0 && !my_can_move() && !my_can_attack()) {
+    if (n > 0 && moot) {
         debug_block({
             ++sim_stats().p4_calls;
             ++sim_stats().p4_moot;
@@ -2396,7 +2396,10 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
 
 bool chase(const World& world, Pathing& pathing, Safety& safety) {
     Phase phase{"chase"};
-    const auto* target = prey(world, safety);
+    // Both spent: a channel clears them too, but chase never runs in one (continue_tribute asks prey).
+    const auto state = my_state();
+    const bool moot = !state.contains(cambc::champion_state::can_move) && !state.contains(cambc::champion_state::can_attack);
+    const auto* target = prey(world, safety, moot);
     if (!target) return false;
     decision = 'C';
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
@@ -2417,7 +2420,8 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     hit |= reset_and_attack_enemy(world); // after an attack, or a ranged walk
     hit |= cast_at_enemies(world);
     // No step and no hit: the target is out of our walk's reach (across live camps), so the turn goes on.
-    return hit || !stuck;
+    // Moot, no fight was asked: only a hit takes the turn from the caller's retreat or farm.
+    return hit || (!moot && !stuck);
 }
 
 bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory) {
