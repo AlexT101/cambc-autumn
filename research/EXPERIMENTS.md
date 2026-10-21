@@ -653,3 +653,11 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   out-of-fuel turns 9223 in 743 games vs 1853 in 522. On gen-s1 alone 65.2% of 512 (61.0-69.2), out-of-fuel turns
   4786 vs 837. Against nemesis, both on their own drafts: 93.0% of 1606 (91.6-94.1; ladder 92.9, gen 94.1, gen-s1
   92.2, gen-s2 92.6); out-of-fuel turns 11516 in 1153 games vs 0. v8 stays (under the 80% bar).
+- removals (2026-10-21; TODO candidates; branch orch/removals 3328bae on main a1efff2): two removals in
+  cast_at_enemies (abilities.cpp enemy_cast). The free stun: an excludes-walking stun hitting every visible enemy
+  able to reach us next turn needed only min_value 40, not min_value + walk; only retreat and the game-ender
+  intercept pass a walk (escape_step_value 210), so it fired only there. Ground and landing casts at tracked unseen
+  enemies: a target spread over `possible` when on at most max_unseen_tiles 9 tiles, which also kept areas and
+  landings off an unseen Ren whose retaliation would kill us. The strike search's own unseen ground casts (plan.cpp
+  add_unseen) stay. 49.2% vs main (1606, 95% CI 46.8-51.6; ladder 47.1, gen 46.7, fresh gen-s1 49.6, gen-s2 51.6);
+  out-of-fuel turns 16157 vs 15948. Level: kept.
