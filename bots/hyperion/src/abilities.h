@@ -23,6 +23,10 @@ bool cast_at_camp(const World& world, Pathing& pathing, int group, bool attacker
 // its turn end), as far as it takes Cassi or Issac below `partner`, plus `recall` for a cancelled recall.
 float hit_worth(float damage, float health, bool spawn, float bag, float partner, float recall = 0);
 
+// Ren's passive deals 0.2 x its Focus back to whoever damages it, even as it dies. Whether a blow
+// dealing `damage` to enemies whose retaliation sums to `back` kills us at `health`: never taken.
+inline bool retaliation_kills(float damage, float back, float health) { return damage > 0 && back >= health; }
+
 // A visible enemy tributing a bag that wins them the game.
 bool enemy_tribute_wins(const World& world, const ChampionBelief& e);
 

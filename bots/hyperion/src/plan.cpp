@@ -108,7 +108,7 @@ Hit best_hit(const Board& b, const Healths& h) {
                 if (j != i && h[j] > 0 && dist(o.pos, f.pos) <= 1)
                     value += hit_worth(b.strength, h[j], o.spawn, o.bag, o.partner), retaliation += o.retaliation;
             }
-        if (retaliation >= b.health) continue;
+        if (retaliation_kills(b.strength, retaliation, b.health)) continue;
         value -= retaliation;
         if (value <= 0) continue;
         if (best.target < 0 || value > best.value || (value == best.value && h[i] < best_health)) best = {value, i}, best_health = h[i];
