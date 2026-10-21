@@ -507,6 +507,11 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   camp hits scaled by our emblems, asleep groups stirred only within a yet-to-act champion's strike reach. 54.5% vs
   main (582, ladder 50.0, gen 55.1), fresh seed 9421 59.4% (512): kept. Out-of-fuel turns 1136 vs 914 (fresh 945 vs
   731), not broken down.
+- q3 bundle (2026-10-21; quality wave 3 fixes, on main d372b00 after the wave's behaviour-identical changes landed
+  16/16 identical): altar_access floods each camp death's pockets into `ours` at once instead of deferring them while
+  an altar is open, and access_fire reads every open tribute tile instead of the first 64. 50.6% vs main (1094, ladder
+  48.6, gen 51.4, fresh gen-s1 50.2): level, kept as fixes. Out-of-fuel turns 6276 vs 6106 (ladder+gen 3265 vs 3072,
+  against the q2 bundle's 1136: strike search's decide).
 - w2-trapped (2026-10-21; WORLD-MODEL 1): Safety::trapped(p, h), every exit next turn (stay, step, a landing if our
   dash stays ready) taking the visible enemies' strike at p before our next turn plus their next strike at the exit,
   closer by their moves, plus camps, >= h (Chebyshev only); a want_home trigger, and step_guard guards trapped tiles.

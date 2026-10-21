@@ -288,3 +288,10 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    compute_strike and threat_strike add 1 to Varg's basic reach so Strike still bounds Reach (debug check
    REACH-BOUND). 51.0% vs main (1094, ladder 50.0, gen 50.6, fresh 51.6), 51.4% at 100M; out-of-fuel turns 6551 vs
    6471.
+39. 2026-10-21 (not yet submitted). Quality wave 3. Behaviour-identical (bench 16/16 identical at 100M each): farm and
+   altar access fuel (fuel -0.35%; real-budget out-of-fuel turns 69 -> 55 on the bench): a group's `fastest` is keyed
+   on strength as well as belief version, the Chebyshev prune runs only before a field from here, groups near an altar
+   are flagged lazily, and altar_access keeps `ours` exact by pocket floods for deaths and ring checks for respawns;
+   live_camps writes only the member bits that flip (-0.001%). Fixes on top: camp deaths reopen altars at once (no
+   deferral while an altar is open), and access_fire reads every open tribute tile (was the first 64). 50.6% vs main
+   (1094, ladder 48.6, gen 51.4, fresh 50.2); out-of-fuel turns 6276 vs 6106.
