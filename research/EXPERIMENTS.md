@@ -497,3 +497,9 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   camp hits scaled by our emblems, asleep groups stirred only within a yet-to-act champion's strike reach. 54.5% vs
   main (582, ladder 50.0, gen 55.1), fresh seed 9421 59.4% (512): kept. Out-of-fuel turns 1136 vs 914 (fresh 945 vs
   731), not broken down.
+- w2-trapped (2026-10-21; WORLD-MODEL 1): Safety::trapped(p, h), every exit next turn (stay, step, a landing if our
+  dash stays ready) taking the visible enemies' strike at p before our next turn plus their next strike at the exit,
+  closer by their moves, plus camps, >= h (Chebyshev only); a want_home trigger, and step_guard guards trapped tiles.
+  Screened well offline (fires on 3.0% / 1.2% of healthy in-sight turn-ends, catches 74% / 71% of point-of-no-return
+  turns). 46.7% vs main (582, ladder 48.6, gen 46.5): worse, dropped. Out-of-fuel turns 1926 vs 1201 (350 vs 293
+  games, spread over maps, not one blowup): step_guard asks it about up to 24 tiles a turn, ~3-4k each when trapped.
