@@ -478,3 +478,8 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   rally deleted (COORDINATION 2; nothing read it), and `possible` counting an unseen enemy's turn this round at once
   (WORLD-MODEL 3, a superset fix). 50.3% vs main (582, ladder 50.0, gen 50.4), out-of-fuel turns 983 vs 1116:
   level, kept.
+- w2-chain (2026-10-21; WORLD-MODEL 2): an enemy with two turns before ours chained in threat_strike as the max over
+  the first turn's slot S1 (or none) of A_S1(d) + B_rest(max(0, d - m)), m = 3 after a dash else 1, replacing
+  max(walked, twice); Reach's ways tagged by turn and slot to match (Stellar at 3 tiles 200 -> 298). Strike bounded
+  Reach on every tile asked (no REACH>STRIKE in 582 debug games). 47.1% vs main (582, ladder 52.9, gen 46.3),
+  out-of-fuel turns 1219 vs 1016: worse, dropped. The larger two-turn threat makes us give ground more.
