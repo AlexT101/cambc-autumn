@@ -293,14 +293,14 @@ bool Pathing::warm_up(int attack_range, std::uint64_t fuel_floor) {
     const auto afford = [&](const Slot& slot) { return slot || (cambc::round_number() == round && fuel_ok(fuel_floor + cost)); };
     if (!warm_centres(fuel_floor) || !afford(any_altar_)) return false;
     to_any_altar();
+    for (int a = 0; a < static_cast<int>(map().altars.size()); ++a) {
+        if (!afford(altar_slot(a))) return false;
+        to_altar(a);
+    }
     for (; warm_group_ < static_cast<int>(map().groups.size()); ++warm_group_, warm_member_ = 0) {
         if (!farmed(warm_group_) || map().attack_tiles_drafted(warm_group_, attack_range)) continue;
         for (; warm_member_ < static_cast<int>(map().groups[warm_group_].members.size()); ++warm_member_)
             if (cambc::round_number() != round || !prepare_member(warm_group_, warm_member_, attack_range, fuel_floor)) return false;
-    }
-    for (int a = 0; a < static_cast<int>(map().altars.size()); ++a) {
-        if (!afford(altar_slot(a))) return false;
-        to_altar(a);
     }
     return true;
 }
