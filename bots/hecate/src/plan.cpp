@@ -259,6 +259,7 @@ struct Centre {
 struct Member {
     vec2 pos;
     int local;
+    bool sleeper; // a striker maybe asleep
 };
 
 // A sleeping striker a touch would wake, and the nearest champion other than us in its reach.
@@ -285,7 +286,10 @@ struct Node {
     float value = 0, pending = 0; // pending: a cast's price a Vendetta kill would refund
     std::uint32_t touched = 0;     // local camp groups hit
     Grid req_w = grid_all, req_d = grid_all, req_e = grid_all; // the tiles still allowed for each move's end
-    vec2 land{-1, -1}; // a landing that hits, fixed
+    // A landing that hits: its tiles, alike in what they hit; the tile, when it touches camps
+    // (its stun then matters to the wake).
+    Grid lset = 0;
+    vec2 land{-1, -1};
     vec2 pos;          // exhaustive enumerator: where we stand
 };
 
@@ -362,7 +366,8 @@ struct Search {
 
     Grid free_ = 0, pass_ = 0, free_n = 0, land_here = 0, land_hits = 0, plain_here = 0, dom_dw = 0;
     Grid land_known = 0;
-    // Landings that would strike camps but no foe: a move that wakes them, never taken.
+    // Landings never taken: those striking camps but no foe, and those waking a sleeping striker
+    // (as the old menu's landing_wakes; a woken pack keeps hitting while the fight stays).
     Grid land_bad = 0;
 
     std::array<Act, max_depth> stack;
@@ -552,7 +557,9 @@ void Search::read_members() {
         bool any = false;
         for (std::size_t i = 0; i < groups_map[g].members.size() && n_members < max_members; ++i)
             if (c.health[i] > 0 && dist(here, groups_map[g].members[i].pos) <= ability_range + 1)
-                tables.members[n_members++] = {groups_map[g].members[i].pos, local}, any = true;
+                tables.members[n_members++] = {groups_map[g].members[i].pos, local,
+                                               groups_map[g].members[i].strength > 0 && c.maybe_asleep(i)},
+                any = true;
         if (any) groups[n_groups++] = g;
     }
 }
@@ -792,6 +799,9 @@ bool Search::read() {
             for (int k = 0; k < n_members; ++k)
                 if (dist(here, tables.members[k].pos) <= grid_r + land_radius) mark(tables.members[k].pos, land_bad);
             land_bad &= ~land_hits;
+            for (int k = 0; k < n_members; ++k)
+                if (tables.members[k].sleeper && dist(here, tables.members[k].pos) <= grid_r + land_radius)
+                    mark(tables.members[k].pos, land_bad);
         }
         land_here = landings(cell(here));
         plain_here = land_here & ~land_hits;
@@ -1035,12 +1045,12 @@ void Search::settle(const Node& s) {
     case at_start: offer(gbit(cell(here)), v, s, leaf, [](int, vec2&, vec2&) {}); break;
     case walked: offer(free_n & s.req_w, v, s, leaf, [&](int c, vec2& w, vec2&) { w = tile(c); }); break;
     case dashed: {
-        const Grid ends = s.land.x >= 0 ? gbit(cell(s.land)) : plain_here & s.req_d;
+        const Grid ends = (s.lset ? s.lset : plain_here) & s.req_d;
         offer(ends, v, s, leaf, [&](int c, vec2&, vec2& d) { d = tile(c); });
         break;
     }
     case walked_dashed: {
-        const Grid allowed = s.land.x >= 0 ? gbit(cell(s.land)) : ~land_hits & s.req_d, mids = free_n & s.req_w;
+        const Grid allowed = (s.lset ? s.lset : ~land_hits) & s.req_d, mids = free_n & s.req_w;
         Grid ends = 0;
         each_bit(mids, [&](int m) { ends |= landings(m); });
         offer(ends & allowed, v, s, leaf, [&](int c, vec2& w, vec2& d) {
@@ -1052,7 +1062,7 @@ void Search::settle(const Node& s) {
         break;
     }
     case dashed_walked: {
-        const Grid from = s.land.x >= 0 ? gbit(cell(s.land)) : plain_here & s.req_d;
+        const Grid from = (s.lset ? s.lset : plain_here) & s.req_d;
         Grid ends = dilate(from) & free_ & s.req_e;
         // A landing itself is an end only when walked to from another.
         each_bit(ends & from, [&](int c) {
@@ -1072,14 +1082,10 @@ bool Search::legal_at(Node& s, Grid legal) const {
     switch (s.seg) {
     case at_start: return legal & gbit(cell(here));
     case walked: return (free_n & (s.req_w &= legal)) != 0;
-    case dashed:
-        if (s.land.x >= 0) return legal & gbit(cell(s.land));
-        return (plain_here & (s.req_d &= legal)) != 0;
-    case walked_dashed:
-        if (s.land.x >= 0) return legal & gbit(cell(s.land));
-        return (~land_hits & (s.req_d &= legal)) != 0;
+    case dashed: return ((s.lset ? s.lset : plain_here) & (s.req_d &= legal)) != 0;
+    case walked_dashed: return ((s.lset ? s.lset : ~land_hits) & (s.req_d &= legal)) != 0;
     case dashed_walked: {
-        const Grid dom = s.land.x >= 0 ? dilate(gbit(cell(s.land))) & free_ & ~gbit(cell(s.land)) : dom_dw;
+        const Grid dom = s.lset ? dilate(s.lset & s.req_d) & free_ : dom_dw;
         return (dom & (s.req_e &= legal)) != 0;
     }
     }
@@ -1103,8 +1109,8 @@ void Search::grow(const Node& s) {
         switch (s.seg) {
         case at_start: return (legal & here_bit) != 0;
         case walked: return (free_n & s.req_w & legal) != 0;
-        case dashed: return s.land.x >= 0 ? (legal & gbit(cell(s.land))) != 0 : (plain_here & s.req_d & legal) != 0;
-        case walked_dashed: return s.land.x >= 0 ? (legal & gbit(cell(s.land))) != 0 : (~land_hits & s.req_d & legal) != 0;
+        case dashed: return ((s.lset ? s.lset : plain_here) & s.req_d & legal) != 0;
+        case walked_dashed: return ((s.lset ? s.lset : ~land_hits) & s.req_d & legal) != 0;
         case dashed_walked: return true;
         }
         return false;
@@ -1127,7 +1133,7 @@ void Search::grow(const Node& s) {
         if (!melee) c.attack = false;
         c.seg = s.seg == at_start ? walked : dashed_walked;
         const Grid dom = c.seg == walked                ? free_n
-                         : s.land.x >= 0                 ? dilate(gbit(cell(s.land))) & free_ & ~gbit(cell(s.land))
+                         : s.lset                        ? dilate(s.lset & s.req_d) & free_
                                                          : dom_dw & dilate(plain_here & s.req_d);
         if (dom && strikes_left(c)) push(c, {Op::walk});
     }
@@ -1143,12 +1149,29 @@ void Search::grow(const Node& s) {
         c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.req_d = reach, c.owed = true;
         c.seg = first ? dashed : walked_dashed;
         if ((reach & ~land_hits) != 0 && strikes_left(c)) push(c, {Op::dash});
-        if (lands)
-            each_bit(reach & land_hits, [&](int l) {
-                Node d = c;
-                if (land_at(tile(l), d)) push(d, {Op::dash});
-                else h = saved;
+        // Landings wake no sleeper, so those hitting the same foes and camp groups are alike.
+        for (Grid rest = lands ? reach & land_hits : 0; rest;) {
+            const int l = std::countr_zero(rest);
+            const auto hit = [&](int k) {
+                std::uint32_t m = 0;
+                for (int t = 0; t < foes; ++t)
+                    if (h[t] > 0 && dist(tile(k), u[t].pos) <= land_radius) m |= 1u << t;
+                return m;
+            };
+            const std::uint32_t m = hit(l), touch = land_touch(l);
+            Grid alike = gbit(l);
+            each_bit(rest & ~alike, [&](int k) {
+                if (land_touch(k) == touch && hit(k) == m) alike |= gbit(k);
             });
+            rest &= ~alike;
+            Node d = c;
+            if (land_at(tile(l), d)) {
+                d.lset = alike, d.land = {-1, -1};
+                push(d, {Op::dash});
+            } else {
+                h = saved;
+            }
+        }
     }
     if (s.cast)
         for (const auto& sp : spells) {
