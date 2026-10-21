@@ -68,17 +68,30 @@ cambc::item_type emblem_of(int family, int stat) {
     return cambc::item_type{static_cast<std::uint32_t>(family * 6 + stat * 2 + 1)};
 }
 
-// Focus when a shard's Focus, over the damage spells' multipliers, beats its Strength over the
-// basic attacks in one cooldown (one a round, plus the reset's). Ren's retaliation also scales
-// with Focus, and where big groups fall to spells from out of reach (kite), every spell's Focus counts.
+// Our basic attacks and casts per slot over the game, counted at each turn's end (count_use).
+struct Use {
+    int attacks = 0;
+    std::array<int, 2> casts{};
+};
+Use use;
+
+// Focus when a shard's Focus, over our damaging casts so far (landings too, as raw_output counts
+// them), beats its Strength over our basic attacks; until both have happened, over the damage
+// spells' multipliers against the basic attacks in one cooldown (one a round, plus the reset's).
+// Ren's retaliation also scales with Focus, and where big groups fall to spells from out of reach
+// (kite), every spell's Focus counts.
 int main_stat(const World& world) {
     const auto& f = world.me().facts();
-    float spells = 0;
-    for (const auto& a : f.abilities)
+    float spells = 0, cast = 0;
+    for (int s = 0; s < 2; ++s) {
+        const auto& a = f.abilities[s];
         if (a.kind == AbilityKind::damage) spells += a.multiplier;
+        if (a.kind == AbilityKind::damage || a.lands()) cast += a.multiplier * static_cast<float>(use.casts[s]);
+    }
     if ((world.map().shared_gems && spells > 0) || f.passive == Passive::retaliation) return focus_stat;
-    const int attacks = ability_cooldown + (f.has_attack_reset() ? 1 : 0);
-    return f.focus.growth * spells > static_cast<float>(attacks) * f.strength.growth ? focus_stat : strength_stat;
+    float attacks = static_cast<float>(use.attacks);
+    if (use.attacks == 0 || cast <= 0) cast = spells, attacks = static_cast<float>(ability_cooldown + (f.has_attack_reset() ? 1 : 0));
+    return f.focus.growth * cast > attacks * f.strength.growth ? focus_stat : strength_stat;
 }
 
 bool buy(cambc::item_type shard, unsigned count) {
@@ -1074,7 +1087,6 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
     float others = 0;
     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
     const float base = upkeep_cost(world, u, others, now, now);
-    const int main = main_stat(world);
     const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
         const unsigned left = 5 - owned[shard_of(family, stat)];
         Build b = now;
@@ -1083,13 +1095,14 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
         if (family == durability) b.taken = 0.9f;
         return {family, stat, base - upkeep_cost(world, u, others, now, b), left * shard_price};
     };
-    const int options[3][2] = {{jungle, main}, {power, main}, {durability, health_stat}};
-    Emblem best = value(power, main);
-    for (const auto& [family, stat] : options) {
+    // In the stat it was begun in: the main stat follows our use and can change.
+    const int begun[5][2] = {{jungle, strength_stat}, {jungle, focus_stat}, {power, strength_stat}, {power, focus_stat}, {durability, health_stat}};
+    for (const auto& [family, stat] : begun)
         if (owned[shard_of(family, stat)] > 0) return value(family, stat);
-        if (family == power) continue;
-        if (const auto e = value(family, stat); e.saved > best.saved) best = e;
-    }
+    const int main = main_stat(world);
+    Emblem best = value(power, main);
+    if (const auto e = value(jungle, main); e.saved > best.saved) best = e;
+    if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
     return best;
 }
 
@@ -1120,12 +1133,13 @@ struct Prices {
 const Prices& prices(const World& world) {
     struct Key {
         float share, strength, focus, max_health;
+        int main;
         bool operator==(const Key&) const = default;
     };
     static Key last{-1};
     static Prices kept;
     const auto& self = world.me();
-    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health}; !(now == last)) {
+    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world)}; !(now == last)) {
         last = now;
         kept.next = best_emblem(world);
         kept.gain = now.share * kept.next.saved * rounds_per_gem;
@@ -3300,9 +3314,29 @@ void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memor
     prepare_walk(world, pathing, memory, end_reserve);
 }
 
+// From our state at the turn's end: a cast restarted its slot's cooldown, and the basic attack was
+// spent unless a ranged walk spent it, a reset adding one (it restores only a spent attack).
+void count_use(const World& world, vec2 start, bool could_attack) {
+    if (!world.me().alive) return;
+    const auto& f = world.me().facts();
+    bool dashed = false;
+    int resets = 0;
+    for (int s = 0; s < 2; ++s) {
+        std::int32_t cooldown = 0;
+        ok(cambc::detail::sdk_champion_cooldown(my_handle(), static_cast<std::uint32_t>(s), &cooldown));
+        if (cooldown < ability_cooldown) continue;
+        ++use.casts[s];
+        dashed |= f.abilities[s].kind == AbilityKind::dash;
+        resets += f.abilities[s].kind == AbilityKind::attack_reset;
+    }
+    const bool walked = !f.walk_and_attack_independent() && my_position() != start && !dashed;
+    use.attacks += std::max(0, (could_attack && !my_can_attack()) + resets - walked);
+}
+
 // The turn's walk, hits and casts, and the free actions that end it.
 void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const vec2 start = world.me().pos;
+    const bool could_attack = my_can_attack();
     prepare_walk(world, pathing, memory, walk_first_floor);
     const int claim = memory.claim;
     decide(world, pathing, safety, memory);
@@ -3326,6 +3360,7 @@ void act(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     place_ward(world, memory); // where we end the turn
     place_lock(world);
     start_recall(world);
+    count_use(world, start, could_attack);
 }
 
 void play_turn(const World& world, Pathing& pathing, Memory& memory) {
