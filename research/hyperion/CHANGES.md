@@ -398,3 +398,11 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    damage_bound, the input to shield_cap, offer_escape and retreat_step's escape cost, an estimate rather than a bound
    (an unseen enemy often reads 0 where the old rule counted a full hit), so some shields are dropped and some
    retreats change; it also counts unknown-state camps at camp_worst instead of camp_exp. Fixed in wave 2 by W2-E.
+55. 2026-10-21 (not yet submitted). Raw engine reads, ported from 3b2edbd (claude/happy-franklin-nltty2) onto the wave
+   3+4 code, behaviour-identical: util.h record_of/visible_record/is_alive/identity_of/gems_of/has_stun/champion_at,
+   visible_camp/camp_has_stun and my_damage/my_heal/my_shield/my_cooldown/cast_slot/attack_champion replace
+   cambc::champion objects (ChampionBelief::live() deleted), camp objects' double record reads and buff collections, and
+   copies of cambc::self().abilities(), in attack_target, heal_choice and mend, enemy_cast and camp_cast, the strike
+   search's reads and actions, cast_valued and Pathing's ally swap; self_abilities' ready() returns a slot.
+   avoid(), camp_area(), enemy_area(), dash_landings_from() and Pathing::dash_landings() return scratch boards.
+   Subset at 100M (8 games, below): replays 8/8 identical, total fuel -1.51%.
