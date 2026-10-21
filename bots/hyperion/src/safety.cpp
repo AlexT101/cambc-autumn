@@ -22,6 +22,15 @@ namespace {
 constexpr int max_fighters = 6; // one team's bodies
 constexpr int never = std::numeric_limits<int>::max();
 
+// Debug only, for the MEMO line: one Safety's simulations, memo hits and act() branches.
+struct MemoStats {
+    int sims = 0, hits = 0, kept = 0, idle_hits = 0, pursuit_hits = 0;
+    std::array<int, 3> act{}; // act() calls by branch: quiet, plain, general
+};
+constinit MemoStats memo_stats{};
+// Debug only: the generation each Safety::fights_ slot was simulated in.
+constinit std::array<std::uint32_t, 64> fight_generation{};
+
 // Strength and Focus as they deal damage: Heart of Ruin's passive at its last-read health.
 float hit_strength(const ChampionBelief& c) { return c.strength * c.scale; }
 float hit_focus(const ChampionBelief& c) { return c.focus * c.scale; }
@@ -476,6 +485,14 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
         }
         if (fuel_floor && t % 8 == 7 && fuel() < fuel_floor) return {-1, -1};
         const bool their_turn = (t % 2 == 0) == they_first;
+        // act()'s branch, counted here: trade()'s debug_block runs act() too, and debug blocks
+        // must not nest.
+        if constexpr (!Dealt) {
+            debug_block({
+                const Side& s = their_turn ? them : us;
+                ++memo_stats.act[s.stunned == 0 && s.turn < s.quiet_until && s.alive == s.quiet_alive ? 0 : s.plain ? 1 : 2];
+            });
+        }
         if (their_turn) {
             const float d = act(them, us);
             if constexpr (Dealt)
@@ -1456,6 +1473,17 @@ std::vector<Safety::CampHit>& Safety::member_pool() {
 Safety::Safety(const World& world) : world_{world}, threats_{threat_pool()}, members_{member_pool()} {
     centre_ = world.me().pos;
     generation_ = next_generation();
+    note_view();
+}
+
+Safety::~Safety() {
+    debug_block({
+        auto& m = memo_stats;
+        if (m.sims | m.hits | m.idle_hits | m.pursuit_hits | m.act[0] | m.act[1] | m.act[2])
+            std::printf("MEMO %d %d %d %d %d %d %d %d %d\n", world_.round, m.sims, m.hits, m.kept, m.idle_hits, m.pursuit_hits,
+                        m.act[0], m.act[1], m.act[2]);
+        m = {};
+    });
 }
 
 std::span<const Safety::CampHit> Safety::awake_members() {
@@ -1583,6 +1611,11 @@ bool Safety::gone(const ChampionBelief& c) {
 }
 
 void Safety::invalidate() {
+    // refresh() has just asked gone() of every seen enemy. new_fight leaves the dead out, so only
+    // keys naming them would now play out differently.
+    std::uint32_t dead = 0;
+    for (std::size_t i = 0; i < gone_.size(); ++i) dead |= (gone_[i] == 2 ? 1u : 0u) << i;
+    drop_fights(dead);
     generation_ = next_generation();
     built_ = false;
     refresh_ = true;
@@ -1593,7 +1626,6 @@ void Safety::invalidate() {
     members_known_ = false;
     camp_area_.reset();
     enemy_area_.reset();
-    fight_count_ = 0;
     gone_.fill(0);
     reachable_known_ = false;
 }
@@ -1603,7 +1635,8 @@ void Safety::refresh() {
     gone_.fill(0);
     build_cost_ = 0;
     reachable_known_ = false;
-    if (!built_ && !members_known_) return;
+    // Fights outlive invalidate() and reobserve(), so a kill must still drop those naming the dead.
+    if (!built_ && !members_known_ && fight_count_ == 0) return;
     bool changed = false;
     for (auto left = seen_enemies(); left; left &= left - 1) changed |= gone(world_.enemies[static_cast<std::size_t>(std::countr_zero(left))]);
     if (!changed && members_known_ && member_count_ > 0) {
@@ -1615,7 +1648,56 @@ void Safety::refresh() {
     if (changed) invalidate();
 }
 
-bool Safety::reobserve() { return false; }
+[[gnu::noinline]] void Safety::note_view() {
+    std::uint16_t enemies = 0, allies = 0;
+    const int n = std::min(static_cast<int>(world_.enemies.size()), 16);
+    for (int i = 0; i < n; ++i)
+        if (const auto& e = world_.enemies[static_cast<std::size_t>(i)]; e.alive && e.visible)
+            enemies |= static_cast<std::uint16_t>(1u << i), viewed_[static_cast<std::size_t>(i)] = {e.pos, e.health};
+    const int m = std::min(static_cast<int>(world_.allies.size()), 16);
+    for (int i = 0; i < m; ++i)
+        if (const auto& a = world_.allies[static_cast<std::size_t>(i)]; a.alive && a.visible) allies |= static_cast<std::uint16_t>(1u << i);
+    viewed_enemies_ = enemies;
+    viewed_allies_ = allies;
+    viewed_camps_ = world_.camps_version;
+}
+
+// observe() moves nobody and reads no camps: with the same champions in view, their Reach, the
+// fighters, the camp members and the fights among visible enemies still hold; only the unseen
+// enemies' possible tiles changed. Their strikes are redone too, to drop what Foe kept per tile.
+bool Safety::reobserve() {
+    if (world_.camps_version != viewed_camps_) return false;
+    std::uint16_t enemies = 0, allies = 0;
+    const int n = std::min(static_cast<int>(world_.enemies.size()), 16);
+    for (int i = 0; i < n; ++i)
+        if (const auto& e = world_.enemies[static_cast<std::size_t>(i)]; e.alive && e.visible) {
+            enemies |= static_cast<std::uint16_t>(1u << i);
+            const auto& v = viewed_[static_cast<std::size_t>(i)];
+            if (!(viewed_enemies_ >> i & 1) || v.pos != e.pos || v.health != e.health) return false;
+        }
+    const int m = std::min(static_cast<int>(world_.allies.size()), 16);
+    for (int i = 0; i < m; ++i)
+        if (const auto& a = world_.allies[static_cast<std::size_t>(i)]; a.alive && a.visible) allies |= static_cast<std::uint16_t>(1u << i);
+    if (enemies != viewed_enemies_ || allies != viewed_allies_) return false;
+    const auto unseen = static_cast<std::uint16_t>(~enemies);
+    built_ = false;
+    threat_count_ = 0;
+    threat_mask_ = 0;
+    enemy_area_.reset();
+    known_ &= enemies;
+    counted_ &= enemies;
+    listed_ = false;
+    build_cost_ = 0;
+    reachable_known_ = false;
+    drop_fights(unseen);
+    const auto was = generation_;
+    generation_ = next_generation();
+    for (int i = 0; i < std::min(pursuit_count_, 2); ++i)
+        if (pursuits_[static_cast<std::size_t>(i)].generation == was) pursuits_[static_cast<std::size_t>(i)].generation = generation_;
+    for (int i = 0; i < std::min(idle_count_, 2); ++i)
+        if (idles_[static_cast<std::size_t>(i)].generation == was) idles_[static_cast<std::size_t>(i)].generation = generation_;
+    return true;
+}
 
 [[gnu::noinline]] void Safety::strike_foe(const ChampionBelief& e, Foe& x) {
     known_ |= static_cast<std::uint16_t>(1u << e.index);
@@ -1943,9 +2025,38 @@ std::uint32_t Safety::fight_key_with(vec2 p, std::uint32_t visible) {
 }
 
 const Trade* Safety::memo(std::uint32_t key) const {
+    static_assert(max_fights <= static_cast<int>(fight_generation.size()));
     for (int i = 0; i < std::min(fight_count_, max_fights); ++i)
-        if (fights_[i].key == key) return &fights_[i].trade;
+        if (fights_[i].key == key) {
+            debug_block({
+                ++memo_stats.hits;
+                memo_stats.kept += fight_generation[static_cast<std::size_t>(i)] != generation_;
+            });
+            return &fights_[i].trade;
+        }
     return nullptr;
+}
+
+void Safety::drop_fights(std::uint32_t enemies) {
+    const std::uint32_t named = enemies << 16;
+    // Once wrapped, slot order is not age order: blank the keys in place (every key has our bit, so
+    // 0 never matches) to keep replacing the oldest first.
+    if (fight_count_ > max_fights) {
+        for (auto& f : fights_)
+            if (f.key & named) f.key = 0;
+        return;
+    }
+    const int count = std::min(fight_count_, max_fights);
+    int i = 0;
+    while (i < count && !(fights_[i].key & named)) ++i;
+    if (i == count) return;
+    int kept = i;
+    for (; i < count; ++i)
+        if (!(fights_[i].key & named)) {
+            debug_block({ fight_generation[static_cast<std::size_t>(kept)] = fight_generation[static_cast<std::size_t>(i)]; });
+            fights_[kept++] = fights_[i];
+        }
+    fight_count_ = kept;
 }
 
 Trade Safety::fight(vec2 p) {
@@ -1966,10 +2077,16 @@ Trade Safety::new_fight(std::uint32_t key) {
     build();
     fill(them, world_, world_.enemies, key >> 16 & threat_mask_, made_);
     const auto before = fuel();
-    auto& slot = fights_[fight_count_++ % max_fights];
-    slot = {key, trade(us, them, end_reserve)};
+    const Trade t = trade(us, them, end_reserve);
+    debug_block({ ++memo_stats.sims; });
+    // A cut fight is a guess forced by the fuel left: asked again, it may be played out.
+    if (!t.cut) {
+        const int i = fight_count_++ % max_fights;
+        fights_[i] = {key, t};
+        debug_block({ fight_generation[static_cast<std::size_t>(i)] = generation_; });
+    }
     if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
-    return slot.trade;
+    return t;
 }
 
 [[gnu::noinline]] void Safety::count_champions() {
@@ -2021,6 +2138,11 @@ std::uint64_t Safety::build_cost_estimate() {
 Trade Safety::pursuit(vec2 p, int approach) {
     Phase phase{"pursuit"};
     world_.throw_if_stale();
+    for (int i = 0; i < std::min(pursuit_count_, 2); ++i)
+        if (const auto& m = pursuits_[static_cast<std::size_t>(i)]; m.generation == generation_ && m.p == p && m.approach == approach) {
+            debug_block({ ++memo_stats.pursuit_hits; });
+            return m.trade;
+        }
     Side us, them;
     const auto& spawn = world_.map().near_enemy_spawn;
     for (auto left = seen_enemies(); left; left &= left - 1) {
@@ -2034,14 +2156,23 @@ Trade Safety::pursuit(vec2 p, int approach) {
         them.add(fighter(world_, e, made_));
         if (them.count > k && walk != 0) them.fighters[k].arrives_at = walk, them.plain = false;
     }
-    if (them.count == 0) return {};
-    join_allies(world_, us, p, made_);
-    us.camp = camp_damage(p, false);
-    return trade(us, them, end_reserve, false);
+    Trade t;
+    if (them.count > 0) {
+        join_allies(world_, us, p, made_);
+        us.camp = camp_damage(p, false);
+        t = trade(us, them, end_reserve, false);
+    }
+    if (!t.cut) pursuits_[static_cast<std::size_t>(pursuit_count_++ % 2)] = {p, approach, generation_, t};
+    return t;
 }
 
 int Safety::turns_to_kill_idle(vec2 p, int horizon) {
     Phase phase{"turns_to_kill_idle"};
+    for (int i = 0; i < std::min(idle_count_, 2); ++i)
+        if (const auto& m = idles_[static_cast<std::size_t>(i)]; m.generation == generation_ && m.p == p && m.horizon == horizon) {
+            debug_block({ ++memo_stats.idle_hits; });
+            return m.turns;
+        }
     Side us, them;
     us.add(fighter(world_, world_.me(), made_));
     us.fighters[0].arrives_at = never;
@@ -2058,8 +2189,9 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
         them.add(fighter(world_, e, made_));
         if (them.count > k && walk != 0) them.fighters[k].arrives_at = walk, them.plain = false;
     }
-    if (them.count == 0 && us.camp <= 0) return 0;
-    return simulate(us, them, true, nullptr, horizon).second;
+    const int turns = them.count == 0 && us.camp <= 0 ? 0 : simulate(us, them, true, nullptr, horizon).second;
+    idles_[static_cast<std::size_t>(idle_count_++ % 2)] = {p, horizon, generation_, turns};
+    return turns;
 }
 
 bool Safety::lethal(vec2 p) {

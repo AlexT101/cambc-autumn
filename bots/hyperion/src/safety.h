@@ -341,6 +341,7 @@ public:
     // After world.observe(): true if Safety was kept, dropping only what unseen enemies decide;
     // false if it must be rebuilt.
     bool reobserve();
+    ~Safety(); // debug: the MEMO line
 
     // A visible enemy's Reach, built on first use this turn: blow(e, p) where its strike reaches p.
     const Reach& reach_of(const ChampionBelief& e);
@@ -427,17 +428,51 @@ private:
         std::array<TileDanger, 53> rows_;
     };
     std::optional<bitboard> camp_area_, enemy_area_;
-    // By fight_key(). A memo: past `max_fights` the oldest is replaced.
+    // By fight_key(). A memo: past `max_fights` the oldest is replaced. Kept across generations:
+    // a key's trade depends only on its fighters, made once a turn.
     struct FightMemo {
         std::uint32_t key;
         Trade trade;
     };
     static constexpr int max_fights = 32;
     const Trade* memo(std::uint32_t key) const;
+    // Forgets the fights of keys naming any of `enemies` (bit i: enemies[i]).
+    void drop_fights(std::uint32_t enemies);
     std::uint32_t generation_;
     int fight_count_ = 0;
     union {
         std::array<FightMemo, max_fights> fights_;
+    };
+    // pursuit() and turns_to_kill_idle(), two each by tile and argument, for one generation.
+    struct PursuitMemo {
+        vec2 p;
+        int approach;
+        std::uint32_t generation;
+        Trade trade;
+    };
+    struct IdleMemo {
+        vec2 p;
+        int horizon;
+        std::uint32_t generation;
+        int turns;
+    };
+    int pursuit_count_ = 0, idle_count_ = 0; // written so far; slot count % 2 is next
+    union {
+        std::array<PursuitMemo, 2> pursuits_;
+    };
+    union {
+        std::array<IdleMemo, 2> idles_;
+    };
+    // What reobserve() compares: the champions in view and the camps at construction.
+    void note_view();
+    struct Viewed {
+        vec2 pos;
+        float health;
+    };
+    std::uint16_t viewed_enemies_ = 0, viewed_allies_ = 0; // bit i: alive and visible
+    std::uint32_t viewed_camps_ = 0;                        // World::camps_version
+    union {
+        std::array<Viewed, 16> viewed_; // by enemy index, for viewed_enemies_
     };
     std::uint64_t costliest_fight_ = 0;
     // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
