@@ -2209,11 +2209,11 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
     if (sieging) return false;
     const float dps = safety.camp_damage(here);
     if (dps <= 0) return false;
-    const auto exit_cost = [&](int rounds) { return dps * (1.5f * static_cast<float>(rounds) + 1.0f); };
+    const auto exit_cost = [&](float damage) { return 1.5f * damage + dps; };
     // The exit takes 1 to max_camp_reach + 1 rounds: the bounds settle most cases without the search.
-    if (health > exit_cost(world.map().max_camp_reach + 1)) return false;
-    if (health <= exit_cost(1)) return true;
-    return health <= exit_cost(safety.exit_rounds(here));
+    if (health > exit_cost(dps * static_cast<float>(world.map().max_camp_reach + 1))) return false;
+    if (health <= exit_cost(dps)) return true;
+    return health <= exit_cost(safety.exit_damage(here));
 }
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.

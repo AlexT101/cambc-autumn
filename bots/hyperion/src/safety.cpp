@@ -2685,7 +2685,7 @@ float Safety::escape_cost(vec2 q) {
     const auto& t = tile(q);
     const float hit = t.worst(), camp = t.camp_worst;
     if (camp <= 0) return hit;
-    return hit + camp * static_cast<float>(std::max(0, exit_rounds(q) - 1));
+    return hit + std::max(0.0f, exit_damage(q) - camp);
 }
 
 void Safety::note_unseen_hit(vec2 at, float damage) { ghost_at_ = at, ghost_ = damage; }
