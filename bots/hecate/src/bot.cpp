@@ -252,14 +252,13 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
     or_into(world.map().standable, safety.camp_area(), exits);
     exits ^= safety.camp_area();
     const int longest = world.map().max_camp_reach;
+    int walk_out = 1;
+    while (walk_out <= longest && !any_within(exits, here, walk_out)) ++walk_out;
+    // A step changes the walk out by at most one: only a step that shortens it needs telling apart.
     const auto cost = [&](vec2 p) {
         const float camp = safety.camp_damage(p);
         float damage = safety.damage_bound(p);
-        if (camp > 0) {
-            int r = 1;
-            while (r <= longest && !any_within(exits, p, r)) ++r;
-            damage += camp * static_cast<float>(r - 1);
-        }
+        if (camp > 0 && walk_out > 1) damage += camp * static_cast<float>(p != here && any_within(exits, p, walk_out - 1) ? walk_out - 2 : walk_out - 1);
         return damage;
     };
     const auto& blocked = pathing.blocked();
