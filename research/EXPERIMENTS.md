@@ -637,6 +637,17 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   place of a bool, and retreat and the game-ender intercept pass escape_step_value 210, so those paths keep 250 and
   free stun. Works against the earlier "ranged carriers hold fire to keep walking" loss (47.9%). 52.1% vs main (1094,
   ladder 51.4, gen 52.1, fresh gen-s1 52.1); out-of-fuel turns 11027 vs 11206. Kept.
+- fight-fuel (2026-10-21; orch/fight-fuel 4e55a0a, not landed): fight simulation fuel. Profile at 100M, six worst
+  maps vs main (decide >= 100k turns, 1103): decide 122k = step_guard 43k (new_fight 3.8 sims ~10k each, exposure 10k, Reach builds
+  5k), want_home 27k (pursuit 7.8k), search 22.6k, prey 12k. A sim is ~26 half-turns at ~370 fuel each (~6 fighters;
+  ends: won 46%, lost 32%, horizon 22%); fill and make_slot ~1.4k of it. Measured and dropped: a cross-turn fight
+  memo by a hash of both sides (0.01 hits a big turn: cooldowns and health move every turn), keeping Reach::at answers
+  across turns while its inputs and the enemy wards hold (no fuel change), quiet stretches through shields (no
+  change). Kept on the branch: simulate() ends once their side cannot take us over the rest of the horizon (12-18% of
+  sims). Identical at 100M (bench 16/16, worst maps 12/12, debug checks of early ends and memo hits clean) but level:
+  worst maps -0.26% fuel, bench +0.08%; real budget bench OOF 95 vs 89, six worst-map games 404 vs 301 (noisy, not
+  better). The per-turn fight memo and per-turn Reach builds already dedupe within a turn; the cost is the sims'
+  per-half-turn work, which needs a cheaper act() rather than fewer duplicate calls.
 - Final check (2026-10-21; main 4afef8c = ab47731's code, after keepwalk and quality). Against hecate-v8 (the
   session's first baseline): 63.4% of 1094 (95% CI 60.5-66.2; ladder 65.7 of 70, gen 62.3, fresh gen-s2 64.3);
   out-of-fuel turns 9223 in 743 games vs 1853 in 522. On gen-s1 alone 65.2% of 512 (61.0-69.2), out-of-fuel turns
