@@ -222,9 +222,6 @@ struct Trade {
 struct TileDanger {
     std::uint16_t vis_mask = 0, stun_mask = 0, unseen_mask = 0;
     float vis = 0, vis_unacted = 0, unseen = 0, camp_exp = 0, camp_worst = 0;
-    // Each unseen credible threat at its strike's distance-0 damage when `possible` is within its
-    // reach of the tile, walls ignored: at least `unseen`, for damage_bound().
-    float unseen_bound = 0;
     float worst() const { return vis + unseen + camp_worst; }
 };
 
@@ -264,8 +261,9 @@ public:
     }
     void list_enemies();
     bool any_threat(); // threats() is not empty, without building it
-    // An upper bound: tile(p)'s vis + unseen_bound + camp_worst, with each visible enemy yet to act
-    // counted twice when `double_unacted`.
+    // An upper bound: tile(p)'s vis + camp_worst, plus each unseen credible threat at its strike's
+    // distance-0 damage when `possible` is within its reach of p, walls ignored; each visible enemy
+    // yet to act counted twice when `double_unacted`.
     float damage_bound(vec2 p, bool double_unacted = false);
     // At least damage_bound(p), counting every unseen threat at its most: no host queries or
     // strikes for them.
@@ -456,20 +454,20 @@ private:
     void fill_camps(vec2 p, TileDanger& row);
     // The one unseen rule for an unseen credible enemy (see tile()).
     Blow unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p, bool window);
-    // unseen_bound's rule for it: 1 if `possible` is within its reach of p, 0 if not, -1 if the
-    // window's gates leave that to the tile.
+    // damage_bound()'s unseen rule for it: 1 if `possible` is within its reach of p, 0 if not, -1
+    // if the window's gates leave that to the tile.
     int unseen_in_reach(const ChampionBelief& e, const Foe& x, vec2 p, bool window);
     // Settles a -1 from its wall-free field out of `possible`, capped at the reach.
     bool reach_field_hit(const ChampionBelief& e, const Foe& x, vec2 p);
-    // Inside debug_block only: the distance-0 rule unseen_bound keeps (each credible unseen threat
+    // Inside debug_block only: the distance-0 rule damage_bound() keeps (each credible unseen threat
     // at its strike's damage at 0 when `possible` is within its reach of p); `near`: any did.
     float debug_old_unseen(vec2 p, bool* near);
     vec2 centre_;
     std::uint32_t table_generation_ = 0;
-    std::uint64_t threats_known_ = 0, camps_known_ = 0, chances_known_ = 0;
+    std::uint64_t threats_known_ = 0, camps_known_ = 0, chances_known_ = 0, bounds_known_ = 0;
     // By enemy, this generation: whether `possible` comes within an unseen threat's field of the window.
     std::uint16_t gate_asked_ = 0, gate_near_ = 0;
-    // Likewise for unseen_bound: `possible` within the reach + 3 of the centre (near), within
+    // Likewise for damage_bound(): `possible` within the reach + 3 of the centre (near), within
     // reach - 3 (all), and its reach field built.
     std::uint16_t reach_asked_ = 0, reach_near_ = 0, reach_all_ = 0, reach_built_ = 0;
     std::uint8_t ring_used_ = 0, ring_next_ = 0;
@@ -482,6 +480,7 @@ private:
     };
     struct Lazy {
         float chance; // unseen_chance()
+        float bound;  // damage_bound()'s unseen part
     };
     union {
         std::array<Lazy, table_slots> lazy_;
