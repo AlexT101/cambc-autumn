@@ -358,33 +358,93 @@ struct AltarAccess {
     std::uint32_t camps_version = 0;
 };
 
+// out = b with its 8 neighbours.
+void dilate_into(const bitboard& b, bitboard& out) {
+    static bitboard rows{cambc::uninitialized}, shifted{cambc::uninitialized};
+    copy_into(b, rows);
+    for (const int d : {1, -1}) {
+        b.shift_right_into(d, shifted);
+        rows |= shifted;
+    }
+    copy_into(rows, out);
+    for (const int d : {1, -1}) {
+        rows.shift_up_into(d, shifted);
+        out |= shifted;
+    }
+}
+
 const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     static AltarAccess a;
     if (a.version > 0 && a.camps_version == world.camps_version) return a;
     a.camps_version = world.camps_version;
     const auto& live = pathing.live_camps();
+    const auto& map = world.map();
+    // `ours` is the walk from our spawn with a.live as walls but for the deaths in `dead`: most
+    // changes update it without a flood from spawn.
     static bitboard walls{cambc::uninitialized}, ours{cambc::uninitialized}, area{cambc::uninitialized},
-        seen{cambc::uninitialized};
-    if (a.version > 0) {
-        // Camps that only died leave an open altar open; they can only open more.
+        seen{cambc::uninitialized}, gone{cambc::uninitialized}, grown{cambc::uninitialized}, dead;
+    bool walked = false;
+    if (a.version > 0 && !map.ally_spawn_tiles.empty()) {
         copy_into(live, area);
         drop(area, a.live);
-        if (area.is_empty() && (a.any_open || a.live == live)) {
+        copy_into(a.live, gone);
+        drop(gone, live);
+        const bool back = !board_empty(area), died = !board_empty(gone);
+        if (!back && !died) return a;
+        // Camps that only died leave an open altar open; they can only open more.
+        if (!back && a.any_open) {
+            dead |= gone;
             copy_into(live, a.live);
             return a;
+        }
+        if (!back || !died) {
+            // Deaths add to the walk what each dead camp beside it reaches without crossing it.
+            or_into(pathing.static_walls(), back ? a.live : live, walls);
+            walls |= ours;
+            dead |= gone;
+            dilate_into(ours, grown);
+            dead &= grown;
+            while (!board_empty(dead)) {
+                const vec2 t = first_tile(dead);
+                walls.reachable_tiles_into(t, unreachable, seen);
+                ours |= seen;
+                drop(dead, seen);
+                set_tile(dead, t, false);
+            }
+            walked = true;
+        }
+        if (back && !died) {
+            // Respawns whose walkable ring is connected cut no walk: it goes round them.
+            dilate_into(area, grown);
+            grown &= ours;
+            drop(grown, area);
+            walked = board_empty(grown);
+            if (!walked) {
+                not_into(grown, walls);
+                walls.reachable_tiles_into(first_tile(grown), static_cast<std::uint16_t>(board_count(grown)), seen);
+                walked = seen == grown;
+            }
+            if (walked) drop(ours, area);
         }
     }
     ++a.version;
     copy_into(live, a.live);
-    const auto& map = world.map();
     a.blocks.clear();
     clear_board(a.open);
     clear_board(a.opened);
     a.any_open = false;
     if (map.ally_spawn_tiles.empty()) return a;
-    for (const auto& t : map.altars) a.opened |= t.tribute_tiles();
-    or_into(pathing.static_walls(), live, walls);
-    walls.reachable_tiles_into(map.ally_spawn_tiles[0], unreachable, ours);
+    static bitboard tributes{cambc::uninitialized};
+    if (a.version == 1) {
+        clear_board(tributes);
+        for (const auto& t : map.altars) tributes |= t.tribute_tiles();
+    }
+    copy_into(tributes, a.opened);
+    if (!walked) {
+        or_into(pathing.static_walls(), live, walls);
+        walls.reachable_tiles_into(map.ally_spawn_tiles[0], unreachable, ours);
+        clear_board(dead);
+    }
     // open = tributes off live camps, but for those the static walk reaches and this one does not
     copy_into(a.opened, a.open);
     drop(a.open, live);
@@ -397,18 +457,8 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
         return a;
     }
     a.opened &= area;
-    // The live camps beside our walk, by growing it a tile each way.
-    static bitboard grown{cambc::uninitialized}, shifted{cambc::uninitialized};
-    copy_into(ours, grown);
-    for (const int d : {1, -1}) {
-        ours.shift_right_into(d, shifted);
-        grown |= shifted;
-    }
-    copy_into(grown, area);
-    for (const int d : {1, -1}) {
-        area.shift_up_into(d, shifted);
-        grown |= shifted;
-    }
+    // The live camps beside our walk.
+    dilate_into(ours, grown);
     grown &= live;
     or_into(pathing.static_walls(), ours, walls);
     clear_board(seen);
@@ -433,17 +483,32 @@ float access_fire(const World& world, const AltarAccess& a) {
     round = world.round;
     version = a.version;
     fire = std::numeric_limits<float>::max();
-    const auto& groups = world.map().groups;
+    const auto& map = world.map();
+    const auto& groups = map.groups;
+    // By group, once read: 1 if a member reaches a tile beside an altar.
+    static std::vector<signed char> near;
+    if (near.size() != groups.size()) near.assign(groups.size(), -1);
+    static std::vector<int> stirring;
+    stirring.clear();
+    world.each_stirring([&](int g) {
+        if (near[g] < 0) {
+            near[g] = 0;
+            for (const auto& m : groups[g].members)
+                for (const auto& altar : map.altars)
+                    if (dist(m.pos, altar.pos) <= m.reach + 1) near[g] = 1;
+        }
+        if (near[g]) stirring.push_back(g);
+    });
     for (const vec2 t : Tiles<64>{a.open}) {
         float f = 0;
-        world.each_stirring([&](int g) {
-            if (!test(groups[g].threat(), t)) return;
+        for (const int g : stirring) {
+            if (!test(groups[g].threat(), t)) continue;
             const auto& c = world.camps[g];
             for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
                 const auto& m = groups[g].members[i];
                 if (c.health[i] > 0 && !c.maybe_asleep(i) && in_square(t, m.pos, m.reach)) f += m.strength;
             }
-        });
+        }
         if ((fire = std::min(fire, f)) <= 0) break;
     }
     return fire;
@@ -1400,8 +1465,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         float home = -1;
         int to_altar = -1;
         std::uint32_t context = 0, version = ~0u;
+        bool sticky = false;
         int walk = 0, bank = 0, cycle_bank = 0;
-        float gems = 0, gold = 0, fastest = 0;
+        float gems = 0, gold = 0, fastest = 0, fastest_strength = 0;
         // Clearing it alone, kept while `clearing` and its belief hold.
         std::uint32_t clearing = 0, clear_version = ~0u;
         float damage = 0, rounds = 0, kite = -1;
@@ -1411,14 +1477,14 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (n_groups > static_cast<int>(few_facts.size()) && static_cast<int>(many_facts.size()) != n_groups) many_facts.assign(n_groups, {});
     GroupFacts* const group_facts = n_groups > static_cast<int>(few_facts.size()) ? many_facts.data() : few_facts.data();
     struct Context {
-        int bag, short_by, farm_group, spawn_to_altar, recall;
-        float per_gold, strength;
+        int bag, short_by, spawn_to_altar, recall;
+        float per_gold;
         bool warm;
         bool operator==(const Context&) const = default;
     };
     static Context last_context{};
     static std::uint32_t context = 0;
-    if (const Context now{bag, short_by, memory.farm_group, spawn_to_altar, recall, per_gold, strength, pathing.centres_ready()};
+    if (const Context now{bag, short_by, spawn_to_altar, recall, per_gold, pathing.centres_ready()};
         context == 0 || !(now == last_context))
         last_context = now, ++context;
     const auto centre_field = [&](int g) __attribute__((always_inline)) {
@@ -1456,11 +1522,15 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     std::uint64_t reserved = 0;
     const auto loop_reserve = [&]() __attribute__((always_inline)) {
         const int g = best >= 0 ? best : memory.farm_group;
-        if (g != reserved_for) reserved_for = g, reserved = walk_reserve(g);
+        if (g != reserved_for) {
+            reserved_for = g;
+            reserved = walk_reserve(g);
+            if (g >= 0) reserved += search_cost_estimate((g == best ? best_steps : dist(here, groups[g].centre)) + max_detour);
+        }
         return reserved;
     };
-    // With the costliest approach to spare, the reserve need not be read.
-    const auto loop_floor = small_cost_estimate + end_reserve, ample = loop_floor + pathing.max_approach_cost();
+    // With the costliest approach and route to spare, the reserve need not be read.
+    const auto loop_floor = small_cost_estimate + end_reserve, ample = loop_floor + 2 * pathing.max_approach_cost();
     // Nothing in the loop changes memory, the round or the warm-up.
     const int round = world.round, farm_group = memory.farm_group;
     const bool centres_ready = pathing.centres_ready();
@@ -1470,41 +1540,17 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     int k = 0;
     for (; k < n_groups && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
         const int g = (first + k) % n_groups;
-        world.throw_if_stale();
         const auto& group = group_data[g];
         const auto& belief = camp_data[g];
         if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
             continue;
-        auto& steps_known = steps_data[g];
-        if (steps_known < 0) {
-            // Walking is symmetric: a group's warm centre field gives our steps to it before all are.
-            if (const auto* centre = centre_field(g)) {
-                steps_known = centre->at(here);
-            } else if (const auto drafted = map.drafted_spawn_steps(here, g)) {
-                steps_known = *drafted;
-            } else {
-                if (!from_here) {
-                    if (!fuel_ok(full_field_cost_estimate() + loop_floor + loop_reserve())) break;
-                    from_here = make_field(pathing.static_walls(), single(here));
-                }
-                steps_known = from_here->at(group.centre);
-            }
-        }
-        const int steps = steps_known;
-        if (steps == unreachable) continue;
-        // A group still respawning when we would arrive costs the wait there.
-        const int wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - steps) : 0;
-        if (wait > params::max_wait) continue;
-        if (bag == 0 && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
-            && steps < help_steps && struggling(g))
-            help_group = g, help_steps = steps;
         const bool claimed = taken(g);
         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
         // it. Gems past the win are worth nothing.
         const bool wins = group.gems >= short_by;
         auto& known = group_facts[g];
-        if (known.context != context) {
+        if (known.context != context || known.sticky != (g == farm_group)) {
             const Field* to_bank = to_altar ? to_altar : wins ? &pathing.to_any_altar() : nullptr;
             // A recall only goes home: the way out from an altar is walked.
             if (to_bank && known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
@@ -1522,9 +1568,47 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             known.gems = weight * static_cast<float>(std::min(group.gems, short_by));
             known.gold = weight * per_gold * static_cast<float>(group.gold);
             known.context = context;
+            known.sticky = g == farm_group;
             known.version = ~0u;
         }
-        if (known.version != belief.version) known.version = belief.version, known.fastest = fastest_clear(world, g, strength);
+        if (known.version != belief.version || known.fastest_strength != strength)
+            known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
+        auto& steps_known = steps_data[g];
+        if (steps_known < 0) {
+            // Walking is symmetric: a group's warm centre field gives our steps to it before all are.
+            if (const auto* centre = centre_field(g)) {
+                steps_known = centre->at(here);
+            } else if (const auto drafted = map.drafted_spawn_steps(here, g)) {
+                steps_known = *drafted;
+            } else {
+                if (!from_here) {
+                    // A walk is never shorter than the Chebyshev distance, and the trip grows with the
+                    // walk: a group that cannot beat the best from that close needs no field from here.
+                    if (!claimed && best >= 0) {
+                        const int near = dist(here, group.centre);
+                        const int near_wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - near) : 0;
+                        const bool may_help = bag == 0 && group.strength > 0 && belief.state == CampState::alive && near <= params::help_radius
+                                              && near < help_steps;
+                        const float near_cycle = static_cast<float>(near + near_wait - bank_now + known.bank + capture_rounds()) + known.fastest;
+                        if (!may_help && near_cycle > 0 && (known.gems + known.gold) / near_cycle <= best_value
+                            && (bag == 0 || (known.gems + known.gold) / (static_cast<float>(known.walk + known.cycle_bank + capture_rounds()) + known.fastest) <= from_altar_value))
+                            continue;
+                    }
+                    if (!fuel_ok(full_field_cost_estimate() + loop_floor + loop_reserve())) break;
+                    from_here = make_field(pathing.static_walls(), single(here));
+                    world.throw_if_stale();
+                }
+                steps_known = from_here->at(group.centre);
+            }
+        }
+        const int steps = steps_known;
+        if (steps == unreachable) continue;
+        // A group still respawning when we would arrive costs the wait there.
+        const int wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - steps) : 0;
+        if (wait > params::max_wait) continue;
+        if (bag == 0 && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
+            && steps < help_steps && struggling(g))
+            help_group = g, help_steps = steps;
         const int walk = known.walk, cycle_bank = known.cycle_bank;
         const int trip = steps + wait - bank_now + known.bank;
         const float gems = known.gems, gold = known.gold, fastest = known.fastest;
@@ -2028,7 +2112,7 @@ int camp_exit_rounds(const World& world, Safety& safety, vec2 here) {
 }
 
 // Camps keep hitting while we walk out of their reach: leave while the health still covers that.
-// A siege (Memory::siege) keeps its own health limits for the Monolith's hits.
+// A siege (Memory::siege) keeps its own health limits for its group's hits.
 bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, bool sieging) {
     if (sieging) return false;
     const float dps = safety.camp_damage(here);
@@ -2896,7 +2980,7 @@ bool contest_capture(const World& world, Pathing& pathing, Memory& memory) {
     return true;
 }
 
-// A sieger stepped out of the Monolith's reach goes home to heal before it is needed again.
+// A sieger stepped out of the besieged group's reach goes home to heal before it is needed again.
 bool siege_heal_trip(const Memory& memory, Safety& safety) {
     return memory.siege && my_health() < params::heal_trip_fraction * my_max_health() && !safety.threatened(my_position());
 }

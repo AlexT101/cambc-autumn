@@ -46,7 +46,7 @@ inline constexpr float home_retreat_ratio = 2.0f;
 // Leave before contact when the visible enemies within this many steps of their reach would win
 // even if we struck first (Safety::pursuit).
 inline constexpr int pursuit_steps = 3;
-// Below this health a sieger out of the big group's reach recalls, and a caster stages farther.
+// Below this health a sieger out of the besieged group's reach recalls, and a caster stages farther.
 inline constexpr float heal_trip_fraction = 0.6f;
 // Turns ahead a tribute's safety is judged over, each turn of the channel.
 inline constexpr int tribute_window = 6;
@@ -57,8 +57,8 @@ inline constexpr float clear_share = 0.15f;
 // Cassi's weight on gold in farm choice: it takes the gold-only groups the others pass up.
 inline constexpr float gold_farmer_weight = 4.0f;
 
-// Monolith sieges (bot.cpp siege), only on maps whose only gems are Monoliths: the team goes once
-// its output clears the Monolith within this many rounds and the hits, by this share after stuns
+// Sieges (bot.cpp siege) of a Monolith on maps whose only gems are Monoliths, or of a group sealing
+// the altars: the team goes once its output clears the group within this many rounds and the hits, by this share after stuns
 // and spells from out of reach, cost at most this share of the team's health; a siege under way
 // keeps going within the slack.
 inline constexpr int siege_rounds = 60;
