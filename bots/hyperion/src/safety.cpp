@@ -2202,11 +2202,18 @@ bool Safety::shape(vec2 p, const Engage& e, FightKey& k) {
     k.arrive = 0;
     k.mode = static_cast<std::uint8_t>(e.mode);
     k.horizon = static_cast<std::uint8_t>(std::clamp(e.horizon, 1, 255));
-    std::uint32_t enemies = 0;
+    std::uint32_t enemies = 0, allies = ~0u;
     if (e.mode == Mode::stand) {
         const auto& row = tile(p);
         enemies = row.vis_mask | row.unseen_mask;
-        if (e.with_enemy >= 0) enemies |= 1u << e.with_enemy;
+        if (e.with_enemy >= 0) {
+            // The prey's escorts join once we reach it: every threat that hits its tile fights too,
+            // and only the allies near both tiles help.
+            const vec2 q = world_.enemies[static_cast<std::size_t>(e.with_enemy)].pos;
+            const auto& prey_row = tile(q);
+            enemies |= prey_row.vis_mask | prey_row.unseen_mask | 1u << e.with_enemy;
+            allies = fighting_allies(world_, q);
+        }
         if (enemies == 0) return false;
     } else {
         // Pursue: within `approach` walks and off their spawn; idle: arriving within the horizon.
@@ -2231,7 +2238,7 @@ bool Safety::shape(vec2 p, const Engage& e, FightKey& k) {
     k.camp_q = static_cast<std::uint16_t>(std::clamp(static_cast<int>(camp / camp_step + 0.5f), 0, 0xFFFF));
     if (enemies == 0 && k.camp_q == 0) return false;
     k.camp_turns = k.camp_q == 0 ? 0 : idle ? k.horizon : static_cast<std::uint8_t>(std::clamp(exit_rounds(p), 0, 255));
-    k.who = (idle ? 1u << world_.me().index : fighting_allies(world_, p)) | enemies << 16;
+    k.who = (idle ? 1u << world_.me().index : fighting_allies(world_, p) & allies) | enemies << 16;
     debug_block({ debug_keys_[debug_key_next_++ % debug_keys_.size()] = {p, generation_, k}; });
     return true;
 }

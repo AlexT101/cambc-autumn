@@ -239,7 +239,7 @@ struct Engage {
     Mode mode = Mode::stand;
     int approach = 0;          // pursue/idle
     int horizon = fight_horizon;
-    int with_enemy = -1;       // always in the key (prey); never no_fight
+    int with_enemy = -1;       // in the key with its escorts (prey); never no_fight
 };
 
 // Whether ending the turn on a tile loses its fight there.
@@ -386,7 +386,8 @@ public:
     bool lethal(vec2 p);
 
     // The one simulation entry, by COMBAT-MERGE.md's rule table. Stand: us and the allies near p,
-    // they first, against tile(p)'s visible and credible unseen threats (and with_enemy). Pursue:
+    // they first, against tile(p)'s visible and credible unseen threats; with_enemy adds it and the
+    // threats to its tile, and keeps only the allies near it too. Pursue:
     // we first, against the visible enemies off their spawn within `approach` walks, each joining
     // as it arrives. Both are charged the camps' expected damage at p, less the claimed group, for
     // exit_rounds(p) of their turns. Idle: we never act (a channel) against the visible enemies

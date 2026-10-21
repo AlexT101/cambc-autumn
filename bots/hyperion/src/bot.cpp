@@ -2324,8 +2324,8 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
 }
 
 // The visible enemy whose kill pays most a turn to reach and kill it, among those whose fight at
-// the tile we would strike it from we win even when they strike first; never one on or next to its
-// spawn, where it heals.
+// the tile we would strike it from, its escorts included, we win even when they strike first;
+// never one on or next to its spawn, where it heals.
 const ChampionBelief* prey(const World& world, Safety& safety) {
     Phase phase{"prey"};
     world.throw_if_stale();
