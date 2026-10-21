@@ -347,6 +347,17 @@ struct Front {
     }
 };
 
+// Landings that hit, classed by the foes alive they hit and the camp groups they touch, each cell
+// on first need.
+struct LandClasses {
+    std::uint32_t alive;
+    int n;
+    Grid known;
+    std::array<Grid, 49> cls;
+    std::array<std::uint32_t, 49> hit, touch;
+    std::array<std::int8_t, 49> of;
+};
+
 // What lies within 1 of a tile, for ground centres.
 struct Near {
     std::uint16_t foes;
@@ -366,6 +377,7 @@ struct Tables {
     std::array<Waker, max_members> wakers;
     std::array<Front, 49> best, kept, exh, exh_kept; // kept: the cast left for the shield; valid by has bits
     std::array<Leaf, 512> leaves;
+    std::array<LandClasses, 2> land_classes;
     std::array<Grid, 49> land_from;
     std::array<float, 49> menu;
     std::array<float, 49> heal_at; // the best heal cast from each tile
@@ -519,11 +531,39 @@ struct Search {
         }
         return t[(dy + win9_r) * win9_n + dx + win9_r];
     }
-    // Landings that hit, grouped alike for the last hits set and foes alive asked.
-    Grid groups_hits = 0;
-    std::uint32_t groups_alive = 0;
-    int n_land_groups = 0;
-    std::array<Grid, 49> land_groups;
+    // The classes for the last two alive sets asked, with `hits` classed.
+    int n_classes = 0, class_last = 0;
+    LandClasses& land_classes(std::uint32_t alive, Grid hits) {
+        int i = 0;
+        while (i < n_classes && tables.land_classes[i].alive != alive) ++i;
+        if (i == n_classes) {
+            if (n_classes < 2) ++n_classes;
+            else i = 1 - class_last;
+            auto& e = tables.land_classes[i];
+            e.alive = alive, e.n = 0, e.known = 0;
+        }
+        class_last = i;
+        auto& e = tables.land_classes[i];
+        each_bit(hits & ~e.known, [&](int k) {
+            const std::uint32_t m = land_foes(k) & alive, t = land_touch(k);
+            int j = 0;
+            while (j < e.n && !(e.hit[j] == m && e.touch[j] == t)) ++j;
+            if (j == e.n) e.hit[j] = m, e.touch[j] = t, e.cls[j] = 0, ++e.n;
+            e.cls[j] |= gbit(k);
+            e.of[k] = static_cast<std::int8_t>(j);
+        });
+        e.known |= hits;
+        return e;
+    }
+    // The landings from any of the walk tiles `mids`, for the last mids asked.
+    Grid reach_mids = ~Grid{0}, reach_last = 0;
+    Grid walk_reach(Grid mids) {
+        if (mids != reach_mids) {
+            reach_mids = mids, reach_last = 0;
+            each_bit(mids, [&](int m) { reach_last |= landings(m); });
+        }
+        return reach_last;
+    }
     // The foes a landing on cell c hits, alive or not.
     Grid land_foes_known = 0;
     std::uint32_t land_foes(int c) {
@@ -627,6 +667,10 @@ struct Search {
 
     void grow(const Node& s);
     void settle(const Node& s);
+    // The leaves ending on cell c (keep: those keeping the cast for the shield), one per set of
+    // enemies removed; valid by has bits.
+    const Front& front(int c, bool keep) const { return (keep ? tables.kept : best)[c]; }
+    float top(int c, bool keep) const { return front(c, keep).top(); }
     template <class Mid> void offer(Grid ends, float v, const Node& s, int& leaf, Mid&& mid);
     std::uint16_t removed(const Node& s) const {
         std::uint16_t r = 0;
@@ -634,7 +678,7 @@ struct Search {
         return r;
     }
     Seq concrete(int c, bool keep, int entry, bool shields) const {
-        const auto& ch = (keep ? tables.kept[c] : best[c]).e[entry];
+        const auto& ch = front(c, keep).e[entry];
         Seq q = tables.leaves[ch.leaf].seq;
         for (int i = 0; i < q.n; ++i) {
             if (q.a[i].op == Op::walk) q.a[i].tile = ch.w;
@@ -1276,7 +1320,6 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& 
             auto& fr = (keep ? tables.kept : best)[c];
             Grid& got = keep ? kept_has : has;
             if (!(got & gbit(c))) fr.n = 0;
-            if (leaf < 0 && n_leaves == static_cast<int>(tables.leaves.size())) return;
             const int i = fr.admit(val, r);
             got |= gbit(c);
             if (i < 0) return;
@@ -1304,7 +1347,8 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& 
 
 // Each end tile a leaf's moves can reach, offered once.
 void Search::settle(const Node& s) {
-    if (s.owed) return;
+    // Past the leaf table's size a new leaf is dropped.
+    if (s.owed || n_leaves == static_cast<int>(tables.leaves.size())) return;
     const float v = leaf_value(s);
     int leaf = -1;
     switch (s.seg) {
@@ -1317,23 +1361,11 @@ void Search::settle(const Node& s) {
     }
     case walked_dashed: {
         const Grid allowed = (s.lset ? s.lset : ~land_hits) & s.req_d, mids = free_n & s.req_w;
-        Grid ends = 0;
-        each_bit(mids, [&](int m) { ends |= landings(m); });
-        // Each end's walk tile: the first mid it lands from, found for all ends on first need.
-        std::array<std::int8_t, 49> first;
-        bool firsts = false;
-        offer(ends & allowed, v, s, leaf, [&](int c, vec2& w, vec2& d) {
-            if (!firsts) {
-                firsts = true;
-                Grid left = ends & allowed;
-                each_bit(mids, [&](int m) {
-                    const Grid now = landings(m) & left;
-                    left &= ~now;
-                    each_bit(now, [&](int e) { first[e] = static_cast<std::int8_t>(m); });
-                });
-            }
-            w = tile(first[c]);
-            d = tile(c);
+        offer(walk_reach(mids) & allowed, v, s, leaf, [&](int c, vec2& w, vec2& d) {
+            // The first mid it lands from.
+            Grid m = mids;
+            while (!(landings(std::countr_zero(m)) >> c & 1)) m &= m - 1;
+            w = tile(std::countr_zero(m)), d = tile(c);
         });
         break;
     }
@@ -1416,11 +1448,7 @@ void Search::grow(const Node& s) {
     if (s.cast && s.dash && (s.seg == at_start || s.seg == walked)) {
         const bool first = s.seg == at_start;
         // Landings from the walk tiles the actions so far still allow.
-        Grid reach = land_here;
-        if (!first) {
-            reach = 0;
-            each_bit(free_n & s.req_w, [&](int m) { reach |= landings(m); });
-        }
+        const Grid reach = first ? land_here : walk_reach(free_n & s.req_w);
         Node c = s;
         c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.req_d = reach, c.owed = true;
         c.seg = first ? dashed : walked_dashed;
@@ -1430,21 +1458,15 @@ void Search::grow(const Node& s) {
             std::uint32_t alive = 0;
             for (int t = 0; t < foes; ++t)
                 if (h[t] > 0) alive |= 1u << t;
-            // Nodes before any kill share their landings' groups.
-            if (hits != groups_hits || alive != groups_alive) {
-                groups_hits = hits, groups_alive = alive, n_land_groups = 0;
-                std::array<std::uint32_t, 49> hit, touch;
-                each_bit(hits, [&](int k) {
-                    const std::uint32_t m = land_foes(k) & alive, t = land_touch(k);
-                    int i = 0;
-                    while (i < n_land_groups && !(hit[i] == m && touch[i] == t)) ++i;
-                    if (i == n_land_groups) hit[i] = m, touch[i] = t, land_groups[i] = 0, ++n_land_groups;
-                    land_groups[i] |= gbit(k);
-                });
-            }
-            const int kinds = n_land_groups;
+            // Each class's landings in reach, by its first: a child may reclass for another alive set.
+            const auto& lc = land_classes(alive, hits);
+            int kinds = 0;
             std::array<Grid, 49> alike;
-            std::copy_n(land_groups.begin(), kinds, alike.begin());
+            for (Grid left = hits; left;) {
+                const Grid g = lc.cls[lc.of[std::countr_zero(left)]] & left;
+                alike[kinds++] = g;
+                left &= ~g;
+            }
             for (int i = 0; i < kinds; ++i) {
                 Node d = c;
                 if (land_at(tile(std::countr_zero(alike[i])), d)) {
@@ -1700,7 +1722,7 @@ bool strike_possible(const World& world) {
         int k = 0;
         for (int keep = 0; keep < 2; ++keep) {
             if (!((keep ? S.kept_has : S.has) >> c & 1)) continue;
-            const auto& fr = (keep ? tables.kept : S.best)[c];
+            const auto& fr = S.front(c, keep == 1);
             for (int i = 0; i < fr.n; ++i)
                 cand[k++] = {fr.e[i].raw, 0, fr.e[i].leaf, fr.e[i].removed, keep == 1, static_cast<std::int8_t>(i)};
         }
@@ -1708,8 +1730,8 @@ bool strike_possible(const World& world) {
     };
     each_bit(S.has | S.kept_has, [&](int c) {
         float top = -1e30f;
-        if (S.has >> c & 1) top = S.best[c].top();
-        if (S.kept_has >> c & 1) top = std::max(top, tables.kept[c].top() + shield_top);
+        if (S.has >> c & 1) top = S.top(c, false);
+        if (S.kept_has >> c & 1) top = std::max(top, S.top(c, true) + shield_top);
         const float bound = top + gain_to(S.tile(c));
         tiles[nt++] = {c, bound, bound, 0, 0, false, false, !(S.has >> c & 1), 0};
     });
@@ -1917,7 +1939,7 @@ bool strike_possible(const World& world) {
             for (int c = 0; c < 49; ++c)
                 for (int keep = 0; keep < 2; ++keep) {
                     const bool a = (keep ? S.kept_has : S.has) >> c & 1, b = (keep ? S.exh_kept_has : S.exh_has) >> c & 1;
-                    const Front &x = (keep ? tables.kept : S.best)[c], &y = (keep ? tables.exh_kept : tables.exh)[c];
+                    const Front &x = S.front(c, keep == 1), &y = (keep ? tables.exh_kept : tables.exh)[c];
                     if (a && b && (x.n == max_sets || y.n == max_sets)) continue;
                     if (a != b || (a && (!covers(x, y) || !covers(y, x))))
                         std::printf("SRCH-EXH %d %u tile %d,%d keep %d search %.1f/%d exh %.1f/%d\n", world.round,
@@ -2082,11 +2104,11 @@ bool strike_possible(const World& world) {
                 if (seq.a[k].op == Op::heal || seq.a[k].op == Op::shield) cast = seq.a[k].op == Op::heal ? 'h' : 's';
             unsigned rm = 0;
             int sets = 0;
-            if (chosen >= 0) rm = (tiles[chosen].keep ? tables.kept : S.best)[tiles[chosen].c].e[tiles[chosen].entry].removed;
+            if (chosen >= 0) rm = S.front(tiles[chosen].c, tiles[chosen].keep).e[tiles[chosen].entry].removed;
             for (int i = 0; i < nt; ++i) {
                 const int c = tiles[i].c;
-                if (S.has >> c & 1) sets = std::max(sets, S.best[c].n);
-                if (S.kept_has >> c & 1) sets = std::max(sets, tables.kept[c].n);
+                if (S.has >> c & 1) sets = std::max(sets, S.front(c, false).n);
+                if (S.kept_has >> c & 1) sets = std::max(sets, S.front(c, true).n);
             }
             std::printf("SRCH %d %u fuel %llu nodes %d offers %d tiles %d priced %d queries %d boundstop %d sharestop %d capped %d len %d cast %c mates %d read %llu grow %llu price %llu act %llu foes %d units %d rm %x sets %d leaves %d left %llu\n",
                         world.round, static_cast<unsigned>(world.me().handle), static_cast<unsigned long long>(used), S.nodes, S.offers, nt,
