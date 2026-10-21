@@ -3224,30 +3224,22 @@ float farm_step_value(const World& world) {
 }
 
 
-// The turn's heals and shields where decide judges them (W4-A: one valuer, mend()). Before the
-// search or the goal, on the turns the search does not plan.
-void mend_early(const World& world, Safety& safety, const Memory& memory, bool strikes) {
-    heal_ally(world);
-    if (!strikes || !(reset_may_kill(world) || landing_ready(world))) shield_if_needed(world, safety, memory.claim);
+// Heals and shields have one valuer, mend(), judged here on spawn, in mend_searched, mend_retreat
+// and at the turn's end (act). Off spawn nothing acts before mend_searched's call. On spawn, before
+// the hits: a shield is worth nothing there, and a reset would take the heal's cast.
+void mend_early(const World& world, Safety& safety, const Memory& memory, bool) {
+    if (test(world.map().ally_spawn, my_position())) mend(world, safety, memory.claim, 'm');
 }
 
-// After the search, before the goal.
-void mend_searched(const World& world, Safety& safety, const Memory& memory, bool strikes) {
-    if (!strikes) return;
-    if (!searched) heal_ally(world);
-    // A cast the search left priced the shield at nothing, blind to the goal's coming camp hit:
-    // judged here, before farm's camp reset or dash takes it.
-    shield_if_needed(world, safety, memory.claim);
-}
+// Before the goal, whether or not the search ran: the search is blind to the goal's coming camp
+// hit, and farm's camp reset or dash would take the cast.
+void mend_searched(const World& world, Safety& safety, const Memory& memory, bool) { mend(world, safety, memory.claim, 'd'); }
 
-// On spawn healing, after the hits.
+// mend_early judged the heal before the hits, which change nothing it reads.
 void mend_spawn(const World&, Safety&, const Memory&) {}
 
-// In a retreat the search did not plan (W3-B calls it).
-void mend_retreat(const World& world, Safety& safety, const Memory& memory) {
-    heal_ally(world);
-    shield_if_needed(world, safety, memory.claim);
-}
+// In a retreat the search did not plan.
+void mend_retreat(const World& world, Safety& safety, const Memory& memory) { mend(world, safety, memory.claim, 'r'); }
 
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
@@ -3448,11 +3440,9 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if constexpr (debug_fights)
         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))
             if (const auto t = safety.fight(start); t.enemies > 0) log_fight("FF", world, safety, start, t);
-    // The search priced heal and shield where its plan ended, not a later walk or hit by the goal.
-    if (!searched || my_position() != searched_at || !my_can_attack() != searched_hit) {
-        heal_ally(world); // allies in reach after walking
-        shield_if_needed(world, safety, memory.claim);
-    }
+    // Where the search's plan ended, it and mend_searched judged already; a later walk or hit by
+    // the goal changes what is due.
+    if (!searched || my_position() != searched_at || !my_can_attack() != searched_hit) mend(world, safety, memory.claim);
     place_ward(world, memory); // where we end the turn
     place_lock(world);
     start_recall(world);

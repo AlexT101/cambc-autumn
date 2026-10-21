@@ -149,7 +149,9 @@ bool use_slot(int slot) {
 
 } // namespace
 
-float shield_cap(Safety& safety, vec2 p, float amount, int duration) { return std::min(amount, static_cast<float>(duration) * safety.damage_bound(p)); }
+float shield_cap(float amount, int duration, float damage) { return std::min(amount, static_cast<float>(duration) * damage); }
+
+float shield_cap(Safety& safety, vec2 p, float amount, int duration) { return shield_cap(amount, duration, safety.damage_bound(p)); }
 
 namespace {
 
@@ -2737,23 +2739,6 @@ Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const
     const auto& f = world.me().facts();
     if (!read_board(world, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0))) return false;
     return attack(b, best_hit(b, b.healths()));
-}
-
-bool landing_ready(const World& world) {
-    const auto& self = world.me();
-    const int slot = self.facts().slot_of(AbilityKind::dash);
-    return slot >= 0 && self.facts().abilities[slot].lands() && self.ability_ready(slot, world.round);
-}
-
-bool reset_may_kill(const World& world) {
-    const auto& self = world.me();
-    const auto& f = self.facts();
-    const int slot = f.slot_of(AbilityKind::attack_reset);
-    if (slot < 0 || !self.ability_ready(slot, world.round) || !enemy_seen(world)) return false;
-    const int reach = f.attack_range() + (f.walk_and_attack_independent() ? 1 : 0);
-    for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(self.pos, e.pos) <= reach && e.health <= 2 * self.strength) return true;
-    return false;
 }
 
 } // namespace aph
