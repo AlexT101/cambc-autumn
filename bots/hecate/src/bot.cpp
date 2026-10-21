@@ -3218,7 +3218,12 @@ void play_turn(const World& world, Pathing& pathing, Memory& memory) {
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage);
     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
-    act(world, pathing, safety, memory);
+    // A failed act still posts the claim, the bag and the health that next turn's damage reads.
+    try {
+        act(world, pathing, safety, memory);
+    } catch (const std::exception& e) {
+        std::printf("r%u act error: %s\n", cambc::round_number(), e.what());
+    }
     set_turn_order(world, safety);
     comms::claim(memory.claim);
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
