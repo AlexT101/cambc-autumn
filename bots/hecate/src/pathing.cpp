@@ -374,9 +374,9 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
         return r;
     }
     // Scratch kept between calls: the host overwrites every output in full.
-    static bitboard walls{cambc::uninitialized}, origin;
+    static bitboard walls{cambc::uninitialized}, origin, visited{cambc::uninitialized};
     static vec2 origin_at{-1, -1};
-    static cambc::distance_field field;
+    auto& field = route_field_;
     // A route is mostly followed by a step, which makes blocked() stale: unless it is fresh, the
     // walls are read straight into the route's board. Our tile is freed below.
     if (blocked_fresh_) copy_into(blocked_, walls);
@@ -411,7 +411,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     // Goals on walls are no roots; with none left we stay unreachable.
     const int cap = std::min<int>(max_steps, unreachable);
     // A search that runs dry counts one layer past its last; one cut off at the cap counts the cap.
-    const int layers = field.compute_to_with_expansion_count(walls, goals, origin, route_reached_, static_cast<std::uint16_t>(cap));
+    const int layers = field.compute_to_with_expansion_count(walls, goals, origin, visited, static_cast<std::uint16_t>(cap));
     const int here = steps_at(field, me);
     if (here == unreachable) {
         route_exhausted_ = layers < cap;
@@ -466,25 +466,29 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
 
 bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_steps) {
     const vec2 me = my_pos();
-    static bitboard allies{cambc::uninitialized}, reached{cambc::uninitialized};
+    static bitboard allies{cambc::uninitialized};
     occupancy_into(team::ally, allies);
-    // After a search that ran dry, freeing an ally's tile changes nothing unless the goals' side
-    // reached a neighbour of it.
-    const bool dry = route_exhausted_;
-    if (dry) copy_into(route_reached_, reached);
-    const auto unconnected = [&](vec2 a) {
-        if (test(goals, a)) return false;
-        for (auto e : directions)
-            if (in_bounds(a + e) && test(reached, a + e)) return false;
-        return true;
-    };
-    bool exhausted = dry;
+    // Freeing ally tile a adds only a to the failed search: a's distance is one more than its
+    // nearest labelled neighbour's (labels run up to the cap), and ours one more than a's. Our own
+    // labelled neighbours are all at the cap, so a is then the only first step.
+    const int cap = std::min<int>(max_steps, unreachable);
+    bool opened = false;
     for (auto d : directions) {
         const vec2 a = me + d;
-        if (!in_bounds(a) || !test(allies, a) || (dry && unconnected(a))) continue;
-        const auto r = route(goals, avoid, max_steps, a);
-        exhausted &= route_exhausted_;
-        if (r.steps == unreachable || r.steps < 2 || std::find(r.first_steps.begin(), r.first_steps.begin() + r.count, a) == r.first_steps.begin() + r.count) continue;
+        if (!in_bounds(a) || !test(allies, a)) continue;
+        // route() blocks these again after freeing a; inside danger, a is in our own region.
+        if ((guard_ && test(*guard_, a)) || (avoid && test(*avoid, a) && !test(*avoid, me))) continue;
+        if (test(goals, a)) {
+            opened = true;
+            continue;
+        }
+        int nearest = unreachable;
+        for (auto e : directions)
+            if (in_bounds(a + e)) nearest = std::min(nearest, steps_at(route_field_, a + e));
+        if (nearest == unreachable) continue;
+        opened = true;
+        if (nearest + 2 > cap) continue;
+        route_exhausted_ = false;
         auto& self = cambc::self();
         const auto ally = cambc::vision::champion_at(a);
         const auto mine = self.gem_count(), theirs = ally.gem_count();
@@ -499,7 +503,8 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
         }
         return best && try_move(*best);
     }
-    route_exhausted_ = exhausted;
+    // A search that ran dry reaches a free ally's tile only to open a way through it.
+    route_exhausted_ &= !opened;
     return false;
 }
 
