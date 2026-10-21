@@ -321,6 +321,11 @@ Shipped changes are in [hecate/CHANGES.md](hecate/CHANGES.md).
     freed tiles' neighbours), which leaves heavy maps (100x100, crowded) slightly dearer.
   - Not done: farm's loop has no cheap exact pre-rejection (its ~180 ops a group are spread over 25 lines); a cheaper
     reuse check (field values in WASM memory, a host min over a mask) would make heavy maps gain too.
+- What fuel costs main (b05d209 vs hecate-v8, 1094 games, both sides; 2026-10-21): real budget 65.7% (ladder 72.9 of
+  70, gen 63.9, fresh gen-s1 66.6), out-of-fuel turns 9614 in 714 games vs 2240 in 511; at 100M (both bots) 62.0%
+  (ladder 70.0, gen 62.1, fresh 60.7). Main does 3.7 points better at the real budget, so lifting the limit helps v8
+  more than main: main's 4x more out-of-fuel turns do not show as lost games against v8. Main alone at 100M against v8
+  at the real budget would isolate main's own loss; ab.py's `--fuel` sets both sides.
 
 ### Ports from koi (2026-10-20)
 
