@@ -1,0 +1,8 @@
+#include <cstdio>
+int main() {
+    Meter m;
+    m.reset();
+    constexpr int u = Meter::unit();
+    std::printf("%d %d %d %d %d\n", m.value, u, safe_div(9, 3), safe_div(1, 0), build_kind());
+    std::printf("%d %d %d %d %d %d\n", g_cross, Holder::k, make_later().n, checked(4), (Meter{} + Meter{}).value, with_default());
+}

@@ -32,6 +32,8 @@ since it's what cambc builds.
 - `src/headers/<name>.h`: what `<name>.htb` declares (classes with method declarations, enums, constants,
   globals, prototypes, templates); `src/<name>.inl`: its function bodies; `src/unity.cpp`: every header, then every
   body, as one translation unit, so calls inline across files.
+- Functions marked `inline`, `constexpr` or `consteval` are kept whole in their header (methods: their body stays
+  in the class) instead of in `src/<name>.inl`, and can still call each other in any order.
 - Never edit `src/`: hgen rewrites it, and refuses to touch a `src/` holding files it didn't write.
 - Anything can be used before it's defined, across files and folders, including a class's nested types above
   their definition (in the editor those still get underlined, because clangd reads the class as written).

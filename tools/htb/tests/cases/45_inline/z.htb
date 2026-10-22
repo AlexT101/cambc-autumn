@@ -1,0 +1,3 @@
+int g_base = base_source();
+int base_source() { return 21; }
+inline int read_base() { return g_base; }

@@ -1,0 +1,7 @@
+#include <cstdio>
+int main() {
+    Counter c;
+    c.add(2);
+    std::printf("%d %d %d %d\n", is_even(10), is_odd(7), area(Rect{2, 3}), area(Rect{2, 3}, 2));
+    std::printf("%d %d %d %d\n", uses_hidden(), geo::dot(1, 2, 3, 4), c.get(), g_derived);
+}

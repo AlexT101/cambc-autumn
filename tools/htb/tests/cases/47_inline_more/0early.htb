@@ -1,0 +1,7 @@
+// Sorts before a.htb; evaluates Meter's out-of-class constexpr members at compile time.
+constexpr int g_cross = Meter{}.doubled() + Meter::unit();
+
+struct Holder {
+    Meter m;
+    static constexpr int k = Meter::unit() * 2;
+};

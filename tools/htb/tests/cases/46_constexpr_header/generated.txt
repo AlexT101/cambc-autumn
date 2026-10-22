@@ -1,0 +1,7 @@
+src/headers/a.h ~ constexpr int cube(int v) { return v * v * v; }
+src/headers/a.h ~ consteval int fixed_size() { return cube(2) + LATER_EXTRA; }
+src/headers/a.h ~ constexpr int cells() const { return w * h; }
+src/headers/a.h ~ static consteval int max_side() { return 16; }
+src/a.inl !~ cube
+src/a.inl !~ cells
+src/a.inl !~ max_side

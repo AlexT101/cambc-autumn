@@ -1,0 +1,3 @@
+struct Later {
+    int n;
+};

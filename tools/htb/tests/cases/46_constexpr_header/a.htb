@@ -1,0 +1,15 @@
+// constexpr and consteval functions are kept whole in the header (methods: in their class),
+// so they can run at compile time wherever they're used.
+constexpr int cube(int v) { return v * v * v; }
+consteval int fixed_size() { return cube(2) + LATER_EXTRA; }
+int buffer[fixed_size()];
+
+struct Grid {
+    constexpr int cells() const { return w * h; }
+    static consteval int max_side() { return 16; }
+    static constexpr int clamp_side(int s) { return s <= max_side() ? s : max_side(); }
+    int w = 3, h = 4;
+};
+static_assert(Grid{}.cells() == 12);
+
+constexpr int g_cube = cube(LATER_EXTRA);

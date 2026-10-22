@@ -1,0 +1,4 @@
+#include <cstdio>
+int main() {
+    std::printf("%zu %d %d %d\n", sizeof(buffer) / sizeof(int), Grid{}.cells(), Grid::clamp_side(20), g_cube);
+}

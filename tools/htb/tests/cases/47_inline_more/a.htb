@@ -1,0 +1,36 @@
+#include <compare>
+
+class Meter {
+public:
+    void reset();
+    constexpr int doubled() const;
+    static constexpr int unit();
+    int value = 4;
+};
+
+// Defined outside the class, C++ style, but still marked: they belong in the header too.
+inline void Meter::reset() { value = 0; }
+constexpr int Meter::doubled() const { return value * 2; }
+constexpr int Meter::unit() { return 5; }
+static_assert(Meter{}.doubled() == 8, "an out-of-class constexpr member, evaluated at compile time");
+
+inline int safe_div(int a, int b) try {
+    if (b == 0) throw 0;
+    return a / b;
+} catch (...) {
+    return -1;
+}
+
+#ifdef CAMBC_DEBUG
+inline int build_kind() { return 1; }
+#else
+inline int build_kind() { return 0; }
+#endif
+
+inline Later make_later() { return Later{6}; }
+[[nodiscard]] inline int checked(int v) noexcept { return v + 1; }
+inline Meter operator+(Meter a, Meter b) {
+    a.value += b.value;
+    return a;
+}
+inline int with_default(int v = checked(1)) { return v * 10; }

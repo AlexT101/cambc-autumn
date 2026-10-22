@@ -1,0 +1,25 @@
+// `inline` keeps a function whole in the header; these call each other and later files' code in any order.
+inline bool is_even(unsigned n) { return n == 0 ? true : is_odd(n - 1); }
+inline bool is_odd(unsigned n) { return n == 0 ? false : is_even(n - 1); }
+
+inline int area(Rect r, int scale = DEFAULT_SCALE) { return r.w * r.h * scale; }
+
+static inline int hidden_helper() { return 5; }
+int uses_hidden() { return hidden_helper(); }
+
+namespace geo {
+inline int dot(int ax, int ay, int bx, int by) { return ax * bx + ay * by; }
+}
+
+class Counter {
+public:
+    inline void add(int v) { total += v * step(); }
+    int get() const { return total; }
+
+private:
+    inline int step() const { return STEP; }
+    int total = 0;
+};
+
+// Started up through an inline function that reads z.htb's g_base.
+int g_derived = read_base() * 2;

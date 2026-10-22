@@ -4,7 +4,9 @@
 Put your .htb files straight in the bot folder (bots/<bot>/*.htb, and any
 subfolders) and write them like Java (an .htb file is C++): classes with their methods inside, no
 headers, no forward declarations, in any order. Every file can use what any
-other file defines.
+other file defines. Functions marked `inline`, `constexpr` or `consteval` are
+kept whole in their header (methods: in their class) instead of
+src/<name>.inl, and can still call each other in any order.
 
 hgen generates src/, which is what cambc compiles and submits:
   src/headers/<name>.h   what <name>.htb declares: its classes (with method
@@ -319,6 +321,8 @@ class Decl:
         self.target = None      # the namespace a namespace alias or using-directive names, as a tuple
         self.decl_only = None   # a declaration without the definition, for an editor context that can't have it
         self.calls = frozenset()    # its by-value names as written, qualified (`Config::compute`)
+        self.constant = False   # a constexpr/consteval function: using it in a constant needs its callees too
+        self.member_of = None   # for a member defined outside its class (kept whole), the class
         self.cond = ()          # the `#if` chains around it (see wrap)
         self.edits = ()
         self.refs = self.strong = frozenset()
@@ -757,6 +761,10 @@ class Parser:
             return e
         if qualified:       # a member defined outside its class, already
             k = name_i - (2 if self.tx(name_i - 1) == "::" else 3)
+            if specs & {"inline", "constexpr", "consteval"}:     # kept whole in the header, after its class
+                d = self.decl("inline", start, e, ns, private, [])
+                d.constant, d.member_of = bool(specs & {"constexpr", "consteval"}), self.tx(k)
+                return e
             ctor = self.tx(k) == name and self.tx(name_i - 1) == "::"
             self.f.bodies.append(Body(self.f, ns, self.line(start), self.src[toks[start].start:toks[body].start].rstrip(),
                                       self.line(body), self.slice(body, e),
@@ -765,11 +773,12 @@ class Parser:
             return e
         private = private or "static" in specs
         deduced = "auto" in specs and "->" not in after
-        if specs & {"constexpr", "consteval"} or deduced:
-            # needed in full wherever it's used (constexpr), or before (deduced return type)
+        if specs & {"constexpr", "consteval", "inline"} or deduced:
+            # Kept whole in the header: you asked for it (inline), or it's needed in full wherever it's
+            # used (constexpr), or before (deduced return type).
             d = self.decl("inline", start, e, ns, private, [name], ahead=None if deduced else ahead)
-            d.decl_only = ahead
-            if not deduced:     # declared ahead, so constexpr functions can call each other in any order
+            d.decl_only, d.constant = ahead, bool(specs & {"constexpr", "consteval"})
+            if not deduced:     # declared ahead, so these can call each other in any order
                 d.fwd = self.without_defaults(start, paren, cparen, body, segs) + ";"
             return e
         if name != "main":
@@ -1188,9 +1197,9 @@ class Parser:
                 e = self.close(self.close(e + 2) + 1)
         if not out.move:
             return e + 1
-        if (specs & {"constexpr", "consteval"} or ("auto" in specs and "->" not in after)
+        if (specs & {"constexpr", "consteval", "inline"} or ("auto" in specs and "->" not in after)
                 or "requires" in after or self.tx(body - 1) == "try" or self.tx(name_start - 1) == "::"):
-            return e + 1    # needed in full where it's used, so it stays in the class
+            return e + 1    # stays in the class: you asked for it (inline), or it's needed in full where it's used
         segs, defaults, _ = self.signature(paren, cparen)
         out.weak.update(k for k in range(start, head_end) if k not in defaults)
         out.exprs.update(defaults)
@@ -1500,13 +1509,22 @@ class Bot:
                 deps[d].update(x for x in d.f.decls if x is not d and d.refs & x.refs)
             if d.kind == "var":
                 deps[d].update(self.init_reads(d, resolve))
+        # Whatever needs a class comes after its constexpr members defined outside it: evaluating one needs it.
+        member_defs = defaultdict(list)
+        for d in decls:
+            if d.member_of and d.constant:
+                member_defs[d.member_of].append(d)
+        for d in decls if member_defs else ():
+            for x in list(deps[d]):
+                if x.kind == "class" and x.names and d.member_of != x.names[0]:
+                    deps[d].update(m for m in member_defs.get(x.names[0], ()) if m is not d)
         # Evaluating a constexpr function needs every constexpr function it calls defined, too.
         for d in decls:
-            todo = [x for x in deps[d] if x.kind == "inline"]
+            todo = [x for x in deps[d] if x.constant]
             seen = set(todo)
             while todo:
                 for y in deps[todo.pop()]:
-                    if y.kind == "inline" and y not in seen and y is not d:
+                    if y.constant and y not in seen and y is not d:
                         seen.add(y)
                         todo.append(y)
             deps[d] |= seen

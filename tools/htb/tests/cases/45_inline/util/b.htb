@@ -1,0 +1,5 @@
+struct Rect {
+    int w, h;
+};
+constexpr int DEFAULT_SCALE = 1;
+constexpr int STEP = 3;

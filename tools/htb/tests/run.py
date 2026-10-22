@@ -7,6 +7,7 @@ Each folder in tests/cases/ is a small bot: .htb files (in any subfolders) and h
   notes.txt    text hgen's notes must contain, one per line (without it, any note fails the case)
   editor.txt   `file:line` clangd should flag in the editor, one per line (without it: no squiggles at all)
   wasm.txt     (empty) a real bot using the cambc API: only cambc's compiler and the editor check it
+  generated.txt  `FILE ~ text` (FILE from the bot folder must contain text) or `FILE !~ text` (must not)
 Every case goes through:
   1. hgen: no crash, the expected notes
   2. a native build, then the program's output (expect.txt), or the expected errors (errors.txt); errors must
@@ -41,7 +42,7 @@ import hgen  # noqa: E402
 import htbcheck  # noqa: E402
 
 CASES = HERE / "cases"
-META = ("expect.txt", "errors.txt", "notes.txt", "editor.txt", "wasm.txt")
+META = ("expect.txt", "errors.txt", "notes.txt", "editor.txt", "wasm.txt", "generated.txt")
 
 
 def first(*paths):
@@ -366,6 +367,12 @@ def check_case(name, fast, keep):
         leaked = [p for p in (bot / "src").rglob("*") if p.is_file() and str(tmp) in p.read_text(errors="replace")]
         if leaked:
             fails.append(f"generated files hold this machine's paths: {[str(p.relative_to(bot)) for p in leaked]}")
+        for rule in meta["generated.txt"] or []:
+            path, op, want = rule.partition(" !~ ") if " !~ " in rule else rule.partition(" ~ ")
+            got = (bot / path).read_text() if (bot / path).exists() else None
+            if got is None or (want in got) != (op == " ~ "):
+                fails.append(f"generated code: {path} should {'' if op == ' ~ ' else 'not '}contain {want!r}"
+                             + ("" if got is not None else " (no such file)"))
         notes = [l.strip()[6:] for l in out.splitlines() if l.strip().startswith("note: ")]
         for want in meta["notes.txt"] or []:
             if not any(want in n for n in notes):
