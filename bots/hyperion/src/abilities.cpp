@@ -71,6 +71,15 @@ float damage_to(int slot, cambc::handle_champion_t target, float raw) {
     }
 }
 
+bool camp_stunned(std::uint32_t camp) {
+    static std::array<cambc::detail::camp_buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+    std::uint32_t n = 0;
+    ok(cambc::detail::sdk_camp_buffs(camp, buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
+    return false;
+}
+
 bool kept_recall(const ChampionBelief& e) {
     return e.channel == Channel::recall && e.visible
            && aph::kept_recall(e.handle, e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
@@ -168,6 +177,7 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
     static bitboard centres{cambc::uninitialized};
     clear_board(centres);
     for (const auto& t : targets) {
+        if (dist(t.pos, here) > range + 1) continue; // no centre in range
         draw_square(centres, t.pos, 1);
         around(t, [&](float& v) { v += t.weight * t.worth; });
     }
@@ -191,12 +201,19 @@ Cast best_landing(int slot, float min_value, const std::vector<Target>& targets,
                   int radius, Keep keep) {
     Cast best;
     if (targets.empty()) return best;
+    // Dash landings are within 2 of `here`. Each cell adds its targets in their order, as summing per landing would.
+    constexpr int reach = 2, side = 2 * reach + 1;
+    std::array<float, side * side> value{};
+    for (const auto& t : targets) {
+        const int x0 = std::max(t.pos.x - radius, here.x - reach), x1 = std::min(t.pos.x + radius, here.x + reach);
+        const int y0 = std::max(t.pos.y - radius, here.y - reach), y1 = std::min(t.pos.y + radius, here.y + reach);
+        for (int y = y0; y <= y1; ++y)
+            for (int x = x0; x <= x1; ++x) value[(y - here.y + reach) * side + (x - here.x + reach)] += t.weight * t.worth;
+    }
     int best_dist = 0;
     for (auto p : Tiles<5 * 5>{landings}) {
-        float v = 0;
-        for (const auto& t : targets)
-            if (dist(p, t.pos) <= radius) v += t.weight * t.worth;
         const int d = dist(p, here);
+        const float v = value[(p.y - here.y + reach) * side + (p.x - here.x + reach)];
         if (v < min_value || v < best.value || (v == best.value && d >= best_dist) || !keep(p)) continue;
         best.slot = slot, best.value = v, best.tile = p, best.dash = true, best_dist = d;
     }
@@ -371,7 +388,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     if (enemy_within(world, here, hold_range)) return {};
 
     struct Member {
-        cambc::camp camp;
+        int index; // in the group
         vec2 pos;
         float health, stun;
     };
@@ -381,18 +398,24 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         if (world.camps[group].health[i] <= 0 || (attackers_only && g.members[i].strength <= 0)
             || !cambc::vision::has_camp(g.members[i].pos))
             continue;
-        auto c = g.camp(i);
-        if (!c.is_visible()) continue;
-        const float health = c.health();
+        const auto handle = static_cast<std::uint32_t>(g.members[i].handle);
+        static cambc::detail::camp_state record;
+        const auto code = cambc::detail::sdk_camp(handle, &record);
+        if (code == static_cast<std::int32_t>(cambc::error_code::api_not_in_vision)
+            || code == static_cast<std::int32_t>(cambc::error_code::api_not_found))
+            continue;
+        ok(code);
+        const float health = record.health;
         if (health <= 0) continue;
         // A stunned monster skips its next attack, which goes to the nearest champion: one of us
         // when we are in its reach, enemies being held off above.
         bool exposed = dist(here, g.members[i].pos) <= g.members[i].reach;
         // At a Monolith, a stun spares whichever of us it would hit.
-        for (const auto& a : world.allies)
-            exposed |= g.has_monolith && !exposed && a.alive && a.visible && dist(a.pos, g.members[i].pos) <= g.members[i].reach;
-        const float stun = stuns && exposed && !c.buffs().has_stun() ? g.members[i].strength : 0;
-        members.push_back({c, g.members[i].pos, health, stun});
+        if (g.has_monolith)
+            for (const auto& a : world.allies)
+                exposed |= !exposed && a.alive && a.visible && dist(a.pos, g.members[i].pos) <= g.members[i].reach;
+        const float stun = stuns && exposed && !camp_stunned(handle) ? g.members[i].strength : 0;
+        members.push_back({i, g.members[i].pos, health, stun});
     }
     if (members.empty()) return {};
 
@@ -407,7 +430,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             for (const auto& m : members) {
                 if (dist(here, m.pos) > a.range()) continue;
                 const float v = std::min(raw, m.health) + (a.stuns ? m.stun : 0);
-                if (v >= floor && v > best.value) best = Cast{s, v, std::nullopt, m.camp, {}};
+                if (v >= floor && v > best.value) best = Cast{s, v, std::nullopt, g.camp(m.index), {}};
             }
         } else if (a.target == Targeting::ground) {
             static std::vector<Target> targets;
@@ -428,19 +451,38 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             clear_board(skip);
             for (int other : world.map().groups_near(here, a.reach()))
                 if (other != group && world.camps[other].state == CampState::alive) draw_alive_members(world, other, skip, a.radius);
-            // Not into the reach of another group's monsters.
+            const auto& lands_ = dash_landings_from(world.map(), here, &skip);
+            // Not into the reach of another group's monsters. Landings are within 2 of `here`: each
+            // group's monsters that could reach one are listed the first time it is asked about.
+            struct Threat {
+                vec2 pos;
+                int reach;
+            };
+            static std::vector<Threat> threats;
+            static std::vector<std::array<int, 3>> listed; // group, its first threat, its end
+            threats.clear();
+            listed.clear();
             const auto keep = [&](vec2 p) {
                 for (int other : world.map().groups_near(p, world.map().max_camp_reach)) {
                     if (other == group || world.camps[other].state != CampState::alive) continue;
-                    const auto& ms = world.map().groups[other].members;
-                    for (std::size_t i = 0; i < ms.size(); ++i)
-                        if (world.camps[other].health[i] > 0 && ms[i].strength > 0 && dist(p, ms[i].pos) <= ms[i].reach
-                            && dist(here, ms[i].pos) > ms[i].reach)
-                            return false;
+                    auto it = std::find_if(listed.begin(), listed.end(), [&](const auto& l) { return l[0] == other; });
+                    if (it == listed.end()) {
+                        const int from = static_cast<int>(threats.size());
+                        const auto& ms = world.map().groups[other].members;
+                        for (std::size_t i = 0; i < ms.size(); ++i) {
+                            const int d = dist(here, ms[i].pos);
+                            if (world.camps[other].health[i] > 0 && ms[i].strength > 0 && d > ms[i].reach && d <= ms[i].reach + 2)
+                                threats.push_back({ms[i].pos, ms[i].reach});
+                        }
+                        listed.push_back({other, from, static_cast<int>(threats.size())});
+                        it = listed.end() - 1;
+                    }
+                    for (int k = (*it)[1]; k < (*it)[2]; ++k)
+                        if (dist(p, threats[k].pos) <= threats[k].reach) return false;
                 }
                 return true;
             };
-            best.offer(best_landing(s, any_value ? 1.0f : min_camp_value, targets, dash_landings_from(world.map(), here, &skip),
+            best.offer(best_landing(s, any_value ? 1.0f : min_camp_value, targets, lands_,
                                     here, a.radius, keep));
         }
     }
