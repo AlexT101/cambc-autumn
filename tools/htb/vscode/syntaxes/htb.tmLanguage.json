@@ -1,0 +1,6 @@
+{
+  "name": "HTB",
+  "scopeName": "source.htb",
+  "comment": "An .htb file is C++: reuse VS Code's C++ grammar.",
+  "patterns": [{ "include": "source.cpp" }]
+}

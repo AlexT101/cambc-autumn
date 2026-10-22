@@ -16,6 +16,7 @@ C++ only; ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ docs.
 - Each bot's draft is compiled in (`params::draft_preference`).
 - A/B baselines are frozen copies in `bots/baselines/<bot>-vN/`: never edit them, and delete one once the current bots beat it about 80% of the time.
 - When copying a bot, leave out `.cambc/`, whose CMake cache breaks the build.
+- A bot with `.htb` files (`bots/htb-starter`) is edited there, never in its generated `src/`; run `py tools/htb/hgen.py <bot>` after editing ([tools/htb/README.md](tools/htb/README.md)).
 
 Don't comment unless necessary: only counterintuitive behaviour or reasoning gets a concise comment.
 

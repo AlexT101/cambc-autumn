@@ -1,0 +1,75 @@
+{
+  "name": "htb",
+  "displayName": "HTB (C++ written like Java)",
+  "description": "Squiggles, completion, hover and go to definition for .htb bots (tools/htb/hgen.py), served by clangd.",
+  "version": "0.2.0",
+  "publisher": "herbert",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HerbertTheBird/Cambridge-Battlecode-Fall"
+  },
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "activationEvents": [
+    "onLanguage:htb",
+    "workspaceContains:bots/*/*.htb"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "htb",
+        "aliases": [
+          "HTB",
+          "htb"
+        ],
+        "extensions": [
+          ".htb"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "htb",
+        "scopeName": "source.htb",
+        "path": "./syntaxes/htb.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "HTB",
+      "properties": {
+        "htb.clangdPath": {
+          "type": "string",
+          "default": "",
+          "description": "clangd to use for .htb files (empty: Homebrew's, else the one on PATH)."
+        },
+        "htb.python": {
+          "type": "string",
+          "default": "",
+          "description": "Python used to run tools/htb/hgen.py on save (empty: py on Windows, else python3)."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "htb.restart",
+        "title": "HTB: Restart language server"
+      }
+    ],
+    "configurationDefaults": {
+      "[htb]": {
+        "editor.inlayHints.enabled": "off"
+      }
+    }
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}

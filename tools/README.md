@@ -171,3 +171,16 @@ py tools/replay/ab_compare.py <variant name> batch-A batch-B batch-C   # both bo
 ## Docs: tools/docs-sync
 
 `cd tools/docs-sync && npm install && node sync.mjs` regenerates `docs/`. Never edit `docs/` by hand.
+
+## .htb bots: tools/htb
+
+C++ bots written like Java (classes with their methods inside, no headers or forward declarations); `hgen.py`
+generates the bot's `src/`, which cambc builds. Example: `bots/htb-starter`. Details in [htb/README.md](htb/README.md).
+
+```
+py tools/htb/install.py               # once: generate + build every .htb bot, install the VS Code extension, check clangd
+py tools/htb/hgen.py <bot>            # regenerate src/ (no name: every .htb bot); --watch regenerates on save
+py tools/htb/htbcheck.py <bot>        # file:line:col errors, without a build
+```
+
+- Run hgen before `cambc build`, `run` and `submit`, and commit `src/`; never edit `src/` by hand.
