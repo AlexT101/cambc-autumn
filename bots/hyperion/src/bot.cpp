@@ -819,7 +819,7 @@ float rate(const World& world, float worth, float rounds) {
         const auto& map = world.map();
         horizon = cycle_horizon * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f);
     }
-    // A bag banked on the way (farm's trip less bank_now) can leave a cycle at or below 0.
+    // A guard: farm floors its trip, so a cycle is at least the capture.
     rounds = std::max(rounds, 1.0f);
     return worth / (rounds * (1.0f + rounds / horizon));
 }
@@ -2123,7 +2123,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
                         const int near_wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - near) : 0;
                         const bool may_help = !banks_bag && group.strength > 0 && belief.state == CampState::alive && near <= params::help_radius
                                               && near < help_steps;
-                        const float near_cycle = static_cast<float>(near + near_wait + capture_rounds()) - bank_now + bank + known.fastest;
+                        const float near_cycle = std::max(0.0f, static_cast<float>(near + near_wait) - bank_now + bank)
+                                                 + static_cast<float>(capture_rounds()) + known.fastest;
                         if (!may_help && near_cycle > 0 && (known.gems + known.gold) / near_cycle <= best_value
                             && (!banks_bag || (known.gems + known.gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + known.fastest) <= from_altar_value))
                             continue;
@@ -2143,7 +2144,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         if (!banks_bag && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
             && steps < help_steps && struggling(g))
             help_group = g, help_steps = steps;
-        const float trip = static_cast<float>(steps + wait) - bank_now + bank;
+        // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
+        // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
+        const float trip = std::max(0.0f, static_cast<float>(steps + wait) - bank_now + bank);
         const float gems = known.gems, gold = known.gold, fastest = known.fastest;
         // Risky groups matter only while no affordable one is found; skip the costly clearing
         // estimate for groups that cannot beat it even with no clearing. A crew's share can.
