@@ -508,3 +508,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    noinline `play_shielded` lands quiet hits shield-first with hurt()/spill()'s float operations and stops before
    anyone falls; shield expiry stays in act(). 0 mismatches over 33,755 fights. Wide bench at 100M vs merge-5 52/52
    identical: total -0.06%, p99 91.3k -> 91.2k, turns >100k 1944 -> 1917.
+81. 2026-10-22 (not yet submitted). Farm walks on after a fight's search (fuel/farm-fight-skip 04add51): on turns where
+   the strike search ran, farm does not evaluate its groups; it walks on to last turn's choice, or banks a bag, as the
+   farm-partial-evaluation gate's cut-short path did. Other turns evaluate as before, under that gate. A/B vs 69835ab
+   53.7% of 1094 (50.8-56.7; ladder 64.3, gen 53.1, gen-s1 52.9), out-of-fuel turns 3159 vs 3208. The same skip with
+   the gate removed won 54.2% but had 2.6x the out-of-fuel turns, all on many-group maps' quiet turns.
