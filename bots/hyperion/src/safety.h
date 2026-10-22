@@ -318,6 +318,7 @@ public:
 
 private:
     bool may_be_hit(vec2 p); // false only if no threat hits p
+    bool threatened_now(vec2 p);
     // Every credible threat at full damage, plus camps.
     float worst_damage(vec2 p);
     // Drop everything cached, after something this turn changed the fight: a kill, a stun or a
@@ -386,6 +387,9 @@ private:
     };
     // camp_area() and enemy_area() are kept in scratch boards: allocating one each turn costs ~550.
     bool camp_area_known_ = false, enemy_area_known_ = false;
+    // threatened()'s last tile and answer: callers on a recall or shop turn ask about our tile again.
+    vec2 threatened_at_{-1, -1};
+    bool threatened_ = false;
     // By fight_key(). A memo: past `max_fights` the oldest is replaced.
     struct FightMemo {
         std::uint32_t key;

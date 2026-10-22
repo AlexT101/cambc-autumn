@@ -1648,6 +1648,7 @@ void Safety::invalidate() {
     members_known_ = false;
     camp_area_known_ = false;
     enemy_area_known_ = false;
+    threatened_at_ = {-1, -1};
     fight_count_ = 0;
     gone_.fill(0);
     reachable_known_ = false;
@@ -1917,6 +1918,11 @@ float Safety::worst_damage(vec2 p) {
 // Any camp member or visible threat in reach is enough on its own. An unseen threat's chance is
 // uniform over its possible tiles; it hits p only within its field, capped inside its reach.
 bool Safety::threatened(vec2 p) {
+    if (p != threatened_at_) threatened_ = threatened_now(p), threatened_at_ = p;
+    return threatened_;
+}
+
+bool Safety::threatened_now(vec2 p) {
     static_assert(unknown_camp_weight >= recall_risk && hit_given_reach >= recall_risk);
     if (camp_damage(p) > 0) return true;
     if (!built_ && !may_be_hit(p)) return false;
