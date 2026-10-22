@@ -367,16 +367,16 @@ struct Search {
 
     int n = 0, foes = 0;
     UnitHealths h{};
-    std::array<int, max_groups> groups{};
+    std::array<int, max_groups> groups;
     int n_groups = 0, n_members = 0, n_centres = 0, n_distinct = 0, n_unseen = 0;
     // By local group: its wakers in tables.wakers, found on first need.
-    std::array<std::uint8_t, max_groups> waker_begin{}, waker_end{};
+    std::array<std::uint8_t, max_groups> waker_begin, waker_end;
     std::uint32_t wakers_known = 0;
     int n_wakers = 0, self_slot = 0;
     void find_wakers(int k);
-    std::array<const ChampionBelief*, 2> hors{};
+    std::array<const ChampionBelief*, 2> hors;
     int n_hors = 0;
-    std::array<const ChampionBelief*, max_mates> mates{};
+    std::array<const ChampionBelief*, max_mates> mates;
     int n_mates = 0;
 
     Grid free_ = 0, pass_ = 0, free_n = 0, land_here = 0, land_hits = 0, plain_here = 0, dom_dw = 0;
@@ -386,7 +386,9 @@ struct Search {
     // (as the old menu's landing_wakes; a woken pack keeps hitting while the fight stays).
     Grid land_bad = 0;
 
-    std::array<Act, max_depth> stack;
+    union {
+        std::array<Act, max_depth> stack;
+    };
     Grid has = 0;
     int nodes = 0, offers = 0, n_leaves = 0;
 
@@ -662,11 +664,11 @@ const TerrainGrid& terrain_grid(const StaticMap& map, vec2 centre, const bitboar
         out.walls |= ((word >> (i & 7)) & ((Grid{1} << (hi - lo)) - 1)) << lo << (r * grid_n);
     }
     if (packed != 1) {
-        std::array<vec2, 49> tiles;
+        Unwritten<vec2, 49> tiles;
         and_into(map.walls, box, scratch);
-        const auto k = positions_into(scratch, tiles.data(), 49);
+        const auto k = positions_into(scratch, tiles.a.data(), 49);
         for (std::uint32_t i = 0; i < k; ++i)
-            out.walls |= gbit((tiles[i].y - centre.y + grid_r) * grid_n + tiles[i].x - centre.x + grid_r);
+            out.walls |= gbit((tiles.a[i].y - centre.y + grid_r) * grid_n + tiles.a[i].x - centre.x + grid_r);
     }
     return out;
 }
@@ -680,12 +682,12 @@ void Search::read_geometry() {
         box_at = here;
     }
     const auto& terrain = terrain_grid(world.map(), here, box, t);
-    std::array<vec2, 49> at;
+    Unwritten<vec2, 49> at;
     const auto read_into = [&](const bitboard& from, Grid& out) {
         and_into(from, box, t);
-        const auto k = positions_into(t, at.data(), 49);
+        const auto k = positions_into(t, at.a.data(), 49);
         out = 0;
-        for (std::uint32_t i = 0; i < k; ++i) out |= gbit(cell(at[i]));
+        for (std::uint32_t i = 0; i < k; ++i) out |= gbit(cell(at.a[i]));
     };
     // A move may pass a guarded tile: only where the moves end is exposed.
     Grid blocked = 0, walls = 0;
@@ -1558,7 +1560,8 @@ bool strike_possible(const World& world) {
                 if (S.hors[k] == &e) hor = k;
             strikers[ns++] = {&e, &safety.strike_of(e), hor};
         }
-    std::array<Safety::CampHit, 24> camps;
+    Unwritten<Safety::CampHit, 24> camp_hits;
+    auto& camps = camp_hits.a;
     int nc = 0;
     for (const auto& m : safety.awake_members())
         if (nc < 24 && dist(here, m.pos) <= m.reach + grid_r) camps[nc++] = m;
@@ -1652,7 +1655,8 @@ bool strike_possible(const World& world) {
             for (int j = 0; j < nk; ++j)
                 if (!(cand[j].removed >> enemy & 1)) cand[j].d += b * factor(cand[j].leaf, hor);
         };
-        std::array<std::pair<float, int>, 16> order;
+        Unwritten<std::pair<float, int>, 16> ranked;
+        auto& order = ranked.a;
         int no = 0;
         for (int k = 0; k < ns; ++k) {
             float most = 0;
@@ -1685,7 +1689,8 @@ bool strike_possible(const World& world) {
             continue;
         }
         if (dist(p, here) >= 2) {
-            std::array<Safety::ThreatAt, 16> at;
+            Unwritten<Safety::ThreatAt, 16> threats;
+            auto& at = threats.a;
             const int k = safety.threats_at(p, at);
             for (int m = 0; m < k; ++m)
                 if (!world.enemies[static_cast<std::size_t>(at[m].enemy)].visible)

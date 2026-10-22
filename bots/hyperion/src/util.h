@@ -476,6 +476,12 @@ inline constexpr std::uint64_t small_cost_estimate = 5000;
 
 inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }
 
+// Storage left unwritten until used: vec2 and std::pair initialise their members.
+template <typename T, std::size_t N> union Unwritten {
+    Unwritten() {}
+    std::array<T, N> a;
+};
+
 // Left for the rest of the turn after optional work.
 inline constexpr std::uint64_t end_reserve = 10000;
 // Left by the fight evaluations before acting: the strikes, the goal's walk and the turn's end.
