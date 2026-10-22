@@ -7,17 +7,19 @@
 #include <cstdint>
 #include <span>
 #include <variant>
+#include <utility>
+#include <vector>
 
 class Bot;
 
-#line 9 "bots/htb-starter/bot.htb"
+#line 11 "bots/htb-starter/bot.htb"
 using cambc::vec2;
 
-#line 10 "bots/htb-starter/bot.htb"
+#line 12 "bots/htb-starter/bot.htb"
 using cambc::team;
 
 // Per-champion state survives between turns. Pick one stat and keep buying it.
-#line 13 "bots/htb-starter/bot.htb"
+#line 15 "bots/htb-starter/bot.htb"
 class Bot {
     int chosen_stat = -1;
 
@@ -89,8 +91,6 @@ public:
 
 
 
-
-
 };
 
 #line 88 "bots/htb-starter/bot.htb"
@@ -106,19 +106,22 @@ cambc::bitboard blocked_tiles();
 #line 108 "bots/htb-starter/bot.htb"
 bool move_towards_closest(cambc::bitboard goals);
 
-// Make one basic attack if the target is already in attack range.
+// Compute the attack mask once, rather than once per visible target.
 #line 136 "bots/htb-starter/bot.htb"
-template<class Target>
-bool attack_if_in_range(const Target& target) {
+template<class Targets>
+bool attack_first_in_range(const Targets& targets) {
     auto& me = cambc::self();
-    if (!me.can_attack() || !target.is_visible() || target.health() <= 0
-        || !me.attack_tiles().is_set(target.position())) {
-        return false;
+    if (targets.empty() || !me.can_attack()) return false;
+    const auto attack_tiles = me.attack_tiles();
+    for (const auto& target : targets) {
+        if (target.is_visible() && attack_tiles.is_set(target.position()) && target.health() > 0) {
+            me.attack(target);
+            return true;
+        }
     }
-    me.attack(target);
-    return true;
+    return false;
 }
 
 // Attack a camp already in range, otherwise move toward the nearest camp tiles.
-#line 148 "bots/htb-starter/bot.htb"
+#line 151 "bots/htb-starter/bot.htb"
 void farm_camps();

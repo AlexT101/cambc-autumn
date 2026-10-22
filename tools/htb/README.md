@@ -19,7 +19,7 @@ to show them inline, set `"[htb]": { "editor.inlayHints.enabled": "on" }`.
 ## Writing a bot
 
 Put the `.htb` files straight in the bot folder, `bots/<bot>/*.htb` (subfolders are fine). `bots/htb-starter` is
-the starter bot written this way. Your own headers (`.h`, `.hpp`) in the bot folder are copied into `src/` as they are.
+cambc 3.0.4's C++ starter (`cambc new --lang cpp`) written this way; it plays the same games as the C++ original. Your own headers (`.h`, `.hpp`) in the bot folder are copied into `src/` as they are.
 
     python3 tools/htb/hgen.py <bot>             # regenerate src/ (no name: every .htb bot)
     python3 tools/htb/hgen.py --watch           # regenerate on every save while you work
