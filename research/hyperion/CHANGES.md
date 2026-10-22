@@ -378,3 +378,6 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    overwhelmed() where neither can be true. The strike search keeps the bounds and walls of its 7x7 window per centre
    tile. 4 bench maps (00ambush, 00contest, 01hooks, 00interlock), 8/8 identical at 100M: total fuel -0.92%, p90 -1.1%,
    p99 -2.8%.
+55. 2026-10-21 (not yet submitted). continue_tribute keeps want_home's answer for decide, as continue_recall does, so
+   a tribute cancelled to go home does not simulate the pursuit again. Behaviour-identical: bench.py at 100M on the 35
+   ladder maps and 16 of maps/gen, 102/102 identical, no turn dearer; the dedupe fired on 3 turns (4.3k in all).

@@ -3033,8 +3033,8 @@ bool siege_heal_trip(const Memory& memory, Safety& safety) {
 }
 
 // Our tribute channel goes on unless it is unsafe and fleeing or fighting back pays. True if the
-// turn ends with it.
-bool continue_tribute(const World& world, Safety& safety, Memory& memory) {
+// turn ends with it; `home` gets want_home's answer if asked.
+bool continue_tribute(const World& world, Safety& safety, Memory& memory, std::optional<bool>& home) {
     auto& me = cambc::self();
     decision = 'T';
     // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits.
@@ -3048,7 +3048,7 @@ bool continue_tribute(const World& world, Safety& safety, Memory& memory) {
     }
     if (tribute_ok(world, safety, memory, my_channel_time())) return true;
     // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
-    if (memory.damage <= 0 && !want_home(world, safety, memory.siege) && !attack_target(world)
+    if (memory.damage <= 0 && !*(home = want_home(world, safety, memory.siege)) && !attack_target(world)
         && (winning_bag(world) || !prey(world, safety)))
         return true;
     decision = 't';
@@ -3218,9 +3218,9 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // One state read covers the channels until one is cancelled; a channel excludes the others.
     const auto state = my_state();
     if (state.contains(cambc::champion_state::teleporting)) return;
-    if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, safety, memory)) return;
     // Read again only after shopping changes our stats.
     std::optional<bool> home;
+    if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, safety, memory, home)) return;
     if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home)) return;
     // A ward shares the recall's channel, so this is its first chance; its sight counts this turn
     // (probe-ward-sight). Growing clusters here would starve the search: the turn end grows them.

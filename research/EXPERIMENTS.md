@@ -674,3 +674,13 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   fuel -0.92%, mean a turn 34594 -> 34277, p90 -1.1%, p99 -2.8%; 46164 turns cheaper, 1395 dearer. Not split per
   commit. Left on the branch: removals 3328bae + 510f8f0 (level at 49.2% vs main, net -130 lines; conflicts with the
   raw-bindings port) and OOF-ANATOMY.md.
+- dedupes (2026-10-21; an outside agent's "8-15k" list, investigated in code): (1) memoising turns_to_kill_idle by
+  tile and horizon: 16/16 identical but total fuel +0.01% (35 turns ~2k cheaper, 89k turns 2-3 dearer from the memo's
+  per-turn writes); the repeats are rare carrier-at-altar turns. Dropped. Extra, exact: continue_tribute discarded
+  want_home's answer and decide asked again, re-running pursuit; passed through (CHANGES 55): 102/102 identical on 35
+  ladder + 16 gen maps, total fuel -0.004%, fired on 3 turns (4.3k). Not tried: (2) skipping pursuit when fight(here)
+  was won needs no camp damage at here (new_fight sets no us.camp; pursuit does), no enemy still walking in (pursuit's
+  arrives_at), and for Cassi and Issac no self_falls, plus a debug check that striking first and fewer enemies never
+  turn a won fight lost; it targets pursuit's ~8k on fight turns. (3) skipping prey for melee after the search
+  attacked is not a dedupe: prey null vs not decides chase vs farm, and farm would walk out of a fight the search
+  stayed in; it needs an A/B.
