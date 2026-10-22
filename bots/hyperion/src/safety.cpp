@@ -1507,6 +1507,17 @@ std::array<Reach, 16>& reach_pool() {
 
 } // namespace
 
+namespace {
+
+// A tile in our vision with no camp on it: its member has died. One host call, which tells hidden
+// tiles apart.
+bool seen_empty(vec2 p) {
+    std::int32_t camp = 0;
+    return cambc::detail::sdk_has_camp(p.x, p.y, &camp) == 0 && camp == 0;
+}
+
+} // namespace
+
 std::vector<Safety::CampHit>& Safety::member_pool() {
     static std::vector<CampHit> pool;
     return pool;
@@ -1546,8 +1557,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
         }
         return static_cast<int>(o.first);
     };
-    static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
-    bool reread = false;
+    const bool reread = refresh_;
     const auto& groups = world_.map().groups;
     world_.each_stirring([&](int g) {
         const auto& c = world_.camps[g];
@@ -1561,11 +1571,6 @@ std::span<const Safety::CampHit> Safety::awake_members() {
                     n < static_cast<int>(others.at.size()) && !gone(o))
                     others.at[n++] = {o.pos, &o, -1, -2};
             if (camp_factor_ <= 0) camp_factor_ = camp_hit_factor();
-            if (refresh_) {
-                reread = true;
-                vision_into(seen);
-                camps_into(camps);
-            }
         }
         const float w = c.awake == Awake::awake ? 1.0f : unknown_camp_weight;
         // Only others this near a group's box can bring a member's reach below the group's:
@@ -1597,7 +1602,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
         auto* const out = members_.data();
         for (std::size_t i = 0; i < size; ++i) {
             const auto& m = groups[g].members[i];
-            if (c.health[i] <= 0 || m.strength <= 0 || (reread && test(seen, m.pos) && !test(camps, m.pos))) continue;
+            if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen_empty(m.pos))) continue;
             if (!stirred && c.member_asleep(i)) continue;
             int reach = m.reach;
             for (int k = 0; k < k_near; ++k) {
@@ -1662,12 +1667,8 @@ void Safety::refresh() {
     if (!built_ && !members_known_) return;
     bool changed = false;
     for (auto left = seen_enemies(); left; left &= left - 1) changed |= gone(world_.enemies[static_cast<std::size_t>(std::countr_zero(left))]);
-    if (!changed && members_known_ && member_count_ > 0) {
-        static bitboard seen{cambc::uninitialized}, camps{cambc::uninitialized};
-        vision_into(seen);
-        camps_into(camps);
-        for (int i = 0; i < member_count_ && !changed; ++i) changed = test(seen, members_[static_cast<std::size_t>(i)].pos) && !test(camps, members_[static_cast<std::size_t>(i)].pos);
-    }
+    if (!changed && members_known_)
+        for (int i = 0; i < member_count_ && !changed; ++i) changed = seen_empty(members_[static_cast<std::size_t>(i)].pos);
     if (changed) invalidate();
 }
 
