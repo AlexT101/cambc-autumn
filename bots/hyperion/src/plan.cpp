@@ -380,6 +380,7 @@ struct Search {
     int n_mates = 0;
 
     Grid free_ = 0, pass_ = 0, free_n = 0, land_here = 0, land_hits = 0, plain_here = 0, dom_dw = 0;
+    Grid guarded = 0; // the step guard's tiles: never an end
     Grid land_known = 0;
     // Landings never taken: those striking camps but no foe, and those waking a sleeping striker
     // (as the old menu's landing_wakes; a woken pack keeps hitting while the fight stays).
@@ -686,13 +687,11 @@ void Search::read_geometry() {
         out = 0;
         for (std::uint32_t i = 0; i < k; ++i) out |= gbit(cell(at[i]));
     };
+    // A move may pass a guarded tile: only where the moves end is exposed.
     Grid blocked = 0, walls = 0;
-    if (const bitboard* guard = pathing.guard()) {
-        or_into(pathing.blocked(), *guard, t);
-        read_into(t, blocked);
-    } else {
-        read_into(pathing.blocked(), blocked);
-    }
+    read_into(pathing.blocked(), blocked);
+    // Where we stand is never an end to drop: after the goal, it is the only one.
+    if (const bitboard* guard = pathing.guard()) read_into(*guard, guarded), guarded &= ~gbit(cell(here));
     // Dash paths are blocked by walls, camps and visible enemies (probe-dash-enemy).
     static bitboard foes_seen{cambc::uninitialized};
     camps_into(t);
@@ -1263,6 +1262,7 @@ Node Search::root() const {
 // Offers the leaf at each end tile in `ends`; mid(c, w, d) names the walk and dash tiles for one
 // it improves.
 template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& leaf, Mid&& mid) {
+    ends &= ~guarded;
     const std::uint16_t r = ends ? removed(s) : 0;
     each_bit(ends, [&](int c) {
         ++offers;
@@ -1728,6 +1728,9 @@ bool strike_possible(const World& world) {
     if (chosen >= 0) seq = concrete(tiles[chosen]), dropped[tiles[chosen].c] = true;
     int done = 0;
     bool failed = false;
+    // Its walk may end on a guarded tile it passes on the way to a landing.
+    const bitboard* guard = pathing.guard();
+    pathing.set_guard(nullptr);
     while (done < seq.n) {
         const Act a = seq.a[done];
         bool ok = false, blocked = false;
@@ -1812,6 +1815,30 @@ bool strike_possible(const World& world) {
         chosen = alt;
         dropped[tiles[alt].c] = true;
         seq = concrete(tiles[alt]);
+    }
+    pathing.set_guard(guard);
+    if constexpr (debug_search) {
+        debug_block({
+            // A first move onto a guarded tile on the way elsewhere, and a plan whose moves stopped
+            // short of its end tile.
+            if (chosen >= 0) {
+                const vec2 end = S.tile(tiles[chosen].c), at = my_position();
+                int moves = 0, made = 0;
+                vec2 first{-1, -1};
+                for (int k = 0; k < seq.n; ++k)
+                    if (seq.a[k].op == Op::walk || seq.a[k].op == Op::dash) {
+                        if (moves++ == 0) first = seq.a[k].tile;
+                        made += k < done;
+                    }
+                if (moves == 2 && first != end && (S.guarded >> S.cell(first) & 1))
+                    std::printf("SRCH-PASS %d %u mid %d,%d end %d,%d made %d\n", world.round, static_cast<unsigned>(world.me().handle), first.x,
+                                first.y, end.x, end.y, made);
+                if (made > 0 && at != end)
+                    std::printf("SRCH-STRANDED %d %u at %d,%d end %d,%d guarded %d failed %d\n", world.round,
+                                static_cast<unsigned>(world.me().handle), at.x, at.y, end.x, end.y,
+                                static_cast<int>(S.guarded >> S.cell(at) & 1), failed ? 1 : 0);
+            }
+        });
     }
     mark(3);
     if (failed) out.attacked |= strike_enemy(world);

@@ -188,6 +188,13 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
 
 ### Fuel
 
+- Guard on end tiles only, again (2026-10-22, branch claude/trusting-galileo-t4s7rm; A/B pending; as 8250a4f, on the
+  post-goal search). The search's moves may pass guarded tiles, the guard is placed again where the search left us,
+  and a dash widens it only while a cast is left; the search's own tile is never a dropped end. Debug lines: SRCH-PASS
+  (a plan's first move onto a guarded tile, ending elsewhere) and SRCH-STRANDED (moves stopped short of the end tile).
+  Passing is rare: 7 in 7,888 searches (100M bench), 2 in 7,391 (real budget), 7 in 11,115 (32 test-draft gen-s1
+  games); none stranded, guarded or not. So 8250a4f's play changes come mostly from the guard placed again and the
+  radius.
 - Savings rounds, byte-identical at 100M: round 1 −11% a turn; round 2 (bush clusters grown in the warm-up, measured
   worst costs in the estimates); exact fight simulation (fighters made once a turn, quiet turns reused; trade 4.7k ->
   4.0k a call); Reach (ways kept per recipe, static windows once per tile, lazy builds); WASM-aware (−4.2%); host-op

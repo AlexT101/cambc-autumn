@@ -2257,7 +2257,7 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     if (n == 0) return nullptr;
     int radius = 1;
     for (int s = 0; s < 2; ++s)
-        if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round)) radius = 2;
+        if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = 2;
     // Who can hit a tile, and how hard: a tile no worse than ours is as safe as ours. `bound`
     // by distance alone, never below the exact exposure, which only the foes in it can add to;
     // only those `reaching` a step or dash can be in it.
@@ -3291,6 +3291,8 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     decision = holding ? 'P' : attacked ? 'A' : decision;
     if (!me.is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) safety.refresh();
+    // The guard was placed around the tile we started on: the goal steps from where the search left us.
+    if (my_position() != world.me().pos && (my_can_move() || my_can_cast())) pathing.set_guard(step_guard(world, safety));
     if (holding) {
         hold_capture(world, memory, attacked);
         return;
