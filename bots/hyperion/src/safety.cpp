@@ -1666,6 +1666,7 @@ void Safety::invalidate() {
     enemy_area_known_ = false;
     threatened_at_ = {-1, -1};
     fight_count_ = 0;
+    unknown_falls_ = 0;
     gone_.fill(0);
     reachable_known_ = false;
 }
