@@ -1532,7 +1532,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             partner_output = std::max(partner_output, floored_output(a));
     const int n_groups = static_cast<int>(groups.size());
     // Static per group once read: its centre field (once warm) and that field's steps to our
-    // spawn, its home_ground weight and its centre_to_altar steps. Then its reward and the walks
+    // spawn, its home_ground weight, its centre_to_altar steps, its own tribute and each holder's
+    // gold (`tribute` 0 until read). Then its reward and the walks
     // to bank it, kept while `context` holds (the gold's worth while `gold_context` also does),
     // and its fastest clear while its belief holds.
     struct GroupFacts {
@@ -1619,6 +1620,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const CampGroup* const group_data = groups.data();
     const CampBelief* const camp_data = world.camps.data();
     int* const steps_data = centre_steps.data();
+    const int bag_tribute = bag > 0 ? tribute_turns(bag) : 0;
     int k = 0;
     for (; k < n_groups && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
         const int g = (first + k) % n_groups;
@@ -1633,18 +1635,20 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const bool wins = group.gems >= short_by;
         auto& known = group_facts[g];
         if (known.context != context || known.sticky != (g == farm_group)) {
+            if (known.tribute == 0) {
+                known.tribute = tribute_turns(group.gems);
+                known.gold_in = static_cast<std::uint32_t>(group.gold / holders(group));
+            }
             const Field* to_bank = to_altar ? to_altar : wins ? &pathing.to_any_altar() : nullptr;
             // A recall only goes home: the way out from an altar is walked.
             if (to_bank && known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
             known.walk = to_bank ? known.to_altar : unreachable;
             // Chained, the gems join the bag's one tribute; from the altar they need their own.
-            known.chained_tribute = tribute_turns(bag + group.gems) - (bag > 0 ? tribute_turns(bag) : 0);
-            known.tribute = tribute_turns(group.gems);
+            known.chained_tribute = bag > 0 ? tribute_turns(bag + group.gems) - bag_tribute : known.tribute;
             // The bank terms when the way back is walked.
             const bool banks = static_cast<float>(known.walk) < static_cast<float>(unreachable);
             known.walked_bank = banks ? static_cast<float>(known.walk) + static_cast<float>(known.chained_tribute) : 0.0f;
             known.walked_cycle = banks ? static_cast<float>(known.walk) + static_cast<float>(known.tribute) : 0.0f;
-            known.gold_in = static_cast<std::uint32_t>(group.gold / holders(group));
             // The spawn fields home_ground reads are warm once the centres are.
             if (known.home < 0 && centres_ready) known.home = home_ground(map, g);
             float weight = centres_ready ? known.home : 1.0f;
