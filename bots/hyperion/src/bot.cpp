@@ -688,19 +688,19 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
 const bitboard* pack_zone(const World& world);
 
 // The quickest bank by a crystal (StaticMap::hops): the walk to a source, the channel, the walk from
-// the nearest landing and the recall out, as no walk leaves the pocket.
+// the nearest landing and the recall out, as no walk leaves the pocket. Not to `exclude`.
 struct HopRoute {
     int hop = -1;
     int steps = unreachable;
 };
-HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory) {
+HopRoute hop_route(const World& world, Pathing& pathing, const Memory& memory, int exclude = -1) {
     HopRoute best;
     const auto& map = world.map();
     const vec2 here = my_position();
     if (map.hops().empty() || !test(pathing.foot(), here)) return best;
     for (int h = 0; h < static_cast<int>(map.hops().size()); ++h) {
         const int a = map.hops()[h].altar;
-        if (world.altars[a].enemy_lock || (a == memory.avoid_altar && world.round < memory.avoid_until)) continue;
+        if (a == exclude || world.altars[a].enemy_lock || (a == memory.avoid_altar && world.round < memory.avoid_until)) continue;
         const int walk = pathing.to_hop(h).at(here), inner = pathing.hop_landing_steps(h);
         if (walk == unreachable || inner == unreachable) continue;
         if (const int steps = walk + cambc::constants::tp_crystal_time + inner + recall_turns(world); steps < best.steps)
@@ -743,7 +743,6 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
     // One cached field covers every altar; per-altar fields are needed only to skip locked ones.
     // Breaking a lock takes a turn per hit left, about a step each.
     int best = -1, best_steps = unreachable;
-    const bool skipping = any_locked;
     if (any_locked) {
         for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
             // A tribute tile is within 1 of its altar: an altar this rules out needs no field.
@@ -755,6 +754,9 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
             if (steps < best_steps) best = a, best_steps = steps;
         }
         any_locked = best >= 0;
+        // Walking reaches only the altar we gave up waiting at, and no hop leads elsewhere when we
+        // left: stop avoiding it rather than stand still. submit_here judges its safety again.
+        if (best < 0 && world.round < memory.avoid_until) memory.avoid_until = world.round;
     }
     // A pack we would retreat from stands in the way: around it within the usual detour, else
     // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
@@ -764,8 +766,7 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
         if (pathing.step_towards(any_locked ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
         return;
     }
-    // Every altar a walk reaches avoided: only a hop is left.
-    const int walk_steps = any_locked ? best_steps : skipping ? unreachable : pathing.to_any_altar().at(here);
+    const int walk_steps = any_locked ? best_steps : pathing.to_any_altar().at(here);
     if (const auto hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
         memory.wants_crystal = true;
         if (carries_crystal()) {
@@ -4040,7 +4041,7 @@ void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& mem
             if (memory.wait_altar != at) memory.wait_altar = at, memory.wait_since = world.round;
             // How long they stay is unknown: wait as many rounds as the walk to the nearest other
             // unlocked altar takes, then walk there.
-            int other_steps = carries_crystal() ? hop_route(world, pathing, memory).steps : unreachable;
+            int other_steps = carries_crystal() ? hop_route(world, pathing, memory, at).steps : unreachable;
             for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
                 if (a == at || world.altars[a].enemy_lock || dist(here, altars[a].pos) - 1 >= other_steps) continue;
                 other_steps = std::min<int>(other_steps, pathing.to_altar(a).at(here));
