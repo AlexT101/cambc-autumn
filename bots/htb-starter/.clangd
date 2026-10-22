@@ -1,0 +1,46 @@
+CompileFlags:
+  CompilationDatabase: .
+
+# >>> tools/htb/hgen.py: lets clangd see what each file uses from the bot's other files.
+# Rewritten by tools/htb/hgen.py; edits between these markers are lost.
+---
+If:
+  PathMatch: 'bot\.htb'
+CompileFlags:
+  Add: [-xc++, -include, ../hgen/bot.h]
+  Remove: [-mbulk-memory-opt]
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use]
+---
+If:
+  PathMatch: 'draft\.htb'
+CompileFlags:
+  Add: [-xc++, -include, ../hgen/draft.h]
+  Remove: [-mbulk-memory-opt]
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use]
+---
+If:
+  PathMatch: 'main\.htb'
+CompileFlags:
+  Add: [-xc++, -include, ../hgen/main.h]
+  Remove: [-mbulk-memory-opt]
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use]
+---
+If:
+  PathMatch: 'random\.htb'
+CompileFlags:
+  Add: [-xc++, -include, ../hgen/random.h]
+  Remove: [-mbulk-memory-opt]
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use]
+# <<< tools/htb/hgen.py

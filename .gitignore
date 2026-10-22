@@ -13,3 +13,7 @@ research/**/*.pkl
 compile_commands.json
 replay-bulk/
 replay-bulk-zip/
+
+# .htb bots (tools/htb)
+tools/htb/vscode/node_modules/
+bots/*/.cache/
