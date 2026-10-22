@@ -1736,6 +1736,16 @@ bool strike_possible(const World& world) {
             for (int j = 0; j < nk; ++j)
                 if (!(cand[j].removed >> enemy & 1)) cand[j].d += b * factor(cand[j].leaf, hor);
         };
+        // add() then top() in one pass.
+        const auto add_top = [&](int enemy, float b, int hor) {
+            float x = -1e30f;
+            for (int j = 0; j < nk; ++j) {
+                auto& q = cand[j];
+                if (!(q.removed >> enemy & 1)) q.d += hor < 0 ? b : b * factor(q.leaf, hor);
+                if (const float y = q.raw + (q.keep ? sh : 0.0f) - q.d; y > x) x = y, arg = j;
+            }
+            return x + base;
+        };
         Unwritten<std::pair<float, int>, 16> ranked;
         auto& order = ranked.a;
         int no = 0;
@@ -1761,9 +1771,11 @@ bool strike_possible(const World& world) {
         bool cut = false;
         for (int m = 0; m < no && !cut; ++m) {
             const auto& sk = strikers[order[m].second];
-            add(sk.e->index, safety_params::hit_given_reach * safety.blow(*sk.e, p).damage, sk.hor);
+            const float b = safety_params::hit_given_reach * safety.blow(*sk.e, p).damage;
             ++queries;
-            total = top();
+            // A miss leaves every candidate, and so the total, as it was.
+            if (b == 0) continue;
+            total = add_top(sk.e->index, b, sk.hor);
             cut = total <= best_total;
         }
         if (!cut && kept && sh > 0) {
@@ -1781,11 +1793,11 @@ bool strike_possible(const World& world) {
             Unwritten<Safety::ThreatAt, 16> threats;
             auto& at = threats.a;
             const int k = safety.threats_at(p, at);
+            bool added = false;
             for (int m = 0; m < k; ++m)
-                if (!world.enemies[static_cast<std::size_t>(at[m].enemy)].visible)
-                    add(at[m].enemy, safety_params::hit_given_reach * at[m].blow.damage, -1);
-            total = top();
-            t.total = total;
+                if (!world.enemies[static_cast<std::size_t>(at[m].enemy)].visible && at[m].blow.damage != 0)
+                    add(at[m].enemy, safety_params::hit_given_reach * at[m].blow.damage, -1), added = true;
+            if (added) total = top(), t.total = total;
         }
         t.exact = true;
         t.keep = cand[arg].keep;
