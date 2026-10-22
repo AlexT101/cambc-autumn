@@ -49,9 +49,9 @@ const std::vector<Enemy>& live_enemies(const World& world) {
     return out;
 }
 
-// Ourselves as we end the turn: moved, cooldowns restarted by casts. The fields read here only:
+// Ourselves as we end the turn, moved. The fields read here only:
 // copying a belief copies its bitboards.
-const ChampionBelief& live_self(const World& world) {
+ChampionBelief& live_self(const World& world, cambc::champion_state& state) {
     static ChampionBelief b;
     const auto& now = world.me();
     b.handle = now.handle;
@@ -61,6 +61,7 @@ const ChampionBelief& live_self(const World& world) {
     b.is_self = true;
     b.visible = now.visible;
     const auto& info = my_record();
+    state = cambc::champion_state::from_bits_retain(info.state);
     // Ren's reflected damage can kill us in our own turn: dead, we read as off the map.
     b.alive = now.alive && info.x >= 0;
     b.max_health = info.max_health;
@@ -68,14 +69,19 @@ const ChampionBelief& live_self(const World& world) {
     b.health = info.health;
     b.strength = info.strength;
     b.focus = info.focus;
-    b.scale = damage_scale(b.facts().passive, b.health, b.max_health);
     b.gems = static_cast<int>(my_gems());
+    return b;
+}
+
+// What our strikes next round read, cooldowns restarted by casts included: only needed with an
+// enemy in sight.
+void read_strike(const World& world, ChampionBelief& b) {
+    b.scale = damage_scale(b.facts().passive, b.health, b.max_health);
     for (std::uint32_t s = 0; s < 2; ++s) {
         static std::int32_t cooldown;
         ok(cambc::detail::sdk_champion_cooldown(my_handle(), s, &cooldown));
         b.ready_round[s] = world.round + std::max(0, static_cast<int>(cooldown));
     }
-    return b;
 }
 
 bool we_start(const World& world, int round) { return world.map().team_a == (round % 2 == 1); }
@@ -158,12 +164,28 @@ void offer_channel(const ChampionBelief& self, cambc::champion_state state, Safe
     }
 }
 
+// At least offer_escape's damage, from the strikes alone: no placement, and unseen enemies at
+// their most. Before a refresh it still bounds the damage after one unless a visible enemy may have
+// died: otherwise our turn only removed camp members.
+bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, bool seen) {
+    // With none in sight the ceiling places nothing, and its unseen strikes cost less.
+    if (!seen) return safety.damage_ceiling(self.pos) >= self.health;
+    float damage = safety.camp_damage(self.pos);
+    bool hit = false;
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !(e.visible || e.tracked)) continue;
+        const auto& s = safety.strike_of(e);
+        const int d = e.visible ? dist(self.pos, e.pos) : 0;
+        if (!s.hits(d)) continue;
+        hit = true;
+        damage += s.damage[static_cast<std::size_t>(d)] * (e.visible && !e.acted ? 2.0f : 1.0f);
+    }
+    return hit && damage >= self.health;
+}
+
 // Enemies yet to act this round strike before our next turn whatever the order; acting first
 // next round denies the second strike of those, and the only one of the others.
 void offer_escape(const World& world, const ChampionBelief& self, Safety& safety, Wish& wish) {
-    if (test(world.map().ally_spawn, self.pos) || safety.damage_ceiling(self.pos, true) < self.health
-        || safety.damage_bound(self.pos, true) < self.health)
-        return;
     float damage = safety.camp_damage(self.pos);
     bool enemy = false;
     std::array<Safety::ThreatAt, 16> threats;
@@ -215,21 +237,37 @@ void set_turn_order(const World& world, Safety& safety) {
         return;
     }
     if (world.me().alive) {
-        const auto& self = live_self(world);
+        cambc::champion_state state{};
+        auto& self = live_self(world, state);
         if (self.alive) {
             const auto& enemies = live_enemies(world);
-            offer_engaged(self, enemies, wish);
-            const Strike ours = strike(self, world.round + 1);
-            offer_kills(world, self, ours, enemies, wish);
-            offer_heal(world, self, enemies, wish);
-            // With no enemy in sight our turn only removed camp members, so the threats before a refresh
-            // overstate those after: when they cannot kill us and no channel ends, nothing needs it.
-            const auto state = my_state();
+            if (!enemies.empty()) {
+                read_strike(world, self);
+                offer_engaged(self, enemies, wish);
+                offer_kills(world, self, strike(self, world.round + 1), enemies, wish);
+                offer_heal(world, self, enemies, wish);
+            }
             const bool ending = channel_ending(state);
-            if (ending || enemy_seen(world)
-                || !(test(world.map().ally_spawn, self.pos) || safety.damage_ceiling(self.pos, true) < self.health)) {
-                safety.refresh();
-                if (ending) offer_channel(self, state, safety, wish);
+            const bool seen = enemy_seen(world);
+            int visible = 0;
+            if (seen)
+                for (const auto& e : world.enemies) visible += e.alive && e.visible;
+            // Out of sight now also reads as off the map.
+            const bool died = static_cast<int>(enemies.size()) < visible;
+            bool refreshed = false;
+            const auto refresh = [&] {
+                using cambc::champion_state;
+                // Only our attacks and casts kill.
+                if (!refreshed && !(state.contains(champion_state::can_attack) && state.contains(champion_state::can_cast)))
+                    refreshed = true, safety.refresh();
+            };
+            if (died) refresh();
+            if (ending) {
+                refresh();
+                offer_channel(self, state, safety, wish);
+            }
+            if (!test(world.map().ally_spawn, self.pos) && may_escape(world, self, safety, seen)) {
+                refresh();
                 offer_escape(world, self, safety, wish);
             }
         }
