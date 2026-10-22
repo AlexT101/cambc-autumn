@@ -42,7 +42,7 @@ py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen    # each on its 
 
 `maps/` holds the 35 ladder maps under the names SDK updates ship them with (`00ambush`, `01big-world`, ...). Delete any uuid-suffixed copies an update adds. Ladder replays name maps without the prefix, and extract.mjs and mapgen accept either.
 
-`maps/gen/` (suite seed 7207) is 256 symmetric maps that load and play to completion. Every camp group, altar and the enemy spawn is reachable on foot.
+`maps/gen/` (suite seed 1021) is 256 symmetric maps that load and play to completion. Every camp group, altar and the enemy spawn is reachable on foot.
 - 165 come from exotic presets: shaped playable areas, mazes, spirals, pillars, Voronoi cells, tunnels, city blocks, corridors, open fields and long thin maps, with varied spawns and economies.
 - 58 come from ladder-like presets, including `monolith-only` and `shared-gems`.
 - 33 are mutations of ladder maps.
