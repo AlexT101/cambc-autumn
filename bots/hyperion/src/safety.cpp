@@ -395,24 +395,42 @@ float watched_health(const Side& us, int self) {
     return me.link >= 0 ? std::min(me.health, us.fighters[me.link].health) : me.health;
 }
 
-// Whether our fighter `self` (and its linked body) must outlive their next `theirs` turns and our
-// next `ours`: every member of theirs alive now attacking each turn and casting each slot as soon
-// as it is ready, Ren hitting back at each of our hits, and the camps, still fall short of it.
-bool outlives(const Side& us, const Side& them, int self, int theirs, int ours) {
-    const float health = watched_health(us, self);
-    const int end = them.turn + theirs;
-    float most = static_cast<float>(theirs) * us.camp, back = 0;
+// The least damage that fells every member of ours: each one's health, but a linked pair falls
+// with the first of its bodies.
+float side_health(const Side& us) {
+    float total = 0, linked = std::numeric_limits<float>::max();
+    for (int i = 0; i < us.count; ++i)
+        if (const auto& f = us.fighters[i]; f.health <= 0) continue;
+        else if (f.link >= 0) linked = std::min(linked, f.health);
+        else total += f.health;
+    return linked < std::numeric_limits<float>::max() ? total + linked : total;
+}
+
+// The most their side can deal ours over the rest of the fight, `horizon` turns each: every member
+// alive now attacking each turn and casting each slot as soon as it is ready, Ren hitting back at
+// each of our next `ours` hits, and the camps.
+struct Cap {
+    float rate = 0, rest = 0; // a turn of theirs, and the casts and Ren
+    float weakest = std::numeric_limits<float>::max(); // their weakest's health
+    // Over their next `theirs` turns, with room for rounding, it falls short of `health`.
+    bool short_of(int theirs, float health) const { return (static_cast<float>(theirs) * rate + rest) * 1.001f + 1.0f < health; }
+};
+Cap their_cap(const Side& us, const Side& them, int horizon, int ours) {
+    Cap c;
+    float strength = 0, casts = 0, back = 0;
     for (int i = 0; i < them.count; ++i) {
         const auto& f = them.fighters[i];
         if (f.health <= 0) continue;
-        most += static_cast<float>(theirs) * f.strength;
+        strength += f.strength;
+        c.weakest = std::min(c.weakest, f.health);
         back = std::max(back, f.retaliation);
         for (int s = 0; s < 2; ++s)
-            if (const int first = std::max(them.turn, f.ready_at[s]); f.ready_at[s] != never && first < end)
-                most += static_cast<float>((end - first + ability_cooldown - 1) / ability_cooldown) * f.kit->cast[s].damage;
+            if (const int first = std::max(them.turn, f.ready_at[s]); first < horizon)
+                casts += static_cast<float>((horizon - first + ability_cooldown - 1) / ability_cooldown) * f.kit->cast[s].damage;
     }
-    if (back > 0) most += static_cast<float>(2 * ours * us.alive) * back;
-    return most * 1.001f + 1.0f < health;
+    c.rate = us.camp + strength;
+    c.rest = back > 0 ? casts + static_cast<float>(2 * ours * us.alive) * back : casts;
+    return c;
 }
 
 // Whether their side must take all of ours within their next `theirs` turns. We cannot fell any of
@@ -455,26 +473,21 @@ bool overwhelmed(const Side& us, const Side& them, int theirs, int ours) {
     return least > guard * 1.001f + 1.0f;
 }
 
-// Lower bounds on the damage outlives() and overwhelmed() sum, every other term of which is at
-// least 0: their live members' Strength each of their turns, and our arriving members' each of
-// ours, against our fighter's health and their weakest. Past its bound either is false.
-struct ExitBounds {
-    float their_strength = 0, our_strength = 0, weakest = std::numeric_limits<float>::max();
-};
-ExitBounds exit_bounds(const Side& us, const Side& them) {
-    ExitBounds b;
-    for (int i = 0; i < them.count; ++i)
-        if (const auto& f = them.fighters[i]; f.health > 0) b.their_strength += f.strength, b.weakest = std::min(b.weakest, f.health);
+// A lower bound on the damage overwhelmed() sums, every other term of which is at least 0: our
+// arriving members' Strength each of our turns. Past their weakest, overwhelmed() is false.
+float our_strength(const Side& us) {
+    float total = 0;
     for (int i = 0; i < us.count; ++i)
-        if (const auto& f = us.fighters[i]; f.health > 0 && f.arrives_at != never) b.our_strength += f.strength;
-    return b;
+        if (const auto& f = us.fighters[i]; f.health > 0 && f.arrives_at != never) total += f.strength;
+    return total;
 }
 
 // Turns each side needs to empty the other's pool, within `horizon` turns each, playing the fight
 // out on the sides given. `self_falls`: whether our own fighter dies before their side does.
 // `dealt`, for debug_fights: their first turn's damage, ours, then their first five turns', ours.
 // {-1, -1} if the fuel left fell below `fuel_floor` first. With `self_falls` and not Dealt, a fight
-// our fighter must outlive ends at once as {0, 0}, and one they must win as {0, horizon}.
+// our fighter (or, once it has fallen, the rest of ours) must outlive ends at once as {0, 0}, and
+// one they must win as {0, horizon}.
 template <bool Dealt = false>
 std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = fight_horizon,
                              std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0) {
@@ -485,18 +498,10 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
         if (!Dealt && self_falls && us.alive + 16 * them.alive != alive) {
             alive = us.alive + 16 * them.alive;
             const int theirs_left = horizon - theirs, ours_left = horizon - ours;
-            const auto bound = exit_bounds(us, them);
-            if (watched >= 0) {
-                if (static_cast<float>(theirs_left) * bound.their_strength < watched_health(us, watched)) {
-                    if (outlives(us, them, watched, theirs_left, ours_left)) return {0, 0};
-                } else if constexpr (!Dealt) {
-                    debug_block({
-                        if (outlives(us, them, watched, theirs_left, ours_left))
-                            std::printf("PREFILTER-MISMATCH %d outlives\n", cambc::round_number());
-                    });
-                }
-            }
-            if (static_cast<float>(ours_left) * bound.our_strength < bound.weakest) {
+            const auto cap = their_cap(us, them, horizon, ours_left);
+            // Our fighter outlives the fight or, once it has fallen, the rest of ours do.
+            if (cap.short_of(theirs_left, watched >= 0 ? watched_health(us, watched) : side_health(us))) return {0, 0};
+            if (static_cast<float>(ours_left) * our_strength(us) < cap.weakest) {
                 if (overwhelmed(us, them, theirs_left, ours_left)) {
                     if (watched >= 0) *self_falls = true;
                     return {0, horizon};
