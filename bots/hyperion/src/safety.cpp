@@ -1581,8 +1581,8 @@ void Safety::invalidate() {
     threat_count_ = 0;
     threat_mask_ = 0;
     members_known_ = false;
-    camp_area_.reset();
-    enemy_area_.reset();
+    camp_area_known_ = false;
+    enemy_area_known_ = false;
     fight_count_ = 0;
     gone_.fill(0);
     reachable_known_ = false;
@@ -1867,28 +1867,34 @@ bool Safety::threatened(vec2 p) {
 }
 
 const bitboard& Safety::camp_area() {
-    if (!camp_area_) {
-        bitboard b;
+    static bitboard area{cambc::uninitialized};
+    if (!camp_area_known_) {
+        clear_board(area);
         for (const auto& m : awake_members())
-            draw_square(b, m.pos, static_cast<float>(m.reach));
-        camp_area_ = std::move(b);
+            draw_square(area, m.pos, static_cast<float>(m.reach));
+        camp_area_known_ = true;
     }
-    return *camp_area_;
+    return area;
 }
 
 const bitboard& Safety::enemy_area() {
-    if (!enemy_area_) {
-        bitboard any;
+    static bitboard any{cambc::uninitialized};
+    if (!enemy_area_known_) {
+        clear_board(any);
         // A visible threat's: a superset, as a walls field per enemy each turn would cost ~3k.
         for (const auto& t : threats())
             if (!t.visible) or_into(any, t.area, any);
             else if (const int r = reach_of(*t.belief).reach(); r >= 0) draw_square(any, t.pos, static_cast<float>(r));
-        enemy_area_ = std::move(any);
+        enemy_area_known_ = true;
     }
-    return *enemy_area_;
+    return any;
 }
 
-bitboard Safety::avoid() { return camp_area() | enemy_area(); }
+const bitboard& Safety::avoid() {
+    static bitboard out{cambc::uninitialized};
+    or_into(camp_area(), enemy_area(), out);
+    return out;
+}
 
 // Every unseen threat is credible: unseen_weight() drops the rest. Its area is `possible` grown by
 // its radius, so it comes within r of p exactly when `possible` comes within radius + r.

@@ -31,7 +31,7 @@ bool castable(const World& world, int slot) {
 struct Cast {
     int slot = -1;
     float value = 0;
-    std::optional<cambc::champion> champion;
+    std::optional<cambc::handle_champion_t> champion;
     std::optional<cambc::camp> camp;
     vec2 tile{-1, -1};
     bool dash = false; // a landing on `tile`
@@ -41,11 +41,10 @@ struct Cast {
     }
     bool execute() const {
         if (slot < 0) return false;
-        const auto ability = cambc::self().abilities()[slot];
         try {
-            if (champion) return ability.use(*champion);
-            if (camp) return ability.use(*camp);
-            const bool cast = ability.use(tile);
+            if (champion) return cast_slot_on(slot, *champion);
+            if (camp) return cast_slot_on(slot, static_cast<cambc::handle_camp_t>(*camp));
+            const bool cast = cast_slot(slot, tile);
             outside_dashes() += cast && dash;
             return cast;
         } catch (const cambc::error&) {
@@ -56,25 +55,25 @@ struct Cast {
 
 float raw_damage(int slot) {
     try {
-        return cambc::self().abilities()[slot].damage_amount();
+        return my_damage(slot);
     } catch (const cambc::error&) {
         return 0;
     }
 }
 
 // Health lost after mitigation and shields, capped at health.
-float damage_to(int slot, const cambc::champion& target, float raw) {
+float damage_to(int slot, cambc::handle_champion_t target, float raw) {
     if (raw <= 0) return 0;
     try {
-        return cambc::self().abilities()[slot].damage_amount(target);
+        return my_damage_to(slot, target);
     } catch (const cambc::error&) {
-        return std::min(raw, target.health());
+        return std::min(raw, record_of(target).health);
     }
 }
 
 bool kept_recall(const ChampionBelief& e) {
     return e.channel == Channel::recall && e.visible
-           && aph::kept_recall(e.live(), e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
+           && aph::kept_recall(e.handle, e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
 }
 
 // A kill takes the bag, both bags for Cassi and Issac, who die together. Other damage to an
@@ -233,8 +232,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
         for (const auto& e : world.enemies) {
             if (n_reaching == 16) break;
             if (!e.alive || !e.visible || !strike(e, next_turn_round(world, e)).hits(dist(here, e.pos))) continue;
-            const auto c = e.live();
-            if (!c.is_visible() || c.buffs().has_stun()) continue;
+            if (!visible_record(e.handle) || has_stun(e.handle)) continue;
             unstoppable |= e.facts().passive == Passive::stun_immune;
             reaching[n_reaching++] = &e;
         }
@@ -270,15 +268,16 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                 if (!e.alive) continue;
                 if (e.visible) {
                     if (dist(here, e.pos) > a.reach()) continue;
-                    const auto c = e.live();
-                    if (!c.is_visible()) continue;
-                    const float damage = damage_to(s, c, raw);
+                    const auto* live = visible_record(e.handle);
+                    if (!live) continue;
+                    const float health = live->health;
+                    const float damage = damage_to(s, e.handle, raw);
                     if (suicidal(e)) {
                         draw_square(off, e.pos, static_cast<float>(a.radius));
                         continue;
                     }
-                    const float stun = a.stuns && !c.buffs().has_stun() ? stun_worth(world, e, raw > 0) : 0;
-                    targets.push_back({e.pos, 1, hit_worth(world, e, damage, c.health(), test(enemy_spawn, e.pos)) + stun});
+                    const float stun = a.stuns && !has_stun(e.handle) ? stun_worth(world, e, raw > 0) : 0;
+                    targets.push_back({e.pos, 1, hit_worth(world, e, damage, health, test(enemy_spawn, e.pos)) + stun});
                 } else if (e.tracked && !board_empty(e.possible)) {
                     const int n = static_cast<int>(board_count(e.possible));
                     if (n > max_unseen_tiles) continue;
@@ -301,12 +300,13 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
         } else if (a.target == Targeting::unit) {
             for (const auto& e : world.enemies) {
                 if (!e.alive || !e.visible || dist(here, e.pos) > a.range() || suicidal(e)) continue;
-                const auto c = e.live();
-                if (!c.is_visible()) continue;
-                float v = hit_worth(world, e, damage_to(s, c, raw), c.health(), test(enemy_spawn, e.pos));
-                if (a.stuns && !c.buffs().has_stun()) v += stun_worth(world, e, raw > 0);
+                const auto* live = visible_record(e.handle);
+                if (!live) continue;
+                const float health = live->health;
+                float v = hit_worth(world, e, damage_to(s, e.handle, raw), health, test(enemy_spawn, e.pos));
+                if (a.stuns && !has_stun(e.handle)) v += stun_worth(world, e, raw > 0);
                 const bool free = a.stuns && !walk_matters && n_reaching == 1 && reaching[0] == &e;
-                if (v >= (free ? min_value : threshold) && v > best.value) best = Cast{s, v, c, std::nullopt, {}};
+                if (v >= (free ? min_value : threshold) && v > best.value) best = Cast{s, v, e.handle, std::nullopt, {}};
             }
         } else if (a.target == Targeting::ground) {
             static std::vector<Target> targets;
@@ -322,10 +322,11 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                         draw_square(off, e.pos, 1);
                         continue;
                     }
-                    const auto c = e.live();
-                    if (!c.is_visible()) continue;
-                    const float stun = a.stuns && !c.buffs().has_stun() ? stun_worth(world, e, raw > 0) : 0;
-                    const float hit = hit_worth(world, e, damage_to(s, c, raw), c.health(), test(enemy_spawn, e.pos));
+                    const auto* live = visible_record(e.handle);
+                    if (!live) continue;
+                    const float health = live->health;
+                    const float stun = a.stuns && !has_stun(e.handle) ? stun_worth(world, e, raw > 0) : 0;
+                    const float hit = hit_worth(world, e, damage_to(s, e.handle, raw), health, test(enemy_spawn, e.pos));
                     targets.push_back({e.pos, 1, hit + stun});
                 } else if (e.tracked && !board_empty(e.possible)) {
                     const int n = static_cast<int>(board_count(e.possible));

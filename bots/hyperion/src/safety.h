@@ -249,8 +249,8 @@ public:
 
     const bitboard& enemy_area(); // within a credible threat's reach
     // Tiles to keep off while routing: camps and credible enemies. Our own tile is included when
-    // in danger, so routing can free the region we stand in.
-    bitboard avoid();
+    // in danger, so routing can free the region we stand in. A scratch board, valid until the next call.
+    const bitboard& avoid();
     // any_within(avoid(), p, r), without building the threats.
     bool avoid_within(vec2 p, int r);
     // Each threat as threats() would list it, with its blow at p, without building them: an
@@ -384,7 +384,8 @@ private:
     union {
         std::array<CampMemo, 2> camp_memo_;
     };
-    std::optional<bitboard> camp_area_, enemy_area_;
+    // camp_area() and enemy_area() are kept in scratch boards: allocating one each turn costs ~550.
+    bool camp_area_known_ = false, enemy_area_known_ = false;
     // By fight_key(). A memo: past `max_fights` the oldest is replaced.
     struct FightMemo {
         std::uint32_t key;
