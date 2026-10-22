@@ -1532,7 +1532,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         bool sticky = false;
         int walk = 0, chained_tribute = 0, tribute = 0;
         std::uint32_t gold_in = 0;
-        float weight = 0, gems = 0, gold = 0, fastest = 0, fastest_strength = 0;
+        float weight = 0, gems = 0, gold = 0, fastest = 0, fastest_strength = 0, walked_bank = 0, walked_cycle = 0;
         // Clearing it alone, kept while `clearing` and its belief hold.
         std::uint32_t clearing = 0, clear_version = ~0u;
         float damage = 0, rounds = 0, kite = -1;
@@ -1599,6 +1599,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const auto loop_floor = small_cost_estimate + end_reserve, ample = loop_floor + 2 * pathing.max_approach_cost();
     // Nothing in the loop changes memory, the round or the warm-up.
     const int round = world.round, farm_group = memory.farm_group;
+    // taken() as a mask.
+    auto claimed_bits = ally_claims;
+    if (memory.claim >= 0 && memory.claim < 256 && !memory.crew)
+        claimed_bits[memory.claim >> 6] &= ~(std::uint64_t{1} << (memory.claim & 63));
     const bool centres_ready = pathing.centres_ready();
     const CampGroup* const group_data = groups.data();
     const CampBelief* const camp_data = world.camps.data();
@@ -1610,7 +1614,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const auto& belief = camp_data[g];
         if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
             continue;
-        const bool claimed = taken(g);
+        const bool claimed = g < 256 && (claimed_bits[g >> 6] >> (g & 63) & 1);
         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
         // it. Gems past the win are worth nothing.
@@ -1624,6 +1628,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             // Chained, the gems join the bag's one tribute; from the altar they need their own.
             known.chained_tribute = tribute_turns(bag + group.gems) - (bag > 0 ? tribute_turns(bag) : 0);
             known.tribute = tribute_turns(group.gems);
+            // The bank terms when the way back is walked.
+            const bool banks = static_cast<float>(known.walk) < static_cast<float>(unreachable);
+            known.walked_bank = banks ? static_cast<float>(known.walk) + static_cast<float>(known.chained_tribute) : 0.0f;
+            known.walked_cycle = banks ? static_cast<float>(known.walk) + static_cast<float>(known.tribute) : 0.0f;
             known.gold_in = static_cast<std::uint32_t>(group.gold / holders(group));
             // The spawn fields home_ground reads are warm once the centres are.
             if (known.home < 0 && centres_ready) known.home = home_ground(map, g);
@@ -1644,10 +1652,13 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
         const int walk = known.walk;
         // The trip home is health-dependent, so it stays out of the kept facts.
-        const float back = to_altar ? (wins ? winning_trip : trip_home)->rounds(walk, capture_rounds(), known.gold_in) : static_cast<float>(walk);
-        const bool banks = back < static_cast<float>(unreachable);
-        const float bank = banks ? back + static_cast<float>(known.chained_tribute) : 0.0f;
-        const float cycle_bank = banks ? back + static_cast<float>(known.tribute) : 0.0f;
+        float bank = known.walked_bank, cycle_bank = known.walked_cycle;
+        if (to_altar) {
+            const float back = (wins ? winning_trip : trip_home)->rounds(walk, capture_rounds(), known.gold_in);
+            const bool banks = back < static_cast<float>(unreachable);
+            bank = banks ? back + static_cast<float>(known.chained_tribute) : 0.0f;
+            cycle_bank = banks ? back + static_cast<float>(known.tribute) : 0.0f;
+        }
         auto& steps_known = steps_data[g];
         if (steps_known < 0) {
             // Walking is symmetric: a group's warm centre field gives our steps to it before all are.
