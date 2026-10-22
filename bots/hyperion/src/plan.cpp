@@ -1721,6 +1721,8 @@ bool strike_possible(const World& world) {
         }
 
     mark(2);
+    // A search that ran out of fuel resumes in the next round: its plan is last round's.
+    world.throw_if_stale();
     // Carry it out. A move a hidden unit refuses takes the next-ranked plan from where we stand.
     Seq seq;
     std::array<bool, 49> dropped{};

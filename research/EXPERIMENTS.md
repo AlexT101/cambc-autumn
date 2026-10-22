@@ -185,9 +185,6 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
   search reads foes' health and shields live, and skips excludes-walking casts once the goal walked. 100M bench vs
   main: 8/16 identical, mean fuel -0.2%, p99 +0.7%, 155 extra searches in 16 games; no SRCH-EXH/DOM. The live reads
   alone: 16/16 identical.
-
-### Fuel
-
 - Guard on end tiles only, again (2026-10-22, branch claude/trusting-galileo-t4s7rm; A/B pending; as 8250a4f, on the
   post-goal search). The search's moves may pass guarded tiles, the guard is placed again where the search left us,
   and a dash widens it only while a cast is left; the search's own tile is never a dropped end. Debug lines: SRCH-PASS
@@ -195,6 +192,14 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
   Passing is rare: 7 in 7,888 searches (100M bench), 2 in 7,391 (real budget), 7 in 11,115 (32 test-draft gen-s1
   games); none stranded, guarded or not. So 8250a4f's play changes come mostly from the guard placed again and the
   radius.
+
+### Fuel
+
+- Stale-plan drop alone (2026-10-22, branch claude/trusting-galileo-t4s7rm; A/B pending). A strike search that ran out
+  of fuel resumes next round and carried out last round's plan (all real-budget SRCH-REFUSED lines); now it throws
+  StaleTurn before acting, and main.cpp replays the round fresh on the fuel left. Bench 16/16 identical at 100M.
+  On 32 test-draft gen-s1 games out-of-fuel turns 332 vs main's 147: the replay starts on the fuel left with every
+  action unspent and runs out again (chains), where carrying out the stale plan spent the actions.
 - Savings rounds, byte-identical at 100M: round 1 −11% a turn; round 2 (bush clusters grown in the warm-up, measured
   worst costs in the estimates); exact fight simulation (fighters made once a turn, quiet turns reused; trade 4.7k ->
   4.0k a call); Reach (ways kept per recipe, static windows once per tile, lazy builds); WASM-aware (−4.2%); host-op
