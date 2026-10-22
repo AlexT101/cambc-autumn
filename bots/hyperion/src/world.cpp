@@ -211,6 +211,26 @@ void dilate(bitboard& tiles, const bitboard& open, int steps, const bitboard& la
     }
 }
 
+// `out` (which may be `from`) = the tiles within `steps` king steps of `from` avoiding `walls`, on
+// `land`, as one reach per tile when at most `few`: less fuel than a distance field or a dilate of
+// 2 or more steps.
+bool reach_each(const bitboard& from, bitboard& out, const bitboard& walls, int steps, const bitboard& land, std::uint32_t few) {
+    static vec2 at[7];
+    static bitboard one{cambc::uninitialized};
+    const auto n = positions_into(from, at, few + 1);
+    if (n > few) return false;
+    namespace raw = cambc::detail;
+    const auto d = static_cast<std::uint16_t>(steps);
+    if (!n) clear_board(out);
+    else ok(raw::sdk_Bitboard_ReachableMask(walls.ptr(), at[0].x, at[0].y, out.ptr(), d));
+    for (std::uint32_t i = 1; i < n; ++i) {
+        ok(raw::sdk_Bitboard_ReachableMask(walls.ptr(), at[i].x, at[i].y, one.ptr(), d));
+        or_into(out, one, out);
+    }
+    and_into(out, land, out);
+    return true;
+}
+
 // out = the tiles within Chebyshev r of `in`, terrain ignored; out must not be `in`. Shifts cost
 // less than a square drawn per tile once there are more than a few.
 void square_dilate(const bitboard& in, int r, bitboard& out) {
@@ -1362,6 +1382,7 @@ bool World::grow(ChampionBelief& b, int turns) {
 
 // `possible` never holds a tile closed to them, so a walk dilates it.
 void World::walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard& land) {
+    if (steps >= 2 && reach_each(tiles, tiles, s.blocked_for_them, steps, land, steps > 2 ? 6 : 4)) return;
     if (steps <= 2) {
         dilate(tiles, s.open_for_them, steps, land);
         return;
@@ -1376,6 +1397,7 @@ void World::walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard&
 // `steps` turns with one dash (2 king steps, with that turn's walk): it crosses holes, altars and
 // champions, so only walls bound it and landings are filtered after.
 void World::widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps, const bitboard& land) {
+    if (reach_each(from, out, s.walls, steps + 2, land, 6)) return;
     static cambc::distance_field field;
     static bitboard grown{cambc::uninitialized};
     field.compute(s.walls, from, grown, static_cast<std::uint16_t>(steps + 2));
