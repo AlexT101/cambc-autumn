@@ -486,6 +486,45 @@ struct Search {
     std::uint32_t groups_alive = 0;
     int n_land_groups = 0;
     std::array<Grid, 49> land_groups;
+    // Landing cells by class, alike in (foes in reach, groups touched), found on first need: a
+    // query merges the classes whose foes alive agree.
+    Grid class_known = 0;
+    int n_land_classes = 0;
+    std::array<std::int8_t, 49> cell_class;
+    std::array<std::uint32_t, 49> class_foes, class_touch;
+    std::uint32_t class_foes_all = 0;
+    void group_landings(Grid hits, std::uint32_t alive) {
+        each_bit(hits & ~class_known, [&](int k) {
+            const std::uint32_t m = land_foes(k), t = land_touch(k);
+            int i = 0;
+            while (i < n_land_classes && !(class_foes[i] == m && class_touch[i] == t)) ++i;
+            if (i == n_land_classes) class_foes[i] = m, class_touch[i] = t, ++n_land_classes;
+            cell_class[k] = static_cast<std::int8_t>(i);
+            class_foes_all |= m;
+        });
+        class_known |= hits;
+        const bool merge = (alive & class_foes_all) != class_foes_all;
+        std::array<std::uint32_t, 49> hit, touch;
+        std::array<std::int8_t, 49> group_of;
+        std::uint64_t seen = 0;
+        n_land_groups = 0;
+        each_bit(hits, [&](int k) {
+            const int j = cell_class[k];
+            if (!(seen >> j & 1)) {
+                seen |= std::uint64_t{1} << j;
+                int i = n_land_groups;
+                if (merge) {
+                    const std::uint32_t m = class_foes[j] & alive, t = class_touch[j];
+                    i = 0;
+                    while (i < n_land_groups && !(hit[i] == m && touch[i] == t)) ++i;
+                    if (i == n_land_groups) hit[i] = m, touch[i] = t;
+                }
+                if (i == n_land_groups) land_groups[i] = 0, ++n_land_groups;
+                group_of[j] = static_cast<std::int8_t>(i);
+            }
+            land_groups[group_of[j]] |= gbit(k);
+        });
+    }
     // The foes a landing on cell c hits, alive or not.
     Grid land_foes_known = 0;
     std::uint32_t land_foes(int c) {
@@ -1434,17 +1473,7 @@ void Search::grow(const Node& s) {
             for (int t = 0; t < foes; ++t)
                 if (h[t] > 0) alive |= 1u << t;
             // Nodes before any kill share their landings' groups.
-            if (hits != groups_hits || alive != groups_alive) {
-                groups_hits = hits, groups_alive = alive, n_land_groups = 0;
-                std::array<std::uint32_t, 49> hit, touch;
-                each_bit(hits, [&](int k) {
-                    const std::uint32_t m = land_foes(k) & alive, t = land_touch(k);
-                    int i = 0;
-                    while (i < n_land_groups && !(hit[i] == m && touch[i] == t)) ++i;
-                    if (i == n_land_groups) hit[i] = m, touch[i] = t, land_groups[i] = 0, ++n_land_groups;
-                    land_groups[i] |= gbit(k);
-                });
-            }
+            if (hits != groups_hits || alive != groups_alive) groups_hits = hits, groups_alive = alive, group_landings(hits, alive);
             const int kinds = n_land_groups;
             std::array<Grid, 49> alike;
             std::copy_n(land_groups.begin(), kinds, alike.begin());
