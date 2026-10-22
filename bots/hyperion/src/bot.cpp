@@ -2271,6 +2271,13 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     unsigned reaching = 0;
     for (int k = 0; k < n; ++k)
         if (in_square(here, at[k], strikes[k]->reach + radius)) reaching |= 1u << k;
+    // Placing the tiles costs up to tens of thousands: give up as the fights would, counting the
+    // costliest placing lately.
+    static std::uint64_t costliest = 0;
+    if (reaching == 0) {
+        costliest -= costliest / 8;
+        return nullptr;
+    }
     const auto bound = [&](vec2 p, float& damage) {
         unsigned mask = 0;
         damage = 0;
@@ -2290,9 +2297,6 @@ const bitboard* step_guard(const World& world, Safety& safety) {
         }
         return mask;
     };
-    // Placing the tiles costs up to tens of thousands: give up as the fights would, counting the
-    // costliest placing lately.
-    static std::uint64_t costliest = 0;
     const auto floor = safety.fight_cost_estimate() + act_reserve;
     if (!fuel_ok(floor + costliest)) {
         note_shortcut("step-guard");
