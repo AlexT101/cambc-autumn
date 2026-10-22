@@ -12,6 +12,8 @@ template <class T> T& entry(std::vector<T>& table, std::size_t count, int i) {
     return table[static_cast<std::size_t>(i)];
 }
 
+int aim_distance(vec2 p, vec2 aim) { return std::abs(p.x - aim.x) + std::abs(p.y - aim.y); }
+
 } // namespace
 
 Pathing::Pathing(const World& world) : world_{world} {}
@@ -365,26 +367,30 @@ vec2 Pathing::my_pos() {
     return pos_;
 }
 
-Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboard* avoid) {
+Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
     const vec2 me = my_pos();
     const int here = field.at(me);
     const auto& walls = blocked();
     Neighbours out;
     std::array<int, 8> steps_of{};
+    std::array<int, 8> aim_of{};
     for (auto d : directions) {
         const vec2 p = me + d;
         if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard_ && test(*guard_, p))) continue;
         const int steps = field.at(p);
         if (steps >= here) continue;
+        const int towards = aim ? aim_distance(p, *aim) : 0;
         auto i = out.count++;
-        for (; i > 0 && steps_of[i - 1] > steps; --i) out.tiles[i] = out.tiles[i - 1], steps_of[i] = steps_of[i - 1];
+        for (; i > 0 && (steps_of[i - 1] > steps || (steps_of[i - 1] == steps && aim_of[i - 1] > towards)); --i)
+            out.tiles[i] = out.tiles[i - 1], steps_of[i] = steps_of[i - 1], aim_of[i] = aim_of[i - 1];
         out.tiles[i] = p;
         steps_of[i] = steps;
+        aim_of[i] = towards;
     }
     return out;
 }
 
-[[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through) {
+[[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through, std::optional<vec2> aim) {
     world_.throw_if_stale();
     Route r;
     route_exhausted_ = false;
@@ -458,6 +464,18 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     if (best < here)
         for (int i = 0; i < 8; ++i)
             if (around[i] == best) r.first_steps[r.count++] = me + directions[i];
+    if (aim) {
+        std::array<int, 8> towards{};
+        for (int j = 0; j < r.count; ++j) {
+            const vec2 p = r.first_steps[j];
+            const int score = aim_distance(p, *aim);
+            int i = j;
+            for (; i > 0 && towards[i - 1] > score; --i)
+                r.first_steps[i] = r.first_steps[i - 1], towards[i] = towards[i - 1];
+            r.first_steps[i] = p;
+            towards[i] = score;
+        }
+    }
     return r;
 }
 
@@ -505,11 +523,11 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
     return false;
 }
 
-[[gnu::flatten]] bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps) {
+[[gnu::flatten]] bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {
     if (!my_can_move()) return false;
     // Only a hidden blocker makes a retry worth its search.
     for (int attempt = 0; attempt < 3; ++attempt) {
-        const auto r = route(goals, avoid, max_steps);
+        const auto r = route(goals, avoid, max_steps, {-1, -1}, aim);
         bool bumped = false;
         for (int i = 0; i < r.count; ++i) {
             if (try_move(r.first_steps[i])) return true;
@@ -597,30 +615,30 @@ bool Pathing::step_towards_funded(const bitboard& goals, std::uint64_t fuel_floo
     return false;
 }
 
-bool Pathing::step_towards(const Field& field, const bitboard* avoid) {
+bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
     const int here = field.at(my_pos());
     if (here == 0 || !my_can_move()) return false;
     bool searched = false;
     if (here != unreachable) {
         const int cap = here + max_detour;
         if (!fuel_ok(search_cost_estimate(cap) + end_reserve)) note_shortcut("static-descend");
-        else if (step_towards(field.goals, avoid, cap)) return true;
+        else if (step_towards(field.goals, avoid, cap, aim)) return true;
         else searched = true;
     }
-    if (descend(field, avoid)) return true;
+    if (descend(field, avoid, aim)) return true;
     // Live camps can block the static way for longer than max_detour (a dead-end pocket whose way
     // out a camp holds): a wider search walks round them, unless the last ran dry.
-    return searched && !route_exhausted_ && step_towards(field.goals, avoid, here + 6 * max_detour);
+    return searched && !route_exhausted_ && step_towards(field.goals, avoid, here + 6 * max_detour, aim);
 }
 
-bool Pathing::descend(const Field& field, const bitboard* avoid) {
+bool Pathing::descend(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
     if (!my_can_move()) return false;
-    for (auto p : closer_neighbours(field, avoid))
+    for (auto p : closer_neighbours(field, avoid, aim))
         if (try_move(p)) return true;
     return false;
 }
 
-bool Pathing::step_closer(vec2 target, const bitboard* avoid) {
+bool Pathing::step_closer(vec2 target, const bitboard* avoid, std::optional<vec2> aim) {
     if (!my_can_move()) return false;
     const vec2 me = my_pos();
     const auto& walls = blocked();
@@ -629,7 +647,9 @@ bool Pathing::step_closer(vec2 target, const bitboard* avoid) {
     for (auto d : directions) {
         const vec2 p = me + d;
         if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard_ && test(*guard_, p))) continue;
-        if (const int d2 = dist(p, target); d2 < best_dist) best = p, best_dist = d2;
+        if (const int d2 = dist(p, target); d2 < best_dist
+            || (best && d2 == best_dist && aim && aim_distance(p, *aim) < aim_distance(*best, *aim)))
+            best = p, best_dist = d2;
     }
     return best && try_move(*best);
 }

@@ -4,6 +4,7 @@
 #include <cstring>
 #include <span>
 #include <vector>
+#include "draft_selection.h"
 #include "params.h"
 #include "util.h"
 #include "world.h"
@@ -13,6 +14,31 @@ namespace aph {
 namespace {
 
 int draft_round() { return static_cast<int>(cambc::round_number()); }
+
+const DraftCampCounts& native_draft_counts() {
+    static const auto counts = [] {
+        // At most one member per tile and one group per member: 5 header + 4 member words.
+        static std::array<std::uint32_t, 9 * 100 * 100> words;
+        std::uint32_t count{};
+        ok(cambc::detail::sdk_map_camp_layout(words.data(), static_cast<std::uint32_t>(words.size()), &count));
+        if (count > words.size()) throw std::length_error("camp layout exceeds map size bound");
+        return count_draft_camps({words.data(), count});
+    }();
+    return counts;
+}
+
+cambc::champion_draft native_pick(DraftRole role) {
+    using C = cambc::champion_draft;
+    switch (role) {
+    case DraftRole::prism: return C::prism;
+    case DraftRole::vesper_vale: return C::vesper_vale;
+    case DraftRole::marcella: return C::marcella;
+    case DraftRole::ryth: return C::ryth;
+    case DraftRole::vendetta: return C::vendetta;
+    case DraftRole::heart_of_ruin: return C::heart_of_ruin;
+    }
+    return C::prism;
+}
 
 constexpr auto all_champions() {
     std::array<cambc::champion_draft, static_cast<std::size_t>(cambc::champion_draft::heart_of_ruin) + 1> all{};
@@ -219,6 +245,16 @@ std::span<const cambc::champion_draft> draft_order() {
         static const auto chosen = test_compositions::choose();
         return chosen;
     }
+    const auto picks = cambc::draft::team_size();
+    if (picks == 4 || picks == 5) {
+        static const auto chosen = [] {
+            const auto roles = teacher_draft_roles(native_draft_counts());
+            std::array<cambc::champion_draft, 5> order;
+            for (std::size_t i = 0; i < order.size(); ++i) order[i] = native_pick(roles[i]);
+            return order;
+        }();
+        return chosen;
+    }
     return params::draft_preference;
 }
 
@@ -240,7 +276,7 @@ const DraftPlan* read_draft_plan() {
 void play_draft(DraftState& state) {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
     // and the draft bot may not run again after its last pick.
-    if constexpr (params::test_draft) draft_order(); // while the first turn's fuel lasts
+    draft_order(); // cache the selection before the first turn's expensive analysis
     try {
         analyse(state.plan);
     } catch (const std::exception&) {

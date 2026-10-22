@@ -15,6 +15,7 @@
 #include <vector>
 #include "abilities.h"
 #include "comms.h"
+#include "crew_work.h"
 #include "params.h"
 #include "pathing.h"
 #include "plan.h"
@@ -177,26 +178,31 @@ bool attack_enemy(const World& world) {
     }
 }
 
-// A camp in range of a group `allowed` accepts; the group of the camp attacked, or -1. The member
-// whose death removes the most damage per hit goes first; Varg's splash wants the one with the
-// most live members next to it.
-template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
-    auto& me = cambc::self();
-    if (!my_can_attack()) return -1;
+struct CampAttackTarget {
+    int group, member;
+    float score;
+};
+
+struct CampAttackTargets {
+    std::array<CampAttackTarget, 16> found;
+    int n = 0;
+};
+
+// Keep the ordinary list's bound and order even when farm also collects harmless alternatives.
+template <class Allowed> CampAttackTargets camp_attack_targets(const World& world, Allowed allowed, CampAttackTargets* resources = nullptr) {
+    CampAttackTargets targets;
+    if (!my_can_attack()) return targets;
     const int range = world.me().facts().attack_range();
     const vec2 here = my_position();
-    if (!camp_in_reach(world, here, range)) return -1;
+    if (!camp_in_reach(world, here, range)) return targets;
     const bool splash = world.me().facts().passive == Passive::splash_attack;
     const auto& map = world.map();
-    struct Candidate {
-        int group, member;
-        float score;
-    };
-    std::array<Candidate, 16> found;
-    int n = 0;
     for (auto p : positions_within(live_camp_tiles(), here, range)) {
         const int g = map.group_at(p);
-        if (g < 0 || (map.groups[g].has_monolith && g != siege_group()) || !allowed(g)) continue;
+        if (g < 0 || (map.groups[g].has_monolith && g != siege_group())) continue;
+        const bool ordinary = allowed(g);
+        const bool resource = resources && !map.groups[g].has_monolith && map.groups[g].strength <= 0;
+        if (!ordinary && !resource) continue;
         const auto& members = map.groups[g].members;
         const auto& health = world.camps[g].health;
         for (int i = 0; i < static_cast<int>(members.size()); ++i) {
@@ -209,19 +215,39 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
                     near += j != i && health[j] > 0 && dist(members[i].pos, members[j].pos) <= 1;
                 score += static_cast<float>(near);
             }
-            if (n < static_cast<int>(found.size())) found[n++] = {g, i, score};
+            if (ordinary && targets.n < static_cast<int>(targets.found.size())) targets.found[targets.n++] = {g, i, score};
+            if (resource && resources->n < static_cast<int>(resources->found.size())) resources->found[resources->n++] = {g, i, score};
         }
     }
-    std::stable_sort(found.begin(), found.begin() + n, [](const Candidate& a, const Candidate& b) { return a.score > b.score; });
-    for (int k = 0; k < n; ++k) {
-        try {
-            me.attack(map.groups[found[k].group].camp(found[k].member));
-            ++camp_hits();
-            return found[k].group;
-        } catch (const cambc::error&) {
-        }
+    const auto rank = [](CampAttackTargets& list) {
+        std::stable_sort(list.found.begin(), list.found.begin() + list.n,
+                         [](const CampAttackTarget& a, const CampAttackTarget& b) { return a.score > b.score; });
+    };
+    rank(targets);
+    if (resources) rank(*resources);
+    return targets;
+}
+
+bool attack_camp_target(const World& world, const CampAttackTarget& target) {
+    try {
+        cambc::self().attack(world.map().groups[target.group].camp(target.member));
+        ++camp_hits();
+        return true;
+    } catch (const cambc::error&) {
     }
+    return false;
+}
+
+int attack_camp_targets(const World& world, const CampAttackTargets& targets) {
+    for (int k = 0; k < targets.n; ++k)
+        if (attack_camp_target(world, targets.found[k])) return targets.found[k].group;
     return -1;
+}
+
+// A camp in range of a group `allowed` accepts; the group attacked, or -1. Removing the most
+// damage per hit goes first; Varg's splash wants the most live members next to its target.
+template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
+    return attack_camp_targets(world, camp_attack_targets(world, allowed));
 }
 
 // Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
@@ -601,6 +627,11 @@ bool closing(const World& world, Pathing& pathing) {
     return bag_rounds_left(world) <= (walk == unreachable ? 0 : walk) + tribute_turns(my_gems()) + endgame_margin;
 }
 
+bool retaining_gems(const World& world, Pathing& pathing) {
+    return world.me().facts().passive == Passive::gem_focus && my_gems() > 0
+           && !winning_bag(world) && !closing(world, pathing);
+}
+
 // A tribute started or kept now is the bag's last chance to score, or wins the game while fleeing
 // gives the enemy time to win first: take it at any risk.
 bool any_risk(const World& world, int channel_turns) {
@@ -680,6 +711,7 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
 }
 
 [[gnu::flatten]] void bank_gems(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    if (retaining_gems(world, pathing)) return;
     world.throw_if_stale();
     if (submit_here(world, safety, memory)) return;
     const vec2 here = my_position();
@@ -1023,17 +1055,20 @@ void note_upkeep(const World& world, Safety& safety, float damage) {
 }
 
 // A Jungle, Power or Durability shard short of its emblem.
-bool emblem_begun() {
+bool emblem_begun(const World& world) {
     const auto& owned = my_items();
     for (const int family : {jungle, power, durability})
         for (int stat = strength_stat; stat <= health_stat; ++stat)
             if (owned[shard_of(family, stat)] > 0) return true;
-    return false;
+    return world.me().facts().passive == Passive::gem_focus
+        && (owned[shard_of(home, health_stat)] > 0 || owned[shard_of(monster, health_stat)] > 0
+            || owned[shard_of(monster, focus_stat)] > 0);
 }
 
-// Our stats and the share of camp damage (Jungle) and of all damage (Durability) we take.
+// Our stats, damage taken (Jungle and Durability), and camp damage dealt (Monster).
 struct Build {
-    float strength = 0, focus = 0, max_health = 0, camp_taken = 1, taken = 1;
+    float strength = 0, focus = 0, max_health = 0, camp_taken = 1, taken = 1, camp_dealt = 1;
+    int recall = static_cast<int>(cambc::constants::recall_time);
 };
 
 void add_shards(Build& b, const ChampionFacts& f, int stat, float shards) {
@@ -1081,14 +1116,14 @@ float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const 
     const auto out = [&](const Build& x) { return std::max(1.0f, raw_output(world.me().facts(), x.strength, x.focus)); };
     const float turns = static_cast<float>(std::max(1, upkeep.turns));
     const float steps = upkeep.spawn_turns > 0 ? upkeep.spawn_steps / static_cast<float>(upkeep.spawn_turns) : 0.0f;
-    const float clear = (others + out(now)) / (others + out(b));
+    const float clear = (others + out(now) * now.camp_dealt) / (others + out(b) * b.camp_dealt);
     const float camp = upkeep.camp_taken / turns * clear * b.camp_taken / now.camp_taken;
     const float taken = (camp + upkeep.champ_taken / turns) * b.taken / now.taken;
     const float usable = b.max_health * (1.0f - params::recall_health_fraction);
     // Counted from one clearing turn in one: before our first camp hit, gold (priced by this
     // saving) is still worth farming.
     const float clearing = static_cast<float>(upkeep.camp_turns + 1) / static_cast<float>(upkeep.turns + 1);
-    return clearing * clear + taken * static_cast<float>(recall_turns(world) + steps) / usable;
+    return clearing * clear + taken * (static_cast<float>(b.recall) + steps) / usable;
 }
 
 // Our mean steps from spawn while alive: the walk back out after a heal.
@@ -1116,7 +1151,9 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
     const auto& owned = my_items();
     const auto& self = world.me();
     const Build now{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
-                    has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f};
+                    has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f,
+                    has_family(owned, monster) ? 1.1f : 1.0f,
+                    has_family(owned, home) ? home_recall_time : recall_turns(world)};
     float others = 0;
     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
     const float base = upkeep_cost(world, u, others, now, now);
@@ -1126,12 +1163,31 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
         add_shards(b, f, stat, static_cast<float>(left + (family == power)));
         if (family == jungle) b.camp_taken = 0.7f;
         if (family == durability) b.taken = 0.9f;
+        if (family == monster) b.camp_dealt = 1.1f;
+        if (family == home) b.recall = home_recall_time;
         return {family, stat, base - upkeep_cost(world, u, others, now, b), left * shard_price};
     };
+    if (f.passive == Passive::gem_focus && owned[shard_of(monster, health_stat)] > 0) return value(monster, health_stat);
+    if (f.passive == Passive::gem_focus && owned[shard_of(monster, focus_stat)] > 0) return value(monster, focus_stat);
     // In the stat it was begun in: the main stat follows our use and can change.
     const int begun[5][2] = {{jungle, strength_stat}, {jungle, focus_stat}, {power, strength_stat}, {power, focus_stat}, {durability, health_stat}};
     for (const auto& [family, stat] : begun)
         if (owned[shard_of(family, stat)] > 0) return value(family, stat);
+    if (f.passive == Passive::gem_focus) {
+        for (const int family : {power, jungle, home})
+            if (owned[shard_of(family, health_stat)] > 0) return value(family, health_stat);
+        Emblem best = value(power, health_stat);
+        if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
+        if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
+        if (!has_family(owned, monster))
+            if (const auto e = value(monster, health_stat); e.saved > best.saved) best = e;
+        if (!has_family(owned, home))
+            if (const auto e = value(home, health_stat); e.saved > best.saved) best = e;
+        if (const auto e = value(power, focus_stat); e.saved > best.saved) best = e;
+        if (!has_family(owned, monster))
+            if (const auto e = value(monster, focus_stat); e.saved > best.saved) best = e;
+        return best;
+    }
     const int main = main_stat(world);
     Emblem best = value(power, main);
     if (const auto e = value(jungle, main); e.saved > best.saved) best = e;
@@ -1167,18 +1223,56 @@ const Prices& prices(const World& world) {
     struct Key {
         float share, strength, focus, max_health;
         int main;
+        bool home, monster;
         bool operator==(const Key&) const = default;
     };
     static Key last{-1};
     static Prices kept;
     const auto& self = world.me();
-    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world)}; !(now == last)) {
+    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world),
+                      self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
+                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)}; !(now == last)) {
         last = now;
         kept.next = best_emblem(world);
         kept.gain = now.share * kept.next.saved * rounds_per_gem;
         kept.per_gold = now.share * kept.next.saved / static_cast<float>(std::max(1u, kept.next.cost));
     }
     return kept;
+}
+
+struct PurchaseQuote {
+    Emblem next{};
+    unsigned count = 0;
+    float gain = 0;
+};
+
+PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
+    const unsigned budget = my_gold() + gold_in;
+    if (budget < shard_price) return {};
+    PurchaseQuote quote{best_emblem(world)};
+    const auto& self = world.me();
+    const auto& f = self.facts();
+    const auto& owned = my_items();
+    const unsigned left = 5 - owned[shard_of(quote.next.family, quote.next.stat)];
+    quote.count = std::min(left, budget / shard_price);
+    const Build now{self.strength, self.focus, self.max_health,
+                    has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f,
+                    has_family(owned, monster) ? 1.1f : 1.0f,
+                    has_family(owned, home) ? home_recall_time : recall_turns(world)};
+    Build bought = now;
+    const bool completes = quote.count == left;
+    add_shards(bought, f, quote.next.stat, static_cast<float>(quote.count + (completes && quote.next.family == power)));
+    if (completes) {
+        if (quote.next.family == jungle) bought.camp_taken = 0.7f;
+        if (quote.next.family == durability) bought.taken = 0.9f;
+        if (quote.next.family == monster) bought.camp_dealt = 1.1f;
+        if (quote.next.family == home) bought.recall = home_recall_time;
+    }
+    float others = 0;
+    const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
+    quote.gain = gems_share(world) * rounds_per_gem
+                 * (upkeep_cost(world, u, others, now, now) - upkeep_cost(world, u, others, now, bought));
+    return quote;
 }
 
 // The way to an altar `walk` steps away, in rounds: walking, or a recall of `channel` turns
@@ -1246,6 +1340,27 @@ int holders(const CampGroup& G) {
     return n;
 }
 
+const ChampionBelief* prism_capture_holder(const World& world, const CampGroup& G) {
+    if (G.gems <= 0 || enemy_seen(world) || enemy_on(world, G.tiles())) return nullptr;
+    for (const auto& a : world.allies) {
+        if (!a.alive || !a.visible || a.facts().passive != Passive::gem_focus) continue;
+        const vec2 p = a.is_self ? my_position() : a.pos;
+        if (!test(G.tiles(), p) || a.health < params::hurt_health_fraction * a.max_health
+            || a.channel == Channel::tribute || a.channel == Channel::teleport
+            || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1)
+            || world.score.ally + a.gems + G.gems >= static_cast<int>(cambc::constants::winning_gems)
+            || rounds_left(world) <= tribute_turns(a.gems + G.gems) + world.map().width + world.map().height + endgame_margin)
+            continue;
+        bool pressure = false;
+        for (const auto& e : world.enemies)
+            pressure |= e.alive && e.age(world.round) <= params::track_horizon
+                        && dist(e.pos, p) <= vision_radius + e.age(world.round);
+        if (pressure) continue;
+        return &a;
+    }
+    return nullptr;
+}
+
 // On a cleared group's tile that no lower-id ally also holds, with no enemy on any of its tiles:
 // stepping off loses the capture's progress, and it pays within six rounds.
 bool holding_capture(const World& world) {
@@ -1253,7 +1368,97 @@ bool holding_capture(const World& world) {
     const int g = world.map().group_at(here);
     if (g < 0 || world.camps[g].state != CampState::cleared || winning_bag(world)) return false;
     const auto& tiles = world.map().groups[g].tiles();
+    // Prism stays while a lower-id holder leaves; the last holder never yields to a remote ally.
+    if (const auto* prism = prism_capture_holder(world, world.map().groups[g]); prism && prism->is_self) return true;
     return allies_on(world, tiles, world.me().index) < holders(world.map().groups[g]) && !enemy_on(world, tiles);
+}
+
+bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    if (!my_can_move() || memory.damage > 0 || winning_bag(world)) return false;
+    const vec2 here = my_position();
+    const auto& map = world.map();
+    const int g = map.group_at(here);
+    if (g < 0 || world.camps[g].state != CampState::cleared) return false;
+    const auto* prism = prism_capture_holder(world, map.groups[g]);
+    if (!prism || prism->is_self || safety.any_threat() || safety.camp_damage(prism->pos) > 0) return false;
+    const auto& blocked = pathing.blocked();
+    for (const auto d : directions) {
+        const vec2 p = here + d;
+        if (!in_bounds(p) || test(map.groups[g].tiles(), p) || !test(map.standable, p)
+            || test(blocked, p) || safety.camp_damage(p) > 0) continue;
+        world.throw_if_stale();
+        const bool moved = pathing.try_move(p);
+        world.throw_if_stale();
+        if (moved) {
+            memory.claim = memory.farm_group = -1;
+            memory.crew = false;
+            decision = 'F';
+            return true;
+        }
+    }
+    return false;
+}
+
+// Arrive before HoR leaves: only its actual observation of our lower-id body releases the hold.
+bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    if (world.me().type != cambc::champion_type::vesper_vale || memory.banking || memory.damage > 0
+        || memory.round != world.round - 1 || memory.claim < 0 || memory.live_claim != memory.claim
+        || !my_can_move() || !my_can_cast() || channelling() || winning_bag(world))
+        return false;
+    const int g = memory.claim;
+    const auto& map = world.map();
+    if (g >= static_cast<int>(map.groups.size())) return false;
+    const auto& G = map.groups[g];
+    const auto& c = world.camps[g];
+    const vec2 here = my_position();
+    if (c.state != CampState::cleared || c.state_round != world.round || c.holder != team::ally
+        || G.has_monolith || G.gold <= 0 || holders(G) != 1 || test(G.tiles(), here)
+        || holding_capture(world) || enemy_seen(world))
+        return false;
+    for (const auto& m : G.members)
+        if (!test(world.visible, m.pos)) return false;
+    const ChampionBelief* incumbent = nullptr;
+    for (const auto& a : world.allies) {
+        if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
+        if (incumbent || a.type != cambc::champion_type::heart_of_ruin || a.index <= world.me().index
+            || a.channel == Channel::tribute || a.channel == Channel::teleport
+            || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1))
+            return false;
+        incumbent = &a;
+    }
+    if (!incumbent || world.score.ally + static_cast<int>(my_gems()) + incumbent->gems + G.gems
+                          >= static_cast<int>(cambc::constants::winning_gems)
+        || rounds_left(world) <= tribute_turns(my_gems() + G.gems) + map.width + map.height + endgame_margin
+        || safety.any_threat() || safety.camp_damage(here) > 0 || safety.camp_damage(incumbent->pos) > 0)
+        return false;
+    const int dash = world.me().facts().slot_of(AbilityKind::dash);
+    if (dash < 0 || !world.me().ability_ready(dash, world.round) || my_cooldown(dash) > 0) return false;
+    std::optional<vec2> landing;
+    int steps = unreachable;
+    for (const auto p : Tiles<5 * 5>{pathing.dash_landings()}) {
+        if (!test(G.tiles(), p) || !test(world.visible, p) || safety.camp_damage(p) > 0) continue;
+        const int d = dist(here, p);
+        if (!landing || d < steps || (d == steps && tile_index(p) < tile_index(*landing))) landing = p, steps = d;
+    }
+    if (!landing) return false;
+    world.throw_if_stale();
+    bool cast = false;
+    try {
+        cast = cast_slot(dash, *landing);
+    } catch (const cambc::error&) {
+    }
+    world.throw_if_stale();
+    if (!cast) return false;
+    pathing.invalidate();
+    const bool arrived = my_position() == *landing;
+    world.throw_if_stale();
+    if (!arrived) return false;
+    debug_block({ std::printf("HANDOFF %d %d incumbent %d acted %d landing %d %d\n", world.round, g,
+                             incumbent->index, static_cast<int>(incumbent->acted), landing->x, landing->y); });
+    memory.farm_group = g;
+    memory.crew = false;
+    decision = 'P';
+    return true;
 }
 
 bool ally_engaged(const World& world, int group) { return allies_on(world, world.map().groups[group].threat()) > 0; }
@@ -1291,7 +1496,7 @@ bool step_onto_cleared(const World& world, Pathing& pathing, int g) {
             return false;
         }
     }
-    if (allies_on(world, G.tiles()) >= holders(G)) return false;
+    if (prism_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G)) return false;
     const vec2 here = my_position();
     for (const auto d : directions)
         if (in_bounds(here + d) && test(G.tiles(), here + d) && pathing.try_move(here + d)) return true;
@@ -1340,7 +1545,7 @@ bool spell_clear(const World& world, Pathing& pathing, int g, const bitboard* zo
         return true;
     }
     if (zone) reach |= *zone;
-    if (!pathing.step_towards(goals, &reach, cap)) return false;
+    if (!pathing.step_towards(goals, &reach, cap, G.centre)) return false;
     if (!test(reach, my_position())) hit();
     return true;
 }
@@ -1364,7 +1569,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const auto& G = map.groups[g];
         const auto& c = world.camps[g];
         if (c.state != CampState::cleared || c.state_round != world.round || G.has_monolith || G.gems + G.gold == 0
-            || test(G.tiles(), here) || allies_on(world, G.tiles()) >= holders(G) || enemy_on(world, G.tiles()))
+            || test(G.tiles(), here) || prism_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G) || enemy_on(world, G.tiles()))
             continue;
         const int steps = steps_to(G, here);
         if (steps > 4) continue;
@@ -1395,6 +1600,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const float max_health = my_max_health();
     const float spare_health = (my_health() - params::recall_health_fraction * max_health) / params::camp_risk;
     const int bag = bankable_bag(world, pathing);
+    const bool banks_bag = bag > 0 && !retaining_gems(world, pathing);
     const int short_by = gems_short(world);
     if (world.is_stale()) return true;
     // Groups in passing pay too (gold clusters are never chosen below), but not one whose clear
@@ -1424,8 +1630,107 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         if (groups[g].strength > 0) return ally_engaged(world, g) || (melee && world.camps[g].fully_awake());
         return melee || groups[g].gems > 0 || gold_farmer;
     };
+    const auto partial_trace = [&](const char* reason, int alternative, int resource, float hp = 0, float damage = 0, bool accepted = false) {
+        debug_block({
+            static unsigned accepted_rows = 0, other_rows = 0;
+            auto& rows = accepted ? accepted_rows : other_rows;
+            if (rows < 256) {
+                ++rows;
+                std::printf("FPARTIAL %d %u alternative %d resource %d hp %.9g basic %.9g farm %d claim %d crew %d reason %s\n",
+                            world.round, my_handle(), alternative, resource, hp, damage,
+                            memory.farm_group, memory.claim, static_cast<int>(memory.crew), reason);
+            }
+        });
+    };
+    const auto prefer_partial = [&](const CampAttackTargets& ordinary, const CampAttackTargets& resources) {
+        if (ordinary.n == 0 || resources.n == 0) return -1;
+        const auto& alternative = ordinary.found[0];
+        const int g = alternative.group;
+        const auto refuse = [&](const char* reason) { partial_trace(reason, g, -1); return -1; };
+        if (decision != 'F' || memory.banking || memory.siege || siege_group() >= 0) return refuse("nonordinary");
+        if (holding_capture(world)) return refuse("holding-capture");
+        const auto& G = groups[g];
+        const auto& c = world.camps[g];
+        if (G.has_monolith || G.members[alternative.member].strength <= 0 || c.state != CampState::alive)
+            return refuse("alternative-harmless");
+        const vec2 here = my_position();
+        bool striker = false;
+        for (int i = 0; i < static_cast<int>(G.members.size()); ++i) {
+            if (G.members[i].strength <= 0) continue;
+            if (!test(world.visible, G.members[i].pos) || c.health_round[i] != world.round || !(c.health[i] >= 0))
+                return refuse("alternative-unobserved");
+            if (c.health[i] <= 0) continue;
+            striker = true;
+            if (!c.member_asleep(i)) return refuse("alternative-awake");
+        }
+        if (!striker) return refuse("alternative-no-striker");
+        const auto live = my_record();
+        const float basic = live.strength * damage_scale(world.me().facts().passive, live.health, live.max_health)
+                            * (has_family(my_items(), monster) ? 1.1f : 1.0f);
+        const float hp = c.health[alternative.member];
+        if (!(basic > 0) || !(hp > basic)) {
+            partial_trace("alternative-lethal", g, -1, hp, basic);
+            return -1;
+        }
+        std::array<int, 16> checked;
+        int n_checked = 0;
+        for (int k = 0; k < resources.n; ++k) {
+            const int h = resources.found[k].group;
+            if (std::find(checked.begin(), checked.begin() + n_checked, h) != checked.begin() + n_checked) continue;
+            checked[n_checked++] = h;
+            const auto reject = [&](const char* reason) { partial_trace(reason, g, h, hp, basic); };
+            const auto& H = groups[h];
+            const auto& known = world.camps[h];
+            // This admission tier must share any future farm-wide cleanup-delegation exclusion.
+            if (h == g || H.has_monolith || H.strength > 0 || H.gems + H.gold <= 0 || known.state != CampState::alive) {
+                reject("resource-not-live-harmless");
+                continue;
+            }
+            // A different ally's actual claim wins even over our stale incumbent/claim.
+            if ((h < 256 && (ally_claims[h >> 6] >> (h & 63) & 1))
+                || prism_capture_holder(world, H) || allies_on(world, H.tiles()) >= holders(H)) {
+                reject("resource-owned");
+                continue;
+            }
+            bool partial = false, alive = false, fresh = true, in_range = true, harmless = true;
+            for (int i = 0; i < static_cast<int>(H.members.size()); ++i) {
+                const auto& m = H.members[i];
+                harmless &= m.strength <= 0;
+                fresh &= test(world.visible, m.pos) && known.health_round[i] == world.round && known.health[i] >= 0;
+                partial |= known.health[i] < m.max_health;
+                if (known.health[i] <= 0) continue;
+                alive = true;
+                in_range &= dist(here, m.pos) <= range;
+            }
+            if (!harmless || !fresh || !alive || !partial || !in_range) {
+                reject(!harmless ? "resource-harmful" : !fresh ? "resource-unobserved" : !alive ? "resource-cleared"
+                       : !partial ? "resource-untouched" : "resource-out-of-range");
+                continue;
+            }
+            partial_trace("candidate", g, h, hp, basic);
+            return k;
+        }
+        return -1;
+    };
     const auto attack_in_range = [&]() __attribute__((always_inline)) {
-        const int hit = attack_camp(world, passing);
+        CampAttackTargets resources;
+        const bool ordinary = !melee && decision == 'F' && !memory.banking && !memory.siege && siege_group() < 0;
+        const auto targets = camp_attack_targets(world, passing, ordinary ? &resources : nullptr);
+        int hit = -1;
+        if (ordinary) {
+            const int preferred = prefer_partial(targets, resources);
+            if (preferred >= 0) {
+                const auto& target = resources.found[preferred];
+                if (attack_camp_target(world, target)) {
+                    hit = memory.farm_group = memory.claim = target.group;
+                    memory.crew = false;
+                    partial_trace("accepted", targets.found[0].group, hit, 0, 0, true);
+                } else {
+                    partial_trace("native-refused", targets.found[0].group, target.group);
+                }
+            }
+        }
+        if (hit < 0) hit = attack_camp_targets(world, targets);
         if (hit >= 0 && hit != memory.claim) {
             memory.crew = taken(hit);
             memory.claim = hit;
@@ -1440,11 +1745,13 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         reset_and_attack_camp(world, hit);
         return true;
     };
-    if (bag == 0 && attack_in_range()) return true;
+    if (!banks_bag && attack_in_range()) return true;
     if (world.is_stale()) return true;
 
     // Holders keep a capture going, and more only split the reward.
-    const auto ally_holding = [&](int g) __attribute__((always_inline)) { return allies_on(world, groups[g].tiles()) >= holders(groups[g]); };
+    const auto ally_holding = [&](int g) __attribute__((always_inline)) {
+        return prism_capture_holder(world, groups[g]) || allies_on(world, groups[g].tiles()) >= holders(groups[g]);
+    };
 
     const vec2 here = my_position();
     if (holding_capture(world)) return true;
@@ -1459,20 +1766,21 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const auto walk_on = [&](int g) __attribute__((always_inline)) {
         if (g < 0) return false;
         // Descending it walks around walls and live camps; a live route only helps past allies.
-        const auto walk = [&](const Field& field) __attribute__((always_inline)) {
-            return dash_across(world, pathing, field) || pathing.descend(field, zone) || pathing.step_towards(field, zone);
+        const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
+            return dash_across(world, pathing, field) || pathing.descend(field, zone, groups[target].centre)
+                   || pathing.step_towards(field, zone, groups[target].centre);
         };
-        if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field);
+        if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
         // Too short of fuel to search the way to a new choice: last turn's, whose way is known.
         if (previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous))) {
             note_shortcut("farm-kept-target");
             memory.farm_group = memory.claim = previous;
             memory.crew = false;
-            return walk(*pathing.approach(previous, walk_range(world, previous)));
+            return walk(*pathing.approach(previous, walk_range(world, previous)), previous);
         }
-        if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone);
+        if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone, groups[g].centre);
         note_shortcut("crow-flies-farm");
-        return pathing.step_closer(groups[g].centre, zone);
+        return pathing.step_closer(groups[g].centre, zone, groups[g].centre);
     };
     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.
     const auto walk_reserve = [&](int g) __attribute__((always_inline)) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(world, g)); };
@@ -1487,7 +1795,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         centre_steps.assign(groups.size(), -1);
     }
     std::optional<Field> from_here;
-    const Field* to_altar = bag > 0 ? &pathing.to_any_altar() : nullptr; // trips matter only when carrying
+    const Field* to_altar = banks_bag ? &pathing.to_any_altar() : nullptr;
     const int left = bag_rounds_left(world);
     // A bag rides a recall home when that reaches an altar sooner (recall_to_bank). Started during
     // a capture, the recall lands as it pays (capture_recall). Once a group's gems make the bag
@@ -1519,18 +1827,95 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     };
     // Joining allies on a group, our part of its gems is our share of the damage still to deal
     // when we arrive, and of the camps' hits.
-    const auto crew_strength = [&](int g) __attribute__((always_inline)) {
-        float total = 0;
-        for (const auto& a : world.allies)
-            if (!a.is_self && a.alive && comms::claim_of(world, a.index) == g) total += floored_output(a);
+    struct CrewWork {
+        float output = 0, delayed_damage = 0;
+    };
+    vec2 spawn_lo{map.width, map.height}, spawn_hi{-1, -1};
+    for (const auto p : map.ally_spawn_tiles) {
+        spawn_lo.x = std::min(spawn_lo.x, p.x), spawn_lo.y = std::min(spawn_lo.y, p.y);
+        spawn_hi.x = std::max(spawn_hi.x, p.x), spawn_hi.y = std::max(spawn_hi.y, p.y);
+    }
+    struct WorkArrival {
+        int anchor_round = -1, member = -1, reach = 0, distance = unreachable, spawn_distance = unreachable;
+        int dash_ready = 0, direct = 0, recall_delay = 0, recall_route = unreachable, earliest = 0;
+        int delay(int round, int waiting = 0) const {
+            return anchor_round < 0 ? 0 : std::max(0, anchor_round + earliest - round - waiting);
+        }
+    };
+    const auto work_arrival = [&](const ChampionBelief& a, int g) __attribute__((always_inline)) {
+        WorkArrival arrival;
+        const bool seen_anchor = !a.visible && a.pos_source == Source::seen && a.pos_round == a.stats_round
+                                 && a.stats_round > 0 && in_bounds(a.pos) && a.seen_channel != Channel::teleport;
+        if ((!a.visible && !seen_anchor) || a.channel == Channel::teleport) return arrival;
+        const auto& group = groups[g];
+        const auto& belief = world.camps[g];
+        arrival.anchor_round = a.visible ? world.round : a.stats_round;
+        const auto& f = a.facts();
+        arrival.reach = f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0);
+        // Readiness and walking exclusions can only delay this earliest effect.
+        for (const auto& ability : f.abilities)
+            if (ability.kind == AbilityKind::damage) arrival.reach = std::max(arrival.reach, ability.reach());
+            else if (ability.lands()) arrival.reach = std::max(arrival.reach, ability.radius);
+        for (int i = 0; i < static_cast<int>(group.members.size()); ++i) {
+            if (belief.state == CampState::alive && belief.health[i] <= 0) continue;
+            const auto p = group.members[i].pos;
+            if (const int d = dist(a.pos, p); d < arrival.distance) arrival.distance = d, arrival.member = i;
+            if (!map.ally_spawn_tiles.empty()) {
+                const int dx = std::max({spawn_lo.x - p.x, 0, p.x - spawn_hi.x});
+                const int dy = std::max({spawn_lo.y - p.y, 0, p.y - spawn_hi.y});
+                arrival.spawn_distance = std::min(arrival.spawn_distance, std::max(dx, dy));
+            }
+        }
+        if (arrival.member < 0) return WorkArrival{};
+        const int dash = f.slot_of(AbilityKind::dash);
+        const int dash_steps = dash >= 0 ? f.abilities[dash].range() : 0;
+        arrival.dash_ready = dash >= 0 ? a.ready_round[dash] - arrival.anchor_round : 0;
+        const int first_turn = a.acted ? 1 : 0;
+        const bool kill_resets = f.passive == Passive::reset_on_kill;
+        arrival.direct = earliest_work_delay(arrival.distance - arrival.reach, first_turn, arrival.dash_ready, dash_steps,
+                                            ability_cooldown, kill_resets);
+        // Allies' Home ownership is unknown: allow the fastest new recall and a ready dash on arrival.
+        arrival.recall_delay = a.seen_channel == Channel::recall ? std::max(0, a.channel_end_round - arrival.anchor_round)
+                                                              : first_turn + home_recall_time;
+        arrival.recall_route = arrival.spawn_distance == unreachable ? unreachable
+                                   : arrival.recall_delay + earliest_work_delay(arrival.spawn_distance - arrival.reach, 0, 0, dash_steps,
+                                                                               ability_cooldown, kill_resets);
+        arrival.earliest = std::min(arrival.direct, arrival.recall_route);
+        return arrival;
+    };
+    const auto crew_work = [&](int g, int working, int waiting) __attribute__((always_inline)) {
+        CrewWork total;
+        const auto& group = groups[g];
+        for (const auto& a : world.allies) {
+            if (a.is_self || !a.alive || comms::claim_of(world, a.index) != g) continue;
+            const float output = floored_output(a);
+            total.output += output;
+            const auto arrival = work_arrival(a, g);
+            // Age the work round from the observation, never a guessed hidden position or turn order.
+            const int delay = arrival.delay(world.round, waiting);
+            debug_block({
+                if (world.round <= 5 && delay > 0) {
+                    const auto p = group.members[arrival.member].pos;
+                    std::printf("FCDELAY %d %u group %d handle %u member %d camp %u at %d %d ally %u pos %d %d reach %d distance %d acted %d dash_ready %d direct %d recall_delay %d spawn_distance %d recall_route %d earliest %d waiting %d delay %d work %d old %.3f new %.3f anchor %d visible %d seen_channel %d\n",
+                                world.round, my_handle(), g, group.handle, arrival.member, group.members[arrival.member].handle, p.x, p.y,
+                                static_cast<unsigned>(a.handle), a.pos.x, a.pos.y, arrival.reach, arrival.distance,
+                                static_cast<int>(a.acted), arrival.dash_ready, arrival.direct, arrival.recall_delay, arrival.spawn_distance, arrival.recall_route,
+                                arrival.earliest, waiting, delay, working,
+                                static_cast<double>(output * static_cast<float>(working)),
+                                static_cast<double>(output * static_cast<float>(std::max(0, working - delay))),
+                                arrival.anchor_round, static_cast<int>(a.visible), static_cast<int>(a.seen_channel));
+                }
+            });
+            total.delayed_damage += output * static_cast<float>(std::min(working, delay));
+        }
         return total;
     };
     // A group too costly for us alone is still ours to call if an ally in reach with no claim of
     // its own can join: valued, like a crew's, by our share of the work.
-    float partner_output = 0;
+    float unclaimed_partner_output = 0;
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive && a.visible && dist(here, a.pos) <= params::partner_radius && comms::claim_of(world, a.index) < 0)
-            partner_output = std::max(partner_output, floored_output(a));
+            unclaimed_partner_output = std::max(unclaimed_partner_output, floored_output(a));
     const int n_groups = static_cast<int>(groups.size());
     // Static per group once read: its centre field (once warm) and that field's steps to our
     // spawn, its home_ground weight, its centre_to_altar steps, its own tribute and each holder's
@@ -1557,12 +1942,12 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     GroupFacts* const group_facts = n_groups > static_cast<int>(few_facts.size()) ? many_facts.data() : few_facts.data();
     struct Context {
         int bag, short_by;
-        bool warm;
+        bool warm, banking;
         bool operator==(const Context&) const = default;
     };
     static Context last_context{};
     static std::uint32_t context = 0;
-    if (const Context now{bag, short_by, pathing.centres_ready()}; context == 0 || !(now == last_context))
+    if (const Context now{bag, short_by, pathing.centres_ready(), banks_bag}; context == 0 || !(now == last_context))
         last_context = now, ++context;
     static float last_per_gold = 0;
     static std::uint32_t gold_context = 0;
@@ -1596,7 +1981,18 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     // First readings of each group (clears, fields) can cost several times the estimate: stop with
     // enough left for the walk after it, and read last turn's choice first so that a cut-short loop
     // still weighs it.
-    const int first = memory.farm_group >= 0 && memory.farm_group < n_groups ? memory.farm_group : 0;
+    int first = memory.farm_group >= 0 && memory.farm_group < n_groups ? memory.farm_group : -1;
+    if (first < 0) {
+        int nearest = unreachable;
+        for (int g = 0; g < n_groups; ++g) {
+            if (groups[g].has_monolith || groups[g].gems + groups[g].gold == 0) continue;
+            const int steps = dist(here, groups[g].centre);
+            if (steps < nearest) first = g, nearest = steps;
+        }
+        if (first < 0) first = 0;
+        debug_block({ if (world.round <= 100) std::printf("FSEED %d %u group %d near %d groups %d\n",
+                         world.round, my_handle(), first, nearest, n_groups); });
+    }
     // After a fight's search, the turn's walk goes on to last turn's choice (a bag is banked): the
     // fight has already taken the turn's work, and the evaluation is done again once it is over.
     const int evaluated = struck && memory.farm_group >= 0 ? 0 : n_groups;
@@ -1621,6 +2017,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (memory.claim >= 0 && memory.claim < 256 && !memory.crew)
         claimed_bits[memory.claim >> 6] &= ~(std::uint64_t{1} << (memory.claim & 63));
     const bool centres_ready = pathing.centres_ready();
+    // Draft spawn distances use walking walls; dashers must keep the live field's graph.
+    static const bool draft_spawn_graph = !world.me().facts().has_dash() || map.crossable.is_empty();
     const CampGroup* const group_data = groups.data();
     const CampBelief* const camp_data = world.camps.data();
     int* const steps_data = centre_steps.data();
@@ -1648,7 +2046,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             if (to_bank && known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
             known.walk = to_bank ? known.to_altar : unreachable;
             // Chained, the gems join the bag's one tribute; from the altar they need their own.
-            known.chained_tribute = bag > 0 ? tribute_turns(bag + group.gems) - bag_tribute : known.tribute;
+            known.chained_tribute = tribute_turns(bag + group.gems) - (banks_bag ? bag_tribute : 0);
             // The bank terms when the way back is walked.
             const bool banks = static_cast<float>(known.walk) < static_cast<float>(unreachable);
             known.walked_bank = banks ? static_cast<float>(known.walk) + static_cast<float>(known.chained_tribute) : 0.0f;
@@ -1684,7 +2082,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             // Walking is symmetric: a group's warm centre field gives our steps to it before all are.
             if (const auto* centre = centre_field(g)) {
                 steps_known = centre->at(here);
-            } else if (const auto drafted = map.drafted_spawn_steps(here, g)) {
+            } else if (const auto drafted = draft_spawn_graph ? map.drafted_spawn_steps(here, g) : std::nullopt) {
                 steps_known = *drafted;
             } else {
                 if (!from_here) {
@@ -1693,11 +2091,11 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
                     if (!claimed && best >= 0) {
                         const int near = dist(here, group.centre);
                         const int near_wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - near) : 0;
-                        const bool may_help = bag == 0 && group.strength > 0 && belief.state == CampState::alive && near <= params::help_radius
+                        const bool may_help = !banks_bag && group.strength > 0 && belief.state == CampState::alive && near <= params::help_radius
                                               && near < help_steps;
                         const float near_cycle = static_cast<float>(near + near_wait + capture_rounds()) - bank_now + bank + known.fastest;
                         if (!may_help && near_cycle > 0 && (known.gems + known.gold) / near_cycle <= best_value
-                            && (bag == 0 || (known.gems + known.gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + known.fastest) <= from_altar_value))
+                            && (!banks_bag || (known.gems + known.gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + known.fastest) <= from_altar_value))
                             continue;
                     }
                     if (!fuel_ok(full_field_cost_estimate() + loop_floor + loop_reserve())) break;
@@ -1712,7 +2110,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         // A group still respawning when we would arrive costs the wait there.
         const int wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - steps) : 0;
         if (wait > params::max_wait) continue;
-        if (bag == 0 && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
+        if (!banks_bag && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
             && steps < help_steps && struggling(g))
             help_group = g, help_steps = steps;
         const float trip = static_cast<float>(steps + wait) - bank_now + bank;
@@ -1720,7 +2118,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         // Risky groups matter only while no affordable one is found; skip the costly clearing
         // estimate for groups that cannot beat it even with no clearing. A crew's share can.
         if (!claimed && best >= 0 && (gems + gold) / (trip + static_cast<float>(capture_rounds()) + fastest) <= best_value
-            && (bag == 0 || (gems + gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + fastest) <= from_altar_value))
+            && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + fastest) <= from_altar_value))
             continue;
         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
@@ -1735,9 +2133,18 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             const bool fresh = belief.state == CampState::respawning;
             float health = 0;
             for (std::size_t i = 0; i < group.members.size(); ++i) health += fresh ? group.members[i].max_health : belief.health[i];
-            const float others = crew_strength(g);
-            const int working = std::max(0, steps - (fresh ? std::max(0, belief.respawn_round - round) : 0));
-            const float health_left = health - others * static_cast<float>(working);
+            const int waiting = fresh ? std::max(0, belief.respawn_round - round) : 0;
+            const int working = std::max(0, steps - waiting);
+            const auto crew = crew_work(g, working, waiting);
+            const float others = crew.output;
+            const float health_left = health - std::max(0.0f, others * static_cast<float>(working) - crew.delayed_damage);
+            debug_block({
+                const float old_left = health - others * static_cast<float>(working);
+                if (world.round <= 5 && health_left != old_left)
+                    std::printf("FCWINDOW %d %u group %d handle %u centre %d %d steps %d working %d hp %.3f old_left %.3f new_left %.3f\n",
+                                world.round, my_handle(), g, group.handle, group.centre.x, group.centre.y, steps, working,
+                                static_cast<double>(health), static_cast<double>(old_left), static_cast<double>(health_left));
+            });
             if (health <= 0 || health_left <= 0) continue;
             // A capture that wins the game is the team's, not a share: what counts is how soon.
             const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
@@ -1760,11 +2167,30 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             }
         }
         const float alone_damage = soften * known.damage, alone_rounds = known.rounds, kite = known.kite;
+        float partner_output = unclaimed_partner_output;
+        if (alone_damage > spare_health && g == farm_group && memory.claim == g && !memory.crew && belief.state == CampState::alive) {
+            for (const auto& a : world.allies) {
+                if (a.is_self || !a.alive || !a.visible || dist(here, a.pos) > params::partner_radius
+                    || comms::claim_of(world, a.index) != g) continue;
+                const auto arrival = work_arrival(a, g);
+                const int delay = arrival.delay(round);
+                const bool together = arrival.anchor_round >= 0 && delay <= steps + wait;
+                const float output = floored_output(a);
+                if (together) partner_output = std::max(partner_output, output);
+                debug_block({
+                    if (round <= 5)
+                        std::printf("FCPARTNER %d %u group %d ally %u delay %d steps %d wait %d known %d together %d output %.6f unclaimed %.6f partner %.6f\n",
+                                    round, my_handle(), g, static_cast<unsigned>(a.handle), delay, steps, wait,
+                                    static_cast<int>(arrival.anchor_round >= 0), static_cast<int>(together),
+                                    static_cast<double>(output), static_cast<double>(unclaimed_partner_output), static_cast<double>(partner_output));
+                });
+            }
+        }
         // Unless a partner shares the clear, it takes us alone at least the quicker of the two ways.
         if (best >= 0 && (alone_damage <= spare_health || partner_output <= 0 || belief.state != CampState::alive)) {
             const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
             if (worth / (trip + quickest + capture_rounds()) <= best_value
-                && (bag == 0 || worth / (static_cast<float>(walk) + cycle_bank + quickest + capture_rounds()) <= from_altar_value))
+                && (!banks_bag || worth / (static_cast<float>(walk) + cycle_bank + quickest + capture_rounds()) <= from_altar_value))
                 continue;
         }
         float clear_rounds = alone_rounds, damage = alone_damage;
@@ -1791,7 +2217,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             if (value > risky_value) risky = g, risky_value = value, risky_steps = steps;
         } else {
             if (value > best_value) best = g, best_value = value, best_steps = steps, best_spell = spell;
-            if (bag > 0 && walk != unreachable) {
+            if (banks_bag && walk != unreachable) {
                 const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk) - bank_now) : 0.0f;
                 const float from_altar = static_cast<float>(walk) + cycle_bank + via_altar + clear_rounds + capture_rounds();
                 from_altar_value = std::max(from_altar_value, rate(world, worth, from_altar));
@@ -1799,8 +2225,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         }
     }
     if (k < evaluated) note_shortcut("farm-partial-evaluation");
-    if (bag > 0 && (best < 0 || best_value <= from_altar_value)) return false;
-    if (bag > 0 && attack_in_range()) return true;
+    if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+    if (banks_bag && attack_in_range()) return true;
     if (world.is_stale()) return true;
     if (best < 0) best = risky, best_steps = risky_steps, best_value = risky_value;
     memory.claim = best;
@@ -1835,7 +2261,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (world.camps[best].state == CampState::cleared) {
         if (!zone) dash_towards(world, pathing, groups[best].tiles(), cap);
         if (search) {
-            if (!pathing.step_towards(off_zone(groups[best].tiles()), zone, cap) && dasher) walk_on(best);
+            if (!pathing.step_towards(off_zone(groups[best].tiles()), zone, cap, groups[best].centre) && dasher) walk_on(best);
         } else {
             note_shortcut("farm-no-route");
             walk_on(best);
@@ -1845,6 +2271,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (spell && dist(here, groups[best].centre) <= vision_radius + ability_range
         && spell_clear(world, pathing, best, zone, cap))
         return true;
+    if (cast_at_camp_on_approach(world, best)) return true;
     const auto* tiles = farm_attack_tiles(world, pathing, best, range, [&] { return end_reserve + walk_reserve(best); });
     if (!tiles) {
         note_shortcut("farm-no-attack-tiles");
@@ -1864,11 +2291,16 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         if (melee) step_onto_cleared(world, pathing, best);
         return true;
     }
-    if (!zone && dash_towards(world, pathing, goals, cap) && attack_camp(world, passing) >= 0) return true;
-    const bool walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
-                            ? pathing.step_towards(off_zone(goals), zone, cap)
-                                  || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap)
-                            : (note_shortcut("farm-no-route"), walk_on(best));
+    const Field* dash_route = nullptr;
+    if (!zone && dash_towards(world, pathing, goals, cap, &dash_route) && attack_camp(world, passing) >= 0) return true;
+    if (dash_route) world.throw_if_stale();
+    bool walked = dash_route && pathing.descend(*dash_route, zone, groups[best].centre);
+    debug_block({ if (walked) std::printf("DASH-FOLLOW %d %u group %d\n", world.round, my_handle(), best); });
+    if (!walked)
+        walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
+                     ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
+                           || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre)
+                     : (note_shortcut("farm-no-route"), walk_on(best));
     if (!walked && dasher) walk_on(best);
     if (walked) {
         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
@@ -2542,6 +2974,31 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         for (; i > 0 && order[i - 1].first > cost; --i) order[i] = order[i - 1];
         order[i] = {cost, &e};
     }
+    if (n == 0) return nullptr;
+    const auto live = my_record();
+    const auto state = cambc::champion_state::from_bits_retain(live.state);
+    const bool can_move = state.contains(cambc::champion_state::can_move);
+    const bool can_cast = state.contains(cambc::champion_state::can_cast);
+    // prey also tests whether to cancel a recall/tribute; that restriction is not a spent cast.
+    const bool cancelable = state.contains(cambc::champion_state::recalling) || state.contains(cambc::champion_state::submitting_gems);
+    const bool channel = cancelable || state.contains(cambc::champion_state::teleporting);
+    const bool cast_available = can_cast || cancelable;
+    std::array<int, 2> cooldowns;
+    for (int s = 0; s < 2; ++s) {
+        std::int32_t remaining{};
+        ok(cambc::detail::sdk_champion_cooldown(my_handle(), static_cast<std::uint32_t>(s), &remaining));
+        cooldowns[s] = std::max(0, static_cast<int>(remaining));
+    }
+    world.throw_if_stale();
+    bool walk_cast = false;
+    const auto& self = world.me();
+    for (int s = 0; s < 2; ++s) {
+        const auto& a = self.facts().abilities[s];
+        if (!can_cast || cooldowns[s] > 0) continue;
+        walk_cast |= a.kind == AbilityKind::attack_reset || a.kind == AbilityKind::dash
+            || (!a.excludes_walking && (a.stuns || ((a.hits_enemies() || a.kind == AbilityKind::heal || a.kind == AbilityKind::shield)
+                && a.multiplier > 0 && live.focus > 0)));
+    }
     // Chasing is optional: leave enough for the walk after it and the turn's end.
     const auto reserve = search_cost_estimate(2 * vision_radius) + end_reserve;
     for (int i = 0; i < n; ++i) {
@@ -2549,7 +3006,39 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
             note_shortcut("prey-cut-short");
             break;
         }
-        if (const auto t = safety.fight(order[i].second->pos, linked); !t.lost && !(linked && t.self_falls)) return order[i].second;
+        const auto& target = *order[i].second;
+        const auto key = safety.fight_key(target.pos);
+        std::uint32_t delayed = 0;
+        if (key != Safety::no_fight)
+            for (auto left = key & 0xFFFFu; left; left &= left - 1) {
+                const int j = std::countr_zero(left);
+                const auto& a = world.allies[static_cast<std::size_t>(j)];
+                if (a.is_self) {
+                    // Intent only: blocked routes are pessimistic; post-cancel walking stays baseline.
+                    if (!channel && self.facts().ranged && can_move && dist(here, target.pos) > range && !walk_cast) delayed |= 1u << j;
+                    continue;
+                }
+                if (!a.alive || !a.visible) continue;
+                const int next = next_turn_round(world, a);
+                if (strike(a, next).hits(dist(a.pos, target.pos))) continue;
+                bool support = false;
+                for (int s = 0; s < 2; ++s) {
+                    const auto& ability = a.facts().abilities[s];
+                    support |= a.ability_ready(s, next) && a.focus > 0 && ability.multiplier > 0
+                        && (ability.kind == AbilityKind::heal || ability.kind == AbilityKind::shield);
+                }
+                if (!support) delayed |= 1u << j;
+            }
+        const auto t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked);
+        debug_block({
+            static int traced = 0;
+            if (delayed && traced < 64) {
+                ++traced;
+                std::printf("CHASE-AVAIL %d %u %u %u %u %d %d %d\n", world.round, my_handle(),
+                            static_cast<std::uint32_t>(target.handle), key, delayed, static_cast<int>(t.lost), t.turns_to_kill_us, t.turns_to_kill_them);
+            }
+        });
+        if (!t.lost && !(linked && t.self_falls)) return &target;
     }
     return nullptr;
 }
@@ -2579,7 +3068,8 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     return hit || !stuck;
 }
 
-bool can_tribute_safely(const World& world, Safety& safety, const Memory& memory) {
+bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+    if (retaining_gems(world, pathing)) return false;
     if (!can_tribute_here(world)) return false;
     return tribute_ok(world, safety, memory, tribute_turns(my_gems()));
 }
@@ -2624,10 +3114,31 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     const int payout = c.payout_round();
     const int channel = my_channel_time();
     if (world.round + channel < payout) return false;
-    const int walk = pathing.to_any_altar().at(here);
-    if (walk == unreachable) return false;
     const auto& G = world.map().groups[g];
     const bool wins = capture_share(world, g) >= gems_short(world);
+    const auto* prism = prism_capture_holder(world, G);
+    if (!wins && (retaining_gems(world, pathing) || (prism && prism->is_self))) {
+        if (world.me().type != cambc::champion_type::prism || !may_shop(world) || winning_bag(world)
+            || closing(world, pathing) || !recall_outruns(world, safety) || enemy_on(world, G.tiles()))
+            return false;
+        const int back = pathing.to_ally_spawn().at(here);
+        if (back == unreachable || c.state != CampState::cleared || payout < world.round) return false;
+        bool seen = true;
+        for (const auto& m : G.members) seen &= test(world.visible, m.pos);
+        unsigned gold_in = 0;
+        if (seen) {
+            const int sharers = 1 + allies_on(world, G.tiles());
+            const bool lowest = allies_on(world, G.tiles(), world.me().index) == 0;
+            const int base = G.gold / sharers + (lowest ? G.gold % sharers : 0);
+            gold_in = static_cast<unsigned>(base + (has_family(my_items(), treasure) ? base / 5 : 0));
+        }
+        const float value = affordable_prefix(world, gold_in).gain
+                            + heal_rounds(world, my_max_health() - my_health(), spawn_steps());
+        const int hurt = my_health() < my_max_health() ? 1 : 0;
+        return std::isfinite(value) && value > static_cast<float>(std::max(0, channel - (payout - world.round)) + hurt + back);
+    }
+    const int walk = pathing.to_any_altar().at(here);
+    if (walk == unreachable) return false;
     const int sharers = 1 + allies_on(world, G.tiles());
     return home_trip(world, pathing, channel, wins).rounds(walk, payout - world.round, G.gold / sharers) < static_cast<float>(walk);
 }
@@ -2635,16 +3146,26 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
 // quicker.
 [[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    if (bankable_bag(world, pathing) > 0 || memory.damage > 0 || !may_shop(world)) return false;
+    if ((bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) || memory.damage > 0 || !may_shop(world)) return false;
     const auto gold = my_gold();
-    if (gold < shard_price || (gold < emblem_price && !emblem_begun())) return false;
+    const bool prism = world.me().type == cambc::champion_type::prism;
+    if (gold < shard_price || (!prism && gold < emblem_price && !emblem_begun(world))) return false;
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here) || safety.threatened(here)) return false;
     // The trip costs the recall and the walk back out; arriving by recall, the heal takes the turn.
-    const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
-    if (stop.short_gold > 0) return false;
-    const int back = pathing.to_ally_spawn().at(here);
-    if (back != unreachable && stop.value(0) < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
+    if (prism) {
+        if (winning_bag(world) || closing(world, pathing)) return false;
+        const int back = pathing.to_ally_spawn().at(here);
+        if (back == unreachable) return false;
+        const int hurt = my_health() < my_max_health() ? 1 : 0;
+        const float value = affordable_prefix(world).gain + heal_rounds(world, my_max_health() - my_health(), spawn_steps());
+        if (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))) return false;
+    } else {
+        const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
+        if (stop.short_gold > 0) return false;
+        const int back = pathing.to_ally_spawn().at(here);
+        if (back != unreachable && stop.value(0) < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
+    }
     bool awake = false;
     world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });
     return !awake;
@@ -2720,6 +3241,7 @@ int enemy_hold_left(const World& world, const CampBelief& c) {
 // Allies in sight on G, or nearer its centre than `here` (ties to the lower index), already make
 // enough holders.
 bool capture_taken(const World& world, const CampGroup& G, vec2 here) {
+    if (const auto* prism = prism_capture_holder(world, G)) return !prism->is_self;
     int ahead = 0;
     for (const auto& a : world.allies)
         ahead += !a.is_self && a.alive && a.visible
@@ -2966,7 +3488,179 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     return true;
 }
 
-// A big group cleared by spells from 4, out of its monsters' reach, so that nobody takes a hit;
+// Enter over two activations; an interior firing turn revalidates only its current activation.
+bool kite_productive_action(const World& world, Pathing& pathing, int g, bool interior = false) {
+    if (!interior && !my_can_move()) return false;
+    const auto& map = world.map();
+    const auto& self = world.me();
+    const auto& f = self.facts();
+    const auto& G = map.groups[g];
+    const auto& c = world.camps[g];
+    if (c.state != CampState::alive || !map.from_ally_spawn_ready()) return false;
+    const int horizon = interior ? 1 : 2;
+    int slot = -1;
+    for (int s = 0; s < 2; ++s) {
+        const auto& a = f.abilities[s];
+        // This local ablation does not price ground centres or trade away an AoE in its horizon.
+        if (a.kind == AbilityKind::damage && a.target == Targeting::ground && a.multiplier > 0
+            && self.ability_ready(s, world.round + horizon - 1)) return false;
+        if (a.kind == AbilityKind::attack_reset || (a.kind == AbilityKind::damage && a.target == Targeting::unit && a.multiplier > 0)) {
+            if (slot >= 0) return false;
+            slot = s;
+        }
+    }
+    const vec2 here = my_position();
+    if (interior && pathing.guard() && test(*pathing.guard(), here)) return false;
+    int reach = f.attack_range();
+    if (slot >= 0 && f.abilities[slot].kind == AbilityKind::damage && self.ability_ready(slot, world.round + horizon - 1))
+        reach = std::max(reach, f.abilities[slot].range());
+    bool reachable = false;
+    for (std::size_t i = 0; i < G.members.size(); ++i)
+        reachable |= c.health[i] > 0 && dist(here, G.members[i].pos) <= reach + (interior ? 0 : 1);
+    if (!reachable) return false;
+    const int home_steps = map.from_ally_spawn().at(here);
+    if (home_steps == unreachable) return false;
+    std::array<vec2, 9> endpoints;
+    endpoints[0] = here;
+    int count = 1;
+    if (!interior) {
+        const auto& blocked = pathing.blocked();
+        for (int dy = -1; dy <= 1; ++dy)
+            for (int dx = -1; dx <= 1; ++dx) {
+                if (dx == 0 && dy == 0) continue;
+                const vec2 p{here.x + dx, here.y + dy};
+                if (in_bounds(p) && test(map.standable, p) && !test(blocked, p)
+                    && (!pathing.guard() || !test(*pathing.guard(), p))) endpoints[count++] = p;
+            }
+    }
+    struct Target { vec2 pos; float health, strength; std::uint16_t visible; };
+    static std::vector<Target> targets;
+    targets.clear();
+    for (std::size_t i = 0; i < G.members.size(); ++i) {
+        if (c.health[i] <= 0) continue;
+        const auto& m = G.members[i];
+        // Only harmful members have a prepared range-5 viewer here. Do not cold-build another.
+        if (m.strength <= 0) {
+            if (dist(here, m.pos) <= ability_range + 1) return false;
+            continue;
+        }
+        const auto& viewers = pathing.member_attack_tiles(g, static_cast<int>(i), ability_range + 1);
+        std::uint16_t visible = 0;
+        for (int k = 0; k < count; ++k)
+            if (test(viewers, endpoints[k])) visible |= std::uint16_t{1} << k;
+        targets.push_back({m.pos, c.health[i], m.strength, visible});
+    }
+    if (targets.empty()) return false;
+    const bool can_attack = my_can_attack(), can_cast = my_can_cast();
+    const auto& owned = my_items();
+    const float dealt = self.damage_scale() * (has_family(owned, monster) ? 1.1f : 1.0f);
+    const float strength = my_strength(), basic_damage = strength * dealt;
+    const float spell_damage = slot < 0 ? 0 : f.abilities[slot].multiplier * my_record().focus * dealt;
+    const float soften = camp_hit_factor();
+    const float spare = my_health() - params::recall_health_fraction * my_max_health();
+    const float lost_output = floored_output(self);
+    world.throw_if_stale();
+    static std::vector<float> remaining;
+    remaining.resize(targets.size());
+    const auto damage = [&](int k) {
+        const vec2 p = endpoints[k];
+        const bool moved = k != 0;
+        const bool held = enemy_within(world, p, 6); // camp_cast's hold_range
+        const bool reset_held = enemy_within(world, p, f.attack_range() + 2); // reset_hold_margin
+        float best = 0;
+        // No cast, cast now, or cast next activation: a slot cannot recur within this horizon.
+        for (int use = 0; use <= horizon; ++use) {
+            for (std::size_t i = 0; i < targets.size(); ++i) remaining[i] = targets[i].health;
+            float total = 0;
+            const auto basic = [&] {
+                int at = -1;
+                float score = -1;
+                for (std::size_t i = 0; i < targets.size(); ++i)
+                    if (remaining[i] > 0 && (targets[i].visible & (std::uint16_t{1} << k)) && dist(p, targets[i].pos) <= f.attack_range()) {
+                        const float value = targets[i].strength / remaining[i];
+                        if (value > score) at = static_cast<int>(i), score = value;
+                    }
+                if (at < 0) return false;
+                const float hit = std::min(basic_damage, remaining[at]);
+                remaining[at] -= hit;
+                total += hit;
+                return true;
+            };
+            for (int turn = 0; turn < horizon; ++turn) {
+                const bool walk = turn == 0 && (moved || here != self.pos);
+                const bool attack = turn > 0 || (can_attack && (!walk || !f.ranged));
+                const bool cast = slot >= 0 && use == turn + 1 && (turn > 0 || can_cast)
+                    && self.ability_ready(slot, world.round + turn) && !(walk && f.abilities[slot].excludes_walking);
+                if (cast && f.abilities[slot].kind == AbilityKind::damage && !held) {
+                    int at = -1;
+                    float value = 0;
+                    for (std::size_t i = 0; i < targets.size(); ++i)
+                        if ((targets[i].visible & (std::uint16_t{1} << k)) && dist(p, targets[i].pos) <= f.abilities[slot].range())
+                            if (const float hit = std::min(spell_damage, remaining[i]); hit > value) at = static_cast<int>(i), value = hit;
+                    if (at >= 0) remaining[at] -= value, total += value;
+                }
+                const bool attacked = attack && basic();
+                // A ranged walk spends its attack; resetting that spent attack is legal too.
+                if (cast && f.abilities[slot].kind == AbilityKind::attack_reset && (attacked || (walk && f.ranged))) {
+                    int at = -1;
+                    for (std::size_t i = 0; i < targets.size(); ++i)
+                        if (remaining[i] > 0 && (targets[i].visible & (std::uint16_t{1} << k)) && dist(p, targets[i].pos) <= f.attack_range()
+                            && (at < 0 || remaining[i] < remaining[at])) at = static_cast<int>(i);
+                    const bool refunded = at >= 0 && f.passive == Passive::reset_on_kill && remaining[at] <= strength;
+                    if (at >= 0 && (!reset_held || refunded)) {
+                        const float hit = std::min(basic_damage, remaining[at]);
+                        remaining[at] -= hit;
+                        total += hit;
+                    }
+                }
+            }
+            best = std::max(best, total);
+        }
+        return best;
+    };
+    const auto exposure = [&](vec2 p, bool supported) {
+        float hit = 0;
+        for (const int h : map.groups_near(p, map.max_camp_reach)) {
+            const auto& belief = world.camps[h];
+            if (belief.state == CampState::cleared) continue;
+            const auto& members = map.groups[h].members;
+            for (std::size_t i = 0; i < members.size(); ++i) {
+                const auto& m = members[i];
+                if ((belief.state == CampState::alive && belief.health[i] <= 0) || m.strength <= 0 || dist(p, m.pos) > m.reach) continue;
+                bool tanked = false;
+                if (supported)
+                    for (const auto& a : world.allies)
+                        tanked |= !a.is_self && a.alive && a.visible && a.channel != Channel::teleport
+                            && !(a.channel == Channel::recall && a.channel_end_round <= world.round + horizon)
+                            && dist(a.pos, m.pos) < dist(p, m.pos);
+                if (!tanked) hit += m.strength;
+            }
+        }
+        return static_cast<float>(horizon) * hit * soften;
+    };
+    const float stay = damage(0) - heal_rounds(world, exposure(here, true), static_cast<float>(home_steps)) * lost_output;
+    if (interior) {
+        const bool fire = exposure(here, false) <= spare && stay > 0;
+        world.throw_if_stale();
+        return fire;
+    }
+    int best = 0;
+    float value = stay;
+    for (int k = 1; k < count; ++k) {
+        // Two camp phases, even if our damage would kill or stun a monster. Support prices only
+        // recovery: the full raw hit reserve still applies if every other body walks away.
+        if (exposure(endpoints[k], false) > spare) continue;
+        const float gain = damage(k) - heal_rounds(world, exposure(endpoints[k], true), static_cast<float>(home_steps + 1)) * lost_output;
+        if (gain > value) best = k, value = gain;
+    }
+    if (best == 0) return false;
+    world.throw_if_stale();
+    const bool moved = pathing.try_move(endpoints[best]);
+    world.throw_if_stale();
+    return moved;
+}
+
+// A big group cleared by stationary spells out of its monsters' reach, so that nobody takes a hit;
 // harmless members fall to basic attacks from there, the rest once the monsters are dead.
 bool kite(const World& world, Pathing& pathing, Memory& memory) {
     world.throw_if_stale();
@@ -3007,11 +3701,32 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
     }
     const bool fresh = c.state == CampState::respawning;
     static bitboard threat{cambc::uninitialized}, near{cambc::uninitialized}, goals{cambc::uninitialized},
-        basic{cambc::uninitialized};
+        basic{cambc::uninitialized}, stations{cambc::uninitialized}, forbidden{cambc::uninitialized},
+        seen_stations{cambc::uninitialized};
     clear_board(threat);
     clear_board(near);
     clear_board(basic);
-    const int range = world.me().facts().attack_range();
+    const auto& f = world.me().facts();
+    const int range = f.attack_range();
+    int ground_range = 0, unit_range = 0;
+    for (const auto& a : f.abilities) {
+        if (a.kind != AbilityKind::damage || a.multiplier <= 0) continue;
+        if (a.target == Targeting::ground) ground_range = std::max(ground_range, a.range());
+        if (a.target == Targeting::unit) unit_range = std::max(unit_range, a.range());
+    }
+    const int spell_reach = std::max(unit_range, ground_range > 0 ? ground_range + 1 : 0);
+    bool ground_stations = ground_range > 0;
+    if (ground_stations)
+        for (std::size_t i = 0; i < G.members.size(); ++i) {
+            if ((!fresh && c.health[i] <= 0) || G.members[i].strength <= 0) continue;
+            const bool ready = pathing.prepare_member(g, static_cast<int>(i), ground_range + 1, end_reserve);
+            world.throw_if_stale();
+            if (!ready) {
+                ground_stations = false;
+                break;
+            }
+        }
+    const int station_range = ground_stations ? spell_reach : ability_range;
     bool attackers = false;
     for (std::size_t i = 0; i < G.members.size(); ++i) {
         if (!fresh && c.health[i] <= 0) continue;
@@ -3019,13 +3734,38 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
         if (G.members[i].strength > 0) {
             attackers = true;
             draw_square(threat, p, static_cast<float>(G.members[i].reach));
-            draw_square(near, p, static_cast<float>(ability_range));
+            if (!ground_stations) draw_square(near, p, static_cast<float>(station_range));
+            if (ground_stations) {
+                const auto& viewers = pathing.member_attack_tiles(g, static_cast<int>(i), ground_range + 1);
+                if (unit_range > 0) {
+                    clear_board(stations);
+                    draw_square(stations, p, static_cast<float>(unit_range));
+                    and_into(viewers, stations, seen_stations);
+                    near |= seen_stations;
+                }
+                clear_board(forbidden);
+                for (const int other : map.groups_near(p, 2)) {
+                    if (other == g || world.camps[other].state != CampState::alive) continue;
+                    const auto& members = map.groups[other].members;
+                    for (std::size_t j = 0; j < members.size(); ++j)
+                        if (world.camps[other].health[j] > 0) draw_square(forbidden, members[j].pos, 1);
+                }
+                clear_board(stations);
+                for (int dy = -1; dy <= 1; ++dy)
+                    for (int dx = -1; dx <= 1; ++dx) {
+                        const vec2 centre{p.x + dx, p.y + dy};
+                        if (in_bounds(centre) && !test(forbidden, centre)) draw_square(stations, centre, static_cast<float>(ground_range));
+                    }
+                and_into(viewers, stations, seen_stations);
+                near |= seen_stations;
+            }
         } else {
             draw_square(basic, p, static_cast<float>(range));
         }
     }
     // Only harmless members: farm clears them. Champions without spells stand guard with the
     // casters, for the fights and the capture.
+    world.throw_if_stale();
     if (!attackers) return false;
     const bool ally_in = ally_claims(world, g);
     memory.claim = g;
@@ -3046,27 +3786,40 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
         if (attacked) reset_and_attack_camp(world, g);
         return cast || attacked;
     };
+    if (!safe_here && ground_stations && kite_productive_action(world, pathing, g, true)) {
+        const bool hit_now = hit();
+        const bool reset = reset_and_attack_camp(world, g);
+        if (hit_now || reset) return true;
+    }
     const auto& first = basic_first ? basic : goals;
     if (safe_here) {
         const bool placed = test(first, here);
-        if (hit() || placed) return true;
+        if (hit()) return true;
+        if (placed) {
+            if (ground_stations && kite_productive_action(world, pathing, g)) {
+                hit();
+                reset_and_attack_camp(world, g);
+            }
+            return true;
+        }
     }
     // Far off, the static walk to within reach; the live route around the monsters once near.
-    if (dist(here, G.centre) > vision_radius + ability_range) {
-        if (const auto* field = pathing.approach(g, ability_range)) pathing.step_towards(*field);
-        else pathing.step_closer(G.centre);
-        return true;
+    if (dist(here, G.centre) > vision_radius + station_range) {
+        if (const auto* field = pathing.approach(g, station_range)) {
+            if (pathing.step_towards(*field)) return true;
+        } else if (pathing.step_closer(G.centre)) return true;
+        if (!ground_stations) return true;
     }
     // A short way to a basic attack's tile, else any safe one: the long way round to the far side
     // of the monsters costs more than the attacks pay.
-    const int cap = 2 * (vision_radius + ability_range);
+    const int cap = 2 * (vision_radius + station_range);
     bool moved = basic_first && pathing.step_towards(basic, &threat, vision_radius);
     if (!moved && !test(goals, here)) moved = pathing.step_towards(goals, &threat, cap);
     // A sleeping group hits nobody passing through its reach.
     if (!moved && !test(goals, here) && c.awake == Awake::asleep) moved = pathing.step_towards(goals, nullptr, cap);
     // No way within the cap (round a lake): the static walk.
     if (!moved && !test(goals, here))
-        if (const auto* field = pathing.approach(g, ability_range))
+        if (const auto* field = pathing.approach(g, station_range))
             moved = pathing.step_towards(*field, c.awake == Awake::asleep ? nullptr : &threat);
     if (!moved && !safe_here) {
         static bitboard out{cambc::uninitialized};
@@ -3075,7 +3828,8 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
         drop(out, threat);
         pathing.step_towards(out, nullptr, 2 * G.reach);
     }
-    if (!test(threat, my_position())) hit();
+    const bool hit_safe = !test(threat, my_position()) && hit();
+    if (ground_stations && !moved && !hit_safe && safe_here && !test(goals, my_position())) return false;
     return true;
 }
 
@@ -3151,7 +3905,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         return false;
     }
     home = want_home(world, safety, memory.siege);
-    if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, safety, memory) && recall_outruns(world, safety))
+    if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
         return true;
     decision = 'k';
     if (holding_capture(world)) {
@@ -3166,7 +3920,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         if (recall_to_bank(world, pathing, safety, memory) || shop()) return true;
         if (siege_heal_trip(memory, safety)) return sieged = true; // the trip keeps the siege until home
         // No walk leaves a pocket a crystal took us into.
-        if (!test(pathing.foot(), my_position()) && my_gems() == 0) return true;
+        if (!test(pathing.foot(), my_position()) && (my_gems() == 0 || retaining_gems(world, pathing))) return true;
     }
     try {
         me.cancel_recall();
@@ -3181,13 +3935,13 @@ void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memor
     auto& me = cambc::self();
     decision = 'R';
     memory.claim = -1;
-    memory.banking = bankable_bag(world, pathing) > 0; // a bag in retreat goes on to an altar, by a recall if quicker
+    memory.banking = bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing);
     if (world.me().facts().walk_and_attack_independent() && attack_enemy(world)) reset_and_attack_enemy(world, true);
     cast_at_enemies(world, escape_step_value);
     if (!me.is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) safety.refresh();
     // A tribute survives damage; a recall does not.
-    if (can_tribute_safely(world, safety, memory)) {
+    if (can_tribute_safely(world, pathing, safety, memory)) {
         bank_gems(world, pathing, safety, memory);
         return;
     }
@@ -3219,7 +3973,7 @@ void hold_capture(const World& world, Memory& memory, bool attacked) {
 // Carrying: chase a kill worth the risk, bank, wait at an altar until it is safe, or chain another
 // capture on the way.
 void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked) {
-    const bool safe = can_tribute_safely(world, safety, memory);
+    const bool safe = can_tribute_safely(world, pathing, safety, memory);
     const bool close = closing(world, pathing);
     if (!safe && !close && !winning_bag(world) && chase(world, pathing, safety)) return;
     if (safe) {
@@ -3283,7 +4037,7 @@ float farm_step_value(const World& world) {
 
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
-    if (!world.me().alive || bankable_bag(world, pathing) == 0) memory.banking = false;
+    if (!world.me().alive || bankable_bag(world, pathing) == 0 || retaining_gems(world, pathing)) memory.banking = false;
     if (!world.me().alive) {
         memory.claim = -1;
         buy_shards(world); // the dead can only shop
@@ -3341,18 +4095,20 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     }
 
     pathing.set_guard(step_guard(world, safety));
+    if (yield_capture(world, pathing, safety, memory)) return;
+    if (take_capture_handoff(world, pathing, safety, memory)) return;
     const bool holding = holding_capture(world) || contesting(world);
     bool attacked = false;
     if (strikes) {
         Intent intent;
         intent.anchored = holding;
-        intent.walks = !holding && !can_tribute_here(world);
+        intent.walks = !holding && (retaining_gems(world, pathing) || !can_tribute_here(world));
         // A carrier's step banks a turn sooner, freeing a turn of output for the farm.
         intent.step_value = farm_step_value(world);
         // An enemy already in attack range was not worth leaving (want_home): the fight is here.
         if (enemy_within(world, my_position(), world.me().facts().attack_range())) intent.walks = false;
         // The goal most likely walks to an altar when carrying, else to the farm choice.
-        intent.to_altar = bankable_bag(world, pathing) > 0;
+        intent.to_altar = bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing);
         intent.group = memory.farm_group;
         struck = true;
         const auto planned = plan_strikes(world, pathing, safety, intent);
@@ -3374,7 +4130,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         hold_capture(world, memory, attacked);
         return;
     }
-    if (bankable_bag(world, pathing) > 0) {
+    if (bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) {
         carry_bag(world, pathing, safety, memory, attacked);
         return;
     }
@@ -3456,7 +4212,7 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (decision != 'W') memory.wait_altar = -1;
     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
     // or a bag takes us away from it.
-    if (!sieged && (memory.claim != claim || decision == 'C' || bankable_bag(world, pathing) > 0)) {
+    if (!sieged && (memory.claim != claim || decision == 'C' || (bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)))) {
         memory.siege = false;
         memory.staged_since = -1;
     }
@@ -3478,6 +4234,11 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
 
 void play_turn(World& world, Pathing& pathing, Memory& memory) {
     Safety safety{world};
+    const int live_claim = world.me().type == cambc::champion_type::vesper_vale && memory.claim >= 0
+                               && memory.claim < static_cast<int>(world.camps.size())
+                               && world.camps[memory.claim].state == CampState::alive
+                               && world.camps[memory.claim].state_round == world.round
+                               ? memory.claim : -1;
     const auto* record = world.me().alive ? &my_record() : nullptr;
     const float health = record ? record->health : 0;
     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
@@ -3498,6 +4259,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     set_turn_order(world, safety);
     comms::claim(memory.claim);
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+    memory.live_claim = live_claim;
     memory.round = world.round;
     memory.health = world.me().alive ? my_health() : 0;
     upkeep.camp_turns += camp_hits() != camp_hits_before;

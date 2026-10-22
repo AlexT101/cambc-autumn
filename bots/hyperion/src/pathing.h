@@ -55,6 +55,7 @@ public:
     bool prepare_attack_tiles(int group, int range, std::uint64_t fuel_floor);
     // The same for the members in `members` (bit i: member i), alive or not.
     bool prepare_member_tiles(int group, int range, std::uint32_t members, std::uint64_t fuel_floor);
+    bool prepare_member(int group, int member, int range, std::uint64_t fuel_floor);
     // Precompute while more than `fuel_floor` remains; true once everything is cached.
     bool warm_up(int attack_range, std::uint64_t fuel_floor);
     // The centre fields first: until they are ready, farm builds a field from wherever we stand.
@@ -74,14 +75,15 @@ public:
 
     // A hidden blocker fails a move without spending the walk; the other first steps are tried,
     // then the route is replanned.
-    bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable);
+    // An optional aim breaks equal-distance ties, retaining compass order for equal aim distance.
+    bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
     bool step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor);
     // A live route within `max_detour` of the static distance, else greedy descent of the field.
-    bool step_towards(const Field& field, const bitboard* avoid = nullptr);
+    bool step_towards(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
     // Cheap fallbacks without a search, when fuel is short: a step down the field, or one that
     // gets closer to the target as the crow flies.
-    bool descend(const Field& field, const bitboard* avoid = nullptr);
-    bool step_closer(vec2 target, const bitboard* avoid = nullptr);
+    bool descend(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
+    bool step_closer(vec2 target, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
     // False, spending nothing, if illegal, guarded or blocked by a hidden unit; `refused`: set
     // unless a hidden unit was the reason.
     bool try_move(vec2 tile, bool* refused = nullptr);
@@ -102,13 +104,13 @@ private:
         const vec2* end() const { return tiles.data() + count; }
     };
     // Free neighbours that get strictly closer on a static field, nearest first.
-    Neighbours closer_neighbours(const Field& field, const bitboard* avoid = nullptr);
+    Neighbours closer_neighbours(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
     struct Route {
         int steps = unreachable; // 0: already on a goal; unreachable: none within the cap
         int count = 0;
-        std::array<vec2, 8> first_steps; // the first `count`: all equally short, in compass order
+        std::array<vec2, 8> first_steps; // the first `count`: all equally short, compass order unless aimed
     };
-    Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, vec2 through = {-1, -1});
+    Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, vec2 through = {-1, -1}, std::optional<vec2> aim = std::nullopt);
     // The latest route's search: its distances from the goals, and whether it found no way
     // although it stopped short of its cap, so that no wider search finds one either.
     cambc::distance_field route_field_;
@@ -146,7 +148,6 @@ private:
     } ready_check_;
     std::unique_ptr<Approach> spare_approach_; // a replaced one, refilled by the next search
     std::optional<bitboard>& attack_slot(int group, int member, int range);
-    bool prepare_member(int group, int member, int range, std::uint64_t fuel_floor);
     const StaticMap& map() const;
     bool farmed(int group) const; // farm reads only groups with a reward and no monolith
     // Layers to cap its centre field at, doubled after a field cut short; 0: uncapped (no draft plan).

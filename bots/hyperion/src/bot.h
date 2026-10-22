@@ -13,6 +13,7 @@ struct Memory {
     bool banking = false; // our bag headed for an altar rather than another capture last turn
     int farm_group = -1;  // farm's latest choice: kept when near tied, walked to on short fuel
     int claim = -1;       // the group we told allies we work towards, or -1
+    int live_claim = -1;  // our claim observed alive at the start of our previous turn
     bool crew = false;    // joining an ally's claim rather than our own
     bool siege = false;   // our claim is a Monolith or a group sealing the altars (seals()), attacked by the team together
     int staged_since = -1; // round we started waiting near it for the others

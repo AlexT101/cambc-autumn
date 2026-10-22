@@ -960,6 +960,7 @@ void find_crossings(StaticMap& s) {
 }
 
 void World::update() {
+    priority_start_enemies.count = 0;
     round = static_cast<int>(checked_round());
     turn_round() = static_cast<std::uint32_t>(round);
     // First turn; a failure part-way is retried next turn from scratch.
@@ -1123,6 +1124,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
                 : state.contains(cambc::champion_state::submitting_gems) ? Channel::tribute
                 : state.contains(cambc::champion_state::teleporting)     ? Channel::teleport
                                                                          : Channel::none;
+    b.seen_channel = b.channel;
     if (b.channel != Channel::none) {
         const auto left = engine::channel_time(h);
         b.channel_end_round = fire_round(round, left.value_or(0), acted);
@@ -1140,6 +1142,21 @@ void World::update_champion(ChampionBelief& b, bool full) {
         b.ready_round[slot] = std::max(fire_round(round, cds[slot], acted), earliest);
     }
     if (b.shield_slot >= 0) read_shield(b, cds);
+    if (full && enemy && priority_start_enemies.count < static_cast<int>(priority_start_enemies.units.size())) {
+        auto& saved = priority_start_enemies.units[static_cast<std::size_t>(priority_start_enemies.count)];
+        saved.type = static_cast<int>(b.type);
+        saved.x = b.pos.x;
+        saved.y = b.pos.y;
+        saved.health = b.health;
+        saved.shield = b.shield;
+        saved.max_health = b.max_health;
+        saved.strength = b.strength;
+        saved.focus = b.focus;
+        saved.cooldowns = cds;
+        saved.alive = true;
+        saved.stunned = has_stun(b.handle);
+        ++priority_start_enemies.count;
+    }
     // In observe() too, for a champion first seen after our move.
     b.gems = engine::gems(h);
     if (enemy || b.is_self) b.fast_recall = engine::home_emblem(h);

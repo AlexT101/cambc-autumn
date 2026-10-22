@@ -1607,6 +1607,15 @@ bool strike_possible(const World& world) {
     if (!S.read()) return out;
     throw_if_stale();
     mark(0);
+    // Prism's exclusive casts cannot follow a walk: offer the walk itself only as a terminal leaf.
+    if (S.f.passive == Passive::gem_focus && S.can_walk && S.moves && !S.walked_first) {
+        Node walk = S.root();
+        walk.seg = walked;
+        walk.walk = walk.attack = walk.owed = false;
+        walk.depth = 1;
+        S.stack[0] = {Op::walk};
+        S.settle(walk);
+    }
     S.grow(S.root());
     mark(1);
     const vec2 here = S.here;

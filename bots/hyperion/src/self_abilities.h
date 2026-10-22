@@ -30,7 +30,8 @@ bool camp_in_reach(const World& world, vec2 p, int range);
 
 // Travel: dash to the landing nearest the goals if it gains at least 2 steps and no enemy is near
 // enough to want the dash for a fight or an escape. Goals more than `max_steps` away are not searched for.
-bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps = unreachable);
+// On success, follow receives the search field, valid until the next call to this overload.
+bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps = unreachable, const Field** follow = nullptr);
 bool dash_towards(const World& world, Pathing& pathing, const Field& field);
 // Over a hole or altar line beside us (StaticMap::crossable) where `field` gains: unlike a travel
 // dash, with enemies near, as long as the landing is no deeper in their reach.

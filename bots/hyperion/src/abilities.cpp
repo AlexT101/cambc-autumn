@@ -155,7 +155,7 @@ const bitboard& wake_risk(const World& world, vec2 here, int reach) {
 
 // Centres within `range` of `here`, off `skip`.
 Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& targets, vec2 here, int range,
-                 const bitboard& skip) {
+                 const bitboard& skip, const std::vector<vec2>* harmful = nullptr) {
     constexpr int max_range = 5; // ability ranges are 4
     Cast best;
     if (targets.empty()) return best;
@@ -190,7 +190,14 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
     // In board order, which breaks ties.
     for (auto c : Tiles<17 * 17>{centres}) {
         const float v = value[(c.y - here.y + range) * side + (c.x - here.x + range)];
-        if (v > best.value && v >= min_weight_value) best.slot = slot, best.value = v, best.tile = c;
+        if (!(v > best.value && v >= min_weight_value)) continue;
+        if (harmful) {
+            int hits = 0;
+            for (auto p : *harmful)
+                if (dist(c, p) <= 1 && ++hits >= 2) break;
+            if (hits < 2) continue;
+        }
+        best.slot = slot, best.value = v, best.tile = c;
     }
     return best;
 }
@@ -376,7 +383,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
     return best;
 }
 
-Cast camp_cast(const World& world, int group, bool attackers_only, bool any_value) {
+Cast camp_cast(const World& world, int group, bool attackers_only, bool any_value, bool approach = false) {
     if (!my_can_cast()) return {};
     const auto& f = world.me().facts();
     const std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};
@@ -384,26 +391,36 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     const bool stuns = (ready[0] && f.abilities[0].stuns) || (ready[1] && f.abilities[1].stuns);
     const vec2 here = my_position();
     const auto& g = world.map().groups[group];
+    const bool harmless_approach = approach && g.strength <= 0;
     if ((g.has_monolith && group != siege_group()) || world.camps[group].state != CampState::alive) return {};
     if (enemy_within(world, here, hold_range)) return {};
+    // A ranged walk also spends the basic: require our native position to be unchanged.
+    const bool post_basic = !approach && !attackers_only && !my_can_attack() && !walked(world);
+    bool all_visible = post_basic;
 
     struct Member {
         int index; // in the group
         vec2 pos;
         float health, stun;
+        bool harmful;
     };
     static std::vector<Member> members;
+    static std::vector<vec2> harmful;
     members.clear();
+    harmful.clear();
     for (int i = 0; i < static_cast<int>(g.members.size()); ++i) {
-        if (world.camps[group].health[i] <= 0 || (attackers_only && g.members[i].strength <= 0)
+        all_visible = all_visible && test(world.visible, g.members[i].pos);
+        if ((!post_basic && world.camps[group].health[i] <= 0) || (attackers_only && g.members[i].strength <= 0)
             || !cambc::vision::has_camp(g.members[i].pos))
             continue;
         const auto handle = static_cast<std::uint32_t>(g.members[i].handle);
         static cambc::detail::camp_state record;
         const auto code = cambc::detail::sdk_camp(handle, &record);
         if (code == static_cast<std::int32_t>(cambc::error_code::api_not_in_vision)
-            || code == static_cast<std::int32_t>(cambc::error_code::api_not_found))
+            || code == static_cast<std::int32_t>(cambc::error_code::api_not_found)) {
+            all_visible = false;
             continue;
+        }
         ok(code);
         const float health = record.health;
         if (health <= 0) continue;
@@ -415,20 +432,34 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             for (const auto& a : world.allies)
                 exposed |= !exposed && a.alive && a.visible && dist(a.pos, g.members[i].pos) <= g.members[i].reach;
         const float stun = stuns && exposed && !camp_stunned(handle) ? g.members[i].strength : 0;
-        members.push_back({i, g.members[i].pos, health, stun});
+        const bool harms = g.members[i].strength > 0;
+        members.push_back({i, g.members[i].pos, health, stun, harms});
+        if (approach && harms) harmful.push_back(g.members[i].pos);
     }
     if (members.empty()) return {};
+    const bool sole_finish = all_visible && members.size() == 1;
+    float finish_factor = 1.0f;
+    if (sole_finish) {
+        const auto& owned = my_items();
+        if (owned[cambc::item_type::monster_emblem_of_strength] > 0
+            || owned[cambc::item_type::monster_emblem_of_focus] > 0
+            || owned[cambc::item_type::monster_emblem_of_health] > 0)
+            finish_factor = 1.1f;
+    }
 
     Cast best;
     for (int s = 0; s < 2; ++s) {
-        if (!ready[s]) continue;
+        if (!ready[s] || (harmless_approach && f.abilities[s].target != Targeting::ground)) continue;
         const auto& a = f.abilities[s];
         const float raw = raw_damage(s);
+        // Native raw already includes outgoing passives; Monster is target-dependent and applies once.
+        const bool finishes = sole_finish && !a.lands() && raw * finish_factor >= members[0].health;
         // A stun that deals nothing and keeps the walk costs only its cooldown.
-        const float floor = any_value || (g.has_monolith && a.stuns && raw <= 0 && !a.excludes_walking) ? 1.0f : min_camp_value;
+        const float floor = finishes ? 0.0f
+                            : any_value || (g.has_monolith && a.stuns && raw <= 0 && !a.excludes_walking) ? 1.0f : min_camp_value;
         if (a.target == Targeting::unit) {
             for (const auto& m : members) {
-                if (dist(here, m.pos) > a.range()) continue;
+                if ((approach && !m.harmful) || dist(here, m.pos) > a.range()) continue;
                 const float v = std::min(raw, m.health) + (a.stuns ? m.stun : 0);
                 if (v >= floor && v > best.value) best = Cast{s, v, std::nullopt, g.camp(m.index), {}};
             }
@@ -440,7 +471,8 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             clear_board(skip);
             for (int other : world.map().groups_near(here, a.reach()))
                 if (other != group && world.camps[other].state == CampState::alive) draw_alive_members(world, other, skip);
-            best.offer(best_ground(s, any_value ? 1.0f : min_camp_value, targets, here, a.range(), skip));
+            best.offer(best_ground(s, finishes ? 0.0f : any_value ? 1.0f : min_camp_value, targets, here, a.range(), skip,
+                                   approach && !harmless_approach ? &harmful : nullptr));
         } else if (a.lands()) {
             // A dash off a cleared group gives up its capture.
             if (const int at = world.map().group_at(here); at >= 0 && world.camps[at].state == CampState::cleared) continue;
@@ -508,7 +540,46 @@ bool cast_at_enemies(const World& world, float walk) {
 bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value) {
     world.throw_if_stale();
     try {
-        const bool cast = camp_cast(world, group, attackers_only, any_value).execute();
+        const auto selected = camp_cast(world, group, attackers_only, any_value);
+        world.throw_if_stale();
+        const bool cast = selected.execute();
+        world.throw_if_stale();
+        camp_hits() += cast;
+        return cast;
+    } catch (const cambc::error&) {
+        return false;
+    }
+}
+
+bool cast_at_camp_on_approach(const World& world, int group) {
+    world.throw_if_stale();
+    if (world.me().type != cambc::champion_type::prism
+        || (!world.me().ability_ready(0, world.round) && !world.me().ability_ready(1, world.round))
+        || !my_can_cast() || walked(world))
+        return false;
+    const auto& c = world.camps[group];
+    if (c.state != CampState::alive) return false;
+    const auto& map = world.map();
+    const auto& g = map.groups[group];
+    const bool harmless = g.strength <= 0;
+    if (harmless ? g.members.size() <= 1 : c.awake != Awake::awake) return false;
+    const vec2 here = my_position();
+    const int range = world.me().facts().attack_range();
+    for (std::size_t i = 0; i < g.members.size(); ++i)
+        if ((harmless || c.health[i] > 0) && dist(here, g.members[i].pos) <= range && cambc::vision::has_camp(g.members[i].pos))
+            return false;
+    for (int other : map.groups_near(here, map.max_camp_reach)) {
+        if (world.camps[other].state != CampState::alive) continue;
+        const auto& members = map.groups[other].members;
+        for (std::size_t i = 0; i < members.size(); ++i)
+            if (world.camps[other].health[i] > 0 && members[i].strength > 0 && dist(here, members[i].pos) <= members[i].reach)
+                return false;
+    }
+    try {
+        const auto selected = camp_cast(world, group, false, false, true);
+        world.throw_if_stale();
+        const bool cast = selected.execute();
+        world.throw_if_stale();
         camp_hits() += cast;
         return cast;
     } catch (const cambc::error&) {

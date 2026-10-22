@@ -266,6 +266,8 @@ public:
     // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
     // Without `falls` the fight may end once it cannot be lost, leaving self_falls unknown.
     Trade fight(vec2 p, bool falls = true);
+    // Optional chase only: the same roster, with unavailable first activations delayed on copies.
+    Trade chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls = true);
     // Who would fight at p: bit i of the low half for allies[i], of the high half for enemies[i];
     // no_fight if no threat hits p.
     static constexpr std::uint32_t no_fight = ~0u;

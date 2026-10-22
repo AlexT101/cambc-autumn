@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <vector>
+#include "idle_priority.h"
 #include "params.h"
 #include "safety.h"
 #include "world.h"
@@ -14,6 +15,54 @@ namespace {
 // life, which outranks being near a fight. Each needs us to act before some enemy next round.
 enum Band : int { idle, engaged, protect, kill };
 constexpr int band_width = 10000;
+
+int idle_role(cambc::champion_type type) {
+    using cambc::champion_type;
+    switch (type) {
+    case champion_type::prism: return 0;
+    case champion_type::vesper_vale: return 1;
+    case champion_type::ryth:
+    case champion_type::vendetta: return 2;
+    case champion_type::marcella: return 3;
+    case champion_type::heart_of_ruin: return 4;
+    default: return -1;
+    }
+}
+
+teacher_priority::Unit priority_self(const World& world) {
+    teacher_priority::Unit self;
+    self.type = static_cast<int>(world.me().type);
+    self.alive = world.me().alive && is_alive(world.me().handle);
+    if (!self.alive) return self;
+    const auto& info = my_record();
+    self.x = info.x;
+    self.y = info.y;
+    self.health = info.health;
+    self.max_health = info.max_health;
+    self.strength = info.strength;
+    self.focus = info.focus;
+    self.shield = shield_value(world.me().handle);
+    for (std::uint32_t slot = 0; slot < 2; ++slot) {
+        static std::int32_t cooldown;
+        ok(cambc::detail::sdk_champion_cooldown(my_handle(), slot, &cooldown));
+        self.cooldowns[slot] = cooldown;
+    }
+    return self;
+}
+
+static_assert(static_cast<int>(cambc::champion_type::ryth) == teacher_priority::ryth);
+static_assert(static_cast<int>(cambc::champion_type::vesper_vale) == teacher_priority::vesper_vale);
+static_assert(static_cast<int>(cambc::champion_type::vendetta) == teacher_priority::vendetta);
+static_assert(static_cast<int>(cambc::champion_type::cassi) == teacher_priority::cassi);
+static_assert(static_cast<int>(cambc::champion_type::issac) == teacher_priority::issac);
+static_assert(static_cast<int>(cambc::champion_type::stellar) == teacher_priority::stellar);
+static_assert(static_cast<int>(cambc::champion_type::prism) == teacher_priority::prism);
+static_assert(static_cast<int>(cambc::champion_type::marcella) == teacher_priority::marcella);
+static_assert(static_cast<int>(cambc::champion_type::willow) == teacher_priority::willow);
+static_assert(static_cast<int>(cambc::champion_type::ren) == teacher_priority::ren);
+static_assert(static_cast<int>(cambc::champion_type::varg) == teacher_priority::varg);
+static_assert(static_cast<int>(cambc::champion_type::tavi) == teacher_priority::tavi);
+static_assert(static_cast<int>(cambc::champion_type::heart_of_ruin) == teacher_priority::heart_of_ruin);
 
 // An enemy yet to act this round moves before our next turn anyway: acting before its turn next
 // round denies it only a second one.
@@ -232,11 +281,16 @@ void set_turn_order(const World& world, Safety& safety) {
     world.throw_if_stale();
     auto& me = cambc::self();
     Wish wish;
+    int priority = 0;
     if (world.me().alive && !fuel_ok(end_reserve)) {
         note_shortcut("turn-order");
         return;
     }
-    if (world.me().alive) {
+    if (idle_role(world.me().type) >= 0) {
+        const auto self = priority_self(world);
+        priority = teacher_priority::priority(self, world.priority_start_enemies, self.alive ? static_cast<int>(my_gems()) : 0);
+        world.throw_if_stale();
+    } else if (world.me().alive) {
         cambc::champion_state state{};
         auto& self = live_self(world, state);
         if (self.alive) {
@@ -271,11 +325,14 @@ void set_turn_order(const World& world, Safety& safety) {
                 offer_escape(world, self, safety, wish);
             }
         }
+        priority = wish.priority();
+        if (const int role = idle_role(self.type); wish.band == idle && role >= 0 && self.health > 0)
+            priority = idle_priority(role, self.health, shield_value(self.handle), self.max_health, self.gems);
     }
     try {
         static std::int32_t next;
         ok(cambc::detail::sdk_bc_champion_priority(my_handle(), 1, &next));
-        if (wish.priority() != next) me.set_priority(wish.priority());
+        if (priority != next) me.set_priority(priority);
     } catch (const cambc::error&) {
     }
 }

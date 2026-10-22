@@ -300,7 +300,8 @@ bool dash_across(const World& world, Pathing& pathing, const Field& field) {
     return dash_to_first(dash, pathing, landings);
 }
 
-bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps) {
+bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, int max_steps, const Field** follow) {
+    if (follow) *follow = nullptr;
     static int paused_until = -1;
     if (world.round < paused_until) return false;
     // Most champions have no dash: check before anything costly.
@@ -309,8 +310,9 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, i
     const vec2 here = my_position();
     // A goal within a dash is a walk or two away: not worth the cooldown or the search.
     if (any_within(goals, here, dash_steps)) return false;
-    static bitboard open_goals{cambc::uninitialized}, origin, visited{cambc::uninitialized};
-    static cambc::distance_field field;
+    static bitboard origin, visited{cambc::uninitialized};
+    static Field field{.goals = bitboard{cambc::uninitialized}};
+    auto& open_goals = field.goals;
     const auto& walls = pathing.blocked();
     // goals & ~walls
     and_into(goals, walls, open_goals);
@@ -319,11 +321,13 @@ bool dash_towards(const World& world, Pathing& pathing, const bitboard& goals, i
     // Searching out from the goals until it reaches us labels every tile nearer than ours.
     clear_board(origin);
     set_tile(origin, here);
-    field.compute_to(walls, open_goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
+    field.steps.compute_to(walls, open_goals, origin, visited, static_cast<std::uint16_t>(std::min<int>(max_steps, unreachable)));
     if (test(visited, here)
-        && travel_dash(world, pathing, dash, steps_at(field, here),
-                       [&](vec2 p) { return test(visited, p) ? steps_at(field, p) : unreachable; }))
+        && travel_dash(world, pathing, dash, field.at(here),
+                       [&](vec2 p) { return test(visited, p) ? field.at(p) : unreachable; })) {
+        if (follow) *follow = &field;
         return true;
+    }
     paused_until = world.round + failed_search_pause;
     return false;
 }

@@ -2091,6 +2091,38 @@ Trade Safety::new_fight(std::uint32_t key, bool falls) {
     return slot.trade;
 }
 
+Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls) {
+    world_.throw_if_stale();
+    if (key == no_fight) return {};
+    Side us, them;
+    fill(us, world_, world_.allies, key & 0xFFFFu, made_);
+    bool changed = false;
+    int at = 0;
+    for (auto left = key & 0xFFFFu; left && at < us.count; left &= left - 1, ++at) {
+        const int i = std::countr_zero(left);
+        auto& f = us.fighters[at];
+        if ((delayed >> i & 1) && f.arrives_at < 1) f.arrives_at = 1, changed = true;
+        if (!world_.allies[static_cast<std::size_t>(i)].is_self) continue;
+        for (int s = 0; s < 2; ++s) {
+            const int ready = f.kit->cast[s].value <= 0 ? never : std::max(can_cast ? 0 : 1, self_cooldowns[s]);
+            changed |= f.ready_at[s] != ready;
+            f.ready_at[s] = ready;
+        }
+        f.next_cast = next_cast(f);
+    }
+    if (!changed) return fight_of(key, falls);
+    us.plain = false;
+    build();
+    fill(them, world_, world_.enemies, key >> 16 & threat_mask_, made_);
+    world_.throw_if_stale();
+    // No cross-target memo: roster alone omits the delayed mask and our live action state.
+    const auto before = fuel();
+    const auto t = trade(us, them, end_reserve, true, falls);
+    if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
+    world_.throw_if_stale();
+    return t;
+}
+
 [[gnu::noinline]] void Safety::count_champions() {
     champions_ = 0;
     for (const auto& a : world_.allies) champions_ += a.alive && (a.is_self || a.visible);

@@ -934,3 +934,18 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   The same check at 9396ecc: 65.1% (712-382), out-of-fuel turns 7098 vs 1947 (ladder 638, gen 3068, gen-s1 3392), so
   the 10 commits since raised hyperion's out-of-fuel turns 30% with the win rate level. SHORTCUT lines 257k in 969
   games vs hecate's 302k in 872.
+
+## khaos_v26: a teammate's build on hyperion (2026-10-22)
+
+- `bots/khaos_v26` (deleted once merged) was hyperion at 184fdba plus ~1.2k lines: a fixed 4-5 pick draft (Prism, Vesper Vale, Marcella,
+  Vendetta or Ryth, Heart of Ruin) and turn-order priority copied from a "teacher" bot, Prism keeping its gems and
+  taking captures, Vesper taking over Heart of Ruin's captures, ally arrival delays in farm crew work, ground-spell
+  kiting stations, a chase fight with late allies, ties broken towards the target. Against main 5d27969, each on its
+  own draft (`--no-test-draft`): 61.4% of 1094 (672-422, 95% CI
+  58.5-64.3; ladder 72.9 of 70, gen 62.3, gen-s1 59.0). Out-of-fuel turns 4544 in 536 games vs 1775 in 425. Draft and
+  play are confounded: untested on shared test drafts.
+- Ported main's 40 hyperion commits since 184fdba (to 5d27969) onto it (per-file
+  three-way merge; chase_trade passes main's `falls`, the copied priority kept for the five drafted types). Against
+  main 5d27969, own drafts: 61.5% of 1094 (673-421, 95% CI 58.6-64.4; ladder 55.7 of 70, gen 63.5, gen-s1 60.4), level
+  with the unported 61.4%. Out-of-fuel turns 1950 in 405 games vs main's 1685 in 399 (unported: 4544 in 536).
+  Kept as hyperion (CHANGES 82); 5d27969 frozen as `bots/baselines/hyperion-v1`.

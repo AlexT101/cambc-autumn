@@ -513,3 +513,68 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    farm-partial-evaluation gate's cut-short path did. Other turns evaluate as before, under that gate. A/B vs 69835ab
    53.7% of 1094 (50.8-56.7; ladder 64.3, gen 53.1, gen-s1 52.9), out-of-fuel turns 3159 vs 3208. The same skip with
    the gate removed won 54.2% but had 2.6x the out-of-fuel turns, all on many-group maps' quiet turns.
+82. 2026-10-22 (not yet submitted). Khaos's changes brought into hyperion. A teammate's bots/khaos_v26 was hyperion
+   184fdba plus ~1.2k lines; 81's base (5d27969) is frozen as bots/baselines/hyperion-v1 (test_draft on), and the 40
+   hyperion commits after 184fdba were merged into khaos (per-file three-way merge, 11 conflicts by hand; reviewed
+   both ways: the result minus khaos is 184fdba..5d27969, minus 5d27969 is khaos's own diff). Vs 5d27969, each on its
+   own draft (`--no-test-draft`): 61.5% of 1094 (673-421, 58.6-64.4; ladder 55.7 of 70, gen 63.5, gen-s1 60.4),
+   out-of-fuel turns 1950 vs 1685; khaos before the merge 61.4% (ladder 72.9, gen 62.3, gen-s1 59.0), 4544 vs 1775.
+   Draft and play are not separated; untested on shared test drafts. Several parts copy a "teacher" bot's observed
+   behaviour; their constants are fitted guesses, not recovered values.
+   - Draft (draft_selection.h, draft.cpp, params.h): on 4-5 pick maps a fixed order Prism, Vesper Vale, Marcella,
+     Vendetta or Ryth, Heart of Ruin; Vendetta when camp members exceed 10/3 per group (sdk_map_camp_layout).
+     draft_preference now starts Prism, Vesper Vale, Heart of Ruin, Marcella (3-pick maps). draft_order() runs on
+     every first draft turn, not only with test_draft; test_draft still takes precedence.
+   - Turn order (combat_priority.h, idle_priority.h, turn_order.cpp, world.cpp): Prism, Vesper Vale, Ryth, Vendetta,
+     Marcella and Heart of Ruin skip the idle/engaged/protect/kill bands. Priority is 14 + floor(10 x danger) when
+     danger > 0, danger being the larger of our best strike over an enemy's health + shield and the strikes of
+     unstunned enemies over ours (a geometric strike per kit, raw cooldowns, from the enemies World saved at turn
+     start, `priority_start_enemies`); else the idle value role + 8 - 8 x floor(10 x (1 - hp / (max_health, doubled
+     while carrying gems))). Other champions keep the bands.
+   - Prism keeps its gems (`retaining_gems`: gem_focus passive, carrying, not a winning bag, not closing). It neither
+     banks nor tributes; bank_gems, can_tribute_safely, carry_bag, decide, retreat, the farm loop (`banks_bag` in
+     place of bag > 0, in its cached context too) and the siege bookkeeping all read it, and a crystal pocket holds
+     it like an empty bag.
+   - Prism takes captures (`prism_capture_holder`): with no enemy seen or pressing (track_horizon), a healthy Prism
+     on a cleared group's tile, not channelling a tribute or teleport or a recall about to land, and no win or
+     endgame deadline at stake, is the holder. holding_capture keeps it there; allies step off (`yield_capture`, no
+     camp damage on the way), and capture_taken, farm's ally_holding, the near pick-up and step_onto_cleared treat
+     the group as held.
+   - Prism shopping: no emblem_price gate; it buys the affordable shards of the next emblem (`affordable_prefix`,
+     priced by the upkeep model) when they plus the heal outweigh the trip home, and may recall to shop during a
+     capture whose gold (Treasure counted) it adds. Emblem choice for gem_focus prices Health shards of Power, Jungle
+     and Durability, Monster (+10% camp damage, `camp_dealt`) and Home (3-turn recall) in Health and Focus, and keeps a
+     begun Monster, Power, Jungle or Home; emblem_begun counts begun Home or Monster for it. The shared upkeep model
+     now prices Monster and Home for everyone (Build::camp_dealt, Build::recall), and the price cache keys on them.
+   - Vesper Vale takes over a capture (`take_capture_handoff`): the round its live claim is cleared, if a higher-id
+     Heart of Ruin holds that gold group alone with every member in sight and no threat or camp damage, Vesper dashes
+     onto the nearest visible group tile; Memory::live_claim records the claim seen alive the turn before.
+   - Camp casts: Prism casts on the approach to an awake group (`cast_at_camp_on_approach`: walk not spent, nothing
+     else in our reach, no member yet in basic range) at a striking member, or a ground cast covering at least two
+     (best_ground's `harmful` filter); at a harmless multi-member cluster only ground casts. After the basic attack,
+     a cast that finishes a group's last visible member (Monster counted) needs no minimum value.
+   - Farm: a ranged farmer whose best camp hit would wake a sleeping, observed group without killing the member hits
+     a partly damaged, fully observed harmless cluster in range instead and claims it (`prefer_partial`; the
+     ordinary list keeps its bound and order). Crew work (crew_work.h, `work_arrival`): a claimed ally's damage counts
+     only from its earliest arrival (walk, dash cooldowns, Vendetta's resets, or a fresh 3-turn recall then walk from
+     spawn), aged from the observation; a claimed ally arriving in time also counts as a partner for a group too
+     costly alone. With no previous choice the loop starts at the nearest group, not group 0. Dashers skip
+     drafted_spawn_steps on maps with crossable lines (it walks round them).
+   - Movement: route, step_towards, descend and step_closer take an aim; equally short first steps go nearest the
+     target group's centre (Manhattan), compass order breaking ties, from farm, cleared-group and approach walks.
+     After a travel dash farm walks on down that dash's search field (`dash_towards` hands it back).
+   - Kiting with ground casters: stations are the tiles from which a ground cast (centres off other live groups) or a
+     unit cast reaches a striking member, within its range-5 view (`prepare_member` now public), instead of a flat
+     range 4. `kite_productive_action` steps or fires from inside a monster's reach when two turns' damage (basic,
+     attack reset, unit cast, Vendetta's refund) outweighs the heal time for the hits, unsupported damage within our
+     spare health.
+   - Chase: `prey` asks `Safety::chase_trade`, the target's fight with allies that cannot hit it next turn (and lack
+     a heal or shield) arriving a turn late, ourselves late too when ranged, out of range and without a walking cast,
+     and our live cooldowns and cast; it passes `falls` as fight() does.
+   - Strike search (plan.cpp): Prism gets the walk alone as a terminal leaf, its spells excluding walking.
+   - World: ChampionBelief::seen_channel keeps the last channel seen. New debug_block traces: FPARTIAL, FSEED,
+     FCDELAY, FCWINDOW, FCPARTNER, DASH-FOLLOW, HANDOFF, CHASE-AVAIL.
+   - Merge resolutions: camp_cast reads camps through sdk_camp and clears its all-visible flag on a camp out of sight;
+     the farm's cached context adds `banking` and drops per_gold (main's gold_context); chained_tribute keeps
+     khaos's sum; chase_trade forwards main's `falls`; the teacher priority branch sits in front of main's rewritten
+     set_turn_order.

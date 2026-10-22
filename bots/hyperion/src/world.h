@@ -7,6 +7,7 @@
 #include <optional>
 #include <vector>
 #include "champions.h"
+#include "combat_priority.h"
 #include "draft.h"
 #include "params.h"
 #include "util.h"
@@ -274,6 +275,7 @@ struct ChampionBelief {
     std::array<int, 2> ready_round{0, 0};
 
     Channel channel = Channel::none;
+    Channel seen_channel = Channel::none; // hidden completion may clear channel while retaining the seen position
     int channel_end_round = -1;
 
     // Enemies only: every tile it could be on, from what we have seen and how champions move.
@@ -361,6 +363,7 @@ struct Scores {
 
 class World {
 public:
+    teacher_priority::Enemies priority_start_enemies;
     // Start of each play turn. The first call also builds the static map.
     void update();
     void observe();
