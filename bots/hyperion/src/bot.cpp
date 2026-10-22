@@ -636,8 +636,14 @@ int bag_rounds_left(const World& world) {
 // The bag needs the rest of the game, or of the race (the rest of the win comes without it), to
 // reach an altar and score: it goes straight there.
 bool closing(const World& world, Pathing& pathing) {
-    const int walk = pathing.to_any_altar().at(my_position());
-    return bag_rounds_left(world) <= (walk == unreachable ? 0 : walk) + tribute_turns(my_gems()) + endgame_margin;
+    const auto& field = pathing.to_any_altar();
+    int walk = field.at(my_position());
+    // No walk out of here: recall home and walk from there.
+    if (walk == unreachable) {
+        const int out = field.at(world.map().ally_spawn_centre);
+        walk = out == unreachable ? 0 : recall_turns(world) + out;
+    }
+    return bag_rounds_left(world) <= walk + tribute_turns(my_gems()) + endgame_margin;
 }
 
 bool retaining_gems(const World& world, Pathing& pathing) {
