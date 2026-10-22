@@ -659,35 +659,89 @@ struct Search {
     bool menu_shape(int depth) const;
 };
 
+// The map's bounds and walls by grid cell around each centre tile: terrain alone, kept for the game.
+struct TerrainGrid {
+    Grid inside = 0, walls = 0; // inside is never 0 once read
+};
+
+// `box`: the grid's square around `centre`, drawn.
+const TerrainGrid& terrain_grid(const StaticMap& map, vec2 centre, const bitboard& box, bitboard& scratch) {
+    static std::array<TerrainGrid, 100 * 100> grids;
+    static std::array<std::uint8_t, 100 * 100 / 8 + 8> wall_bits; // walls as packed row-major bits
+    static int packed = 0;                                       // 1 yes, 2 no
+    if (packed == 0) {
+        packed = 2;
+        const std::size_t size = bitboard::linear_buffer_size();
+        if (size + 8 <= wall_bits.size()) {
+            map.walls.export_linear_buffer({wall_bits.data(), size});
+            packed = 1;
+            // Bits run from the low end of each byte; check on a set tile.
+            if (!map.walls.is_empty()) {
+                const vec2 probe = first_tile(map.walls);
+                const int i = probe.x + probe.y * map.width;
+                if (!(wall_bits[static_cast<std::size_t>(i >> 3)] >> (i & 7) & 1)) packed = 2;
+            }
+        }
+    }
+    static TerrainGrid wide; // past 100x100: read every time
+    const auto at = static_cast<std::size_t>(centre.x + centre.y * map.width);
+    if (at < grids.size() && grids[at].inside) return grids[at];
+    auto& out = at < grids.size() ? grids[at] : wide;
+    out = {};
+    const int x0 = centre.x - grid_r, lo = std::max(0, -x0), hi = std::min(grid_n, map.width - x0);
+    const Grid span = ((Grid{1} << (hi - lo)) - 1) << lo;
+    for (int r = 0; r < grid_n; ++r) {
+        const int y = centre.y - grid_r + r;
+        if (y < 0 || y >= map.height) continue;
+        out.inside |= span << (r * grid_n);
+        if (packed != 1) continue;
+        const int i = x0 + lo + y * map.width;
+        std::uint64_t word;
+        std::memcpy(&word, &wall_bits[static_cast<std::size_t>(i >> 3)], sizeof word);
+        out.walls |= ((word >> (i & 7)) & ((Grid{1} << (hi - lo)) - 1)) << lo << (r * grid_n);
+    }
+    if (packed != 1) {
+        std::array<vec2, 49> tiles;
+        and_into(map.walls, box, scratch);
+        const auto k = positions_into(scratch, tiles.data(), 49);
+        for (std::uint32_t i = 0; i < k; ++i)
+            out.walls |= gbit((tiles[i].y - centre.y + grid_r) * grid_n + tiles[i].x - centre.x + grid_r);
+    }
+    return out;
+}
+
 void Search::read_geometry() {
     static bitboard box{cambc::uninitialized}, t{cambc::uninitialized};
-    clear_board(box);
-    draw_square(box, here, grid_r);
-    Grid columns = 0, inside = 0;
-    for (int x = 0; x < grid_n; ++x)
-        if (const int tx = here.x + x - grid_r; tx >= 0 && tx < world.map().width) columns |= grid_column(x);
-    for (int y = 0; y < grid_n; ++y)
-        if (const int ty = here.y + y - grid_r; ty >= 0 && ty < world.map().height) inside |= columns & (Grid{0x7F} << (y * grid_n));
+    static vec2 box_at{-1, -1};
+    if (here != box_at) {
+        clear_board(box);
+        draw_square(box, here, grid_r);
+        box_at = here;
+    }
+    const auto& terrain = terrain_grid(world.map(), here, box, t);
     std::array<vec2, 49> at;
-    const auto read_into = [&](Grid& out) {
-        and_into(t, box, t);
+    const auto read_into = [&](const bitboard& from, Grid& out) {
+        and_into(from, box, t);
         const auto k = positions_into(t, at.data(), 49);
         out = 0;
         for (std::uint32_t i = 0; i < k; ++i) out |= gbit(cell(at[i]));
     };
     Grid blocked = 0, walls = 0;
-    if (const bitboard* guard = pathing.guard()) or_into(pathing.blocked(), *guard, t);
-    else copy_into(pathing.blocked(), t);
-    read_into(blocked);
+    if (const bitboard* guard = pathing.guard()) {
+        or_into(pathing.blocked(), *guard, t);
+        read_into(t, blocked);
+    } else {
+        read_into(pathing.blocked(), blocked);
+    }
     // Dash paths are blocked by walls, camps and visible enemies (probe-dash-enemy).
     static bitboard foes_seen{cambc::uninitialized};
     camps_into(t);
     occupancy_into(team::enemy, foes_seen);
     or_into(t, foes_seen, t);
-    or_into(t, world.map().walls, t);
-    read_into(walls);
-    free_ = inside & ~blocked;
-    pass_ = inside & ~walls;
+    read_into(t, walls);
+    walls |= terrain.walls;
+    free_ = terrain.inside & ~blocked;
+    pass_ = terrain.inside & ~walls;
     free_n = moves && can_walk ? free_ & dilate(gbit(cell(here))) & ~gbit(cell(here)) : 0;
 }
 

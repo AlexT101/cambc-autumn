@@ -371,3 +371,10 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    my_damage/my_heal/my_shield/my_cooldown/cast_slot/attack_champion replace cambc::champion objects
    (ChampionBelief::live() deleted) and copies of cambc::self().abilities(); self_abilities' ready() returns a slot.
    avoid(), camp_area(), enemy_area() and dash_landings_from() return scratch boards instead of allocating.
+54. 2026-10-21 (not yet submitted). Three fuel-only commits taken from claude/dazzling-mccarthy-4kawix (9c840c0,
+   80158c8, acd164a; that branch's waves themselves were not kept). World::update_camp reads members in one loop per
+   liveness (a cleared or respawning group reads no member health; the cleared branch's hidden-tile check comes from the
+   member loop's visibility tests instead of a ~visible & passable board). A Strength bound skips outlives() and
+   overwhelmed() where neither can be true. The strike search keeps the bounds and walls of its 7x7 window per centre
+   tile. 4 bench maps (00ambush, 00contest, 01hooks, 00interlock), 8/8 identical at 100M: total fuel -0.92%, p90 -1.1%,
+   p99 -2.8%.

@@ -665,3 +665,12 @@ Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh s
   cambc::self().abilities(); avoid(), camp_area(), enemy_area() and the dash landings in scratch boards. bench 16/16
   identical at 100M; total fuel -1.12% (mean a turn -395), p90 -1.4%, p99 -1.5%; turns over 90k -1.12% (-1.5k each),
   turns over 100k 663 -> 625; every bench map -0.7% to -1.7%. No A/B or real-budget run (fuel-only, byte-identical).
+- dazzling-salvage (2026-10-21; branch claude/dazzling-mccarthy-4kawix reviewed for parts worth keeping): its combat
+  merge waves each A/B'd level or worse against the step before (w0 48.6% vs main, w1 48.5% vs w0, w2fix 49.7% vs w1,
+  waves 3+4 45.7% vs w2fix with out-of-fuel turns +86%), never against main again, and added ~4.4k lines, so none was
+  kept. Its three byte-identical fuel commits (9c840c0 world camps, 80158c8 the Strength bound before outlives and
+  overwhelmed, acd164a the search's terrain window per tile; minus 9c840c0's Phase markers) landed on main together
+  (CHANGES 54): bench.py at 100M vs hecate on 00ambush, 00contest, 01hooks, 00interlock, 8/8 identical replays; total
+  fuel -0.92%, mean a turn 34594 -> 34277, p90 -1.1%, p99 -2.8%; 46164 turns cheaper, 1395 dearer. Not split per
+  commit. Left on the branch: removals 3328bae + 510f8f0 (level at 49.2% vs main, net -130 lines; conflicts with the
+  raw-bindings port) and OOF-ANATOMY.md.
