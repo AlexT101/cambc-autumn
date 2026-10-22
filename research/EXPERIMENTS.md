@@ -1,951 +1,192 @@
 # Experiments
 
-What has been tried on our bots, so it isn't repeated. Win rates are against the bot's own previous version on all maps
-from both sides at the real fuel budget, unless noted. Until 2026-10-20 "all maps" was ladder + the old `maps/gen` (132)
-+ `maps/gen-central` (46), 390 games; `all` added two fresh-seed suites (746 games), `full` one more (1102). Since then
-it is ladder + the unified `maps/gen` (256 maps, 554 games; noise about ±2.1 points). Noise is about ±2.5 points on 390
-games; "level" means within noise. Don't retry a lost or level idea as is: it needs a new mechanism or ladder evidence. Results on older bots are
-hints, not rules. Git history has the branches, commits and per-suite numbers behind each line.
+What has been tried, so it isn't repeated: lessons, and the ideas that lost, were level and dropped, or are held.
+Kept changes are in [hyperion/CHANGES.md](hyperion/CHANGES.md), not here. The untrimmed file (every measurement and
+the per-round fuel details) is `git show 1d5ddf0:research/EXPERIMENTS.md`.
 
-## General
+Win rates are against the bot's previous version, all maps from both sides at the real fuel budget, unless noted.
+`tools/ab.py` runs 1094 games: ladder (70) + `maps/gen` (512) + fresh `maps/gen-s1` (512); results before 2026-10-21
+used 390-582 games. Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
+idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
+
+## Lessons
 
 - Gains on the committed suites shrink on fresh seeds (crews +22/320 -> +8/320; a 54.6% hecate bundle was 47.8% on a
-  fresh suite): confirm on suites with a fresh seed.
-- Local games are deterministic: rerunning the same maps gives the same results.
+  fresh suite): confirm on a fresh seed.
 - Self-play hides ladder behaviour. Our bots start a recall at every turn end and cancel it the next turn, so locally
   enemies look like they are recalling in ~90% of rounds (5-8% on the ladder): any value for cancelling an enemy
-  recall is inflated locally, and an ally's `channel == recall` does not mean it is going home.
+  recall is inflated locally, and an ally's `channel == recall` does not mean it is going home. Changes level or
+  better locally have lost on the ladder (the big-bag escort, the stunned-turn skip, the shared-gem caster draft).
 - Bug fixes, drafts and map-type strategies have paid off. Retuning tactics or pricing against our own bots rarely
-  has; whole-model ports (morgana's farm pricing into nemesis 43.0%, a pack zone decided by the fight sim 46.9%) lost.
+  has; whole-model ports (morgana's farm pricing into nemesis 43.0%, a pack zone decided by the fight sim 46.9%,
+  farming stage 2 45.1%) lost.
 - Who wins: in the mirror the side that dies first loses 70%, and +1 net kill at round 300 takes the win rate from 56%
   to 85%. A fight's swing is predicted by HP fraction, lifetime gold and the initiative; head count adds nothing once
   those are in. contest is the only ladder map that reaches round 2000: 31% of its games tie on gems, then gold
   decides.
-- Fuel-only changes (byte-identical at 100M) still reroute real-budget games: savings scored 47.5% and a control
-  burning 2k fuel a turn 48.4% (full). Neither direction helps; judge them by fuel and out-of-fuel turns, not win
-  rate.
+- Loss analysis (mirror, 390 games): winners die 2.0 times a game against 4.1. 86% of deaths carry no gems; 79% are on
+  our own ground, but the risk per champion-round is 3.4/1000 on enemy ground vs 0.7 on ours; 88% follow a retreat
+  within 4 turns. Weak families against other bots: huge, large-open, islands, Monolith-only, maze, rows.
+- Single-map flips between versions follow fuel trajectories, not regressions; two games a map is noise.
+  `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
 
-## aphelios and morgana (2026-10-15/16)
+## Older bots (aphelios, morgana, nemesis; 2026-10-15/18)
 
-- One champion per camp: 38-45% (deaths with no ally within 6 doubled). Waiting at respawning groups: 45%. Won:
-  discounting enemy-ground groups by min(1, 2·d_enemy/(d_ally+d_enemy)) with ×1.2 stickiness.
-- ~20 tactical tweaks level or worse: retreat variants, fighting back when doomed, ally assist, a strike-first fight
-  sim alone, pushing when ahead, gold in camp value, Focus on Ren/Tavi, Durability as second emblem (−15), a farm-race
-  draft rule, steering around the pack zone (−15/240). Won: crews, draft order (Varg 3rd), a stun valuation bug,
-  lock/tribute bugs.
-- One-price farm valuation: ~52% vs morgana-v5, 100% on Monolith-only maps. Needed: the first claimer owns a group; a
-  respawning group's attack tiles exclude its camp tiles; no face-clearing when camp DPS × exit hits exceeds health at
-  the recall line. Lost: discounting reward by enemies that could reach (−3 to −20), two-job lookahead (−24), a
-  constant gold share (−4 to −8), pooled crew health (−3). Capping waits at a quarter of a respawn: small maps 25% ->
-  50%.
-- Picking up cleared groups in sight plus team-total banking: 52.8% (gold-only captures 529 -> 1849 per 264 games).
+- Lost or level: one champion per camp (38-45%); waiting at respawning groups (45%); ~20 tactical tweaks (retreat
+  variants, fighting back when doomed, ally assist, pushing when ahead, gold in camp value, Durability second emblem
+  −15, steering round the pack zone −15/240); farm pricing variants (reward discounted by enemies that could reach −3
+  to −20, two-job lookahead −24, a constant gold share −4 to −8, pooled crew health −3); other drafts (37-50%) and Fish
+  builds (−3); pack bonus or spread penalty in farm value; Monolith sieges on normal maps (39.6%); stickiness 1.0 (−5);
+  shopping at 300 gold (−7); casting before walking (46.2%); camp damage in the fight sim (47.7%); a periodic ward
+  rule (48.7%); ranking jobs by worth − ρ·cycle (27-34%); EOQ bag limit, tank assignment, Smith targeting, exact
+  enemy-turn threat model, gold as score on Monolith-only maps.
+- The whole team as one PVP pack (brawler): 2-8% vs nemesis. It earns ~150 gold a game against 540-940; a pure pack
+  can't out-score five farmers.
 
-## nemesis (2026-10-17/18)
-
-- Won (from rival): max_wait 5; home_retreat ratio 2 in our own half; finishing_camp over all awake groups, plus
-  camp_trapped; a sticky siege target with 2 Monolith holders; shop recall and chain_bag_limit 80; camp tie-break by
-  turn order; retreat by the least exposed homeward step (about +5).
-- Lost or level: other drafts (37-50%) and Fish builds (−3); pack bonus or spread penalty in farm value; Monolith
-  sieges on normal maps (39.6%); stickiness 1.0 (−5); shopping at 300 gold (−7); casting before walking (46.2%); camp
-  damage in the fight sim (47.7%); a periodic ward rule (48.7%); ranking jobs by worth − ρ·cycle (27-34%); EOQ bag
-  limit, capture-recall heal value, tank assignment, stun value max(80, next-turn damage), Smith targeting; Treasure
-  as second emblem, Stellar ground-skip fix, tank priority, pursuit sim, attack-tile adjacency, symmetric fight
-  arrivals, exact enemy-turn threat model, camp clear sim, gold-as-score on Monolith-only maps; a crowd rule and
-  farm-zone avoidance with an empty bag (−3.5 vs rival).
-- The whole team as one PVP pack (brawler): 2-8% vs nemesis. It earns ~150 gold a game against 540-940, and a pure
-  pack can't out-score five farmers.
-
-## hecate (2026-10-18 on)
-
-Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
-
-### Strategy and economy
+## Strategy and economy
 
 - Level or lost: true first striker in the fight sim, shopping ×2 emblems, third-party camp damage in the fight sim,
   rally assist, caster poke from our own ground, Cassi/Issac target priority, kite cap 40, altar control (6 variants),
-  central-group kiting, Focus builds (−4), other drafts (no Cassi 39.5%), Monolith and cluster sieges on normal maps
-  (5-40%), Monolith sieges on any map when their rate beats the team's (48.3%: started ~r320, never cleared in time).
-- Ladder-motivated, lost locally: gold valued 3× in farm choice (46.9%), the top teams' draft (Ren, Stellar, Cassi,
-  Ryth, Varg) with Focus Ren (42.3%), Cassi gold weight 10 instead of 4 (49.2%), gold front-loaded by gems left
-  (47.2%, 45.6%), a 100+ carrier going home from any visible threat (48.7%). These target gaps seen against
-  Intercontinental Fish ([FISH.md](FISH.md)) that our own bots don't exploit: judge them on the ladder.
-- Big bags: an escort (a 150+ carrier waits for 2 allies; empty-handed allies within 18 guard it) was level locally
-  (51.3%) and halved big bags lost on Monolith-only maps, but lost on the ladder (scrims vs the top 5 on the same
-  maps: 28-47 -> 26-49 and 24-51; stampede 0-1080 once escorts left the shared block). Reverted. A 150+ bag treated
-  like Cassi/Issac (a fight where the carrier falls counts as lost) lost bags faster to a carrier hunter: lone
-  retreating carriers get run down. Untried: keep the carrier with allies and flee towards them.
-- Kept: carriers on their own ground are chased when the bag can be stopped (`intercept_steps`): full 51.1%, bags
-  taken +29%, bags lost −21% (any carrier: 49.7%). Stopping a visible game-ending bag (`stop_game_ender`): level in
-  self-play, 57.5% vs 55.6% against nemesis-v2. Contesting any gem capture: 50.5%.
-- Kept: farm clears with spells from out of the camps' reach (`spell_clear`) and first picks up a cleared group in
-  sight (one taker per group): 51.0%. Without the pickup 48.5% (clear-to-hold latency 5.1 vs 4.1 rounds).
-- Kept: passing hits skip damaging groups that aren't our choice unless an ally clears them or (melee) they are awake
-  (level). Dropped: the pack zone for empty-handed farming too (48.1%; deaths up).
-- 2026-10-19 vs hecate-v6 (1a80ff8).
-  - Kept: a spellcaster draft (Stellar, Ryth, Prism, Ren, Cassi, Varg, ...) on shared-gem maps, 63.3% on 120
-    shared-gem games (two fresh-seed sets of 30 maps plus the suites' own); the same order on Monolith-only maps lost
-    (45.1% of 122), so it is gated on `shared_gems` alone.
-  - Level: life_value 600 and 1000 (both 50.0%); away pack ratio 3.0 (50.5%); a chase catch test (beyond range + 1
-    only a carrier, a hurt enemy or with a dash ready) plus a kill-per-turn floor at the farm step value (50.3%); a
-    game-ending bag tracked out of sight met at its nearest altar with a lock, plus locks on any altar from enemy
-    score 700 (50.8%); following a teammate's rally while the enemy is unseen (50.0%, ladder 11/34); a Monster emblem
-    priced in best_emblem (49.5%).
-  - Lost: home retreat ratio 3.0 with away 3.0 (46.7%); live Monolith sieges on mixed maps when nearer our spawn,
-    40-round limit (48.2%); Monster, Home and Treasure priced together (44.6%); farm value halved for groups within 3
-    of a believed enemy's reach (41.5%).
-- Ladder, 2026-10-19, scrims vs the top 5 on the same maps (75 games each, ±5.5): version 25 31-44; plus fuel round 3
-  alone (v28) 30-45; plus the stunned-turn skip too (v27) 26-49; plus the gate removals and the shared-gem draft (v26)
-  24-51. The stunned-turn skip was byte-identical in the local fuel A/Bs and only shows against real opponents;
-  reverted (the recall guard stays). Fish went 3-12, 2-13, 1-14, 0-15 across the four. Version 29 (v26 without the
-  stun skip) 29-46: level with v28, so the gate removals plus the shared-gem draft are a wash on the ladder; the draft
-  went 2-3 on stampede against v28's 3-2 and was reverted too, as a local-only gain.
-- Emblems: the next one by measured value (Jungle, Power, Durability priced by the rounds they save) 52.0% full; on
-  Monolith-only maps the coming siege priced before any camp has hit us (39/60 on extra Monolith-only maps against 30
-  for the fixed order); a begun emblem priced by its remaining shards 51.6%. Dropped: the model over five families and
-  Health or main stat (Monolith-only 9/38); Home emblem as second (50.4%) or first (48.9%) emblem.
-- Sieges: a heal-trip bug (recall kept, cancelled next turn) fixed: 51.1-51.2%, gen-monolith-only 9/24 -> 17/24; the
-  siege role survives the heal-trip turn (50.7%) and fight turns (level). Siege readiness with heal trips: level.
-- Banking: `closing()` banks when score + team bags + team rate × (walk + tribute) reach 1000: 50.7%; the same horizon
-  bounds farm's chain deadline: 51.3%. In losses most carried gems are fresh captures, not missed banking.
-- Locks, measured: they cancelled 19 tributes each way in 390 games, and a lock costs a carrier ~3 attacks or a
-  detour, so the ceiling is small. Locks only on enemy-side and middle altars: 47.6% (our own-side locks matter).
-- Bug-fix bundles, all kept and level: fight sim (Ren's reflection after our own turn, stuns only on fighters in
-  reach, `turns_to_kill_idle` joins enemies like `pursuit`, `recall_outruns` uses `threat_strike`); a teammate's
-  sighting fixes the enemy at the sighted tile, comms group fields 8 bits; emblem pricing; `siege_candidate` skips
-  live Monoliths off Monolith-only maps; kite/contest timing on `enemy_hold_left`; waiting at an unsafe altar capped
-  at the walk to the next; a stunned turn skips acting.
-  - Wrong and reverted: the crew value with capture rounds (48.0%; the claimer holds, the crew moves on); `passing`
-    instead of `affordable` for hits after a walk (49.5%).
+  central-group kiting, Focus builds (−4), Monolith and cluster sieges on normal maps (5-40%), Monolith sieges on any
+  map when their rate beats the team's (48.3%: started ~r320, never cleared in time), the pack zone for empty-handed
+  farming too (48.1%; deaths up).
+- Ladder-motivated (from the Intercontinental Fish analysis), lost locally (judge on the ladder): gold valued 3× in farm choice (46.9%), the
+  top teams' draft with Focus Ren (42.3%), Cassi gold weight 10 (49.2%), gold front-loaded by gems left (47.2%,
+  45.6%), a 100+ carrier going home from any visible threat (48.7%).
+- 2026-10-19, level: life_value 600 and 1000; away pack ratio 3.0; a chase catch test plus a kill-per-turn floor; a
+  game-ending bag met at its nearest altar with a lock, plus locks from enemy score 700; following a teammate's rally
+  while the enemy is unseen (ladder 11/34); a Monster emblem in best_emblem. Lost: home and away retreat ratio 3.0
+  (46.7%); live Monolith sieges on mixed maps when nearer our spawn (48.2%); Monster, Home and Treasure priced
+  together (44.6%); farm value halved near a believed enemy's reach (41.5%).
+- Big bags: an escort (a 150+ carrier waits for 2 allies) was level locally and halved big bags lost on Monolith-only
+  maps, but lost on the ladder (scrims vs the top 5: 28-47 -> 26-49 and 24-51; stampede 0-1080 once escorts left the
+  shared block). Treating a 150+ bag like Cassi/Issac (a fight where the carrier falls counts as lost) lost bags faster
+  to a carrier hunter. Untried: keep the carrier with allies and flee towards them. Chasing any carrier, not only
+  interceptable ones: 49.7%.
+- Shared-gem maps: a spellcaster draft (Stellar, Ryth, Prism, Ren, Cassi, Varg) won 63.3% locally on 120 games but was
+  level on the ladder (29-46 vs 30-45) and reverted; on Monolith-only maps it lost (45.1%).
+- Emblems dropped: a model over five families with Health or main stat (Monolith-only 9/38); Home as second (50.4%) or
+  first (48.9%) emblem.
+- Locks cancelled 19 tributes each way in 390 games and cost a carrier ~3 attacks or a detour: a small ceiling. Locks
+  only on enemy-side and middle altars: 47.6% (our own-side locks matter).
+- Wrong and reverted: the crew value with capture rounds (48.0%; the claimer holds, the crew moves on); `passing`
+  instead of `affordable` for hits after a walk (49.5%).
+- Gem limits (CHANGES 24): gem_value 40 on top 50.8%; life_value 400 changed no game; brake_bag 30 50.9% and
+  chain_bag_limit 80 52.7% (ladder 18-24, not confirmed on a fresh suite) after CHANGES 26.
+- boss-battle (CHANGES 27, reverted): sieging the gate Monolith's key member opened the altar around round 1100, but its
+  tile stayed in the other Monolith's reach and bags held back meanwhile (400-875) could not be banked. Ladder teams
+  that score there kill both Monoliths in a burst and hold the tile (one banked 1987 in one channel). Ladder record
+  there 2-11, all 8 0-0 games lost on gold.
+- corridors farm targets flipped every turn (32% of farm turns A-B-A), crews joining and leaving together because
+  claims reach teammates a turn late. Counting only earlier allies in crew_strength (44.5% gen), counting them once
+  (40.5% ladder, 44.9% gen) and claim seniority all lost.
+- A crystal shortcut over open ground (for corridors' lanes) was dropped: ladder opponents used 9 crystals in 9
+  corridors games. Camps reachable only by crystal (ambush, big-world, fracture: 7-21 gems) are not farmed.
+- Farming stage 2 (FARMING.md; crews from arrivals, one lexicographic pick, the risky/shared/help tiers deleted): 45.1%
+  (gen 42.6), 46.2% without its heal term. Melee champions stopped working big monster groups and took small ones
+  (melee camp damage −19%, capture gems −6.7%); the ladder went the other way (tributed +15%).
+- Waking sleeping groups onto enemies (`wake_camps`): fired in 17 of 582 games, too rare to measure; its place is the
+  strike search's wake pricing.
 
-### Fights and planning
+## Draft (2026-10-20, after the Heart of Ruin nerf)
 
-- Strike planner (`plan.cpp`: every legal attack/reset/cast/walk/dash sequence priced in enemy health points): 52.2%
-  vs hecate-v2, 53.4-54.0% vs main. Lost on the way: ranged carriers holding fire to keep walking (47.9%); an early
-  `prey()` for the intent (32k fuel, nothing measurable). A farming step priced at a full turn of output cost Ryth's
-  and Ren's stuns 9-17% of their hits; at output × gems per camp HP × gem_value they recover.
-- Retreat planner (`plan_turn`, branch plan3, unmerged): level at 100M (49.7%) and at the real budget (49.8%), but
-  2.5x main's out-of-fuel turns. Each priced tile needs a `Safety::blow` per enemy (~500 per uncached Reach query) on
-  up to 49 tiles. Also lost: the chase as a goal planned before acting (43.0-46.2%); a stun valued by the turn it
-  denies instead of a flat 80 (48.5%).
-- Wall- and sight-aware danger model (`Reach`): changed few decisions (want_home 3.5k of 1.4M evaluations, step_guard
-  6.2k of 1.3M, prey 6.3k of 1.2M) and was level at 100M (48.2%); its first version lost to fuel (41.3%). Merged after
-  its fuel rounds at 49.1%.
-- Loss analysis (mirror, 390 games): winners die 2.0 times a game against 4.1. 86% of deaths carry no gems; 79% are on
-  our own ground, but the risk per champion-round is 3.4/1000 on enemy ground vs 0.7 on ours; 88% follow a retreat
-  within 4 turns. Retreat triggers before a death: pack zone 200, low health 186, lost fight 128, pursuit 115, none
-  85, lethal 55. Time in rounds 1-300: walking to camps 33%, attacking camps 25%, walking to altars 8%. Weak families
-  against other bots: huge, large-open, islands, Monolith-only, maze, rows.
-- Single-map flips between versions (corners, interlock) follow fuel trajectories, not regressions.
-- Strike search phase 1 (2026-10-21, orch/int-strike-p1 dbab204, not merged): plan_strikes' fixed menu replaced by one
-  search over every legal walk/attack/reset/dash/cast sequence, camps as targets with wake pricing, bound-ordered Reach
-  pricing (research/hyperion/strike-notes.md). Against main: 38.5% of 582 (ladder 30.0, gen 39.6), out-of-fuel turns 16282
-  against 946 (all but 0.1% in decide). At 100M fuel still 40.5% (ladder 44.3, gen 40.0): deaths 6.0 against 4.5 a game
-  (+34%), captures -4%, tributed -7%. The exhaustive and old-menu checks never fired, but 113 dashes were refused with
-  no fuel shortage. Lost; with unlimited fuel it still dies more, so the search or its leaf score misjudges danger.
-  Round 2 (orch/int-strike-p1 2277faf on main 0bfc997): dash paths blocked by visible enemy champions
-  (probe-dash-enemy), a move must lead to a strike, wakes priced per camp phase, no landing wakes sleepers, fuel cuts.
-  52.6% of 582 (ladder 54.3, gen 52.3), but out-of-fuel turns 3441 in 398 games against 1191 in 308 (99.5% in decide;
-  elk-arena, contest, hooks, shared-gems, diamond, lanes worst). At 100M 55.2% (ladder 55.7, gen 55.1). Kept and
-  merged (main e2242aa) on the keep rule: it wins at the real budget with its out-of-fuel turns included. STRIKE-SEARCH's
-  out-of-fuel rule is owed by a fuel-only follow-up (decide), pending.
-- Strike search phase 3a (2026-10-21, orch/int-strike-p3a): an enemy Varg's basic attack reaches a tile through a
-  unit beside it (our other visible champions, live camp members), with Strike +1 for Varg's basic attacks. 51.0% of
-  1094 vs main (ladder 50.0, gen 50.6, fresh gen-s1 51.6), out-of-fuel turns 6551 vs 6471; at 100M 51.4% (ladder
-  54.3, gen 49.8, fresh 52.5). Level; kept and merged on the keep rule (follows the rules, plays level).
-- Strike search phase 2 (2026-10-21, orch/strike-p2 ported as b76c8b4 on main f6fd561): heal and shield as search
-  options. A leaf with its cast unused is offered per end tile with the best heal (min(amount, missing health,
-  cooldown x damage_bound at the ally)) and with a shield priced once the tile's foes are priced; decide and act()
-  skip their own heal and shield on turns the search planned an exactly priced tile (decide's post-plan shield stays
-  for the goal's camp hit). 50.0% of 1094 vs main (ladder 44.3 of 70, gen 52.0, fresh gen-s1 48.8), out-of-fuel turns
-  7041 vs 6256 (+12.5%); at 100M 51.1% (ladder 54.3, gen 51.6, fresh 50.2). Level; kept and merged on the keep rule.
-  hecate drafts Heart of Ruin first, so only its shield path is live in this A/B (Willow and Varg only in test drafts).
-- Strike search phase 3b (2026-10-21, orch/strike-p3b as 1753982 on main a850d48): removal. A leaf's killed foes
-  (with a Cassi/Issac partner, seen or not) and stunned foes (stunnable, one turn before ours) leave its end tile's
-  danger; each end tile keeps the best leaf per removed set, less those beaten by a superset. 48.9% of 1094 vs main
-  (ladder 51.4 of 70, gen 47.9, fresh gen-s1 49.6), out-of-fuel turns 8663 vs 8071 (+7.3%); at 100M 51.0% (ladder
-  48.6, gen 51.2, fresh 51.2). Level; kept and merged on the keep rule (follows the rules, plays level).
-- Strike search phase 4a (2026-10-21, orch/int-strike-p4a 058f55b on main 971c68b, not merged): retreat turns planned
-  by the search under plan3's retreat score (dash_away, flee_camps, retreat_step deleted), unseen threats priced near
-  the start and walk tiles. 40.8% of 1094 vs main (ladder 31.4 of 70, gen 41.8, fresh gen-s1 41.0), out-of-fuel turns
-  24816 in 897 games vs 10570 in 759 (+135%, 98% in decide); at 100M 52.6% (ladder 55.7, gen 53.5, fresh 51.2).
-  Dropped: the play is sound and the 12-point loss is fuel, so the retreat search's cost (builder: mean 21.6k, max
-  83.5k) must come down before it is retried.
-- Step guard folded into the strike search (2026-10-22; 825ea36 with bda1c3e, a resumed search dropping last round's
-  plan; dropped). The search judged only the tile about to win, passed guarded tiles, and step_guard's board was built
-  after the search. vs hecate, against main 9396ecc's 65.1% of 1094: 64.2% (fresh gen-s1 65.2 vs 69.1); out-of-fuel
-  turns 7100 vs 7098. With test drafts the board, now after the search, hit its fuel gate twice as often (step-guard
-  shortcuts 1391 -> 2827 on 32 gen-s1 games) and left the goal's steps unguarded; a 16-game bench on hyperion's own
-  draft showed neither. Then 8250a4f (step_guard first again; the guard holds end tiles only, is placed again where
-  the search left us, radius 2 only while a cast is left): 63.3% (ladder 64.3, gen 60.9, fresh 65.4); out-of-fuel
-  turns 7247. Dropped: no gain in three runs, all slightly down.
-- Post-goal strike search (2026-10-22, 9409a99; kept and merged, CHANGES 56). strike_after is the strike
-  search again, anchored, from where the goal left us, when a hit is still possible (attack left, a reset ready, or a
-  ready damage or stun cast castable here, with an enemy in reach): Marcella's armed stun, Vendetta's refresh, Varg's
-  splash and attack-then-cast order now count after the goal, and the `valued` hand-off to cast_at_enemies goes. The
-  search reads foes' health and shields live, and skips excludes-walking casts once the goal walked. 100M bench vs
-  main: 8/16 identical, mean fuel -0.2%, p99 +0.7%, 155 extra searches in 16 games; no SRCH-EXH/DOM. The live reads
-  alone: 16/16 identical.
-- Guard on end tiles only, again (2026-10-22, 7b85cc0; kept and merged, CHANGES 58; as 8250a4f, on the
-  post-goal search). The search's moves may pass guarded tiles, the guard is placed again where the search left us,
-  and a dash widens it only while a cast is left; the search's own tile is never a dropped end. Debug lines: SRCH-PASS
-  (a plan's first move onto a guarded tile, ending elsewhere) and SRCH-STRANDED (moves stopped short of the end tile).
-  Passing is rare: 7 in 7,888 searches (100M bench), 2 in 7,391 (real budget), 7 in 11,115 (32 test-draft gen-s1
-  games); none stranded, guarded or not. So 8250a4f's play changes come mostly from the guard placed again and the
-  radius. A/B vs main 9e75d70: 48.9% of 1094 (ladder 41.4 of 70, gen 47.3, fresh gen-s1 51.6), level; out-of-fuel
-  turns 8284 vs 7918 (+4.6%, likely the second step_guard after a search move; unmeasured). SRCH-PASS 364 in 251
-  games; SRCH-STRANDED 79 in 63 games, all failed plans, 3 on a guarded tile. Kept as level and logical; its fuel is
-  for the fuel work.
+Hecate vs hecate with only the draft changed, each pick on maps of its pick count ([hyperion/DRAFT.md](hyperion/DRAFT.md)).
+These predate Khaos's Prism-specific play (CHANGES 82), whose draft starts with Prism.
 
-### Fuel
-
-- **Out-of-fuel anatomy of main d59ccf7** (2026-10-22, [OOF-ANATOMY-2026-10-22.md](hyperion/OOF-ANATOMY-2026-10-22.md)).
-  Four OOF-heavy maps, both sides, instrumented copy.
-  - 59% of OOF turns run out inside the strike search (Heart of Ruin 75% of those, mostly `grow`), and 18% in `farm`.
-  - Before the search, world, `want_home` and `step_guard` have spent ~50k (p50).
-  - 44% of OOF turns are replays that run out again, 80% of them in the same step.
-  - At the real budget the step-guard and prey gates hold those steps to 18k and 2k; their fuel goes to the search.
-- **Profile of main bbf6f05** (2026-10-22, [FUEL-PROFILE-2026-10-22.md](hyperion/FUEL-PROFILE-2026-10-22.md)). Wide
-  bench, 52 test-draft games against hecate.
-  - At 100M: mean 35.3k, p99 106.8k, 1.32% of turns over 100k (hecate 31.4k, 95.6k, 0.81%).
-  - At the real budget: 1611 out-of-fuel turns, against hecate's 279. Two thirds are follow-ons in streaks.
-  - All turns: farm 25%, of which the evaluation loop is 11%. World update 22.5%, of which `update_camps` is 8.7%.
-    `siege_candidate` 4%.
-  - Turns over 90k: want_home 21%, simulations 20%, step_guard 19%, the strike search 16%, world 12%, prey 10%.
-  - The worst turns are Heart of Ruin strike searches of up to 325k.
-- **Fuel merge 1** (2026-10-22, fuel/merge-1: fight-sim, strike-reach, farm-world; CHANGES 60-63). Wide bench, 52
-  test-draft games against hecate, vs main bbf6f05.
-  - At 100M: 52/52 identical. Total fuel -4.26%; mean 35.3k -> 33.8k, p50 32.5k -> 30.8k, p90 55.6k -> 53.8k,
-    p99 106.8k -> 100.1k, max 452k -> 439k; turns over 100k 4147 -> 3156 (1.32% -> 1.00%).
-  - At the real budget: out-of-fuel turns 1611 -> 1062 (hecate 279); mean 35.9k -> 34.0k.
-- One fight for want_home (2026-10-22, fuel/home-fold 9d90470; kept and merged, CHANGES 66). `Safety::stand()`
-  replaces pursuit + visible_threat, counting camps and walkers in one fight; the home-no-fight-sim and
-  home-no-pursuit gates go. A/B vs e5f7d32 52.2% of 1094 (49.2-55.1; ladder 52.9, gen 51.6, gen-s1 52.7), out-of-fuel
-  turns 6666 vs 6787. Wide bench at 100M p99 -6.8%, turns >100k 3156 -> 2193, max 439k -> 272k; real budget
-  out-of-fuel turns 1062 -> 861.
-- Exact fight bounds at the start of a simulation (2026-10-22, fuel/fight-bound ae7fe2f; not merged). `takes_all` /
-  `takes_within` settle a sim's verdict both ways before it runs: 52/52 identical, 0 mismatches, but total fuel
-  +0.05%. 16% of sims settle at the start, but those were the cheap ones, and the check costs ~300 a sim.
-  - Sims are only 2.9% of all fuel (308.6M of 10.76G on the wide set), ~20% on heavy turns.
-  - A horizon of 9 is rejected from the data: ~6.7% of sims are lost after half-turn 19.
-- Step guard on the one fight model (2026-10-22, fuel/guard-fold 16d35a4 on home-fold; not merged). step_guard
-  priced with stand_of (camps counted), its fuel gates and prey-cut-short replaced by limits (4 fights a call binds
-  on 0.094% of calls, 3 prey candidates on 0.084%), estimators deleted. At 100M mean +0.1%, p99 +3.3%; real budget
-  out-of-fuel turns 861 -> 2931; no A/B. The gates were the turn's last brakes, and lower limits did not help.
-- Wave-1 fuel gates removed (2026-10-22, fuel/no-gates-1 54f0d7a + 52b55f8; held). turn-order, farm-*, siege,
-  spell-clear, ward, static-descend, siege-route, comms-stale-vision, fight-cut, late_floor etc. At 100M 52/52
-  identical, total -0.76%. A/B vs e5f7d32 49.5% of 1094 (46.6-52.5) but out-of-fuel turns 23319 vs 6776; wide real
-  budget 1062 -> 2104. Held until decide's worst case is cut.
-- **Fuel merge 2** (2026-10-22, fuel/merge-2: err5 fix, strike-big, home-fold; CHANGES 64-67). Wide bench, 52
-  test-draft games against hecate, vs merge 1 (e5f7d32).
-  - err5 + strike-big at 100M: 51/52 identical (only gen-monolith-heavy-102107600 a, the err5 game); max 439k -> 401k.
-  - With home-fold at 100M: mean 33.8k -> 33.7k, p90 -1.8%, p99 100.1k -> 93.3k, turns over 100k 3156 -> 2178
-    (1.00% -> 0.71%), max 439k -> 250k.
-  - At the real budget: out-of-fuel turns 1062 -> 1201 (err5 + strike-big alone 1086, home-fold alone 861). Totals
-    are noise at this size: gen-chambers-102206117 a alone gave 332 / 196 / 138 / 239 across the four runs.
-  - Vs hecate: 65.4% of 1094 (62.6-68.2; ladder 67.1, gen 66.0, gen-s1 64.6); out-of-fuel turns 5891 in 594 games vs
-    1965 in 461 (main 019ce53: 63.9%, 9225 vs 1975).
-- Strike search commutation pruning (2026-10-22, fuel/strike-orders 011483a; kept and merged, CHANGES 68). Attacks
-  hoisted, walk-then-attack, a dash straight after the walk, a walk after a dash: each order is dropped only when
-  another is offered at the same value with at least the same end tiles. 0 of 23,509 searches lost value against an
-  unpruned copy; 375 (1.6%) pick another equal-valued sequence. A/B vs its base (e5f7d32 + strike-big) 50.9% of 1094
-  (48.0-53.9; ladder 50.0, gen 51.0, gen-s1 51.0), out-of-fuel turns 5870 vs 6234 (-5.8%). Wide bench at 100M: p99
-  -1.5%, max -9.2%, turns >100k -6.4%; nodes -30% on searches of 60+ nodes.
-- Strike search leaves (2026-10-22, fuel/strike-settle; b8cd2f5 and 76208a6 kept and merged, CHANGES 69): int8 walk and
-  dash cells in Choice, no self copies in admit, Heart of Ruin health read by unit. f4a8d31 (each landing grouping
-  kept for the whole search) left out: too much machinery for ~4k on the biggest search.
-- Possible-set growth by reach per tile (2026-10-22, fuel/possible-grow 6a04b41, 93f64c0; kept and merged, CHANGES 70).
-  52/52 identical on main d59ccf7: total -0.55%, p50 -0.8%; grow() -10.7%.
-- Turn order folded (2026-10-22, fuel/turn-order-fold 2ec042f, d989f74; kept and merged, CHANGES 71). One
-  `may_escape` bound replaces offer_escape's damage_ceiling/damage_bound, safety.refresh() runs only after an attack or
-  cast, the strike and offer work only with an enemy in sight, and gems are read only when needed. 52/52 identical
-  vs merge 2: total -0.66%, set_turn_order 1043 -> 826 a call.
-  - The turn-order gate removed on top (bb414db, reverted in d8ff11c; held): A/B vs d59ccf7 49.5% of 1094, but
-    out-of-fuel turns 6561 vs 5802 (+13%, on every suite).
-- **Fuel merge 3** (2026-10-22, fuel/merge-3: strike-orders, strike-settle, possible-grow, turn-order-fold; CHANGES
-  68-72). Wide bench, 52 test-draft games against hecate, vs merge 2 (d59ccf7).
-  - At 100M: 29/52 identical (the rest through strike-orders' tie order). Mean 33.7k -> 33.4k, p50 -1.3%, p99 93.3k
-    -> 93.8k, turns over 100k 2178 -> 2301, max 250k -> 295k: 00contest's two diverged games alone add about 200 turns over
-    100k (side a runs 3000 turns longer); most other diverged games' maxima fell. Turn-order-fold on top 52/52
-    identical, total -0.64%.
-  - At the real budget: out-of-fuel turns 1201 -> 868 (before turn-order-fold 807: noise); mean -2.8%.
-  - Vs hecate: 63.9% of 1094 (61.0-66.7; ladder 62.9, gen 63.3, gen-s1 64.6); out-of-fuel turns 4463 in 561 games vs
-    1877 in 463 (merge 2: 65.4%, 5891 vs 1965; before turn-order-fold 63.4%, 4566 vs 1909). Level with merge 2
-    within noise, out-of-fuel turns -24%.
-- Farm loop bound across turns (2026-10-22, fuel/farm-lean, no commits). An exact bound carried across turns for
-  empty-handed groups skipped 45% of visits, but those were cheap prunes: +0.5% fuel. 93% of loop calls are
-  empty-handed; the loop's best equals last turn's group on 70.7% of them, so "keep the target" would disagree on up
-  to ~29%.
-- Exact cuts in step_guard (2026-10-22, fuel/guard-exact, no commits). A heavy call costs ~24.9k: placing 13.4k
-  (exposure 6.3k, of which Reach::at misses 3.7k) and settling 11.5k (1.39 sims). Guard sims cost 6.8k each (the
-  union fight 7.7k, 94% of heavy calls, 2.04 enemies) against want_home's 5.2k. The Reach memo has 0 collisions;
-  repeated keys are 2.0% of calls and lethal ones 0.4%: no exact cut.
-- World update (2026-10-22, fuel/world-lean, no commits). 10.1k a turn on a camp-heavy subset (update_camps 4.56k,
-  update_champions 3.68k). A per-group visible-member mask cost +2.5%; skipping out-of-view pending groups was level.
-  A host test is ~15 fuel: WASM loops cost more than the host calls they replace.
-- Reach::at way-0 fast path (2026-10-22, fuel/reach-at 9c5abae; not merged). A mask fast path cut a miss 492 -> 402,
-  but total fuel only -0.04%, and it relies on shadow_cast including its origin (undocumented, unprobed).
-- Strike read with shifted viewer grids (2026-10-22, fuel/strike-read 051942c; not merged). Attack viewers kept as 7x7
-  grids and shifted: read() -2.3%, total -0.02%.
-- Step guard bound union first (2026-10-22, fuel/guard-lean 591d418, e51bc37; kept and merged, CHANGES 73). The union
-  fight on distance-bound keys runs before exact Reach exposure (a won bound union settles the call), a not-lost fight
-  settles `lost` for the fights it covers, and the guard returns before its estimate, gate and our exposure when no
-  bound reaches. 0 disagreeing calls or tiles over 261,794 calls run side by side with the old guard. At 100M 52/52
-  identical: total -0.48%, p99 -1.5%, max -15.6%, turns >100k 2301 -> 2115; step_guard's own p99 -14.5%. A/B vs
-  4c6cb30 52.4% of 1094 (49.4-55.3; ladder 54.3, gen 52.5, gen-s1 52.0), out-of-fuel turns 3608 vs 4503 (-20%).
-- Farm worst cases (2026-10-22, fuel/farm-worst 0e7d0ba, 37b31dd, 49af74f; kept and merged, CHANGES 74).
-  min_camp_damage's sort kept per group belief version, Ren reflect over attackers only, farm_attack_tiles kept for
-  groups up to 256 members; camp casts read each camp once, best_landing sums on a 5x5 grid, keep() lists reaching
-  monsters once, best_ground skips far targets; tribute_turns and gold_in once per group. 52/52 identical at 100M:
-  total -0.17%; gen-chambers-102206117 -2.56%, turns >100k 606 -> 535, worst turns -43k.
-- Fixed per-turn work (2026-10-22, fuel/fixed-work 48e4192; kept and merged, CHANGES 75). find_members skips stirring
-  groups of strength 0 (clusters): 52/52 identical, total -0.11%. Per-turn memos of find_members, lethal and
-  camp_damage would rarely hit (repeats 0.1 a turn, 4%, 0.7 hits): not built.
-- Strike search node budget (2026-10-22, fuel/search-budget; the cap kept and merged, CHANGES 76).
-  - 24 nodes in the usual order (07b867f's net diff): binds on 0.45% of searches; the best raw leaf is lost on 0.07%
-    (by 80 on average); worst search 158.6k -> 78.2k. A/B vs 4c6cb30 49.7% of 1094 (46.8-52.7), out-of-fuel turns
-    4482 vs 4804 (-6.7%).
-  - Best-first frontier under the cap (25dc99e; not merged): no value lost, but the frontier costs ~500 fuel a node:
-    out-of-fuel turns +27%, 48.7%.
-- Wave-1b fuel gates removed (2026-10-22, fuel/no-gates-1b 5082482, 98d5c68; held). On 4c6cb30 at 100M 52/52
-  identical, total -0.73%. A/B vs 4c6cb30 50.6% of 1094 (47.7-53.6), but out-of-fuel turns 19980 vs 4761 (4.2x).
-- **Fuel merge 4** (2026-10-22, fuel/merge-4: guard-lean, farm-worst, fixed-work, the search node cap; CHANGES 73-77).
-  Wide bench, 52 test-draft games against hecate, vs merge 3 (4c6cb30).
-  - Exact parts at 100M: 52/52 identical. Total -0.77%; p99 93.8k -> 91.6k, max 295k -> 249k; turns over 100k
-    2301 -> 1991.
-  - With the node cap at 100M: 37/52 identical; mean -0.6%, p99 -2.2%, turns over 100k 1981, max 306k (a diverged
-    game).
-  - At the real budget: out-of-fuel turns 868 -> 450; mean -1.4%, p90 -2.5%.
-  - Vs hecate: 65.1% of 1094 (62.2-67.8; ladder 68.6, gen 65.8, gen-s1 63.9); out-of-fuel turns 3130 in 517 games vs
-    1864 in 454 (merge 3: 63.9%, 4463 vs 1877).
-  - Vs merge 3: 50.7% of 1094 (47.8-53.7; ladder 58.6, gen 49.6, gen-s1 50.8); out-of-fuel turns 3313 vs 4807 (-31%).
-- Stale-plan drop alone (2026-10-22, f4eee8f; kept and merged without an A/B, CHANGES 59). A strike search that ran out
-  of fuel resumes next round and carried out last round's plan (all real-budget SRCH-REFUSED lines); now it throws
-  StaleTurn before acting, and main.cpp replays the round fresh on the fuel left. Bench 16/16 identical at 100M.
-  On 32 test-draft gen-s1 games out-of-fuel turns 332 vs main's 147: the replay starts on the fuel left with every
-  action unspent and runs out again (chains), where carrying out the stale plan spent the actions.
-  With round checks (throw_if_stale, ~18 fuel each) in the search's nodes and pricing and every 8 fight half-turns,
-  the resumed leftover fell from a mean 30.7k to 6.1k (max 94k -> 16k), but out-of-fuel turns rose to 419 (main 138).
-  Long fights cost more than a turn every round: main's resumed search finishes and carries out its plan, spending the
-  attack and cast, so the replay is cheap and the champion acts every round; dropping the plan makes every replay a
-  full turn that runs out again, often before acting. Both kept (184fdba) on the bet that heavy fight turns will
-  fit a turn once their fuel is fixed; until then they cost turns in long fights. Not A/B'd.
-- Strike pricing (2026-10-22, fuel/strike-price e4727e7, 88e5a0b, 821b648; kept and merged, CHANGES 78). Goal field
-  only when 2+ end tiles compete, foes every candidate removes or with Strike damage 0 skipped in ranking, factor()
-  only with a Heart of Ruin, add and max fused. On 4c6cb30 52/52 identical: total -0.08%, price phase -13.8%.
-- Codegen (2026-10-22, no commit). cambc builds with -O3 -msimd128 -mbulk-memory -fwasm-exceptions through the repo's
-  cmake/CMakeLists.txt, but the ladder builds only src/ with its own copy, so flags can't ship. Locally: -flto (with
-  the wasm EH options at link, else EH breaks) -1.6%, inline-threshold=1000 -0.8%, a single-file build -0.3%, -O2
-  +0.3%, -Os +6.9%. The disassembly has hot loops fully inlined and no spills or EH in hot paths: the cost is wasm's
-  stack-machine instruction count (40% local.get/set). wasi-sdk-33's llvm-objdump.exe works on the module.
-- Wave-1c fuel gates removed (2026-10-22, fuel/no-gates-1c; held). On 2c3f771 at 100M 52/52 identical, total -0.70%.
-  A/B vs 2c3f771 48.5% of 1094 (45.6-51.5), out-of-fuel turns 16593 vs 3270 (5.1x). The culprit is pick_up's
-  farm-loop gate (restoring it alone: out-of-fuel turns on the 2 worst maps 1788 -> 96, main 61); the ward gate is a distant second.
-- Farm loop ungated (2026-10-22, fuel/farm-ungate a9d2b14 exact, 8f041c9 ungate + limit; not merged). The worst case
-  is the per-group loop on many-group maps (gen-band-102105911: 132 groups, 44k a call, ~120 pruned groups at ~300
-  each), not the from-here field (21 builds). A limit of 12 fresh clearing estimates a call binds 0.46%, but real
-  budget out-of-fuel turns on 6 heavy maps 2193 vs main's 416: the gate trims the loop on most turns there (15,229
-  fires in 12 games).
-- Farm loop best-first (2026-10-22, fuel/farm-bestfirst 3f3861a; not merged). A bound pass visiting highest bound
-  first costs ~210-235 a group (touching a group is the cost: loads, versions, bank terms): wide +3.8% mean. Needs
-  spatial buckets or an order kept across turns.
-- Prey (2026-10-22, no merge). ~5k a call (p99 28.5k); heavy calls are one key and one sim. Bound key first is not
-  exact (1 case), and the threat and Reach builds it skips are paid later in the turn (total -0.00%, p99 +1.4%).
-  Settling from covering memo entries saves ~0.05%, and the fight sim is not monotone (2 of ~660 settlements wrong).
-- Fight sim setup (2026-10-22, no commit). make_slot is already cached per turn. Non-plain act() (shield kits) is 44%
-  of sim fuel; sims that reach the horizon are 16% of sims and 37% of sim fuel; gating play_quiet +0.04%.
-- Strike == Reach shortcut (2026-10-22, fuel/strike-reach-eq 7a781ac; not merged). The exact condition (not Varg; no
-  ally, blocked or camp tile within the path radius; no wall or bush within sight reach) holds on 16% of builds with
-  0 mismatches, but the check costs more than it saves (+0.19%): a build's ~1k fixed work is the cost, not its tile
-  sets, and still enemies already reuse sets.
-- Reach builds (2026-10-22, no commit). Tile sets are recomputed in 98% of builds, since 91% have a camp in the 9x9
-  window (`sets_reusable_ = !camps`); the live-camp spot loop is ~400-480 a build. Grouping spots per camp group
-  (+0.48%), also without its cache (+0.27%): both dearer.
-- **Fuel merge 5** (2026-10-22, fuel/merge-5: strike-price; CHANGES 79). Wide bench vs merge 4 (2c3f771).
-  - At 100M: 52/52 identical. Total -0.08%; p99 91.7k -> 91.3k, turns over 100k 1981 -> 1944.
-  - At the real budget: out-of-fuel turns 450 -> 530 (23 games diverge; gen-chambers-102106111 b 22 -> 91).
-  - Vs hecate: 65.7% of 1094 (62.9-68.5; ladder 71.4, gen 65.8, gen-s1 64.8); out-of-fuel turns 2951 in 513 games vs
-    1967 in 457.
-  - Vs bbf6f05 (main at the session's start): 54.2% of 1094 (51.2-57.1; ladder 55.7, gen 53.5, gen-s1 54.7);
-    out-of-fuel turns 3323 in 511 games vs 8616 in 672 (-61%).
-- Quiet half-turns with a shielded weakest (2026-10-22, fuel/sim-shield 53e8935; kept and merged, CHANGES 80).
-  play_quiet gave up whenever either side's weakest held a shield; a noinline `play_shielded` lands each quiet hit
-  shield-first with hurt()/spill()'s float operations and stops before anyone would fall; shield expiry stays in act().
-  0 mismatches over 33,755 fights (debug cross-check). Wide bench vs merge 5 52/52 identical: total -0.06%, p99 -0.2%,
-  turns >100k 1944 -> 1917.
-  - Shield kits on the plain path with a side-level shield_end (not merged): exact, moved ~35k of ~140k non-plain acts,
-    but +0.02%. Requiet after a death (not merged): +0.03%.
-  - The non-plain acts left are mostly inexact kits (Heart of Ruin's missing-health scaling, ~79k of ~106k) and
-    arrivals (~26k).
-- Reach tile-set reuse (2026-10-22, fuel/reach-reuse, no commit). Reusing sets keyed on (pass, land, kind), or on the
-  origin plus the live window, reuses 16-22% of builds with 0 mismatches but is level to +0.01-0.03%: the sets cost
-  only ~40-90 a build; a build's cost is build_ways and at().
-- Farm spatial buckets (2026-10-22, fuel/farm-buckets a0f8a1b; not merged). 8x8 cells holding max worth and min
-  health, with a dirty-group bitmask. Exact (52/52 identical); gen-band empty-handed farm calls 36k -> 20-24k, but
-  wide +0.23%: a codegen tax of ~+350 a farm call on maps that never list, carrying calls (~45% on gen-band, ~50k)
-  untouched, and round 1 +70-88k a body on gen-band.
-  - Version 2 (fuel/farm-buckets2 028acc4; not merged): the cell listing as a separate `farm_with<true>`
-    instantiation, chosen once a game when 64+ groups share cells, so other maps run the plain loop. 52/52 identical
-    vs merge 5: wide total -0.02%; gen-band + gen-close-spawns 4/4 identical, -0.80%. Not worth ~190 lines.
-- Where the farm-loop gate's out-of-fuel turns come from (2026-10-22, main 80555ae, no commit). The gate alone removed
-  (the loop test and the from-here field's break), wide real budget, one run each: 483 -> 1109 out-of-fuel turns,
-  almost all on fight maps (gen-chambers-102106111 113 -> 456, gen-hourglass-102205812 48 -> 206; 00swirl, 00corners,
-  00pilgrimage +15 each); gen-close-spawns 0. On those three maps' 991 cut turns, the step open at the cut was the farm
-  loop 44%, the strike search 17%, farm's attack tiles and route 12%, siege 5%, prey 3%.
-  - Tagging steps with `fuel_phase()` misleads: a resumed turn unwinds quietly (farm's `world.is_stale()` returns)
-    until the first `throw_if_stale` (place_ward), whose tag is then printed. Record the tag open when a later tag first
-    sees the round changed.
-- Farm loop cost by section (2026-10-22, debug meters, 100M). A group the `best_value` test rejects costs ~150-270 just
-  to touch (loop header and filter ~60, facts and `fastest` checks ~65, steps ~30, trip ~28, the test ~65). The test
-  rejects ~90% of touched groups: gen-band 124 of 132 (36k a call empty-handed), gen-hourglass-102205812 60 of 68
-  (20k), gen-chambers-102106111 38 of 50 (16k). Carrying adds the bank terms (`trip_home->rounds`, ~80 a group) and
-  ~10 full evaluations kept alive by `from_altar_value` (gen-band 48k a call). Facts and `fastest` rebuilds (bag,
-  short_by or strength changed) add 10-25k to a call.
-- Farm loop prefilter (2026-10-22, fuel/farm-prefilter, no commit; not merged). Before a group's facts are refreshed,
-  skip it when its worth (recomputed exactly as the facts would) over Chebyshev steps - bank_now + capture rounds + its
-  last valid `fastest` (else 0) cannot beat `best_value` nor, carrying, `from_altar_value` (walk + capture + fastest).
-  Exact: 0 violations in a debug cross-check, 52/52 identical; it rejects ~115 of 132 groups on gen-band, 59 of 68 on
-  hourglass, 38 of 50 on chambers (exact steps instead of Chebyshev would add ~1). But it costs 80-100 a group it
-  passes and saves only 20-45 a group it rejects: wide -0.07% (00lanes -1.7%, gen-hourglass-102205812 -1.0%,
-  gen-chambers-102106111 -0.9%; gen-open-field +1.3%, 00swirl +1.1%). Its loop is -9 to -11% on chambers.
-- Farm walks on after a fight's search, in place of the farm-loop gate (2026-10-22, fuel/farm-fight-walk-on 3064454;
-  pending a decision). The gate and its estimators go; on turns where the strike search ran, farm does not evaluate
-  and walks on to last turn's group (a bag is banked), as the gate's cut-short path did. A/B vs 69835ab **54.2%** of
-  1094 (51.2-57.1; ladder 61.4, gen 54.1, gen-s1 53.3), but out-of-fuel turns 7878 vs 3032 (2.6x). They moved to the
-  many-group maps, where the full loop now runs on quiet turns: gen-band-102105911 766 vs 41, the two close-spawns
-  837 vs 54, far-spawns 597, cross 336, dense-camps 215; the fight maps are level (chambers 127 vs 82, 168 vs 186).
-  - The same skip with the gate kept (fuel/farm-fight-skip 04add51): A/B vs 69835ab **53.7%** of 1094 (50.8-56.7;
-    ladder 64.3, gen 53.1, gen-s1 52.9), out-of-fuel turns 3159 vs 3208 (level; gen-chambers-102106111 60 vs 141,
-    01elk-arena 90 vs 121). So the win is the skip's, and the gate still brakes the many-group maps' quiet turns.
-- Savings rounds, byte-identical at 100M: round 1 −11% a turn; round 2 (bush clusters grown in the warm-up, measured
-  worst costs in the estimates); exact fight simulation (fighters made once a turn, quiet turns reused; trade 4.7k ->
-  4.0k a call); Reach (ways kept per recipe, static windows once per tile, lazy builds); WASM-aware (−4.2%); host-op
-  (sight() skips bush and wall work when none is near); round 3 −17.7% (farm caches keyed by camp versions,
-  want_home's quiet-turn exit, enemy_seen early outs, sight masks built lazily).
-  - Tried and slower or no gain: raw bitboard reads instead of `is_set`, WASM bitmask searches, a stalemate early-out
-    in `simulate`, damage-bound settling before simulating, a per-side cast plan (+37%), a farm straight-line
-    prefilter, field steps read from WASM memory, per-group camp-damage boxes, Reach as per-enemy host boards, no
-    warm_reach at all (more out-of-fuel turns).
-- What runs out: fight turns. `step_guard`'s exact tile looks (Reach queries on new tiles, ~850-1200 each) and its
-  simulations, then `want_home` and `prey` simulations, the planner, and farm on cold 100x100 starts (centre warm-up
-  takes 19-54 rounds there). An out-of-fuel turn resumes next round on stale beliefs and can chain; the cascade
-  breaker (StaleTurn at decision checkpoints) keeps them single.
-- Gate removals: every gate at once raised out-of-fuel turns from 8 to 100-200 per 16 bench games, and removing only
-  the fight-simulation gates from 83/67 to 150/176: a "skip when short" gate adds work exactly when fuel is short.
-  Kept removals: turn order without a threat build, a capped chase route, altar fields on demand, fight memo 32. Round
-  3 added `step_guard`'s 20k reserve and per-tile check and skipped the turn end, comms send and prepare below 1500.
-- Fuel-gate removal 1a on hecate-v5 ([hecate/FUEL-GATES.md](hyperion/FUEL-GATES.md)): enemy-cast, camp-cast,
-  route-retry, crow-flies-kite and travel-dash gates gone; `approach` no longer sizes its search by fuel.
-  Byte-identical at 100M; head-to-head vs hecate-v5 on all maps 49.7%, out-of-fuel turns 187 vs 169 in 390 games. The
-  costlier gates (turn-order, farm-no-route, farm-kept-target, static-descend) raised out-of-fuel turns 48/36 ->
-  121/112 per 16 bench games on hecate-v4: they wait until step_guard and farm fit. The first turn has no room for
-  extra work: it ends with 1.3-9k left on lanes, swirl, corners, pilgrimage and ambush (world setup 46-75k, decision
-  64-116k).
-- Measuring out-of-fuel turns: the 16-game bench (`tools/fuel/bench.py --fuel 0`) swings by about ±20 and has no
-  shared-gem maps. Over all maps, hecate-v5 runs out ~170 times in 390 games (14% of games), a third of them on two
-  shared-gem maps (gen-shared-gems-640105705 alone ~50), then contest and stampede. Count them on the full suite.
-- Fight-path round on hecate 110e338, byte-identical at 100M (46 bench games: the default maps vs rival and nemesis,
-  heavy maps vs rival): turns over 100k −23/−36/−23%, p999 −6/−7/−6.5%, all turns −1.1/−2.1/−1.2%.
-  - Reach::at boxes from span tables, its sight shift out of line and per-way bounds (−14% a query); step_guard bounds
-    only foes that can reach a step, asks Reach only of foes in bound reach, reads open tiles packed and memoised
-    fights in place; kits kept across turns; threat_strike's widening memoised; camp_damage memo; ward sight cast
-    again only when the wards change, read packed; live camps by a per-tile member index; big camp groups skip far
-    champions; pack boxes worked out only for outmatching subsets.
-  - Tried and slower or no gain: act or hurt inlined into simulate, a loop for plain sides in act (−1%), cast split
-    out of attack (+13% a simulation), a cast-only fast path when sums are exact (its checks cost more than it saves),
-    ward checks by distance to each ward (+7% a query), a second recipe kept in Reach (recipes rarely flip back), the
-    far-champion filter on small groups, a cross-turn simulation memo (2-10% hit rate).
-  - On the turns over 95k at 100M the fight cost is simulations ~30k (a 5v5 fight 8-12k), Reach ~25k and step_guard's
-    own loop ~9k.
-- World and economy round on hecate 110e338, byte-identical at 100M (46 bench games vs rival and nemesis): −3.2% a
-  turn (−2.2% on heavy maps), p99 −1.4%, turns over 100k −5%, round 1 without the warm-up −8% (lanes ~208k -> ~180k).
-  - Wins: `always_inline` on farm's lambdas, whose captured locals otherwise live in memory (−0.8% alone);
-    `[[gnu::flatten]]` on farm, update_camp(s), track, observe, comms receive, route, plan_strikes and the warm-up;
-    camp updates in a member function; liveness read only out of view; first-use caches in static arrays, not vectors;
-    scratch boards for warm-up temporaries.
-  - Slower: flatten on decide (+0.7%), update_champion or continue_recall; refixing a seen enemy by moving its one
-    tile; camp member visibility from the tile list; a Chebyshev bound before farm's steps; by-value captures; dash
-    widening by dilation and walks by capped fields (+0.4-1.5%).
-  - Fuel is ~1 per WASM instruction, loads included.
-- Fight-path round 2 on hecate 72cc39c, byte-identical at 100M (same 46 games, measured before the last commit): turns
-  over 100k −20/−24/−23%, p999 −5.6/−4.2/−4.8%, max −7.5/−6.4/−7.1%, all turns −1.1/−1.4/−1.2%.
-  - Simulation: sentinels for idle, no shield and worthless slots, hurt()'s common case inline, an exact-sum fast turn
-    for sides whose Strength and cast damage are small sixteenths (casts add to the cached basic attacks), the weakest
-    kept across shields and heals that cannot change it (−14% a simulation on recorded fights).
-  - Hidden writes: vec2 and std::pair zero their members, so step_guard, prey, retreat_step and pack_boxes cleared
-    hundreds of bytes a call, and Reach::at its sight windows; constructing the Reach pool wrote ~50KB at each game's
-    first fight and the strike memos ~6KB on round 1 (now zeroed static storage).
-  - dist() in 32-bit (the SDK's is 64-bit: −0.2% on every turn).
-  - Memos per ready slots: strikes and Reach ways (cooldowns flip recipes back and forth; the single-entry memos
-    missed most turns).
-  - Also awake_members works out turn order only near a member's reach, fight keys read joining allies once a turn,
-    best_ground clears only cells it reads, the pack zone is drawn as squares and prey tests coverage from its boxes.
-  - Tried and slower or no gain in games (judge with whole games: ±0.1% swings from codegen alone): shields in the
-    fast turn (−1.8% on big recorded fights, +1.4% on small), side-level shield expiry, a cache of built fight sides
-    (a Side copy is memory.copy at a fuel a byte), a bulk side fill (−35% in a microbenchmark, slower in games),
-    step_guard's bound from per-foe offsets or row/column tables, pack boxes by a pruned subset search (recursion), an
-    early stop in Reach::at when the rest is dominated, packed bits instead of is_set for near_enemy_spawn (the host
-    test is cheaper), lethal settled by strike bounds first (the Reach builds only move elsewhere).
-  - Top turns (shared-gem maps, ~270k) are still step_guard's 6v6 simulations (~10k each, ~11 a turn), Reach (~35k)
-    and fight setup (~1.5k a simulation).
-- World, economy and SDK-call round 2 on hecate 85a648a, byte-identical at 100M (46 bench games): −11.2% a turn on the
-  default maps vs rival, −13.1% heavy, −11.0% vs nemesis; p99 −5.5/−6.4/−5.4%, p999 −3.6/−5.2/−4.0%, turns over 100k
-  284/90/278 -> 220/69/213; round 1 without the warm-up mean 143k -> 139k (max 180k -> 175k).
-  - Real budget: shortcuts on the default maps 1665 -> 1018 and vs nemesis 1700 -> 1062, out-of-fuel turns 1/2/0 ->
-    0/3/0 (noise).
-  - Found with a line profiler that counts every WASM op per source line and function (assembly instrumented, counters
-    dumped inside debug_block). Simple host calls cost only ~3-5 fuel; the waste was the WASM around them.
-  - Wins: hecate's own host reads test the result inline (`ok()`) instead of calling the SDK's out-of-line `check()`
-    (−1.2%), with raw helpers for tile tests, field steps, bitboard clear/set/square/empty/count/positions, occupancy
-    and scores, outputs in static storage rather than stack slots (−0.4% each batch); `World::me()` through a kept
-    pointer and `enemy_seen()` cached until a champion update (−2.1%); loops over visible enemies return at once when
-    none is seen (game_ender −0.6%, five more −0.7%); our handle read once at start-up and round_now into static
-    storage (−0.9%); read_priorities and update_champion in locals, out of reach of aliasing stores (−1.4%, −0.3%);
-    World::fix inlined so update_champion passes no struct through memory (−0.4%: vec2 and Moment are passed by
-    pointer to a stack copy when not inlined); group_at/altar_at and the spawn fields inline in the header (−0.35%,
-    −0.1%); dist() and central tiles in 32 bits; slot() from kept team sizes; update_camps reuses last turn's visible
-    groups while the camp tiles in view are the same (one IsEqual host call; −0.3% to −1%); route's neighbour scan raw
-    and bounds-free off the edge (−0.4%); no ward attempt on a stunned turn (every one threw error 63, ~3.9k).
-  - Slower or no gain: `always_inline` on the SDK's check() through a pre-declaration (+2%: inlined throw paths bloat
-    every wrapper); an ally_seen() cache (allies are usually in view, +0.2%); farm's loop index without modulo and its
-    claim test as one mask (0%); a precomputed crew list (costs more than the claimed groups it serves); CampGroup
-    tile/threat accessors inline (round 1 +640, no gain); moving the teleport branch out of update_champion (identical
-    fuel); Moment comparisons field by field (+0.02%); vector resize instead of reserve+push_back for camp health
-    (round 1 +840).
-  - farm's loop (~280 ops a group, ~10 groups a turn) is now ~17% of WASM ops and at its floor for local changes.
-- Fight-path round 3 on hecate bbd10a9 (merged with the world round 2), byte-identical at 100M (46 bench games):
-  before the merge −0.81/−0.95/−0.85% a turn, p999 −5.3/−4.5/−4.5%, turns over 100k 210/67/200 -> 168/56/160; after it
-  (raw SDK helpers in the fight path, step_guard's visible key) a further −0.26/−0.26/−0.27%, p99 −0.5/−0.7/−0.6%,
-  turns over 100k 125/44/121 -> 123/39/117.
-  - Mostly "known case inline, work out of line": struck(), reach_of(), terrain(), the threat build, gone(), foe
-    counts, camp members, cost estimates and fighter slots each test their ready state inline and call a noinline
-    builder, so callers keep their locals in registers.
-  - Also Reach::at settles a near way outside bushes from its box and tests wards once a query; enemy ward sight
-    refreshed from one raw occupancy read and compared in place; step_guard asks each foe's Reach directly and
-    simulates an unknown fight without a second memo search; the Reach cost estimate counts a pending mask built once
-    a refresh; fight sides filled in one pass with tallies in locals; simulate's debug tallies compile-time; static
-    windows place rows by constexpr shifts.
-  - Real budget (games diverge, so noisy): out-of-fuel turns 1/5/3 -> 0/0/1 before the merge, 0/0/0 with both rounds;
-    step-guard shortcuts 117/421/186 -> 114/175/108 before the merge, 87/327/78 with both.
-  - Slower or no gain: per-round static caches in small inlined helpers (+0.1-0.5%: codegen around them grows), a
-    turns_before_ours cache (+0.1%).
-  - Leads: the general simulation path for Varg shields (~5k a heavy turn), Reach::at's fixed cost (~10k a heavy
-    turn), step_guard's own loop (~8.5k) and pack_boxes (~3k).
-- Fight-path round 4 on hecate 98706e5, byte-identical at 100M (46 bench games): −1.53/−2.40/−1.59% a turn (default vs
-  rival, heavy, vs nemesis), p99 −2.1/−2.6/−2.1%, p999 −2.1/−2.3/−1.9%, max −1.5/−1.8/−1.6%, turns over 100k
-  123/39/117 -> 112/31/101.
-  - Wins: Safety lists its enemies once a turn as masks (alive and visible; alive, unseen and tracked), and every
-    enemy loop in Safety and in step_guard, prey, killable_now, visible_threat and shield_if_needed walks the mask
-    instead of testing each belief (−0.6/−0.8/−0.65%, then −0.24/−0.39/−0.27%: a loop over the 152-byte beliefs costs
-    ~25 ops an enemy); camp members written into pre-sized storage rather than push_back (−0.26/−0.43%);
-    strike()/threat_strike() return their memo by reference (−0.09%); kite's bitboard calls through the raw helpers
-    (heavy −0.24%); distance thresholds whose distance is unused tested as a square by unsigned offsets (`in_square`:
-    camp members' reach −0.1/−0.18%, blow() −0.1%, fighting_allies' ally squares p999 −0.5 to −0.95%, in_pack_zone and
-    step_guard's filters −0.06%).
-  - Slower or no gain: most_damage cached per turn (+0.02%: called about once a turn), Reach::at's memo hit inline
-    with the miss out of line (+0.12-0.15%: the memo rarely hits, and callers grow), hoisted member and health
-    pointers in find_members (−0.01%), a square pre-test before find_members' distance (tail +0.3%).
-  - Leads unchanged: the general simulation path for shields, Reach::at, step_guard's bound loop (dist ~800 a heavy
-    turn), static_window misses (~640 each, ~6 a heavy turn); World-level enemy masks would let the loops in
-    abilities.cpp and self_abilities.cpp (no Safety there) and the age-based loops (in_pack_zone, pack_boxes,
-    recall_outruns) skip beliefs too.
-- World and economy round 3 on hecate c3c874c (not merged: it raises p99 and leaves heavy maps flat, against the aim
-  of cutting the tail), byte-identical at 100M (46 bench games): −1.16% a turn on the default maps vs rival, −1.27% vs
-  nemesis, 0.0% heavy; p99 +0.2-0.3%, p999 +0.1-0.2%, turns over 100k unchanged; real budget (an earlier setting)
-  unchanged: out-of-fuel 0/0/1 as before, shortcuts 751/913/874 -> 762/914/883 (noise).
-  - Measured: a simple host call costs 3 + its arguments (sdk_champion 8, round 7, cooldown 9), so caching
-    `my_record()` cannot beat the round read its invalidation needs; a field search costs chunks × (16 + layers) + ~30
-    over the whole map (100x100: 169 chunks, 2.9k for 1 layer), whatever region it touches, and `route` was 7% of all
-    fuel (3.8k a call, 0.6 a turn; inclusive meters: farm 8.7k a turn with its walk, world update 7.1k).
-  - Win: `route` keeps its last field, walls and goals and, for the same goals, reuses it while every tile its walls
-    changed at is at least our best neighbour's layer (newly blocked) or has no neighbour below it (newly freed, not a
-    goal); the layers below the one that reached us are complete, so the neighbours and steps are exact. Checks that
-    fail back off (up to 3 calls), guarded searches are neither checked nor kept, at most 4 changed tiles (2: -0.1%,
-    6-12: +0.05-0.3%). Hits ~40% of unguarded calls; each check costs 3 board operations and reads (~700 with the
-    freed tiles' neighbours), which leaves heavy maps (100x100, crowded) slightly dearer.
-  - Not done: farm's loop has no cheap exact pre-rejection (its ~180 ops a group are spread over 25 lines); a cheaper
-    reuse check (field values in WASM memory, a host min over a mask) would make heavy maps gain too.
-- What fuel costs main (b05d209 vs hecate-v8, 1094 games, both sides; 2026-10-21): real budget 65.7% (ladder 72.9 of
-  70, gen 63.9, fresh gen-s1 66.6), out-of-fuel turns 9614 in 714 games vs 2240 in 511; at 100M (both bots) 62.0%
-  (ladder 70.0, gen 62.1, fresh 60.7). Main does 3.7 points better at the real budget, so lifting the limit helps v8
-  more than main: main's 4x more out-of-fuel turns do not show as lost games against v8. Main alone at 100M against v8
-  at the real budget would isolate main's own loss; ab.py's `--fuel` sets both sides.
-- bounded-decide (2026-10-21; orch/bounded-decide, kept and merged): fight horizon 24 -> 2 * cooldown + 1 = 17 own turns,
-  and exact early ends (our fighter must outlive the rest of the horizon given every attack and ready cast of theirs;
-  or we cannot fell any of theirs and their basic attacks alone, less a stunned turn of their strongest per stun,
-  beat our health and every heal). Asked at the start and as either side loses a member; a debug check replays
-  each fight to the horizon (0 mismatches in 16k fights). Measured on 01elk-arena, 00contest, 00fragment both
-  sides at 100M vs main: kills peak right after cast turns (own turns 9 and 17); the 8% of fights undecided at 24
-  cost 20% of simulation fuel (16.9k vs 6.1k). 5.8% of fight verdicts change against 24, all lost -> not lost
-  (fights first lost on their turns 18-24). Per fight 7.06k -> 6.26k; same games, both bots metered: decide
-  25.4k -> 23.7k a turn (-6.7%), decide >= 100k turns 380 -> 349, pursuit 611 -> 441. Real budget, same 6 games:
-  out-of-fuel turns 186 vs main 198 (noise). Tried and dropped: damage reaching us only after every weaker ally
-  falls (no heals or shields) plus a re-check every cooldown, identical but +0.1% fuel. Fighters were not cut:
-  fight keys already hold only enemies whose blow reaches the tile, pursuit only those within `pursuit_steps`.
-  A/B vs main b05d209: 49.8% of 1094 (ladder 50.0, gen 49.4, fresh gen-s1 50.2), out-of-fuel turns 10543 vs 11337
-  (-7%); at 100M 50.6% (ladder 52.9, gen 49.4, fresh 51.6). Level with fewer out-of-fuel turns: kept.
-
-### Ports from koi (2026-10-20)
-
-Against hecate 3e8dfa0 (`bots/baselines/hecate-v7`), both sides; fresh suites are `replays/koi-maps/` (seeds 7101-7112).
-
-| variant | ladder + gen + central (390) | fresh gen (1848) | central, standard + fresh (552) | all |
-|---|---|---|---|---|
-| port: farm horizon on the farm side only, wide search, holders as carriers | 52.3 | 52.9 | 48.6 | 52.1 (2698) |
-| cycbank: plain farm values, the horizon only on the chain side of the bank test | 50.5 | | 50.5 | 49.8 (850) |
-| cycboth (kept): the horizon on the bank-then-farm value too | 55.4 | 51.9 | 49.8 | 51.9 (2698) |
-
-- The port against the older bots (390 each, hecate-v7 in brackets): aphelios 90.8 (91.8), morgana 76.7 (74.9), rival
-  74.4 (70.5), nemesis 63.6 (65.1); against koi 48.7.
-- The gain is the group choice (nearer, faster cycles), not earlier banking: the koi version's undiscounted bank side
-  made carriers bank early, which was level to negative on its own and cost central-altar maps.
-
-### Week 2 patch (2026-10-20)
-
-- Camp reach per monster type from the camp designs, instead of 3 for all: 54.3% vs hecate-v7 (398 games). Kept.
-- Gem limits rescaled by stampede's block (big_gems 55, chain_bag_limit 30, brake_bag 11): 52.8% on top (398), 52.3%
-  on a fresh suite (264). Kept. With gem_value 40 as well: 50.8%. With life_value 400 as well: identical games (no
-  effect).
-
-### Heart of Ruin (2026-10-20)
-
-Against hecate 1251236 (`bots/variants/hor-pre`, frozen pre-change), ladder + gen (554 games) both sides. HoR draft:
-heart_of_ruin, stellar, cassi_and_issac, ryth, varg (normal draft with Ren swapped for HoR).
-
-| match | new | pre |
-|---|---|---|
-| HoR draft vs pre HoR draft | 70.8 (ladder 64.3, gen 71.3) | |
-| normal draft vs pre normal draft | 49.8 | |
-| normal draft vs pre HoR draft | 54.7 | 52.0 |
-| normal draft vs new HoR draft | 37.7 | 34.7 |
-
-- The dash landing (planner, enemy casts, camp casts), the passive in our damage, and the shield gated on the plan
-  when a landing is ready (CHANGES 25). An earlier build with ungated shield reads for allies too gave 68.2 / 50.9 /
-  53.2 / 37.7 on the same rows.
-- Enemy modelling (landing reach, damage and stun, passive, active shields): +2.7 and +3.0 points against the two HoR
-  drafts, level in the mirror.
-- The new HoR draft beats our normal draft 62.3% (554): a draft change to try next, with ladder evidence.
-- Fuel: about +2% a turn from the early turns on (the shield bookkeeping per champion update, the passive in strikes
-  and outputs; moving it around shifted the bench by +-100 a turn from layout alone); real budget 0 out-of-fuel turns.
-
-### Gates, crystals, big groups and gem limits (2026-10-20)
-
-Each against the bot before it (frozen in bots/variants), ladder + gen both sides (554). The first three were measured
-on hecate 1251236 and rebased onto d70138d (Heart of Ruin) afterwards.
-
-| change | ladder | gen | all |
-|---|---|---|---|
-| no big-group sieges off shared-gem maps, holders by tribute length (CHANGES 26) | 57.1 | 54.5 | 54.7 |
-| siege the group that gates every altar (27) | 57.1 (boss-battle 2/2) | 49.6 | 50.2 |
-| crystal hops to altars no walk reaches, crystal bought every life | 45.2 | 52.5 | 52.0 |
-| the same, recall out priced, crystal bought on demand (28) | 47.6 | 52.5 | 52.2 |
-
-- No generated map has a gate or a hop (`GATE`/`HOPS` debug line), so the gen columns of 27 and 28 are fuel noise:
-  find_gate and find_hops shift round-1 fuel and reroute games. Only boss-battle has a gate; collision and islands
-  hops.
-- corridors locally vs rival: 812-1026 and 741-1048 before 26, 1012-484 and 1032-122 after (identical to big_gems
-  150).
-- boss-battle vs the pre-gate bot: 1002-0 and 640-109; mirror games before it ended 0-0 on gold. The siege is slow
-  (champions walk into the Monolith's reach 5 to hit it; the key member fell around round 1100).
-- Hops without the recall in their price: carriers hopped into collision's vault whenever it was nearer than the mid
-  altar and then sat out 5 recall turns and the walk back.
-- Dash crossings (one-tile hole/altar lines a dash jumps), counted for a later change: walks from spawn to groups
-  shorten by 51% on fracture, 60% on concentrated-wealth, 58% on gold-rush and 11% on islands (+34 groups reachable),
-  under 6% elsewhere on the ladder; 17 of 256 generated maps gain more than 5%.
-- Dash crossings (CHANGES 29) vs the pre-dash bot: 52.0% (ladder 20/42, gen 268/512). The first version (3d837e6) was
-  21-21 on ladder and 105-99 after 208 gen games, with dashers stuck on big-world (Ren still 1004 of 1060 turns) and
-  islands (0 camp attacks): approach goals on crossable holes, crossings into camp tiles, recalls out of what looked
-  like a crystal pocket, and fields walking along chains of crossable tiles.
-- Gem limits after 26: brake_bag 30 50.9% (554), chain_bag_limit 80 52.7% (ladder 42.9, gen 53.5), both at life_value
-  / gem_value ladder 22-20. Not adopted; item 24's values stay.
-- corridors: lost mirror games show farm targets flipping every turn (32% of farm turns A-B-A on corridors, 1-2%
-  elsewhere), crews joining and leaving a group together because claims reach teammates a turn late. Counting only
-  allies earlier in index in crew_strength cut corridors flips to 5.5% but lost 44.5% on gen; counting them only once
-  in a crew 40.5% ladder, 44.9% gen; seniority for contested claims made corridors flips worse. All dropped.
-- A crystal shortcut over open ground (a crystal landing more than twice the channel's turns nearer on foot, for
-  corridors' lanes) was left unfinished and dropped: ladder opponents used 9 crystals in 9 corridors games.
-
-### 7515f8e against submission 31: per map, and boss-battle (2026-10-20)
-
-- 53.2% (554; ladder 22/42, gen 273/512). The maps items 26-29 aimed at all won 2/2: corridors 1028-124 and 1007-210,
-  collision, fracture, islands, eight (and their gen mutations: collision 4/4, corridors, fracture 2/2).
-  `results.json` match `winner` is the 0-based bot index; reading 1 as bot 1 inverts every per-map table.
-- 0/2 maps: contest from d70138d on (every commit since lost both; hecate died 41 and 35 times to 5 and 12; the gen
-  monolith-only and shared-gems maps went 3/4 each, so it does not carry over). elk-arena, expanse and interlock flip
-  between commits: noise at two games a map.
-- boss-battle per commit against v31: d70138d and 96f90c7 0/2, ff50c99 and a599469 2/2, 7515f8e 1/2 (0-0 won on gold,
-  90-334 lost). In the loss the key Monolith fell at round 1059 and its tile, the only tribute tile, stayed in reach
-  of the other Monolith (200 a turn) until 1303: tributes of 53-158 cancelled after a turn, bags of 87, 53, 385, 105
-  and 125 lost there. Bags held back while the gate stood reached 400-875 (40-88 turn channels), cancelled by tribute
-  safety, stuns and locks; one holder took the pair's 400. v31 banked 19-49 gem bags at the altar we opened.
-- Ladder boss-battle (13 games, v30/v31): 2-11. 8 ended 0-0 and we lost all 8 on lifetime gold. Teams that opened it
-  killed both Monoliths in a burst, captured and held the tile: :3 dealt 39.8k in rounds 1200-1250, captured 400 and
-  banked 1987 in one channel (won round 1531); OneTap killed both twice and banked 190, 320, 49 and 200.
-- Live camps lengthen or cut a walk to an altar on 14 of 277 maps (ladder + gen): only boss-battle cuts it; spiral (30
-  groups, +28 steps each) and cross (10, +15) are the only real detours, the rest under 10 steps.
-
-### Draft search after the Heart of Ruin nerf (2026-10-20)
-
-Details in [hecate/DRAFT.md](hyperion/DRAFT.md). Each pick scored on maps of its pick count (ladder + gen), screened on
-45% of them and confirmed on the rest. Kept: Heart of Ruin, Marcella, Vesper, Ryth, Stellar, ...: 69.3% vs the old
-draft on a fresh-seed suite (512 games; 3/4/5-pick 71.1/63.1/73.8).
-
-- Heart of Ruin is the core: replacing it in HoR/Stellar/Cassi lost 12-48% (80 games each). Marcella (62.5% in
-  Stellar's slot) and Ryth were the best additions; Prism, Tavi and Willow lost in every slot of a trio.
-- Trios: HoR/Marcella/Cassi and HoR/Marcella/Vesper level (50.0%, 178), both ~61% against the field; the old trio
-  Ren/Stellar/Cassi lost 69.7-72.5% to them, and HoR/Stellar/Ren (a common ladder trio) 64-73% to the top three.
-- 4th: Ryth (53-60% over Vesper or Cassi); Vendetta, Willow, Varg, Stellar and Ren lost as 4th (42-49% screen).
-- 5th: Stellar 57.9% and Willow 52.8% over Cassi (216), level with each other (49.2%, 118); Varg 47.7%, Ren and
-  Vendetta lost (42%, 39%).
-
-### Camp awake state from striking members (2026-10-20)
-
-- Monsters sleep one by one (`probe-sleep-range`), but `World` read a group's state from its first visible live
-  member, often a cluster. Now the group is awake while any striking member reads awake and asleep only when every
-  live striker is seen asleep. Against hecate-v6 (main ffc6b76 without it), real budget: 295/582 = 50.7% (ladder
-  36/70, gen 259/512); out-of-fuel turns 1155 against 1152. Level; kept as a logical fix.
-- Per-member sleep. `CampBelief::asleep` keeps the strikers read asleep while their group is awake; only damage
-  wakes them, so one seen awake again clears the rest. Safety's camp members, `awake_over`, the dash and shield
-  hazards, passing and capture-hold "free" hits, `landing_wakes` and `wake_risk` read members, not the group; an asleep
-  member counts as a threat only while another champion is within 4 of the group. A blind quiet streak that starts by
-  the round a member was woken needs 3 rounds. A traced packs game read a partly awake group on 44 turns.
-  Against hecate-v7 (main 5a33e52): 291/582 = 50.0% (ladder 30/70, gen 261/512; flips vs the v7 mirror 5-10 and
-  49-44); out-of-fuel turns 1125 against 1224. Level; kept.
-- Waking sleeping groups onto enemies (`wake_camps`, never shipped): a damage or stun spell on a group whose asleep
-  strikers then reach only enemies, valued by `hit_worth` on reach - distance (+1 once the enemy has acted) phases,
-  or the rounds left in a tribute or capture hold. At turn end it fired in 17 of 582 games (25 wakes, almost all
-  boss-battle's centre elks), 296/582 = 50.9% against the bot without it; a pre-walk version for walk-excluding
-  spells (all of our draft's) when the wake beats `keep_walk_value` never fired, 285/582. Basic-attack wakes (on a
-  harmless member, the only way out of reach) never fired. Too rare to measure. A visible enemy held in an asleep
-  striker's reach is common locally, but those are mostly self-play recalls (above): ladder games showed 109 capture
-  or tribute rounds in 70 games, the enemy usually 4-8 tiles from us. Not merged; its place is the strike search's wake
-  pricing (`STRIKE-SEARCH.md`).
-
-### Quality wave 1 (2026-10-21)
-
-- Four behaviour-identical cleanups (world, safety, bot.cpp, comms/turn order/pathing) landed one at a time, each
-  16/16 identical on the fuel bench; together total fuel -0.54% (p99 80391 -> 79827).
-- Bundle of fixes and removals on top (main 07c414f): a shield read in its last round; diagonal crossing ties by row
-  parity; a camp stirred only by champions yet to act, within 5; camp members cut to reach 0 dropped; submit_here
-  judges an avoided altar; siege_load counts a cleared group as dead; offer_channel skips stun-immune tributes;
-  live max health; step_closer keeps off the guard and the farm zone; warm_up's member fuel check left to
-  prepare_member; `killable_now` and `fight`'s exclude removed; the delayed tribute stun removed. 282/582 = 48.5%
-  (ladder 30/70, gen 252/512), out-of-fuel turns 1078 against 1147. Level; kept as fixes and level removals.
+- Heart of Ruin was the core: replacing it in HoR/Stellar/Cassi lost 12-48%. Marcella and Ryth were the best additions;
+  Prism, Tavi and Willow lost in every slot of a trio.
+- Trios: HoR/Marcella/Cassi and HoR/Marcella/Vesper level with each other, both ~61% against the field; Ren/Stellar/Cassi
+  lost 69.7-72.5% to them, and HoR/Stellar/Ren (a common ladder trio) 64-73% to the top three.
+- 4th: Ryth 53-60% over Vesper or Cassi; Vendetta, Willow, Varg, Stellar and Ren lost as 4th. 5th: Stellar 57.9% and
+  Willow 52.8% over Cassi, level with each other; Varg 47.7%, Ren and Vendetta lost.
 
 ## koi: Fish's play on hecate (2026-10-19/20)
 
-Against `baselines/hecate-v1`, 1010-1630 games (ladder, gen, central and fresh seeds 7101-7106); details in
-[koi/LOG-attempt1.md](koi/LOG-attempt1.md) and [koi/LOG.md](koi/LOG.md).
+Against hecate-v1, 1010-2698 games. Three ports were kept (CHANGES 21).
 
-- Level (52-54%, the same as hecate + latsize alone at 53.3%): Cassi and other damage-free stuns on any monster
-  hitting an ally; a peel stun valued at the hurt ally's life; clusters first; spells from range only while an ally
-  tanks; enemy-race and late-race banking; Fish's commit (no retreat at hp after burst 300+ and local ratio 1.5+);
-  chasing any carrier; Fish's turn priority; the 150-gold shopping recall bag and all; lazy chaining to 5 gems a step;
-  waiting in bushes; cycle horizons 70-140; openers when a melee crewmate arrives; elk crews by pick pairs (−1.2); a
-  Monster emblem first on big-group maps; Fish's caster draft on Monolith-only and shared-gem maps; the late-race line
-  at 850.
-- Fish's build table: −5 to −6 alone (no Jungle: 16-50% more camp damage, more heal trips; caster-only −2); with
-  Fish's camp-aggro priority (healthy empty-handed bodies act first) and 30% recall line −2.5; with its old-version
-  table (Durability second, no Home) about −2. koi ships it for Fish-likeness, with a melee pre-hold step (a body
-  steps onto a freed camp tile while the group still fights; level, freed-tile share 41% -> 52%) and Fish's engage as
-  an advance (go for the weakest enemy within 6 where hp after burst is 300+ and local health 1.5x theirs; level,
-  kills 2.4 -> 2.9 a game): 50.4% over 1986 games, nemesis 59.0, rival 66.7, morgana 74.9, aphelios 89.5.
-- Lost: the fitted engage rule as the retreat/advance rule (33-35% on 390); crews by pick pairs (−4 to −10); solo
-  range openers (−4.6); respawning groups worth 1.3x (−6); casters chipping Monoliths on mixed maps (never finished in
-  time; those maps 33/78 -> 21/78); gold-free heal trips (−6).
-- Who wins koi-vs-hecate: the first champion death (first to die wins 41%; no death in a third of games, koi 58%).
-  Steals are about 28 gems a game each way: the games are farm races on each side's own groups.
-- Found: a body could stand for 90 rounds in a dead-end pocket whose way out a live camp blocked (static fields ignore
-  camps); a wider search fixes it (`Pathing::step_towards`), level overall.
-- Attempt 3 (from the Fish-vs-hecate scrims; `tools/koi/killcard.py`): Fish converts engagements with less damage per
-  kill (2.2k against 3.3k), mostly through its killers' Focus and health; bush and unseen kills are not distinctive.
-  Level alone: Fish's targeting (kill, else lowest health; stuns on the biggest threat), a chasing caster stopping at
-  nuke range in a bush (+2 on 390), retreating casters casting any ready spell, the step-in after an enemy acts, rush
-  tributes late in a tight race. An enemy capture holder counted as a carrier: +1.7 on 1010. Funnelling captures to
-  Stellar: −4 to −5. hecate's upkeep builds instead of Fish's table: +2. The final koi (those fight changes with
-  hecate's builds): 54.0% over 1986 games (53.4% over 2698), nemesis 63.3, rival 73.6, morgana 74.9, aphelios 92.6
-  against hecate-v1's 61.5, 69.0, 74.9, 90.3. Code: [koi/koi.patch](koi/koi.patch) against hecate 110e338.
-- w2-small bundle (2026-10-21): the periodic ward deleted (off-bush wards every 20 rounds; WARDS.md proposal 1), the
-  rally deleted (COORDINATION 2; nothing read it), and `possible` counting an unseen enemy's turn this round at once
-  (WORLD-MODEL 3, a superset fix). 50.3% vs main (582, ladder 50.0, gen 50.4), out-of-fuel turns 983 vs 1116:
-  level, kept.
-- w2-chain (2026-10-21; WORLD-MODEL 2): an enemy with two turns before ours chained in threat_strike as the max over
-  the first turn's slot S1 (or none) of A_S1(d) + B_rest(max(0, d - m)), m = 3 after a dash else 1, replacing
-  max(walked, twice); Reach's ways tagged by turn and slot to match (Stellar at 3 tiles 200 -> 298). Strike bounded
-  Reach on every tile asked (no REACH>STRIKE in 582 debug games). 47.1% vs main (582, ladder 52.9, gen 46.3),
-  out-of-fuel turns 1219 vs 1016: worse, dropped.
-- w2-altar (2026-10-21; COORDINATION 1): an altar is usable for a bag when a tribute tile is walkable from spawn with
-  live camps as walls and the believed-awake camps' fire there over tribute_turns(bag) stays below the carrier's
-  health; bankable_bag replaces my_gems() where a bag decides to bank, and while none is usable for the team's largest
-  bag the groups sealing the altars are siege candidates (replacing CHANGES 27's gate). chase gives the turn back when
-  it can neither step nor hit. 49.0% vs main (582, ladder 51.4 with boss-battle 2/2, gen 48.6): level, kept.
-  Out-of-fuel turns 2145 vs 1004: +208 on rounds 1-2 (the first access build), ~800 on two maps
-  (gen-clusters-only-720708305, gen-huge-shared-720707817) where a carrier stood still with a bankable bag 10 steps from
-  an altar for 500 rounds and the farmer behind it spent 60-80k a turn in farm's step_towards/make_way retries. The
-  stuck carrier is on main too (a 1481-round 'B' run on gen-dense-camps-720708102).
-- q2 bundle (2026-10-21; quality wave 2 fixes): stale-turn guards in main.cpp and comms send, farm always evaluates
-  (mini-farm fallback deleted), act errors still post claim/bag/health, one heal_rounds price for heal trips, Safety's
-  camp hits scaled by our emblems, asleep groups stirred only within a yet-to-act champion's strike reach. 54.5% vs
-  main (582, ladder 50.0, gen 55.1), fresh seed 9421 59.4% (512): kept. Out-of-fuel turns 1136 vs 914 (fresh 945 vs
-  731), not broken down.
-- q3 bundle (2026-10-21; quality wave 3 fixes, on main d372b00 after the wave's behaviour-identical changes landed
-  16/16 identical): altar_access floods each camp death's pockets into `ours` at once instead of deferring them while
-  an altar is open, and access_fire reads every open tribute tile instead of the first 64. 50.6% vs main (1094, ladder
-  48.6, gen 51.4, fresh gen-s1 50.2): level, kept as fixes. Out-of-fuel turns 6276 vs 6106 (ladder+gen 3265 vs 3072,
-  against the q2 bundle's 1136: strike search's decide).
-- farm-s1 (2026-10-21; FARMING.md stage 1, shared prices): one heal_rounds, one HomeTrip price for every trip home
-  (farm's bank trips, recall_to_bank, capture_recall, wants_shop: heal plus the next emblem once the gold completes
-  it, no recall that arrives too late to tribute, nothing once closing), gems_share capped by the tribute rate and our
-  pace over bag_rounds_left, gold priced by the emblem's saving (about 2x the old per_gold), closing absorbs endgame(),
-  holders() for cleared groups; deletes gold_worth, endgame, emblem_gain_rounds and 3 params. upkeep_cost's clearing
-  share counts from (camp_turns+1)/(turns+1): at 0 gold was worthless and stampede idled. 50.0% vs main (1094, ladder
-  47.1, gen 51.0, fresh gen-s1 49.4): level, kept as the base for stage 2. Out-of-fuel turns 7156 vs 6606 (+8%, all
-  decide, spread over maps); 100M bench mean fuel +0.4%, p99 +2.1%. Suspect: prices() keys on the float share, which
-  moves every round once the time cap binds, rebuilding farm's group facts.
-- strike-fuel (2026-10-21; landed as cc38946, f56b8c9 on main 55f8f6d): strike search fuel with the same choices
-  (centre/touch scatter with hashed dedup, memos for wake, landing groups and first-mid, a per-tile viewer row cache,
-  our record read once, landings read only foes within their radius). bench 16/16 identical at 100M on main 55f8f6d
-  (fuel -0.08%). Worst maps at 100M (12 games): search fuel per call mean 11.75k -> 11.2k, p99 42.5k -> 39.3k, max
-  204k -> 133k. Measurement A/B vs 55f8f6d: 51.5% of 1094 (ladder 54.3, gen 52.5, fresh gen-s1 50.0), level as
-  expected; out-of-fuel turns 6139 vs 6545 (-6%; ladder 589 vs 633, gen 2699 vs 2728, fresh 2851 vs 3184). The rest
-  is the search's tail: searches start with 40-60k left after step_guard; a capped branch gave no real-budget gain
-  and was dropped (strike-notes.md).
-- strike-fuel-2 (2026-10-21; landed as a850d48 on main afae02d): find_centres takes each point's 3x3 as a row mask
-  less the centres already added (same order) and clears the whole near table when over 8 points would each clear
-  around them. bench 16/16 identical at 100M on main 1264821 (total fuel -0.002%, p99 86736 -> 86620); big Ryth and
-  Stellar searches' centres 8.2k -> 7.6k. Measurement A/B vs afae02d: 50.2% of 1094 (ladder 48.6, gen 50.0, fresh
-  gen-s1 50.6), level; out-of-fuel turns 6900 vs 6865 (ladder 589 vs 609, gen 2898 vs 2917, fresh 3413 vs 3339):
-  no real-budget gain. Profile (12 worst-map games at 100M): Heart of Ruin searches over 25k average 41k (read 10k,
-  grow 20k, price 10k), but ~70k (p90 115k) is spent before the search: world 10k, decide start 12k, want_home 9.5k,
-  step_guard 37k (fights 17k at ~10.7k a new fight, Reach exposure 9.5k, fight keys 1.8k). Tried, no gain, dropped:
-  per-turn landing classes (regroups 3.6k -> 4.1k: the cost is each cell's first land_foes/land_touch), a heap for
-  the price loop's selection (its cost is the strike-share order, ~500 an iteration, plus Reach queries at ~500-700
-  on tiles step_guard never asked about). Left: step_guard's fight simulations and the read's per-foe loop (2.9k mean,
-  4-6k on big searches; 1-2.7k of it attack_viewers on uncached tiles).
-- w2-trapped (2026-10-21; WORLD-MODEL 1): Safety::trapped(p, h), every exit next turn (stay, step, a landing if our
-  dash stays ready) taking the visible enemies' strike at p before our next turn plus their next strike at the exit,
-  closer by their moves, plus camps, >= h (Chebyshev only); a want_home trigger, and step_guard guards trapped tiles.
-  Screened well offline (fires on 3.0% / 1.2% of healthy in-sight turn-ends, catches 74% / 71% of point-of-no-return
-  turns). 46.7% vs main (582, ladder 48.6, gen 46.5): worse, dropped. Out-of-fuel turns 1926 vs 1201 (350 vs 293
-  games, spread over maps, not one blowup): step_guard asks it about up to 24 tiles a turn, ~3-4k each when trapped.
-- w2-ward-early (2026-10-21; WARDS.md proposal 2): place_ward between comms receive and decide, then observe, so a
-  ward's sight reaches this turn's strike and casts; the turn-end call kept. 49.5% vs main (582, ladder 55.7, gen
-  48.6): level, dropped for fuel. Out-of-fuel turns 1487 vs 1154, all in decide (gen-huge-shared 158 vs 27): at turn
-  start ward_bushes grows bush clusters down to small_cost_estimate + end_reserve, so decide starts nearly empty
-  (ward-no-bushes-clusters shortcuts 1997 in REF, near 0 in CAND). Retry only with clusters already found (warm-up's
-  find_all_bush_clusters) or the search moved after decide. Correction (gaps-ward-early-2's trace): this version placed
-  no ward at turn start at all (all 39,946 calls refused: start_recall leaves us channelling into the next turn); turn
-  start held at most 4.2k fuel, and the shortcuts were 1,122 vs 1,997, not near 0.
-- gaps-ward-early-2 (2026-10-21; GAPS 2): the ward placed in decide right after continue_recall cancels the recall,
-  from bush clusters already found only (bush_clusters_found; the turn-end call grows them); after a ward, observe,
-  rebuild Safety (refresh() keeps the seen/unseen lists and cached strikes, so newly revealed enemies would stay
-  modelled from turn-start beliefs) and invalidate Pathing's occupancy. 13 turn-start wards on 00ambush (main 0).
-  50.7% vs main (1094, ladder 50.0, gen 48.0, fresh 53.5); out-of-fuel turns 10112 vs 10123. Level and sound: kept.
-- gaps-stat-by-use (2026-10-21; GAPS.md, landed as 278a531): main stat from our counted basic attacks and casts
-  (count_use at act()'s end) instead of the per-cooldown formula, which stays until both counts are non-zero; a begun
-  emblem is finished in the stat it was begun in. Travel dashes count as landing casts, so Heart of Ruin flips to
-  Focus. 56.4% vs main (1094, ladder 65.7, gen 54.7, fresh gen-s1 56.8): kept. Out-of-fuel turns 9427 vs 8471 (+11%;
-  ladder 794 vs 752, gen 3860 vs 3602, fresh 4773 vs 4117), not broken down. Untried: count a landing only when it
-  hits something (needs a hook at the cast site, strike-search owned).
-- farm-s2 (2026-10-21; FARMING.md stage 2, one group value; branch orch/farm-s2 849239c, integrated as
-  orch/int-farm-s2 6920ca8 on main 73c9b6e): crews from arrivals (fall_time), claimers dropped when they would leave at
-  their recall line, a visible unclaimed partner with no radius, a heal price (camp_risk x damage, free on a recall
-  home) in every cycle, one lexicographic (feasible, value) pick; deleted the risky, shared and help tiers,
-  rally_radius and help_radius. 45.1% vs main (1094, ladder 54.3, gen 42.6, fresh gen-s1 46.3): worse, dropped.
-  Without the heal term in the ranking (orch/int-farm-s2-noheal 543caed): 46.2% (ladder 60.0, gen 44.5, fresh 45.9),
-  so the heal price is not the cause. Out-of-fuel turns 10842 vs 10523. Losses spread over most gen kinds (no blowup).
-  ab_compare on gen: clears +3%, capture gems -6.7%, gold -10.6%, melee camp damage -19%, capture resets +12%: melee
-  champions stop working big monster groups (the old help/shared joins), taking small groups instead. Ladder went the
-  other way (tributed +15%).
-- gaps-ward-churn (2026-10-21; GAPS 3, WARDS.md proposal 3; landed as c04907d): ward_bushes replaces our ward only
-  by a cluster scoring strictly more than the warded one, a score being its tiles within ability_range of here plus
-  within ability_range of the work tile (claimed group's centre, else the waited-at altar). On 6 games vs main afae02d:
-  wards placed -20%, median bush ward life 21 -> 33 rounds, A-B-A swaps 252 vs 283 (claim and wait_altar alternate, so
-  camp-altar-camp still swaps; a persistent work tile would be farm_group, farming-owned). 50.6% vs main 695b6aa (1094,
-  ladder 51.4, gen 50.0, fresh gen-s1 51.2); out-of-fuel turns 10638 vs 10472. Level and sound: kept.
-- final-clearing (2026-10-21; GAPS camp deaths; branch orch/final-clearing 93ac027, integrated as orch/int-final-clearing
-  4b907ac on main 9f89878): most camp deaths with no enemy within 5 (ladder 107 of 146, gen 714 of 898; mostly Elk and
-  Golem, half from full health) crossed the recall line, then took 3.6-4.9 more camp hits walking along the edge of the
-  camp's reach: an Elk or Golem hits every tile in reach alike, so flee_camps' one-step damage tied and "closest to
-  home" circled the camp. flee_camps now adds camp damage x the hits left before leaving every awake camp's reach
-  (Safety::camp_area minus standable, walls ignored as in camp_exit_rounds; one search from here, one board test per
-  step). 4 games 00elkring/00lanes vs 695b6aa: camp deaths 1 vs 7. 49.9% vs main (1094, ladder 47.1, gen 50.4, fresh
-  gen-s1 49.8); out-of-fuel turns 11202 vs 11361. Level and a rule fix: kept. Not fixed: retreat_step walks back into
-  an Elk's reach when the way home passes it (recall_outruns ignores camps; lanes), idle turns under a Golem
-  (dense-camps).
-- final-keepwalk (2026-10-21; GAPS derived thresholds; branch orch/final-keepwalk 06e74a6, integrated as
-  orch/int-final-keepwalk 6db8557 on main 4cfb395): the step search priced a carrier's walk at carried_step_value 210
-  (keep_walk_value 250 less a cast's 40), so a carrier cast a walk-blocking spell only above 250 and Stellar's nuke (140)
-  never did; Intent::keep_walk was set but unread. A carrier's step is now farm_step_value (a step home banks a turn
-  sooner, freeing a turn of farming); cast_at_enemies takes the forgone walk's worth (threshold min_value + walk) in
-  place of a bool, and retreat and the game-ender intercept pass escape_step_value 210, so those paths keep 250 and
-  free stun. Works against the earlier "ranged carriers hold fire to keep walking" loss (47.9%). 52.1% vs main (1094,
-  ladder 51.4, gen 52.1, fresh gen-s1 52.1); out-of-fuel turns 11027 vs 11206. Kept.
-- fight-fuel (2026-10-21; orch/fight-fuel 4e55a0a, not landed): fight simulation fuel. Profile at 100M, six worst
-  maps vs main (decide >= 100k turns, 1103): decide 122k = step_guard 43k (new_fight 3.8 sims ~10k each, exposure 10k, Reach builds
-  5k), want_home 27k (pursuit 7.8k), search 22.6k, prey 12k. A sim is ~26 half-turns at ~370 fuel each (~6 fighters;
-  ends: won 46%, lost 32%, horizon 22%); fill and make_slot ~1.4k of it. Measured and dropped: a cross-turn fight
-  memo by a hash of both sides (0.01 hits a big turn: cooldowns and health move every turn), keeping Reach::at answers
-  across turns while its inputs and the enemy wards hold (no fuel change), quiet stretches through shields (no
-  change). Kept on the branch: simulate() ends once their side cannot take us over the rest of the horizon (12-18% of
-  sims). Identical at 100M (bench 16/16, worst maps 12/12, debug checks of early ends and memo hits clean) but level:
-  worst maps -0.26% fuel, bench +0.08%; real budget bench OOF 95 vs 89, six worst-map games 404 vs 301 (noisy, not
-  better). The per-turn fight memo and per-turn Reach builds already dedupe within a turn; the cost is the sims'
-  per-half-turn work, which needs a cheaper act() rather than fewer duplicate calls.
-- Final check (2026-10-21; main 4afef8c = ab47731's code, after keepwalk and quality). Against hecate-v8 (the
-  session's first baseline): 63.4% of 1094 (95% CI 60.5-66.2; ladder 65.7 of 70, gen 62.3, fresh gen-s2 64.3);
-  out-of-fuel turns 9223 in 743 games vs 1853 in 522. On gen-s1 alone 65.2% of 512 (61.0-69.2), out-of-fuel turns
-  4786 vs 837. Against nemesis, both on their own drafts: 93.0% of 1606 (91.6-94.1; ladder 92.9, gen 94.1, gen-s1
-  92.2, gen-s2 92.6); out-of-fuel turns 11516 in 1153 games vs 0. v8 stays (under the 80% bar).
-- raw-bindings (2026-10-21; a dev confirmed bots may call the engine's host imports directly): the runner (cambc
-  3.0.4, read from its binary) links the imports.h set plus a few undeclared ones: `champion_movement_mask` (our own
-  1-step walk tiles this turn, visible champions removed), `bc_Bitboard_DrawManhattan`, `champion_respawn_timer`
-  (unprobed: would read hidden state if it works for enemies), a host-handle board API and control-ward imports. None
-  saves fuel. `fuel_pause`/`fuel_resume`/`fuel_adjust` link only in debug builds (release refuses the module) and the
-  GC fuel windows only for Python. Host imports charge for their work (`charge_fuel`), as the measured prices show.
-  So the gain left was the SDK wrappers still on hot paths: enemies and allies read raw instead of building a
-  cambc::champion (two ability_props calls, a record per accessor, buffs() allocating) in attack_target, enemy_cast,
-  the strike search's reads and its actions; our abilities read and cast by slot instead of copying
-  cambc::self().abilities(); avoid(), camp_area(), enemy_area() and the dash landings in scratch boards. bench 16/16
-  identical at 100M; total fuel -1.12% (mean a turn -395), p90 -1.4%, p99 -1.5%; turns over 90k -1.12% (-1.5k each),
-  turns over 100k 663 -> 625; every bench map -0.7% to -1.7%. No A/B or real-budget run (fuel-only, byte-identical).
-- dazzling-salvage (2026-10-21; branch claude/dazzling-mccarthy-4kawix reviewed for parts worth keeping): its combat
-  merge waves each A/B'd level or worse against the step before (w0 48.6% vs main, w1 48.5% vs w0, w2fix 49.7% vs w1,
-  waves 3+4 45.7% vs w2fix with out-of-fuel turns +86%), never against main again, and added ~4.4k lines, so none was
-  kept. Its three byte-identical fuel commits (9c840c0 world camps, 80158c8 the Strength bound before outlives and
-  overwhelmed, acd164a the search's terrain window per tile; minus 9c840c0's Phase markers) landed on main together
-  (CHANGES 54): bench.py at 100M vs hecate on 00ambush, 00contest, 01hooks, 00interlock, 8/8 identical replays; total
-  fuel -0.92%, mean a turn 34594 -> 34277, p90 -1.1%, p99 -2.8%; 46164 turns cheaper, 1395 dearer. Not split per
-  commit. Left on the branch: removals 3328bae + 510f8f0 (level at 49.2% vs main, net -130 lines; conflicts with the
-  raw-bindings port) and OOF-ANATOMY.md.
-- dedupes (2026-10-21; an outside agent's "8-15k" list, investigated in code): (1) memoising turns_to_kill_idle by
-  tile and horizon: 16/16 identical but total fuel +0.01% (35 turns ~2k cheaper, 89k turns 2-3 dearer from the memo's
-  per-turn writes); the repeats are rare carrier-at-altar turns. Dropped. Extra, exact: continue_tribute discarded
-  want_home's answer and decide asked again, re-running pursuit; passed through (CHANGES 55): 102/102 identical on 35
-  ladder + 16 gen maps, total fuel -0.004%, fired on 3 turns (4.3k). Not tried: (2) skipping pursuit when fight(here)
-  was won needs no camp damage at here (new_fight sets no us.camp; pursuit does), no enemy still walking in (pursuit's
-  arrives_at), and for Cassi and Issac no self_falls, plus a debug check that striking first and fewer enemies never
-  turn a won fight lost; it targets pursuit's ~8k on fight turns. (3) skipping prey for melee after the search
-  attacked is not a dedupe: prey null vs not decides chase vs farm, and farm would walk out of a fight the search
-  stayed in; it needs an A/B.
-- Check after CHANGES 58-59 (2026-10-21; main 019ce53 vs hecate, both on test drafts; maps/gen and maps/gen-s1
-  regenerated byte-identical): 63.9% of 1094 (699-395, 95% CI 61.0-66.7; ladder 67.1 of 70, gen 62.1, gen-s1 65.2).
-  Out-of-fuel turns 9225 in 645 games vs 1975 in 470 (ladder 830 vs 181, gen 4048 vs 732, gen-s1 4347 vs 1062),
-  nearly all in decide; worst gen-chambers-102206117 682, gen-chambers-102106111 256, gen-hourglass-102205812 255.
-  The same check at 9396ecc: 65.1% (712-382), out-of-fuel turns 7098 vs 1947 (ladder 638, gen 3068, gen-s1 3392), so
-  the 10 commits since raised hyperion's out-of-fuel turns 30% with the win rate level. SHORTCUT lines 257k in 969
-  games vs hecate's 302k in 872.
+- Level: damage-free stuns on any monster hitting an ally; a peel stun; clusters first; spells from range only while an
+  ally tanks; enemy-race and late-race banking; Fish's commit and engage rules; Fish's turn priority; the 150-gold
+  shopping recall; lazy chaining; waiting in bushes; cycle horizons 70-140; a Monster emblem first on big-group maps;
+  Fish's caster draft on Monolith-only and shared-gem maps; Fish's targeting; a chasing caster stopping at nuke range
+  in a bush.
+- Lost: Fish's build table (−5 to −6: no Jungle means 16-50% more camp damage); the fitted engage rule as the
+  retreat/advance rule (33-35%); crews by pick pairs (−4 to −10); solo range openers (−4.6); respawning groups worth
+  1.3x (−6); casters chipping Monoliths on mixed maps; gold-free heal trips (−6); funnelling captures to Stellar (−4 to
+  −5).
+- koi vs hecate games are farm races on each side's own groups (steals ~28 gems a game each way); the first champion
+  death decides. Fish converts engagements with less damage per kill (2.2k against 3.3k), through its killers' Focus
+  and health.
 
-## khaos_v26: a teammate's build on hyperion (2026-10-22)
+## Fights and planning
 
-- `bots/khaos_v26` (deleted once merged) was hyperion at 184fdba plus ~1.2k lines: a fixed 4-5 pick draft (Prism, Vesper Vale, Marcella,
-  Vendetta or Ryth, Heart of Ruin) and turn-order priority copied from a "teacher" bot, Prism keeping its gems and
-  taking captures, Vesper taking over Heart of Ruin's captures, ally arrival delays in farm crew work, ground-spell
-  kiting stations, a chase fight with late allies, ties broken towards the target. Against main 5d27969, each on its
-  own draft (`--no-test-draft`): 61.4% of 1094 (672-422, 95% CI
-  58.5-64.3; ladder 72.9 of 70, gen 62.3, gen-s1 59.0). Out-of-fuel turns 4544 in 536 games vs 1775 in 425. Draft and
-  play are confounded: untested on shared test drafts.
-- Ported main's 40 hyperion commits since 184fdba (to 5d27969) onto it (per-file
-  three-way merge; chase_trade passes main's `falls`, the copied priority kept for the five drafted types). Against
-  main 5d27969, own drafts: 61.5% of 1094 (673-421, 95% CI 58.6-64.4; ladder 55.7 of 70, gen 63.5, gen-s1 60.4), level
-  with the unported 61.4%. Out-of-fuel turns 1950 in 405 games vs main's 1685 in 399 (unported: 4544 in 536).
-  Kept as hyperion (CHANGES 82); 5d27969 frozen as `bots/baselines/hyperion-v1`.
+- Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent
+  (32k fuel, nothing measurable). A farming step priced at a full turn of output cost Ryth's and Ren's stuns 9-17% of
+  their hits.
+- Retreat planner (`plan_turn`, branch plan3): level at 100M and at the real budget, but 2.5x the out-of-fuel turns
+  (a `Safety::blow` per enemy on up to 49 tiles). Also lost: the chase planned as a goal before acting (43.0-46.2%); a
+  stun valued by the turn it denies instead of a flat 80 (48.5%).
+- Reach changed few decisions (want_home 3.5k of 1.4M evaluations) and was level in play; its first version lost to
+  fuel (41.3%).
+- Strike search phase 1's first round lost 38.5% (40.5% even at 100M: deaths +34%) to illegal dashes, moves with no
+  strike after them and fuel; the round that shipped fixed those.
+- Strike phase 4a (retreat turns planned by the search, `orch/int-strike-p4a` 058f55b): 40.8%, but 52.6% at 100M with
+  out-of-fuel turns +135%. The play is sound; the retreat search's cost (mean 21.6k, max 83.5k) must come down first.
+- Step guard folded into the strike search (825ea36, then 8250a4f): no gain in three runs, all slightly down; with test
+  drafts the guard, built after the search, hit its fuel gate twice as often.
+- Enemy two-turn chain in threat_strike (w2-chain): 47.1%. `Safety::trapped` as a want_home trigger and guard
+  (w2-trapped): 46.7%, out-of-fuel turns +60% (up to 24 tiles a turn at ~3-4k).
+- Not fixed: retreat_step walks back into an Elk's reach when the way home passes it (recall_outruns ignores camps);
+  idle turns under a Golem (dense-camps). Untried: count a Heart of Ruin landing as a cast only when it hits something.
+
+## Fuel
+
+Where fuel goes now: [OOF-ANATOMY-2026-10-22.md](hyperion/OOF-ANATOMY-2026-10-22.md) (59% of out-of-fuel turns run out
+in the strike search, 18% in farm; 44% are replays that run out again) and
+[FUEL-PROFILE-2026-10-22.md](hyperion/FUEL-PROFILE-2026-10-22.md).
+
+- Fuel-only changes (byte-identical at 100M) still reroute real-budget games (savings 47.5%, a control burning 2k a turn
+  48.4%): judge them by fuel and out-of-fuel turns, not win rate. Out-of-fuel totals swing by hundreds on three or four
+  long fights (gen-chambers, gen-hourglass); count them on the full suite.
+- Gate removals: every one so far was level at 100M but multiplied out-of-fuel turns, since a "skip when short" gate
+  adds work exactly when fuel is short. Held branches: `fuel/no-gates-1` (23319 vs 6776), `-1b` (4.2x), `-1c` (5.1x;
+  the culprit is pick_up's farm-loop gate, the ward gate a distant second); the turn-order gate (bb414db, +13%); step
+  guard on `stand_of` with limits instead of gates (`fuel/guard-fold`, 861 -> 2931); the farm loop ungated with a limit
+  of 12 estimates (`fuel/farm-ungate`, 2193 vs 416 on 6 heavy maps). With the farm-loop gate removed, out-of-fuel turns
+  went 483 -> 1109, almost all on fight maps, 44% of cuts inside the farm loop.
+- The stale-plan drop (CHANGES 59) costs turns in long fights: the resumed search used to finish and spend the attack
+  and cast, so its replay was cheap; now every replay is a full turn that runs out again.
+- Main vs hecate-v8 (2026-10-21): 65.7% at the real budget, 62.0% with 100M for both. Lifting the limit helps v8 more,
+  so main's extra out-of-fuel turns did not show as lost games; ab.py's `--fuel` sets both sides.
+- Codegen: the ladder builds only src/ with its own flags, so flags can't ship. Locally -flto −1.6% (with the wasm EH
+  options at link), inline-threshold=1000 −0.8%, -Os +6.9%. Hot loops are fully inlined with no spills; the cost is
+  wasm's stack-machine instruction count (40% local.get/set). wasi-sdk-33's llvm-objdump.exe works on the module.
+- Host imports (cambc 3.0.4): the runner links a few undeclared imports (`champion_movement_mask`,
+  `bc_Bitboard_DrawManhattan`, `champion_respawn_timer` unprobed); none saves fuel. `fuel_pause`/`fuel_resume` link
+  only in debug builds. Imports charge for their work.
+- Measured costs: a simple host call is 3 + its arguments; a field search is chunks × (16 + layers) + ~30 over the
+  whole map whatever it touches (100x100: 2.9k for one layer); a WASM loop often costs more than the host calls it
+  replaces. Touching a farm group costs ~150-270 even when `best_value` rejects it (~90% of groups); a non-plain act()
+  (shield kits, mostly Heart of Ruin's scaling) is 44% of simulation fuel, and sims reaching the horizon are 16% of
+  sims but 37% of their fuel.
+
+Tried and no gain (not merged):
+
+- Farm loop: a bound carried across turns (+0.5%; keeping last turn's target would disagree on up to ~29%); best-first
+  by bound (+3.8%); spatial buckets (+0.23%; a version only on 64+ group maps −0.02%, not worth ~190 lines); an exact
+  prefilter (−0.07%).
+- Fights: exact bounds at a sim's start (+0.05%; the settled sims were the cheap ones); a horizon of 9 (6.7% of sims are
+  lost after half-turn 19); shield kits on the plain path (+0.02%); requiet after a death (+0.03%); cross-turn fight
+  memos (0.01-10% hit rates); a per-side cast plan (+37%); act or hurt inlined; cast split out of attack (+13% a sim);
+  a cache of built fight sides (memcpy costs a fuel a byte). Prey: the bound key first is not exact, and the fight sim
+  is not monotone (2 of ~660 settlements wrong).
+- step_guard: no exact cut left (Reach memo 0 collisions, repeated keys 2%).
+- Reach: a way-0 fast path (−0.04%, relies on unprobed shadow_cast origin behaviour); a Strike == Reach shortcut
+  (+0.19%); grouping spots per camp group (+0.48%); tile-set reuse (level: sets cost ~40-90 a build, build_ways and
+  at() are the cost).
+- Strike search: shifted viewer grids (−0.02%); a best-first frontier under the node cap (~500 a node, out-of-fuel turns
+  +27%); per-turn landing classes; a heap for the price loop; keeping each landing grouping for the whole search
+  (f4a8d31, ~4k on the biggest search, too much machinery).
+- World: a per-group visible-member mask (+2.5%); route field reuse (World round 3, c3c874c: −1.2% on default maps but
+  p99 up and heavy maps flat).
+- Codegen-level: raw bitboard reads instead of `is_set`; `always_inline` on the SDK's check() (+2%); flatten on decide
+  (+0.7%); per-round static caches in small inlined helpers (+0.1-0.5%); memoising turns_to_kill_idle (+0.01%).
