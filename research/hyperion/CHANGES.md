@@ -277,3 +277,33 @@ kept. Test drafts only: our own draft is all teacher champions, whose path is un
   engaged band, 10001+) outranked a teacher in top danger.
 - The engaged band (`offer_engaged`) and the duplicate role table are gone; protect (10000+) and kill (20000+) bids
   stay above the shared range, for non-teacher champions only.
+
+## 89: enemies revealed by our own move (2026-10-22)
+
+Against 87 (4f369f9): 51.4% of 1094 (ladder 47.1, gen 52.0, gen-s1 51.4), out-of-fuel turns 4394 vs 4277. Fuel +0.4%
+mean on the wide bench; on the 11 games it leaves identical ~190 a turn (the check), the re-read firing on 0.45% of
+turns.
+
+- Before, the strike search after moving, farm's post-walk `strike_enemy` and Safety read only the enemies seen at
+  turn start: a walk revealing one (1.6% of turns, ~8 a game we could hit at once) fell through to the camp hit.
+- `World::revealed(p, r)`: an enemy unseen at turn start now in sight within r of p (one `in_sight` host call per
+  hidden enemy; false at the tile vision was last read from or last found clear).
+- `see_revealed` re-reads vision and rebuilds Safety (`see_again`, shared with the ward path) when one is within
+  `Strike::max_reach`: after farm's walk before its attack, after the strike plan in `decide()`, and in `act()` before
+  `strike_after`; the end-of-turn heal and shield are judged again.
+- Not caught: an enemy revealed by a failed step onto its tile (we did not move); farm's post-dash path has no
+  `strike_enemy` at all.
+
+## 90: enemy ward sight per owner, bushes included (2026-10-22)
+
+Against 87 (4f369f9): 50.8% of 1094 (ladder 54.3, gen 51.0, gen-s1 50.2), out-of-fuel turns 4286 vs 4368. +0.05%
+fuel on the 24 bench games it leaves identical.
+
+- `Reach` credits an enemy only with its own ward's sight (vision.personal). Before, every visible enemy ward's
+  walls-only shadowcast counted for every enemy, seeing into bushes no ward off them sees.
+- `Wards` (safety.cpp) keeps one mask per enemy: `sdk_wards` (wards in our sight, with owner handles, ~20 fuel) and
+  `sdk_ward_vision` (the engine's mask, ~350), cast again only when that owner's ward moves; looked up on a Reach's
+  first sight query.
+- probe-ward-bush: ward sight follows the bush rules, and `sdk_ward_vision` matches them exactly (cambc-rules.yaml
+  `wards.vision` clarified).
+- Known limit: a fresh enemy ward placed in its own turn is not modelled (see EXPERIMENTS).
