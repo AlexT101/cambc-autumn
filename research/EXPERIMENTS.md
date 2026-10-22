@@ -185,17 +185,20 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
   search reads foes' health and shields live, and skips excludes-walking casts once the goal walked. 100M bench vs
   main: 8/16 identical, mean fuel -0.2%, p99 +0.7%, 155 extra searches in 16 games; no SRCH-EXH/DOM. The live reads
   alone: 16/16 identical.
-- Guard on end tiles only, again (2026-10-22, branch claude/trusting-galileo-t4s7rm; A/B pending; as 8250a4f, on the
+- Guard on end tiles only, again (2026-10-22, 7b85cc0; kept and merged, CHANGES 58; as 8250a4f, on the
   post-goal search). The search's moves may pass guarded tiles, the guard is placed again where the search left us,
   and a dash widens it only while a cast is left; the search's own tile is never a dropped end. Debug lines: SRCH-PASS
   (a plan's first move onto a guarded tile, ending elsewhere) and SRCH-STRANDED (moves stopped short of the end tile).
   Passing is rare: 7 in 7,888 searches (100M bench), 2 in 7,391 (real budget), 7 in 11,115 (32 test-draft gen-s1
   games); none stranded, guarded or not. So 8250a4f's play changes come mostly from the guard placed again and the
-  radius.
+  radius. A/B vs main 9e75d70: 48.9% of 1094 (ladder 41.4 of 70, gen 47.3, fresh gen-s1 51.6), level; out-of-fuel
+  turns 8284 vs 7918 (+4.6%, likely the second step_guard after a search move; unmeasured). SRCH-PASS 364 in 251
+  games; SRCH-STRANDED 79 in 63 games, all failed plans, 3 on a guarded tile. Kept as level and logical; its fuel is
+  for the fuel work.
 
 ### Fuel
 
-- Stale-plan drop alone (2026-10-22, branch claude/trusting-galileo-t4s7rm; A/B pending). A strike search that ran out
+- Stale-plan drop alone (2026-10-22, f4eee8f; kept and merged without an A/B, CHANGES 59). A strike search that ran out
   of fuel resumes next round and carried out last round's plan (all real-budget SRCH-REFUSED lines); now it throws
   StaleTurn before acting, and main.cpp replays the round fresh on the fuel left. Bench 16/16 identical at 100M.
   On 32 test-draft gen-s1 games out-of-fuel turns 332 vs main's 147: the replay starts on the fuel left with every
@@ -204,7 +207,8 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
   the resumed leftover fell from a mean 30.7k to 6.1k (max 94k -> 16k), but out-of-fuel turns rose to 419 (main 138).
   Long fights cost more than a turn every round: main's resumed search finishes and carries out its plan, spending the
   attack and cast, so the replay is cheap and the champion acts every round; dropping the plan makes every replay a
-  full turn that runs out again, often before acting. Not worth an A/B; drop both.
+  full turn that runs out again, often before acting. Both kept (184fdba) on the bet that heavy fight turns will
+  fit a turn once their fuel is fixed; until then they cost turns in long fights. Not A/B'd.
 - Savings rounds, byte-identical at 100M: round 1 −11% a turn; round 2 (bush clusters grown in the warm-up, measured
   worst costs in the estimates); exact fight simulation (fighters made once a turn, quiet turns reused; trade 4.7k ->
   4.0k a call); Reach (ways kept per recipe, static windows once per tile, lazy builds); WASM-aware (−4.2%); host-op

@@ -391,3 +391,13 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    at 100M, total fuel -0.03%, p99 -0.2%): the exhaustive enumerator (SRCH-EXH) and the old-menu comparison (SRCH-DOM),
    which never fired, with the Node fields (pos, moved), tables and Tile::danger only they used. SRCH and SRCH-REFUSED
    lines stay.
+58. 2026-10-22 (not yet submitted). The strike search's moves may pass guarded tiles: only where they end is exposed,
+   so step_guard's tiles are dropped as end tiles only and the search's walk ignores the guard. The guard is placed
+   again from where the search left us when it moved us and we can still step or dash, and a dash widens it to radius
+   2 only while a cast is left. Debug lines SRCH-PASS and SRCH-STRANDED (tools/replay/debug_lines.py). 48.9% vs main
+   (1094, ladder 41.4, gen 47.3, fresh 51.6); out-of-fuel turns 8284 vs 7918.
+59. 2026-10-22 (not yet submitted). A turn that ran out of fuel and resumed in the next round is abandoned, not carried
+   out on last round's beliefs: the strike search throws StaleTurn before acting, and round checks (throw_if_stale in
+   util.h, ~18 fuel) stop it in each search node and priced tile and every 8 fight half-turns; main.cpp then replays
+   the round. Bench 16/16 identical at 100M. Not A/B'd: on 32 test-draft gen-s1 games out-of-fuel turns 419 vs main's
+   138, as replays of long fights run out again; kept for after the fuel work.
