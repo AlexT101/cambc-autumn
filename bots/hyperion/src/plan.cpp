@@ -630,6 +630,27 @@ struct Search {
             if (sp.slot >= 0 && sp.unit && !sp.excl) return true;
         return false;
     }
+    // Foes the start tile's attack hits without a kill, off their spawn and with no partner to
+    // cap the damage: on them hit_worth sums the same in either order. Set as the root expands,
+    // its attacks first.
+    std::uint16_t soft_first = 0;
+    // An attack after moves and casts alone, the last move followed by a strike, is offered
+    // earlier from the start tile, at the same value and with more end tiles. A spell's cancelled
+    // recall needs the foe to outlive it, so a recalling foe keeps its order.
+    bool hoisted(const Node& s, int t) const {
+        if (s.owed || s.depth == 0 || splash || vendetta || !(soft_first >> t & 1)) return false;
+        for (int k = 0; k < s.depth; ++k) {
+            const Op op = stack[k].op;
+            if (op != Op::walk && op != Op::dash && (op != Op::spell || u[t].recall)) return false;
+        }
+        return true;
+    }
+    // A walk then an attack the start tile allows leaves the state the attack then the walk does,
+    // which is grown first and keeps every walk tile: only the leaf itself is its own.
+    bool walked_attack(const Node& s) const {
+        return s.depth == 2 && melee && stack[0].op == Op::walk && stack[1].op == Op::attack &&
+               (u[stack[1].unit].legal & gbit(cell(here)));
+    }
 
     void grow(const Node& s);
     void settle(const Node& s);
@@ -1394,14 +1415,9 @@ void Search::settle(const Node& s) {
     }
     case dashed_walked: {
         const Grid from = (s.lset ? s.lset : plain_here) & s.req_d;
-        Grid ends = dilate(from) & free_ & s.req_e;
-        // A landing itself is an end only when walked to from another.
-        each_bit(ends & from, [&](int c) {
-            if (!(dilate(gbit(c)) & from & ~gbit(c))) ends &= ~gbit(c);
-        });
-        offer(ends, v, s, leaf, [&](int c, vec2& w, vec2& d) {
+        offer(dilate(from) & free_ & s.req_e, v, s, leaf, [&](int c, vec2& w, vec2& d) {
             w = tile(c);
-            d = tile(std::countr_zero(dilate(gbit(c)) & from & ~gbit(c)));
+            d = tile(std::countr_zero(dilate(gbit(c)) & from));
         });
         break;
     }
@@ -1427,7 +1443,7 @@ void Search::grow(const Node& s) {
     throw_if_stale();
     ++nodes;
     settle(s);
-    if (s.depth == max_depth) return;
+    if (s.depth == max_depth || walked_attack(s)) return;
     const UnitHealths saved = h;
     const auto push = [&](Node& c, Act a) {
         stack[s.depth] = a;
@@ -1449,10 +1465,15 @@ void Search::grow(const Node& s) {
     };
     if (s.attack)
         for (int t = 0; t < n; ++t) {
-            if (h[t] <= 0 || !open(u[t].legal)) continue;
+            if (h[t] <= 0 || !open(u[t].legal) || hoisted(s, t)) continue;
             Node c = s;
-            if (legal_at(c, u[t].legal) && hit_unit(t, c)) push(c, {Op::attack, static_cast<std::int8_t>(t)});
-            else h = saved;
+            if (legal_at(c, u[t].legal) && hit_unit(t, c)) {
+                if (s.depth == 0 && h[t] > 0 && u[t].link < 0 && !u[t].spawn && partner(t) >= saved[t])
+                    soft_first |= static_cast<std::uint16_t>(1u << t);
+                push(c, {Op::attack, static_cast<std::int8_t>(t)});
+            } else {
+                h = saved;
+            }
         }
     if (s.cast && s.reset && !s.attack) {
         Node c = s;
@@ -1464,9 +1485,12 @@ void Search::grow(const Node& s) {
         c.walk = false, c.owed = true;
         if (!melee) c.attack = false;
         c.seg = s.seg == at_start ? walked : dashed_walked;
-        const Grid dom = c.seg == walked                ? free_n
-                         : s.lset                        ? dilate(s.lset & s.req_d) & free_
-                                                         : dom_dw & dilate(plain_here & s.req_d);
+        // A walk back onto a landing is the dash alone, with the walk to spare.
+        if (c.seg == dashed_walked) c.req_e = ~((s.lset ? s.lset : plain_here) & s.req_d);
+        const Grid dom = (c.seg == walked ? free_n
+                          : s.lset        ? dilate(s.lset & s.req_d) & free_
+                                          : dom_dw & dilate(plain_here & s.req_d)) &
+                         c.req_e;
         if (dom && strikes_left(c)) push(c, {Op::walk});
     }
     if (s.cast && s.dash && (s.seg == at_start || s.seg == walked)) {
@@ -1476,6 +1500,9 @@ void Search::grow(const Node& s) {
         if (!first) {
             reach = 0;
             each_bit(free_n & s.req_w, [&](int m) { reach |= landings(m); });
+            // Straight after the walk, a landing the start tile reaches is the dash alone, with
+            // the walk to spare.
+            if (stack[s.depth - 1].op == Op::walk) reach &= ~land_here;
         }
         Node c = s;
         c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.req_d = reach, c.owed = true;
