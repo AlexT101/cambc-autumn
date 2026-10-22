@@ -579,7 +579,8 @@ struct Search {
 
     [[gnu::always_inline]] bool hit_unit(int t, Node& s);
     [[gnu::always_inline]] bool spell_unit(const Spell& sp, int t, Node& s);
-    [[gnu::always_inline]] bool land_at(vec2 L, Node& s);
+    // A landing on cell c, of a class already found.
+    [[gnu::always_inline]] bool land_at(int c, Node& s);
     [[gnu::always_inline]] float centre_value(const Centre& c, int slot, const Node& s, bool& ok) const;
     void hit_centre(const Centre& c, int slot, Node& s);
     bool wake(std::uint32_t touched, vec2 E, float& cost);
@@ -633,12 +634,18 @@ struct Search {
     void grow(const Node& s);
     void settle(const Node& s);
     template <class Mid> void offer(Grid ends, float v, const Node& s, int& leaf, Mid&& mid);
-    std::uint16_t removed(const Node& s) const {
+    // For the last kills and stuns asked: siblings mostly share them.
+    std::uint32_t removed_key = ~0u;
+    std::uint16_t removed_last = 0;
+    std::uint16_t removed(const Node& s) {
+        const std::uint32_t key = s.dead | std::uint32_t{s.stunned} << 16;
+        if (key == removed_key) return removed_last;
         std::uint16_t r = 0;
         const std::uint32_t all = (1u << foes) - 1;
         for (std::uint32_t m = s.dead & all; m; m &= m - 1) r |= u[std::countr_zero(m)].drop_kill;
         for (std::uint32_t m = s.stunned & ~s.dead & all; m; m &= m - 1) r |= u[std::countr_zero(m)].drop_stun;
-        return r;
+        removed_key = key;
+        return removed_last = r;
     }
     Seq concrete(int c, bool keep, int entry, bool shields) const {
         const auto& ch = (keep ? tables.kept[c] : best[c]).e[entry];
@@ -1204,11 +1211,12 @@ void Search::hit_centre(const Centre& c, int slot, Node& s) {
     if (spells[slot].excl) s.excl = true, s.walk = false;
 }
 
-bool Search::land_at(vec2 L, Node& s) {
+bool Search::land_at(int c, Node& s) {
     float value = 0, retaliation = 0;
     bool struck = false;
-    const int c = cell(L);
-    for (std::uint32_t near = land_foes(c); near; near &= near - 1) {
+    const vec2 L = tile(c);
+    const int k = cell_class[c];
+    for (std::uint32_t near = class_foes[k]; near; near &= near - 1) {
         const int t = std::countr_zero(near);
         const auto& x = u[t];
         if (h[t] <= 0) continue;
@@ -1220,7 +1228,7 @@ bool Search::land_at(vec2 L, Node& s) {
         lose(t, x.land, s);
     }
     if (retaliation >= health) return false;
-    s.touched |= land_touch(c);
+    s.touched |= class_touch[k];
     s.value += value - retaliation;
     s.owed = !struck;
     return true;
@@ -1485,7 +1493,7 @@ void Search::grow(const Node& s) {
             std::copy_n(land_groups.begin(), kinds, alike.begin());
             for (int i = 0; i < kinds; ++i) {
                 Node d = c;
-                if (land_at(tile(std::countr_zero(alike[i])), d)) {
+                if (land_at(std::countr_zero(alike[i]), d)) {
                     d.lset = alike[i];
                     push(d, {Op::dash});
                 } else {
