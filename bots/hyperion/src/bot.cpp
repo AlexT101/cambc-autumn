@@ -3222,9 +3222,10 @@ const ChampionBelief* game_ender(const World& world) {
     const ChampionBelief* best = nullptr;
     int best_steps = unreachable;
     for (const auto& e : world.enemies) {
-        if (!e.alive || !e.visible || test(world.map().near_enemy_spawn, e.pos)) continue;
-        // A tribute scores only the tributing body's bag.
-        if ((e.channel == Channel::tribute ? e.gems : pair_gems(world, e)) < need) continue;
+        if (!e.alive || !e.visible) continue;
+        const bool tributing = e.channel == Channel::tribute;
+        // A tribute scores only the tributing body's bag; one by its spawn can still be stunned or locked.
+        if ((tributing ? e.gems : pair_gems(world, e)) < need || (!tributing && test(world.map().near_enemy_spawn, e.pos))) continue;
         if (!here) {
             if (winning_bag(world)) return nullptr;
             here = my_position();
