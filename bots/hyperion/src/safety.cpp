@@ -981,7 +981,7 @@ struct CampTile {
 };
 std::array<CampTile, 100 * 100> camp_tiles;
 
-bool live_camp(const World& world, vec2 p) {
+const CampTile& camp_tile(const World& world, vec2 p) {
     auto& t = camp_tiles[static_cast<std::size_t>(p.x + p.y * world.map().width)];
     if (!t.known) {
         t.known = true;
@@ -993,10 +993,24 @@ bool live_camp(const World& world, vec2 p) {
                 if (members[i].pos == p) t.member = static_cast<std::uint8_t>(i);
         }
     }
-    if (t.group < 0 || t.member == 255) return false;
-    const auto& c = world.camps[t.group];
-    return c.state == CampState::alive && c.health[t.member] > 0;
+    return t;
 }
+
+bool live_member(const World& world, int group, int member) {
+    const auto& c = world.camps[static_cast<std::size_t>(group)];
+    return c.state == CampState::alive && c.health[static_cast<std::size_t>(member)] > 0;
+}
+
+// The camp members on the camp tiles of the window around each tile, by window bit, found on its
+// first build there: liveness is then read without looking each tile up. By tile, the first spot
+// in the pool and the count + 1 (0: not yet found).
+struct CampSpot {
+    std::uint8_t bit, member;
+    std::int16_t group;
+};
+std::vector<CampSpot> spot_pool;
+std::array<std::uint32_t, 100 * 100> spots_from;
+std::array<std::uint8_t, 100 * 100> spots_count;
 
 // Whether a visible enemy ward sees p this round: a target there is in sight of whoever owns it.
 // What the wards see is cast again only when they change, and read as packed bits when the
@@ -1261,14 +1275,25 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     Window pass = st.pass, land = st.land & ~occupied;
     const Window& camps = st.camps;
     sets_reusable_ = !camps;
-    for (int word = 0; word < 2; ++word)
-        for (std::uint64_t bits = word ? camps.hi : camps.lo; bits; bits &= bits - 1) {
-            const int i = 64 * word + std::countr_zero(bits);
-            if (live_camp(world, {origin_.x - win_r + i % win_n, origin_.y - win_r + i / win_n})) {
-                pass &= ~tables.bits[static_cast<std::size_t>(i)], land &= ~tables.bits[static_cast<std::size_t>(i)];
-                units_ |= tables.bits[static_cast<std::size_t>(i)];
-            }
+    if (camps) {
+        const auto oi = static_cast<std::size_t>(origin_.x + origin_.y * world.map().width);
+        if (!spots_count[oi]) {
+            if (spot_pool.empty()) spot_pool.reserve(512);
+            spots_from[oi] = static_cast<std::uint32_t>(spot_pool.size());
+            for (int word = 0; word < 2; ++word)
+                for (std::uint64_t bits = word ? camps.hi : camps.lo; bits; bits &= bits - 1) {
+                    const int i = 64 * word + std::countr_zero(bits);
+                    const auto& t = camp_tile(world, {origin_.x - win_r + i % win_n, origin_.y - win_r + i / win_n});
+                    if (t.group >= 0 && t.member != 255) spot_pool.push_back({static_cast<std::uint8_t>(i), t.member, t.group});
+                }
+            spots_count[oi] = static_cast<std::uint8_t>(spot_pool.size() - spots_from[oi] + 1);
         }
+        Window live;
+        for (const CampSpot *s = spot_pool.data() + spots_from[oi], *end = s + spots_count[oi] - 1; s != end; ++s)
+            if (live_member(world, s->group, s->member)) live |= tables.bits[s->bit];
+        pass &= ~live, land &= ~live;
+        units_ |= live;
+    }
     const auto walk = [&](Window s) { return s | (dilate(s) & land); };
     const auto dash_from = [&](Window s) {
         const Window first = dilate(s) & pass;
