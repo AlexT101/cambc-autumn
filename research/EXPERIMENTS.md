@@ -198,6 +198,12 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
 
 ### Fuel
 
+- **Out-of-fuel anatomy of main d59ccf7** (2026-10-22, [OOF-ANATOMY-2026-10-22.md](hyperion/OOF-ANATOMY-2026-10-22.md)).
+  Four OOF-heavy maps, both sides, instrumented copy.
+  - 59% of OOF turns run out inside the strike search (Heart of Ruin 75% of those, mostly `grow`), and 18% in `farm`.
+  - Before the search, world, `want_home` and `step_guard` have spent ~50k (p50).
+  - 44% of OOF turns are replays that run out again, 80% of them in the same step.
+  - At the real budget the step-guard and prey gates hold those steps to 18k and 2k; their fuel goes to the search.
 - **Profile of main bbf6f05** (2026-10-22, [FUEL-PROFILE-2026-10-22.md](hyperion/FUEL-PROFILE-2026-10-22.md)). Wide
   bench, 52 test-draft games against hecate.
   - At 100M: mean 35.3k, p99 106.8k, 1.32% of turns over 100k (hecate 31.4k, 95.6k, 0.81%).
