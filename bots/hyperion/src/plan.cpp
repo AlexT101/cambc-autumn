@@ -269,8 +269,8 @@ struct Leaf {
 
 struct Choice {
     float raw; // hits less prices and wakes, plus a heal and an unused walk
-    int leaf;
-    vec2 w, d;          // its walk and dash tiles
+    std::int16_t leaf;
+    std::int8_t w, d;   // its walk and dash cells
     std::int8_t mate;   // healed, or -1
     bool first;         // the heal cast from the start tile, before the moves
     std::uint16_t removed; // enemies out of the end tile's danger, by index
@@ -289,7 +289,7 @@ struct Front {
         int k = 0, low = -1;
         for (int i = 0; i < n; ++i)
             if ((e[i].removed & r) != e[i].removed || e[i].raw > raw) {
-                e[k] = e[i];
+                if (k != i) e[k] = e[i];
                 if (low < 0 || e[k].raw < e[low].raw) low = k;
                 ++k;
             }
@@ -654,7 +654,7 @@ struct Search {
 
     void grow(const Node& s);
     void settle(const Node& s);
-    template <class Mid> void offer(Grid ends, float v, const Node& s, int& leaf, Mid&& mid);
+    template <class Mid> void offer(Grid ends, float v, const Node& s, std::int16_t& leaf, Mid&& mid);
     // For the last kills and stuns asked: siblings mostly share them.
     std::uint32_t removed_key = ~0u;
     std::uint16_t removed_last = 0;
@@ -672,8 +672,8 @@ struct Search {
         const auto& ch = (keep ? tables.kept[c] : best[c]).e[entry];
         Seq q = tables.leaves[ch.leaf].seq;
         for (int i = 0; i < q.n; ++i) {
-            if (q.a[i].op == Op::walk) q.a[i].tile = ch.w;
-            if (q.a[i].op == Op::dash) q.a[i].tile = ch.d;
+            if (q.a[i].op == Op::walk) q.a[i].tile = tile(ch.w);
+            if (q.a[i].op == Op::dash) q.a[i].tile = tile(ch.d);
         }
         if (ch.mate >= 0) {
             const Act heal_act{Op::heal, ch.mate};
@@ -1335,9 +1335,9 @@ Node Search::root() const {
     return s;
 }
 
-// Offers the leaf at each end tile in `ends`; mid(c, w, d) names the walk and dash tiles for one
+// Offers the leaf at each end tile in `ends`; mid(c, w, d) names the walk and dash cells for one
 // it improves.
-template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& leaf, Mid&& mid) {
+template <class Mid> void Search::offer(Grid ends, float v, const Node& s, std::int16_t& leaf, Mid&& mid) {
     ends &= ~guarded;
     const std::uint16_t r = ends ? removed(s) : 0;
     each_bit(ends, [&](int c) {
@@ -1357,14 +1357,14 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& 
             got |= gbit(c);
             if (i < 0) return;
             if (leaf < 0) {
-                leaf = n_leaves++;
+                leaf = static_cast<std::int16_t>(n_leaves++);
                 auto& l = tables.leaves[leaf];
                 l.seq.n = s.depth;
                 for (int k = 0; k < s.depth; ++k) l.seq.a[k] = stack[k];
                 for (int t = 0; t < foes; ++t)
                     if (u[t].hor >= 0) l.hor[u[t].hor] = h[t];
             }
-            vec2 w{-1, -1}, d{-1, -1};
+            std::int8_t w = -1, d = -1;
             mid(c, w, d);
             fr.e[i] = {val, leaf, w, d, mate, first, r};
         };
@@ -1382,13 +1382,13 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& 
 void Search::settle(const Node& s) {
     if (s.owed) return;
     const float v = leaf_value(s);
-    int leaf = -1;
+    std::int16_t leaf = -1;
     switch (s.seg) {
-    case at_start: offer(gbit(cell(here)), v, s, leaf, [](int, vec2&, vec2&) {}); break;
-    case walked: offer(free_n & s.req_w, v, s, leaf, [&](int c, vec2& w, vec2&) { w = tile(c); }); break;
+    case at_start: offer(gbit(cell(here)), v, s, leaf, [](int, std::int8_t&, std::int8_t&) {}); break;
+    case walked: offer(free_n & s.req_w, v, s, leaf, [](int c, std::int8_t& w, std::int8_t&) { w = static_cast<std::int8_t>(c); }); break;
     case dashed: {
         const Grid ends = (s.lset ? s.lset : plain_here) & s.req_d;
-        offer(ends, v, s, leaf, [&](int c, vec2&, vec2& d) { d = tile(c); });
+        offer(ends, v, s, leaf, [](int c, std::int8_t&, std::int8_t& d) { d = static_cast<std::int8_t>(c); });
         break;
     }
     case walked_dashed: {
@@ -1398,7 +1398,7 @@ void Search::settle(const Node& s) {
         // Each end's walk tile: the first mid it lands from, found for all ends on first need.
         std::array<std::int8_t, 49> first;
         bool firsts = false;
-        offer(ends & allowed, v, s, leaf, [&](int c, vec2& w, vec2& d) {
+        offer(ends & allowed, v, s, leaf, [&](int c, std::int8_t& w, std::int8_t& d) {
             if (!firsts) {
                 firsts = true;
                 Grid left = ends & allowed;
@@ -1408,16 +1408,16 @@ void Search::settle(const Node& s) {
                     each_bit(now, [&](int e) { first[e] = static_cast<std::int8_t>(m); });
                 });
             }
-            w = tile(first[c]);
-            d = tile(c);
+            w = first[c];
+            d = static_cast<std::int8_t>(c);
         });
         break;
     }
     case dashed_walked: {
         const Grid from = (s.lset ? s.lset : plain_here) & s.req_d;
-        offer(dilate(from) & free_ & s.req_e, v, s, leaf, [&](int c, vec2& w, vec2& d) {
-            w = tile(c);
-            d = tile(std::countr_zero(dilate(gbit(c)) & from));
+        offer(dilate(from) & free_ & s.req_e, v, s, leaf, [&](int c, std::int8_t& w, std::int8_t& d) {
+            w = static_cast<std::int8_t>(c);
+            d = static_cast<std::int8_t>(std::countr_zero(dilate(gbit(c)) & from));
         });
         break;
     }
