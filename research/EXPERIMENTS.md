@@ -367,6 +367,22 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
     1967 in 457.
   - Vs bbf6f05 (main at the session's start): 54.2% of 1094 (51.2-57.1; ladder 55.7, gen 53.5, gen-s1 54.7);
     out-of-fuel turns 3323 in 511 games vs 8616 in 672 (-61%).
+- Quiet half-turns with a shielded weakest (2026-10-22, fuel/sim-shield 53e8935; kept and merged, CHANGES 80).
+  play_quiet gave up whenever either side's weakest held a shield; a noinline `play_shielded` lands each quiet hit
+  shield-first with hurt()/spill()'s float operations and stops before anyone would fall; shield expiry stays in act().
+  0 mismatches over 33,755 fights (debug cross-check). Wide bench vs merge 5 52/52 identical: total -0.06%, p99 -0.2%,
+  turns >100k 1944 -> 1917.
+  - Shield kits on the plain path with a side-level shield_end (not merged): exact, moved ~35k of ~140k non-plain acts,
+    but +0.02%. Requiet after a death (not merged): +0.03%.
+  - The non-plain acts left are mostly inexact kits (Heart of Ruin's missing-health scaling, ~79k of ~106k) and
+    arrivals (~26k).
+- Reach tile-set reuse (2026-10-22, fuel/reach-reuse, no commit). Reusing sets keyed on (pass, land, kind), or on the
+  origin plus the live window, reuses 16-22% of builds with 0 mismatches but is level to +0.01-0.03%: the sets cost
+  only ~40-90 a build; a build's cost is build_ways and at().
+- Farm spatial buckets (2026-10-22, fuel/farm-buckets a0f8a1b; not merged). 8x8 cells holding max worth and min
+  health, with a dirty-group bitmask. Exact (52/52 identical); gen-band empty-handed farm calls 36k -> 20-24k, but
+  wide +0.23%: a codegen tax of ~+350 a farm call on maps that never list, carrying calls (~45% on gen-band, ~50k)
+  untouched, and round 1 +70-88k a body on gen-band.
 - Savings rounds, byte-identical at 100M: round 1 −11% a turn; round 2 (bush clusters grown in the warm-up, measured
   worst costs in the estimates); exact fight simulation (fighters made once a turn, quiet turns reused; trade 4.7k ->
   4.0k a call); Reach (ways kept per recipe, static windows once per tile, lazy builds); WASM-aware (−4.2%); host-op

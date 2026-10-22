@@ -503,3 +503,8 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    gen-chambers-102106111 b alone 22 -> 91). Vs hecate 65.7% of 1094 (62.9-68.5; ladder 71.4, gen 65.8, gen-s1
    64.8), out-of-fuel turns 2951 vs 1967. Vs bbf6f05 (main at the session's start) 54.2% of 1094 (51.2-57.1),
    out-of-fuel turns 3323 vs 8616 (-61%).
+80. 2026-10-22 (not yet submitted). Quiet fight half-turns with a shielded weakest (fuel/sim-shield 53e8935),
+   behaviour-identical, merged in fuel/merge-6: play_quiet no longer gives up when a side's weakest holds a shield; a
+   noinline `play_shielded` lands quiet hits shield-first with hurt()/spill()'s float operations and stops before
+   anyone falls; shield expiry stays in act(). 0 mismatches over 33,755 fights. Wide bench at 100M vs merge-5 52/52
+   identical: total -0.06%, p99 91.3k -> 91.2k, turns >100k 1944 -> 1917.
