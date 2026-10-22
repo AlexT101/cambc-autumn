@@ -213,7 +213,8 @@ void make_fighter(const ChampionBelief& c, int turn_round, Fighter& f, Kit& kit)
     f.max_health = c.max_health;
     const bool shielded = c.shield > 0 && (c.visible || c.is_self);
     f.shield = shielded ? c.shield : 0;
-    f.shield_until = shielded ? std::max(1, c.shield_turns) : never;
+    // At 0 turn ends left it is lost at turn 0's start, though it still absorbs what comes before.
+    f.shield_until = shielded ? c.shield_turns : never;
     f.retaliation = c.retaliation();
     f.link = -1;
 }
