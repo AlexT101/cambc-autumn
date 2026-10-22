@@ -26,6 +26,7 @@ cambc run rules-verification/probes/<A> rules-verification/probes/<B> --map <map
 | `turn`, `abilities` (cooldown, excludes walking, reset, dash, targets) | `probe-allowances`, `probe-allowances-b` |
 | `abilities.stun`, `combat.kill`, `death`, `recall`, `map.spawn` | `probe-stun`, `probe-stun-b`, `probe-stunstack` |
 | `recall` with a shield | `probe-shield-recall` |
+| `economy.emblems` Durability with a shield (the -10% applies before absorption) | `probe-durability-shield` |
 | `camps.wake`, `camps.sleep`, `camps.attack` | `probe-camps`, `probe-camps-b`, `probe-stunwake`, `probe-sleep-range`, `probe-sleep-timing`; ties: `probe-denial` scenario 6 |
 | `capture`, `gems.tribute`, `economy.gold`, `economy.bonuses` | `probe-capture`, `probe-capture-b`, `probe-reset`, `probe-reset-b`, `probe-denial`; contest: `probe-misc` scenario 2 |
 | `combat.modifiers`, `altar_locks`, `economy.health_purchase` | `probe-misc`, `probe-misc-b` |
