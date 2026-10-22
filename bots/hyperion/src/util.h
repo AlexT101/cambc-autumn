@@ -145,6 +145,15 @@ inline bool has_stun(cambc::handle_champion_t c) {
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
     return false;
 }
+// A camp in sight is stunned: it skips its next attack. False out of sight, without a throw.
+inline bool camp_stunned(std::uint32_t camp) {
+    static std::array<cambc::detail::camp_buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+    std::uint32_t n = 0;
+    if (cambc::detail::sdk_camp_buffs(camp, buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n) != 0) return false;
+    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
+    return false;
+}
 // The active shield's value, 0 if none.
 inline float shield_value(cambc::handle_champion_t c) {
     static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;

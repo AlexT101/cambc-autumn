@@ -2582,6 +2582,9 @@ PackZone& pack_boxes(const World& world) {
     return pz;
 }
 
+// After a re-read of vision: the next query builds the boxes from what we see now.
+void forget_pack_zone(const World& world) { pack_zone_state(world).round = -1; }
+
 bool in_pack_zone(const World& world, vec2 p) {
     // Each box lies within pack_radius of every member of its subset.
     bool near = false, recent = false;
@@ -3126,8 +3129,9 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
     if (!memory.banking) return false;
     const vec2 here = my_position();
     if (safety.threatened(here)) return false;
+    // With no walk out (a crystal's pocket), the trip by way of spawn is the only one.
     const int walk = pathing.to_any_altar().at(here);
-    return walk != unreachable && home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk);
+    return home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk);
 }
 
 // No enemy seen this round or last could walk into reach before the recall lands: standing
@@ -4103,6 +4107,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         // Safety's beliefs are fixed for its life: what we see changed, so it starts again.
         std::destroy_at(&safety);
         std::construct_at(&safety, world);
+        forget_pack_zone(world);
         home.reset();
     }
 

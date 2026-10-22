@@ -241,7 +241,9 @@ public:
     // At least damage_bound(p), counting every unseen threat at its most: no host queries or
     // strikes for them.
     float damage_ceiling(vec2 p, bool double_unacted = false);
-    float camp_damage(vec2 p, bool worst = true);
+    // `next`: in the next camp phase only, which a stunned member skips (rules: abilities.stun);
+    // else in each camp phase while we stay.
+    float camp_damage(vec2 p, bool worst = true, bool next = false);
     // Where a live member of an awake (or maybe awake) group would attack us: within its range, and
     // no visible champion nearer it (or as near and acting first).
     const bitboard& camp_area();
@@ -302,7 +304,8 @@ public:
     // Their turns for the visible enemies and camps to kill us at p if we never act (channelling),
     // each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
     int turns_to_kill_idle(vec2 p, int horizon);
-    // Could the credible threats and camps kill us at p before our next turn?
+    // Could the credible threats and camps kill us at p before our next turn? Against our health
+    // and shield now: Ren's retaliation and our shield cast this turn count once refreshed.
     bool lethal(vec2 p);
 
     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
@@ -312,6 +315,8 @@ public:
         float strength; // softened by our emblems: its damage to us
         float weight;
         int reach; // farthest distance at which it would pick us
+        std::uint32_t handle;
+        bool stunned; // in sight and stunned: it skips the next camp phase
     };
     std::span<const CampHit> awake_members();
 
@@ -362,6 +367,7 @@ private:
     std::uint16_t reached_ = 0; // bit i: reach_pool()[i] is built for enemies[i] this turn
     bool built_ = false;
     bool refresh_ = false;
+    float own_health_ = -1; // lethal()'s health and shield, read on first need since the last refresh
     std::array<std::int8_t, 16> gone_{}; // by enemy index: 0 unknown, 1 alive, 2 dead
     bool listed_ = false;
     std::uint32_t seen_ = 0, unseen_ = 0;
@@ -386,9 +392,10 @@ private:
         float damage;
         bool valid;
     };
-    // camp_damage() by `worst`: the last tile asked. Reset whenever the members are found.
+    // camp_damage() by `worst`, and worst for the next phase: the last tile asked. Reset whenever the
+    // members are found or a stun is read.
     union {
-        std::array<CampMemo, 2> camp_memo_;
+        std::array<CampMemo, 3> camp_memo_;
     };
     // camp_area() and enemy_area() are kept in scratch boards: allocating one each turn costs ~550.
     bool camp_area_known_ = false, enemy_area_known_ = false;

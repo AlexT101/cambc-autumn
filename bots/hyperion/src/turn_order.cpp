@@ -232,7 +232,7 @@ void offer_channel(const ChampionBelief& self, cambc::champion_state state, Safe
 bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, bool seen) {
     // With none in sight the ceiling places nothing, and its unseen strikes cost less.
     if (!seen) return safety.damage_ceiling(self.pos) >= self.health;
-    float damage = safety.camp_damage(self.pos);
+    float damage = safety.camp_damage(self.pos, true, true);
     bool hit = false;
     for (const auto& e : world.enemies) {
         if (!e.alive || !(e.visible || e.tracked)) continue;
@@ -248,7 +248,7 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
 // Enemies yet to act this round strike before our next turn whatever the order; acting first
 // next round denies the second strike of those, and the only one of the others.
 void offer_escape(const World& world, const ChampionBelief& self, Safety& safety, Wish& wish) {
-    float damage = safety.camp_damage(self.pos);
+    float damage = safety.camp_damage(self.pos, true, true);
     bool enemy = false;
     std::array<Safety::ThreatAt, 16> threats;
     const int n = safety.threats_at(self.pos, threats);

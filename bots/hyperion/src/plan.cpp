@@ -269,6 +269,7 @@ struct Node {
     std::uint16_t stunned = 0;     // units stunned this turn
     std::uint16_t dead = 0;        // units killed this turn
     float value = 0, pending = 0; // pending: a cast's price a Vendetta kill would refund
+    float hurt = 0;               // Ren's retaliation taken this turn
     std::uint32_t touched = 0;     // local camp groups hit
     Grid req_w = grid_all, req_d = grid_all, req_e = grid_all; // the tiles still allowed for each move's end
     Grid lset = 0; // a landing that hits: its tiles, alike in what they hit
@@ -319,7 +320,8 @@ struct Front {
 
 struct Unseen {
     vec2 pos;
-    float weight, worth; // worth < 0: hitting it is suicidal
+    float weight, worth;
+    bool suicidal; // its retaliation would kill us
 };
 
 // What lies within 1 of a tile, for ground centres.
@@ -595,40 +597,40 @@ struct Search {
     [[gnu::always_inline]] bool spell_unit(const Spell& sp, int t, Node& s);
     // A landing on cell c, of a class already found.
     [[gnu::always_inline]] bool land_at(int c, Node& s);
-    [[gnu::always_inline]] float centre_value(const Centre& c, int slot, const Node& s, bool& ok) const;
+    [[gnu::always_inline]] float centre_value(const Centre& c, int slot, const Node& s, bool& ok, float& back) const;
     void hit_centre(const Centre& c, int slot, Node& s);
-    bool wake(std::uint32_t touched, vec2 E, float& cost);
+    bool wake(std::uint32_t touched, vec2 E, float& cost, float& on_us);
     bool wakers_known_slot = false;
     // wake() by end tile, for the last touched set asked there: leaves differing only in their
     // hits share them.
     struct WakeMemo {
         std::uint32_t touched;
-        float cost;
+        float cost, on_us;
         bool ok;
     };
 
     Grid wake_known = 0;
-    bool wake_at(std::uint32_t touched, int c, float& cost) {
+    bool wake_at(std::uint32_t touched, int c, float& cost, float& on_us) {
         static std::array<WakeMemo, 49> memo; // valid by wake_known
         auto& m = memo[c];
         if (!(wake_known & gbit(c)) || m.touched != touched) {
-            m.touched = touched, m.ok = wake(touched, tile(c), m.cost);
+            m.touched = touched, m.ok = wake(touched, tile(c), m.cost, m.on_us);
             wake_known |= gbit(c);
         }
-        cost = m.cost;
+        cost = m.cost, on_us = m.on_us;
         return m.ok;
     }
     // wake() at the start tile, by touched set: the ground centres ask it at every node.
     std::array<WakeMemo, 8> here_wakes;
     int n_here_wakes = 0;
-    bool wake_here(std::uint32_t touched, float& cost) {
+    bool wake_here(std::uint32_t touched, float& cost, float& on_us) {
         for (int i = 0; i < n_here_wakes; ++i)
             if (here_wakes[i].touched == touched) {
-                cost = here_wakes[i].cost;
+                cost = here_wakes[i].cost, on_us = here_wakes[i].on_us;
                 return here_wakes[i].ok;
             }
-        const bool ok = wake(touched, here, cost);
-        if (n_here_wakes < static_cast<int>(here_wakes.size())) here_wakes[n_here_wakes++] = {touched, cost, ok};
+        const bool ok = wake(touched, here, cost, on_us);
+        if (n_here_wakes < static_cast<int>(here_wakes.size())) here_wakes[n_here_wakes++] = {touched, cost, on_us, ok};
         return ok;
     }
     float leaf_value(const Node& s) const;
@@ -902,14 +904,14 @@ void Search::add_unseen(int s) {
         if (count > 9) continue;
         const float hp = e.health > 0 ? e.health : e.max_health;
         const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0.0f;
-        const bool suicidal = raw > 0 && e.retaliation() >= health;
+        const float back = raw > 0 ? e.retaliation() : 0.0f;
+        const bool suicidal = back >= health && back > 0;
         for (auto p : positions_within(e.possible, here, a.reach())) {
             if (n_unseen == max_unseen) break;
-            const float worth = suicidal ? -1.0f
-                                         : hit_worth(std::min(raw, hp), hp, test(enemy_spawn, p),
-                                                     params::gem_value * static_cast<float>(pair_gems(world, e)),
-                                                     linked_partner_health(world, e)) + stun;
-            tables.unseen[n_unseen++] = {p, 1.0f / static_cast<float>(count), worth};
+            const float worth = hit_worth(std::min(raw, hp), hp, test(enemy_spawn, p),
+                                          params::gem_value * static_cast<float>(pair_gems(world, e)),
+                                          linked_partner_health(world, e)) + stun - back;
+            tables.unseen[n_unseen++] = {p, 1.0f / static_cast<float>(count), worth, suicidal};
         }
     }
 }
@@ -973,7 +975,7 @@ void Search::find_centres(int s) {
     for (int k = 0; k < n_unseen; ++k) {
         const auto& un = tables.unseen[k];
         around(un.pos, [&](int j) {
-            if (un.worth < 0) near[j].banned = true;
+            if (un.suicidal) near[j].banned = true;
             else near[j].unseen += un.weight * un.worth;
         });
     }
@@ -1185,9 +1187,10 @@ bool Search::hit_unit(int t, Node& s) {
         }
         s.touched |= touch1(x.pos);
     }
-    if (retaliation >= health) return false;
+    if (s.hurt + retaliation >= health) return false;
     value -= retaliation;
     if (value < 0 || (!x.foe && value <= 0 && !(vendetta && kill))) return false;
+    s.hurt += retaliation;
     s.value += value;
     s.armed = false;
     s.attack = false;
@@ -1206,12 +1209,14 @@ bool Search::hit_unit(int t, Node& s) {
 bool Search::spell_unit(const Spell& sp, int t, Node& s) {
     const auto& x = u[t];
     const float d = x.spell[sp.slot];
-    if (x.suicidal[sp.slot]) return false;
-    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t)) - (d > 0 ? x.retaliation : 0.0f);
+    const float back = d > 0 ? x.retaliation : 0.0f;
+    if (x.suicidal[sp.slot] || (back > 0 && s.hurt + back >= health)) return false;
+    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t)) - back;
     if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
     if (x.spell_stun[sp.slot] > 0 && !(s.stunned >> t & 1)) v += x.spell_stun[sp.slot], s.stunned |= static_cast<std::uint16_t>(1u << t);
     if (d <= 0 && v <= 0) return false;
     lose(t, d, s);
+    s.hurt += back;
     s.value += v - cast_cost;
     s.pending = cast_cost;
     s.cast = false;
@@ -1220,26 +1225,30 @@ bool Search::spell_unit(const Spell& sp, int t, Node& s) {
     return true;
 }
 
-float Search::centre_value(const Centre& c, int slot, const Node& s, bool& ok) const {
+float Search::centre_value(const Centre& c, int slot, const Node& s, bool& ok, float& back) const {
     ok = !c.banned;
+    back = 0;
     float v = c.unseen;
     for (std::uint32_t m = c.foes; m && ok; m &= m - 1) {
         const int t = std::countr_zero(m);
         const auto& x = u[t];
         if (h[t] <= 0) continue;
         const float d = x.spell[slot];
-        if (d > 0) v -= x.retaliation;
+        if (d > 0) v -= x.retaliation, back += x.retaliation;
         if (x.link >= 0 && moot(t, d, x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])) continue;
         v += hit_worth(d, h[t], x.spawn, x.bag, partner(t));
         if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
         if (!(s.stunned >> t & 1)) v += x.spell_stun[slot];
     }
+    ok = ok && (back == 0 || s.hurt + back < health);
     return v;
 }
 
 void Search::hit_centre(const Centre& c, int slot, Node& s) {
     bool ok;
-    s.value += centre_value(c, slot, s, ok) - cast_cost;
+    float back;
+    s.value += centre_value(c, slot, s, ok, back) - cast_cost;
+    s.hurt += back;
     for (std::uint32_t m = c.foes; m; m &= m - 1) {
         const int t = std::countr_zero(m);
         if (h[t] <= 0) continue;
@@ -1268,7 +1277,8 @@ bool Search::land_at(int c, Node& s) {
         retaliation += x.land > 0 ? x.retaliation : 0.0f;
         lose(t, x.land, s);
     }
-    if (retaliation >= health) return false;
+    if (s.hurt + retaliation >= health) return false;
+    s.hurt += retaliation;
     s.touched |= class_touch[k];
     s.value += value - retaliation;
     s.owed = !struck;
@@ -1309,11 +1319,12 @@ void Search::find_wakers(int k) {
 // ties to the first to act next round, among us at E, the allies we see and the enemies held in
 // place (acted this round, or channelling). A hit on an enemy earns nothing for now. False for the
 // bans: a sleeping Monolith; a woken hit on an ally recalling, tributing or holding a capture; a
-// woken hit that could kill us or an ally.
-bool Search::wake(std::uint32_t touched, vec2 E, float& cost) {
+// woken hit that could kill an ally. `on_us`: the woken hits on us, which callers weigh against
+// our health after this turn's retaliation.
+bool Search::wake(std::uint32_t touched, vec2 E, float& cost, float& on_us) {
     cost = 0;
+    on_us = 0;
     std::array<float, 8> ally_hit{};
-    float on_us = 0;
     for (std::uint32_t m = touched; m; m &= m - 1) {
         const int k = std::countr_zero(m);
         if (!(wakers_known >> k & 1)) find_wakers(k);
@@ -1336,7 +1347,7 @@ bool Search::wake(std::uint32_t touched, vec2 E, float& cost) {
             }
         }
     }
-    return on_us < health;
+    return true;
 }
 
 float Search::leaf_value(const Node& s) const {
@@ -1364,8 +1375,8 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, std::
         ++offers;
         float x = v;
         if (s.touched) {
-            float cost;
-            if (!wake_at(s.touched, c, cost)) return;
+            float cost, on_us;
+            if (!wake_at(s.touched, c, cost, on_us) || s.hurt + on_us >= health) return;
             x -= cost;
         }
         const auto place = [&](bool keep, float val, std::int8_t mate, bool first) __attribute__((always_inline)) {
@@ -1571,10 +1582,12 @@ void Search::grow(const Node& s) {
                     const int k = tables.distinct[q];
                     const auto& ce = tables.centres[k];
                     bool ok;
-                    float v = centre_value(ce, sp.slot, s, ok);
+                    float back;
+                    float v = centre_value(ce, sp.slot, s, ok, back);
                     if (!ok) continue;
-                    float cost = 0;
-                    if ((ce.touched | s.touched) && !wake_here(ce.touched | s.touched, cost)) continue;
+                    float cost = 0, on_us = 0;
+                    if ((ce.touched | s.touched) && (!wake_here(ce.touched | s.touched, cost, on_us) || s.hurt + back + on_us >= health))
+                        continue;
                     v -= cost;
                     std::uint16_t mask = 0;
                     for (std::uint32_t m = ce.foes; m; m &= m - 1)
@@ -1671,7 +1684,7 @@ bool strike_possible(const World& world) {
     const auto camp_at = [&](vec2 p) {
         float camp = 0;
         for (int k = 0; k < nc; ++k)
-            if (dist(p, camps[k].pos) <= camps[k].reach) camp += camps[k].strength * camps[k].weight;
+            if (dist(p, camps[k].pos) <= camps[k].reach && !camps[k].stunned) camp += camps[k].strength * camps[k].weight;
         return camp;
     };
     // Picked by their bound before the camps, which can only lower it. Each tile's candidates are
