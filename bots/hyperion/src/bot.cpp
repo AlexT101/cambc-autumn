@@ -1521,17 +1521,18 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     const int n_groups = static_cast<int>(groups.size());
     // Static per group once read: its centre field (once warm) and that field's steps to our
     // spawn, its home_ground weight and its centre_to_altar steps. Then its reward and the walks
-    // to bank it, kept while `context` holds, and its fastest clear while its belief also does.
+    // to bank it, kept while `context` holds (the gold's worth while `gold_context` also does),
+    // and its fastest clear while its belief holds.
     struct GroupFacts {
         const Field* centre = nullptr;
         int to_spawn = -1;
         float home = -1;
         int to_altar = -1;
-        std::uint32_t context = 0, version = ~0u;
+        std::uint32_t context = 0, gold_context = 0, version = ~0u;
         bool sticky = false;
         int walk = 0, chained_tribute = 0, tribute = 0;
         std::uint32_t gold_in = 0;
-        float gems = 0, gold = 0, fastest = 0, fastest_strength = 0;
+        float weight = 0, gems = 0, gold = 0, fastest = 0, fastest_strength = 0;
         // Clearing it alone, kept while `clearing` and its belief hold.
         std::uint32_t clearing = 0, clear_version = ~0u;
         float damage = 0, rounds = 0, kite = -1;
@@ -1542,15 +1543,16 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     GroupFacts* const group_facts = n_groups > static_cast<int>(few_facts.size()) ? many_facts.data() : few_facts.data();
     struct Context {
         int bag, short_by;
-        float per_gold;
         bool warm;
         bool operator==(const Context&) const = default;
     };
     static Context last_context{};
     static std::uint32_t context = 0;
-    if (const Context now{bag, short_by, per_gold, pathing.centres_ready()};
-        context == 0 || !(now == last_context))
+    if (const Context now{bag, short_by, pathing.centres_ready()}; context == 0 || !(now == last_context))
         last_context = now, ++context;
+    static float last_per_gold = 0;
+    static std::uint32_t gold_context = 0;
+    if (gold_context == 0 || per_gold != last_per_gold) last_per_gold = per_gold, ++gold_context;
     const auto centre_field = [&](int g) __attribute__((always_inline)) {
         auto& known = group_facts[g];
         if (!known.centre) known.centre = pathing.from_centre(g);
@@ -1628,11 +1630,15 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             float weight = centres_ready ? known.home : 1.0f;
             // Staying with last turn's choice keeps near ties from turning us back and forth.
             if (g == farm_group) weight *= stickiness;
+            known.weight = weight;
             known.gems = weight * static_cast<float>(std::min(group.gems, short_by));
-            known.gold = weight * per_gold * static_cast<float>(group.gold);
             known.context = context;
             known.sticky = g == farm_group;
-            known.version = ~0u;
+            known.gold_context = 0;
+        }
+        if (known.gold_context != gold_context) {
+            known.gold = known.weight * per_gold * static_cast<float>(group.gold);
+            known.gold_context = gold_context;
         }
         if (known.version != belief.version || known.fastest_strength != strength)
             known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
