@@ -1369,6 +1369,7 @@ bool Search::legal_at(Node& s, Grid legal) const {
 }
 
 void Search::grow(const Node& s) {
+    throw_if_stale();
     ++nodes;
     settle(s);
     if (s.depth == max_depth) return;
@@ -1528,6 +1529,7 @@ bool strike_possible(const World& world) {
         }
     };
     if (!S.read()) return out;
+    throw_if_stale();
     mark(0);
     S.grow(S.root());
     mark(1);
@@ -1623,6 +1625,7 @@ bool strike_possible(const World& world) {
             capped = true;
             break;
         }
+        throw_if_stale();
         auto& t = tiles[i];
         t.done = true;
         const vec2 p = S.tile(t.c);

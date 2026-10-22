@@ -896,6 +896,7 @@ void find_crossings(StaticMap& s) {
 
 void World::update() {
     round = static_cast<int>(checked_round());
+    turn_round() = static_cast<std::uint32_t>(round);
     // First turn; a failure part-way is retried next turn from scratch.
     if (!ready()) {
         first_round = round;

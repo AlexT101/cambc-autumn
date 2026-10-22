@@ -446,6 +446,17 @@ inline std::uint32_t round_now() {
     (void)cambc::detail::sdk_bc_round_number(&round);
     return round;
 }
+// A turn that ran out of fuel resumes in the next round, a round old: it is abandoned at the next
+// check, so that the round's own turn, played next on what fuel is left, does not run out in turn.
+struct StaleTurn {};
+inline std::uint32_t& turn_round() { // the round the turn began in (World::update)
+    static std::uint32_t round = 0;
+    return round;
+}
+// ~18 fuel: worth it in a loop whose pass costs a few hundred or more.
+inline void throw_if_stale() {
+    if (round_now() != turn_round()) throw StaleTurn{};
+}
 
 inline std::uint64_t search_cost_estimate(int layers) {
     return 4000 + search_chunks() * (20 + static_cast<std::uint64_t>(layers));

@@ -13,8 +13,6 @@
 
 namespace aph {
 
-struct StaleTurn {};
-
 // Derived static parts are built on first use: all at once costs too much fuel on large maps.
 // WASM loops, sorting and hashing are costly; host bitboard and field calls are cheap.
 
@@ -388,8 +386,7 @@ public:
     const StaticMap& map() const { return *static_; }
     // True if the bot ran out of fuel and resumed in a later round: beliefs are a round old.
     bool is_stale() const { return round_now() != static_cast<std::uint32_t>(round); }
-    // Abandons a turn that ran out of fuel at the next costly step, so that the round's own turn,
-    // played next with what is left of its fuel, does not run out in turn.
+    // Abandons a turn that ran out of fuel at the next costly step (aph::throw_if_stale).
     void throw_if_stale() const {
         if (is_stale()) throw StaleTurn{};
     }

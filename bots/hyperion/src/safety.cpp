@@ -511,7 +511,10 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             t = play_quiet(us, them, t, 2 * horizon, they_first, ours, theirs);
             if (t == 2 * horizon) break;
         }
-        if (fuel_floor && t % 8 == 7 && fuel() < fuel_floor) return {-1, -1};
+        if (t % 8 == 7) {
+            if constexpr (!Dealt) throw_if_stale();
+            if (fuel_floor && fuel() < fuel_floor) return {-1, -1};
+        }
         const bool their_turn = (t % 2 == 0) == they_first;
         if (their_turn) {
             const float d = act(them, us);

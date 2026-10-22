@@ -200,6 +200,11 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
   StaleTurn before acting, and main.cpp replays the round fresh on the fuel left. Bench 16/16 identical at 100M.
   On 32 test-draft gen-s1 games out-of-fuel turns 332 vs main's 147: the replay starts on the fuel left with every
   action unspent and runs out again (chains), where carrying out the stale plan spent the actions.
+  With round checks (throw_if_stale, ~18 fuel each) in the search's nodes and pricing and every 8 fight half-turns,
+  the resumed leftover fell from a mean 30.7k to 6.1k (max 94k -> 16k), but out-of-fuel turns rose to 419 (main 138).
+  Long fights cost more than a turn every round: main's resumed search finishes and carries out its plan, spending the
+  attack and cast, so the replay is cheap and the champion acts every round; dropping the plan makes every replay a
+  full turn that runs out again, often before acting. Not worth an A/B; drop both.
 - Savings rounds, byte-identical at 100M: round 1 −11% a turn; round 2 (bush clusters grown in the warm-up, measured
   worst costs in the estimates); exact fight simulation (fighters made once a turn, quiet turns reused; trade 4.7k ->
   4.0k a call); Reach (ways kept per recipe, static windows once per tile, lazy builds); WASM-aware (−4.2%); host-op
