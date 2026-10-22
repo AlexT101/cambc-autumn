@@ -387,3 +387,7 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    stun, Vendetta's refresh, Varg's splash and attack-then-cast order count after the goal too. The search reads foes'
    health and shields live, and skips excludes-walking casts once the goal walked. 100M bench vs main: mean fuel -0.2%,
    p99 +0.7%.
+57. 2026-10-22 (not yet submitted). The strike search's debug checks deleted, behaviour-identical (bench 16/16 identical
+   at 100M, total fuel -0.03%, p99 -0.2%): the exhaustive enumerator (SRCH-EXH) and the old-menu comparison (SRCH-DOM),
+   which never fired, with the Node fields (pos, moved), tables and Tile::danger only they used. SRCH and SRCH-REFUSED
+   lines stay.

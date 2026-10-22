@@ -5,7 +5,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <string_view>
 #include "abilities.h"
 #include "params.h"
 #include "pathing.h"
@@ -20,7 +19,7 @@ namespace {
 constexpr int dash_steps = 2;
 constexpr float cast_cost = 40; // a slot's next 8 rounds, as cast_at_enemies prices them
 constexpr int max_foes = 8;
-constexpr bool debug_search = true; // SRCH lines and the search's checks, all inside debug_block
+constexpr bool debug_search = true; // SRCH and SRCH-REFUSED lines, inside debug_block
 
 // ---- The basic attack from where we stand, for strike_enemy ----
 
@@ -250,7 +249,6 @@ struct Node {
     Seg seg = at_start;
     bool walk : 1 = false, attack : 1 = false, cast : 1 = false, excl : 1 = false;
     bool reset : 1 = false, dash : 1 = false, armed : 1 = false;
-    bool moved : 1 = false; // exhaustive enumerator: walked
     // A walk or dash not yet followed by a strike from where it ended: a move with none is the
     // goal's walk or retreat's dash, which price what the leaf score cannot (later turns).
     bool owed : 1 = false;
@@ -260,7 +258,6 @@ struct Node {
     std::uint32_t touched = 0;     // local camp groups hit
     Grid req_w = grid_all, req_d = grid_all, req_e = grid_all; // the tiles still allowed for each move's end
     Grid lset = 0; // a landing that hits: its tiles, alike in what they hit
-    vec2 pos;          // exhaustive enumerator: where we stand
 };
 
 // A sequence as the search grows it, its walk and dash tiles left open.
@@ -329,10 +326,9 @@ struct Tables {
     std::array<Unseen, max_unseen> unseen;
     std::array<Member, max_members> members;
     std::array<Waker, max_members> wakers;
-    std::array<Front, 49> best, kept, exh, exh_kept; // kept: the cast left for the shield; valid by has bits
+    std::array<Front, 49> best, kept; // kept: the cast left for the shield; valid by has bits
     std::array<Leaf, 512> leaves;
     std::array<Grid, 49> land_from;
-    std::array<float, 49> menu;
     std::array<float, 49> heal_at; // the best heal cast from each tile
     std::array<std::int8_t, 49> heal_who;
     std::array<std::uint32_t, win9_n * win9_n> touch1;
@@ -393,8 +389,7 @@ struct Search {
     Grid has = 0;
     int nodes = 0, offers = 0, n_leaves = 0;
 
-    Grid exh_has = 0, exh_kept_has = 0, menu_has = 0, kept_has = 0;
-    std::array<char, max_depth> shape{};
+    Grid kept_has = 0;
 
     Search(const World& w, Safety& s, Pathing& p, const Intent& i) : world(w), safety(s), pathing(p), intent(i), f(w.me().facts()) {}
 
@@ -622,9 +617,6 @@ struct Search {
     }
     float hor_health(int leaf, int k) const { return tables.leaves[leaf].hor[k]; }
 
-    void exhaust(const Node& s);
-    void offer_exh(const Node& s);
-    bool menu_shape(int depth) const;
 };
 
 // The map's bounds and walls by grid cell around each centre tile: terrain alone, kept for the game.
@@ -1265,7 +1257,6 @@ Node Search::root() const {
     s.cast = can_cast;
     s.reset = reset_ready;
     s.dash = dash_ready;
-    s.pos = here;
     return s;
 }
 
@@ -1513,113 +1504,6 @@ void Search::grow(const Node& s) {
         }
 }
 
-// ---- Debug: every sequence on concrete tiles, without the search's grouping ----
-
-bool Search::menu_shape(int depth) const {
-    // The old planner's menu: stay A, A R A, A + cast; walk W A, melee A W R A, ranged W R A;
-    // dash D A, melee A D, D W A; a landing before or after an attack.
-    static constexpr std::string_view shapes[] = {"", "A", "ARA", "AS", "S", "WA", "AWRA", "WRA", "DA", "AD", "DWA", "D"};
-    const std::string_view v{shape.data(), static_cast<std::size_t>(depth)};
-    for (const auto sh : shapes) {
-        if (sh != v) continue;
-        if ((v == "WA" || v == "AWRA" || v == "AD" || v == "DWA") && !melee) return false;
-        if (v == "WRA" && melee) return false;
-        if (v == "D" && !lands) return false;
-        return true;
-    }
-    return false;
-}
-
-void Search::offer_exh(const Node& s) {
-    if (s.owed) return;
-    float v = leaf_value(s);
-    if (s.touched) {
-        float cost;
-        if (!wake(s.touched, s.pos, cost)) return;
-        v -= cost;
-    }
-    const int c = cell(s.pos);
-    const std::uint16_t r = removed(s);
-    const auto put = [&](std::array<Front, 49>& tab, Grid& got, float x) {
-        if (!(got & gbit(c))) tab[c].n = 0, got |= gbit(c);
-        if (const int i = tab[c].admit(x, r); i >= 0) tab[c].e[i].raw = x, tab[c].e[i].removed = r;
-    };
-    const auto put_menu = [&](float x) {
-        if (!(menu_has & gbit(c)) || x > tables.menu[c]) tables.menu[c] = x, menu_has |= gbit(c);
-    };
-    if (s.cast && shield >= 0) put(tables.exh_kept, exh_kept_has, v);
-    else put(tables.exh, exh_has, v);
-    float top = v; // the menu's, its shield left out
-    if (s.cast && heal >= 0) {
-        const float hv = std::max(tables.heal_at[cell(here)], tables.heal_at[c]);
-        if (hv > 0) put(tables.exh, exh_has, top = v + hv);
-    }
-    if (menu_shape(s.depth)) put_menu(top);
-}
-
-void Search::exhaust(const Node& s) {
-    offer_exh(s);
-    if (s.depth == max_depth) return;
-    const UnitHealths saved = h;
-    const int at = cell(s.pos);
-    const auto push = [&](Node& c, char op) {
-        shape[s.depth] = op;
-        c.depth = static_cast<std::int8_t>(s.depth + 1);
-        exhaust(c);
-        h = saved;
-    };
-    if (s.attack)
-        for (int t = 0; t < n; ++t) {
-            if (h[t] <= 0 || !(u[t].legal & gbit(at))) continue;
-            Node c = s;
-            if (hit_unit(t, c)) push(c, 'A');
-            else h = saved;
-        }
-    if (s.cast && s.reset && !s.attack) {
-        Node c = s;
-        c.attack = true, c.cast = false, c.reset = false, c.armed = arms, c.pending = 0;
-        push(c, 'R');
-    }
-    if (s.walk && !s.excl && (melee || s.attack))
-        each_bit(dilate(gbit(at)) & free_ & ~gbit(at), [&](int e) {
-            Node c = s;
-            c.walk = false, c.moved = true, c.owed = true, c.pos = tile(e);
-            if (!melee) c.attack = false;
-            push(c, 'W');
-        });
-    if (s.cast && s.dash && dist(s.pos, here) <= 1)
-        each_bit(landings(at), [&](int l) {
-            Node c = s;
-            c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.owed = true, c.pos = tile(l);
-            if (lands && (land_hits & gbit(l)) && !land_at(tile(l), c)) {
-                h = saved;
-                return;
-            }
-            push(c, 'D');
-        });
-    if (s.cast)
-        for (const auto& sp : spells) {
-            if (sp.slot < 0 || (sp.excl && (s.moved || s.pos != here))) continue;
-            if (sp.unit) {
-                for (int t = 0; t < foes; ++t) {
-                    if (h[t] <= 0 || !(u[t].cast_legal & gbit(at))) continue;
-                    Node c = s;
-                    if (spell_unit(sp, t, c)) push(c, 'S');
-                    else h = saved;
-                }
-            } else if (sp.ground && sp.excl) {
-                for (int k = 0; k < n_centres; ++k) {
-                    bool ok;
-                    centre_value(tables.centres[k], sp.slot, s, ok);
-                    if (!ok) continue;
-                    Node c = s;
-                    hit_centre(tables.centres[k], sp.slot, c);
-                    push(c, 'S');
-                }
-            }
-        }
-}
-
 } // namespace
 
 bool strike_possible(const World& world) {
@@ -1695,7 +1579,7 @@ bool strike_possible(const World& world) {
     // the shield, bounded by the shield's whole amount until the tile is priced.
     struct Tile {
         int c;
-        float bound, total, danger, shield;
+        float bound, total, shield;
         bool exact, done, keep;
         std::int8_t entry;
     };
@@ -1725,7 +1609,7 @@ bool strike_possible(const World& world) {
         if (S.has >> c & 1) top = S.best[c].top();
         if (S.kept_has >> c & 1) top = std::max(top, tables.kept[c].top() + shield_top);
         const float bound = top + gain_to(S.tile(c));
-        tiles[nt++] = {c, bound, bound, 0, 0, false, false, !(S.has >> c & 1), 0};
+        tiles[nt++] = {c, bound, bound, 0, false, false, !(S.has >> c & 1), 0};
     });
     float best_total = -1e30f;
     int chosen = -1, queries = 0, priced = 0, share_stops = 0, bound_stops = 0;
@@ -1745,7 +1629,6 @@ bool strike_possible(const World& world) {
         const float camp = camp_at(p);
         t.bound -= camp;
         t.total = t.bound;
-        t.danger = camp;
         if (t.bound <= best_total) {
             ++bound_stops;
             continue;
@@ -1793,13 +1676,7 @@ bool strike_possible(const World& world) {
             cut = total <= best_total;
         }
         ++priced;
-        const auto most_danger = [&] {
-            float x = 0;
-            for (int j = 0; j < nk; ++j) x = std::max(x, cand[j].d);
-            return x;
-        };
         t.total = total;
-        t.danger = camp + most_danger();
         if (cut) {
             ++share_stops;
             continue;
@@ -1812,7 +1689,6 @@ bool strike_possible(const World& world) {
                     add(at[m].enemy, safety_params::hit_given_reach * at[m].blow.damage, -1);
             total = top();
             t.total = total;
-            t.danger = camp + most_danger();
         }
         t.exact = true;
         t.keep = cand[arg].keep;
@@ -1845,47 +1721,6 @@ bool strike_possible(const World& world) {
         }
 
     mark(2);
-    if constexpr (debug_search) {
-        debug_block({
-            // The exhaustive enumerator must agree with the search on every end tile; the old
-            // menu, scored the same way, must never beat the search's choice.
-            S.exhaust(S.root());
-            // Per end tile, each front's entries are matched by the other's: as many enemies removed
-            // or more, for as much.
-            const auto covers = [](const Front& a, const Front& b) {
-                for (int i = 0; i < b.n; ++i) {
-                    bool ok = false;
-                    for (int j = 0; j < a.n && !ok; ++j)
-                        ok = (a.e[j].removed & b.e[i].removed) == b.e[i].removed && a.e[j].raw >= b.e[i].raw - 0.5f;
-                    if (!ok) return false;
-                }
-                return true;
-            };
-            for (int c = 0; c < 49; ++c)
-                for (int keep = 0; keep < 2; ++keep) {
-                    const bool a = (keep ? S.kept_has : S.has) >> c & 1, b = (keep ? S.exh_kept_has : S.exh_has) >> c & 1;
-                    const Front &x = (keep ? tables.kept : S.best)[c], &y = (keep ? tables.exh_kept : tables.exh)[c];
-                    if (a && b && (x.n == max_sets || y.n == max_sets)) continue;
-                    if (a != b || (a && (!covers(x, y) || !covers(y, x))))
-                        std::printf("SRCH-EXH %d %u tile %d,%d keep %d search %.1f/%d exh %.1f/%d\n", world.round,
-                                    static_cast<unsigned>(world.me().handle), S.tile(c).x, S.tile(c).y, keep, a ? x.top() : -1.0f,
-                                    a ? x.n : 0, b ? y.top() : -1.0f, b ? y.n : 0);
-                }
-            if (chosen >= 0 && !capped)
-                for (int i = 0; i < nt; ++i) {
-                    const int c = tiles[i].c;
-                    const vec2 p = S.tile(c);
-                    if (!(S.menu_has >> c & 1) || dist(p, here) == 3) continue;
-                    // Priced (or cut short): the larger candidate's danger found there; unpriced: the camps only.
-                    const float danger = tiles[i].done ? tiles[i].danger : camp_at(p);
-                    const float old = tables.menu[c] + gain_to(p) - danger;
-                    if (old > best_total + 0.5f)
-                        std::printf("SRCH-DOM %d %u tile %d,%d menu %.1f search %.1f\n", world.round, static_cast<unsigned>(world.me().handle),
-                                    p.x, p.y, old, best_total);
-                }
-        });
-    }
-
     // Carry it out. A move a hidden unit refuses takes the next-ranked plan from where we stand.
     Seq seq;
     std::array<bool, 49> dropped{};
