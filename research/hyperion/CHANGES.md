@@ -425,3 +425,22 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    unknown_falls_ (a stale bit only lost a memo slot). Wide bench at 100M 52/52 identical vs main: total fuel -4.26%,
    mean 35.3k -> 33.8k, p50 -5.3%, p99 106.8k -> 100.1k, turns >100k 4147 -> 3156; real budget out-of-fuel turns
    1611 -> 1062.
+64. 2026-10-22 (not yet submitted). Bug fix (fuel/bugfix-err5 d76ca51): a Cassi/Issac body killed in its own turn
+   (attacking Ren reflects damage) still had `world.me().alive` set while its position read (-1,-1), so start_recall
+   and set_turn_order's offer_escape (via live_self) passed (-1,-1) to a bitboard test: engine error 5, and the throw
+   skipped the rest of play_turn (claim, bag, Memory). Wide bench at 100M 51/52 identical; only the bug game differs.
+65. 2026-10-22 (not yet submitted). Strike search fuel (fuel/strike-big 0e56cd9, 25c38f4, 753c0f2),
+   behaviour-identical: each landing cell's class (foes in reach, groups touched) is found once per search and
+   regroups and landings read it; search nodes carry a dead mask so removed() visits only killed and stunned foes and
+   keeps its last answer. Heart of Ruin's largest searches -14 to -19%; wide bench at 100M max turn 439k -> 401k.
+66. 2026-10-22 (not yet submitted). want_home asks one fight (fuel/home-fold 9d90470): `Safety::stand()` replaces
+   pursuit and visible_threat. Enemies who can strike us now strike first, visible ones within pursuit_steps join as
+   they walk in, and camps keep hitting us; without walkers or camps it is fight(here). The home-no-fight-sim and
+   home-no-pursuit gates go. A/B vs e5f7d32 52.2% of 1094 (49.2-55.1; ladder 52.9, gen 51.6, gen-s1 52.7),
+   out-of-fuel turns 6666 vs 6787. Wide bench at 100M: p99 -6.8%, turns >100k 3156 -> 2193, max 439k -> 272k;
+   want_home's own cost -12.5% (p99 -19%); real budget out-of-fuel turns 1062 -> 861.
+67. 2026-10-22 (not yet submitted). 64-66 merged (fuel/merge-2). Wide bench vs merge-1: 64-65 at 100M 51/52
+   identical (only the err5 game), max 439k -> 401k; with 66 at 100M mean -0.4%, p99 100.1k -> 93.3k, turns >100k
+   3156 -> 2178, max 439k -> 250k. Real budget out-of-fuel turns 1062 -> 1201 (64-65 alone 1086): the totals swing by
+   hundreds on three or four long fights of the gen-chambers and gen-hourglass maps. Vs hecate 65.4% of 1094 (62.6-68.2;
+   ladder 67.1, gen 66.0, gen-s1 64.6), out-of-fuel turns 5891 vs 1965 (main 019ce53: 63.9%, 9225 vs 1975).

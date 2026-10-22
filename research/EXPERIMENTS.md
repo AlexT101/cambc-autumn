@@ -211,6 +211,33 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
   - At 100M: 52/52 identical. Total fuel -4.26%; mean 35.3k -> 33.8k, p50 32.5k -> 30.8k, p90 55.6k -> 53.8k,
     p99 106.8k -> 100.1k, max 452k -> 439k; turns over 100k 4147 -> 3156 (1.32% -> 1.00%).
   - At the real budget: out-of-fuel turns 1611 -> 1062 (hecate 279); mean 35.9k -> 34.0k.
+- One fight for want_home (2026-10-22, fuel/home-fold 9d90470; kept and merged, CHANGES 66). `Safety::stand()`
+  replaces pursuit + visible_threat, counting camps and walkers in one fight; the home-no-fight-sim and
+  home-no-pursuit gates go. A/B vs e5f7d32 52.2% of 1094 (49.2-55.1; ladder 52.9, gen 51.6, gen-s1 52.7), out-of-fuel
+  turns 6666 vs 6787. Wide bench at 100M p99 -6.8%, turns >100k 3156 -> 2193, max 439k -> 272k; real budget
+  out-of-fuel turns 1062 -> 861.
+- Exact fight bounds at the start of a simulation (2026-10-22, fuel/fight-bound ae7fe2f; not merged). `takes_all` /
+  `takes_within` settle a sim's verdict both ways before it runs: 52/52 identical, 0 mismatches, but total fuel
+  +0.05%. 16% of sims settle at the start, but those were the cheap ones, and the check costs ~300 a sim.
+  - Sims are only 2.9% of all fuel (308.6M of 10.76G on the wide set), ~20% on heavy turns.
+  - A horizon of 9 is rejected from the data: ~6.7% of sims are lost after half-turn 19.
+- Step guard on the one fight model (2026-10-22, fuel/guard-fold 16d35a4 on home-fold; not merged). step_guard
+  priced with stand_of (camps counted), its fuel gates and prey-cut-short replaced by limits (4 fights a call binds
+  on 0.094% of calls, 3 prey candidates on 0.084%), estimators deleted. At 100M mean +0.1%, p99 +3.3%; real budget
+  out-of-fuel turns 861 -> 2931; no A/B. The gates were the turn's last brakes, and lower limits did not help.
+- Wave-1 fuel gates removed (2026-10-22, fuel/no-gates-1 54f0d7a + 52b55f8; held). turn-order, farm-*, siege,
+  spell-clear, ward, static-descend, siege-route, comms-stale-vision, fight-cut, late_floor etc. At 100M 52/52
+  identical, total -0.76%. A/B vs e5f7d32 49.5% of 1094 (46.6-52.5) but out-of-fuel turns 23319 vs 6776; wide real
+  budget 1062 -> 2104. Held until decide's worst case is cut.
+- **Fuel merge 2** (2026-10-22, fuel/merge-2: err5 fix, strike-big, home-fold; CHANGES 64-67). Wide bench, 52
+  test-draft games against hecate, vs merge 1 (e5f7d32).
+  - err5 + strike-big at 100M: 51/52 identical (only gen-monolith-heavy-102107600 a, the err5 game); max 439k -> 401k.
+  - With home-fold at 100M: mean 33.8k -> 33.7k, p90 -1.8%, p99 100.1k -> 93.3k, turns over 100k 3156 -> 2178
+    (1.00% -> 0.71%), max 439k -> 250k.
+  - At the real budget: out-of-fuel turns 1062 -> 1201 (err5 + strike-big alone 1086, home-fold alone 861). Totals
+    are noise at this size: gen-chambers-102206117 a alone gave 332 / 196 / 138 / 239 across the four runs.
+  - Vs hecate: 65.4% of 1094 (62.6-68.2; ladder 67.1, gen 66.0, gen-s1 64.6); out-of-fuel turns 5891 in 594 games vs
+    1965 in 461 (main 019ce53: 63.9%, 9225 vs 1975).
 - Stale-plan drop alone (2026-10-22, f4eee8f; kept and merged without an A/B, CHANGES 59). A strike search that ran out
   of fuel resumes next round and carried out last round's plan (all real-budget SRCH-REFUSED lines); now it throws
   StaleTurn before acting, and main.cpp replays the round fresh on the fuel left. Bench 16/16 identical at 100M.
