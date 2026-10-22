@@ -113,6 +113,15 @@ private:
     // although it stopped short of its cap, so that no wider search finds one either.
     cambc::distance_field route_field_;
     bool route_exhausted_ = false;
+    // The latest search that found a way, with its goals and walls: complete below `layer`, the
+    // layer that reached us.
+    struct KeptRoute {
+        cambc::distance_field field;
+        bitboard goals{cambc::uninitialized}, walls{cambc::uninitialized};
+        int layer = -1;
+    } kept_route_;
+    // Our steps in k if a search over `walls` would label every tile below them as k's did.
+    static int kept_steps(const KeptRoute& k, const bitboard& goals, const bitboard& walls, vec2 me, int cap);
     // Two allies head-on with no way past: the one with fewer gems (ties: lower champion) backs off.
     // Right after a route that found no way, with the same arguments: read from its field.
     // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.

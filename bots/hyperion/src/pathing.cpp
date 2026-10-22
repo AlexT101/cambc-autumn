@@ -396,7 +396,6 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     // Scratch kept between calls: the host overwrites every output in full.
     static bitboard walls{cambc::uninitialized}, origin, visited{cambc::uninitialized};
     static vec2 origin_at{-1, -1};
-    auto& field = route_field_;
     // A route is mostly followed by a step, which makes blocked() stale: unless it is fresh, the
     // walls are read straight into the route's board. Our tile is freed below.
     if (blocked_fresh_) copy_into(blocked_, walls);
@@ -422,21 +421,30 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     }
     if (guard_) or_into(walls, *guard_, walls);
     set_tile(walls, me, false);
-    // Search outwards from the goals until it reaches us: every tile one layer nearer than ours
-    // is then labelled, so each neighbour on a shortest route is known.
-    FuelMeter meter{"route"};
-    if (in_bounds(origin_at)) set_tile(origin, origin_at, false);
-    set_tile(origin, me);
-    origin_at = me;
-    // Goals on walls are no roots; with none left we stay unreachable.
     const int cap = std::min<int>(max_steps, unreachable);
-    // A search that runs dry counts one layer past its last; one cut off at the cap counts the cap.
-    const int layers = field.compute_to_with_expansion_count(walls, goals, origin, visited, static_cast<std::uint16_t>(cap));
-    const int here = steps_at(field, me);
+    auto& kept = kept_route_;
+    int here = kept_steps(kept, goals, walls, me, cap);
     if (here == unreachable) {
-        route_exhausted_ = layers < cap;
-        return r;
+        // Search outwards from the goals until it reaches us: every tile one layer nearer than ours
+        // is then labelled, so each neighbour on a shortest route is known.
+        FuelMeter meter{"route"};
+        if (in_bounds(origin_at)) set_tile(origin, origin_at, false);
+        set_tile(origin, me);
+        origin_at = me;
+        // Goals on walls are no roots; with none left we stay unreachable. A search that runs dry
+        // counts one layer past its last; one cut off at the cap counts the cap.
+        const int layers = route_field_.compute_to_with_expansion_count(walls, goals, origin, visited, static_cast<std::uint16_t>(cap));
+        here = steps_at(route_field_, me);
+        if (here == unreachable) {
+            route_exhausted_ = layers < cap;
+            return r;
+        }
+        std::swap(route_field_, kept.field);
+        copy_into(goals, kept.goals);
+        walls.swap(kept.walls);
+        kept.layer = here;
     }
+    const auto& field = kept.field;
     r.steps = here;
     // As distance_field::next_moves_from, without its vector: the nearest neighbours, north first.
     std::array<std::uint16_t, 8> around{};
@@ -451,6 +459,32 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
         for (int i = 0; i < 8; ++i)
             if (around[i] == best) r.first_steps[r.count++] = me + directions[i];
     return r;
+}
+
+// Removing a tile at or past our layer, or adding one whose neighbours all lie at or past the
+// layer before ours (it would land at or past ours), changes no label below ours.
+int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboard& walls, vec2 me, int cap) {
+    if (k.layer < 0) return unreachable;
+    const int steps = steps_at(k.field, me);
+    if (steps == unreachable || steps > k.layer || steps > cap || !(goals == k.goals)) return unreachable;
+    static bitboard changed{cambc::uninitialized};
+    xor_into(walls, k.walls, changed);
+    constexpr std::uint32_t most = 4;
+    if (board_empty(changed)) return steps;
+    std::array<vec2, most + 1> at;
+    const auto n = positions_into(changed, at.data(), most + 1);
+    if (n > most) return unreachable;
+    for (std::uint32_t i = 0; i < n; ++i) {
+        const vec2 t = at[i];
+        if (test(walls, t)) {
+            if (steps_at(k.field, t) < steps) return unreachable;
+            continue;
+        }
+        if (test(goals, t)) return unreachable;
+        for (const auto d : directions)
+            if (in_bounds(t + d) && steps_at(k.field, t + d) + 1 < steps) return unreachable;
+    }
+    return steps;
 }
 
 [[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
