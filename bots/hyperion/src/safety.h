@@ -212,6 +212,7 @@ struct Trade {
     int turns_to_kill_us = 0;   // their turns, when they strike first; 0: not within the horizon
     int turns_to_kill_them = 0; // ours
     bool self_falls = false;    // we die before their side does, when they strike first
+    bool falls_known = true;    // self_falls is: a fight asked without it can end once it cannot be lost
     float our_health = 0, their_health = 0; // debug_fights only
     int allies = 0, enemies = 0;
     std::array<float, 4> dealt{}; // debug_fights only: see simulate()
@@ -263,7 +264,8 @@ public:
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.
-    Trade fight(vec2 p);
+    // Without `falls` the fight may end once it cannot be lost, leaving self_falls unknown.
+    Trade fight(vec2 p, bool falls = true);
     // Who would fight at p: bit i of the low half for allies[i], of the high half for enemies[i];
     // no_fight if no threat hits p.
     static constexpr std::uint32_t no_fight = ~0u;
@@ -271,11 +273,11 @@ public:
     // fight_key(p) given `visible`: the bits of every visible threat that hits p, at least one.
     std::uint32_t fight_key_with(vec2 p, std::uint32_t visible);
     // The fight of a key, memoised.
-    Trade fight_of(std::uint32_t key);
+    Trade fight_of(std::uint32_t key, bool falls = true);
     // fight_of(key) if memoised, else null.
-    const Trade* known_fight_of(std::uint32_t key) const { return memo(key); }
+    const Trade* known_fight_of(std::uint32_t key) const { return memo(key, true); }
     // fight_of(key) when known_fight_of(key) is null.
-    Trade new_fight(std::uint32_t key);
+    Trade new_fight(std::uint32_t key, bool falls = true);
     // threat_strike(), kept for the turn.
     const Strike& strike_of(const ChampionBelief& e) { return struck(e).strike; }
     // What a visible enemy could do to p before our next turn (threat_strike placed on the map).
@@ -292,8 +294,9 @@ public:
     std::uint64_t build_cost_estimate();
     // Us and the allies we see near p, striking first, against every visible enemy within
     // `approach` steps of its reach, each joining once it has walked into reach, while the camps
-    // in reach of p keep hitting us: lost means they win even if we stand and fight.
-    Trade pursuit(vec2 p, int approach);
+    // in reach of p keep hitting us: lost means they win even if we stand and fight. `falls` as
+    // for fight().
+    Trade pursuit(vec2 p, int approach, bool falls = true);
     // Their turns for the visible enemies and camps to kill us at p if we never act (channelling),
     // each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
     int turns_to_kill_idle(vec2 p, int horizon);
@@ -392,8 +395,10 @@ private:
         Trade trade;
     };
     static constexpr int max_fights = 32;
-    const Trade* memo(std::uint32_t key) const;
+    // `falls`: only one whose self_falls is known.
+    const Trade* memo(std::uint32_t key, bool falls) const;
     int fight_count_ = 0;
+    std::uint32_t unknown_falls_ = 0; // bit i: fights_[i] was asked without self_falls and does not know it
     union {
         std::array<FightMemo, max_fights> fights_;
     };
