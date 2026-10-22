@@ -286,6 +286,38 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
   but total fuel only -0.04%, and it relies on shadow_cast including its origin (undocumented, unprobed).
 - Strike read with shifted viewer grids (2026-10-22, fuel/strike-read 051942c; not merged). Attack viewers kept as 7x7
   grids and shifted: read() -2.3%, total -0.02%.
+- Step guard bound union first (2026-10-22, fuel/guard-lean 591d418, e51bc37; kept and merged, CHANGES 73). The union
+  fight on distance-bound keys runs before exact Reach exposure (a won bound union settles the call), a not-lost fight
+  settles `lost` for the fights it covers, and the guard returns before its estimate, gate and our exposure when no
+  bound reaches. 0 disagreeing calls or tiles over 261,794 calls run side by side with the old guard. At 100M 52/52
+  identical: total -0.48%, p99 -1.5%, max -15.6%, turns >100k 2301 -> 2115; step_guard's own p99 -14.5%. A/B vs
+  4c6cb30 52.4% of 1094 (49.4-55.3; ladder 54.3, gen 52.5, gen-s1 52.0), out-of-fuel turns 3608 vs 4503 (-20%).
+- Farm worst cases (2026-10-22, fuel/farm-worst 0e7d0ba, 37b31dd, 49af74f; kept and merged, CHANGES 74).
+  min_camp_damage's sort kept per group belief version, Ren reflect over attackers only, farm_attack_tiles kept for
+  groups up to 256 members; camp casts read each camp once, best_landing sums on a 5x5 grid, keep() lists reaching
+  monsters once, best_ground skips far targets; tribute_turns and gold_in once per group. 52/52 identical at 100M:
+  total -0.17%; gen-chambers-102206117 -2.56%, turns >100k 606 -> 535, worst turns -43k.
+- Fixed per-turn work (2026-10-22, fuel/fixed-work 48e4192; kept and merged, CHANGES 75). find_members skips stirring
+  groups of strength 0 (clusters): 52/52 identical, total -0.11%. Per-turn memos of find_members, lethal and
+  camp_damage would rarely hit (repeats 0.1 a turn, 4%, 0.7 hits): not built.
+- Strike search node budget (2026-10-22, fuel/search-budget; the cap kept and merged, CHANGES 76).
+  - 24 nodes in the usual order (07b867f's net diff): binds on 0.45% of searches; the best raw leaf is lost on 0.07%
+    (by 80 on average); worst search 158.6k -> 78.2k. A/B vs 4c6cb30 49.7% of 1094 (46.8-52.7), out-of-fuel turns
+    4482 vs 4804 (-6.7%).
+  - Best-first frontier under the cap (25dc99e; not merged): no value lost, but the frontier costs ~500 fuel a node:
+    out-of-fuel turns +27%, 48.7%.
+- Wave-1b fuel gates removed (2026-10-22, fuel/no-gates-1b 5082482, 98d5c68; held). On 4c6cb30 at 100M 52/52
+  identical, total -0.73%. A/B vs 4c6cb30 50.6% of 1094 (47.7-53.6), but out-of-fuel turns 19980 vs 4761 (4.2x).
+- **Fuel merge 4** (2026-10-22, fuel/merge-4: guard-lean, farm-worst, fixed-work, the search node cap; CHANGES 73-77).
+  Wide bench, 52 test-draft games against hecate, vs merge 3 (4c6cb30).
+  - Exact parts at 100M: 52/52 identical. Total -0.77%; p99 93.8k -> 91.6k, max 295k -> 249k; turns over 100k
+    2301 -> 1991.
+  - With the node cap at 100M: 37/52 identical; mean -0.6%, p99 -2.2%, turns over 100k 1981, max 306k (a diverged
+    game).
+  - At the real budget: out-of-fuel turns 868 -> 450; mean -1.4%, p90 -2.5%.
+  - Vs hecate: 65.1% of 1094 (62.2-67.8; ladder 68.6, gen 65.8, gen-s1 63.9); out-of-fuel turns 3130 in 517 games vs
+    1864 in 454 (merge 3: 63.9%, 4463 vs 1877).
+  - Vs merge 3: 50.7% of 1094 (47.8-53.7; ladder 58.6, gen 49.6, gen-s1 50.8); out-of-fuel turns 3313 vs 4807 (-31%).
 - Stale-plan drop alone (2026-10-22, f4eee8f; kept and merged without an A/B, CHANGES 59). A strike search that ran out
   of fuel resumes next round and carried out last round's plan (all real-budget SRCH-REFUSED lines); now it throws
   StaleTurn before acting, and main.cpp replays the round fresh on the fuel left. Bench 16/16 identical at 100M.

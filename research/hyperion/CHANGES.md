@@ -469,3 +469,27 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    max 250k -> 295k: 00contest's two games diverge (side a 3000 turns longer) and alone add about 200 turns over 100k. 71
    on top 52/52 identical, total -0.64%. Real budget out-of-fuel turns 1201 -> 868. Vs hecate 63.9% of 1094
    (61.0-66.7; ladder 62.9, gen 63.3, gen-s1 64.6), out-of-fuel turns 4463 vs 1877 (merge-2: 65.4%, 5891 vs 1965).
+73. 2026-10-22 (not yet submitted). Step guard fuel (fuel/guard-lean 591d418, e51bc37), behaviour-identical:
+   step_guard asks the union fight on distance-bound keys before exact Reach exposure (a won bound union settles the
+   call), a not-lost fight settles `lost` for the fights it covers, and the guard returns before the cost estimate,
+   gate and our exposure when no tile's bound reaches. 0 disagreeing calls or tiles over 261,794 calls against the old
+   guard run side by side. Wide bench at 100M 52/52 identical: total -0.48%, p99 -1.5%, max -15.6%, turns >100k
+   2301 -> 2115; step_guard's own p99 -14.5%. A/B vs 4c6cb30 52.4% of 1094 (49.4-55.3), out-of-fuel turns 3608 vs
+   4503 (-20%).
+74. 2026-10-22 (not yet submitted). Farm worst-case fuel (fuel/farm-worst 0e7d0ba, 37b31dd, 49af74f),
+   behaviour-identical: min_camp_damage sorts members once per group belief version, Ren's reflect steps over
+   attackers only, farm_attack_tiles is kept for groups up to 256 members; camp_cast reads each camp once,
+   best_landing sums on a 5x5 grid in target order, keep() lists reaching monsters once, best_ground skips far
+   targets; tribute_turns and gold_in once per group. Wide bench at 100M 52/52 identical: total -0.17%;
+   gen-chambers-102206117 -2.56%, turns >100k 606 -> 535, its worst turns -43k.
+75. 2026-10-22 (not yet submitted). find_members skips stirring groups with strength 0 (clusters) (fuel/fixed-work
+   48e4192), behaviour-identical: wide bench at 100M 52/52 identical, total -0.11%.
+76. 2026-10-22 (not yet submitted). The strike search grows at most 24 nodes, in its usual order (fuel/search-budget's
+   net plan.cpp diff, 07b867f; 25dc99e's best-first frontier left out). Binds on 0.45% of searches; the best raw
+   leaf is lost on 0.07% of them (by 80 on average); worst search 158.6k -> 78.2k. A/B vs 4c6cb30 49.7% of 1094
+   (46.8-52.7), out-of-fuel turns 4482 vs 4804 (-6.7%).
+77. 2026-10-22 (not yet submitted). 73-76 merged (fuel/merge-4), with OOF-ANATOMY-2026-10-22.md. Wide bench vs
+   merge-3: 73-75 at 100M 52/52 identical, total -0.77%, p99 -2.3%, max 295k -> 249k, turns >100k 2301 -> 1991; with
+   76 at 100M 37/52 identical, p99 93.8k -> 91.7k, turns >100k 1981. Real budget out-of-fuel turns 868 -> 450. Vs
+   hecate 65.1% of 1094 (62.2-67.8; ladder 68.6, gen 65.8, gen-s1 63.9), out-of-fuel turns 3130 vs 1864 (merge-3:
+   63.9%, 4463 vs 1877). Vs merge-3 (4c6cb30) 50.7% of 1094 (47.8-53.7), out-of-fuel turns 3313 vs 4807 (-31%).
