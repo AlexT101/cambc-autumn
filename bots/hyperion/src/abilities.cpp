@@ -447,6 +447,17 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             finish_factor = 1.1f;
     }
 
+    // Visible enemies are held off above; an area or landing also hits unseen ones, so keep it off
+    // a tracked Ren whose retaliation kills us, as enemy_cast does.
+    const auto skip_rens = [&](float raw, int reach, int radius, bitboard& skip) {
+        if (raw <= 0) return;
+        for (const auto& e : world.enemies) {
+            if (!e.alive || e.visible || !e.tracked || e.retaliation() < my_health() || board_empty(e.possible)
+                || static_cast<int>(board_count(e.possible)) > max_unseen_tiles)
+                continue;
+            for (auto p : positions_within(e.possible, here, reach)) draw_square(skip, p, static_cast<float>(radius));
+        }
+    };
     Cast best;
     for (int s = 0; s < 2; ++s) {
         if (!ready[s] || (harmless_approach && f.abilities[s].target != Targeting::ground)) continue;
@@ -471,6 +482,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             clear_board(skip);
             for (int other : world.map().groups_near(here, a.reach()))
                 if (other != group && world.camps[other].state == CampState::alive) draw_alive_members(world, other, skip);
+            skip_rens(raw, a.reach(), 1, skip);
             best.offer(best_ground(s, finishes ? 0.0f : any_value ? 1.0f : min_camp_value, targets, here, a.range(), skip,
                                    approach && !harmless_approach ? &harmful : nullptr));
         } else if (a.lands()) {
@@ -483,6 +495,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             clear_board(skip);
             for (int other : world.map().groups_near(here, a.reach()))
                 if (other != group && world.camps[other].state == CampState::alive) draw_alive_members(world, other, skip, a.radius);
+            skip_rens(raw, a.reach(), a.radius, skip);
             const auto& lands_ = dash_landings_from(world.map(), here, &skip);
             // Not into the reach of another group's monsters. Landings are within 2 of `here`: each
             // group's monsters that could reach one are listed the first time it is asked about.
