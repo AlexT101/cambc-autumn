@@ -283,7 +283,7 @@ bool dash_towards(const World& world, Pathing& pathing, const Field& field) {
 }
 
 bool dash_across(const World& world, Pathing& pathing, const Field& field) {
-    if (!world.me().facts().has_dash() || !any_within(world.map().crossable, my_position(), 1)) return false;
+    if (!world.me().facts().has_dash() || !test(world.map().near_crossable, my_position())) return false;
     const int dash = ready(world, AbilityKind::dash);
     const vec2 here = my_position();
     const int here_steps = field.at(here);

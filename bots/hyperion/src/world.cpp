@@ -769,6 +769,7 @@ void find_crossings(StaticMap& s) {
     drop(s.crossable, beside);
     copy_into(s.blocked_for_us, s.dash_walls);
     drop(s.dash_walls, s.crossable);
+    square_dilate(s.crossable, 1, s.near_crossable);
 }
 
 } // namespace

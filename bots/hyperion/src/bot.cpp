@@ -1797,7 +1797,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     memory.farm_group = best;
     // Our fields price a dash over a hole line; live routes walk round it.
     const bool dasher = world.me().facts().has_dash();
-    if (dasher && any_within(map.crossable, here, 1))
+    if (dasher && test(map.near_crossable, here))
         if (const auto* field = pathing.prepare_approach(best, walk_range(world, best), end_reserve); field && dash_across(world, pathing, *field))
             return true;
     const int cap = best_steps + max_detour;
