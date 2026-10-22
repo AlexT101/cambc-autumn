@@ -1,0 +1,7 @@
+// Nothing else ties y.htb to a.htb: only the macro-declared class does.
+#define MAKE_STRUCT(name, field) \
+    struct name {                \
+        int field;               \
+    };
+
+MAKE_STRUCT(Made, v)

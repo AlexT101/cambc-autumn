@@ -1,0 +1,2 @@
+#include <cstdio>
+int main() { std::printf("%d %d %d %d\n", Bank{}.main.total(), int(Bank{}.kind), origin.b, holder_instance.v); }

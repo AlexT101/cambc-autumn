@@ -29,9 +29,12 @@ Good to know:
   - Every file sees the library headers (<...>) any file includes.
   - Globals start up after the globals their initializers read, including
     through the functions and constructors they call.
-  - `#if 0` (and `#if 1 ... #else`) and include guards are fine anywhere; any
-    other `#if` around code at file level isn't supported (put it inside a
-    function).
+  - `#if`/`#ifdef` around code works anywhere (`#ifdef CAMBC_DEBUG` for
+    debug-only code): whatever hgen moves keeps its conditions. `#if 0` is
+    left out, and include guards are fine.
+  - Forgot the `;` after a class (Java has none)? hgen adds it and says so.
+  - Each file's macros keep their own values, even if another file defines
+    the same macro.
   - In the editor, a nested class used above its definition in the same class
     is underlined, although it builds: clangd reads the class as written.
   - Never edit src/: hgen rewrites it, and won't touch a src/ holding files it
@@ -92,6 +95,12 @@ KEYWORDS = frozenset("""
     static_cast struct switch template this thread_local throw true try typedef
     typeid typename union unsigned using virtual void volatile wchar_t while xor
     xor_eq""".split())
+# What can start a declaration: after a class's `}` on a later line, these mean its `;` was forgotten.
+DECL_START = frozenset("""
+    class struct union enum template namespace using typedef static inline constexpr consteval
+    constinit extern virtual friend explicit void auto bool char char8_t char16_t char32_t wchar_t
+    int long short unsigned signed float double public private protected static_assert typename
+    decltype operator mutable""".split())
 # Specifiers that belong on a member's declaration in its class, not on its definition.
 MEMBER_ONLY = frozenset(("static", "virtual", "explicit", "inline", "friend"))
 OPEN = ("(", "[", "{")
@@ -309,6 +318,8 @@ class Decl:
         self.text = self.fwd = self.sig = self.span = self.key = self.ahead = None
         self.target = None      # the namespace a namespace alias or using-directive names, as a tuple
         self.decl_only = None   # a declaration without the definition, for an editor context that can't have it
+        self.calls = frozenset()    # its by-value names as written, qualified (`Config::compute`)
+        self.cond = ()          # the `#if` chains around it (see wrap)
         self.edits = ()
         self.refs = self.strong = frozenset()
 
@@ -321,9 +332,11 @@ class Body:
     """A function or method definition, emitted in its file's .inl (or, with no sig, a #define or #undef
     replayed there so bodies see the macros they saw in the file)."""
 
-    def __init__(self, f, ns, sig_line, sig, body_line, body, owner=None, refs=frozenset()):
+    def __init__(self, f, ns, sig_line, sig, body_line, body, owner=None, refs=frozenset(), cond=()):
         self.f, self.ns, self.sig_line, self.sig, self.body_line, self.body = f, ns, sig_line, sig, body_line, body
-        self.owner, self.refs = owner, refs     # the function (or class, for a constructor) and the names it uses
+        # What calling it looks like (`f`, `Config::compute`, `Config` for a constructor), and the names it uses
+        self.owner, self.refs = (owner,) if isinstance(owner, str) else tuple(owner or ()), refs
+        self.cond = cond        # the `#if` chains around it (see wrap)
 
 
 class Split:
@@ -333,6 +346,7 @@ class Split:
         self.edits, self.bodies, self.posts = [], [], []
         self.weak, self.removed, self.nested = set(), set(), set()
         self.exprs = set()      # initializer and default-argument tokens
+        self.move = True        # move method bodies out (not for class templates, which keep them)
 
 
 class Parser:
@@ -342,6 +356,12 @@ class Parser:
         self.f, self.src, self.toks, self.pair = f, f.text, f.toks, f.pair
         self.macros = set()     # function-like macros defined so far
         self.code_seen = False  # past the file's opening directives
+        # Open `#if`s around code, at file level and in the class being read: each is its directive and
+        # the #elif/#else lines since, so whatever hgen moves can be wrapped in the same conditions.
+        self.cond, self.class_cond = [], []
+
+    def cond_now(self):
+        return tuple(tuple(c) for c in self.cond + self.class_cond)
 
     def tx(self, k):
         return self.toks[k].text if 0 <= k < len(self.toks) else ""
@@ -387,6 +407,7 @@ class Parser:
 
     def decl(self, kind, a, b, ns, private, names, text=None, refs=None, strong=None, ahead=None):
         d = Decl(self.f, kind, names, ns, private, a)
+        d.cond = self.cond_now()
         d.text = self.slice(a, b) if text is None else text
         d.ahead = ahead
         d.refs = self.idents(a, b) if refs is None else refs
@@ -458,21 +479,25 @@ class Parser:
                 k = self.close(k) + 1
             elif self.tx(k) == ";":
                 k += 1
-            self.decl("misc", i, k - 1, ns, private, [])
+            # `MAKE_STRUCT(Point, x)` likely declares its first argument: others using Point come after it
+            first = self.toks[i + 2]
+            named = first.kind == "id" and first.text not in KEYWORDS and first.text not in self.macros \
+                and self.tx(i + 3) in (",", ")")
+            self.decl("misc", i, k - 1, ns, private, [first.text] if named else [])
             return k
         return self.declaration(i, end, ns, private)
 
     def directive(self, i, end, ns, private):
         """Handle a directive at file level; the ones before any code stay first, in order."""
         text = self.toks[i].text
-        preamble = not ns and not self.code_seen
+        preamble = not ns and not self.code_seen and not self.cond
         m = _INCLUDE.match(text)
         if m:
             inc = self.f.include(m.group(1), m.group(2))
             if inc[0] == "drop":
                 return i + 1
             if preamble:
-                self.f.preamble.append(("include", inc))
+                self.f.preamble.append(("include", inc, self.line(i)))
             else:
                 self.f.includes.append(inc)
             return i + 1
@@ -487,14 +512,21 @@ class Parser:
                 block = self.slice(i, k)
                 defines = [m.group(1) for m in map(_DEFINE.match, (self.tx(j) for j in range(i, k))) if m]
                 if preamble:
-                    self.f.preamble.append(("text", block))
+                    self.f.preamble.append(("text", block, self.line(i)))
                 else:
-                    self.f.bodies.append(Body(self.f, (), None, None, None, block))
+                    self.f.bodies.append(Body(self.f, (), None, None, None, block, cond=self.cond_now()))
                 text = "" if preamble else block
                 self.decl("macro", i, k, ns, private, defines, text=text, refs=frozenset(), ahead=text)
                 return k + 1
-            self.f.notes[f"{self.f.display}:{self.line(i)}: hgen moves code around, so an `#if` around code "
-                          f"at file level doesn't work; put it inside a function"] = None
+            self.cond.append([text])    # code inside: each piece is wrapped in it wherever it goes
+            return i + 1
+        if _ELSE.match(text):
+            if self.cond:
+                self.cond[-1].append(text)
+            return i + 1
+        if _ENDIF.match(text):
+            if self.cond:
+                self.cond.pop()
             return i + 1
         if _CONDITIONAL.match(text) or _PRAGMA_ONCE.match(text):
             return i + 1
@@ -507,15 +539,15 @@ class Parser:
             kept = "" if preamble else text     # a preamble #define is already at the top
             self.decl("macro", i, i, (), private, [m.group(1)], text=kept, refs=refs, ahead=kept)
             if not preamble:
-                self.f.bodies.append(Body(self.f, (), None, None, None, text))
+                self.f.bodies.append(Body(self.f, (), None, None, None, text, cond=self.cond_now()))
         elif _UNDEF.match(text) and not preamble:
             self.decl("undef", i, i, (), private, [], text=text, refs=frozenset([_UNDEF.match(text).group(1)]))
-            self.f.bodies.append(Body(self.f, (), None, None, None, text))
+            self.f.bodies.append(Body(self.f, (), None, None, None, text, cond=self.cond_now()))
             self.f.undefs.add(_UNDEF.match(text).group(1))
         elif not preamble:
             self.decl("misc", i, i, (), private, [], text=text, refs=frozenset())
         if preamble:
-            self.f.preamble.append(("text", text))
+            self.f.preamble.append(("text", text, self.line(i)))
         return i + 1
 
     def namespace(self, i, end, ns, private):
@@ -727,14 +759,18 @@ class Parser:
             k = name_i - (2 if self.tx(name_i - 1) == "::" else 3)
             ctor = self.tx(k) == name and self.tx(name_i - 1) == "::"
             self.f.bodies.append(Body(self.f, ns, self.line(start), self.src[toks[start].start:toks[body].start].rstrip(),
-                                      self.line(body), self.slice(body, e), owner=name if ctor else None,
-                                      refs=self.idents(cparen + 1, e) if ctor else frozenset()))
+                                      self.line(body), self.slice(body, e),
+                                      owner=[f"{self.tx(k)}::{name}"] + ([name] if ctor else []),
+                                      refs=self.idents(cparen + 1, e), cond=self.cond_now()))
             return e
         private = private or "static" in specs
         deduced = "auto" in specs and "->" not in after
         if specs & {"constexpr", "consteval"} or deduced:
             # needed in full wherever it's used (constexpr), or before (deduced return type)
-            self.decl("inline", start, e, ns, private, [name], ahead=None if deduced else ahead).decl_only = ahead
+            d = self.decl("inline", start, e, ns, private, [name], ahead=None if deduced else ahead)
+            d.decl_only = ahead
+            if not deduced:     # declared ahead, so constexpr functions can call each other in any order
+                d.fwd = self.without_defaults(start, paren, cparen, body, segs) + ";"
             return e
         if name != "main":
             sig = [k for k in range(start, body) if k not in pnames]
@@ -744,7 +780,8 @@ class Parser:
             p.sig = tuple(" ".join(self.tx(k) for k in range(a, (eq if eq is not None else b + 1)) if k not in pnames)
                           for a, b, eq in segs)
         self.f.bodies.append(Body(self.f, ns, self.line(start), self.without_defaults(start, paren, cparen, body, segs),
-                                  self.line(body), self.slice(body, e), owner=name, refs=self.idents(body, e)))
+                                  self.line(body), self.slice(body, e), owner=name, refs=self.idents(body, e),
+                                  cond=self.cond_now()))
         return e
 
     def prototype(self, start, h, d, ns, private, template):
@@ -758,10 +795,11 @@ class Parser:
         specs = {t.text for t in self.toks[h:name_i]}
         text = self.slice(start, d["e"])
         deleted = d["eq"] is not None and self.tx(d["eq"] + 1) in ("delete", "default")   # a definition: can't repeat
+        guide = template and name_i == h and self.tx(d["cparen"] + 1) == "->"    # `Box(T) -> Box<T>;`: can't repeat
         self.decl("template" if template else "proto", start, d["e"], ns, private or "static" in specs,
                   [] if self.qualified_name(name_i) else [name], text=text,
                   refs=self.idents_at(k for k in range(start, d["e"] + 1) if k not in pnames),
-                  strong=self.idents_at(defaulted), ahead=None if deleted else text)
+                  strong=self.idents_at(defaulted), ahead=None if deleted or guide else text)
 
     def declarators(self, h, e, init_paren=None):
         """For `T a = 1, *b;` at h..e-1: the names declared, the first name's index,
@@ -928,11 +966,30 @@ class Parser:
         return dict(keyword=keyword, name=name, qualified=qualified, spec_args=spec_args,
                     brace=k, enum=key == "enum", scoped=scoped, fixed=fixed)
 
+    def missing_semi(self, c, end):
+        """Whether the class closing at c was left without its `;` (Java has none): what follows,
+        on a later line, starts another declaration rather than declaring variables of the class."""
+        k = c + 1
+        if k >= end or self.tx(k) == "}":
+            return True
+        if self.tx(k) == ";" or self.line(k) == self.line(c):
+            return False
+        t = self.toks[k]
+        return (t.kind == "pp" or t.text in DECL_START or t.text == "~" or (t.text == "[" and self.tx(k + 1) == "[")
+                or (t.kind == "id" and (self.toks[k + 1].kind == "id" or self.tx(k + 1) in ("::", "<", "*", "&", "&&"))))
+
+    def semi_note(self, c, name):
+        self.f.notes[f"{self.f.display}:{self.line(c)}: `{name or 'the class'}` needs a `;` after its closing brace "
+                      f"(hgen added it)"] = None
+
     def class_def(self, start, head, end, ns, private, template, spec):
         brace = head["brace"]
         c = self.close(brace)
-        e = self.skip_to(c + 1, end)
+        semi = self.missing_semi(c, end)
+        e = c if semi else self.skip_to(c + 1, end)
         name = head["name"]
+        if semi:
+            self.semi_note(c, name)
         special = template or spec or head["qualified"] or head["spec_args"] is not None
         names = [name] if name and not (head["qualified"] or head["spec_args"]) else []
         if head["enum"] and not head["scoped"]:
@@ -940,19 +997,35 @@ class Parser:
         if c + 1 < e:       # variables declared with it: `struct P {...} origin, unit{1, 1};`
             names += self.declarators(c + 1, e)[0]
         if special or head["enum"] or not name:
-            d = self.decl("class", start, e, ns, private, names)   # kept as written
+            text, strong = self.slice(start, e), None
+            if not head["enum"]:    # templates keep their methods, but get nested types declared first and inline statics
+                out = Split()
+                out.move = False
+                self.split_members(brace, c, [name or ""], ns, out, "private" if head["keyword"] == "class" else "public")
+                text = self.apply(start, e, out.edits)
+                strong = self.strong_refs((k for k in range(start, e + 1) if k not in out.weak), out.exprs)
+            d = self.decl("class", start, e, ns, private, names, text=text + (";" if semi else ""), strong=strong)
             if head["enum"] and name and (head["scoped"] or head["fixed"]):
                 d.fwd = f"{head['keyword']} {name}" + (f" : {head['fixed']};" if head["fixed"] else ";")
+            elif (template and not spec and names and not head["qualified"] and head["spec_args"] is None
+                  and not any(self.tx(k) == "=" for k in range(start, head["brace"]))):
+                # `template <class T> class Box;`: a primary template without default arguments (they can't be repeated)
+                key = start
+                while self.tx(key) == "template":
+                    key = self.skip_angles(key + 1, end)
+                key = self.skip_attrs(key)
+                d.fwd = f"{self.src[self.toks[start].start:self.toks[key].start].strip()} {self.tx(key)} {name};"
             return e + 1
         out = Split()
         self.split_members(brace, c, [name], ns, out, "private" if head["keyword"] == "class" else "public")
         keep = [k for k in range(start, e + 1) if k not in out.removed]
-        d = self.decl("class", start, e, ns, private, names, text=self.apply(start, e, out.edits),
+        d = self.decl("class", start, e, ns, private, names, text=self.apply(start, e, out.edits) + (";" if semi else ""),
                       refs=self.idents_at(keep), strong=self.strong_refs((k for k in keep if k not in out.weak), out.exprs))
         d.fwd = f"{head['keyword']} {name};"
         d.span, d.edits = (start, e), out.edits
-        for text, a, b, key in out.posts:
-            self.decl("post", a, b, ns, private, [], text=text).key = key
+        for text, a, b, key, cond in out.posts:
+            d = self.decl("post", a, b, ns, private, [], text=text)
+            d.key, d.cond = key, cond
         self.f.bodies.extend(out.bodies)
         return e + 1
 
@@ -991,12 +1064,16 @@ class Parser:
         """Move the method bodies in the class at brace..c out of it, recording edits in out."""
         k, default, fwds = brace + 1, access, []
         out.nested |= self.nested_names(brace, c)
+        depth = len(self.class_cond)
         while k < c:
             t = self.toks[k]
             if t.kind == "pp":
-                if _CONDITIONAL.match(t.text):
-                    self.f.notes[f"{self.f.display}:{self.line(k)}: hgen moves method bodies out of their class, "
-                                  f"so `#if` inside a class may not do what you want"] = None
+                if _IF.match(t.text):
+                    self.class_cond.append([t.text])
+                elif _ELSE.match(t.text) and len(self.class_cond) > depth:
+                    self.class_cond[-1].append(t.text)
+                elif _ENDIF.match(t.text) and len(self.class_cond) > depth:
+                    self.class_cond.pop()
                 k += 1
             elif t.text in ("public", "private", "protected") and self.tx(k + 1) == ":":
                 access = t.text
@@ -1008,6 +1085,9 @@ class Parser:
                 if fwd:
                     fwds.append((access, fwd))
                 k = self.member(k, c, quals, ns, out)
+        if len(self.class_cond) > depth:
+            self.f.notes[f"{self.f.display}:{self.line(c)}: an `#if` in this class has no `#endif` before its end"] = None
+            del self.class_cond[depth:]
         if fwds:    # on the brace's line, so line numbers stay put
             text, cur = "{", default
             for acc, fwd in fwds:
@@ -1029,7 +1109,10 @@ class Parser:
         if self.tx(h) == "template" and self.tx(h + 1) == "<":    # member templates stay put
             while self.tx(h) == "template" and self.tx(h + 1) == "<":
                 h = self.skip_angles(h + 1, c)
-            return self.scan(h, c)["e"] + 1
+            e = self.scan(h, c)["e"]
+            if self.tx(h) == "friend":      # `template <class U> friend class Peeker;` needs nothing
+                out.weak.update(range(start, e + 1))
+            return e + 1
         if self.tx(h) in ("using", "typedef", "static_assert"):
             e = self.skip_to(h, c)
             if self.tx(h) == "typedef":
@@ -1042,6 +1125,10 @@ class Parser:
             brace = head["brace"]
             inner = self.close(brace)
             e = self.skip_to(inner + 1, c)
+            if self.missing_semi(inner, c):
+                e = inner
+                out.edits.append((inner, inner, "};", None))
+                self.semi_note(inner, head["name"])
             if head["name"]:
                 out.nested.add(head["name"])
             if not head["enum"] and head["name"] and not head["qualified"] and head["spec_args"] is None:
@@ -1072,24 +1159,21 @@ class Parser:
         if static is None or not names or specs & {"constexpr", "inline"}:
             return
         key = f"{quals[-1]}::{names[0]}"
-        # A static of the class's own type (`static Foo origin;`, `static std::vector<Foo> all;`) can't be
-        # defined inside the still-incomplete class.
-        if len(names) > 1 or not {self.tx(k) for k in range(start, first)} & set(quals):
+        # A static of the class's own type (`static Foo origin;`, `static std::vector<Foo> all;`) or of a type
+        # declared in it (maybe further down, Java style) can't be defined inside the class: it's defined after.
+        if len(names) > 1 or not {self.tx(k) for k in range(start, first)} & (set(quals) | out.nested):
             out.edits.append((static, static, "inline static", key))
             return
-        # Its type is the class itself, which isn't complete yet: define it after the class.
+        if not out.move:
+            return      # a class template's: left as written
         init = ""
-        stop = e
         if inits:
             a, b = inits[0]
             init = self.slice(a, b)
-            stop = a
             out.edits.append((a, b, "\n" * init.count("\n"), key))
-        type_text = (self.src[toks[start].start:toks[static].start]
-                     + self.src[toks[static].end:toks[first].start]).strip()
-        dims = self.src[toks[first].end:toks[stop].start].strip()
         init = (" " + init) if init.startswith("=") else init
-        out.posts.append((f"{type_text} {'::'.join(quals)}::{names[0]}{dims}{init};", start, e, key))
+        q = "::".join(quals)
+        out.posts.append((f"decltype({q}::{names[0]}) {q}::{names[0]}{init};", start, e, key, self.cond_now()))
 
     def method(self, start, d, quals, ns, out):
         toks = self.toks
@@ -1102,6 +1186,8 @@ class Parser:
         if self.tx(body - 1) == "try":
             while self.tx(e + 1) == "catch":
                 e = self.close(self.close(e + 2) + 1)
+        if not out.move:
+            return e + 1
         if (specs & {"constexpr", "consteval"} or ("auto" in specs and "->" not in after)
                 or "requires" in after or self.tx(body - 1) == "try" or self.tx(name_start - 1) == "::"):
             return e + 1    # needed in full where it's used, so it stays in the class
@@ -1140,7 +1226,8 @@ class Parser:
             sig += " " + self.src[toks[colon].start:toks[body].start].strip()
         ctor = self.tx(name_start) == quals[-1]   # a constructor runs when a global of its class starts up
         out.bodies.append(Body(self.f, ns, self.line(start), sig, self.line(body), self.slice(body, e),
-                               owner=quals[-1] if ctor else None, refs=self.idents(cparen + 1, e) if ctor else frozenset()))
+                               owner=[f"{quals[-1]}::{self.tx(name_i)}"] + ([quals[-1]] if ctor else []),
+                               refs=self.idents(cparen + 1, e), cond=self.cond_now()))
         return e + 1
 
     def enumerators(self, brace, c):
@@ -1179,6 +1266,8 @@ class SrcFile:
         self.undefs = set()     # macros the file #undefs after its opening directives
         self.parser = Parser(self)
         self.parser.scope(0, len(self.toks), (), False)
+        if self.parser.cond:
+            self.notes[f"{self.display}: an `#if` around code has no `#endif`"] = None
 
     def line(self, pos):
         return bisect.bisect_left(self.newlines, pos) + 1
@@ -1213,13 +1302,17 @@ class SrcFile:
             if style == "drop":
                 return f"/* {m.group(0)} */"
             return m.group(1) + (where(path) if style == "file" else path) + m.group(3)
-        for kind, val in self.preamble + [("include", inc) for inc in self.includes]:
+        for kind, val, line in self.preamble + [("include", inc, 0) for inc in self.includes]:
             if kind == "include":
                 style, path = val
                 yield val, (f"#include <{path}>" if style == "<" else
                             f'#include "{where(path) if style == "file" else path}"')
             else:
-                yield None, _QUOTED_INCLUDE.sub(fix, val)
+                # Its own value even if another file's opening lines define the same macro; a problem in it
+                # is reported at its own line.
+                m = _DEFINE.match(val)
+                yield None, (f"#undef {m.group(1)}\n" if m else "") + f'#line {line} "{self.display}"\n' \
+                    + _QUOTED_INCLUDE.sub(fix, val)
 
     def doc(self, pos):
         """The comment block directly above pos, if any."""
@@ -1245,6 +1338,15 @@ def unqualify(refs, user_ns):
         elif head in user_ns or not head:
             out.add(name)
     return frozenset(out)
+
+
+def guarded(path):
+    """Whether a header protects itself from being included twice."""
+    try:
+        text = read(path)
+    except OSError:
+        return True
+    return bool(_PRAGMA_ONCE.search(text) or re.search(r"^\s*#\s*ifndef\s+(\w+)\s*\n\s*#\s*define\s+\1\b", text, re.M))
 
 
 def within(path, folder):
@@ -1276,13 +1378,15 @@ def is_generated(path):
 
 
 def bot_files(bot_dir, suffixes):
-    """Files in the bot folder you write, sorted; src/, build output and dot-folders excluded."""
+    """Files in the bot folder you write, sorted; src/, build output, hidden files and folders excluded
+    (an editor's lock file, `.#bot.htb`, is a broken link)."""
     out = []
     for dirpath, dirnames, filenames in os.walk(str(bot_dir)):
         top = os.path.abspath(dirpath) == os.path.abspath(str(bot_dir))
         dirnames[:] = sorted(d for d in dirnames if not d.startswith(".")
                              and not (top and d in ("src", "build", "target")))
-        out += [Path(dirpath) / n for n in sorted(filenames) if n.endswith(suffixes)]
+        out += [Path(dirpath) / n for n in sorted(filenames)
+                if n.endswith(suffixes) and not n.startswith(".") and os.path.isfile(os.path.join(dirpath, n))]
     return out
 
 
@@ -1290,11 +1394,13 @@ class Bot:
     def __init__(self, path):
         self.dir, self.name, self.src = path, path.name, path / "src"
         self.files = [SrcFile(self, p, i) for i, p in enumerate(bot_files(path, (SOURCE,)))]
-        copied = {self.src / p.relative_to(self.dir) for p in bot_files(path, HEADER_TYPES)}
-        for f in self.files:    # a header of yours where hgen would write one keeps its place
-            if f.header in copied:
+        # A header of yours where hgen would write one keeps its place (names compared ignoring case,
+        # as macOS and Windows do).
+        copied = {str(self.src / p.relative_to(self.dir)).lower() for p in bot_files(path, HEADER_TYPES)}
+        for f in self.files:
+            if str(f.header).lower() in copied:
                 f.header = f.header.with_name(f.header.stem + ".htb.h")
-            if f.inl in copied:
+            if str(f.inl).lower() in copied:
                 f.inl = f.inl.with_name(f.inl.stem + ".htb.inl")
         user_ns = {n for f in self.files for n in f.namespaces if n}
         # Static members someone defined outside their class keep their plain declaration.
@@ -1305,6 +1411,7 @@ class Bot:
                 if any(ed[3] in defined for ed in d.edits):
                     d.text = f.parser.apply(*d.span, [ed for ed in d.edits if ed[3] not in defined])
             for d in f.decls:
+                d.calls = d.strong      # as written (`Config::compute`), for the start-up order of globals
                 d.refs, d.strong = unqualify(d.refs, user_ns), unqualify(d.strong, user_ns)
                 # Its own name inside it (constructors, `Node* next`, `int x = 5;` beside an `extern int x;`)
                 # means itself or another declaration of it, never something to put first.
@@ -1315,20 +1422,21 @@ class Bot:
         """The globals a global's initializer reads through the functions (and constructors) it calls:
         they must start up first, as they would in Java."""
         if not hasattr(self, "body_refs"):
-            user_ns = {n for f in self.files for n in f.namespaces if n}
             self.body_refs = defaultdict(set)
             for f in self.files:
                 for b in f.bodies:
-                    if b.owner:
-                        self.body_refs[b.owner] |= unqualify(b.refs, user_ns)
-        seen, todo, out = set(), list(d.strong), set()
+                    for key in b.owner:
+                        self.body_refs[key] |= b.refs
+        seen, todo, out = set(), list(d.strong | d.calls), set()
         while todo:
             r = todo.pop()
             if r in seen:
                 continue
             seen.add(r)
             todo += self.body_refs.get(r, ())
-            out.update(x for x in resolve(r, d.f) if x.kind == "var" and x is not d)
+            # (another declaration of the same global, `extern int x;` beside `int x = 5;`, isn't a different one)
+            out.update(x for x in resolve(r.rpartition("::")[2], d.f)
+                       if x.kind == "var" and x is not d and not set(x.names) & set(d.names))
         return out
 
     def context_path(self, f):
@@ -1337,6 +1445,9 @@ class Bot:
     def generate(self):
         """Return ({src/ path: text}, [notes], {editor context path: text})."""
         notes = {}
+        for p in bot_files(self.dir, (".cpp", ".cc", ".cxx", ".c++")):
+            notes[f"{display_path(p, self)} isn't part of the build (cambc builds src/, which hgen writes from the "
+                  f".htb files): rename it to .htb"] = None
         for f in self.files:
             notes.update(f.notes)
             for line, text in f.using_dirs if len(self.files) > 1 else ():
@@ -1389,6 +1500,16 @@ class Bot:
                 deps[d].update(x for x in d.f.decls if x is not d and d.refs & x.refs)
             if d.kind == "var":
                 deps[d].update(self.init_reads(d, resolve))
+        # Evaluating a constexpr function needs every constexpr function it calls defined, too.
+        for d in decls:
+            todo = [x for x in deps[d] if x.kind == "inline"]
+            seen = set(todo)
+            while todo:
+                for y in deps[todo.pop()]:
+                    if y.kind == "inline" and y not in seen and y is not d:
+                        seen.add(y)
+                        todo.append(y)
+            deps[d] |= seen
         self.clashes(by_name, notes)
 
         # Files whose declarations need each other's share one header.
@@ -1417,7 +1538,7 @@ class Bot:
                  "// The whole bot as one translation unit: every file's declarations, then every",
                  "// file's function bodies, so the compiler can inline calls across files.", ""]
         # Each file sees the library headers any file includes, as the editor shows it.
-        system = [f"#include <{val[1]}>" for f in self.files for kind, val in f.preamble + [("include", i) for i in f.includes]
+        system = [f"#include <{val[1]}>" for f in self.files for kind, val, _ in f.preamble + [("include", i, 0) for i in f.includes]
                   if kind == "include" and val[0] == "<"]
         lines += list(dict.fromkeys(system)) + [""] if system else []
         lines += [f'#include "{rel_include(f.header, unity)}"' for g in groups for f in g]
@@ -1426,7 +1547,8 @@ class Bot:
         out[unity] = "\n".join(lines) + "\n"
         for path in bot_files(self.dir, HEADER_TYPES):
             rel = path.relative_to(self.dir).as_posix()
-            out[self.src / rel] = (f"{BANNER_PREFIX}: a copy of {rel}. {EDIT_HINT.format(src=rel)}\n"
+            # `#pragma once`: the bot is one unit, so a header without a guard would be included twice
+            out[self.src / rel] = (f"{BANNER_PREFIX}: a copy of {rel}. {EDIT_HINT.format(src=rel)}\n#pragma once\n"
                                    f'#line 1 "{display_path(path, self)}"\n' + read(path))
         contexts = {self.context_path(f): self.context_text(f, emission, deps) for f in self.files}
         return out, list(notes), contexts
@@ -1436,7 +1558,9 @@ class Bot:
         path = self.context_path(X)
         lines = [f"{BANNER_PREFIX} for editors: read before {X.rel}, so clangd knows what the bot's",
                  "// other files declare. cambc never compiles this; it builds src/unity.cpp.", "#pragma once", ""]
-        seen = set()
+        # A header without an include guard that X includes itself would be read twice: leave it to X.
+        seen = {inc for inc, _ in X.directives(path, original=True) if inc and inc[0] == "file"
+                and not guarded(self.dir / os.path.relpath(inc[1], str(self.src)) if within(inc[1], self.src) else Path(inc[1]))}
         for f in [X] + [f for f in self.files if f is not X]:
             for inc, text in f.directives(path, original=True):
                 if inc is None or inc not in seen:
@@ -1451,13 +1575,13 @@ class Bot:
             if d in blocked or any(x in blocked for x in deps[d]):
                 blocked.add(d)
                 if d.f is not X and d.decl_only:    # e.g. `extern const int SCALE;`: usable, if not in full
-                    blocks.append((d.ns, f'#line {d.line} "{d.f.display}"\n{d.decl_only}\n'))
+                    blocks.append((d.ns, wrap(d.cond, f'#line {d.line} "{d.f.display}"\n{d.decl_only}\n')))
                 continue
             text = d.ahead if d.f is X else d.text
             if text:
                 doc = d.f.doc(d.f.toks[d.start].start)
                 # The #line lets the HTB extension send go to definition from here to the .htb line.
-                blocks.append((d.ns, (doc + "\n" if doc else "") + f'#line {d.line} "{d.f.display}"\n{text}\n'))
+                blocks.append((d.ns, wrap(d.cond, (doc + "\n" if doc else "") + f'#line {d.line} "{d.f.display}"\n{text}\n')))
         emit(lines, blocks)
         return "\n".join(lines).rstrip() + "\n"
 
@@ -1570,7 +1694,7 @@ def header_text(owner, group, items, used, resolve):
         if not d.text:
             continue    # a macro from the file's opening directives, already above
         doc = d.f.doc(d.f.toks[d.start].start)
-        blocks.append((d.ns, (doc + "\n" if doc else "") + f'#line {d.line} "{d.f.display}"\n{d.text}\n'))
+        blocks.append((d.ns, wrap(d.cond, (doc + "\n" if doc else "") + f'#line {d.line} "{d.f.display}"\n{d.text}\n')))
     emit(lines, blocks)
     return "\n".join(lines).rstrip() + "\n"
 
@@ -1578,14 +1702,23 @@ def header_text(owner, group, items, used, resolve):
 def inl_text(f):
     lines = [f"{BANNER_PREFIX} from {f.rel}. {EDIT_HINT.format(src=f.rel)}",
              "// Function bodies; src/unity.cpp includes this after every header.", ""]
-    # Bodies see the macros they saw in the file: its #defines and #undefs are replayed in order,
-    # after the opening ones the file later #undefs.
-    lines += [text for kind, text in f.preamble
-              if kind == "text" and (m := _DEFINE.match(text)) and m.group(1) in f.undefs]
-    emit(lines, [(b.ns, b.body + "\n" if b.sig is None else
-                  f'#line {b.sig_line} "{f.display}"\n{b.sig}\n#line {b.body_line} "{f.display}"\n{b.body}\n')
+    # Bodies see the macros they saw in the file, whatever other files define: its opening #defines
+    # first, then its later #defines and #undefs in order.
+    for kind, text, _ in f.preamble:
+        m = _DEFINE.match(text) if kind == "text" else None
+        if m:
+            lines += [f"#undef {m.group(1)}", text]
+    emit(lines, [(b.ns, wrap(b.cond, b.body + "\n" if b.sig is None else
+                  f'#line {b.sig_line} "{f.display}"\n{b.sig}\n#line {b.body_line} "{f.display}"\n{b.body}\n'))
                  for b in f.bodies])
     return "\n".join(lines).rstrip() + "\n"
+
+
+def wrap(cond, text):
+    """text inside the `#if` chains it was in: for each, the #if and the #elif/#else before its branch."""
+    if not cond:
+        return text
+    return "\n".join([line for chain in cond for line in chain] + [text.rstrip("\n")] + ["#endif"] * len(cond)) + "\n"
 
 
 def emit(lines, blocks):

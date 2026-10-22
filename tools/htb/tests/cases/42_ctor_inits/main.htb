@@ -1,0 +1,5 @@
+#include <cstdio>
+int main() {
+    Fancy a, b(7), c(3, 4);
+    std::printf("%d %d %zu %d | %d %d | %d %zu %d\n", a.base_value, a.fn(), a.v.size(), a.x, b.x, b.fn(), c.base_value, c.v.size(), c.x);
+}

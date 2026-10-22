@@ -1,0 +1,9 @@
+#include <cstdio>
+int main() {
+    Forwarded* f = make_forwarded();
+    Chain c;
+    c = 5;
+    std::printf("%d %d %d %d\n", g_from_static, int(Tier::High), Derived{}.get(), forwarded_value(f));
+    std::printf("%d %d %d %d %d\n", fast_add(1, 2), slow_add(3, 4), file_local(), c.v, Chain(2.5).v);
+    delete f;
+}

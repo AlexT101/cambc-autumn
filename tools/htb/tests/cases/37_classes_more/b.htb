@@ -1,0 +1,18 @@
+struct Square : Shape {
+    Square* clone() const override { return new Square(*this); }
+    int sides() const override { return 4; }
+};
+
+struct Tag {
+    int id = 0;
+};
+
+// Diamond across files: Top <- Left, Right <- Bottom
+struct Top {
+    int t = 1;
+};
+struct Left : virtual Top {};
+struct Right : virtual Top {};
+struct Bottom : Left, Right {
+    int get() const { return t + 1; }
+};

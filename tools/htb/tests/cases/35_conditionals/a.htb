@@ -1,0 +1,40 @@
+#include <cstdio>
+
+#define FEATURE_LEVEL 2
+
+// cambc builds define CAMBC_DEBUG unless --release: debug-only code at file level.
+#ifdef CAMBC_DEBUG
+int debug_calls = 0;
+void debug_log(const char* what) {
+    ++debug_calls;
+    std::printf("debug %s\n", what);
+}
+#else
+void debug_log(const char*) {}
+#endif
+
+#if FEATURE_LEVEL > 1
+int level() { return 2; }
+#elif FEATURE_LEVEL > 0
+int level() { return 1; }
+#else
+int level() { return 0; }
+#endif
+
+#if defined(NEVER_DEFINED) && FEATURE_LEVEL > 0
+int broken() { return this_does_not_compile; }
+#endif
+
+#ifndef NEVER_DEFINED
+struct Gadget {
+    int value() const { return Mode::ON == mode ? 5 : 6; }
+    enum class Mode { OFF, ON };
+    Mode mode = Mode::ON;
+#ifdef NEVER_DEFINED
+    int extra() const { return missing_name; }
+    int extra_field = missing_name;
+#else
+    int extra() const { return 7; }
+#endif
+};
+#endif

@@ -1,0 +1,22 @@
+#include <string>
+
+// Java has no `;` after a class: forgetting it here must not break other files.
+class Account {
+public:
+    int balance = 5;
+    struct Entry {
+        int amount;
+    }
+    int total() const { return balance + Entry{2}.amount; }
+}
+
+enum class Kind { Checking, Savings }
+
+struct Pair {
+    int a, b;
+} origin{1, 2};
+
+struct Holder {
+    int v = 3;
+}
+holder_instance;

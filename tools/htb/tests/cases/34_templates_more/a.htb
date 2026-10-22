@@ -1,0 +1,63 @@
+#include <string>
+#include <utility>
+#include <vector>
+
+// Class templates written Java style: a static with an initializer, a nested type used above its definition.
+template <class T>
+class Stack {
+public:
+    void push(T v) { items.push_back(Node{v}); ++count; }
+    T top() const { return items.back().value; }
+    Node first() const { return items.front(); }
+    static int count = 0;
+    template <class U>
+    void push_all(const std::vector<U>& us);
+
+private:
+    std::vector<Node> items;
+    struct Node {
+        T value;
+    };
+};
+
+template <class T>
+template <class U>
+void Stack<T>::push_all(const std::vector<U>& us) {
+    for (const auto& u : us) push(T(u));
+}
+
+// A primary template; b.htb specializes it.
+template <class T>
+struct Describe {
+    static std::string name() { return "thing"; }
+};
+
+template <class T>
+T convert(int v) { return T(v); }
+
+template <template <class> class C, class T>
+int size_of(const C<T>& c) { return int(c.size()); }
+
+template <class T = Later>
+struct WithDefault {
+    T value{};
+    int get() const { return value.n; }
+};
+
+template <class T>
+typename T::value_type first_of(const T& t) { return *t.begin(); }
+
+struct HasGet {
+    template <int N>
+    int get() const { return N * 10; }
+};
+
+template <class T>
+int call_get(const T& t) { return t.template get<4>(); }
+
+template <class T>
+class Secretive {
+    template <class U>
+    friend class Peeker;
+    T hidden{42};
+};

@@ -1,0 +1,6 @@
+int g_scale = scale_source();
+int scale_source() { return 21; }
+constexpr int BASE_TIER = 3;
+struct Payload {
+    int n = 4;
+};

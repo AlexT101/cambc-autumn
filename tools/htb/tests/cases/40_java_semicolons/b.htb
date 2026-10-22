@@ -1,0 +1,4 @@
+struct Bank {
+    Account main;
+    Kind kind = Kind::Savings;
+}

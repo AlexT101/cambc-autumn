@@ -1,0 +1,15 @@
+template <class T>
+struct Wrapper {
+    T value;
+};
+
+class Forwarded {
+public:
+    int x = 9;
+};
+Forwarded* make_forwarded() { return new Forwarded; }
+int forwarded_value(const Forwarded* f) { return f->x; }
+
+struct Config {
+    static int compute() { return g_scale * 2; }
+};

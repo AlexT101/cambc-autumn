@@ -1,0 +1,3 @@
+int z_marker() { return 0; }
+
+#define GRID 6

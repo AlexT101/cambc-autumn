@@ -1,0 +1,5 @@
+# The editor flags each forgotten `;` (with a quick fix); the build adds them and notes it.
+a.htb:10
+a.htb:13
+a.htb:15
+b.htb:5

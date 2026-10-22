@@ -1,0 +1,42 @@
+#include <ostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+struct Outer {
+    int use() const { return cached.v + int(default_mode) + Inner::self.v; }
+    static Inner cached;
+    static Mode default_mode = Mode::B;
+    struct Inner {
+        int v = 1;
+        static Inner self;
+    };
+    enum class Mode { A = 10, B = 20 };
+
+private:
+    static Inner hidden_cache;
+};
+
+struct Shape {
+    virtual ~Shape() = 0;
+    virtual Shape* clone() const = 0;
+    virtual int sides() const = 0;
+};
+Shape::~Shape() {}
+
+struct Calculator {
+    int double_it(int v) const { return v * 2; }
+    int (Calculator::*op)(int) const = &Calculator::double_it;
+    static constexpr int table[] = {1, 2, 3};
+    mutable int calls = 0;
+    int run(int v) const {
+        ++calls;
+        return (this->*op)(v);
+    }
+    explicit operator std::vector<int>() const { return {table[0], table[1], table[2]}; }
+    friend std::ostream& operator<<(std::ostream& os, const Calculator& c) { return os << "calc(" << c.calls << ")"; }
+};
+
+struct Tagged {
+    std::vector<::Tag> tags;
+};

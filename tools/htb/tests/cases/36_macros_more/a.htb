@@ -1,0 +1,11 @@
+#define LIMIT 5
+
+int a_limit() { return LIMIT; }
+
+struct Sized {
+    int cells[GRID];
+    int size() const { return int(sizeof(cells) / sizeof(cells[0])); }
+};
+
+Made made_value() { return Made{3}; }
+Made g_made{4};

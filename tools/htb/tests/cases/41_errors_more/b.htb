@@ -1,0 +1,7 @@
+struct Dup {
+    int b = 2;
+};
+
+struct Cycle2 {
+    Cycle1 inner;
+};

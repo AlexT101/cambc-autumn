@@ -1,0 +1,15 @@
+#include <cstdio>
+int main() {
+    Square sq;
+    Shape* copy = sq.clone();
+    Calculator c;
+    std::ostringstream os;
+    int r = c.run(21);
+    os << c;
+    const int* row = Calculator::table;
+    std::vector<int> as_vec(c);
+    Tagged t{{Tag{4}}};
+    std::printf("%d %d %d %s %d %zu\n", Outer{}.use(), copy->sides(), r, os.str().c_str(), row[2], as_vec.size());
+    std::printf("%d %d\n", t.tags[0].id, Bottom{}.get());
+    delete copy;
+}

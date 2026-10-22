@@ -1,0 +1,16 @@
+#include <functional>
+#include <vector>
+
+template <class T>
+struct Base {
+    T base_value;
+};
+
+struct Fancy : Base<int> {
+    Fancy() : Base<int>{1}, fn([this] { return x * 2; }), v{1, 2, 3}, x{[] { return 5; }()} {}
+    Fancy(int a) noexcept(true) : Fancy() { x = a; }
+    Fancy(int a, int b) : Base<int>{a}, fn(nullptr), v(static_cast<std::size_t>(b), 0), x(a > b ? a : b) {}
+    std::function<int()> fn;
+    std::vector<int> v;
+    int x;
+};

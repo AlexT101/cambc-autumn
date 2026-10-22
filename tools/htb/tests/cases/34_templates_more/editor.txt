@@ -1,0 +1,4 @@
+# Known limitation: clangd reads the class as written, so a nested type used above its
+# definition is flagged in the editor; the build is fine (hgen declares nested types first).
+a.htb:11
+a.htb:17

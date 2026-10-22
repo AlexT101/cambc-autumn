@@ -1,0 +1,15 @@
+#include <cstdio>
+#include <vector>
+
+int main() {
+    Stack<int> s;
+    s.push(3);
+    s.push_all(std::vector<double>{4.5, 5.5});
+    std::printf("%d %d %d\n", s.top(), s.first().value, Stack<int>::count);
+    std::printf("%s | %s | %s\n", Describe<char>::name().c_str(), Describe<int>::name().c_str(),
+                Describe<int*>::name().c_str());
+    std::printf("%d %.1f\n", convert<int>(2), convert<double>(2));
+    std::vector<int> v{7, 8, 9};
+    std::printf("%d %d %d %d\n", size_of(v), WithDefault<>{}.get(), first_of(v), call_get(HasGet{}));
+    std::printf("%d\n", Peeker<void>{}.peek(Secretive<int>{}));
+}

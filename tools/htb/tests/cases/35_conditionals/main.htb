@@ -1,0 +1,4 @@
+int main() {
+    debug_log("start");
+    std::printf("%d %d %d\n", level(), Gadget{}.value(), Gadget{}.extra());
+}

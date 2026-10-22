@@ -1,0 +1,2 @@
+#include "consts.h"
+int dotted() { return 2 + UNGUARDED_BASE; }

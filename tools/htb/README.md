@@ -39,8 +39,11 @@ since it's what cambc builds.
   name, and a file-level `using namespace std;` reaches every file; hgen prints a note for both.
 - Every file sees the library headers (`<...>`) any file includes, and globals start up after the globals their
   initializers read (also through the functions and constructors they call).
-- `#if 0` blocks and include guards are fine; any other `#if` around code at file level isn't supported (put it
-  inside a function).
+- `#if`/`#ifdef` around code works anywhere, at file level or in a class (`#ifdef CAMBC_DEBUG` for debug-only code):
+  whatever hgen moves keeps its conditions. `#if 0` is left out; include guards are fine.
+- A forgotten `;` after a class (Java has none) is added, with a note; the editor underlines it with a quick fix.
+- Each file's macros keep their own values, even if another file defines the same macro.
+- A `.cpp` file in the bot folder isn't built (cambc builds `src/`); hgen notes it.
 
 ## What's here
 
@@ -54,11 +57,13 @@ since it's what cambc builds.
 
 ## Tests
 
-    python3 tools/htb/tests/run.py              # every case: about 35 s
+    python3 tools/htb/tests/run.py              # every case: about 45 s
     python3 tools/htb/tests/run.py 07_templates --keep
 
 Each case in `tests/cases/` is a small bot that defines things in awkward ways (circular, across nested folders,
 Java order, C-style, macros, CRLF files...). Every case is generated, built and run natively with its output
 checked (or its errors checked against the right `.htb` lines), compiled with cambc's own compiler, opened in clangd
-the way the extension does, and fuzzed: each file cut at every token, with every token deleted, and with junk
-inserted everywhere must never crash or hang hgen. Run it after changing hgen.
+the way the extension does, and fuzzed: each file cut at every token, with every token deleted, with junk inserted
+everywhere and with random multi-token edits must never crash or hang hgen. Two more checks: `lifecycle` (editing,
+deleting and renaming files, stray files in `src/`, `--check`, `--watch`) and `stress` (a 20,000-line file, 300
+files, nesting 100 deep). Run it after changing hgen.

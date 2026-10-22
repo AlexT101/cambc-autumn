@@ -1,0 +1,2 @@
+#include <cstdio>
+int main() { std::printf("%d %d %d\n", cafe_value(), quote_value(), hash_value()); }

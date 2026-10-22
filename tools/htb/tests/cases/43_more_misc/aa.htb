@@ -1,0 +1,2 @@
+// Started up by a static method whose body reads z.htb's g_scale: nothing else ties this file to z.htb.
+int g_from_static = Config::compute();

@@ -1,0 +1,6 @@
+#include <cstdio>
+int main() {
+    g_ref = 11;
+    std::printf("%d %d %d %d %d\n", g_first + g_second, g_target, g_buf[3], g_points[1].y, g_from_defaults);
+    std::printf("%d %zu %s %d %s\n", g_size, sizeof(g_array) / sizeof(int), reinterpret_cast<const char*>(g_u8), g_fact(5), ("ab"_s2).c_str());
+}

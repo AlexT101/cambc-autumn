@@ -1,0 +1,24 @@
+#include <functional>
+#include <string>
+#include <utility>
+
+auto [g_first, g_second] = std::pair{3, 4};
+int g_target = 10;
+int& g_ref = g_target;
+alignas(16) int g_buf[4] = {1, 2, 3, 4};
+[[maybe_unused]] static int g_unused = 0;
+Point g_points[2];
+const Config DEFAULTS{3};
+int g_size = sizeof(Later);
+int g_from_defaults = DEFAULTS.level * 2;
+
+constexpr bool c_even(unsigned n) { return n == 0 ? true : c_odd(n - 1); }
+static_assert(c_even(10), "constexpr functions call each other across files");
+constexpr int c_twice(int v) { return c_add(v, v); }
+int g_array[c_twice(2)];
+
+const char8_t* g_u8 = u8"{ u8 }";
+const char16_t* g_u16 = u"{";
+const wchar_t* g_wide = L"}";
+
+std::function<int(int)> g_fact = [](int n) { return n <= 1 ? 1 : n * g_fact(n - 1); };

@@ -1,0 +1,2 @@
+#include <cstdio>
+int main() { std::printf("%d %d %d %d %d\n", a_limit(), b_limit(), Sized{}.size(), made_value().v + z_marker(), g_made.v); }

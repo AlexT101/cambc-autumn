@@ -1,0 +1,16 @@
+#include <string>
+
+constexpr bool c_odd(unsigned n) { return n == 0 ? false : c_even(n - 1); }
+constexpr int c_add(int a, int b) { return a + b; }
+
+struct Point {
+    int x = 1, y = 2;
+};
+struct Config {
+    int level;
+};
+struct Later {
+    char data[12];
+};
+
+std::string operator""_s2(const char* s, std::size_t n) { return std::string(s, n) + std::string(s, n); }

@@ -1,0 +1,26 @@
+#include <vector>
+
+enum class Tier { Low = BASE_TIER, High = BASE_TIER + 10 };
+
+struct Derived : Wrapper<Payload> {
+    int get() const { return value.n + 1; }
+};
+
+class Forwarded;
+Forwarded* make_forwarded();
+int forwarded_value(const Forwarded* f);
+
+[[gnu::always_inline]] inline int fast_add(int a, int b) { return a + b; }
+__attribute__((noinline)) int slow_add(int a, int b) { return a + b; }
+static inline int file_local() { return 6; }
+
+struct Chain {
+    int v = 0;
+    Chain& operator=(int x) {
+        v = x;
+        return *this;
+    }
+    template <class T>
+    explicit Chain(T t) : v(int(t)) {}
+    Chain() = default;
+};

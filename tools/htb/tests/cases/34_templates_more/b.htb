@@ -1,0 +1,27 @@
+#include <string>
+
+template <class T>
+struct Describe<T*> {
+    static std::string name() { return "pointer to " + Describe<T>::name(); }
+};
+
+template <>
+struct Describe<int> {
+    static std::string name() { return "int"; }
+};
+
+template <>
+double convert<double>(int v) { return v + 0.5; }
+
+struct Later {
+    int n = 8;
+};
+
+template <class U>
+class Peeker {
+public:
+    template <class T>
+    T peek(const Secretive<T>& s) const { return s.hidden; }
+};
+
+template class Stack<long>;
