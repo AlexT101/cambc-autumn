@@ -69,13 +69,13 @@ ChampionBelief& live_self(const World& world, cambc::champion_state& state) {
     b.health = info.health;
     b.strength = info.strength;
     b.focus = info.focus;
-    b.gems = static_cast<int>(my_gems());
     return b;
 }
 
 // What our strikes next round read, cooldowns restarted by casts included: only needed with an
 // enemy in sight.
 void read_strike(const World& world, ChampionBelief& b) {
+    b.gems = static_cast<int>(my_gems());
     b.scale = damage_scale(b.facts().passive, b.health, b.max_health);
     for (std::uint32_t s = 0; s < 2; ++s) {
         static std::int32_t cooldown;
@@ -158,7 +158,7 @@ void offer_channel(const ChampionBelief& self, cambc::champion_state state, Safe
     for (int i = 0; i < n; ++i) {
         const auto& b = threats[i].blow;
         if (!b.hits || !(recall || b.stuns)) continue;
-        const float gems = params::gem_value * static_cast<float>(self.gems);
+        const float gems = params::gem_value * static_cast<float>(my_gems());
         wish.offer(protect, (tribute ? params::tribute_value : params::recall_value) + gems);
         return;
     }
@@ -197,7 +197,7 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         const auto& e = world.enemies[t.enemy];
         damage += t.blow.damage * (e.visible && !e.acted ? 2.0f : 1.0f);
     }
-    if (enemy && damage >= self.health) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(self.gems));
+    if (enemy && damage >= self.health) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
 }
 
 // A heal before the enemies' turns keeps an ally alive whom they would otherwise kill.
