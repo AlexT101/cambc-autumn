@@ -39,6 +39,7 @@ char decision = '-';
 bool sieged = false; // siege() ran this turn
 bool stunned_turn = false; // stunned at this turn's start
 bool searched = false; // the strike search chose this turn's cast, heals and shields included
+bool struck = false;   // the strike search ran this turn
 vec2 searched_at{};      // where the search's plan ended, and whether it had attacked by then
 bool searched_hit = false;
 
@@ -1596,6 +1597,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     // enough left for the walk after it, and read last turn's choice first so that a cut-short loop
     // still weighs it.
     const int first = memory.farm_group >= 0 && memory.farm_group < n_groups ? memory.farm_group : 0;
+    // After a fight's search, the turn's walk goes on to last turn's choice (a bag is banked): the
+    // fight has already taken the turn's work, and the evaluation is done again once it is over.
+    const int evaluated = struck && memory.farm_group >= 0 ? 0 : n_groups;
     // Nothing in the loop moves us or changes the fields walk_reserve reads.
     int reserved_for = -2;
     std::uint64_t reserved = 0;
@@ -1622,7 +1626,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     int* const steps_data = centre_steps.data();
     const int bag_tribute = bag > 0 ? tribute_turns(bag) : 0;
     int k = 0;
-    for (; k < n_groups && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
+    for (; k < evaluated && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
         const int g = (first + k) % n_groups;
         const auto& group = group_data[g];
         const auto& belief = camp_data[g];
@@ -1794,7 +1798,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             }
         }
     }
-    if (k < n_groups) note_shortcut("farm-partial-evaluation");
+    if (k < evaluated) note_shortcut("farm-partial-evaluation");
     if (bag > 0 && (best < 0 || best_value <= from_altar_value)) return false;
     if (bag > 0 && attack_in_range()) return true;
     if (world.is_stale()) return true;
@@ -3350,6 +3354,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         // The goal most likely walks to an altar when carrying, else to the farm choice.
         intent.to_altar = bankable_bag(world, pathing) > 0;
         intent.group = memory.farm_group;
+        struck = true;
         const auto planned = plan_strikes(world, pathing, safety, intent);
         attacked = planned.attacked;
         searched = planned.searched;
@@ -3479,6 +3484,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     decision = '-';
     sieged = false;
     searched = false;
+    struck = false;
     siege_group() = -1;
     const int camp_hits_before = camp_hits();
     if (world.me().alive) note_upkeep(world, safety, memory.damage);

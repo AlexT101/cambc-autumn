@@ -383,6 +383,39 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
   health, with a dirty-group bitmask. Exact (52/52 identical); gen-band empty-handed farm calls 36k -> 20-24k, but
   wide +0.23%: a codegen tax of ~+350 a farm call on maps that never list, carrying calls (~45% on gen-band, ~50k)
   untouched, and round 1 +70-88k a body on gen-band.
+  - Version 2 (fuel/farm-buckets2 028acc4; not merged): the cell listing as a separate `farm_with<true>`
+    instantiation, chosen once a game when 64+ groups share cells, so other maps run the plain loop. 52/52 identical
+    vs merge 5: wide total -0.02%; gen-band + gen-close-spawns 4/4 identical, -0.80%. Not worth ~190 lines.
+- Where the farm-loop gate's out-of-fuel turns come from (2026-10-22, main 80555ae, no commit). The gate alone removed
+  (the loop test and the from-here field's break), wide real budget, one run each: 483 -> 1109 out-of-fuel turns,
+  almost all on fight maps (gen-chambers-102106111 113 -> 456, gen-hourglass-102205812 48 -> 206; 00swirl, 00corners,
+  00pilgrimage +15 each); gen-close-spawns 0. On those three maps' 991 cut turns, the step open at the cut was the farm
+  loop 44%, the strike search 17%, farm's attack tiles and route 12%, siege 5%, prey 3%.
+  - Tagging steps with `fuel_phase()` misleads: a resumed turn unwinds quietly (farm's `world.is_stale()` returns)
+    until the first `throw_if_stale` (place_ward), whose tag is then printed. Record the tag open when a later tag first
+    sees the round changed.
+- Farm loop cost by section (2026-10-22, debug meters, 100M). A group the `best_value` test rejects costs ~150-270 just
+  to touch (loop header and filter ~60, facts and `fastest` checks ~65, steps ~30, trip ~28, the test ~65). The test
+  rejects ~90% of touched groups: gen-band 124 of 132 (36k a call empty-handed), gen-hourglass-102205812 60 of 68
+  (20k), gen-chambers-102106111 38 of 50 (16k). Carrying adds the bank terms (`trip_home->rounds`, ~80 a group) and
+  ~10 full evaluations kept alive by `from_altar_value` (gen-band 48k a call). Facts and `fastest` rebuilds (bag,
+  short_by or strength changed) add 10-25k to a call.
+- Farm loop prefilter (2026-10-22, fuel/farm-prefilter, no commit; not merged). Before a group's facts are refreshed,
+  skip it when its worth (recomputed exactly as the facts would) over Chebyshev steps - bank_now + capture rounds + its
+  last valid `fastest` (else 0) cannot beat `best_value` nor, carrying, `from_altar_value` (walk + capture + fastest).
+  Exact: 0 violations in a debug cross-check, 52/52 identical; it rejects ~115 of 132 groups on gen-band, 59 of 68 on
+  hourglass, 38 of 50 on chambers (exact steps instead of Chebyshev would add ~1). But it costs 80-100 a group it
+  passes and saves only 20-45 a group it rejects: wide -0.07% (00lanes -1.7%, gen-hourglass-102205812 -1.0%,
+  gen-chambers-102106111 -0.9%; gen-open-field +1.3%, 00swirl +1.1%). Its loop is -9 to -11% on chambers.
+- Farm walks on after a fight's search, in place of the farm-loop gate (2026-10-22, fuel/farm-fight-walk-on 3064454;
+  pending a decision). The gate and its estimators go; on turns where the strike search ran, farm does not evaluate
+  and walks on to last turn's group (a bag is banked), as the gate's cut-short path did. A/B vs 69835ab **54.2%** of
+  1094 (51.2-57.1; ladder 61.4, gen 54.1, gen-s1 53.3), but out-of-fuel turns 7878 vs 3032 (2.6x). They moved to the
+  many-group maps, where the full loop now runs on quiet turns: gen-band-102105911 766 vs 41, the two close-spawns
+  837 vs 54, far-spawns 597, cross 336, dense-camps 215; the fight maps are level (chambers 127 vs 82, 168 vs 186).
+  - The same skip with the gate kept (fuel/farm-fight-skip 04add51): A/B vs 69835ab **53.7%** of 1094 (50.8-56.7;
+    ladder 64.3, gen 53.1, gen-s1 52.9), out-of-fuel turns 3159 vs 3208 (level; gen-chambers-102106111 60 vs 141,
+    01elk-arena 90 vs 121). So the win is the skip's, and the gate still brakes the many-group maps' quiet turns.
 - Savings rounds, byte-identical at 100M: round 1 −11% a turn; round 2 (bush clusters grown in the warm-up, measured
   worst costs in the estimates); exact fight simulation (fighters made once a turn, quiet turns reused; trade 4.7k ->
   4.0k a call); Reach (ways kept per recipe, static windows once per tile, lazy builds); WASM-aware (−4.2%); host-op
