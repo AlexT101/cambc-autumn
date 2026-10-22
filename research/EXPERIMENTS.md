@@ -198,6 +198,14 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
 
 ### Fuel
 
+- **Profile of main bbf6f05** (2026-10-22, [FUEL-PROFILE-2026-10-22.md](hyperion/FUEL-PROFILE-2026-10-22.md)). Wide
+  bench, 52 test-draft games against hecate.
+  - At 100M: mean 35.3k, p99 106.8k, 1.32% of turns over 100k (hecate 31.4k, 95.6k, 0.81%).
+  - At the real budget: 1611 out-of-fuel turns, against hecate's 279. Two thirds are follow-ons in streaks.
+  - All turns: farm 25%, of which the evaluation loop is 11%. World update 22.5%, of which `update_camps` is 8.7%.
+    `siege_candidate` 4%.
+  - Turns over 90k: want_home 21%, simulations 20%, step_guard 19%, the strike search 16%, world 12%, prey 10%.
+  - The worst turns are Heart of Ruin strike searches of up to 325k.
 - Stale-plan drop alone (2026-10-22, f4eee8f; kept and merged without an A/B, CHANGES 59). A strike search that ran out
   of fuel resumes next round and carried out last round's plan (all real-budget SRCH-REFUSED lines); now it throws
   StaleTurn before acting, and main.cpp replays the round fresh on the fuel left. Bench 16/16 identical at 100M.

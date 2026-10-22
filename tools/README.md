@@ -85,12 +85,25 @@ py tools/fuel/bench.py run hyperion --out replays/fuel/base.json          # 16 g
 py tools/fuel/bench.py run variants/x --out replays/fuel/x.json           # a modified copy of hyperion
 py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # identical replays, fuel change
 py tools/fuel/bench.py run hyperion --fuel 0 --out replays/fuel/real.json # the real budget: counts shortcuts and lost turns
+py tools/fuel/bench.py run hyperion --set wide --test-draft --per-map --jobs 8 --out replays/fuel/x.json  # 52 games, ~5 min
 py tools/fuel/oof.py replays/batch-A replays/batch-B replays/batch-C       # out-of-fuel turns per bot in run_batched.py batches
 py tools/replay/debug_lines.py SRCH-PASS SRCH-STRANDED -- replays/batch-A ... # any debug_block line prefix per bot (--show N prints them)
 py tools/fuel/cap_variant.py hecate --run-fuel 10000000                   # bots/variants/hecate-cap100000-at10000000/
 py tools/ab.py main variants/hecate-cap100000-at10000000 --fuel 10000000  # CAND on 10M fuel, REF on the real 100k
 ```
 
+- **bench.py options:**
+  - `--maps` takes ladder names or map paths;
+  - `--set wide` is 26 maps: 12 ladder, 12 `maps/gen` and the 2 `maps/gen-s1` maps with the most out-of-fuel turns;
+  - `--test-draft` plays a copy of each bot whose `params::test_draft` is off (`bots/variants/bench-td-<bot>/`) with
+    it on, so both draft the ladder test compositions;
+  - `--per-map` prints mean, p99, max, turns over 100k and out-of-fuel turns per map.
+- **bench.py summaries:** `all` covers play turns from round 2, since round 1 has 200k, and gives `over_100k`.
+  `compare` keys games by map stem and side.
+- **Baselines for the wide set** (main bbf6f05, test drafts, against hecate):
+  `replays/fuel/wide-base-100M.json` and `wide-base-real.json` in the primary checkout.
+- **Profile:** [FUEL-PROFILE-2026-10-22.md](../research/hyperion/FUEL-PROFILE-2026-10-22.md) shows where the fuel
+  goes, phase by phase.
 - hyperion prints `SHORTCUT round champion what` wherever fuel made it choose worse (`note_shortcut` in util.h), and `OOF round phase` for each turn that ran out. Both are inside `debug_block`.
 - The bench's 16 games swing by about ±20 out-of-fuel turns and include no shared-gem map, where a third of them happen. Judge out-of-fuel turns on a full A/B with `oof.py`.
 - Set `debug_fuel` in util.h for per-phase costs (`FuelMeter`, ~170 fuel per meter).
