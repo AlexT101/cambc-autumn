@@ -11,6 +11,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 #include "abilities.h"
 #include "comms.h"
@@ -512,7 +513,17 @@ float access_fire(const World& world, const AltarAccess& a) {
         }
         if (near[g]) stirring.push_back(g);
     });
-    for (const vec2 t : a.open.positions()) {
+    // With nothing stirring every open tile is free of fire.
+    if (stirring.empty()) return fire = a.any_open ? 0.0f : fire;
+    // Room for every tribute tile, which the open ones are among.
+    static std::vector<vec2> open;
+    if (open.empty()) {
+        bitboard tributes;
+        for (const auto& t : map.altars) tributes |= t.tribute_tiles();
+        open.resize(std::max<std::size_t>(1, board_count(tributes)));
+    }
+    const auto n = std::min<std::size_t>(positions_into(a.open, open.data(), static_cast<std::uint32_t>(open.size())), open.size());
+    for (const vec2 t : std::span{open.data(), n}) {
         float f = 0;
         for (const int g : stirring) {
             if (!test(groups[g].threat(), t)) continue;
