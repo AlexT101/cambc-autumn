@@ -1852,6 +1852,8 @@ bool strike_possible(const World& world) {
     const bitboard* guard = pathing.guard();
     pathing.set_guard(nullptr);
     while (done < seq.n) {
+        // Out of fuel mid-plan, the rest would play in the next round on last round's positions.
+        if (done > 0 && world.is_stale()) break;
         const Act a = seq.a[done];
         bool ok = false, blocked = false;
         switch (a.op) {
@@ -1937,6 +1939,7 @@ bool strike_possible(const World& world) {
         seq = concrete(tiles[alt]);
     }
     pathing.set_guard(guard);
+    world.throw_if_stale();
     if constexpr (debug_search) {
         debug_block({
             // A first move onto a guarded tile on the way elsewhere, and a plan whose moves stopped

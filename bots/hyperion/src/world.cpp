@@ -337,10 +337,11 @@ void* static_alloc(std::size_t bytes, std::size_t align) {
 const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const {
     static std::vector<int> out;
     // Camp tiles are fixed for the game: each tile keeps its answers for the last two radii asked,
-    // as a range of `pool`.
+    // as a range of `pool`. An evicted answer's range is reused when the new one fits, so the pool
+    // stays bounded however many radii callers alternate between.
     struct Kept {
         std::array<std::uint8_t, 2> radius; // radius + 1; 0: none
-        std::array<std::uint8_t, 2> count;
+        std::array<std::uint8_t, 2> count, capacity;
         std::uint8_t next;
         std::array<std::uint32_t, 2> from;
     };
@@ -367,8 +368,13 @@ const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const {
         k.next ^= 1;
         k.radius[j] = static_cast<std::uint8_t>(radius + 1);
         k.count[j] = static_cast<std::uint8_t>(out.size());
-        k.from[j] = static_cast<std::uint32_t>(pool.size());
-        pool.insert(pool.end(), out.begin(), out.end());
+        if (out.size() <= k.capacity[j]) {
+            std::copy(out.begin(), out.end(), pool.begin() + k.from[j]);
+        } else {
+            k.capacity[j] = static_cast<std::uint8_t>(out.size());
+            k.from[j] = static_cast<std::uint32_t>(pool.size());
+            pool.insert(pool.end(), out.begin(), out.end());
+        }
     }
     return out;
 }
@@ -969,7 +975,14 @@ void World::update() {
         if (!static_) static_ = StaticMap::build();
         allies.clear();
         enemies.clear();
-        init_beliefs();
+        try {
+            init_beliefs();
+        } catch (...) {
+            // ready() reads the ally list, filled first: empty it so the next turn starts over.
+            allies.clear();
+            enemies.clear();
+            throw;
+        }
     }
     FuelMeter meter{"update"};
     read_vision();

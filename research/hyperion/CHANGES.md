@@ -171,3 +171,15 @@ observed behaviour, with fitted constants.
 - Chase: `prey` asks `Safety::chase_trade` (allies that cannot hit next turn arrive a turn late).
 - Strike search: Prism gets the walk alone as a terminal leaf. New debug traces: FPARTIAL, FSEED, FCDELAY, FCWINDOW,
   FCPARTNER, DASH-FOLLOW, HANDOFF, CHASE-AVAIL.
+
+## 83: robustness fixes from the 2026-10-22 audit (behaviour-identical)
+
+- `groups_near` reuses an evicted answer's pool range when the new one fits: the pool grew all match, as callers ask
+  about 6 radii and each tile keeps 2.
+- A first-turn setup that throws part-way empties the ally list, so `ready()` is false and the next turn starts over
+  (before, `me_` stayed null and `camps` empty).
+- Killed during our own turn (Ren's retaliation): `ward_bushes` no longer tests the off-map tile (a ~3.9k throw that
+  skipped the rest of `act()`), and main.cpp does not count the move as one that needs vision re-read.
+- `yield_capture` and `take_capture_handoff` record the move in memory before the stale-turn check.
+- Plan execution stops between actions once out of fuel, instead of finishing last round's plan in the next round.
+- Dead code (turn_order.cpp's idle fallback, unreachable) and four comments that contradicted the code.

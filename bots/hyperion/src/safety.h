@@ -326,8 +326,8 @@ private:
     bool threatened_now(vec2 p);
     // Every credible threat at full damage, plus camps.
     float worst_damage(vec2 p);
-    // Drop everything cached, after something this turn changed the fight: a kill, a stun or a
-    // camp kill. Later queries recheck the engine for champions and monsters that died.
+    // Drop everything cached, after something this turn changed the fight: a kill or a camp kill.
+    // Later queries recheck the engine for champions and monsters that died; stuns are not read.
     void invalidate();
 
     static std::vector<CampHit>& member_pool();

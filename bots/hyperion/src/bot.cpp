@@ -808,9 +808,9 @@ struct CampLeft {
     float health, strength;
 };
 
-// Damage taken clearing a group alone with basic attacks, killing the deadliest first; also
-// the rounds it takes. `reflect`: damage each hit on us returns to its monster (Ren). `left`: the
-// living members, deadliest first; the reflect path wears it down.
+// Damage taken clearing a group alone at `strength` a turn (callers pass floored_output, spells
+// included), killing the deadliest first; also the rounds it takes. `reflect`: damage each hit on us
+// returns to its monster (Ren). `left`: the living members, deadliest first; the reflect path wears it down.
 float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, float reflect) {
     float damage = 0, elapsed = 0;
     if (reflect <= 0) {
@@ -1388,13 +1388,14 @@ bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory&
             || test(blocked, p) || safety.camp_damage(p) > 0) continue;
         world.throw_if_stale();
         const bool moved = pathing.try_move(p);
-        world.throw_if_stale();
+        // Before the stale check: a turn resumed late has still made the move.
         if (moved) {
             memory.claim = memory.farm_group = -1;
             memory.crew = false;
             decision = 'F';
-            return true;
         }
+        world.throw_if_stale();
+        if (moved) return true;
     }
     return false;
 }
@@ -1447,17 +1448,21 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
         cast = cast_slot(dash, *landing);
     } catch (const cambc::error&) {
     }
-    world.throw_if_stale();
-    if (!cast) return false;
-    pathing.invalidate();
-    const bool arrived = my_position() == *landing;
+    // Memory before the stale check: a turn resumed late has still made the move.
+    bool arrived = false;
+    if (cast) {
+        pathing.invalidate();
+        arrived = my_position() == *landing;
+        if (arrived) {
+            memory.farm_group = g;
+            memory.crew = false;
+            decision = 'P';
+        }
+    }
     world.throw_if_stale();
     if (!arrived) return false;
     debug_block({ std::printf("HANDOFF %d %d incumbent %d acted %d landing %d %d\n", world.round, g,
                              incumbent->index, static_cast<int>(incumbent->acted), landing->x, landing->y); });
-    memory.farm_group = g;
-    memory.crew = false;
-    decision = 'P';
     return true;
 }
 
@@ -2330,7 +2335,8 @@ bool ward_bushes(const World& world, Memory& memory, bool grow) {
     const auto& map = world.map();
     const vec2 here = my_position();
     const auto floor = small_cost_estimate + end_reserve;
-    if (here == memory.bushes_watched) return false;
+    // Off the map: killed this turn (Ren's retaliation), after world.me() was read alive.
+    if (here.x < 0 || here == memory.bushes_watched) return false;
     if (!fuel_ok(floor)) {
         note_shortcut("ward-no-bushes-fuel");
         return false;

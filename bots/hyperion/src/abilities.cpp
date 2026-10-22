@@ -283,7 +283,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
         const auto suicidal = [&](const ChampionBelief& e) { return raw > 0 && e.retaliation() >= my_health(); };
         if (a.lands()) {
             if (!landings) continue;
-            // It moves us: worth only what an excludes-walking cast must be worth to keep the walk.
+            // It moves us: worth at least min_landing_value, whatever walk it replaces.
             static std::vector<Target> targets;
             targets.clear();
             static bitboard off{cambc::uninitialized};

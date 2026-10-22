@@ -26,7 +26,8 @@ void receive(World& world);
 void send(World& world, bool moved, bool refresh);
 // The gems we carry, posted when it changes.
 void bag(int gems);
-// The gems an ally (by index) carries as it last posted, 0 if never or while dead.
+// The gems an ally (by index) carries as it last posted, rounded up to a multiple of 4 (ours exact);
+// 0 if never or while dead.
 inline int bag_of(const World& world, int ally) {
     const auto& a = world.allies[ally];
     if (a.is_self) return detail::posts.my_bag;

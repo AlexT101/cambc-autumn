@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <array>
 #include <vector>
-#include "idle_priority.h"
 #include "params.h"
 #include "safety.h"
 #include "world.h"
@@ -326,8 +325,6 @@ void set_turn_order(const World& world, Safety& safety) {
             }
         }
         priority = wish.priority();
-        if (const int role = idle_role(self.type); wish.band == idle && role >= 0 && self.health > 0)
-            priority = idle_priority(role, self.health, shield_value(self.handle), self.max_health, self.gems);
     }
     try {
         static std::int32_t next;
