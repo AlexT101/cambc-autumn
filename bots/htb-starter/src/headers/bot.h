@@ -10,8 +10,6 @@
 #include <utility>
 #include <vector>
 
-class Bot;
-
 #line 11 "bots/htb-starter/bot.htb"
 using cambc::vec2;
 

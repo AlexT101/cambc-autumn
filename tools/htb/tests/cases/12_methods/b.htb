@@ -1,0 +1,5 @@
+#include <string>
+
+constexpr int DEFAULT_SIZE = 4;
+std::string default_name() { return "widget"; }
+static_assert(DEFAULT_SIZE == 4);

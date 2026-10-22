@@ -1,0 +1,8 @@
+enum class Phase : int { Draft, Play, End };
+
+Phase next(Phase p) { return p == Phase::End ? Phase::End : Phase(int(p) + 1); }
+
+struct Holder {
+    enum Inner { A = 3, B = 5 };
+    Inner which = B;
+};

@@ -1,0 +1,23 @@
+#include <string>
+#include <vector>
+
+// Calls helpers from c_helpers.htb (a later file), with dependent and plain arguments.
+template <class T>
+T scaled(T x) { return x * factor() + bump(x); }
+
+template <class... Ts>
+auto sum_all(Ts... xs) { return (xs + ... + 0); }
+
+template <class T>
+constexpr T pi_v = T(3.14159);
+
+template <class T>
+using Vec = std::vector<T>;
+
+template <Small T>
+int small_size(T) { return int(sizeof(T)); }
+
+// CRTP: Speaker is in z_crtp.htb.
+struct Dog : Speaker<Dog> {
+    std::string name() const { return "dog"; }
+};

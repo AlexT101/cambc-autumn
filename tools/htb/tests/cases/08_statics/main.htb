@@ -1,0 +1,13 @@
+#include <cstdio>
+
+int main() {
+    std::printf("%d %d %.1f %s\n", Registry::count, Registry::max_items, Registry::ratio, Registry::label.c_str());
+    std::printf("%d %d\n", Registry::global.id, Registry::origin.id);
+    Registry r(3);
+    Registry::all.push_back(r);
+    std::printf("%d %zu %d\n", read_counts(), Registry::all.size(), Registry::next_id());
+    std::printf("%d %d\n", Registry::defined_elsewhere, Registry::counter_array[2]);
+    std::printf("%d\n", Registry::Inner{}.get());
+    const int* p = &Registry::max_items;
+    std::printf("%d\n", *p);
+}

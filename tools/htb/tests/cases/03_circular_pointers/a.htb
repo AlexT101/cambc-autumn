@@ -1,0 +1,15 @@
+// A and B (b.htb) point at each other, take each other by value and call each other.
+class A {
+public:
+    B* partner = nullptr;
+    int value() const { return 1; }
+    int partner_value() const { return partner ? partner->value() : -1; }
+    int combine(B other) const { return value() * 10 + other.value(); }
+    B make_b() const {
+        B b;
+        b.partner = const_cast<A*>(this);
+        return b;
+    }
+};
+
+bool is_even(unsigned n) { return n == 0 ? true : is_odd(n - 1); }

@@ -1,0 +1,16 @@
+int main() {
+    {
+        Widget w;
+        std::printf("%d %s %d\n", w.get_size(), w.label().c_str(), Widget(5).get_size());
+        Widget m = Widget::make(2);
+        std::printf("%s %d %d %d %d\n", m.label().c_str(), m.weight(), m.area(), m.doubled(), m.cube_of(3));
+        std::printf("%d %zu %d %d\n", m.part().n, sizeof(m.parts()), m.final(), m.override);
+        std::printf("%d\n", w.with_defaults());
+        Heavy h(9);
+        const Widget& base = h;
+        std::printf("%d %d\n", base.weight(), h.get_size());
+    }
+    std::printf("%d\n", Widget::destroyed);
+    Parser ok(5), bad(-2);
+    std::printf("%d %d %d %d\n", ok.value, bad.value, parse_free(5), parse_free(500));
+}

@@ -1,0 +1,6 @@
+struct Cargo {
+    int weight = 1;
+    BadType item;
+};
+
+int global_init = unknown_function();

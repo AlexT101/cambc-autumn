@@ -1,0 +1,3 @@
+int Registry::defined_elsewhere = 11;
+
+int read_counts() { return Registry::count; }

@@ -1,0 +1,13 @@
+#include <cstdio>
+int main() {
+    CPoint p{3, 4};
+    std::printf("%d %d %d\n", p.x + p.y, pick_op('+')(2, 3), pick_op('*')(2, 3));
+    std::printf("%d %d %llu\n", ops[1](4, 5), HIGH_E, big_num());
+    std::printf("%d %d %d\n", origin_sum(), unit3.*member_ptr, first_x);
+    Value v;
+    v.i = 7;
+    Flags f{};
+    f.a = 5;
+    f.raw = 9;
+    std::printf("%d %u %d\n", v.i, f.a, f.raw);
+}

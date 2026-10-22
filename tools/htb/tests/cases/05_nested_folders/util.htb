@@ -1,0 +1,1 @@
+int util_top() { return 1; }

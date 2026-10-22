@@ -1,0 +1,9 @@
+// a needs c (A2 holds a C1), c needs b, b needs a (B1 holds an A1): one cycle across three files.
+struct A1 { int x = 1; };
+
+struct A2 {
+    C1 c;
+    int total() const { return c.b.a.x + c.y + 100; }
+};
+
+constexpr int A_BASE = 21;

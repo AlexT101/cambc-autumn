@@ -1,0 +1,12 @@
+#include <cstdio>
+
+int main() {
+    Kennel k;
+    k.adopt("Rex");
+    k.adopt("Fido");
+    std::printf("%s\n", k.roll_call().c_str());
+    Puppy p("Bit");
+    const Animal& a = p;
+    std::printf("%s\n", a.describe().c_str());
+    std::printf("%d\n", Animal::created);
+}

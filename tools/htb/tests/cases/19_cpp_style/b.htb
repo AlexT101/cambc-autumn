@@ -1,0 +1,13 @@
+#include <utility>
+
+Account::Account(std::string owner, int balance) : owner_(std::move(owner)), balance_(balance) { ++open_count; }
+Account::~Account() { --open_count; }
+void Account::deposit(int amount) { balance_ += amount - bank::fee(amount); }
+int Account::balance() const { return balance_; }
+bool Account::operator==(const Account& o) const { return balance_ == o.balance_; }
+int Account::open_count = 0;
+
+template <class F>
+void Account::apply(F f) { balance_ = f(balance_); }
+
+int bank::fee(int amount) { return amount / 10; }

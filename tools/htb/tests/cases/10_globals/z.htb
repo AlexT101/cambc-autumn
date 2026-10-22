@@ -1,0 +1,19 @@
+#include <string>
+#include <cstdio>
+
+int base = 21;
+int size_param = compute_size();
+int compute_size() { return 4; }
+
+struct Config {
+    int speed = 1;
+    std::string name;
+};
+
+int negate(int x) { return -x; }
+int declared_here_defined_there = 5;
+
+struct Logger {
+    explicit Logger(const char* n) { std::printf("init %s\n", n); }
+};
+Logger second_logger("z");

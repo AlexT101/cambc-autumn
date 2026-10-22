@@ -1,0 +1,7 @@
+#pragma once
+#ifndef B_HTB_GUARD
+#define B_HTB_GUARD
+
+int guarded() { return SQUARE(TEAM_SIZE); }
+
+#endif

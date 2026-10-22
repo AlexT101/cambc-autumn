@@ -1,0 +1,14 @@
+extern "C" int c_add(int a, int b) { return a + b; }
+
+extern "C" {
+int c_mul(int a, int b);
+int c_twice(int a) { return c_mul(a, 2); }
+}
+
+class Vault {
+    friend class Auditor;
+    friend int peek(const Vault& v);
+    int secret = 42;
+};
+
+int peek(const Vault& v) { return v.secret; }

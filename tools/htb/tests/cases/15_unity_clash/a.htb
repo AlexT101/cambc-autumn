@@ -1,0 +1,6 @@
+static int helper() { return 1; }
+int a_value() { return helper(); }
+
+namespace {
+int anon = 1;
+}

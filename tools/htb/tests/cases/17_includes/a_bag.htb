@@ -1,0 +1,6 @@
+// Uses std::vector and std::string without including them: z_make.htb does.
+struct Bag {
+    std::vector<int> items;
+    std::string label = "bag";
+    int count() const { return int(items.size()); }
+};

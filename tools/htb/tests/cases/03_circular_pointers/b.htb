@@ -1,0 +1,23 @@
+class B {
+public:
+    A* partner = nullptr;
+    int value() const { return 2; }
+    int partner_value() const { return partner ? partner->value() : -1; }
+    int combine(A other) const { return value() * 10 + other.value(); }
+};
+
+bool is_odd(unsigned n) { return n == 0 ? false : is_even(n - 1); }
+
+struct Node {
+    int v;
+    Node* next = nullptr;
+    int length() const { return 1 + (next ? next->length() : 0); }
+};
+
+#include <memory>
+
+struct Tree {
+    int v = 0;
+    std::unique_ptr<Tree> left, right;
+    int sum() const { return v + (left ? left->sum() : 0) + (right ? right->sum() : 0); }
+};

@@ -1,0 +1,12 @@
+#include <cstdio>
+
+int main() {
+    Vec2 a{1, 2}, b{3, 4};
+    Vec2 c = a + b;
+    c += a;
+    std::printf("%s %d %d\n", to_string(c).c_str(), c[0], c[1]);
+    std::printf("%s\n", to_string(b - a).c_str());
+    std::printf("%s\n", to_string(3 * a).c_str());
+    std::printf("%d %d %d\n", a == Vec2{1, 2}, a < b, bool(Vec2{}));
+    std::printf("%d %.0Lf %lld\n", Doubler{}(21), 5_tiles, 3_k);
+}

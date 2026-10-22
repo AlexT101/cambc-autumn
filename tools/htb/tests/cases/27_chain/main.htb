@@ -1,0 +1,2 @@
+#include <cstdio>
+int main() { std::printf("%d\n", T0{}.v()); }

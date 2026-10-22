@@ -1,0 +1,6 @@
+struct T4 {
+    int base = BASE;
+    int v() const { return base + EXTRA; }
+};
+constexpr int BASE = 10;
+constexpr int EXTRA = 2;

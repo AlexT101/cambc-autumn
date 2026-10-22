@@ -1,0 +1,13 @@
+#include <string>
+
+class Dog : public Animal {
+public:
+    explicit Dog(std::string n) : Animal(std::move(n)) {}
+    std::string sound() const override { return "woof"; }
+};
+
+class Puppy final : public Dog {
+public:
+    using Dog::Dog;
+    std::string sound() const override { return "yip"; }
+};

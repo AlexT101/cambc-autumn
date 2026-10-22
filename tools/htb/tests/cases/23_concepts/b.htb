@@ -1,0 +1,10 @@
+#include <concepts>
+#include <string>
+
+template <class T>
+concept Named = requires(const T& t) {
+    { t.name() } -> std::convertible_to<std::string>;
+};
+
+template <class T>
+concept Numeric = std::integral<T> || std::floating_point<T>;

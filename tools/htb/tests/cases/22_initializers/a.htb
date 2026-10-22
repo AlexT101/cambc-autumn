@@ -1,0 +1,24 @@
+#include <array>
+#include <functional>
+#include <map>
+#include <utility>
+#include <vector>
+
+struct Tricky {
+    std::function<int(int)> fn = [](int x) { return x + 1; };
+    int arr[3]{1, 2, 3};
+    std::vector<int> v{4, 5, 6};
+    std::map<int, std::pair<int, int>> m = {{1, {2, 3}}};
+    std::array<int, (5 > 3) ? 2 : 1> sized{};
+    std::vector<std::vector<int>> nested{{1}, {2, 3}};
+    bool flag = 1 < 2;
+    int shifted = (8 >> 1);
+    int apply(int x, std::function<int(int)> f = [](int v) { return v * 2; }) const { return f(x); }
+    int pick(std::pair<int, int> p = {1, 2}, bool b = (1 > 0)) const { return b ? p.second : p.first; }
+    int compare(int a = 3 < 4, int b = 5) const { return a + b; }
+    template <class T>
+    int tsize(const T& t = T{}) const { return int(t.size()); }
+};
+
+int free_defaults(std::pair<int, int> p = {3, 4}, int scale = 1 < 2 ? 10 : 20) { return (p.first + p.second) * scale; }
+int lt(bool b = LO < HI, int d = 7) { return b + d; }

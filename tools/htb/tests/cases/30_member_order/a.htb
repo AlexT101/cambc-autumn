@@ -1,0 +1,26 @@
+// Java style: the class's nested types come after the methods that use them.
+class Outer {
+public:
+    Inner make_inner() const { return Inner{value}; }
+    int use() const { return make_inner().doubled() + helper_count; }
+    Mode mode() const { return Mode::On; }
+    int value = 4;
+    static constexpr int helper_count = 1;
+
+    struct Inner {
+        int v;
+        int doubled() const { return v * 2 + Deep{}.k; }
+        struct Deep {
+            int k = 100;
+        };
+    };
+
+private:
+    class Secret;
+    enum class Mode { Off, On };
+};
+
+class Outer::Secret {
+public:
+    int s = 1;
+};

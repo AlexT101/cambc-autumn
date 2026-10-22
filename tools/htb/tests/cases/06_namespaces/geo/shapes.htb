@@ -1,0 +1,13 @@
+namespace geo {
+struct Point {
+    int x, y;
+};
+int dot(Point a, Point b) { return a.x * b.x + a.y * b.y; }
+namespace detail {
+int square(int v) { return v * v; }
+}
+}
+
+namespace geo::metrics {
+int length2(geo::Point p) { return detail::square(p.x) + detail::square(p.y); }
+}

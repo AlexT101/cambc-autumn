@@ -1,0 +1,10 @@
+struct Base {
+    virtual ~Base() = default;
+    virtual int depth() const { return 1; }
+};
+
+struct Packed {
+    unsigned short a, b;
+};
+
+int make_number() { return 41; }

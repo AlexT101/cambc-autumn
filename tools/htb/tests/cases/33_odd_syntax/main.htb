@@ -1,0 +1,10 @@
+#include <cstdio>
+int main() {
+    Result r{};
+    Pool* p = new Pool;
+    delete p;
+    std::printf("%d %.0f %d %d %d\n", r.code, Vec4{}.sum(), Leaf{}.depth(), g_inline, g_decl + 1);
+    std::printf("%d %d %d %s %d %zu %d\n", only_int(4), apply([](int v) { return v + 1; }, 0, 9), sum_n(3, 1, 2, 3),
+                greeting.c_str(), paren_init, made.size(), made[2]);
+    std::printf("%d %d\n", make_adder(2)(5), Pool::allocs);
+}

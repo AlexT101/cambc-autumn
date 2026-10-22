@@ -1,0 +1,2 @@
+int f(double) { return 2; }
+int f(const char*) { return 3; }

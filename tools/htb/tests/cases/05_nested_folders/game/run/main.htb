@@ -1,0 +1,9 @@
+#include <cstdio>
+
+int main() {
+    Hero h;
+    std::printf("%d %d %d\n", util_top(), util_game(), util_units());
+    std::printf("%d\n", h.power());
+    std::printf("%d\n", deep_value());
+    std::printf("%d %d %d %d\n", dashed(), spaced(), CONST_SEVEN, inner());
+}

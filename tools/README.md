@@ -181,6 +181,7 @@ generates the bot's `src/`, which cambc builds. Example: `bots/htb-starter`. Det
 py tools/htb/install.py               # once: generate + build every .htb bot, install the VS Code extension, check clangd
 py tools/htb/hgen.py <bot>            # regenerate src/ (no name: every .htb bot); --watch regenerates on save
 py tools/htb/htbcheck.py <bot>        # file:line:col errors, without a build
+py tools/htb/tests/run.py             # hgen's test suite (33 awkward bots): run after changing hgen
 ```
 
 - Run hgen before `cambc build`, `run` and `submit`, and commit `src/`; never edit `src/` by hand.

@@ -1,0 +1,22 @@
+#include <string>
+
+// Declared C++ style; b.htb defines the members outside the class.
+class Account {
+public:
+    Account(std::string owner, int balance);
+    ~Account();
+    void deposit(int amount);
+    int balance() const;
+    bool operator==(const Account& o) const;
+    static int open_count;
+    template <class F>
+    void apply(F f);
+
+private:
+    std::string owner_;
+    int balance_;
+};
+
+namespace bank {
+int fee(int amount);
+}

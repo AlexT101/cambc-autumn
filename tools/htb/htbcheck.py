@@ -35,7 +35,8 @@ ROOT = hgen.ROOT
 def wasi_clang():
     homes = [os.path.expanduser("~/Library/Caches/cambc"), os.path.expanduser("~/.cache/cambc"),
              os.path.join(os.environ.get("LOCALAPPDATA", ""), "cambc")]
-    found = sorted(p for h in homes for p in glob.glob(os.path.join(h, "wasi-sdk-*", "bin", "clang++*")))
+    found = sorted(p for h in homes for name in ("clang++", "clang++.exe")
+                   for p in glob.glob(os.path.join(h, "wasi-sdk-*", "bin", name)))
     return found[-1] if found else None
 
 

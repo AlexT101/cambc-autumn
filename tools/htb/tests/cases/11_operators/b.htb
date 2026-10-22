@@ -1,0 +1,4 @@
+Vec2 operator-(const Vec2& a, const Vec2& b) { return {a.x - b.x, a.y - b.y}; }
+
+constexpr long double operator""_tiles(unsigned long long n) { return n * 2.0L; }
+long long operator""_k(unsigned long long n) { return n * 1000; }

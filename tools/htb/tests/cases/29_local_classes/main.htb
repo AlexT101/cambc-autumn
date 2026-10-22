@@ -1,0 +1,5 @@
+#include <cstdio>
+int main() {
+    auto v = Sorter{}.sorted({3, 1, 2});
+    std::printf("%d %d %d %d\n", v[0], v[1], v[2], local_class_fn());
+}

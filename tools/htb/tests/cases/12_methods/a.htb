@@ -1,0 +1,63 @@
+#include <cstdio>
+#include <string>
+#include <utility>
+
+class Widget {
+public:
+    Widget() : Widget(DEFAULT_SIZE) {}
+    explicit Widget(int s, std::string n = default_name()) : size{s}, name(std::move(n)) {}
+    Widget(const Widget&) = default;
+    Widget(Widget&&) noexcept = default;
+    Widget& operator=(const Widget&) = delete;
+    ~Widget() { ++destroyed; }
+
+    [[nodiscard]] int get_size() const& { return size; }
+    int get_size() && { return -size; }
+    static Widget make(int s) { return Widget(s, "made"); }
+    virtual int weight() const noexcept(true) { return size * 2; }
+    auto area() const -> int { return size * size; }
+    auto doubled() const { return size * 2; }
+    constexpr int cube_of(int v) const { return v * v * v; }
+    Part part() const { return Part{size + 1}; }
+    std::pair<Part, Part> parts() const { return {Part{1}, Part{2}}; }
+    int final() const { return 7; }
+    int override = 3;
+    const std::string& label() const { return name; }
+    int with_defaults(int a = 1, int b = DEFAULT_SIZE, const char* c = "x,y") const { return a + b + int(c[0]); }
+
+    struct Part {
+        int n;
+    };
+    static int destroyed;
+
+private:
+    int size;
+    std::string name;
+};
+
+int Widget::destroyed = 0;
+
+struct Heavy final : Widget {
+    using Widget::Widget;
+    int weight() const noexcept(true) override final { return 1000; }
+};
+
+class Parser {
+public:
+    explicit Parser(int v) : value(safe_check(v)) {}
+    int value;
+
+private:
+    static int check(int v) {
+        if (v < 0) throw 1;
+        return v;
+    }
+    static int safe_check(int v) try { return check(v); } catch (...) { return -1; }
+};
+
+int parse_free(int v) try {
+    if (v > 100) throw 2;
+    return v;
+} catch (...) {
+    return -2;
+}

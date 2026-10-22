@@ -33,8 +33,14 @@ since it's what cambc builds.
   globals, prototypes, templates); `src/<name>.inl`: its function bodies; `src/unity.cpp`: every header, then every
   body, as one translation unit, so calls inline across files.
 - Never edit `src/`: hgen rewrites it, and refuses to touch a `src/` holding files it didn't write.
-- The whole bot compiles as one unit, so two files can't both have a `static` function or global with the same name.
-- `#if` at file level isn't supported; put it inside a function.
+- Anything can be used before it's defined, across files and folders, including a class's nested types above
+  their definition (in the editor those still get underlined, because clangd reads the class as written).
+- The whole bot compiles as one unit, so two files can't both have a `static` function or global with the same
+  name, and a file-level `using namespace std;` reaches every file; hgen prints a note for both.
+- Every file sees the library headers (`<...>`) any file includes, and globals start up after the globals their
+  initializers read (also through the functions and constructors they call).
+- `#if 0` blocks and include guards are fine; any other `#if` around code at file level isn't supported (put it
+  inside a function).
 
 ## What's here
 
@@ -44,3 +50,15 @@ since it's what cambc builds.
 | `htbcheck.py` | command-line checker: bracket/string errors per file, then cambc's compiler on the generated code |
 | `install.py` | the setup above |
 | `vscode/` | the VS Code extension (source and the packaged `htb-*.vsix`); see its README to change it |
+| `tests/` | the test suite: `python3 tools/htb/tests/run.py` (cases in `tests/cases/`; see `run.py`'s header) |
+
+## Tests
+
+    python3 tools/htb/tests/run.py              # every case: about 35 s
+    python3 tools/htb/tests/run.py 07_templates --keep
+
+Each case in `tests/cases/` is a small bot that defines things in awkward ways (circular, across nested folders,
+Java order, C-style, macros, CRLF files...). Every case is generated, built and run natively with its output
+checked (or its errors checked against the right `.htb` lines), compiled with cambc's own compiler, opened in clangd
+the way the extension does, and fuzzed: each file cut at every token, with every token deleted, and with junk
+inserted everywhere must never crash or hang hgen. Run it after changing hgen.

@@ -1,0 +1,28 @@
+typedef struct {
+    int x, y;
+} CPoint;
+typedef int (*BinOp)(int, int);
+typedef enum { LOW_E, HIGH_E } Level;
+typedef unsigned long long u64;
+
+struct Point3 {
+    int x, y, z;
+} origin3 = {1, 2, 3}, unit3{1, 1, 1};
+
+int (*pick_op(char c))(int, int) { return c == '+' ? add : mul; }
+BinOp ops[2] = {add, mul};
+int Point3::*member_ptr = &Point3::y;
+
+union Value {
+    int i;
+    float f;
+};
+
+struct Flags {
+    unsigned a : 3;
+    unsigned b : 5;
+    union {
+        int raw;
+        float real;
+    };
+};

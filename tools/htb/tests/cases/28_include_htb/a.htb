@@ -1,0 +1,3 @@
+#include "b.htb"
+
+int a_val() { return b_val() + 1; }

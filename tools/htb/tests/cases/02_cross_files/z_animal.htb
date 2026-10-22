@@ -1,0 +1,18 @@
+#include <string>
+
+class Animal {
+public:
+    explicit Animal(std::string n) : name(std::move(n)) { ++created; }
+    virtual ~Animal() = default;
+    virtual std::string sound() const = 0;
+    std::string describe() const { return name + " says " + sound(); }
+    static int created = 0;
+
+protected:
+    std::string name;
+};
+
+struct Leash {
+    int length;
+    std::string describe() const { return "leash " + std::to_string(length) + "m"; }
+};

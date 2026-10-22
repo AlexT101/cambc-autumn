@@ -1,0 +1,11 @@
+enum Level { LOW = 1, HIGH = 2 };
+
+struct Holder {
+    Config cfg;
+    int extra = 4;
+    Level lv = HIGH;
+};
+
+constexpr int SCALE = Config{}.n * 2;
+
+auto get_n(Config c) { return c.n + c.lv; }

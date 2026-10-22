@@ -1,0 +1,6 @@
+#include "../../../../game/units/stats.h"
+
+int deep_value() {
+    Stats s{1, 1};
+    return s.attack + util_game() + 40;
+}

@@ -1,0 +1,11 @@
+#include <array>
+
+// Enums from b.htb and c.htb, used before they're defined.
+struct Unit {
+    Kind kind = Kind::Tank;
+    std::array<int, COLOR_COUNT> paint{};
+    Mode mode = FAST;
+    const char* describe() const { return kind_name(kind); }
+};
+
+Phase next(Phase p);

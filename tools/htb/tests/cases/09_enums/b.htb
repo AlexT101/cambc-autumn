@@ -1,0 +1,12 @@
+enum class Kind : unsigned char { Tank, Scout, Healer };
+enum Color { RED, GREEN, BLUE, COLOR_COUNT };
+enum Mode { SLOW = 1, FAST = 4 };
+
+const char* kind_name(Kind k) {
+    switch (k) {
+    case Kind::Tank: return "tank";
+    case Kind::Scout: return "scout";
+    case Kind::Healer: return "healer";
+    }
+    return "?";
+}

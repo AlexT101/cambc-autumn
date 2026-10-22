@@ -1,0 +1,5 @@
+#include <cstdio>
+
+int main() {
+    std::printf("%d %d %d %d\n", A2{}.total(), B_TOTAL, B1{}.z, C1{}.d.w);
+}

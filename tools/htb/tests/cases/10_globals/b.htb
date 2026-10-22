@@ -1,0 +1,10 @@
+#include <vector>
+
+// Initialised at startup by calling a function that reads size_param, a global in z.htb.
+std::vector<int> table = build_table();
+
+std::vector<int> build_table() {
+    std::vector<int> t;
+    for (int i = 0; i < size_param; ++i) t.push_back(i * i);
+    return t;
+}

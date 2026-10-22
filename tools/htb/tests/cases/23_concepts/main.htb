@@ -1,0 +1,5 @@
+#include <cstdio>
+int main() {
+    std::printf("%s %d %s %d\n", greet(Robot{}).c_str(), twice_any(21), twice_any(std::string("ab")).c_str(), describe(2.5));
+    std::printf("%d %d %d %d\n", clamp_pos(-3), Robot{}.scale(2), Robot{}.mult(2), CE);
+}

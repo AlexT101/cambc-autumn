@@ -1,0 +1,27 @@
+// Reopens geo, aliases a namespace and names things declared in geo/shapes.htb, a later file.
+namespace geo {
+Point add(Point a, Point b) { return {a.x + b.x, a.y + b.y}; }
+}
+
+namespace a {
+struct Node { int v = 1; };
+int node_value(Node n) { return n.v; }
+}
+namespace b {
+struct Node { int v = 2; };
+int node_value(Node n) { return n.v * 10; }
+}
+
+namespace gm = geo::metrics;
+
+inline namespace v2 {
+int version() { return 2; }
+}
+
+namespace {
+int hidden() { return 99; }
+}
+int use_hidden() { return hidden(); }
+
+using geo::Point;
+Point origin() { return Point{0, 0}; }

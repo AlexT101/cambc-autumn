@@ -1,0 +1,7 @@
+struct C1 {
+    B1 b;
+    int y = 3;
+    D1 d;
+};
+
+constexpr int C_LIMIT = A_BASE * 2;

@@ -1,0 +1,2 @@
+both define `helper`
+both define `anon`

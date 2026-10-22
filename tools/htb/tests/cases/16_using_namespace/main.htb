@@ -1,0 +1,2 @@
+#include <cstdio>
+int main() { std::printf("%d %d\n", biggest({3, 9, 2}), bump()); }

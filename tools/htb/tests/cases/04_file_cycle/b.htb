@@ -1,0 +1,6 @@
+struct B1 {
+    A1 a;
+    int z = 2;
+};
+
+constexpr int B_TOTAL = C_LIMIT + 1;

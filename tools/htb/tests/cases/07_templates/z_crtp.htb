@@ -1,0 +1,6 @@
+#include <string>
+
+template <class Derived>
+struct Speaker {
+    std::string speak() const { return static_cast<const Derived*>(this)->name() + " speaks"; }
+};

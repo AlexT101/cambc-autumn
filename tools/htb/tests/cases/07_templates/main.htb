@@ -1,0 +1,18 @@
+#include <cstdio>
+
+int main() {
+    std::printf("%d %.1f\n", scaled(4), scaled(2.0));
+    std::printf("%d\n", sum_all(1, 2, 3, 4));
+    std::printf("%.2f\n", pi_v<double>);
+    Vec<int> v{1, 2, 3};
+    std::printf("%zu\n", v.size());
+    std::printf("%d %d\n", small_size('a'), small_size(1));
+    std::printf("%s\n", Dog{}.speak().c_str());
+    Box b(41);
+    b.set(b.get() + 1);
+    std::printf("%d\n", b.get());
+    Box<int> c = b.map(add_one);
+    std::printf("%d\n", c.get());
+    Box<bool> yes(true);
+    std::printf("%s\n", yes.get());
+}

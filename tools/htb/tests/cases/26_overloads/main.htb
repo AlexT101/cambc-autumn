@@ -1,0 +1,7 @@
+#include <cstdio>
+int main() {
+    const Calc cc;
+    Calc m;
+    int Shadow = 1;
+    std::printf("%d %d %d %d %d %d %d %d\n", f(1), f(1.0), f("x"), cc.g(), cc.f(0), m.f(0), value, shadow_size + Shadow);
+}

@@ -1,0 +1,5 @@
+#include <cstdio>
+int main() {
+    Bag b{make()};
+    std::printf("%d %s\n", b.count(), b.label.c_str());
+}

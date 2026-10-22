@@ -2,6 +2,18 @@
 // The whole bot as one translation unit: every file's declarations, then every
 // file's function bodies, so the compiler can inline calls across files.
 
+#include <cambc.h>
+#include <array>
+#include <iostream>
+#include <cstdint>
+#include <span>
+#include <variant>
+#include <utility>
+#include <vector>
+#include <algorithm>
+#include <string_view>
+#include <random>
+
 #include "headers/bot.h"
 #include "headers/draft.h"
 #include "headers/main.h"

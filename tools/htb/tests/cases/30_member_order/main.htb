@@ -1,0 +1,5 @@
+#include <cstdio>
+int main() {
+    Outer o;
+    std::printf("%d %d\n", o.use(), static_cast<int>(o.mode()));
+}

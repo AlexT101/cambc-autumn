@@ -1,0 +1,23 @@
+#include <cstdio>
+#include <string>
+
+// A comment with code in it: class Fake { void f() { } }
+/* block comment with } and { and "quotes' and // nested-looking
+   struct Broken {
+*/
+const char* braces() { return "{ } ( ) [ ] /* not a comment */ // nor this"; }
+const char* raw() { return R"(raw { with } "quotes" and )"; }
+const char* raw_delim() { return R"xy(tricky )" still raw })xy"; }
+char open_brace() { return '{'; }
+char quote_char() { return '"'; }
+char apostrophe() { return '\''; }
+long big() { return 1'000'000; }
+double hexf() { return 0x1p3; }
+int trigraph_like() { return sizeof("??="); }
+#define MULTI_LINE(a, b) \
+    ((a) + \
+     (b))
+int use_macro() { return MULTI_LINE(2, 3); }
+std::string escaped() { return "line\\n {"; }
+int unicode_café() { return 5; }
+const char* emoji() { return "🎯 {"; }

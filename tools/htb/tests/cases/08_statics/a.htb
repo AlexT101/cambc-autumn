@@ -1,0 +1,24 @@
+#include <string>
+#include <vector>
+
+class Registry {
+public:
+    static int count = 0;
+    static const int max_items = 5;
+    static constexpr double ratio = 1.5;
+    static std::string label = "reg";
+    static Registry global;
+    static Registry origin{7};
+    static std::vector<Registry> all;
+    static int defined_elsewhere;
+    static int counter_array[3];
+
+    int id;
+    explicit Registry(int i = 0) : id(i) { ++count; }
+    static int next_id() { return count + 1; }
+
+    struct Inner {
+        static int depth = 2;
+        int get() const { return depth * 2; }
+    };
+};

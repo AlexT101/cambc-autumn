@@ -1,0 +1,29 @@
+#include <cstdio>
+
+#define SQUARE(x) ((x) * (x))
+#define TEAM_SIZE 5
+#define FIELDS(X) X(alpha, 1) X(beta, 2)
+#define DECLARE(name, value) int name() { return value; }
+
+FIELDS(DECLARE)
+
+#ifndef TEAM_SIZE
+#error "TEAM_SIZE missing"
+#endif
+
+#if 0
+this is not C++ at all {
+int disabled() { return 1; }
+#endif
+
+int temp_macro_user() {
+#ifdef TEAM_SIZE
+    return TEAM_SIZE * 2;
+#else
+    return -1;
+#endif
+}
+
+#define TEMP 3
+int uses_temp() { return TEMP; }
+#undef TEMP

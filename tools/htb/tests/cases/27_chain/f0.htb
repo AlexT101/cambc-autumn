@@ -1,0 +1,4 @@
+struct T0 {
+    T1 next;
+    int v() const { return next.v() + 1; }
+};

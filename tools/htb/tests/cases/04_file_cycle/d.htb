@@ -1,0 +1,2 @@
+// Needed by the cycle, but needs nothing back.
+struct D1 { int w = 4; };

@@ -1,0 +1,8 @@
+#include <cstdio>
+int main() {
+    Tricky t;
+    std::printf("%d %d %d %d %d\n", t.fn(1), t.arr[2], t.v[1], t.m[1].second, int(t.sized.size()));
+    std::printf("%d %d %d\n", int(t.nested[1].size()), t.flag, t.shifted);
+    std::printf("%d %d %d %d\n", t.apply(5), t.pick(), t.compare(), t.tsize<std::vector<int>>());
+    std::printf("%d %d\n", free_defaults(), lt());
+}

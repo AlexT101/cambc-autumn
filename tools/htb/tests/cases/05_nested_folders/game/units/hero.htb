@@ -1,0 +1,7 @@
+#include "stats.h"
+
+class Hero {
+public:
+    Stats stats{10, 2};
+    int power() const { return stats.attack * stats.level + util_units(); }
+};

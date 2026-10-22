@@ -1,0 +1,20 @@
+#include <string>
+
+std::string greet(const Named auto& x) { return "hi " + x.name(); }
+auto twice_any(auto x) { return x + x; }
+int describe(Numeric auto x) { return int(x) * 2; }
+
+template <class T>
+    requires Numeric<T>
+T clamp_pos(T v) { return v < 0 ? T(0) : v; }
+
+struct Robot {
+    std::string name() const { return "robo"; }
+    template <class T>
+        requires Numeric<T>
+    T scale(T v) const { return v * 3; }
+    int mult(auto k) const { return int(k) * 5; }
+};
+
+consteval int ce_square(int v) { return v * v; }
+constexpr int CE = ce_square(7);

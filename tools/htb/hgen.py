@@ -24,8 +24,16 @@ checks a bot from the command line.
 
 Good to know:
   - The whole bot is compiled together, so two files can't both have a
-    `static` function or global with the same name.
-  - `#if` at file level isn't supported; put it inside a function.
+    `static` function or global with the same name, and a file-level
+    `using namespace` reaches every file (hgen notes both).
+  - Every file sees the library headers (<...>) any file includes.
+  - Globals start up after the globals their initializers read, including
+    through the functions and constructors they call.
+  - `#if 0` (and `#if 1 ... #else`) and include guards are fine anywhere; any
+    other `#if` around code at file level isn't supported (put it inside a
+    function).
+  - In the editor, a nested class used above its definition in the same class
+    is underlined, although it builds: clangd reads the class as written.
   - Never edit src/: hgen rewrites it, and won't touch a src/ holding files it
     didn't write.
 
@@ -64,14 +72,14 @@ CLANGD_START, CLANGD_END = "# >>> tools/htb/hgen.py", "# <<< tools/htb/hgen.py"
 OLD_CLANGD_MARKERS = (("# >>> tools/hgen.py", "# <<< tools/hgen.py"),)
 # Errors clangd would show only because it reads your file as written, which the build doesn't:
 # a default argument the context already gave, static members hgen makes inline, and classes
-# your file uses before (or while) they're defined, which hgen orders. Building reports any
-# real ones, at your file and line.
+# (or functions with a deduced return type) your file uses before they're defined, which hgen
+# orders. Building reports any real ones, at your file and line.
 SUPPRESS = ("param_default_argument_redefinition", "in_class_initializer_non_const",
             "in_class_initializer_literal_type", "incomplete_base_class", "field_incomplete_or_sizeless",
             "typecheck_decl_incomplete_type", "incomplete_member_access", "incomplete_nested_name_spec",
             "sizeof_alignof_incomplete_or_sizeless_type", "call_incomplete_argument",
             "call_function_incomplete_return", "func_def_incomplete_result", "init_incomplete_type",
-            "invalid_incomplete_type_use")
+            "invalid_incomplete_type_use", "auto_fn_used_before_defined")
 
 KEYWORDS = frozenset("""
     alignas alignof and and_eq asm auto bitand bitor bool break case catch char
@@ -108,6 +116,9 @@ _UNDEF = re.compile(r"#\s*undef\s+([A-Za-z_]\w*)")
 _CONDITIONAL = re.compile(r"#\s*(if|ifdef|ifndef|elif|else|endif)\b")
 _IF = re.compile(r"#\s*if(n?def)?\b")
 _ENDIF = re.compile(r"#\s*endif\b")
+_ELSE = re.compile(r"#\s*(else|elif)\b")
+_IF_CONST = re.compile(r"#\s*if\s+(0|1|false|true)\s*(?://.*|/\*.*)?$")
+_GUARD = re.compile(r"#\s*ifndef\s+(\w+)\s*$")
 _QUOTED_INCLUDE = re.compile(r'(#\s*include\s*")([^"]*)(")')
 _PRAGMA_ONCE = re.compile(r"#\s*pragma\s+once\b")
 _MACRO_NAME = re.compile(r"[A-Z][A-Z0-9_]*")
@@ -205,6 +216,68 @@ def tokenize(src):
     return toks, comments
 
 
+def drop_disabled(toks):
+    """Leave out what the compiler never sees anyway: code under `#if 0` (or the `#else` of
+    `#if 1`), with those directives, and a whole-file include guard."""
+    pp = [k for k, t in enumerate(toks) if t.kind == "pp" and not _PRAGMA_ONCE.match(t.text)]
+    drop = set()
+    if len(pp) >= 3 and pp[-1] == len(toks) - 1 and _ENDIF.match(toks[pp[-1]].text):
+        m = _GUARD.match(toks[pp[0]].text)
+        if m and pp[1] == pp[0] + 1 and re.fullmatch(rf"#\s*define\s+{m.group(1)}\s*", toks[pp[1]].text):
+            depth = 0
+            for k in pp:
+                depth += 1 if _IF.match(toks[k].text) else -1 if _ENDIF.match(toks[k].text) else 0
+                if depth == 0:
+                    break
+            if k == pp[-1]:     # the #ifndef's own #endif closes the file
+                drop = {pp[0], pp[1], pp[-1]}
+    out, stack = [], []     # per open #if: [shown (True/False, or None: the compiler decides), decided, taken]
+    for k, t in enumerate(toks):
+        if k in drop:
+            continue
+        live = all(f[0] is not False for f in stack)
+        if t.kind == "pp":
+            if _IF.match(t.text):
+                m = _IF_CONST.match(t.text)
+                if not live or m:
+                    shown = live and m.group(1) in ("1", "true")
+                    stack.append([shown, True, shown or not live])
+                    continue
+                stack.append([None, False, False])
+            elif _ELSE.match(t.text) and stack and stack[-1][1]:
+                f = stack[-1]
+                if t.text.lstrip("# \t").startswith("else"):
+                    f[0], f[2] = not f[2], True
+                elif not f[2] and all(x[0] is not False for x in stack[:-1]):
+                    # `#if 0 ... #elif COND`: COND's branch is an ordinary #if now
+                    f[:] = [None, False, False]
+                    out.append(Tok("pp", "#if" + t.text.lstrip("# \t")[4:], t.start, t.end))
+                    continue
+                else:
+                    f[0] = False
+                continue
+            elif _ENDIF.match(t.text) and stack:
+                if stack.pop()[1]:
+                    continue
+        if live:
+            out.append(t)
+    return out
+
+
+class Toks(list):
+    """A file's tokens; reading past either end gives an empty end-of-file token, so half-written
+    code (hgen runs on every save) can't crash the parser."""
+
+    def __init__(self, toks, size):
+        super().__init__(toks)
+        self.eof = Tok("eof", "", size, size)
+
+    def __getitem__(self, k):
+        if isinstance(k, int) and not 0 <= k < len(self):
+            return self.eof
+        return super().__getitem__(k)
+
+
 def match_brackets(toks):
     pair, stack = [-1] * len(toks), []
     closer = {")": "(", "]": "[", "}": "{"}
@@ -234,6 +307,8 @@ class Decl:
         self.f, self.kind, self.names, self.ns, self.private = f, kind, names, ns, private
         self.start, self.order = start, (f.index, start)
         self.text = self.fwd = self.sig = self.span = self.key = self.ahead = None
+        self.target = None      # the namespace a namespace alias or using-directive names, as a tuple
+        self.decl_only = None   # a declaration without the definition, for an editor context that can't have it
         self.edits = ()
         self.refs = self.strong = frozenset()
 
@@ -243,10 +318,12 @@ class Decl:
 
 
 class Body:
-    """A function or method definition, emitted in its file's .inl."""
+    """A function or method definition, emitted in its file's .inl (or, with no sig, a #define or #undef
+    replayed there so bodies see the macros they saw in the file)."""
 
-    def __init__(self, f, ns, sig_line, sig, body_line, body):
+    def __init__(self, f, ns, sig_line, sig, body_line, body, owner=None, refs=frozenset()):
         self.f, self.ns, self.sig_line, self.sig, self.body_line, self.body = f, ns, sig_line, sig, body_line, body
+        self.owner, self.refs = owner, refs     # the function (or class, for a constructor) and the names it uses
 
 
 class Split:
@@ -255,6 +332,7 @@ class Split:
     def __init__(self):
         self.edits, self.bodies, self.posts = [], [], []
         self.weak, self.removed, self.nested = set(), set(), set()
+        self.exprs = set()      # initializer and default-argument tokens
 
 
 class Parser:
@@ -269,7 +347,7 @@ class Parser:
         return self.toks[k].text if 0 <= k < len(self.toks) else ""
 
     def close(self, k):
-        j = self.pair[k]
+        j = self.pair[k] if 0 <= k < len(self.pair) else -1
         return j if j >= 0 else len(self.toks) - 1
 
     def slice(self, a, b):
@@ -391,6 +469,8 @@ class Parser:
         m = _INCLUDE.match(text)
         if m:
             inc = self.f.include(m.group(1), m.group(2))
+            if inc[0] == "drop":
+                return i + 1
             if preamble:
                 self.f.preamble.append(("include", inc))
             else:
@@ -408,6 +488,8 @@ class Parser:
                 defines = [m.group(1) for m in map(_DEFINE.match, (self.tx(j) for j in range(i, k))) if m]
                 if preamble:
                     self.f.preamble.append(("text", block))
+                else:
+                    self.f.bodies.append(Body(self.f, (), None, None, None, block))
                 text = "" if preamble else block
                 self.decl("macro", i, k, ns, private, defines, text=text, refs=frozenset(), ahead=text)
                 return k + 1
@@ -422,10 +504,14 @@ class Parser:
                 self.macros.add(m.group(1))
             body, _ = tokenize(text[m.end():])
             refs = frozenset(t.text for t in body if t.kind == "id" and t.text not in KEYWORDS)
-            text = "" if preamble else text
-            self.decl("macro", i, i, (), private, [m.group(1)], text=text, refs=refs, ahead=text)
+            kept = "" if preamble else text     # a preamble #define is already at the top
+            self.decl("macro", i, i, (), private, [m.group(1)], text=kept, refs=refs, ahead=kept)
+            if not preamble:
+                self.f.bodies.append(Body(self.f, (), None, None, None, text))
         elif _UNDEF.match(text) and not preamble:
             self.decl("undef", i, i, (), private, [], text=text, refs=frozenset([_UNDEF.match(text).group(1)]))
+            self.f.bodies.append(Body(self.f, (), None, None, None, text))
+            self.f.undefs.add(_UNDEF.match(text).group(1))
         elif not preamble:
             self.decl("misc", i, i, (), private, [], text=text, refs=frozenset())
         if preamble:
@@ -443,7 +529,9 @@ class Parser:
             k += 1
         if self.tx(k) == "=":
             e = self.skip_to(k, end)
-            self.decl("alias", i, e, ns, private, name[-1:], strong=frozenset(), ahead=self.slice(i, e))
+            d = self.decl("alias", i, e, ns, private, name[-1:], strong=frozenset(), ahead=self.slice(i, e))
+            d.target = tuple(self.tx(j) for j in range(k + 1, e) if self.toks[j].kind == "id")
+            self.f.namespaces.update(name[-1:])     # `alias::name` then means a name of the bot's own
             return e + 1
         if self.tx(k) != "{":
             return k + 1
@@ -513,10 +601,11 @@ class Parser:
         e, paren = d["e"], d["paren"]
         if typedef:
             name = self.typedef_name(h, e)
+            defines = any(self.tx(k) == "{" for k in range(h, e))   # `typedef struct {...} P;` can't be repeated
             self.decl("alias", start, e, ns, private, [name] if name else [], strong=frozenset(),
-                      ahead=self.slice(start, e))
+                      ahead=None if defines else self.slice(start, e))
         elif d["body"] is not None and paren is not None:
-            self.function(start, h, d, ns, private, template, spec)
+            e = self.function(start, h, d, ns, private, template, spec)
         elif d["body"] is not None:
             self.decl("misc", start, e, ns, private, [])
         elif paren is not None and not self.call_args(paren, d["cparen"]):
@@ -607,15 +696,24 @@ class Parser:
         return (self.src[self.toks[start].start:self.toks[paren].end] + ", ".join(parts)
                 + self.src[self.toks[cparen].start:self.toks[stop].start].rstrip())
 
+    def qualified_name(self, name_i):
+        """Whether the name at name_i is qualified (`A::f`, `A::~A`): a member defined outside its class."""
+        return self.tx(name_i - 1) == "::" or (self.tx(name_i - 1) == "~" and self.tx(name_i - 2) == "::")
+
     def function(self, start, h, d, ns, private, template, spec):
+        """A function definition; returns its last token."""
         toks = self.toks
         paren, cparen, name_i, body = d["paren"], d["cparen"], d["name_i"], d["body"]
         e = self.close(body)
+        if self.tx(body - 1) == "try":      # a function-try-block: the body is `try {...} catch (...) {...}`
+            body -= 1
+            while self.tx(e + 1) == "catch" and self.tx(e + 2) == "(":
+                e = self.close(self.close(e + 2) + 1)
         if toks[name_i].text == "operator":
             name = "operator" + "".join(t.text for t in toks[name_i + 1:paren])
         else:
             name = toks[name_i].text
-        qualified = self.tx(name_i - 1) == "::"
+        qualified = self.qualified_name(name_i)
         specs = {t.text for t in toks[h:name_i]}
         after = {self.tx(k) for k in range(cparen + 1, body)}
         segs, _, pnames = self.signature(paren, cparen)
@@ -624,17 +722,20 @@ class Parser:
             d = self.decl("template", start, e, ns, private, [] if qualified else [name])
             if not (spec or qualified or any(self.tx(k) == "=" for k in range(start, h))):
                 d.ahead = ahead
-            return
+            return e
         if qualified:       # a member defined outside its class, already
+            k = name_i - (2 if self.tx(name_i - 1) == "::" else 3)
+            ctor = self.tx(k) == name and self.tx(name_i - 1) == "::"
             self.f.bodies.append(Body(self.f, ns, self.line(start), self.src[toks[start].start:toks[body].start].rstrip(),
-                                      self.line(body), self.slice(body, e)))
-            return
+                                      self.line(body), self.slice(body, e), owner=name if ctor else None,
+                                      refs=self.idents(cparen + 1, e) if ctor else frozenset()))
+            return e
         private = private or "static" in specs
         deduced = "auto" in specs and "->" not in after
         if specs & {"constexpr", "consteval"} or deduced:
             # needed in full wherever it's used (constexpr), or before (deduced return type)
-            self.decl("inline", start, e, ns, private, [name], ahead=None if deduced else ahead)
-            return
+            self.decl("inline", start, e, ns, private, [name], ahead=None if deduced else ahead).decl_only = ahead
+            return e
         if name != "main":
             sig = [k for k in range(start, body) if k not in pnames]
             defaulted = [k for a, b, eq in segs if eq is not None for k in range(a, b + 1) if k not in pnames]
@@ -643,7 +744,8 @@ class Parser:
             p.sig = tuple(" ".join(self.tx(k) for k in range(a, (eq if eq is not None else b + 1)) if k not in pnames)
                           for a, b, eq in segs)
         self.f.bodies.append(Body(self.f, ns, self.line(start), self.without_defaults(start, paren, cparen, body, segs),
-                                  self.line(body), self.slice(body, e)))
+                                  self.line(body), self.slice(body, e), owner=name, refs=self.idents(body, e)))
+        return e
 
     def prototype(self, start, h, d, ns, private, template):
         """A function declaration the file wrote itself."""
@@ -655,10 +757,11 @@ class Parser:
         defaulted = [k for a, b, eq in segs if eq is not None for k in range(a, b + 1) if k not in pnames]
         specs = {t.text for t in self.toks[h:name_i]}
         text = self.slice(start, d["e"])
+        deleted = d["eq"] is not None and self.tx(d["eq"] + 1) in ("delete", "default")   # a definition: can't repeat
         self.decl("template" if template else "proto", start, d["e"], ns, private or "static" in specs,
-                  [] if self.tx(name_i - 1) == "::" else [name], text=text,
+                  [] if self.qualified_name(name_i) else [name], text=text,
                   refs=self.idents_at(k for k in range(start, d["e"] + 1) if k not in pnames),
-                  strong=self.idents_at(defaulted), ahead=text)
+                  strong=self.idents_at(defaulted), ahead=None if deleted else text)
 
     def declarators(self, h, e, init_paren=None):
         """For `T a = 1, *b;` at h..e-1: the names declared, the first name's index,
@@ -706,6 +809,11 @@ class Parser:
         take()
         return names, first, [k for k in top if first is None or k < first], inits
 
+    def strong_refs(self, ks, exprs):
+        """Names at ks used by value: in a type, `T*` only needs T declared; in an expression (exprs), `a * b` uses a."""
+        ks = list(ks)
+        return self.by_value(k for k in ks if k not in exprs) | self.idents_at(k for k in ks if k in exprs)
+
     def variable(self, start, h, e, ns, private, template, init_paren):
         names, first, top, inits = self.declarators(h, e, init_paren)
         if first is not None and self.tx(first - 1) == "::":
@@ -713,10 +821,11 @@ class Parser:
             self.f.static_defs.add(f"{self.tx(first - 2)}::{self.tx(first)}")
         specs = {self.tx(k) for k in top}
         private = private or "static" in specs
+        exprs = {k for a, b in inits for k in range(a, b + 1)}
         d = self.decl("template" if template else "var", start, e, ns, private, names,
-                      strong=None if template else self.by_value(range(start, e + 1)))
+                      strong=None if template else self.strong_refs(range(start, e + 1), exprs))
         pointer = any(self.tx(k) in POINTER for k in top)
-        const = "constexpr" in specs or ("const" in specs and (not pointer or self.tx(first - 1) == "const"))
+        const = "constexpr" in specs or ("const" in specs and (not pointer or first is None or self.tx(first - 1) == "const"))
         if "extern" in specs:
             d.ahead = d.text
         elif names and not (template or private or const or specs & {"inline", "auto"}) and start == h:
@@ -726,11 +835,24 @@ class Parser:
                     kept.append(self.slice(k, a - 1))
                 k = b + 1
             d.ahead = "extern " + "".join(kept).strip() + ";"
+        elif (len(names) == 1 and const and not (template or private or pointer or specs & {"auto", "static"})
+              and start == h):
+            # A constant declared ahead (enough for uses outside constant expressions): `extern const int N;`
+            top_set = set(top)
+            typ = " ".join(self.tx(k) for k in range(h, first)
+                           if not (k in top_set and self.tx(k) in ("constexpr", "constinit", "const", "inline")))
+            stop = inits[0][0] if inits else e
+            d.ahead = f"extern const {typ} {names[0]}{self.src[self.toks[first].end:self.toks[stop].start].strip()};"
+        d.decl_only = d.ahead
 
     def using(self, start, h, end, ns, private, template):
         e = self.skip_to(h, end)
-        if self.tx(h + 1) in ("namespace", "enum"):
-            self.decl("usingdir", start, e, ns, private, [], strong=frozenset(), ahead=self.slice(start, e))
+        if self.tx(h + 1) == "namespace":
+            d = self.decl("usingdir", start, e, ns, private, [], strong=frozenset(), ahead=self.slice(start, e))
+            d.target = tuple(self.tx(j) for j in range(h + 2, e) if self.toks[j].kind == "id")
+            self.f.using_dirs.append((self.line(start), self.slice(start, e)))
+        elif self.tx(h + 1) == "enum":      # `using enum E;` needs E complete
+            self.decl("usingdir", start, e, ns, private, [], ahead=self.slice(start, e))
         elif self.toks[h + 1].kind == "id" and self.tx(h + 2) == "=":
             self.decl("template" if template else "alias", start, e, ns, private, [self.tx(h + 1)],
                       strong=None if template else frozenset(), ahead=None if template else self.slice(start, e))
@@ -741,7 +863,8 @@ class Parser:
                     names.append(last)
                 elif self.toks[k].kind == "id" and self.tx(k) not in KEYWORDS:
                     last = self.tx(k)
-            self.decl("alias", start, e, ns, private, names, strong=frozenset(), ahead=self.slice(start, e))
+            # a using-declaration (`using geo::dot;`) needs what it names declared
+            self.decl("alias", start, e, ns, private, names, ahead=self.slice(start, e))
         return e + 1
 
     def typedef_name(self, h, e):
@@ -814,16 +937,18 @@ class Parser:
         names = [name] if name and not (head["qualified"] or head["spec_args"]) else []
         if head["enum"] and not head["scoped"]:
             names += self.enumerators(brace, c)
+        if c + 1 < e:       # variables declared with it: `struct P {...} origin, unit{1, 1};`
+            names += self.declarators(c + 1, e)[0]
         if special or head["enum"] or not name:
             d = self.decl("class", start, e, ns, private, names)   # kept as written
             if head["enum"] and name and (head["scoped"] or head["fixed"]):
                 d.fwd = f"{head['keyword']} {name}" + (f" : {head['fixed']};" if head["fixed"] else ";")
             return e + 1
         out = Split()
-        self.split_members(brace, c, [name], ns, out)
+        self.split_members(brace, c, [name], ns, out, "private" if head["keyword"] == "class" else "public")
         keep = [k for k in range(start, e + 1) if k not in out.removed]
         d = self.decl("class", start, e, ns, private, names, text=self.apply(start, e, out.edits),
-                      refs=self.idents_at(keep), strong=self.by_value(k for k in keep if k not in out.weak))
+                      refs=self.idents_at(keep), strong=self.strong_refs((k for k in keep if k not in out.weak), out.exprs))
         d.fwd = f"{head['keyword']} {name};"
         d.span, d.edits = (start, e), out.edits
         for text, a, b, key in out.posts:
@@ -841,9 +966,31 @@ class Parser:
         out.append(self.src[pos:self.toks[b].end])
         return "".join(out)
 
-    def split_members(self, brace, c, quals, ns, out):
+    def nested_names(self, brace, c):
+        """Names of the types declared directly in the class at brace..c, wherever they are in it."""
+        names, k = set(), brace + 1
+        while k < c:
+            x = self.tx(k)
+            if x in OPEN:
+                k = self.close(k) + 1
+                continue
+            if x in ("class", "struct", "union", "enum") and self.tx(k - 1) not in ("friend", "enum"):
+                head = self.class_head(k, c)
+                if head and head["name"] and not head["qualified"]:
+                    names.add(head["name"])
+                elif self.toks[k + 1].kind == "id" and self.tx(k + 2) == ";":
+                    names.add(self.tx(k + 1))   # `class Secret;`, defined later
+            elif x == "using" and self.toks[k + 1].kind == "id" and self.tx(k + 2) == "=":
+                names.add(self.tx(k + 1))
+            elif x == "typedef":
+                names.add(self.typedef_name(k, self.skip_to(k, c)))
+            k += 1
+        return names
+
+    def split_members(self, brace, c, quals, ns, out, access):
         """Move the method bodies in the class at brace..c out of it, recording edits in out."""
-        k = brace + 1
+        k, default, fwds = brace + 1, access, []
+        out.nested |= self.nested_names(brace, c)
         while k < c:
             t = self.toks[k]
             if t.kind == "pp":
@@ -852,11 +999,30 @@ class Parser:
                                   f"so `#if` inside a class may not do what you want"] = None
                 k += 1
             elif t.text in ("public", "private", "protected") and self.tx(k + 1) == ":":
+                access = t.text
                 k += 2
             elif t.text == ";":
                 k += 1
             else:
+                fwd = self.nested_fwd(k, c)
+                if fwd:
+                    fwds.append((access, fwd))
                 k = self.member(k, c, quals, ns, out)
+        if fwds:    # on the brace's line, so line numbers stay put
+            text, cur = "{", default
+            for acc, fwd in fwds:
+                text += (f" {acc}:" if acc != cur else "") + " " + fwd
+                cur = acc
+            out.edits.append((brace, brace, text + (f" {default}:" if cur != default else ""), None))
+
+    def nested_fwd(self, k, c):
+        """A forward declaration of the nested class or enum defined at k, if it can have one."""
+        head = self.class_head(k, c)
+        if head is None or not head["name"] or head["qualified"] or head["spec_args"] is not None:
+            return None
+        if head["enum"] and not (head["scoped"] or head["fixed"]):
+            return None     # a plain enum without a fixed type can't be declared ahead
+        return f"{head['keyword']} {head['name']}" + (f" : {head['fixed']}" if head["fixed"] else "") + ";"
 
     def member(self, start, c, quals, ns, out):
         h = start
@@ -879,7 +1045,8 @@ class Parser:
             if head["name"]:
                 out.nested.add(head["name"])
             if not head["enum"] and head["name"] and not head["qualified"] and head["spec_args"] is None:
-                self.split_members(brace, inner, quals + [head["name"]], ns, out)
+                self.split_members(brace, inner, quals + [head["name"]], ns, out,
+                                   "private" if head["keyword"] == "class" else "public")
             return e + 1
         d = self.scan(h, c)
         e = d["e"]
@@ -888,6 +1055,7 @@ class Parser:
         if d["paren"] is not None:      # a method declaration, maybe `= default`
             _, defaults, _ = self.signature(d["paren"], d["cparen"])
             out.weak.update(k for k in range(start, e + 1) if k not in defaults)
+            out.exprs.update(defaults)
         elif self.tx(start) == "friend":
             out.weak.update(range(start, e + 1))
         else:
@@ -898,14 +1066,15 @@ class Parser:
         """Static data members need `inline` (or a definition outside the class) to just work."""
         toks = self.toks
         names, first, top, inits = self.declarators(start, e)
+        out.exprs.update(k for a, b in inits for k in range(a, b + 1))
         static = next((k for k in top if self.tx(k) == "static"), None)
         specs = {self.tx(k) for k in top}
         if static is None or not names or specs & {"constexpr", "inline"}:
             return
-        pointer = any(self.tx(k) in POINTER for k in top)
-        const = "const" in specs and (not pointer or self.tx(first - 1) == "const")
         key = f"{quals[-1]}::{names[0]}"
-        if const or len(names) > 1 or not ({self.tx(k) for k in top} & set(quals)):
+        # A static of the class's own type (`static Foo origin;`, `static std::vector<Foo> all;`) can't be
+        # defined inside the still-incomplete class.
+        if len(names) > 1 or not {self.tx(k) for k in range(start, first)} & set(quals):
             out.edits.append((static, static, "inline static", key))
             return
         # Its type is the class itself, which isn't complete yet: define it after the class.
@@ -938,6 +1107,7 @@ class Parser:
             return e + 1    # needed in full where it's used, so it stays in the class
         segs, defaults, _ = self.signature(paren, cparen)
         out.weak.update(k for k in range(start, head_end) if k not in defaults)
+        out.exprs.update(defaults)
         out.removed.update(range(head_end, e + 1))
         decl = self.src[toks[start].start:toks[head_end].start].rstrip() + ";"
         gone = self.src[toks[head_end].start:toks[e].end]
@@ -968,7 +1138,9 @@ class Parser:
                 sig = f"{ret} {name}{params}{qualifiers}".lstrip()
         if colon is not None:
             sig += " " + self.src[toks[colon].start:toks[body].start].strip()
-        out.bodies.append(Body(self.f, ns, self.line(start), sig, self.line(body), self.slice(body, e)))
+        ctor = self.tx(name_start) == quals[-1]   # a constructor runs when a global of its class starts up
+        out.bodies.append(Body(self.f, ns, self.line(start), sig, self.line(body), self.slice(body, e),
+                               owner=quals[-1] if ctor else None, refs=self.idents(cparen + 1, e) if ctor else frozenset()))
         return e + 1
 
     def enumerators(self, brace, c):
@@ -997,11 +1169,14 @@ class SrcFile:
         self.inl = bot.src / stem.with_suffix(".inl")
         self.text = read(path)
         self.toks, self.comments = tokenize(self.text)
+        self.toks = Toks(drop_disabled(self.toks), len(self.text))
         self.comment_ends = [e for _, e in self.comments]
         self.pair = match_brackets(self.toks)
         self.newlines = [m.start() for m in re.finditer("\n", self.text)]
         self.preamble, self.includes, self.decls, self.bodies = [], [], [], []
         self.namespaces, self.notes, self.static_defs = set(), {}, set()
+        self.using_dirs = []    # (line, text) of file-level `using namespace`
+        self.undefs = set()     # macros the file #undefs after its opening directives
         self.parser = Parser(self)
         self.parser.scope(0, len(self.toks), (), False)
 
@@ -1010,6 +1185,10 @@ class SrcFile:
 
     def include(self, style, path):
         """How to include path from src/: files in the bot folder are copied into src/."""
+        if path.endswith(SOURCE):
+            self.notes[f"{self.display}: #include of {path} isn't needed (every file sees what the others "
+                       f"declare), so hgen leaves it out"] = None
+            return ("drop", path)
         if style == '"':
             target = os.path.normpath(os.path.join(str(self.path.parent), path))
             if os.path.isfile(target):
@@ -1031,6 +1210,8 @@ class SrcFile:
 
         def fix(m):
             style, path = self.include('"', m.group(2))
+            if style == "drop":
+                return f"/* {m.group(0)} */"
             return m.group(1) + (where(path) if style == "file" else path) + m.group(3)
         for kind, val in self.preamble + [("include", inc) for inc in self.includes]:
             if kind == "include":
@@ -1078,10 +1259,12 @@ def display_path(path, bot):
 
 
 def read(path):
+    """A file's text, with a byte order mark and Windows line endings (as Windows editors write) removed."""
     try:
-        return path.read_text(encoding="utf-8")
+        text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
-        return path.read_text(encoding="latin-1")
+        text = path.read_text(encoding="latin-1")
+    return (text[1:] if text.startswith("\ufeff") else text).replace("\r\n", "\n")
 
 
 def is_generated(path):
@@ -1107,6 +1290,12 @@ class Bot:
     def __init__(self, path):
         self.dir, self.name, self.src = path, path.name, path / "src"
         self.files = [SrcFile(self, p, i) for i, p in enumerate(bot_files(path, (SOURCE,)))]
+        copied = {self.src / p.relative_to(self.dir) for p in bot_files(path, HEADER_TYPES)}
+        for f in self.files:    # a header of yours where hgen would write one keeps its place
+            if f.header in copied:
+                f.header = f.header.with_name(f.header.stem + ".htb.h")
+            if f.inl in copied:
+                f.inl = f.inl.with_name(f.inl.stem + ".htb.inl")
         user_ns = {n for f in self.files for n in f.namespaces if n}
         # Static members someone defined outside their class keep their plain declaration.
         defined = {key for f in self.files for key in f.static_defs}
@@ -1117,6 +1306,30 @@ class Bot:
                     d.text = f.parser.apply(*d.span, [ed for ed in d.edits if ed[3] not in defined])
             for d in f.decls:
                 d.refs, d.strong = unqualify(d.refs, user_ns), unqualify(d.strong, user_ns)
+                # Its own name inside it (constructors, `Node* next`, `int x = 5;` beside an `extern int x;`)
+                # means itself or another declaration of it, never something to put first.
+                if d.kind in ("class", "var", "proto", "inline"):
+                    d.refs, d.strong = d.refs - set(d.names), d.strong - set(d.names)
+
+    def init_reads(self, d, resolve):
+        """The globals a global's initializer reads through the functions (and constructors) it calls:
+        they must start up first, as they would in Java."""
+        if not hasattr(self, "body_refs"):
+            user_ns = {n for f in self.files for n in f.namespaces if n}
+            self.body_refs = defaultdict(set)
+            for f in self.files:
+                for b in f.bodies:
+                    if b.owner:
+                        self.body_refs[b.owner] |= unqualify(b.refs, user_ns)
+        seen, todo, out = set(), list(d.strong), set()
+        while todo:
+            r = todo.pop()
+            if r in seen:
+                continue
+            seen.add(r)
+            todo += self.body_refs.get(r, ())
+            out.update(x for x in resolve(r, d.f) if x.kind == "var" and x is not d)
+        return out
 
     def context_path(self, f):
         return self.dir / CONTEXT_DIR / Path(f.rel).with_suffix(".h")
@@ -1126,6 +1339,10 @@ class Bot:
         notes = {}
         for f in self.files:
             notes.update(f.notes)
+            for line, text in f.using_dirs if len(self.files) > 1 else ():
+                notes[f"{f.display}:{line}: `{text}` reaches every file of the bot (they're compiled as one), so a "
+                      f"name it brings in can clash with one in another file; `std::name` or `using std::name;` "
+                      f"for just the names you need avoids that"] = None
         decls = [d for f in self.files for d in f.decls]
         by_name = defaultdict(list)
         for d in decls:
@@ -1135,20 +1352,43 @@ class Bot:
         def resolve(name, f):
             return [d for d in by_name.get(name, ()) if not d.private or d.f is f]
 
+        def aliased(x, seen):
+            """What an alias (typedef, using) names, through other aliases."""
+            for r in x.refs:
+                for y in resolve(r, x.f):
+                    if y not in seen:
+                        seen.add(y)
+                        yield y
+                        if y.kind == "alias":
+                            yield from aliased(y, seen)
+
+        def ns_path(d):
+            return tuple(p for _, nm in d.ns for p in nm.split("::") if p)
+
+        def within_ns(x, target):
+            path = ns_path(x)
+            return any(path[i:i + len(target)] == target for i in range(len(path) - len(target) + 1))
+
         # What each declaration needs defined before it.
         deps = {d: set() for d in decls}
         for d in decls:
             if d.kind == "macro":
                 continue    # a macro needs nothing until it's used
+            if d.target:    # `namespace gm = geo::metrics;`, `using namespace geo;`: geo's contents first
+                deps[d].update(x for x in decls if x is not d and x.kind != "usingdir" and within_ns(x, d.target))
             for r in d.refs:
                 for x in resolve(r, d.f):
                     # Only what r must be complete for counts: a class can be forward-declared,
                     # and a function or global matters only in an initializer or default argument.
                     if x is not d and (r in d.strong or not (x.fwd or x.kind in ("proto", "var"))):
                         deps[d].add(x)
+                        if x.kind == "alias" and r in d.strong:
+                            deps[d].update(y for y in aliased(x, {x, d}))
             deps[d].update(x for x in d.f.decls if x.kind == "usingdir" and x.order < d.order)
             if d.kind == "undef":
                 deps[d].update(x for x in d.f.decls if x is not d and d.refs & x.refs)
+            if d.kind == "var":
+                deps[d].update(self.init_reads(d, resolve))
         self.clashes(by_name, notes)
 
         # Files whose declarations need each other's share one header.
@@ -1176,6 +1416,10 @@ class Bot:
         lines = [f"{BANNER_PREFIX}. Do not edit: change the bot's {SOURCE} files and run tools/htb/hgen.py.",
                  "// The whole bot as one translation unit: every file's declarations, then every",
                  "// file's function bodies, so the compiler can inline calls across files.", ""]
+        # Each file sees the library headers any file includes, as the editor shows it.
+        system = [f"#include <{val[1]}>" for f in self.files for kind, val in f.preamble + [("include", i) for i in f.includes]
+                  if kind == "include" and val[0] == "<"]
+        lines += list(dict.fromkeys(system)) + [""] if system else []
         lines += [f'#include "{rel_include(f.header, unity)}"' for g in groups for f in g]
         lines.append("")
         lines += [f'#include "{rel_include(f.inl, unity)}"' for f in self.files]
@@ -1206,6 +1450,8 @@ class Bot:
         for d in emission:
             if d in blocked or any(x in blocked for x in deps[d]):
                 blocked.add(d)
+                if d.f is not X and d.decl_only:    # e.g. `extern const int SCALE;`: usable, if not in full
+                    blocks.append((d.ns, f'#line {d.line} "{d.f.display}"\n{d.decl_only}\n'))
                 continue
             text = d.ahead if d.f is X else d.text
             if text:
@@ -1332,7 +1578,12 @@ def header_text(owner, group, items, used, resolve):
 def inl_text(f):
     lines = [f"{BANNER_PREFIX} from {f.rel}. {EDIT_HINT.format(src=f.rel)}",
              "// Function bodies; src/unity.cpp includes this after every header.", ""]
-    emit(lines, [(b.ns, f'#line {b.sig_line} "{f.display}"\n{b.sig}\n#line {b.body_line} "{f.display}"\n{b.body}\n')
+    # Bodies see the macros they saw in the file: its #defines and #undefs are replayed in order,
+    # after the opening ones the file later #undefs.
+    lines += [text for kind, text in f.preamble
+              if kind == "text" and (m := _DEFINE.match(text)) and m.group(1) in f.undefs]
+    emit(lines, [(b.ns, b.body + "\n" if b.sig is None else
+                  f'#line {b.sig_line} "{f.display}"\n{b.sig}\n#line {b.body_line} "{f.display}"\n{b.body}\n')
                  for b in f.bodies])
     return "\n".join(lines).rstrip() + "\n"
 

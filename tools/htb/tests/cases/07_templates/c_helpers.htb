@@ -1,0 +1,8 @@
+int factor() { return 3; }
+int bump(int x) { return x > 5 ? 1 : 0; }
+double bump(double) { return 0.5; }
+
+template <class T>
+concept Small = sizeof(T) <= 4;
+
+int add_one(int v) { return v + 1; }

@@ -1,0 +1,4 @@
+int f(int) { return 1; }
+struct Shadow {
+    int value = 3;
+};

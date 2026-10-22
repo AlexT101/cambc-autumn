@@ -1,0 +1,17 @@
+#include <string>
+#include <vector>
+
+// Uses Dog (b_dog.htb) and Leash (z_animal.htb) by value, both defined in later files.
+class Kennel {
+public:
+    void adopt(const std::string& name) { dogs.push_back(Dog(name)); }
+    std::string roll_call() const {
+        std::string out;
+        for (const auto& d : dogs) out += d.describe() + "; ";
+        return out + leash.describe();
+    }
+
+private:
+    std::vector<Dog> dogs;
+    Leash leash{3};
+};

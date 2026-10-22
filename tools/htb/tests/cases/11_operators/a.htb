@@ -1,0 +1,22 @@
+#include <compare>
+#include <string>
+
+struct Vec2 {
+    int x = 0, y = 0;
+    Vec2 operator+(const Vec2& o) const { return {x + o.x, y + o.y}; }
+    Vec2& operator+=(const Vec2& o) {
+        x += o.x;
+        y += o.y;
+        return *this;
+    }
+    int operator[](int i) const { return i == 0 ? x : y; }
+    bool operator==(const Vec2&) const = default;
+    auto operator<=>(const Vec2&) const = default;
+    explicit operator bool() const { return x || y; }
+    friend Vec2 operator*(int k, const Vec2& v) { return {k * v.x, k * v.y}; }
+    friend std::string to_string(const Vec2& v) { return "(" + std::to_string(v.x) + "," + std::to_string(v.y) + ")"; }
+};
+
+struct Doubler {
+    int operator()(int v) const { return 2 * v; }
+};

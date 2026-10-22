@@ -1,0 +1,2 @@
+constexpr int LO = 1;
+constexpr int HI = 2;

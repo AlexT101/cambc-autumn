@@ -1,0 +1,13 @@
+﻿#include <cstdio>
+#define CRLF_MACRO(x) \
+    ((x) * 2)
+
+int crlf_fn() {
+    return CRLF_MACRO(21);
+}
+
+int main() {
+    std::printf("%s|%s|%s\n", braces(), raw(), raw_delim());
+    std::printf("%c%c%c %ld %.0f %d %d\n", open_brace(), quote_char(), apostrophe(), big(), hexf(), trigraph_like(), use_macro());
+    std::printf("%s %d %s %d\n", escaped().c_str(), unicode_café(), emoji(), crlf_fn());
+}

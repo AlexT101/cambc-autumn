@@ -1,0 +1,10 @@
+#include <string>
+#include <cstdio>
+
+int derived = base * 2;
+Config cfg{.speed = 3, .name = "fast"};
+auto square = [](int x) { return x * x; };
+int (*op)(int) = &negate;
+const int LIMIT = derived + 1;
+extern int declared_here_defined_there;
+Logger first_logger("a");

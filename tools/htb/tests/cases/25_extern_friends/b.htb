@@ -1,0 +1,19 @@
+extern "C" int c_mul(int a, int b) { return a * b; }
+
+class Auditor {
+public:
+    int audit(const Vault& v) const { return v.secret + 1; }
+};
+
+class Base {
+protected:
+    int prot = 5;
+
+public:
+    virtual ~Base() = default;
+};
+
+class Derived : public Base {
+public:
+    int get() const { return prot * 2; }
+};

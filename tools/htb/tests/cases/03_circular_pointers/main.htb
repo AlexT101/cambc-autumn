@@ -1,0 +1,22 @@
+#include <cstdio>
+
+int main() {
+    A a;
+    B b;
+    a.partner = &b;
+    b.partner = &a;
+    std::printf("%d %d\n", a.partner_value(), b.partner_value());
+    std::printf("%d %d\n", a.combine(b), b.combine(a));
+    B made = a.make_b();
+    std::printf("%d\n", made.partner_value());
+    std::printf("%d %d\n", is_even(10), is_odd(7));
+    Node n3{3}, n2{2, &n3}, n1{1, &n2};
+    std::printf("%d\n", n1.length());
+    Tree t;
+    t.v = 1;
+    t.left = std::make_unique<Tree>();
+    t.left->v = 2;
+    t.right = std::make_unique<Tree>();
+    t.right->v = 4;
+    std::printf("%d\n", t.sum());
+}

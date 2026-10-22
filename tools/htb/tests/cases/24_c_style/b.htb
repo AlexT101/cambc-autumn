@@ -1,0 +1,5 @@
+int add(int a, int b) { return a + b; }
+int mul(int a, int b) { return a * b; }
+u64 big_num() { return 1ULL << 40; }
+int origin_sum() { return origin3.x + origin3.y + origin3.z; }
+int first_x = origin3.x;

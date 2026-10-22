@@ -1,0 +1,28 @@
+template <class T>
+class Box {
+public:
+    explicit Box(T v) : value(v) {}
+    T get() const { return value; }
+    template <class U>
+    Box<U> map(U (*fn)(T)) const { return Box<U>(fn(value)); }
+    void set(T v);
+
+private:
+    T value;
+};
+
+template <class T>
+void Box<T>::set(T v) { value = v; }
+
+template <class T>
+Box(T) -> Box<T>;
+
+template <>
+class Box<bool> {
+public:
+    explicit Box(bool v) : value(v) {}
+    const char* get() const { return value ? "yes" : "no"; }
+
+private:
+    bool value;
+};

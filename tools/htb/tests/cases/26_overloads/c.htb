@@ -1,0 +1,7 @@
+struct Calc {
+    int f(int) const { return 10; }
+    int f(int) { return 20; }
+    int g() const { return f(0); }
+};
+int value = 9;
+int shadow_size = sizeof(struct Shadow);

@@ -1,0 +1,7 @@
+int main() {
+    std::printf("%d %d\n", derived, LIMIT);
+    std::printf("%zu\n", table.size());
+    std::printf("%d %s\n", cfg.speed, cfg.name.c_str());
+    std::printf("%d %d\n", square(5), op(7));
+    std::printf("%d\n", declared_here_defined_there);
+}

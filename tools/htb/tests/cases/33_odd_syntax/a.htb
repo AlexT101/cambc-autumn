@@ -1,0 +1,42 @@
+#include <string>
+#include <vector>
+
+struct [[nodiscard]] Result {
+    int code = 0;
+};
+
+class alignas(16) Vec4 {
+public:
+    float v[4] = {1, 2, 3, 4};
+    float sum() const { return v[0] + v[1] + v[2] + v[3]; }
+};
+
+struct Leaf final : Base {
+    int depth() const override { return Base::depth() + 1; }
+};
+
+inline int g_inline = 3;
+static_assert(sizeof(Packed) == 4, "Packed is defined in b.htb");
+decltype(make_number()) g_decl = make_number();
+
+void only_int(double) = delete;
+int only_int(int v) noexcept { return v * 2; }
+
+int apply(int (*cb)(int), [[maybe_unused]] int unused, int v) { return cb(v); }
+int sum_n(int n, ...) { return n; }
+
+std::string greeting("hi");
+int paren_init(5);
+std::vector<int> made(3, 7);
+
+auto make_adder = [](int a) { return [a](int b) { return a + b; }; };
+
+template class std::vector<long>;
+
+struct Pool {
+    static void* operator new(std::size_t n) { ++allocs; return ::operator new(n); }
+    static void operator delete(void* p) { ::operator delete(p); }
+    static int allocs;
+    int x = 0;
+};
+int Pool::allocs = 0;

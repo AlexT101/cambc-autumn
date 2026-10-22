@@ -1,0 +1,9 @@
+#include <cstdio>
+
+int main() {
+    Unit u;
+    u.paint[BLUE] = 9;
+    std::printf("%s %d %zu %d\n", u.describe(), u.paint[BLUE], u.paint.size(), u.mode);
+    std::printf("%d\n", int(next(next(Phase::Draft))));
+    std::printf("%d %d\n", Holder{}.which, Holder::A);
+}

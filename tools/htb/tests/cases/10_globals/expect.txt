@@ -1,0 +1,7 @@
+init z
+init a
+42 43
+4
+3 fast
+25 -7
+5

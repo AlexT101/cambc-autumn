@@ -1,0 +1,19 @@
+#include <string>
+
+// Each error below must be reported at this file's line, wherever hgen moves the code.
+class Ship {
+public:
+    int speed() const {
+        return undefined_in_method;
+    }
+    Ship(int s) : fuel(s + not_a_name) {}
+    std::string name(int width = missing_default) const { return "ship"; }
+    int fuel;
+};
+
+int free_function() {
+    int x = 1;
+    return x + also_undefined;
+}
+
+void Ship_helper(Ship& s) { s.no_such_member = 3; }

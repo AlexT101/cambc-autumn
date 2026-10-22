@@ -1,0 +1,12 @@
+// b.htb's Holder, SCALE and get_n all need Config (this file) complete; this file uses all three.
+struct Config {
+    int n = 3;
+    Level lv = LOW;
+};
+
+int read_holder() {
+    Holder h;
+    return h.cfg.n + h.extra + SCALE + get_n(Config{});
+}
+
+Holder make_holder() { return Holder{}; }

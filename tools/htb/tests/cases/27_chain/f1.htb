@@ -1,0 +1,4 @@
+struct T1 {
+    Alias2 next;
+    int v() const { return next.v() + 1; }
+};

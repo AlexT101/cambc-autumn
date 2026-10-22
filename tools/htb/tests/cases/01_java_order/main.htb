@@ -1,0 +1,36 @@
+#include <cstdio>
+
+// Everything here is used before it is defined, Java style.
+int main() {
+    Counter c;
+    c.add(5);
+    c.add(7);
+    std::printf("total %d\n", c.total());
+    std::printf("twice %d\n", twice(c.total()));
+    Shape s = make_square(3);
+    std::printf("area %d perimeter %d\n", s.area(), s.perimeter());
+    return 0;
+}
+
+int twice(int x) { return helper(x) + helper(x); }
+
+static int helper(int x) { return x; }
+
+class Counter {
+public:
+    void add(int v) { sum += scale(v); }
+    int total() const { return sum; }
+
+private:
+    int scale(int v) const { return v * factor; }
+    int sum = 0;
+    int factor = 1;
+};
+
+Shape make_square(int side) { return Shape{side, side}; }
+
+struct Shape {
+    int w, h;
+    int area() const { return w * h; }
+    int perimeter() const { return 2 * (w + h); }
+};

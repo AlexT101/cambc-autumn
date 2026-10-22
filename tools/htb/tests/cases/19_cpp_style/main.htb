@@ -1,0 +1,7 @@
+#include <cstdio>
+int main() {
+    Account a("ann", 100), b("bob", 50);
+    a.deposit(50);
+    b.apply([](int v) { return v * 3 - 5; });
+    std::printf("%d %d %d %d\n", a.balance(), b.balance(), a == b, Account::open_count);
+}

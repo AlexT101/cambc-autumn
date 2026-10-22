@@ -1,0 +1,2 @@
+#include <cstdio>
+int main() { std::printf("%d %d %d %d %d\n", c_add(2, 3), c_twice(4), peek(Vault{}), Auditor{}.audit(Vault{}), Derived{}.get()); }
