@@ -49,11 +49,18 @@ struct Board {
     }
 };
 
+// Read live: Vendetta's kill readies both slots mid-turn, after the belief was read.
+bool slot_ready(const World& world, int slot) {
+    try {
+        return my_cooldown(slot) == 0;
+    } catch (const cambc::error&) {
+        return world.me().ability_ready(slot, world.round);
+    }
+}
+
 int ready_slot(const World& world, AbilityKind kind) {
-    const auto& self = world.me();
-    const int slot = self.facts().slot_of(kind);
-    // The belief is exact for ourselves at turn start.
-    return slot >= 0 && self.ability_ready(slot, world.round) ? slot : -1;
+    const int slot = world.me().facts().slot_of(kind);
+    return slot >= 0 && slot_ready(world, slot) ? slot : -1;
 }
 
 // Health read from the engine, after our own hits this turn.
@@ -67,15 +74,16 @@ bool read_board(const World& world, Board& b, int reach) {
     for (const auto& e : world.enemies) {
         if (b.n == max_foes) break;
         if (!e.alive || !e.visible || e.stats_round != world.round || dist(b.here, e.pos) > reach) continue;
-        float health = 0;
+        float health = 0, shield = 0;
         try {
             if (!is_alive(e.handle)) continue;
             health = record_of(e.handle).health;
+            shield = e.shield > 0 ? shield_value(e.handle) : 0.0f;
         } catch (const cambc::error&) {
             continue;
         }
         // A shield absorbs before health: to kill, the hits must go through both.
-        b.foes[b.n++] = {&e, e.pos, health + e.shield, e.retaliation(), linked_partner_health(world, e),
+        b.foes[b.n++] = {&e, e.pos, health + shield, e.retaliation(), linked_partner_health(world, e),
                          params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), e.taken};
     }
     if (b.n == 0) return false;
@@ -771,11 +779,12 @@ void Search::read_geometry() {
     read_into(pathing.blocked(), blocked);
     // Where we stand is never an end to drop: after the goal, it is the only one.
     if (const bitboard* guard = pathing.guard()) read_into(*guard, guarded), guarded &= ~gbit(cell(here));
-    // Dash paths are blocked by walls, camps and visible enemies (probe-dash-enemy).
+    // Dash paths are blocked by walls, camps, visible enemies (probe-dash-enemy) and the enemy spawn.
     static bitboard foes_seen{cambc::uninitialized};
     camps_into(t);
     occupancy_into(team::enemy, foes_seen);
     or_into(t, foes_seen, t);
+    or_into(t, world.map().enemy_spawn, t);
     read_into(t, walls);
     walls |= terrain.walls;
     free_ = terrain.inside & ~blocked;
@@ -839,7 +848,7 @@ void Search::read_spells() {
     if (!can_cast) return;
     for (int s = 0; s < 2; ++s) {
         const auto& a = f.abilities[s];
-        if (!world.me().ability_ready(s, world.round)) continue;
+        if (!slot_ready(world, s)) continue;
         if ((a.kind != AbilityKind::damage && a.kind != AbilityKind::stun) || (a.target != Targeting::unit && a.target != Targeting::ground))
             continue;
         // After the goal's walk, the walk has taken an excludes-walking cast.
@@ -929,7 +938,8 @@ void Search::read_mates() {
             hp = live->health, top = live->max_health;
             // Allies start a recall at every turn end and cancel it unless wanted: one kept will
             // reach spawn and heal there.
-            if (kept_recall(a.handle)) continue;
+            if (kept_recall(a.handle, a.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time)))
+                continue;
         } catch (const cambc::error&) {
             continue;
         }
@@ -1014,7 +1024,6 @@ void Search::find_centres(int s) {
 }
 
 bool Search::read() {
-    const auto& self = world.me();
     const auto& record = my_record();
     here = {record.x, record.y};
     range = f.attack_range();
@@ -1037,8 +1046,9 @@ bool Search::read() {
     dash = f.slot_of(AbilityKind::dash);
     shield = can_cast ? ready_slot(world, AbilityKind::shield) : -1;
     heal = can_cast ? ready_slot(world, AbilityKind::heal) : -1;
-    reset_ready = can_cast && reset >= 0 && self.ability_ready(reset, world.round);
-    dash_ready = can_cast && moves && dash >= 0 && self.ability_ready(dash, world.round);
+    const std::array<bool, 2> ready{can_cast && slot_ready(world, 0), can_cast && slot_ready(world, 1)};
+    reset_ready = reset >= 0 && ready[reset];
+    dash_ready = moves && dash >= 0 && ready[dash];
     arms = reset >= 0 && f.abilities[reset].stuns;
     if (dash >= 0 && f.abilities[dash].lands()) lands = true, land_radius = f.abilities[dash].radius;
 
@@ -1047,7 +1057,7 @@ bool Search::read() {
     const int reach = std::max(grid_r + range + (splash ? 1 : 0), ability_range + 1);
     bool stuns = arms, casts = false, touches = (lands && dash_ready) || splash || vendetta;
     for (int s = 0; s < 2; ++s)
-        if (can_cast && self.ability_ready(s, world.round) && f.abilities[s].hits_enemies())
+        if (ready[s] && f.abilities[s].hits_enemies())
             stuns |= f.abilities[s].stuns, casts |= !f.abilities[s].lands(), touches |= f.abilities[s].target == Targeting::ground;
     const auto& enemy_spawn = world.map().enemy_spawn;
     for (const auto& e : world.enemies) {
@@ -1086,7 +1096,7 @@ bool Search::read() {
         // A stun takes only the next turn: with two before ours, the blow still lands.
         if (stuns && x.stunnable && turns_before_ours(world, e) == 1) x.drop_stun = static_cast<std::uint16_t>(1u << e.index);
         if (e.facts().passive == Passive::missing_health && n_hors < 2) x.hor = static_cast<std::int8_t>(n_hors), hor_unit[n_hors] = static_cast<std::int8_t>(foes), hors[n_hors++] = &e;
-        x.legal = can_attack && dist(here, e.pos) <= grid_r + range ? viewers(e.pos, range) : 0;
+        x.legal = (can_attack || reset_ready) && dist(here, e.pos) <= grid_r + range ? viewers(e.pos, range) : 0;
         h[foes++] = x.health;
     }
     n = foes;
@@ -1197,7 +1207,7 @@ bool Search::spell_unit(const Spell& sp, int t, Node& s) {
     const auto& x = u[t];
     const float d = x.spell[sp.slot];
     if (x.suicidal[sp.slot]) return false;
-    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t));
+    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t)) - (d > 0 ? x.retaliation : 0.0f);
     if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
     if (x.spell_stun[sp.slot] > 0 && !(s.stunned >> t & 1)) v += x.spell_stun[sp.slot], s.stunned |= static_cast<std::uint16_t>(1u << t);
     if (d <= 0 && v <= 0) return false;
@@ -1218,6 +1228,7 @@ float Search::centre_value(const Centre& c, int slot, const Node& s, bool& ok) c
         const auto& x = u[t];
         if (h[t] <= 0) continue;
         const float d = x.spell[slot];
+        if (d > 0) v -= x.retaliation;
         if (x.link >= 0 && moot(t, d, x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])) continue;
         v += hit_worth(d, h[t], x.spawn, x.bag, partner(t));
         if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
@@ -1440,7 +1451,7 @@ bool Search::legal_at(Node& s, Grid legal) const {
     case dashed: return ((s.lset ? s.lset : plain_here) & (s.req_d &= legal)) != 0;
     case walked_dashed: return ((s.lset ? s.lset : ~land_hits) & (s.req_d &= legal)) != 0;
     case dashed_walked: {
-        const Grid dom = s.lset ? dilate(s.lset & s.req_d) & free_ : dom_dw;
+        const Grid dom = dilate((s.lset ? s.lset : plain_here) & s.req_d) & free_;
         return (dom & (s.req_e &= legal)) != 0;
     }
     }
@@ -1612,8 +1623,11 @@ bool strike_possible(const World& world) {
     if (!S.read()) return out;
     throw_if_stale();
     mark(0);
-    // Prism's exclusive casts cannot follow a walk: offer the walk itself only as a terminal leaf.
-    if (S.f.passive == Passive::gem_focus && S.can_walk && S.moves && !S.walked_first) {
+    // A ranged walk spends the attack, and exclusive casts cannot follow it: with no reset or dash
+    // (Prism, Stellar) nothing strikes after it, so offer the walk itself only as a terminal leaf.
+    const auto excl_only = [](const AbilityFacts& a) { return !a.hits_enemies() || a.excludes_walking; };
+    if (!S.melee && S.reset < 0 && S.dash < 0 && excl_only(S.f.abilities[0]) && excl_only(S.f.abilities[1]) && S.can_walk
+        && S.moves && !S.walked_first) {
         Node walk = S.root();
         walk.seg = walked;
         walk.walk = walk.attack = walk.owed = false;
@@ -1813,12 +1827,12 @@ bool strike_possible(const World& world) {
                     add(at[m].enemy, safety_params::hit_given_reach * at[m].blow.damage, -1), added = true;
             if (added) total = top(), t.total = total;
         }
+        // The step guard covers radius 1-2 only. Left inexact, a hidden blocker's re-plan skips it too.
+        if (dist(p, here) == 3 && safety.lethal(p)) continue;
         t.exact = true;
         t.keep = cand[arg].keep;
         t.entry = cand[arg].entry;
         t.shield = t.keep ? sh : 0.0f;
-        // The step guard covers radius 1-2 only.
-        if (dist(p, here) == 3 && safety.lethal(p)) continue;
         if (total > best_total) best_total = total, chosen = i;
     }
     // Unpriced tiles keep their Strike price, and no shield.
@@ -1923,16 +1937,25 @@ bool strike_possible(const World& world) {
             failed = true;
             break;
         }
-        // The next-ranked plan that took the same actions so far, avoiding the revealed tile.
+        // The next-ranked plan that took the same actions so far, avoiding the revealed tile, also
+        // as a dash's only way through. Unpriced tiles 3 away were never checked for lethal danger.
         int alt = -1;
         float alt_total = -1e30f;
+        const Grid revealed = gbit(S.cell(a.tile));
         for (int i = 0; i < nt; ++i) {
             const auto& t = tiles[i];
-            if (dropped[t.c] || !(t.exact || (capped && !t.done)) || t.total <= alt_total) continue;
+            if (dropped[t.c] || !(t.exact || (capped && !t.done && dist(S.tile(t.c), here) < 3)) || t.total <= alt_total) continue;
             const Seq q = concrete(t);
             bool same = q.n > done;
             for (int k = 0; k < done && same; ++k) same = q.a[k] == seq.a[k];
-            for (int k = done; k < q.n && same; ++k) same = !((q.a[k].op == Op::walk || q.a[k].op == Op::dash) && q.a[k].tile == a.tile);
+            vec2 at = here;
+            for (int k = 0; k < q.n && same; ++k) {
+                if (q.a[k].op != Op::walk && q.a[k].op != Op::dash) continue;
+                if (k >= done && q.a[k].tile == a.tile) same = false;
+                else if (k >= done && q.a[k].op == Op::dash && dist(at, q.a[k].tile) == 2)
+                    same = (dilate(gbit(S.cell(at))) & dilate(gbit(S.cell(q.a[k].tile))) & S.pass_ & ~revealed) != 0;
+                at = q.a[k].tile;
+            }
             if (same) alt = i, alt_total = t.total;
         }
         if (alt < 0) {
@@ -2013,7 +2036,7 @@ Planned strike_after(const World& world, Pathing& pathing, Safety& safety) {
     int reach = state.contains(cambc::champion_state::can_attack) ? basic : -1;
     for (int s = 0; s < 2 && cast; ++s) {
         const auto& a = f.abilities[s];
-        if (!self.ability_ready(s, world.round)) continue;
+        if (!slot_ready(world, s)) continue;
         // A reset gives back a spent attack.
         if (a.kind == AbilityKind::attack_reset) reach = std::max(reach, basic);
         else if (a.hits_enemies() && !a.lands() && !(a.excludes_walking && here != self.pos)) reach = std::max(reach, a.reach());

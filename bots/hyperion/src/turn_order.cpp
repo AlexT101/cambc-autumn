@@ -78,11 +78,11 @@ struct Wish {
 
 struct Enemy {
     const ChampionBelief* belief;
-    float health;
+    float health; // shield included
 };
 
-// Visible enemies still alive after our turn, with their health now. One raw read each: every
-// SDK accessor reads the whole record again.
+// Visible enemies still alive after our turn, with their health and shield now. One raw read
+// each: every SDK accessor reads the whole record again.
 const std::vector<Enemy>& live_enemies(const World& world) {
     static std::vector<Enemy> out; // kept across turns: growing it reallocates
     out.clear();
@@ -92,7 +92,21 @@ const std::vector<Enemy>& live_enemies(const World& world) {
         if (!e.alive || !e.visible) continue;
         // A dead champion reads as off the map.
         if (cambc::detail::sdk_champion(static_cast<std::uint32_t>(e.handle), &info) != 0 || info.x < 0 || info.y < 0) continue;
-        out.push_back({&e, info.health});
+        out.push_back({&e, info.health + (e.shield > 0 ? shield_value(e.handle) : 0.0f)});
+    }
+    return out;
+}
+
+// The enemies in sight at turn start that our turn has not killed.
+const teacher_priority::Enemies& live_start_enemies(const World& world) {
+    static teacher_priority::Enemies out;
+    const auto& start = world.priority_start_enemies;
+    out.count = 0;
+    for (int i = 0; i < start.count; ++i) {
+        static std::int32_t alive;
+        const auto h = static_cast<std::uint32_t>(world.priority_start_handles[static_cast<std::size_t>(i)]);
+        if (cambc::detail::sdk_champion_is_alive(h, &alive) == 0 && alive == 0) continue;
+        out.units[static_cast<std::size_t>(out.count++)] = start.units[static_cast<std::size_t>(i)];
     }
     return out;
 }
@@ -226,7 +240,7 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
         const int d = e.visible ? dist(self.pos, e.pos) : 0;
         if (!s.hits(d)) continue;
         hit = true;
-        damage += s.damage[static_cast<std::size_t>(d)] * (e.visible && !e.acted ? 2.0f : 1.0f);
+        damage += s.damage[static_cast<std::size_t>(d)] * (e.visible && !e.acted && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f);
     }
     return hit && damage >= self.health;
 }
@@ -243,7 +257,8 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         if (!t.blow.hits) continue;
         enemy = true;
         const auto& e = world.enemies[t.enemy];
-        damage += t.blow.damage * (e.visible && !e.acted ? 2.0f : 1.0f);
+        // With two turns before ours, the blow already covers both.
+        damage += t.blow.damage * (e.visible && !e.acted && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f);
     }
     if (enemy && damage >= self.health) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
 }
@@ -261,7 +276,7 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
             continue;
         float damage = 0;
         for (const auto& [e, health] : enemies) damage += next_strike(world, *e, strikes).at(dist(e->pos, ally.pos));
-        if (damage >= ally.health && damage < ally.health + heal)
+        if (damage >= ally.health && damage < std::min(ally.health + heal, ally.max_health))
             wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(ally.gems));
     }
 }
@@ -287,7 +302,7 @@ void set_turn_order(const World& world, Safety& safety) {
     }
     if (idle_role(world.me().type) >= 0) {
         const auto self = priority_self(world);
-        priority = teacher_priority::priority(self, world.priority_start_enemies, self.alive ? static_cast<int>(my_gems()) : 0);
+        priority = teacher_priority::priority(self, live_start_enemies(world), self.alive ? static_cast<int>(my_gems()) : 0);
         world.throw_if_stale();
     } else if (world.me().alive) {
         cambc::champion_state state{};

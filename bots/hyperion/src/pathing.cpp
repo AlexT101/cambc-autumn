@@ -658,11 +658,12 @@ const bitboard& dash_landings_from(const StaticMap& map, vec2 from, const bitboa
     static bitboard camps{cambc::uninitialized}, excluded{cambc::uninitialized}, t{cambc::uninitialized},
         landings{cambc::uninitialized};
     camps_into(camps);
-    // Dash paths cross holes, altars, allies and unseen enemies, but not walls, camps or visible
-    // enemies (probe-dash-enemy).
+    // Dash paths cross holes, altars, allies and unseen enemies, but not walls, camps, visible
+    // enemies (probe-dash-enemy) or the enemy spawn.
     occupancy_into(team::enemy, t);
     or_into(map.walls, camps, excluded);
     or_into(excluded, t, excluded);
+    or_into(excluded, map.enemy_spawn, excluded);
     excluded.reachable_tiles_into(from, 2, landings);
     and_into(landings, map.open_for_us, landings);
     or_into(camps, t, excluded);

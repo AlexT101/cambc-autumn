@@ -146,24 +146,30 @@ bool channelling() {
     if (lock.count() == 0 || channelling()) return;
     const auto& map = world.map();
     const vec2 here = my_position();
-    for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
-        const vec2 p = map.altars[a].pos;
-        if (dist(here, p) > 2 || world.altars[a].ally_lock) continue;
-        // Placing one also cancels an enemy's tribute there: its bag stays out of the score.
-        bool enemy_tribute = false;
-        for (const auto& e : world.enemies)
-            enemy_tribute |= e.alive && e.visible && e.channel == Channel::tribute && dist(e.pos, p) <= 1;
-        if (!enemy_tribute && dist(p, map.ally_spawn_centre) > dist(p, map.enemy_spawn_centre) + 2) continue;
-        // Placing one cancels every tribute at the altar, ours included.
-        bool tributing = false;
-        for (const auto& ally : world.allies)
-            tributing |= !ally.is_self && ally.alive && ally.channel == Channel::tribute && dist(ally.pos, p) <= 1;
-        if (tributing) continue;
-        try {
-            if (lock.use(p)) return;
-        } catch (const cambc::error&) {
+    // Altars with an enemy tributing first.
+    for (int pass = 0; pass < 2; ++pass)
+        for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
+            const vec2 p = map.altars[a].pos;
+            if (dist(here, p) > 2 || world.altars[a].ally_lock) continue;
+            // Placing one also cancels an enemy's tribute there: its bag stays out of the score.
+            bool enemy_tribute = false, winning = false;
+            for (const auto& e : world.enemies)
+                if (e.alive && e.visible && e.channel == Channel::tribute && dist(e.pos, p) <= 1)
+                    enemy_tribute = true, winning |= enemy_tribute_wins(world, e);
+            if (enemy_tribute != (pass == 0)) continue;
+            if (!enemy_tribute && dist(p, map.ally_spawn_centre) > dist(p, map.enemy_spawn_centre) + 2) continue;
+            // Placing one cancels every tribute at the altar, ours included: worth it only against a win.
+            bool tributing = false, ours_wins = false;
+            for (const auto& ally : world.allies)
+                if (!ally.is_self && ally.alive && ally.channel == Channel::tribute && dist(ally.pos, p) <= 1)
+                    tributing = true,
+                    ours_wins |= world.score.ally + ally.gems >= static_cast<int>(cambc::constants::winning_gems);
+            if (tributing && (!winning || ours_wins)) continue;
+            try {
+                if (lock.use(p)) return;
+            } catch (const cambc::error&) {
+            }
         }
-    }
 }
 
 bool attack_enemy(const World& world) {
@@ -352,6 +358,13 @@ bool break_lock(const World& world, int altar) {
                 return false;
             }
         }
+    return false;
+}
+
+// A believed lock can be gone: break_lock's last hit, or an old sighting of an altar out of view at turn start.
+bool enemy_lock_live(vec2 p) {
+    for (const auto& lock : cambc::vision::altar_locks())
+        if (lock.is_enemy() && lock.position() == p) return true;
     return false;
 }
 
@@ -604,12 +617,12 @@ bool seals(const World& world, const AltarAccess& access, int g) {
 bool winning_bag(const World& world) { return gems_short(world) <= 0; }
 
 // Rounds until the team, at its recent tribute rate, has the rest of the win beyond our score and
-// the team's bags (posted through comms): our bag banked later than that only delays the win.
+// the team's bags (as seen, else as posted through comms): our bag banked later than that only delays the win.
 int race_left(const World& world) {
     int short_by = gems_short(world);
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive && !(a.visible && a.channel == Channel::tribute))
-            short_by -= comms::bag_of(world, a.index);
+            short_by -= a.visible ? a.gems : comms::bag_of(world, a.index);
     if (short_by <= 0) return 0;
     const float rate = world.ally_rate();
     return rate > 0 ? static_cast<int>(static_cast<float>(short_by) / rate) : rounds_left(world);
@@ -651,7 +664,8 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
     const vec2 here = my_position();
     const auto& altars = world.map().altars;
     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
-        if (world.altars[a].enemy_lock || dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
+        if (dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
+        if (world.altars[a].enemy_lock && enemy_lock_live(altars[a].pos)) continue;
         const bool avoided = a == memory.avoid_altar && world.round < memory.avoid_until;
         if ((avoided || here != world.me().pos) && !tribute_ok(world, safety, memory, tribute_turns(my_gems()))) return false;
         place_lock(world); // first: it cancels every tribute at its altar
@@ -716,12 +730,6 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
     if (submit_here(world, safety, memory)) return;
     const vec2 here = my_position();
     const auto& altars = world.map().altars;
-    // A pack we would retreat from stands in the way: around it within the usual detour, else
-    // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
-    if (const auto* zone = pack_zone(world)) {
-        if (pathing.step_towards(pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
-        return;
-    }
     // One we gave up waiting at (carry_bag) counts as locked until we could reach another.
     const auto avoided = [&](int a) { return a == memory.avoid_altar && world.round < memory.avoid_until; };
     bool any_locked = false;
@@ -741,6 +749,14 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
             if (steps < best_steps) best = a, best_steps = steps;
         }
         any_locked = best >= 0;
+    }
+    // A pack we would retreat from stands in the way: around it within the usual detour, else
+    // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
+    if (const auto* zone = pack_zone(world)) {
+        if (any_locked && world.altars[best].enemy_lock && break_lock(world, best) && !world.me().facts().walk_and_attack_independent())
+            return;
+        if (pathing.step_towards(any_locked ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
+        return;
     }
     // Every altar a walk reaches avoided: only a hop is left.
     const int walk_steps = any_locked ? best_steps : skipping ? unreachable : pathing.to_any_altar().at(here);
@@ -1523,10 +1539,11 @@ bool spell_clear(const World& world, Pathing& pathing, int g, const bitboard* zo
     const auto& c = world.camps[g];
     static bitboard reach{cambc::uninitialized}, goals{cambc::uninitialized};
     reach.clear();
+    // Targets only among the first 32 members (the mask's width), but every member's reach is avoided.
     std::uint32_t attackers = 0;
-    for (std::size_t i = 0; i < G.members.size() && i < 32; ++i)
+    for (std::size_t i = 0; i < G.members.size(); ++i)
         if (c.health[i] > 0 && G.members[i].strength > 0) {
-            attackers |= 1u << i;
+            if (i < 32) attackers |= 1u << i;
             reach.draw_chebyshev(G.members[i].pos, static_cast<float>(G.members[i].reach));
         }
     if (!attackers) return false;
@@ -2928,12 +2945,16 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     const int range = self.facts().attack_range();
     int steps = std::max(0, dist(here, e.pos) - range);
     if (e.channel == Channel::tribute) {
+        // It completes at its turn start in its end round: the last round we act before that.
+        const int end = e.channel_end_round;
+        const bool first = end == world.round ? !e.acted : world.slot(self, end) < world.slot(e, end);
+        const int last = first ? end : end - 1;
         if (e.facts().passive != Passive::stun_immune)
-            if (const int reach = self.ready_stun_reach(e.channel_end_round - 1); reach >= 0)
+            if (const int reach = self.ready_stun_reach(last); reach >= 0)
                 steps = std::min(steps, std::max(0, dist(here, e.pos) - reach));
         if (const int a = tribute_altar(world, e.pos); a >= 0 && carried_locks() > 0)
             steps = std::min(steps, std::max(0, dist(here, altars[a].pos) - 2));
-        return steps < e.channel_end_round - world.round ? steps : unreachable;
+        return steps <= last - world.round ? steps : unreachable;
     }
     int a = -1;
     for (int k = 0; k < static_cast<int>(altars.size()); ++k)
@@ -3188,7 +3209,7 @@ bool can_stop_winning_tribute(const World& world) {
     return false;
 }
 
-// A visible enemy whose bag (both, for Cassi and Issac) ends the game once tributed and that we
+// A visible enemy whose bag (both, for a walking Cassi and Issac) ends the game once tributed and that we
 // can stop: nothing we gain meanwhile counts unless our own bag wins first. The nearest; null if none.
 const ChampionBelief* game_ender(const World& world) {
     const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
@@ -3201,7 +3222,9 @@ const ChampionBelief* game_ender(const World& world) {
     const ChampionBelief* best = nullptr;
     int best_steps = unreachable;
     for (const auto& e : world.enemies) {
-        if (!e.alive || !e.visible || pair_gems(world, e) < need || test(world.map().near_enemy_spawn, e.pos)) continue;
+        if (!e.alive || !e.visible || test(world.map().near_enemy_spawn, e.pos)) continue;
+        // A tribute scores only the tributing body's bag.
+        if ((e.channel == Channel::tribute ? e.gems : pair_gems(world, e)) < need) continue;
         if (!here) {
             if (winning_bag(world)) return nullptr;
             here = my_position();
@@ -3383,6 +3406,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
         // The nearest take the capture, split to shorten the tributes; the rest farm.
         if (capture_taken(world, G, here)) {
             memory.siege = false;
+            memory.staged_since = -1;
             return false;
         }
         memory.siege = true;

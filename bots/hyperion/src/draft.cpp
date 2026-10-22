@@ -289,6 +289,12 @@ void play_draft(DraftState& state) {
 
 void ensure_picked(DraftState& state) {
     if (state.picked_round == draft_round()) return;
+    // draft_order() may be what threw in play_draft.
+    try {
+        if (pick_first_available(state, draft_order())) return;
+    } catch (const std::exception&) {
+    }
+    if (pick_first_available(state, params::draft_preference)) return;
     pick_first_available(state, all_champions());
 }
 

@@ -181,7 +181,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
             float shield = 0, taken = 1;
             for (const auto& e : world.enemies)
                 if (e.alive && e.visible && e.pos == p) {
-                    if (kind.has(AbilityKind::shield)) shield = e.shield;
+                    if (kind.has(AbilityKind::shield) && e.shield > 0) shield = shield_value(c);
                     taken = e.taken;
                 }
             seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken});
@@ -221,10 +221,11 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only) {
     if (reset < 0) return false;
     const auto target = attack_target(world, stunning_only);
     if (!target) return false;
-    float taken = 1;
+    float taken = 1, shield = 0;
     for (const auto& e : world.enemies)
-        if (e.handle == *target) taken = e.taken;
-    if ((!(record_of(*target).health <= my_strength() * taken) && shield_wanted(world)) || !cast(reset)) return false;
+        if (e.handle == *target) taken = e.taken, shield = e.shield;
+    if (shield > 0) shield = shield_value(*target);
+    if ((!(record_of(*target).health + shield <= my_strength() * taken) && shield_wanted(world)) || !cast(reset)) return false;
     try {
         attack_champion(*target);
     } catch (const cambc::error&) {
@@ -408,7 +409,10 @@ bool heal_ally(const World& world) {
             if (identity_of(c).team != cambc::detail::sdk_my_team()) continue;
             // Allies start a recall at every turn end and cancel it unless wanted, so only one
             // they kept going will reach spawn and heal there.
-            if (kept_recall(c)) continue;
+            int recall = static_cast<int>(cambc::constants::recall_time);
+            for (const auto& a : world.allies)
+                if (a.handle == c && a.fast_recall) recall = home_recall_time;
+            if (kept_recall(c, recall)) continue;
             const auto& live = record_of(c);
             const float gain = std::min(amount, live.max_health - live.health);
             const float fraction = live.health / live.max_health;

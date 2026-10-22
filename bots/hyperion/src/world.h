@@ -263,13 +263,14 @@ struct ChampionBelief {
     float scale = 1;      // damage_scale() at `health`, kept with the stats: fights read it often
     int stats_round = -1;
     int gems = 0;
-    bool fast_recall = false; // a Home emblem, when last seen (enemies and ourselves): recall takes home_recall_time turn ends
-    float taken = 1;          // damage taken per point dealt: durability_taken with a Durability emblem, when last seen (enemies and ourselves)
+    bool fast_recall = false; // a Home emblem, when last seen: recall takes home_recall_time turn ends
+    float taken = 1;          // damage taken per point dealt: durability_taken with a Durability emblem, when last seen
     bool acted = false; // had completed its turn when last read this round
     // Turn-order priority for priority_round, and from the round after it.
     int priority = 0, next_priority = 0, priority_round = -1;
     int rank = 0; // place in its team's turn order, from the priorities last read
     int prev_rank = 0; // its rank in the round of our previous update
+    int next_rank = 0; // its rank from next round on, by next_priority
 
     // Abilities: the earliest round each slot could be cast. Exact while visible (read from the
     // engine); through fog, projected with the cooldown rule assuming no unseen cast, so the real
@@ -366,6 +367,7 @@ struct Scores {
 class World {
 public:
     teacher_priority::Enemies priority_start_enemies;
+    std::array<cambc::handle_champion_t, 6> priority_start_handles{}; // parallel to priority_start_enemies.units
     // Start of each play turn. The first call also builds the static map.
     void update();
     void observe();
@@ -412,14 +414,14 @@ public:
         return enemy_seen_;
     }
     // Index of the champion's turn in `round`, by its rank then: the current one for this round,
-    // that of our previous update for earlier rounds.
+    // that of our previous update for earlier rounds, next_rank for later ones.
     int slot(const ChampionBelief& c, int r) const {
         // Teams alternate one turn at a time, A first in odd rounds; the larger team's extra
         // champions go last.
         const bool ally = c.side == team::ally;
         const int others = ally ? enemy_count_ : ally_count_;
         const bool first = ally == (team_a_ == (r % 2 == 1));
-        const int rank = r < round ? c.prev_rank : c.rank;
+        const int rank = r < round ? c.prev_rank : r == round ? c.rank : c.next_rank;
         return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
     }
     int round = 0;
@@ -525,7 +527,7 @@ private:
     int tracked_count_ = 0;
     std::uint32_t lineages_ = 0;
     bool ranks_stale_ = true;
-    std::array<std::array<std::uint8_t, 16>, 2> turn_order_; // allies', enemies' indices by rank
+    std::array<std::array<std::uint8_t, 16>, 4> turn_order_; // allies', enemies' indices by rank, then by next_rank
     int ranked_round_ = -1;
     int updated_round_ = -1;
 };

@@ -191,3 +191,35 @@ deal Strength times that in the strike search (`hit_unit`, splash included), `st
 `attack_target` and `reset_and_attack_enemy`'s kill test, and turn order's kill bid (`offer_kills`). Spells already
 went through the engine's `damage_against`. Before, a 100-Strength hit was counted as killing a 95-health Durability
 holder, and the planner dropped that surviving enemy from its end tile's danger. Not A/B tested.
+
+## 85: logic fixes from the 2026-10-22 audit (phase 1b)
+
+With 84 (Durability), against 83: 51.0% of 1094 (ladder 48.6, gen 51.8, gen-s1 50.6), out-of-fuel turns 3816 vs
+3612. Seven judgment calls from the same batch, layered on top separately, took the batch to 56.3% (ladder 44.3,
+gen 55.5, gen-s1 58.8).
+
+- Strike search and dashes:
+  - Dash paths never cross the enemy spawn (probe-dash-spawn): `dash_landings_from` and the search's `pass_`.
+  - A hidden blocker's re-plan skips tiles rejected as lethal, unpriced tiles 3 away, and dashes whose only way
+    through is the revealed tile.
+  - A reset then an attack on a champion is planned once the attack is spent (`strike_after`).
+  - The walk-only terminal leaf goes to any ranged champion with no reset or dash whose strikes exclude walking
+    (Prism, now Stellar).
+  - Dash-then-walk legality respects the dash tiles still allowed, as `settle` does.
+  - Spell scoring subtracts Ren's retaliation, as attacks and landings do.
+  - Enemy shields are read live in basic-attack kills; our slots' readiness is read live (Vendetta's refresh).
+- Banking, locks and the endgame (bot.cpp):
+  - siege resets `staged_since` when allies take the capture.
+  - `submit_here` confirms a believed enemy lock live (gone after break_lock's last hit).
+  - `bank_gems`' pack-zone branch uses the lock- and avoid-aware altar choice and breaks locks.
+  - `game_ender` judges a tributing enemy by its own bag (not Cassi's and Issac's together).
+  - `intercept_steps` counts the rounds we act before a tribute completes, by turn order.
+  - `place_lock` prefers the altar with an enemy tribute, and locks over an ally's tribute only against a winning
+    enemy tribute and when the ally's would not win first.
+  - `race_left` uses visible allies' live bags; `spell_clear` avoids every member's reach.
+- World, comms, draft, turn order:
+  - Allies' emblems are read too, so Willow's heal sees a Home ally's 3-turn recall.
+  - Next round's turn order ranks by `next_priority` (`next_rank`).
+  - The draft fallback follows `draft_order()`, then `draft_preference`.
+  - Turn order: `offer_heal` caps the heal at max health, `offer_kills` counts shields, escape does not double a strike
+    that already covers two turns; the teacher priority skips enemies killed this turn.
