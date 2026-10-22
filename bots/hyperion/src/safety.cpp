@@ -349,6 +349,41 @@ float act(Side& self, Side& other) {
     return damage;
 }
 
+// hurt() of `d` on the weakest, with its shield and health in `shield` and `health`: false if it
+// would fall.
+[[gnu::always_inline]] inline bool takes(float d, float& shield, float& health) {
+    if (!(d > 0)) return true;
+    const float absorbed = std::min(d, shield);
+    shield -= absorbed;
+    d -= absorbed;
+    if (!(d < health)) return false;
+    health -= d;
+    return true;
+}
+
+// play_quiet() with a weakest shielded.
+[[gnu::noinline]] int play_shielded(Side& us, Side& them, Fighter& u, Fighter& e, int t, int end, bool they_first, int& ours, int& theirs) {
+    const float onto_them = u.retaliation > 0 ? static_cast<float>(them.quiet_hits) * u.retaliation : 0.0f;
+    const float onto_us = e.retaliation > 0 ? static_cast<float>(us.quiet_hits) * e.retaliation : 0.0f;
+    const float camp = us.camp;
+    for (; t < end; ++t) {
+        float us_ = u.shield, uh = u.health, es = e.shield, eh = e.health;
+        if ((t % 2 == 0) == they_first) {
+            if (them.turn >= them.quiet_until || them.alive != them.quiet_alive || them.stunned != 0) break;
+            if (!takes(them.quiet_damage, us_, uh) || !takes(onto_them, es, eh) || !takes(camp, us_, uh)) break;
+            ++them.turn;
+            ++theirs;
+        } else {
+            if (us.turn >= us.quiet_until || us.alive != us.quiet_alive || us.stunned != 0) break;
+            if (!takes(us.quiet_damage, es, eh) || !takes(onto_us, us_, uh)) break;
+            ++us.turn;
+            ++ours;
+        }
+        u.shield = us_, u.health = uh, e.shield = es, e.health = eh;
+    }
+    return t;
+}
+
 // The half-turns from `t` (to `end` at most) in which both sides only make their basic attacks
 // and nobody falls, each taken off the side's weakest as act() and hurt() would; returns the next.
 int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours, int& theirs) {
@@ -356,7 +391,7 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int& ours,
     if (wu < 0 || we < 0) return t;
     auto& u = us.fighters[wu];
     auto& e = them.fighters[we];
-    if (u.shield != 0 || e.shield != 0) return t;
+    if (u.shield != 0 || e.shield != 0) return play_shielded(us, them, u, e, t, end, they_first, ours, theirs);
     const float onto_them = u.retaliation > 0 ? static_cast<float>(them.quiet_hits) * u.retaliation : 0.0f;
     const float onto_us = e.retaliation > 0 ? static_cast<float>(us.quiet_hits) * e.retaliation : 0.0f;
     const float camp = us.camp;
