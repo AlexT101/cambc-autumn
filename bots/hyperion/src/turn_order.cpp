@@ -10,23 +10,11 @@ namespace aph {
 
 namespace {
 
-// Allies sort by band, then by value within it: a kill or a cancelled channel outranks saving a
-// life, which outranks being near a fight. Each needs us to act before some enemy next round.
-enum Band : int { idle, engaged, protect, kill };
+// One scale for every ally: teacher_priority's danger (14..23), dead (13) and idle (at most 12)
+// values, with two bands above them. A kill or a cancelled channel outranks saving a life; each
+// needs us to act before some enemy next round. Only non-teacher champions bid for the bands.
+enum Band : int { none, protect, kill };
 constexpr int band_width = 10000;
-
-int idle_role(cambc::champion_type type) {
-    using cambc::champion_type;
-    switch (type) {
-    case champion_type::prism: return 0;
-    case champion_type::vesper_vale: return 1;
-    case champion_type::ryth:
-    case champion_type::vendetta: return 2;
-    case champion_type::marcella: return 3;
-    case champion_type::heart_of_ruin: return 4;
-    default: return -1;
-    }
-}
 
 teacher_priority::Unit priority_self(const World& world) {
     teacher_priority::Unit self;
@@ -67,7 +55,7 @@ static_assert(static_cast<int>(cambc::champion_type::heart_of_ruin) == teacher_p
 // round denies it only a second one.
 constexpr float unacted_share = 0.5f;
 struct Wish {
-    int band = idle;
+    int band = none;
     float value = 0;
 
     void offer(int b, float v) {
@@ -281,37 +269,23 @@ void offer_heal(const World& world, const ChampionBelief& self, const std::vecto
     }
 }
 
-// Fights go to the first hit, and a stun before the enemy's turn removes it: the ally nearest a
-// visible enemy acts first.
-void offer_engaged(const ChampionBelief& self, const std::vector<Enemy>& enemies, Wish& wish) {
-    int nearest = vision_radius + 1;
-    for (const auto& [e, health] : enemies) nearest = std::min(nearest, dist(self.pos, e->pos));
-    if (nearest <= vision_radius) wish.offer(engaged, static_cast<float>(vision_radius + 1 - nearest));
-}
-
 } // namespace
 
 void set_turn_order(const World& world, Safety& safety) {
     world.throw_if_stale();
     auto& me = cambc::self();
     Wish wish;
-    int priority = 0;
     if (world.me().alive && !fuel_ok(end_reserve)) {
         note_shortcut("turn-order");
         return;
     }
-    if (idle_role(world.me().type) >= 0) {
-        const auto self = priority_self(world);
-        priority = teacher_priority::priority(self, live_start_enemies(world), self.alive ? static_cast<int>(my_gems()) : 0);
-        world.throw_if_stale();
-    } else if (world.me().alive) {
+    if (world.me().alive && teacher_priority::role(static_cast<int>(world.me().type)) < 0) {
         cambc::champion_state state{};
         auto& self = live_self(world, state);
         if (self.alive) {
             const auto& enemies = live_enemies(world);
             if (!enemies.empty()) {
                 read_strike(world, self);
-                offer_engaged(self, enemies, wish);
                 offer_kills(world, self, strike(self, world.round + 1), enemies, wish);
                 offer_heal(world, self, enemies, wish);
             }
@@ -339,7 +313,14 @@ void set_turn_order(const World& world, Safety& safety) {
                 offer_escape(world, self, safety, wish);
             }
         }
+    }
+    int priority;
+    if (wish.band != none) {
         priority = wish.priority();
+    } else {
+        const auto self = priority_self(world);
+        priority = teacher_priority::priority(self, live_start_enemies(world), self.alive ? static_cast<int>(my_gems()) : 0);
+        world.throw_if_stale();
     }
     try {
         static std::int32_t next;

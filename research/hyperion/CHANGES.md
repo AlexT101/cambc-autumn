@@ -266,3 +266,14 @@ games it leaves identical; the extra out-of-fuel turns come from changed play.
   (`camp_damage(p, true, true)`: damage_bound, damage_ceiling, worst_damage, threatened, turn order's escape, the
   search's end-tile camp price), read again after our casts in refresh(). Fight simulations, camp exits, routing and
   upkeep still count it.
+
+## 88: one turn-order scale for every champion (2026-10-22)
+
+Against 87 (4f369f9): 51.3% of 1094 (ladder 57.1, gen 51.2, gen-s1 50.6), out-of-fuel turns 4454 vs 4333. Level,
+kept. Test drafts only: our own draft is all teacher champions, whose path is unchanged.
+
+- Champions outside the teacher six take idle, dead and danger priorities from `teacher_priority::priority` (idle up
+  to 12, dead 13, danger 14..23). Before, they used bands of 10000, so any of them with an enemy within 8 (the
+  engaged band, 10001+) outranked a teacher in top danger.
+- The engaged band (`offer_engaged`) and the duplicate role table are gone; protect (10000+) and kill (20000+) bids
+  stay above the shared range, for non-teacher champions only.

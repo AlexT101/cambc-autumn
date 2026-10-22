@@ -43,8 +43,7 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
 - Open from the 2026-10-22 audit (CHANGES 83-87): enemies revealed by our own walk (strike_after and farm's
   strike_enemy read only turn-start sightings; measure the fuel); capture_taken counting allies bound elsewhere;
   camps killed mid-turn still walls in approach fields; Varg's splash waking camps, priced; enemy stun status and our
-  own mid-turn health in Safety's fights; per-owner enemy ward sight through `sdk_wards`/`sdk_ward_vision`; one
-  turn-order scale for teacher and banded champions (test drafts only).
+  own mid-turn health in Safety's fights; per-owner enemy ward sight through `sdk_wards`/`sdk_ward_vision`.
 
 ## Don't remove
 
