@@ -1,0 +1,2 @@
+# Written with a byte order mark and Windows line endings on purpose: keep its bytes as they are.
+cases/13_tokens/main.htb -text
