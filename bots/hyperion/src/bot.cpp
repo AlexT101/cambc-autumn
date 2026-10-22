@@ -222,12 +222,6 @@ template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
     return -1;
 }
 
-// Storage left unwritten until used: vec2 and std::pair initialise their members.
-template <typename T, std::size_t N> union Unwritten {
-    Unwritten() {}
-    std::array<T, N> a;
-};
-
 // Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
 // every turn, so only danger near us is worth the extra search.
 void step_safely(Pathing& pathing, const Field& field, Safety& safety) {

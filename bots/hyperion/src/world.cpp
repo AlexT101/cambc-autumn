@@ -301,10 +301,39 @@ void* static_alloc(std::size_t bytes, std::size_t align) {
 
 const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const {
     static std::vector<int> out;
+    // Camp tiles are fixed for the game: each tile keeps its answers for the last two radii asked,
+    // as a range of `pool`.
+    struct Kept {
+        std::array<std::uint8_t, 2> radius; // radius + 1; 0: none
+        std::array<std::uint8_t, 2> count;
+        std::uint8_t next;
+        std::array<std::uint32_t, 2> from;
+    };
+    static std::array<Kept, 100 * 100> kept;
+    static std::vector<std::uint16_t> pool;
+    const bool keep = in_bounds(p) && radius >= 0 && radius < 255;
+    const auto i = keep ? static_cast<std::size_t>(tile_index(p)) : 0;
+    if (keep) {
+        const auto& k = kept[i];
+        for (int j = 0; j < 2; ++j)
+            if (k.radius[j] == radius + 1) {
+                out.assign(pool.begin() + k.from[j], pool.begin() + k.from[j] + k.count[j]);
+                return out;
+            }
+    }
     out.clear();
     for (auto tile : positions_within(camp_tiles, p, radius)) {
         const int g = group_at(tile);
         if (g >= 0 && std::find(out.begin(), out.end(), g) == out.end()) out.push_back(g);
+    }
+    if (keep && out.size() < 256) {
+        auto& k = kept[i];
+        const int j = k.next;
+        k.next ^= 1;
+        k.radius[j] = static_cast<std::uint8_t>(radius + 1);
+        k.count[j] = static_cast<std::uint8_t>(out.size());
+        k.from[j] = static_cast<std::uint32_t>(pool.size());
+        pool.insert(pool.end(), out.begin(), out.end());
     }
     return out;
 }
