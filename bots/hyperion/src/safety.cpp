@@ -1571,6 +1571,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
     const bool reread = refresh_;
     const auto& groups = world_.map().groups;
     world_.each_stirring([&](int g) {
+        if (groups[g].strength <= 0) return;
         const auto& c = world_.camps[g];
         if (n < 0) {
             n = 0;
