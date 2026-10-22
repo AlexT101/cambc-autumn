@@ -65,6 +65,8 @@ public:
     const bitboard& static_walls() const;
     const bitboard& foot() const;
     const bitboard& live_camps(); // members believed alive
+    // Changes whenever a tile of live_camps() does, as of its last call.
+    std::uint32_t live_flips() const { return live_flips_; }
     // Static walls, visible units and teleport reservations, and tiles bumped this round.
     const bitboard& blocked();
     void occupied_into(bitboard& out); // blocked() with our own tile set
@@ -123,6 +125,7 @@ private:
     struct Approach {
         Field field;
         bitboard camps; // the live camp tiles it walks around
+        std::uint32_t flips = 0; // live_flips() when made
     };
     std::unique_ptr<Approach>& approach_slot(int group, int range);
     // approach_ready's latest answer, reused for the same slot, round and tile.
@@ -151,6 +154,8 @@ private:
     bitboard live_camps_;
     std::uint32_t live_camps_version_ = ~0u; // the World::camps_version it was built for
     std::vector<std::uint32_t> live_versions_; // per group: the CampBelief::version written
+    std::vector<std::uint64_t> live_members_;  // per group: bit i, member i written alive
+    std::uint32_t live_flips_ = 0;
     bool centres_ready_ = false;
     int warm_group_ = 0, warm_member_ = 0; // warm_up's progress through the attack tiles
     // By attack range, then group, then member.

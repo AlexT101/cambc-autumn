@@ -83,13 +83,26 @@ const bitboard& Pathing::live_camps() {
         live_camps_version_ = world_.camps_version;
         // Only the groups whose belief changed are rewritten.
         const auto& groups = map().groups;
-        if (live_versions_.size() != groups.size()) live_versions_.assign(groups.size(), ~0u);
+        if (live_versions_.size() != groups.size()) live_versions_.assign(groups.size(), ~0u), live_members_.assign(groups.size(), 0);
         for (std::size_t g = 0; g < groups.size(); ++g) {
             const auto& c = world_.camps[g];
             if (live_versions_[g] == c.version) continue;
             live_versions_[g] = c.version;
-            for (std::size_t i = 0; i < groups[g].members.size(); ++i)
-                live_camps_.set(groups[g].members[i].pos, c.state == CampState::alive && c.health[i] > 0);
+            const auto& members = groups[g].members;
+            if (members.size() > 64) {
+                for (std::size_t i = 0; i < members.size(); ++i) live_camps_.set(members[i].pos, c.state == CampState::alive && c.health[i] > 0);
+                ++live_flips_;
+                continue;
+            }
+            std::uint64_t alive = 0;
+            if (c.state == CampState::alive)
+                for (std::size_t i = 0; i < members.size(); ++i) alive |= static_cast<std::uint64_t>(c.health[i] > 0) << i;
+            for (std::uint64_t flipped = alive ^ live_members_[g]; flipped; flipped &= flipped - 1) {
+                const int i = __builtin_ctzll(flipped);
+                live_camps_.set(members[i].pos, (alive >> i & 1) != 0);
+            }
+            live_flips_ += alive != live_members_[g];
+            live_members_[g] = alive;
         }
     }
     return live_camps_;
@@ -106,8 +119,14 @@ std::unique_ptr<Pathing::Approach>& Pathing::approach_slot(int group, int range)
     if (!slot) return false;
     const vec2 me = my_pos();
     auto& c = ready_check_;
-    if (c.slot != slot.get() || c.round != world_.round || c.at != me)
-        c = {slot.get(), world_.round, me, slot->field.at(me) != unreachable && slot->camps == live_camps()};
+    if (c.slot != slot.get() || c.round != world_.round || c.at != me) {
+        bool ready = slot->field.at(me) != unreachable;
+        if (ready) {
+            const auto& live = live_camps();
+            ready = slot->flips == live_flips_ || slot->camps == live;
+        }
+        c = {slot.get(), world_.round, me, ready};
+    }
     return c.ready;
 }
 
@@ -160,6 +179,7 @@ const Field* Pathing::search_approach(int group, int range, int steps) {
     static bitboard walls{cambc::uninitialized}, open{cambc::uninitialized}, origin{cambc::uninitialized},
         visited{cambc::uninitialized};
     copy_into(live_camps(), made.camps);
+    made.flips = live_flips_;
     or_into(static_walls(), made.camps, walls);
     auto& goals = made.field.goals;
     if (range == 0) {

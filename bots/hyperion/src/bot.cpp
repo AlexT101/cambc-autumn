@@ -377,7 +377,7 @@ struct AltarAccess {
     bool any_open = false;
     std::vector<int> blocks;
     int version = 0;          // bumped on each rebuild
-    std::uint32_t camps_version = 0;
+    std::uint32_t live_flips = 0;
 };
 
 // out = b with its 8 neighbours.
@@ -397,9 +397,9 @@ void dilate_into(const bitboard& b, bitboard& out) {
 
 const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     static AltarAccess a;
-    if (a.version > 0 && a.camps_version == world.camps_version) return a;
-    a.camps_version = world.camps_version;
     const auto& live = pathing.live_camps();
+    if (a.version > 0 && a.live_flips == pathing.live_flips()) return a;
+    a.live_flips = pathing.live_flips();
     const auto& map = world.map();
     // `ours` is kept as the walk from our spawn with a.live as walls: most changes update it
     // without a flood from spawn.
