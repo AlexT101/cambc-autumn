@@ -536,10 +536,10 @@ struct Search {
         return partner_hit && h[k] > 0 && partner_d >= h[k] - 0.01f && d < h[t] - 0.01f;
     }
 
-    bool hit_unit(int t, Node& s);
-    bool spell_unit(const Spell& sp, int t, Node& s);
-    bool land_at(vec2 L, Node& s);
-    float centre_value(const Centre& c, int slot, const Node& s, bool& ok) const;
+    [[gnu::always_inline]] bool hit_unit(int t, Node& s);
+    [[gnu::always_inline]] bool spell_unit(const Spell& sp, int t, Node& s);
+    [[gnu::always_inline]] bool land_at(vec2 L, Node& s);
+    [[gnu::always_inline]] float centre_value(const Centre& c, int slot, const Node& s, bool& ok) const;
     void hit_centre(const Centre& c, int slot, Node& s);
     bool wake(std::uint32_t touched, vec2 E, float& cost);
     bool wakers_known_slot = false;
@@ -1274,7 +1274,7 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, int& 
             if (!wake_at(s.touched, c, cost)) return;
             x -= cost;
         }
-        const auto place = [&](bool keep, float val, std::int8_t mate, bool first) {
+        const auto place = [&](bool keep, float val, std::int8_t mate, bool first) __attribute__((always_inline)) {
             auto& fr = (keep ? tables.kept : best)[c];
             Grid& got = keep ? kept_has : has;
             if (!(got & gbit(c))) fr.n = 0;
@@ -1384,7 +1384,7 @@ void Search::grow(const Node& s) {
     };
     // Legality is settled before a child is copied.
     const Grid here_bit = gbit(cell(here));
-    const auto open = [&](Grid legal) {
+    const auto open = [&](Grid legal) __attribute__((always_inline)) {
         switch (s.seg) {
         case at_start: return (legal & here_bit) != 0;
         case walked: return (free_n & s.req_w & legal) != 0;
