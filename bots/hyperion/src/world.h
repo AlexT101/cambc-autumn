@@ -479,8 +479,10 @@ private:
     // Advance `possible` to now and prune it to unseen tiles; for an enemy of a lineage, copy the
     // result of one of the same lineage and inputs tracked earlier in this pass.
     void track(ChampionBelief& b);
-    static void walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard& land);
-    static void widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps, const bitboard& land);
+    // `listed`: list_growth() of the board to grow, if it was the last call that listed tiles.
+    static void walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard& land, std::uint32_t listed = ~0u);
+    static void widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps, const bitboard& land,
+                              std::uint32_t listed = ~0u);
     // Every change to `possible` but growth goes to `undashed` too.
     static void also_undashed(ChampionBelief& b, const bitboard& tiles);
     void update_camps();

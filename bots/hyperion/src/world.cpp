@@ -183,19 +183,33 @@ bool disjoint(const bitboard& a, const bitboard& b) {
     return both.is_empty();
 }
 
+constexpr std::uint32_t unlisted = ~0u;
+constexpr std::uint32_t reach_few = 6;
+vec2 growth_tiles[65];
+
+// A few tiles grow for less as a square drawn around each (~22 fuel) than by the 8 shifts and
+// unions, at about 1 fuel per 8x8 chunk each.
+std::uint32_t dilate_few() {
+    static const auto few = static_cast<std::uint32_t>(std::min<std::uint64_t>(64, (7 * (search_chunks() + 13) - 100) / 22));
+    return few;
+}
+
+// Lists `tiles` into growth_tiles, as far as dilate and reach_each need to tell whether they are
+// few; returns how many it listed.
+std::uint32_t list_growth(const bitboard& tiles) {
+    return positions_into(tiles, growth_tiles, std::max(dilate_few(), reach_few) + 1);
+}
+
 // Grows `tiles` by king steps onto open tiles, the last onto `land` within them: what a distance
 // field capped at `steps` reaches, for less fuel at one or two steps.
-void dilate(bitboard& tiles, const bitboard& open, int steps, const bitboard& land) {
+void dilate(bitboard& tiles, const bitboard& open, int steps, const bitboard& land, std::uint32_t listed) {
     static bitboard t1{cambc::uninitialized}, t2{cambc::uninitialized};
-    // A few tiles grow for less as a square drawn around each (~22 fuel) than by the 8 shifts and
-    // unions, at about 1 fuel per 8x8 chunk each.
-    static vec2 at[65];
-    const auto few = static_cast<std::uint32_t>(std::min<std::uint64_t>(64, (7 * (search_chunks() + 13) - 100) / 22));
+    const auto few = dilate_few();
     namespace raw = cambc::detail;
-    for (; steps > 0; --steps) {
-        if (const auto n = positions_into(tiles, at, few + 1); n <= few) {
+    for (; steps > 0; --steps, listed = unlisted) {
+        if (const auto n = listed == unlisted ? list_growth(tiles) : listed; n <= few) {
             clear_board(t1);
-            for (std::uint32_t i = 0; i < n; ++i) draw_square(t1, at[i], 1.0f);
+            for (std::uint32_t i = 0; i < n; ++i) draw_square(t1, growth_tiles[i], 1.0f);
             and_into(t1, steps == 1 ? land : open, tiles);
             continue;
         }
@@ -214,13 +228,14 @@ void dilate(bitboard& tiles, const bitboard& open, int steps, const bitboard& la
 // `out` (which may be `from`) = the tiles within `steps` king steps of `from` avoiding `walls`, on
 // `land`, as one reach per tile when at most `few`: less fuel than a distance field or a dilate of
 // 2 or more steps.
-bool reach_each(const bitboard& from, bitboard& out, const bitboard& walls, int steps, const bitboard& land, std::uint32_t few) {
-    static vec2 at[7];
+bool reach_each(const bitboard& from, bitboard& out, const bitboard& walls, int steps, const bitboard& land, std::uint32_t few,
+                std::uint32_t listed) {
     static bitboard one{cambc::uninitialized};
-    const auto n = positions_into(from, at, few + 1);
+    const auto n = listed == unlisted ? list_growth(from) : listed;
     if (n > few) return false;
     namespace raw = cambc::detail;
     const auto d = static_cast<std::uint16_t>(steps);
+    const auto* at = growth_tiles;
     if (!n) clear_board(out);
     else ok(raw::sdk_Bitboard_ReachableMask(walls.ptr(), at[0].x, at[0].y, out.ptr(), d));
     for (std::uint32_t i = 1; i < n; ++i) {
@@ -1319,15 +1334,17 @@ bool World::grow(ChampionBelief& b, int turns) {
     const bool dash = dash_ready(b, round);
     if (dash && undashed_read && !b.undashed_all) {
         static bitboard dashed{cambc::uninitialized};
-        widen_by_dash(b.undashed, dashed, s, turns, land);
+        const auto listed = list_growth(b.undashed);
+        widen_by_dash(b.undashed, dashed, s, turns, land, listed);
+        if (undashed_kept) walk(b.undashed, s, turns, land, listed);
         walk(b.possible, s, turns, land);
         or_into(b.possible, dashed, b.possible);
-        if (undashed_kept) walk(b.undashed, s, turns, land);
     } else if (dash) {
         // undashed lies within possible (equal to it, or read no more): dashing from possible
         // covers dashing from it.
-        if (undashed_kept) walk(b.undashed, s, turns, land);
-        widen_by_dash(b.possible, b.possible, s, turns, land);
+        const auto listed = list_growth(b.possible);
+        widen_by_dash(b.possible, b.possible, s, turns, land, listed);
+        if (undashed_kept) walk(b.undashed, s, turns, land, b.undashed_all ? listed : unlisted);
     } else {
         walk(b.possible, s, turns, land);
         if (undashed_kept) {
@@ -1381,10 +1398,13 @@ bool World::grow(ChampionBelief& b, int turns) {
 }
 
 // `possible` never holds a tile closed to them, so a walk dilates it.
-void World::walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard& land) {
-    if (steps >= 2 && reach_each(tiles, tiles, s.blocked_for_them, steps, land, steps > 2 ? 6 : 4)) return;
+void World::walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard& land, std::uint32_t listed) {
+    if (steps >= 2) {
+        if (listed == unlisted) listed = list_growth(tiles);
+        if (reach_each(tiles, tiles, s.blocked_for_them, steps, land, steps > 2 ? reach_few : 4, listed)) return;
+    }
     if (steps <= 2) {
-        dilate(tiles, s.open_for_them, steps, land);
+        dilate(tiles, s.open_for_them, steps, land, listed);
         return;
     }
     static cambc::distance_field field;
@@ -1396,8 +1416,9 @@ void World::walk(bitboard& tiles, const StaticMap& s, int steps, const bitboard&
 
 // `steps` turns with one dash (2 king steps, with that turn's walk): it crosses holes, altars and
 // champions, so only walls bound it and landings are filtered after.
-void World::widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps, const bitboard& land) {
-    if (reach_each(from, out, s.walls, steps + 2, land, 6)) return;
+void World::widen_by_dash(const bitboard& from, bitboard& out, const StaticMap& s, int steps, const bitboard& land,
+                          std::uint32_t listed) {
+    if (reach_each(from, out, s.walls, steps + 2, land, reach_few, listed)) return;
     static cambc::distance_field field;
     static bitboard grown{cambc::uninitialized};
     field.compute(s.walls, from, grown, static_cast<std::uint16_t>(steps + 2));
