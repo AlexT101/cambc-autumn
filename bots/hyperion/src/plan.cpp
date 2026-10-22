@@ -376,6 +376,7 @@ struct Search {
     int n_wakers = 0, self_slot = 0;
     void find_wakers(int k);
     std::array<const ChampionBelief*, 2> hors;
+    std::array<std::int8_t, 2> hor_unit;
     int n_hors = 0;
     std::array<const ChampionBelief*, max_mates> mates;
     int n_mates = 0;
@@ -1078,7 +1079,7 @@ bool Search::read() {
         if (const auto* p = linked_partner(world, e); p && p->alive) x.drop_kill |= static_cast<std::uint16_t>(1u << p->index);
         // A stun takes only the next turn: with two before ours, the blow still lands.
         if (stuns && x.stunnable && turns_before_ours(world, e) == 1) x.drop_stun = static_cast<std::uint16_t>(1u << e.index);
-        if (e.facts().passive == Passive::missing_health && n_hors < 2) x.hor = static_cast<std::int8_t>(n_hors), hors[n_hors++] = &e;
+        if (e.facts().passive == Passive::missing_health && n_hors < 2) x.hor = static_cast<std::int8_t>(n_hors), hor_unit[n_hors] = static_cast<std::int8_t>(foes), hors[n_hors++] = &e;
         x.legal = can_attack && dist(here, e.pos) <= grid_r + range ? viewers(e.pos, range) : 0;
         h[foes++] = x.health;
     }
@@ -1361,8 +1362,7 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, std::
                 auto& l = tables.leaves[leaf];
                 l.seq.n = s.depth;
                 for (int k = 0; k < s.depth; ++k) l.seq.a[k] = stack[k];
-                for (int t = 0; t < foes; ++t)
-                    if (u[t].hor >= 0) l.hor[u[t].hor] = h[t];
+                for (int k = 0; k < n_hors; ++k) l.hor[k] = h[hor_unit[k]];
             }
             std::int8_t w = -1, d = -1;
             mid(c, w, d);
