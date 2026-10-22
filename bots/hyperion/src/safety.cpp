@@ -1068,43 +1068,57 @@ std::vector<CampSpot> spot_pool;
 std::array<std::uint32_t, 100 * 100> spots_from;
 std::array<std::uint8_t, 100 * 100> spots_count;
 
-// Whether a visible enemy ward sees p this round: a target there is in sight of whoever owns it.
-// What the wards see is cast again only when they change, and read as packed bits when the
-// terrain's are.
+// The enemy wards in our sight this round, by owner (its index among the enemies): what one sees
+// is in its owner's sight alone (vision.personal). sdk_wards lists the wards in our own sight with
+// their owners, and sdk_ward_vision is the engine's mask, bushes included (probe-ward-bush); a
+// mask is cast again only when its ward moves.
 struct Wards {
+    static constexpr int slots = 8;
     int round = -1;
-    bool any = false;
-    std::array<vec2, 64> cast_from; // the wards `seen` holds
-    std::uint32_t cast_count = 0;
-    std::array<std::uint8_t, Terrain::bytes> bits;
-    bitboard seen{cambc::uninitialized}, wards{cambc::uninitialized}, cast{cambc::uninitialized};
+    std::uint8_t present = 0; // bit i: enemies[i]'s ward is in sight
+    std::array<vec2, slots> cast_at;
+    std::array<std::array<std::uint8_t, Terrain::bytes>, slots> bits; // when the terrain is packed
+    std::vector<bitboard> boards;                                      // when it is not
 
     [[gnu::noinline]] void refresh(const World& world, const Terrain& t) {
+        if (round < 0) cast_at.fill({-1, -1});
         round = world.round;
-        ok(cambc::detail::sdk_enemy_ward_occupancy(wards.ptr()));
-        const Tiles<64> tiles{wards};
-        const auto count = static_cast<std::uint32_t>(tiles.end() - tiles.begin());
-        any = count > 0;
-        if (!any) return;
-        bool same = count == cast_count;
-        for (std::uint32_t i = 0; i < count && same; ++i) same = tiles.begin()[i] == cast_from[i];
-        if (same) return;
-        cast_count = count;
-        std::copy(tiles.begin(), tiles.end(), cast_from.begin());
-        const auto r = static_cast<std::uint16_t>(cambc::constants::ward_vision_radius);
-        shadow_into(world.map().walls, *tiles.begin(), r, seen);
-        for (const vec2* w = tiles.begin() + 1; w != tiles.end(); ++w) {
-            shadow_into(world.map().walls, *w, r, cast);
-            or_into(seen, cast, seen);
+        present = 0;
+        static std::array<cambc::detail::ward_info, 16> raw;
+        std::uint32_t n = 0;
+        ok(cambc::detail::sdk_wards(raw.data(), static_cast<std::uint32_t>(raw.size()), &n));
+        const auto own = static_cast<std::uint32_t>(world.map().team_a ? 0 : 1);
+        for (std::uint32_t k = 0; k < n && k < raw.size(); ++k) {
+            const auto& w = raw[k];
+            if (w.team == own) continue;
+            int i = 0;
+            while (i < static_cast<int>(world.enemies.size()) && static_cast<std::uint32_t>(world.enemies[static_cast<std::size_t>(i)].handle) != w.owner) ++i;
+            if (i >= slots || i >= static_cast<int>(world.enemies.size())) continue;
+            present |= static_cast<std::uint8_t>(1u << i);
+            const vec2 at{w.x, w.y};
+            if (cast_at[static_cast<std::size_t>(i)] == at) continue;
+            cast_at[static_cast<std::size_t>(i)] = at;
+            static bitboard cast{cambc::uninitialized};
+            if (!t.packed && boards.empty()) boards.resize(slots);
+            auto& out = t.packed ? cast : boards[static_cast<std::size_t>(i)];
+            ok(cambc::detail::sdk_ward_vision(at.x, at.y, out.ptr()));
+            if (t.packed) out.export_linear_buffer({bits[static_cast<std::size_t>(i)].data(), bitboard::linear_buffer_size()});
         }
-        if (t.packed) seen.export_linear_buffer({bits.data(), bitboard::linear_buffer_size()});
     }
 };
 
-[[gnu::always_inline]] inline bool warded(const World& world, const Terrain& t, vec2 p) {
-    static Wards w;
-    if (w.round != world.round) w.refresh(world, t);
-    return w.any && (t.packed ? Terrain::bit(w.bits, p.x + p.y * t.width) : test(w.seen, p));
+Wards enemy_wards;
+
+// enemies[owner]'s index in enemy_wards if we see its ward this round, else -1.
+int ward_of(const World& world, int owner) {
+    auto& w = enemy_wards;
+    if (w.round != world.round) w.refresh(world, terrain(world.map()));
+    return owner >= 0 && owner < Wards::slots && (w.present >> owner & 1) ? owner : -1;
+}
+
+[[gnu::always_inline]] inline bool ward_sees(const Terrain& t, int ward, vec2 p) {
+    const auto i = static_cast<std::size_t>(ward);
+    return t.packed ? Terrain::bit(enemy_wards.bits[i], p.x + p.y * t.width) : test(enemy_wards.boards[i], p);
 }
 
 std::array<Window, 100 * 100> sight_masks;
@@ -1292,6 +1306,8 @@ int Reach::add(Tiles from, int range, bool sight, float damage, bool stuns, bool
 void Reach::build(const World& world, const ChampionBelief& e, int turn_round, bool twice) {
     world_ = &world;
     origin_ = e.pos;
+    owner_ = e.index;
+    ward_ = unknown_ward;
     static std::uint32_t builds = 0;
     stamp_ = ++builds;
     twice_ = twice;
@@ -1456,7 +1472,10 @@ const Reach::Window& Reach::splash_targets(Tiles from, int range) const {
             const int i = 64 * word + std::countr_zero(bits), ux = i % win_n, uy = i / win_n;
             const vec2 u{origin_.x - win_r + ux, origin_.y - win_r + uy};
             Window f = tiles_[from] & box(ux, uy, range);
-            if (f && (range > 1 || t.bush(u)) && !warded(*world_, t, u)) f &= sight_from(*world_, u, range > 1, ux - win_r, uy - win_r);
+            if (f && (range > 1 || t.bush(u))) {
+                if (ward_ == unknown_ward) ward_ = ward_of(*world_, owner_);
+                if (ward_ < 0 || !ward_sees(t, ward_, u)) f &= sight_from(*world_, u, range > 1, ux - win_r, uy - win_r);
+            }
             if (f) m |= tables.bits[static_cast<std::size_t>(i)];
         }
     return m;
@@ -1468,8 +1487,8 @@ Blow Reach::at(vec2 p) const {
     Blow out;
     const int dx = p.x - origin_.x, dy = p.y - origin_.y;
     if (const auto& t = terrain(world_->map()); std::max(std::abs(dx), std::abs(dy)) <= reach_ && t.inside(p)) {
-        // Who sees p, in this window; worked out on first need. Whoever owns a ward that sees p
-        // sees it from anywhere.
+        // Who sees p, in this window; worked out on first need. If its own ward sees p, it sees
+        // it from anywhere.
         union Sight {
             Sight() {}
             Window w;
@@ -1483,7 +1502,10 @@ Blow Reach::at(vec2 p) const {
         const auto& ws = *ways_;
         int ward = -1;
         const auto seen = [&](bool far, Window& m) __attribute__((always_inline)) {
-            if (ward < 0) ward = warded(*world_, t, p);
+            if (ward < 0) {
+                if (ward_ == unknown_ward) ward_ = ward_of(*world_, owner_);
+                ward = ward_ >= 0 && ward_sees(t, ward_, p);
+            }
             m = ward ? win_full : sight_from(*world_, p, far, dx, dy);
         };
         for (int i = 0; i < ws.count; ++i) {

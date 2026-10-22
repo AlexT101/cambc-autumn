@@ -36,7 +36,7 @@ cambc run rules-verification/probes/<A> rules-verification/probes/<B> --map <map
 | `abilities.dash`: paths blocked by visible enemy champions | `probe-dash-enemy` |
 | `abilities.dash`: paths blocked by the enemy spawn | `probe-dash-spawn` |
 | `abilities.dash`: paths not blocked by an unseen camp (on a bush) | `probe-dash-hidden-camp` |
-| `vision`, `wards`, `teleport_crystal`, `turn.hidden_blocker` | `probe-vision`, `probe-vision-b`, `probe-pathcost`, `ward-hidden`, `probe-wardcd`, `probe-ward-walk`; same-turn ward sight: `probe-ward-sight` |
+| `vision`, `wards`, `teleport_crystal`, `turn.hidden_blocker` | `probe-vision`, `probe-vision-b`, `probe-pathcost`, `ward-hidden`, `probe-wardcd`, `probe-ward-walk`; same-turn ward sight: `probe-ward-sight`; ward sight and bushes, `sdk_ward_vision`, `sdk_wards`: `probe-ward-bush` |
 | teleporting into a walled altar | `vault` |
 
 ## Facts outside the rules

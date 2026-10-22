@@ -58,9 +58,9 @@ struct Strike {
 // A visible enemy's actions before our next turn on the map: the tiles it can walk to (over tiles
 // open to it, past visible allies of ours) or dash to (2 king steps over anything but walls and
 // live camps, onto a free tile), and from there a basic attack or unit spell at a target in its
-// sight (walls and bushes block it; a bush tile is seen only from its own cluster, or by a visible
-// enemy ward), or a ground spell at any tile within 5; Varg's basic attacks also at a unit beside
-// the tile. Damage as Strike's.
+// sight (walls and bushes block it; a bush tile is seen only from its own cluster) or its own
+// ward's, when we see that ward, or a ground spell at any tile within 5; Varg's basic attacks also
+// at a unit beside the tile. Damage as Strike's.
 class Reach {
 public:
     // Its next turn, or with `twice` its next two: a walk first, or a second basic attack.
@@ -112,6 +112,10 @@ private:
     std::array<std::int8_t, tile_sets> extent_; // farthest tile of each from the enemy
     const World* world_ = nullptr;
     vec2 origin_{-1, -1};
+    int owner_ = -1; // its index among the enemies
+    // Its own ward, the only one that lends it sight, when we see it; else -1. Looked up on first need.
+    static constexpr int unknown_ward = -2;
+    mutable int ward_ = unknown_ward;
     // What tiles_ were worked out for: kept while it stays put, our champions around it stay put
     // and no camp lies in its window.
     vec2 sets_origin_{-1, -1};
