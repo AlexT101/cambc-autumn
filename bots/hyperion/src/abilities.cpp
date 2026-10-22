@@ -459,10 +459,12 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         }
     };
     Cast best;
+    float unit_raw = 0;
     for (int s = 0; s < 2; ++s) {
         if (!ready[s] || (harmless_approach && f.abilities[s].target != Targeting::ground)) continue;
         const auto& a = f.abilities[s];
         const float raw = raw_damage(s);
+        if (s == 0) unit_raw = raw;
         // Native raw already includes outgoing passives; Monster is target-dependent and applies once.
         const bool finishes = sole_finish && !a.lands() && raw * finish_factor >= members[0].health;
         // A stun that deals nothing and keeps the walk costs only its cooldown.
@@ -529,6 +531,24 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             };
             best.offer(best_landing(s, any_value ? 1.0f : min_camp_value, targets, lands_,
                                     here, a.radius, keep));
+        }
+    }
+    // Prism's stun overkilling a harmless group's last health goes to another harmless group in range.
+    if (world.me().type == cambc::champion_type::prism && post_basic && !any_value && g.strength <= 0 && best.slot == 0
+        && best.value < unit_raw) {
+        const auto& map = world.map();
+        const int range = f.abilities[0].range();
+        for (int other : map.groups_near(here, range)) {
+            const auto& og = map.groups[other];
+            if (other == group || og.has_monolith || og.strength > 0 || world.camps[other].state != CampState::alive) continue;
+            for (int i = 0; i < static_cast<int>(og.members.size()); ++i) {
+                const auto& m = og.members[i];
+                if (dist(here, m.pos) > range || !test(world.visible, m.pos)) continue;
+                static cambc::detail::camp_state record;
+                if (cambc::detail::sdk_camp(static_cast<std::uint32_t>(m.handle), &record) != 0 || !(record.health > 0)) continue;
+                if (const float v = std::min(unit_raw, record.health); v > best.value) best = Cast{0, v, std::nullopt, og.camp(i), {}};
+                if (best.value >= unit_raw) return best;
+            }
         }
     }
     return best;

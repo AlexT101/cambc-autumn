@@ -307,3 +307,11 @@ fuel on the 24 bench games it leaves identical.
 - probe-ward-bush: ward sight follows the bush rules, and `sdk_ward_vision` matches them exactly (cambc-rules.yaml
   `wards.vision` clarified).
 - Known limit: a fresh enemy ward placed in its own turn is not modelled (see EXPERIMENTS).
+
+## 91: Prism's camp stun on another harmless group (2026-10-22)
+
+From the teammate's v37 (Khaos line). Against 90 (e14e7c3), each on its own draft: 50.7% of 1094 (ladder 54.3, gen
+51.4, gen-s1 49.6), out-of-fuel turns 2303 vs 2235.
+
+- After its basic attack at a harmless group, Prism's stun (slot 0) that would deal less than its full damage to what
+  is left goes to a visible member of another live harmless group within range, if that takes more (`camp_cast`).

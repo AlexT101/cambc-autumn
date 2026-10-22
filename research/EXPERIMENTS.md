@@ -121,6 +121,19 @@ Against hecate-v1, 1010-2698 games. Three ports were kept (CHANGES 21).
   death decides. Fish converts engagements with less damage per kill (2.2k against 3.3k), through its killers' Focus
   and health.
 
+## v36-v37: the teammate's Khaos builds (2026-10-22)
+
+Ported from bots/v37 on top of CHANGES 90, against e14e7c3, each on its own draft (1094 games). Prism's camp stun on
+another harmless group was kept (CHANGES 91).
+
+- Lost: mixed-camp farm targeting (v36, "teacher" behaviour: farming a group whose members in reach both strike and
+  do not, hit the lowest-health one first, usually the harmless cluster; Vendetta excepted when its reset can finish
+  the weak one). With CHANGES 91 and Durability priority 47.2% (ladder 40.0, gen 48.6, gen-s1 46.7), against 50.7%
+  without it; the monsters that strike live longer.
+- Held, no measurable effect: Durability in the turn-order danger ratio (v36: ours scaled 0.9 against an enemy with
+  a Durability emblem, theirs 0.9 against ours). With CHANGES 91 50.7% (555-539), the same total as 91 alone; it
+  only moves a champion across a tenth of the ratio.
+
 ## Fights and planning
 
 - Strike planner variants lost: ranged carriers holding fire to keep walking (47.9%); an early `prey()` for the intent
