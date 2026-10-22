@@ -181,6 +181,9 @@ constexpr int max_depth = 6;
 constexpr int max_mates = 6;
 // Reach queries per search; past it the rest keep their Strike price.
 constexpr int max_exact_queries = 10;
+// Nodes a search grows. At 100M on the wide set 24 binds on 0.46% of searches, where nodes cost
+// ~1.1k each; past it the leaves offered so far stand.
+constexpr int max_nodes = 24;
 
 enum class Op : std::uint8_t { walk, attack, reset, dash, spell, heal, shield };
 struct Act {
@@ -1441,6 +1444,7 @@ bool Search::legal_at(Node& s, Grid legal) const {
 
 void Search::grow(const Node& s) {
     throw_if_stale();
+    if (nodes >= max_nodes) return;
     ++nodes;
     settle(s);
     if (s.depth == max_depth || walked_attack(s)) return;
