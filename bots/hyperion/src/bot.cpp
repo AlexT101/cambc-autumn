@@ -2305,9 +2305,20 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     const auto& open = world.map().open_for_us;
     const auto* open_packed = open_bits(world);
     const int width = world.map().width;
-    // The tiles more exposed than ours, and who would fight on each.
+    const auto no_worse = [&](unsigned mask, float damage) { return mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage); };
+    // Every visible threat that could hit q is a foe, as q is within 2 of us.
+    const auto visible_of = [&](unsigned mask) {
+        std::uint32_t visible = 0;
+        for (; mask; mask &= mask - 1) visible |= 1u << (16 + foes[std::countr_zero(mask)]->index);
+        return visible;
+    };
+    const auto note_placing = [&] {
+        if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
+    };
+    // The tiles more exposed than ours by `bound`, and who would fight on each by it.
     Unwritten<std::pair<vec2, std::uint32_t>, 24> tiles;
     auto& exposed = tiles.a;
+    std::array<unsigned, 24> nears;
     int m = 0;
     std::uint32_t enemies = 0, allies = ~0u;
     for (int dy = -radius; dy <= radius; ++dy)
@@ -2316,29 +2327,21 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
             if (const int i = q.x + q.y * width; open_packed ? !(open_packed[i >> 3] >> (i & 7) & 1) : !test(open, q)) continue;
             float damage = 0;
-            const auto no_worse = [&](unsigned mask) { return mask == 0 || ((mask & ~here_mask) == 0 && damage <= here_damage); };
             const unsigned near = bound(q, damage);
-            if (no_worse(near)) continue;
-            // An exact look can query Reach on a new tile, ~1000 a foe.
-            if (!fuel_ok(floor + 1000 * static_cast<std::uint64_t>(n))) {
-                note_shortcut("step-guard");
-                return nullptr;
-            }
-            const unsigned mask = exposure(q, damage, near);
-            if (no_worse(mask)) continue;
-            // Every visible threat that could hit q is a foe, as q is within 2 of us.
-            std::uint32_t visible = 0;
-            for (unsigned left = mask; left; left &= left - 1) visible |= 1u << (16 + foes[std::countr_zero(left)]->index);
-            const auto key = n < static_cast<int>(foes.size()) ? safety.fight_key_with(q, visible) : safety.fight_key(q);
+            if (no_worse(near, damage)) continue;
+            const auto key = n < static_cast<int>(foes.size()) ? safety.fight_key_with(q, visible_of(near)) : safety.fight_key(q);
             if (key == Safety::no_fight) continue;
+            nears[m] = near;
             exposed[m++] = {q, key};
             enemies |= key & 0xFFFF0000u;
             allies &= key & 0xFFFFu;
         }
-    if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
-    if (m == 0) return nullptr;
+    if (m == 0) {
+        note_placing();
+        return nullptr;
+    }
     // A fight only gets worse with more enemies or fewer allies: one we win settles those it
-    // covers, one we lose those that cover it.
+    // covers, one we lose those that cover it, and one not lost the `lost` of those it covers.
     const auto covers = [](std::uint32_t worse, std::uint32_t key) {
         return (key & ~worse & 0xFFFF0000u) == 0 && (worse & ~key & 0xFFFFu) == 0;
     };
@@ -2346,14 +2349,20 @@ const bitboard* step_guard(const World& world, Safety& safety) {
         std::uint32_t key;
         bool won, lost; // won: neither lost nor do we fall
     };
-    std::array<Settled, 25> settled;
+    std::array<Settled, 26> settled;
     int s = 0;
-    // False if fuel ran short.
-    const auto outcome = [&](std::uint32_t key, bool& lost, bool& falls) {
+    // 0 won, 1 lost, 2 not lost (self_falls unknown), -1 unsettled.
+    const auto settle = [&](std::uint32_t key) {
+        int not_lost = -1;
         for (int i = 0; i < s; ++i) {
-            if (settled[i].won && covers(settled[i].key, key)) return lost = falls = false, true;
-            if (settled[i].lost && covers(key, settled[i].key)) return lost = falls = true, true;
+            if (settled[i].won && covers(settled[i].key, key)) return 0;
+            if (settled[i].lost && covers(key, settled[i].key)) return 1;
+            if (!settled[i].lost && covers(settled[i].key, key)) not_lost = 2;
         }
+        return not_lost;
+    };
+    // False if fuel ran short.
+    const auto fight = [&](std::uint32_t key, bool& lost, bool& falls) {
         const auto* known = safety.known_fight_of(key);
         if (!known && !fuel_ok(safety.fight_cost_estimate() + act_reserve)) {
             note_shortcut("step-guard");
@@ -2370,9 +2379,41 @@ const bitboard* step_guard(const World& world, Safety& safety) {
         if (s < static_cast<int>(settled.size())) settled[s++] = {key, !lost && !falls, lost};
         return true;
     };
+    const auto outcome = [&](std::uint32_t key, bool& lost, bool& falls) {
+        if (const int k = settle(key); k == 0 || k == 1) return lost = falls = k == 1, true;
+        return fight(key, lost, falls);
+    };
     bool lost = false, falls = false;
     // Every enemy that could hit any of them against the allies at all of them first: if we win
-    // even that, no tile needs guarding.
+    // even that, no tile needs guarding. Each bound holds its tile's exact exposure, so a win
+    // settles the exact tiles before Reach is asked.
+    if (m > 1) {
+        if (!outcome(enemies | allies, lost, falls)) return nullptr;
+        if (!lost && !falls) {
+            note_placing();
+            return nullptr;
+        }
+    }
+    const int bounded = m;
+    m = 0;
+    enemies = 0, allies = ~0u;
+    for (int i = 0; i < bounded; ++i) {
+        // An exact look can query Reach on a new tile, ~1000 a foe.
+        if (!fuel_ok(floor + 1000 * static_cast<std::uint64_t>(n))) {
+            note_shortcut("step-guard");
+            return nullptr;
+        }
+        const auto [q, bound_key] = exposed[i];
+        float damage = 0;
+        const unsigned mask = exposure(q, damage, nears[i]);
+        if (no_worse(mask, damage)) continue;
+        const auto key = n < static_cast<int>(foes.size()) ? (bound_key & ~visible_of(nears[i])) | visible_of(mask) : bound_key;
+        exposed[m++] = {q, key};
+        enemies |= key & 0xFFFF0000u;
+        allies &= key & 0xFFFFu;
+    }
+    note_placing();
+    if (m == 0) return nullptr;
     if (m > 1 && (!outcome(enemies | allies, lost, falls) || (!lost && !falls))) return nullptr;
     // Then the fewest enemies first, so that lost fights settle the larger ones.
     std::sort(exposed.begin(), exposed.begin() + m, [](const auto& a, const auto& b) {
@@ -2381,7 +2422,11 @@ const bitboard* step_guard(const World& world, Safety& safety) {
     bool any = false;
     for (int i = 0; i < m; ++i) {
         const auto [q, key] = exposed[i];
-        if (!outcome(key, lost, falls)) return any ? &guard : nullptr;
+        const int k = settle(key);
+        // Not lost settles q unless a fall there counts.
+        if (k == 2 && !linked && !safety.lethal(q)) continue;
+        if (k == 0 || k == 1) lost = falls = k == 1;
+        else if (!fight(key, lost, falls)) return any ? &guard : nullptr;
         if (lost || (falls && (linked || safety.lethal(q)))) {
             if (!any) clear_board(guard);
             set_tile(guard, q);
