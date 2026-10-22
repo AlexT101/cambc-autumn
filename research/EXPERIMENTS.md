@@ -45,6 +45,10 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 
 ## Strategy and economy
 
+- Audit judgment calls dropped or replaced (2026-10-22, CHANGES 86): a comms capture reminder (re-posting pending
+  captures in a cycle, 1652507) never sends stale data but changes the shared slot most rounds, which delays
+  teammates' new captures, and teammates who saw a hold already infer the respawn; dropped untested. A carrier
+  stranded by its avoided altar standing still (e22f389) idled 10-25 rounds even when banking was safe; replaced.
 - Level or lost: true first striker in the fight sim, shopping ×2 emblems, third-party camp damage in the fight sim,
   rally assist, caster poke from our own ground, Cassi/Issac target priority, kite cap 40, altar control (6 variants),
   central-group kiting, Focus builds (−4), Monolith and cluster sieges on normal maps (5-40%), Monolith sieges on any

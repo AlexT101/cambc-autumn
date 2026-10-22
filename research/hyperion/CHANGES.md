@@ -223,3 +223,22 @@ gen 55.5, gen-s1 58.8).
   - The draft fallback follows `draft_order()`, then `draft_preference`.
   - Turn order: `offer_heal` caps the heal at max health, `offer_kills` counts shields, escape does not double a strike
     that already covers two turns; the teacher priority skips enemies killed this turn.
+
+## 86: judgment calls from the 2026-10-22 audit, on top of 85
+
+Against 85: 54.9% of 1094 (ladder 58.6, gen 55.7, gen-s1 53.7), out-of-fuel turns 4000 vs 4104. Seven commits, not
+separated by A/B:
+
+- `game_ender` contests a winning tribute next to the enemy spawn too (a stun or a lock cancels it whatever healing;
+  `intercept_steps` still requires reaching it in time). Walking carriers there are still skipped. Generated maps keep
+  altars 3+ from a spawn, so it fires only where an altar is within 2 of one.
+- `closing()` prices a bag with no walk to an altar as `recall_turns` plus the walk from our spawn (was 0).
+- Fights drop a shield with 0 turn ends left at its owner's next turn start (`shield_until = shield_turns`, was at
+  least 1, which kept it through an extra enemy volley).
+- Camp ground casts and Heart of Ruin landings stay off tracked unseen Rens whose retaliation would kill us, as
+  `enemy_cast` does (binds only near death: retaliation is 0.2 x Focus, ~20-40).
+- Farm floors a chain's trip at 0: a capture's gold that completes an emblem shortened the trip home while worth
+  counted it too, so the cycle could reach 0 or below (a negative rate rejected the best chains, and the pre-filters
+  disagreed with the rate). `rate()` keeps a 1-round floor as a guard.
+- A carrier whose only walkable altar is the one `carry_bag` gave up on stops avoiding it and banks there again
+  (`submit_here` judges it again); `carry_bag`'s crystal-hop alternative never leads back to the altar it leaves.
