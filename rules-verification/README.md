@@ -33,6 +33,8 @@ cambc run rules-verification/probes/<A> rules-verification/probes/<B> --map <map
 | Varg's splash from a camp target | `probe-varg-splash` |
 | Heart of Ruin's landing on unseen enemies | `probe-hor-unseen` |
 | `abilities.dash`: paths blocked by visible enemy champions | `probe-dash-enemy` |
+| `abilities.dash`: paths blocked by the enemy spawn | `probe-dash-spawn` |
+| `abilities.dash`: paths not blocked by an unseen camp (on a bush) | `probe-dash-hidden-camp` |
 | `vision`, `wards`, `teleport_crystal`, `turn.hidden_blocker` | `probe-vision`, `probe-vision-b`, `probe-pathcost`, `ward-hidden`, `probe-wardcd`, `probe-ward-walk`; same-turn ward sight: `probe-ward-sight` |
 | teleporting into a walled altar | `vault` |
 
