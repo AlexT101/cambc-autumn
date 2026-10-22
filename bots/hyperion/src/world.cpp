@@ -67,6 +67,12 @@ int gems(std::uint32_t h) {
     return static_cast<int>(value);
 }
 
+// A hidden champion's gems are unreadable: cheaper than champion().
+bool in_sight(std::uint32_t h) {
+    static std::uint32_t value;
+    return sdk_champion_gems(h, &value) == 0;
+}
+
 // Summing every item count costs ~350 fuel; only the Home and Durability emblems matter.
 struct Emblems {
     bool home, durability;
@@ -994,6 +1000,7 @@ void World::update() {
     updated_round_ = round;
     if (ranks_stale_) rank_turns();
     update_champions(true);
+    sight_pos_ = clear_pos_ = me().pos;
     // Visible champions that have acted come before us and those that have not after us, which
     // bounds our slot; a visible enemy's modelled order against ours should match its flag.
     debug_block({
@@ -1015,6 +1022,7 @@ void World::update() {
     FuelMeter meter{"observe"};
     read_vision();
     update_champions(false);
+    sight_pos_ = clear_pos_ = my_position();
 }
 
 namespace {
@@ -1265,6 +1273,16 @@ void World::read_vision() {
     vision_into(visible);
     not_into(visible, unseen_);
     landing_ready_ = false;
+}
+
+bool World::revealed(vec2 p, int r) const {
+    // Nothing moves during our turn: a tile looked from once shows the same.
+    if (p == sight_pos_ || p == clear_pos_) return false;
+    for (const auto& b : enemies)
+        if (b.alive && b.stats_round != round && engine::in_sight(engine::id(b.handle)))
+            if (const auto* info = engine::champion(engine::id(b.handle)); info && dist(p, {info->x, info->y}) <= r) return true;
+    clear_pos_ = p;
+    return false;
 }
 
 // `undashed` is read only while turns_since_fixed <= ability_cooldown, in advance(), which first

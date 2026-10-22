@@ -662,6 +662,7 @@ bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int tu
 }
 
 bool place_ward(const World& world, Memory& memory, bool grow = true);
+bool see_revealed(World& world, Pathing& pathing, Safety& safety);
 
 // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, or at
 // an altar carry_bag gave up waiting at, is judged again.
@@ -1621,7 +1622,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
 // Carrying gems, farming on chains a capture onto the bag: it saves the walk to the altar and
 // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
 // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
-[[gnu::flatten]] bool farm(const World& world, Pathing& pathing, Memory& memory) {
+[[gnu::flatten]] bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     if (pick_up(world, pathing, memory)) return true;
     const auto& map = world.map();
@@ -2338,6 +2339,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (!walked && dasher) walk_on(best);
     if (walked) {
         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
+        see_revealed(world, pathing, safety);
         if (!strike_enemy(world)) attack_camp(world, passing);
         cast_at_camp(world, best); // only casts that allow walking remain
         reset_and_attack_camp(world, best);
@@ -2584,6 +2586,26 @@ PackZone& pack_boxes(const World& world) {
 
 // After a re-read of vision: the next query builds the boxes from what we see now.
 void forget_pack_zone(const World& world) { pack_zone_state(world).round = -1; }
+
+// What we see changed mid-turn. Safety's beliefs are fixed for its life, so it starts again.
+[[gnu::noinline]] void see_again(World& world, Pathing& pathing, Safety& safety) {
+    world.observe();
+    pathing.invalidate();
+    std::destroy_at(&safety);
+    std::construct_at(&safety, world);
+    forget_pack_zone(world);
+}
+
+// Our walk or dash brought an enemy into sight that could strike us, or that we could strike,
+// before our next turn.
+bool see_revealed(World& world, Pathing& pathing, Safety& safety) {
+    // Off the map, Ren's reflection killed us this turn.
+    const vec2 here = my_position();
+    if (here.x < 0 || !world.revealed(here, Strike::max_reach) || world.is_stale()) return false;
+    debug_block({ std::printf("REVEAL %d %u %c\n", world.round, my_handle(), decision); });
+    see_again(world, pathing, safety);
+    return true;
+}
 
 bool in_pack_zone(const World& world, vec2 p) {
     // Each box lies within pack_radius of every member of its subset.
@@ -4019,7 +4041,7 @@ void hold_capture(const World& world, Memory& memory, bool attacked) {
 
 // Carrying: chase a kill worth the risk, bank, wait at an altar until it is safe, or chain another
 // capture on the way.
-void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked) {
+void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked) {
     const bool safe = can_tribute_safely(world, pathing, safety, memory);
     const bool close = closing(world, pathing);
     if (!safe && !close && !winning_bag(world) && chase(world, pathing, safety)) return;
@@ -4061,7 +4083,7 @@ void carry_bag(const World& world, Pathing& pathing, Safety& safety, Memory& mem
     }
     decision = 'B';
     const bool walked = attacked && !world.me().facts().walk_and_attack_independent();
-    memory.banking = close || walked || !may_chain(world, safety) || !farm(world, pathing, memory);
+    memory.banking = close || walked || !may_chain(world, safety) || !farm(world, pathing, safety, memory);
     if (memory.banking) bank_gems(world, pathing, safety, memory); // a tribute can still start after a ranged attack
 }
 
@@ -4102,12 +4124,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // A ward shares the recall's channel, so this is its first chance; its sight counts this turn
     // (probe-ward-sight). Growing clusters here would starve the search: the turn end grows them.
     if (place_ward(world, memory, false)) {
-        world.observe();
-        pathing.invalidate();
-        // Safety's beliefs are fixed for its life: what we see changed, so it starts again.
-        std::destroy_at(&safety);
-        std::construct_at(&safety, world);
-        forget_pack_zone(world);
+        see_again(world, pathing, safety);
         home.reset();
     }
 
@@ -4165,6 +4182,8 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         searched_at = my_position();
         searched_hit = !my_can_attack();
         if (!searched) heal_ally(world);
+        // The search priced nothing against an enemy its own moves revealed.
+        if (see_revealed(world, pathing, safety)) searched = false;
         // A cast the search left priced the shield at nothing, blind to the goal's coming camp hit:
         // judged here, before farm's camp reset or dash takes it.
         shield_if_needed(world, safety, memory.claim);
@@ -4199,7 +4218,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         decision = 'G';
         return;
     }
-    farm(world, pathing, memory);
+    farm(world, pathing, safety, memory);
 }
 
 // Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a
@@ -4264,6 +4283,7 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         memory.siege = false;
         memory.staged_since = -1;
     }
+    if (world.me().alive && see_revealed(world, pathing, safety)) searched = false;
     if (strike_after(world, pathing, safety).searched) searched = true, searched_at = my_position(), searched_hit = !my_can_attack();
     pathing.set_guard(nullptr);
     if constexpr (debug_fights)

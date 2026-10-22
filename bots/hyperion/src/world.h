@@ -371,6 +371,9 @@ public:
     // Start of each play turn. The first call also builds the static map.
     void update();
     void observe();
+    // An enemy in sight from p, within r of it, that this turn's reads did not see: our own move
+    // revealed it. False at the tile vision was last read from.
+    bool revealed(vec2 p, int r) const;
     // After our actions: note a group we cleared standing on it, so held from this round.
     void note_turn_end();
     std::uint64_t observe_cost_estimate() const { return 1000 * (allies.size() + enemies.size()); }
@@ -509,6 +512,8 @@ private:
     bitboard unseen_; // ~visible
     bitboard landing_{cambc::uninitialized}; // open_for_them & unseen_, once landing_ready_
     bool landing_ready_ = false;
+    vec2 sight_pos_{-1, -1};         // where update() or observe() last looked from
+    mutable vec2 clear_pos_{-1, -1}; // where revealed() last found nothing new
     std::vector<std::uint64_t> group_visible_; // update_camps() scratch, bit g
     // Bit g: unseen, update_camps() could still change it (a hold paying out, a return, an
     // awake group's wakefulness going unknown).
