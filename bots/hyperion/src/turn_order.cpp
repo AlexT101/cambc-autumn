@@ -59,9 +59,10 @@ const ChampionBelief& live_self(const World& world) {
     b.side = now.side;
     b.index = now.index;
     b.is_self = true;
-    b.alive = now.alive;
     b.visible = now.visible;
     const auto& info = my_record();
+    // Ren's reflected damage can kill us in our own turn: dead, we read as off the map.
+    b.alive = now.alive && info.x >= 0;
     b.max_health = info.max_health;
     b.pos = {info.x, info.y};
     b.health = info.health;
@@ -215,20 +216,22 @@ void set_turn_order(const World& world, Safety& safety) {
     }
     if (world.me().alive) {
         const auto& self = live_self(world);
-        const auto& enemies = live_enemies(world);
-        offer_engaged(self, enemies, wish);
-        const Strike ours = strike(self, world.round + 1);
-        offer_kills(world, self, ours, enemies, wish);
-        offer_heal(world, self, enemies, wish);
-        // With no enemy in sight our turn only removed camp members, so the threats before a refresh
-        // overstate those after: when they cannot kill us and no channel ends, nothing needs it.
-        const auto state = my_state();
-        const bool ending = channel_ending(state);
-        if (ending || enemy_seen(world)
-            || !(test(world.map().ally_spawn, self.pos) || safety.damage_ceiling(self.pos, true) < self.health)) {
-            safety.refresh();
-            if (ending) offer_channel(self, state, safety, wish);
-            offer_escape(world, self, safety, wish);
+        if (self.alive) {
+            const auto& enemies = live_enemies(world);
+            offer_engaged(self, enemies, wish);
+            const Strike ours = strike(self, world.round + 1);
+            offer_kills(world, self, ours, enemies, wish);
+            offer_heal(world, self, enemies, wish);
+            // With no enemy in sight our turn only removed camp members, so the threats before a refresh
+            // overstate those after: when they cannot kill us and no channel ends, nothing needs it.
+            const auto state = my_state();
+            const bool ending = channel_ending(state);
+            if (ending || enemy_seen(world)
+                || !(test(world.map().ally_spawn, self.pos) || safety.damage_ceiling(self.pos, true) < self.health)) {
+                safety.refresh();
+                if (ending) offer_channel(self, state, safety, wish);
+                offer_escape(world, self, safety, wish);
+            }
         }
     }
     try {

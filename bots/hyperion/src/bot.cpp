@@ -3349,8 +3349,10 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
 // the engine refuses it, and the thrown error costs ~3.9k fuel.
 void start_recall(const World& world) {
     auto& me = cambc::self();
-    if (stunned_turn || !world.me().alive || channelling() || test(world.map().ally_spawn, my_position()))
-        return;
+    if (stunned_turn || !world.me().alive || channelling()) return;
+    // Ren's reflected damage can kill us in our own turn: dead, we read as off the map.
+    const vec2 here = my_position();
+    if (here.x < 0 || test(world.map().ally_spawn, here)) return;
     try {
         me.recall();
     } catch (const cambc::error&) {
