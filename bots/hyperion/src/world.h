@@ -231,6 +231,7 @@ struct Moment {
 };
 
 inline constexpr int home_recall_time = 3;       // turn ends, with a Home emblem
+inline constexpr float durability_taken = 0.9f; // damage a Durability emblem's owner takes
 inline constexpr int teleport_crystal_range = 3; // Chebyshev, terrain ignored
 inline constexpr int ability_cooldown = 8;        // rounds from a cast to the slot's next
 inline constexpr int ability_range = 4;           // unit, ground and ally abilities
@@ -263,6 +264,7 @@ struct ChampionBelief {
     int stats_round = -1;
     int gems = 0;
     bool fast_recall = false; // a Home emblem, when last seen (enemies and ourselves): recall takes home_recall_time turn ends
+    float taken = 1;          // damage taken per point dealt: durability_taken with a Durability emblem, when last seen (enemies and ourselves)
     bool acted = false; // had completed its turn when last read this round
     // Turn-order priority for priority_round, and from the round after it.
     int priority = 0, next_priority = 0, priority_round = -1;

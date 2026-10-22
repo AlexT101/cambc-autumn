@@ -28,6 +28,7 @@ struct Foe {
     vec2 pos;
     float health, retaliation, partner, bag;
     bool spawn;
+    float taken; // damage it takes per point of our Strength
 };
 
 using Healths = std::array<float, max_foes>;
@@ -75,7 +76,7 @@ bool read_board(const World& world, Board& b, int reach) {
         }
         // A shield absorbs before health: to kill, the hits must go through both.
         b.foes[b.n++] = {&e, e.pos, health + e.shield, e.retaliation(), linked_partner_health(world, e),
-                         params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos)};
+                         params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), e.taken};
     }
     if (b.n == 0) return false;
     const bool cast = my_can_cast();
@@ -107,12 +108,12 @@ Hit best_hit(const Board& b, const Healths& h) {
     for (int i = 0; i < b.n; ++i) {
         const auto& f = b.foes[i];
         if (h[i] <= 0 || dist(b.here, f.pos) > b.range) continue;
-        float value = hit_worth(b.strength, h[i], f.spawn, f.bag, f.partner), retaliation = f.retaliation;
+        float value = hit_worth(b.strength * f.taken, h[i], f.spawn, f.bag, f.partner), retaliation = f.retaliation;
         if (b.splash)
             for (int j = 0; j < b.n; ++j) {
                 const auto& o = b.foes[j];
                 if (j != i && h[j] > 0 && dist(o.pos, f.pos) <= 1)
-                    value += hit_worth(b.strength, h[j], o.spawn, o.bag, o.partner), retaliation += o.retaliation;
+                    value += hit_worth(b.strength * o.taken, h[j], o.spawn, o.bag, o.partner), retaliation += o.retaliation;
             }
         if (retaliation >= b.health) continue;
         value -= retaliation;
@@ -209,6 +210,7 @@ struct Unit {
     vec2 pos;
     float health = 0, shield = 0; // a foe's health with its shield, and the shield
     float retaliation = 0, partner = 1e9f, bag = 0;
+    float taken = 1; // damage it takes per point dealt (a Durability emblem)
     bool foe = true, spawn = false, stunnable = false, recall = false;
     float stun = 0;                             // Marcella's armed attack's stun
     float land = 0, land_stun = 0;              // our landing's
@@ -1072,6 +1074,7 @@ bool Search::read() {
         x.health = hp + shield;
         x.shield = shield;
         x.retaliation = e.retaliation();
+        x.taken = e.taken;
         x.partner = linked_partner_health(world, e);
         x.bag = params::gem_value * static_cast<float>(pair_gems(world, e));
         x.spawn = test(enemy_spawn, e.pos);
@@ -1146,27 +1149,29 @@ bool Search::read() {
 bool Search::hit_unit(int t, Node& s) {
     const auto& x = u[t];
     float value = 0, retaliation = 0;
-    const bool kill = strength >= h[t] - 0.01f;
+    const auto dealt = [&](int k) { return strength * u[k].taken; };
+    const float d = dealt(t);
+    const bool kill = d >= h[t] - 0.01f;
     const auto splashed = [&](int k) { return splash && k != t && dist(u[k].pos, x.pos) <= 1; };
     if (x.foe) {
-        const bool m = x.link >= 0 && moot(t, strength, splashed(x.link), strength);
-        if (!m) value += hit_worth(strength, h[t], x.spawn, x.bag, partner(t));
+        const bool m = x.link >= 0 && moot(t, d, splashed(x.link), dealt(x.link));
+        if (!m) value += hit_worth(d, h[t], x.spawn, x.bag, partner(t));
         if (!m && s.armed && x.stunnable && !(s.stunned >> t & 1)) value += x.stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
         retaliation += x.retaliation;
     } else {
         s.touched |= 1u << x.local;
     }
-    lose(t, strength, s);
+    lose(t, d, s);
     if (splash) {
         for (int j = 0; j < n; ++j) {
             if (j == t || h[j] <= 0 || dist(u[j].pos, x.pos) > 1) continue;
             const auto& o = u[j];
             if (o.foe) {
-                const bool m = o.link >= 0 && moot(j, strength, splashed(o.link) && o.link > j, strength);
-                if (!m) value += hit_worth(strength, h[j], o.spawn, o.bag, partner(j));
+                const bool m = o.link >= 0 && moot(j, dealt(j), splashed(o.link) && o.link > j, dealt(o.link));
+                if (!m) value += hit_worth(dealt(j), h[j], o.spawn, o.bag, partner(j));
                 retaliation += o.retaliation;
             }
-            lose(j, strength, s);
+            lose(j, dealt(j), s);
         }
         s.touched |= touch1(x.pos);
     }
@@ -2040,7 +2045,7 @@ bool reset_may_kill(const World& world) {
     if (slot < 0 || !self.ability_ready(slot, world.round) || !enemy_seen(world)) return false;
     const int reach = f.attack_range() + (f.walk_and_attack_independent() ? 1 : 0);
     for (const auto& e : world.enemies)
-        if (e.alive && e.visible && dist(self.pos, e.pos) <= reach && e.health <= 2 * self.strength) return true;
+        if (e.alive && e.visible && dist(self.pos, e.pos) <= reach && e.health <= 2 * self.strength * e.taken) return true;
     return false;
 }
 

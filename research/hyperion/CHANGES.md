@@ -183,3 +183,11 @@ observed behaviour, with fitted constants.
 - `yield_capture` and `take_capture_handoff` record the move in memory before the stale-turn check.
 - Plan execution stops between actions once out of fuel, instead of finishing last round's plan in the next round.
 - Dead code (turn_order.cpp's idle fallback, unreachable) and four comments that contradicted the code.
+
+## 84: enemy Durability in basic-attack kills (2026-10-22 audit)
+
+Enemies' Durability emblems are read with their Home emblem (`ChampionBelief::taken`, 0.9 with one). Basic attacks
+deal Strength times that in the strike search (`hit_unit`, splash included), `strike_enemy`, `reset_may_kill`,
+`attack_target` and `reset_and_attack_enemy`'s kill test, and turn order's kill bid (`offer_kills`). Spells already
+went through the engine's `damage_against`. Before, a 100-Strength hit was counted as killing a 95-health Durability
+holder, and the planner dropped that surviving enemy from its end tile's danger. Not A/B tested.

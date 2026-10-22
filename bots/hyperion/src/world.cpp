@@ -67,13 +67,16 @@ int gems(std::uint32_t h) {
     return static_cast<int>(value);
 }
 
-// Summing every item count costs ~350 fuel; only a Home emblem matters.
-bool home_emblem(std::uint32_t h) {
-    static cambc::enum_map<cambc::item_type> counts; // overwritten whole: not cleared first
+// Summing every item count costs ~350 fuel; only the Home and Durability emblems matter.
+struct Emblems {
+    bool home, durability;
+};
+Emblems emblems(std::uint32_t h) {
+    using I = cambc::item_type;
+    static cambc::enum_map<I> counts; // overwritten whole: not cleared first
     ok(sdk_champion_items(h, counts.ptr()));
-    return counts[cambc::item_type::home_emblem_of_strength] + counts[cambc::item_type::home_emblem_of_focus]
-               + counts[cambc::item_type::home_emblem_of_health]
-           > 0;
+    return {counts[I::home_emblem_of_strength] + counts[I::home_emblem_of_focus] + counts[I::home_emblem_of_health] > 0,
+            counts[I::durability_emblem_of_strength] + counts[I::durability_emblem_of_focus] + counts[I::durability_emblem_of_health] > 0};
 }
 
 // Static camp data in one batched raw call: map::camp_groups() builds an SDK object graph that
@@ -1172,7 +1175,11 @@ void World::update_champion(ChampionBelief& b, bool full) {
     }
     // In observe() too, for a champion first seen after our move.
     b.gems = engine::gems(h);
-    if (enemy || b.is_self) b.fast_recall = engine::home_emblem(h);
+    if (enemy || b.is_self) {
+        const auto e = engine::emblems(h);
+        b.fast_recall = e.home;
+        b.taken = e.durability ? durability_taken : 1.0f;
+    }
 }
 
 void World::read_priorities(bool new_round) {

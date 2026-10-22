@@ -160,6 +160,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
         float health, retaliation;
         bool stunnable;
         float partner; // Cassi or Issac: the visible other body's health
+        float taken;   // damage it takes per point of our Strength (a Durability emblem)
     };
     static std::vector<Seen> seen; // kept across calls: allocating costs more than the work
     seen.clear();
@@ -177,11 +178,13 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
                 for (const auto& e : world.enemies)
                     if (e.alive && e.visible && e.pos != p && e.facts().passive == Passive::linked_pair) partner = e.health;
             // A shield must be hit through before health: counted as health.
-            float shield = 0;
-            if (kind.has(AbilityKind::shield))
-                for (const auto& e : world.enemies)
-                    if (e.alive && e.visible && e.pos == p) shield = e.shield;
-            seen.push_back({c, p, health + shield, retaliation, stunnable, partner});
+            float shield = 0, taken = 1;
+            for (const auto& e : world.enemies)
+                if (e.alive && e.visible && e.pos == p) {
+                    if (kind.has(AbilityKind::shield)) shield = e.shield;
+                    taken = e.taken;
+                }
+            seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken});
         } catch (const cambc::error&) {
         }
     }
@@ -189,8 +192,9 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
     const float health = my_health(), strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health());
     // An enemy on its spawn heals to full at its turn end: only a kill or a stun is worth anything.
     const auto worth = [&](const Seen& s) {
-        if (s.health <= strength) return s.health + params::life_value;
-        return test(enemy_spawn, s.pos) ? 0.0f : useful_damage(strength, s.health, s.partner);
+        const float dealt = strength * s.taken;
+        if (s.health <= dealt) return s.health + params::life_value;
+        return test(enemy_spawn, s.pos) ? 0.0f : useful_damage(dealt, s.health, s.partner);
     };
     std::optional<cambc::handle_champion_t> best;
     float best_value = 0, best_health = 0, best_pair = 0;
@@ -216,7 +220,11 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only) {
     const int reset = ready(world, AbilityKind::attack_reset);
     if (reset < 0) return false;
     const auto target = attack_target(world, stunning_only);
-    if (!target || (!(record_of(*target).health <= my_strength()) && shield_wanted(world)) || !cast(reset)) return false;
+    if (!target) return false;
+    float taken = 1;
+    for (const auto& e : world.enemies)
+        if (e.handle == *target) taken = e.taken;
+    if ((!(record_of(*target).health <= my_strength() * taken) && shield_wanted(world)) || !cast(reset)) return false;
     try {
         attack_champion(*target);
     } catch (const cambc::error&) {

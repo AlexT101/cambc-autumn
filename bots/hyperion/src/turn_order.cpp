@@ -176,7 +176,7 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
     for (const auto& [e, health] : enemies) {
         const int d = dist(self.pos, e->pos);
         if (!ours.hits(d) || test(enemy_spawn, e->pos) || !can_act_before(world, *e)) continue;
-        if (side_damage(world, self, ours, e->pos, allies) >= health) {
+        if (side_damage(world, self, ours, e->pos, allies) * e->taken >= health) {
             const float value = params::life_value + params::gem_value * static_cast<float>(pair_gems(world, *e));
             wish.offer(kill, e->acted ? value : unacted_share * value);
         }
