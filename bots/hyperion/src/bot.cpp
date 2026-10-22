@@ -2207,7 +2207,7 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
     // Short of fuel for the simulation, a lethal tile counts as a lost fight.
     const bool simulate = fuel_ok(safety.fight_cost_estimate() + end_reserve);
     if (!simulate && lethal) note_shortcut("home-no-fight-sim");
-    if ((lethal && (!simulate || safety.fight(here).self_falls)) || (simulate && visible_threat(world, safety, here) && safety.fight(here).lost))
+    if ((lethal && (!simulate || safety.fight(here).self_falls)) || (simulate && visible_threat(world, safety, here) && safety.fight(here, false).lost))
         return true;
     if (!simulate || !fuel_ok(2 * safety.fight_cost_estimate() + end_reserve)) {
         note_shortcut("home-no-pursuit");
@@ -2215,8 +2215,9 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
     }
     // Healthy on our own ground, they have no reason to come for us.
     if (paying_soon(world) || (own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health())) return false;
-    const auto t = safety.pursuit(here, params::pursuit_steps);
-    return t.lost || (partner(world) && t.self_falls);
+    const bool linked = partner(world) != nullptr;
+    const auto t = safety.pursuit(here, params::pursuit_steps, linked);
+    return t.lost || (linked && t.self_falls);
 }
 
 // open_for_us as packed row-major bits, read without host calls; null if the export's layout is
@@ -2473,7 +2474,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
             note_shortcut("prey-cut-short");
             break;
         }
-        if (const auto t = safety.fight(order[i].second->pos); !t.lost && !(linked && t.self_falls)) return order[i].second;
+        if (const auto t = safety.fight(order[i].second->pos, linked); !t.lost && !(linked && t.self_falls)) return order[i].second;
     }
     return nullptr;
 }
