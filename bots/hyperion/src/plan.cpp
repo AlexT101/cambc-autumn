@@ -254,6 +254,7 @@ struct Node {
     bool owed : 1 = false;
     std::int8_t depth = 0;
     std::uint16_t stunned = 0;     // units stunned this turn
+    std::uint16_t dead = 0;        // units killed this turn
     float value = 0, pending = 0; // pending: a cast's price a Vendetta kill would refund
     std::uint32_t touched = 0;     // local camp groups hit
     Grid req_w = grid_all, req_d = grid_all, req_e = grid_all; // the tiles still allowed for each move's end
@@ -563,10 +564,11 @@ struct Search {
         return k < 0 ? u[t].partner : std::min(h[k], u[k].belief->health);
     }
     // A kill takes the partner with it.
-    void lose(int t, float d) {
+    void lose(int t, float d, Node& s) {
         if ((h[t] -= d) > 0.01f) return;
         h[t] = 0;
-        if (u[t].link >= 0) h[u[t].link] = 0;
+        s.dead |= static_cast<std::uint16_t>(1u << t);
+        if (const int k = u[t].link; k >= 0) h[k] = 0, s.dead |= static_cast<std::uint16_t>(1u << k);
     }
     // Whether t's partner, hit later by the same blow (not yet counted), dies to it while t would
     // not: t's hit is then worth nothing beyond the partner's kill.
@@ -633,7 +635,9 @@ struct Search {
     template <class Mid> void offer(Grid ends, float v, const Node& s, int& leaf, Mid&& mid);
     std::uint16_t removed(const Node& s) const {
         std::uint16_t r = 0;
-        for (int t = 0; t < foes; ++t) r |= h[t] <= 0 ? u[t].drop_kill : s.stunned >> t & 1 ? u[t].drop_stun : 0;
+        const std::uint32_t all = (1u << foes) - 1;
+        for (std::uint32_t m = s.dead & all; m; m &= m - 1) r |= u[std::countr_zero(m)].drop_kill;
+        for (std::uint32_t m = s.stunned & ~s.dead & all; m; m &= m - 1) r |= u[std::countr_zero(m)].drop_stun;
         return r;
     }
     Seq concrete(int c, bool keep, int entry, bool shields) const {
@@ -1120,7 +1124,7 @@ bool Search::hit_unit(int t, Node& s) {
     } else {
         s.touched |= 1u << x.local;
     }
-    lose(t, strength);
+    lose(t, strength, s);
     if (splash) {
         for (int j = 0; j < n; ++j) {
             if (j == t || h[j] <= 0 || dist(u[j].pos, x.pos) > 1) continue;
@@ -1130,7 +1134,7 @@ bool Search::hit_unit(int t, Node& s) {
                 if (!m) value += hit_worth(strength, h[j], o.spawn, o.bag, partner(j));
                 retaliation += o.retaliation;
             }
-            lose(j, strength);
+            lose(j, strength, s);
         }
         s.touched |= touch1(x.pos);
     }
@@ -1160,7 +1164,7 @@ bool Search::spell_unit(const Spell& sp, int t, Node& s) {
     if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
     if (x.spell_stun[sp.slot] > 0 && !(s.stunned >> t & 1)) v += x.spell_stun[sp.slot], s.stunned |= static_cast<std::uint16_t>(1u << t);
     if (d <= 0 && v <= 0) return false;
-    lose(t, d);
+    lose(t, d, s);
     s.value += v - cast_cost;
     s.pending = cast_cost;
     s.cast = false;
@@ -1192,7 +1196,7 @@ void Search::hit_centre(const Centre& c, int slot, Node& s) {
         const int t = std::countr_zero(m);
         if (h[t] <= 0) continue;
         if (u[t].spell_stun[slot] > 0) s.stunned |= static_cast<std::uint16_t>(1u << t);
-        lose(t, u[t].spell[slot]);
+        lose(t, u[t].spell[slot], s);
     }
     s.touched |= c.touched;
     s.pending = cast_cost;
@@ -1213,7 +1217,7 @@ bool Search::land_at(vec2 L, Node& s) {
         if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t));
         if (!m && x.land_stun > 0 && !(s.stunned >> t & 1)) value += x.land_stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
         retaliation += x.land > 0 ? x.retaliation : 0.0f;
-        lose(t, x.land);
+        lose(t, x.land, s);
     }
     if (retaliation >= health) return false;
     s.touched |= land_touch(c);
@@ -1297,6 +1301,8 @@ Node Search::root() const {
     s.cast = can_cast;
     s.reset = reset_ready;
     s.dash = dash_ready;
+    for (int t = 0; t < n; ++t)
+        if (h[t] <= 0) s.dead |= static_cast<std::uint16_t>(1u << t);
     return s;
 }
 
