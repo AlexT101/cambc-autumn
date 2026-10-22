@@ -444,3 +444,28 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    3156 -> 2178, max 439k -> 250k. Real budget out-of-fuel turns 1062 -> 1201 (64-65 alone 1086): the totals swing by
    hundreds on three or four long fights of the gen-chambers and gen-hourglass maps. Vs hecate 65.4% of 1094 (62.6-68.2;
    ladder 67.1, gen 66.0, gen-s1 64.6), out-of-fuel turns 5891 vs 1965 (main 019ce53: 63.9%, 9225 vs 1975).
+68. 2026-10-22 (not yet submitted). Strike search commutation pruning (fuel/strike-orders 011483a): attacks hoisted,
+   walk-then-attack, a dash straight after the walk and a walk after a dash each drop an order only when another is
+   offered at the same value with at least the same end tiles. Play changes only through tie order: 0 of 23,509
+   searches lost value against an unpruned copy, 375 (1.6%) pick another equal-valued sequence. A/B vs its base
+   (e5f7d32 + strike-big) 50.9% of 1094 (48.0-53.9; ladder 50.0, gen 51.0, gen-s1 51.0), out-of-fuel turns 5870 vs
+   6234 (-5.8%). Wide bench at 100M: p99 -1.5%, max -9.2%, turns >100k -6.4%; nodes -30% on searches of 60+ nodes.
+69. 2026-10-22 (not yet submitted). Strike search leaves (fuel/strike-settle b8cd2f5, 76208a6), behaviour-identical:
+   Choice keeps its walk and dash as int8 cells (28 -> 12 bytes), Front::admit skips self copies, and a new leaf reads
+   Heart of Ruin health through `hor_unit` instead of a loop over every foe. f4a8d31 (each landing grouping kept for
+   the whole search) left out: too much machinery for ~4k on the biggest search.
+70. 2026-10-22 (not yet submitted). Possible-set growth (fuel/possible-grow 6a04b41, 93f64c0), behaviour-identical: a
+   few-tile possible set grows by one reachable_tiles call per tile (`reach_each`: at most 6 tiles for dashes, 4 for
+   2-step walks, 6 for longer ones) instead of a field or a 2-step dilate; a growing board lists its tiles once for its
+   dash and walk, and dilate's few-tile cutoff is found once. Wide bench at 100M on d59ccf7 52/52 identical: total
+   -0.55%, p50 -0.8%; grow() -10.7%.
+71. 2026-10-22 (not yet submitted). Turn order fuel (fuel/turn-order-fold 2ec042f, d989f74), behaviour-identical:
+   offer_escape's damage_ceiling and damage_bound fold into one `may_escape` bound, safety.refresh() runs only after an
+   attack or cast, the strike and offer work only with an enemy in sight, and our gems are read only when needed. Wide
+   bench at 100M 52/52 identical vs merge-2: total -0.66%, set_turn_order 1043 -> 826 a call. The turn-order gate
+   stays (removing it, bb414db: out-of-fuel turns +13%).
+72. 2026-10-22 (not yet submitted). 68-71 merged (fuel/merge-3). Wide bench at 100M vs merge-2: 29/52 identical (the
+   rest differ through 68's tie order), mean 33.7k -> 33.4k, p50 -1.3%, p99 93.3k -> 93.8k, turns >100k 2178 -> 2301,
+   max 250k -> 295k: 00contest's two games diverge (side a 3000 turns longer) and alone add about 200 turns over 100k. 71
+   on top 52/52 identical, total -0.64%. Real budget out-of-fuel turns 1201 -> 868. Vs hecate 63.9% of 1094
+   (61.0-66.7; ladder 62.9, gen 63.3, gen-s1 64.6), out-of-fuel turns 4463 vs 1877 (merge-2: 65.4%, 5891 vs 1965).

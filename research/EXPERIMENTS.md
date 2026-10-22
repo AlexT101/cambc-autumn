@@ -238,6 +238,48 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
     are noise at this size: gen-chambers-102206117 a alone gave 332 / 196 / 138 / 239 across the four runs.
   - Vs hecate: 65.4% of 1094 (62.6-68.2; ladder 67.1, gen 66.0, gen-s1 64.6); out-of-fuel turns 5891 in 594 games vs
     1965 in 461 (main 019ce53: 63.9%, 9225 vs 1975).
+- Strike search commutation pruning (2026-10-22, fuel/strike-orders 011483a; kept and merged, CHANGES 68). Attacks
+  hoisted, walk-then-attack, a dash straight after the walk, a walk after a dash: each order is dropped only when
+  another is offered at the same value with at least the same end tiles. 0 of 23,509 searches lost value against an
+  unpruned copy; 375 (1.6%) pick another equal-valued sequence. A/B vs its base (e5f7d32 + strike-big) 50.9% of 1094
+  (48.0-53.9; ladder 50.0, gen 51.0, gen-s1 51.0), out-of-fuel turns 5870 vs 6234 (-5.8%). Wide bench at 100M: p99
+  -1.5%, max -9.2%, turns >100k -6.4%; nodes -30% on searches of 60+ nodes.
+- Strike search leaves (2026-10-22, fuel/strike-settle; b8cd2f5 and 76208a6 kept and merged, CHANGES 69): int8 walk and
+  dash cells in Choice, no self copies in admit, Heart of Ruin health read by unit. f4a8d31 (each landing grouping
+  kept for the whole search) left out: too much machinery for ~4k on the biggest search.
+- Possible-set growth by reach per tile (2026-10-22, fuel/possible-grow 6a04b41, 93f64c0; kept and merged, CHANGES 70).
+  52/52 identical on main d59ccf7: total -0.55%, p50 -0.8%; grow() -10.7%.
+- Turn order folded (2026-10-22, fuel/turn-order-fold 2ec042f, d989f74; kept and merged, CHANGES 71). One
+  `may_escape` bound replaces offer_escape's damage_ceiling/damage_bound, safety.refresh() runs only after an attack or
+  cast, the strike and offer work only with an enemy in sight, and gems are read only when needed. 52/52 identical
+  vs merge 2: total -0.66%, set_turn_order 1043 -> 826 a call.
+  - The turn-order gate removed on top (bb414db, reverted in d8ff11c; held): A/B vs d59ccf7 49.5% of 1094, but
+    out-of-fuel turns 6561 vs 5802 (+13%, on every suite).
+- **Fuel merge 3** (2026-10-22, fuel/merge-3: strike-orders, strike-settle, possible-grow, turn-order-fold; CHANGES
+  68-72). Wide bench, 52 test-draft games against hecate, vs merge 2 (d59ccf7).
+  - At 100M: 29/52 identical (the rest through strike-orders' tie order). Mean 33.7k -> 33.4k, p50 -1.3%, p99 93.3k
+    -> 93.8k, turns over 100k 2178 -> 2301, max 250k -> 295k: 00contest's two diverged games alone add about 200 turns over
+    100k (side a runs 3000 turns longer); most other diverged games' maxima fell. Turn-order-fold on top 52/52
+    identical, total -0.64%.
+  - At the real budget: out-of-fuel turns 1201 -> 868 (before turn-order-fold 807: noise); mean -2.8%.
+  - Vs hecate: 63.9% of 1094 (61.0-66.7; ladder 62.9, gen 63.3, gen-s1 64.6); out-of-fuel turns 4463 in 561 games vs
+    1877 in 463 (merge 2: 65.4%, 5891 vs 1965; before turn-order-fold 63.4%, 4566 vs 1909). Level with merge 2
+    within noise, out-of-fuel turns -24%.
+- Farm loop bound across turns (2026-10-22, fuel/farm-lean, no commits). An exact bound carried across turns for
+  empty-handed groups skipped 45% of visits, but those were cheap prunes: +0.5% fuel. 93% of loop calls are
+  empty-handed; the loop's best equals last turn's group on 70.7% of them, so "keep the target" would disagree on up
+  to ~29%.
+- Exact cuts in step_guard (2026-10-22, fuel/guard-exact, no commits). A heavy call costs ~24.9k: placing 13.4k
+  (exposure 6.3k, of which Reach::at misses 3.7k) and settling 11.5k (1.39 sims). Guard sims cost 6.8k each (the
+  union fight 7.7k, 94% of heavy calls, 2.04 enemies) against want_home's 5.2k. The Reach memo has 0 collisions;
+  repeated keys are 2.0% of calls and lethal ones 0.4%: no exact cut.
+- World update (2026-10-22, fuel/world-lean, no commits). 10.1k a turn on a camp-heavy subset (update_camps 4.56k,
+  update_champions 3.68k). A per-group visible-member mask cost +2.5%; skipping out-of-view pending groups was level.
+  A host test is ~15 fuel: WASM loops cost more than the host calls they replace.
+- Reach::at way-0 fast path (2026-10-22, fuel/reach-at 9c5abae; not merged). A mask fast path cut a miss 492 -> 402,
+  but total fuel only -0.04%, and it relies on shadow_cast including its origin (undocumented, unprobed).
+- Strike read with shifted viewer grids (2026-10-22, fuel/strike-read 051942c; not merged). Attack viewers kept as 7x7
+  grids and shifted: read() -2.3%, total -0.02%.
 - Stale-plan drop alone (2026-10-22, f4eee8f; kept and merged without an A/B, CHANGES 59). A strike search that ran out
   of fuel resumes next round and carried out last round's plan (all real-budget SRCH-REFUSED lines); now it throws
   StaleTurn before acting, and main.cpp replays the round fresh on the fuel left. Bench 16/16 identical at 100M.
