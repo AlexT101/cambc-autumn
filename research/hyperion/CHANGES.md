@@ -381,3 +381,9 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
 55. 2026-10-21 (not yet submitted). continue_tribute keeps want_home's answer for decide, as continue_recall does, so
    a tribute cancelled to go home does not simulate the pursuit again. Behaviour-identical: bench.py at 100M on the 35
    ladder maps and 16 of maps/gen, 102/102 identical, no turn dearer; the dedupe fired on 3 turns (4.3k in all).
+56. 2026-10-22 (not yet submitted). After the goal, strike_after runs the strike search again, anchored where the goal
+   left us, when a hit is still possible (an attack left, a reset ready, or a ready damage or stun cast castable there,
+   with an enemy in reach), instead of its own best-attack, reset-versus-shield and valued-cast rules: Marcella's armed
+   stun, Vendetta's refresh, Varg's splash and attack-then-cast order count after the goal too. The search reads foes'
+   health and shields live, and skips excludes-walking casts once the goal walked. 100M bench vs main: mean fuel -0.2%,
+   p99 +0.7%.

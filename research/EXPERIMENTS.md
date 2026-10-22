@@ -178,7 +178,7 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
   draft showed neither. Then 8250a4f (step_guard first again; the guard holds end tiles only, is placed again where
   the search left us, radius 2 only while a cast is left): 63.3% (ladder 64.3, gen 60.9, fresh 65.4); out-of-fuel
   turns 7247. Dropped: no gain in three runs, all slightly down.
-- Post-goal strike search (2026-10-22, branch claude/trusting-galileo-t4s7rm; A/B pending). strike_after is the strike
+- Post-goal strike search (2026-10-22, 9409a99; kept and merged, CHANGES 56). strike_after is the strike
   search again, anchored, from where the goal left us, when a hit is still possible (attack left, a reset ready, or a
   ready damage or stun cast castable here, with an enemy in reach): Marcella's armed stun, Vendetta's refresh, Varg's
   splash and attack-then-cast order now count after the goal, and the `valued` hand-off to cast_at_enemies goes. The
