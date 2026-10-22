@@ -771,26 +771,14 @@ float rate(const World& world, float worth, float rounds) {
 int capture_rounds() { return cambc::constants::capture_time + 1; }
 constexpr float stickiness = 1.2f;
 
+struct CampLeft {
+    float health, strength;
+};
+
 // Damage taken clearing a group alone with basic attacks, killing the deadliest first; also
-// the rounds it takes. `reflect`: damage each hit on us returns to its monster (Ren).
-float min_camp_damage(const CampGroup& group, const CampBelief& belief, float strength, float* rounds, float reflect = 0) {
-    struct Left {
-        float health, strength;
-    };
-    std::array<Left, 16> buffer;
-    std::vector<Left> spill;
-    Left* left = buffer.data();
-    if (group.members.size() > buffer.size()) {
-        spill.resize(group.members.size());
-        left = spill.data();
-    }
-    int n = 0;
-    const bool fresh = belief.state == CampState::respawning;
-    for (std::size_t i = 0; i < group.members.size(); ++i) {
-        const float hp = fresh ? group.members[i].max_health : belief.health[i];
-        if (hp > 0) left[n++] = {hp, group.members[i].strength};
-    }
-    if (n > 1) std::sort(left, left + n, [](const Left& a, const Left& b) { return a.strength * b.health > b.strength * a.health; });
+// the rounds it takes. `reflect`: damage each hit on us returns to its monster (Ren). `left`: the
+// living members, deadliest first; the reflect path wears it down.
+float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, float reflect) {
     float damage = 0, elapsed = 0;
     if (reflect <= 0) {
         for (int i = 0; i < n; ++i) {
@@ -800,18 +788,21 @@ float min_camp_damage(const CampGroup& group, const CampBelief& belief, float st
         *rounds = elapsed;
         return damage;
     }
+    // Only members that strike take the reflection.
+    int attackers = n;
+    while (attackers > 0 && left[attackers - 1].strength <= 0) --attackers;
     // Each round we hit the first living target, then every living attacker hits us and takes the
     // reflection. Stepped from one death to the next.
     for (int i = 0; i < n;) {
         const float own = left[i].strength > 0 ? reflect : 0.0f;
         float k = std::max(1.0f, std::ceil(left[i].health / (strength + own)));
-        for (int j = i + 1; j < n; ++j)
+        for (int j = i + 1; j < attackers; ++j)
             if (left[j].health > 0 && left[j].strength > 0) k = std::min(k, std::max(1.0f, std::ceil(left[j].health / reflect)));
         // Our hit in round k fells it before it strikes; otherwise it struck every round.
         const float hits = left[i].health - k * strength - (k - 1) * own <= 0 ? k - 1 : k;
         damage += left[i].strength * hits;
         left[i].health -= k * strength + hits * own;
-        for (int j = i + 1; j < n; ++j)
+        for (int j = i + 1; j < attackers; ++j)
             if (left[j].health > 0 && left[j].strength > 0) damage += left[j].strength * k, left[j].health -= k * reflect;
         elapsed += k;
         while (i < n && left[i].health <= 0) ++i;
@@ -820,7 +811,8 @@ float min_camp_damage(const CampGroup& group, const CampBelief& belief, float st
     return damage;
 }
 
-// Kept per group and strength while the group's belief is unchanged.
+// Kept per group and strength while the group's belief is unchanged; the sorted members, for the
+// last group asked, while its belief is.
 float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect = 0) {
     const auto& group = world.map().groups[g];
     const auto& belief = world.camps[g];
@@ -831,9 +823,10 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
     };
     // Static storage starts filled for free, where a vector pays to fill its slots.
     static std::array<Slots, 256> cache;
-    if (static_cast<std::size_t>(g) >= cache.size()) return min_camp_damage(group, belief, strength, rounds, reflect);
-    auto& c = cache[g];
-    if (c.version != belief.version) {
+    static Slots uncached;
+    const bool kept = static_cast<std::size_t>(g) < cache.size();
+    auto& c = kept ? cache[g] : uncached;
+    if (c.version != belief.version || !kept) {
         c.version = belief.version;
         c.count = c.next = 0;
     }
@@ -842,12 +835,30 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
             *rounds = c.rounds[i];
             return c.damage[i];
         }
+    static std::vector<CampLeft> sorted, worn;
+    static int sorted_group = -1, n = 0;
+    static std::uint32_t sorted_version = 0;
+    if (sorted_group != g || sorted_version != belief.version) {
+        sorted_group = g, sorted_version = belief.version;
+        if (sorted.size() < group.members.size()) sorted.resize(group.members.size()), worn.resize(group.members.size());
+        int living = 0;
+        CampLeft* out = sorted.data();
+        const bool fresh = belief.state == CampState::respawning;
+        for (std::size_t i = 0; i < group.members.size(); ++i) {
+            const float hp = fresh ? group.members[i].max_health : belief.health[i];
+            if (hp > 0) out[living++] = {hp, group.members[i].strength};
+        }
+        n = living;
+        if (n > 1) std::sort(sorted.data(), sorted.data() + n, [](const CampLeft& a, const CampLeft& b) { return a.strength * b.health > b.strength * a.health; });
+    }
+    CampLeft* left = sorted.data();
+    if (reflect > 0) left = std::copy_n(sorted.data(), n, worn.data()) - n;
     const int i = c.next;
     c.next = (c.next + 1) % static_cast<int>(c.strength.size());
     c.count = std::max(c.count, i + 1);
     c.strength[i] = strength;
     c.reflect[i] = reflect;
-    c.damage[i] = min_camp_damage(group, belief, strength, &c.rounds[i], reflect);
+    c.damage[i] = min_camp_damage(left, n, strength, &c.rounds[i], reflect);
     *rounds = c.rounds[i];
     return c.damage[i];
 }
@@ -1252,17 +1263,18 @@ template <class Floor>
 [[gnu::noinline]] const bitboard* farm_attack_tiles(const World& world, Pathing& pathing, int group, int range, Floor floor) {
     static struct {
         int group = -1, range = -1;
-        std::uint32_t alive = 0;
+        std::array<std::uint64_t, 4> alive{};
         bitboard tiles;
     } kept;
     const auto& health = world.camps[group].health;
-    std::uint32_t alive = 0;
-    for (std::size_t i = 0; i < health.size() && i < 32; ++i)
-        if (health[i] > 0) alive |= 1u << i;
-    if (health.size() <= 32 && kept.group == group && kept.range == range && kept.alive == alive) return &kept.tiles;
+    const bool keeps = health.size() <= 64 * kept.alive.size();
+    std::array<std::uint64_t, 4> alive{};
+    for (std::size_t i = 0; i < health.size() && keeps; ++i)
+        if (health[i] > 0) alive[i >> 6] |= std::uint64_t{1} << (i & 63);
+    if (keeps && kept.group == group && kept.range == range && kept.alive == alive) return &kept.tiles;
     if (!pathing.prepare_attack_tiles(group, range, floor())) return nullptr;
     pathing.attack_tiles(group, range, kept.tiles);
-    kept.group = health.size() <= 32 ? group : -1, kept.range = range, kept.alive = alive;
+    kept.group = keeps ? group : -1, kept.range = range, kept.alive = alive;
     return &kept.tiles;
 }
 
