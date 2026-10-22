@@ -819,6 +819,8 @@ float rate(const World& world, float worth, float rounds) {
         const auto& map = world.map();
         horizon = cycle_horizon * std::max(1.0f, static_cast<float>(std::max(map.width, map.height)) / 50.0f);
     }
+    // A bag banked on the way (farm's trip less bank_now) can leave a cycle at or below 0.
+    rounds = std::max(rounds, 1.0f);
     return worth / (rounds * (1.0f + rounds / horizon));
 }
 
