@@ -2101,25 +2101,35 @@ std::uint64_t Safety::build_cost_estimate() {
     return cost;
 }
 
-Trade Safety::pursuit(vec2 p, int approach, bool falls) {
+Trade Safety::stand(vec2 p, int approach, bool falls, bool unseen) {
     world_.throw_if_stale();
-    Side us, them;
+    std::uint32_t hit = 0, walking = 0;
+    std::array<int, 16> walks;
     const auto& spawn = world_.map().near_enemy_spawn;
     for (auto left = seen_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (gone(e) || test(spawn, e.pos)) continue;
+        if (gone(e)) continue;
         const auto& s = struck(e).strike;
         if (s.reach < 0 || dist(p, e.pos) - s.reach > approach) continue;
         const int walk = this->approach(e, p);
-        if (walk > approach) continue;
-        const int k = them.count;
-        them.add(fighter(world_, e, made_));
-        if (them.count > k && walk != 0) them.fighters[k].arrives_at = walk, them.plain = false;
+        if (walk == 0) hit |= 1u << e.index;
+        else if (walk <= approach && !test(spawn, e.pos)) walking |= 1u << e.index, walks[static_cast<std::size_t>(e.index)] = walk;
     }
-    if (them.count == 0) return {};
-    join_allies(world_, us, p, made_);
-    us.camp = camp_damage(p, false);
-    return trade(us, them, end_reserve, false, falls);
+    if (!hit && !walking && !unseen) return {};
+    const auto key = hit || unseen ? fight_key_with(p, hit << 16) : fighting_allies(world_, p);
+    const std::uint32_t enemies = (key >> 16 & threat_mask_) | walking;
+    if (!enemies) return {};
+    const float camp = camp_damage(p, false);
+    if (!walking && camp <= 0) return fight_of(key, falls);
+    Side us, them;
+    fill(us, world_, world_.allies, key & 0xFFFFu, made_);
+    fill(them, world_, world_.enemies, enemies, made_);
+    int k = 0;
+    for (auto left = enemies; left && k < them.count; left &= left - 1, ++k)
+        if (const int i = std::countr_zero(left); walking >> i & 1) them.fighters[k].arrives_at = walks[static_cast<std::size_t>(i)], them.plain = false;
+    us.camp = camp;
+    // With nobody in reach yet, we strike first: they must still win.
+    return trade(us, them, end_reserve, (key >> 16) != 0, falls);
 }
 
 int Safety::turns_to_kill_idle(vec2 p, int horizon) {

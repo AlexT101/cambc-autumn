@@ -1986,13 +1986,6 @@ bool contesting(const World& world) {
     return world.camps[g].holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
 }
 
-// The threats' visible part, without building the unseen ones' fields.
-bool visible_threat(const World& world, Safety& safety, vec2 p) {
-    for (auto left = safety.seen_enemies(); left; left &= left - 1)
-        if (safety.blow(world.enemies[static_cast<std::size_t>(std::countr_zero(left))], p).hits) return true;
-    return false;
-}
-
 // Our ground: no farther from our spawn than from theirs.
 bool own_ground(const World& world, vec2 p) {
     const auto& map = world.map();
@@ -2226,20 +2219,11 @@ bool want_home(const World& world, Safety& safety, bool sieging) {
     // Out of sight and not lethal, nobody can win a fight here or pursue us.
     const bool lethal = safety.lethal(here);
     if (!lethal && !enemy_seen(world)) return false;
-    // Short of fuel for the simulation, a lethal tile counts as a lost fight.
-    const bool simulate = fuel_ok(safety.fight_cost_estimate() + end_reserve);
-    if (!simulate && lethal) note_shortcut("home-no-fight-sim");
-    if ((lethal && (!simulate || safety.fight(here).self_falls)) || (simulate && visible_threat(world, safety, here) && safety.fight(here, false).lost))
-        return true;
-    if (!simulate || !fuel_ok(2 * safety.fight_cost_estimate() + end_reserve)) {
-        note_shortcut("home-no-pursuit");
-        return false;
-    }
     // Healthy on our own ground, they have no reason to come for us.
-    if (paying_soon(world) || (own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health())) return false;
+    const bool pursued = !paying_soon(world) && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health());
     const bool linked = partner(world) != nullptr;
-    const auto t = safety.pursuit(here, params::pursuit_steps, linked);
-    return t.lost || (linked && t.self_falls);
+    const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal);
+    return t.lost || ((lethal || linked) && t.self_falls);
 }
 
 // open_for_us as packed row-major bits, read without host calls; null if the export's layout is

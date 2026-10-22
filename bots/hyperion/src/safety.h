@@ -292,11 +292,11 @@ public:
     std::uint64_t query_cost_estimate();
     // At most what building the threats costs, 0 once built.
     std::uint64_t build_cost_estimate();
-    // Us and the allies we see near p, striking first, against every visible enemy within
-    // `approach` steps of its reach, each joining once it has walked into reach, while the camps
-    // in reach of p keep hitting us: lost means they win even if we stand and fight. `falls` as
-    // for fight().
-    Trade pursuit(vec2 p, int approach, bool falls = true);
+    // The fight if we stay at p: us and the allies near p against the enemies who can strike p
+    // now (the unseen ones only if a visible one can, or `unseen`), joined by every visible enemy
+    // within `approach` steps of its reach once it has walked into reach, while the camps in reach
+    // of p keep hitting us. `falls` as for fight(); without walkers or camps it is fight(p).
+    Trade stand(vec2 p, int approach, bool falls, bool unseen);
     // Their turns for the visible enemies and camps to kill us at p if we never act (channelling),
     // each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
     int turns_to_kill_idle(vec2 p, int horizon);
