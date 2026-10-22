@@ -242,3 +242,27 @@ separated by A/B:
   disagreed with the rate). `rate()` keeps a 1-round floor as a guard.
 - A carrier whose only walkable altar is the one `carry_bag` gave up on stops avoiding it and banks there again
   (`submit_here` judges it again); `carry_bag`'s crystal-hop alternative never leads back to the altar it leaves.
+
+## 87: phase 2-3 audit fixes (2026-10-22): retaliation sums, Durability and stunned camps in danger
+
+Against 86: 49.1% of 1094 (ladder 45.7, gen 48.8, gen-s1 49.8), out-of-fuel turns 4428 vs 3980. In steps: the first
+four items 50.9% against 86 (3888 vs 3810); Durability 48.4% against those (4364 vs 3947); stunned camps 49.8% against
+Durability (4358 vs 4151). Level, kept as rule fixes. On the 100M wide bench Durability costs +0.01% on the 11 of 52
+games it leaves identical; the extra out-of-fuel turns come from changed play.
+
+- Strike search: Ren's retaliation sums over the plan (`Node::hurt`). Attacks, unit and ground casts, landings and
+  woken camps' hits are each checked against health less what the plan has taken; a ground cast is refused on the
+  summed retaliation of all it hits. A cast at an unseen enemy subtracts its retaliation from the worth (a suicidal
+  one is a flag, no longer a negative worth).
+- Pack zones are rebuilt after the ward's re-read of vision: continue_recall's want_home had built them before it on
+  most turns.
+- A carrier with no walk to an altar (a crystal's pocket) recalls to bank by way of spawn.
+- `lethal` judges against our live health and shield, re-read after each refresh (it read turn-start health, no
+  shield).
+- Fight simulation: Durability (`Fighter::taken`) cuts each hit before the shield (probe-durability-shield), in
+  hurt/spill and the quiet paths; `overwhelmed`'s lower bound scales by our side's lowest taken; camp damage is kept
+  before our Durability, which hurt() applies. No early-exit mismatches over the 52 bench games.
+- Stunned camps: an awake member in sight with a stun skips the next camp phase in next-turn danger
+  (`camp_damage(p, true, true)`: damage_bound, damage_ceiling, worst_damage, threatened, turn order's escape, the
+  search's end-tile camp price), read again after our casts in refresh(). Fight simulations, camp exits, routing and
+  upkeep still count it.

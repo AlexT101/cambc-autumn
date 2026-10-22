@@ -139,6 +139,9 @@ Against hecate-v1, 1010-2698 games. Three ports were kept (CHANGES 21).
   drafts the guard, built after the search, hit its fuel gate twice as often.
 - Enemy two-turn chain in threat_strike (w2-chain): 47.1%. `Safety::trapped` as a want_home trigger and guard
   (w2-trapped): 46.7%, out-of-fuel turns +60% (up to 24 tiles a turn at ~3-4k).
+- Audit phases 2-3 (2026-10-22, CHANGES 87): Varg's attacks skipping any target whose splash touches a sleeping
+  camp was a ban where the search prices wakes; held for a priced version (wake cost on champion hits, waking camp
+  targets ranked last), untested. The two-turn chain was not retried (w2-chain above).
 - Not fixed: retreat_step walks back into an Elk's reach when the way home passes it (recall_outruns ignores camps);
   idle turns under a Golem (dense-camps). Untried: count a Heart of Ruin landing as a cast only when it hits something.
 

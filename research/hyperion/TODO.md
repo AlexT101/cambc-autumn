@@ -40,6 +40,12 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
   enemy tributes a big bag (`Altar::lock_tiles()` as goals); spell-clear pricing (`spell_clear_rounds`) tested both
   ways; probabilistic `threatened()` removed (risky: it gates recalls). Ren's specials change only on ladder evidence.
 
+- Open from the 2026-10-22 audit (CHANGES 83-87): enemies revealed by our own walk (strike_after and farm's
+  strike_enemy read only turn-start sightings; measure the fuel); capture_taken counting allies bound elsewhere;
+  camps killed mid-turn still walls in approach fields; Varg's splash waking camps, priced; enemy stun status and our
+  own mid-turn health in Safety's fights; per-owner enemy ward sight through `sdk_wards`/`sdk_ward_vision`; one
+  turn-order scale for teacher and banded champions (test drafts only).
+
 ## Don't remove
 
 These have evidence behind them: `step_guard`, `pursuit`, `threat_strike`; Monolith sieges; kite on shared-gem maps.
