@@ -206,6 +206,11 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
     `siege_candidate` 4%.
   - Turns over 90k: want_home 21%, simulations 20%, step_guard 19%, the strike search 16%, world 12%, prey 10%.
   - The worst turns are Heart of Ruin strike searches of up to 325k.
+- **Fuel merge 1** (2026-10-22, fuel/merge-1: fight-sim, strike-reach, farm-world; CHANGES 60-63). Wide bench, 52
+  test-draft games against hecate, vs main bbf6f05.
+  - At 100M: 52/52 identical. Total fuel -4.26%; mean 35.3k -> 33.8k, p50 32.5k -> 30.8k, p90 55.6k -> 53.8k,
+    p99 106.8k -> 100.1k, max 452k -> 439k; turns over 100k 4147 -> 3156 (1.32% -> 1.00%).
+  - At the real budget: out-of-fuel turns 1611 -> 1062 (hecate 279); mean 35.9k -> 34.0k.
 - Stale-plan drop alone (2026-10-22, f4eee8f; kept and merged without an A/B, CHANGES 59). A strike search that ran out
   of fuel resumes next round and carried out last round's plan (all real-budget SRCH-REFUSED lines); now it throws
   StaleTurn before acting, and main.cpp replays the round fresh on the fuel left. Bench 16/16 identical at 100M.

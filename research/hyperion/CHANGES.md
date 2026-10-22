@@ -401,3 +401,27 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    util.h, ~18 fuel) stop it in each search node and priced tile and every 8 fight half-turns; main.cpp then replays
    the round. Bench 16/16 identical at 100M. Not A/B'd: on 32 test-draft gen-s1 games out-of-fuel turns 419 vs main's
    138, as replays of long fights run out again; kept for after the fuel work.
+60. 2026-10-22 (not yet submitted). Fight simulation fuel (fuel/fight-sim d883872, e03d15a), behaviour-identical: one
+   damage cap of their side (`their_cap`) gives simulate's exits in one pass, and once our fighter has fallen the rest
+   of ours outliving the cap ends the fight. Callers asking only whether a fight is lost (want_home's visible-threat
+   check, an unlinked pursuit or prey) call `fight(p, false)` / `pursuit(.., false)`, which may end once the rest of
+   ours must outlive it, leaving `Trade::falls_known` false; the memo hands those only to callers without self_falls.
+   Wide bench at 100M 52/52 identical: 26-map total fuel -0.52%, p99 -3.4%, turns >100k 4147 -> 3597; real budget
+   out-of-fuel turns 1611 -> 1460.
+61. 2026-10-22 (not yet submitted). Strike search and Reach fuel (fuel/strike-reach cde27d6..13fa767),
+   behaviour-identical: scratch arrays left unwritten until used (`Unwritten` now in util.h), per-node helpers always
+   inlined, Reach::build reads its window's live camps from a member list found once per tile,
+   StaticMap::groups_near keeps each tile's answers for its last two radii, Safety::threatened() keeps its last tile's
+   answer (cleared by invalidate), and dead camp members are told by one sdk_has_camp call each. Wide bench at 100M
+   52/52 identical: total fuel -0.74%, p99 -2.3%, turns >100k -8.3%.
+62. 2026-10-22 (not yet submitted). Farm and world fuel (fuel/farm-world 46cc0db..813023a), behaviour-identical:
+   Pathing counts live-camp tile flips, and altar access and approach fields skip their diffs while it holds;
+   access_fire reads no tribute tiles while nothing near an altar stirs; a route reuses the last search that found a
+   way while no wall change can move a label below ours; farm refreshes only a group's gold when only its price
+   changed, reads claims from one mask and keeps the walked bank terms; dashers test StaticMap::near_crossable. Wide
+   bench at 100M 52/52 identical: total fuel -2.98%, p50 -4.9%.
+63. 2026-10-22 (not yet submitted). 60-62 merged (fuel/merge-1), with the wide bench and per-phase profile
+   (bench.py --test-draft/--set wide/--per-map, FUEL-PROFILE-2026-10-22.md) and Safety::invalidate clearing
+   unknown_falls_ (a stale bit only lost a memo slot). Wide bench at 100M 52/52 identical vs main: total fuel -4.26%,
+   mean 35.3k -> 33.8k, p50 -5.3%, p99 106.8k -> 100.1k, turns >100k 4147 -> 3156; real budget out-of-fuel turns
+   1611 -> 1062.
