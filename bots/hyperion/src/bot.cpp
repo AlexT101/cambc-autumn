@@ -3379,7 +3379,7 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         memory.siege = false;
         memory.staged_since = -1;
     }
-    strike_after(world, safety);
+    if (strike_after(world, pathing, safety).searched) searched = true, searched_at = my_position(), searched_hit = !my_can_attack();
     pathing.set_guard(nullptr);
     if constexpr (debug_fights)
         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))

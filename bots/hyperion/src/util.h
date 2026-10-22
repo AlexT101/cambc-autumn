@@ -145,6 +145,15 @@ inline bool has_stun(cambc::handle_champion_t c) {
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
     return false;
 }
+// The active shield's value, 0 if none.
+inline float shield_value(cambc::handle_champion_t c) {
+    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+    std::uint32_t n = 0;
+    ok(cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::shield)) return buffs[i].data.shield.value;
+    return 0;
+}
 // The champion cambc::vision::champion_at(p) views: throws if none is visible there.
 inline cambc::handle_champion_t champion_at(vec2 p) {
     static std::uint32_t c;

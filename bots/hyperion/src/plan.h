@@ -43,7 +43,8 @@ bool landing_ready(const World& world);
 // The basic attack from here on the enemy it is worth most against, if any.
 bool strike_enemy(const World& world);
 
-// After the goal: the attack and cast still unspent, from where the walk ended.
-void strike_after(const World& world, Safety& safety);
+// After the goal: the search again from where it left us, for the attack and cast still unspent,
+// without moving.
+Planned strike_after(const World& world, Pathing& pathing, Safety& safety);
 
 } // namespace aph

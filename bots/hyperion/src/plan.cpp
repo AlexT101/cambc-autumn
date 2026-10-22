@@ -22,7 +22,7 @@ constexpr float cast_cost = 40; // a slot's next 8 rounds, as cast_at_enemies pr
 constexpr int max_foes = 8;
 constexpr bool debug_search = true; // SRCH lines and the search's checks, all inside debug_block
 
-// ---- The basic attack from where we stand, for strike_after and strike_enemy ----
+// ---- The basic attack from where we stand, for strike_enemy ----
 
 struct Foe {
     const ChampionBelief* belief;
@@ -123,18 +123,6 @@ Hit best_hit(const Board& b, const Healths& h) {
     return best;
 }
 
-void apply(const Board& b, const Hit& hit, Healths& h) {
-    if (hit.target < 0) return;
-    const vec2 at = b.foes[hit.target].pos;
-    for (int j = 0; j < b.n; ++j)
-        if (j == hit.target || (b.splash && h[j] > 0 && dist(b.foes[j].pos, at) <= 1)) h[j] -= b.strength;
-    // Cassi and Issac die together.
-    for (int j = 0; j < b.n; ++j)
-        if (h[j] <= 0.01f && b.foes[j].belief->facts().passive == Passive::linked_pair)
-            for (int k = 0; k < b.n; ++k)
-                if (b.foes[k].belief->facts().passive == Passive::linked_pair) h[k] = 0;
-}
-
 bool attack(const Board& b, const Hit& hit) {
     if (hit.target < 0) return false;
     try {
@@ -152,26 +140,6 @@ bool use_slot(int slot) {
         return false;
     }
 }
-
-// The shield cast left for the turn's end, over its duration, capped by what could hit us at p.
-float shield_worth(const World& world, Safety& safety, int slot, vec2 p) {
-    if (slot < 0) return 0;
-    float amount = 0;
-    try {
-        amount = my_shield(slot);
-    } catch (const cambc::error&) {
-        return 0;
-    }
-    return std::min(amount, static_cast<float>(world.me().facts().abilities[slot].duration) * safety.damage_bound(p));
-}
-
-// Whether the search valued an enemy cast from its start tile this turn: strike_after casts there
-// if the goal did not walk.
-struct Valued {
-    int round = -1;
-    vec2 at{-1, -1};
-    bool any = false;
-} valued;
 
 const Field* goal_field(const World& world, Pathing& pathing, const Intent& intent) {
     if (intent.to_altar) return &pathing.to_any_altar();
@@ -237,7 +205,7 @@ using UnitHealths = std::array<float, max_units>;
 struct Unit {
     const ChampionBelief* belief = nullptr; // foes
     vec2 pos;
-    float health = 0; // a foe's with its shield
+    float health = 0, shield = 0; // a foe's health with its shield, and the shield
     float retaliation = 0, partner = 1e9f, bag = 0;
     bool foe = true, spawn = false, stunnable = false, recall = false;
     float stun = 0;                             // Marcella's armed attack's stun
@@ -392,7 +360,7 @@ struct Search {
     float strength = 0, health = 0, step = 0, dash_cost = 0, shield_amount = 0;
     int range = 1, land_radius = 0;
     bool melee = true, splash = false, vendetta = false, lands = false, walks = false, moves = true;
-    bool can_walk = false, can_attack = false, can_cast = false;
+    bool can_walk = false, can_attack = false, can_cast = false, walked_first = false;
     int reset = -1, dash = -1, shield = -1, heal = -1;
     bool reset_ready = false, dash_ready = false, arms = false;
     struct Spell {
@@ -547,7 +515,7 @@ struct Search {
         who = tables.heal_who[first ? h0 : c];
         return tables.heal_at[first ? h0 : c];
     }
-    // What the shield would absorb at p over its turns, as shield_worth prices it.
+    // What the shield would absorb at p over its turns.
     float shield_at(vec2 p) const {
         return std::min(shield_amount, static_cast<float>(f.abilities[shield].duration) * safety.damage_bound(p));
     }
@@ -804,6 +772,8 @@ void Search::read_spells() {
         if (!world.me().ability_ready(s, world.round)) continue;
         if ((a.kind != AbilityKind::damage && a.kind != AbilityKind::stun) || (a.target != Targeting::unit && a.target != Targeting::ground))
             continue;
+        // After the goal's walk, the walk has taken an excludes-walking cast.
+        if (a.excludes_walking && walked_first) continue;
         float raw = 0;
         try {
             raw = my_damage(s);
@@ -822,10 +792,10 @@ void Search::read_spells() {
             try {
                 lost = raw > 0 ? my_damage_to(s, e.handle) : 0.0f;
             } catch (const cambc::error&) {
-                lost = std::min(raw, e.health);
+                lost = std::min(raw, x.health - x.shield);
             }
             // Health lost after the shield, which x.health counts.
-            x.spell[s] = e.shield <= 0 ? lost : lost > 0 ? lost + e.shield : std::min(raw, e.shield);
+            x.spell[s] = x.shield <= 0 ? lost : lost > 0 ? lost + x.shield : std::min(raw, x.shield);
             x.spell_stun[s] = a.stuns && x.stunnable ? stun_worth(world, e, raw > 0) : 0.0f;
             x.suicidal[s] = raw > 0 && x.retaliation >= health;
             if (sp.unit && x.cast_legal == 0) x.cast_legal = viewers(x.pos, ability_range);
@@ -986,6 +956,8 @@ bool Search::read() {
     can_attack = state.contains(cambc::champion_state::can_attack);
     can_cast = state.contains(cambc::champion_state::can_cast);
     health = record.health;
+    // Off our start tile with the cast unspent, the goal walked: this is the search after it.
+    walked_first = here != world.me().pos;
     strength = record.strength * damage_scale(f.passive, health, record.max_health);
     moves = !intent.anchored;
     walks = intent.walks && can_walk;
@@ -1012,21 +984,25 @@ bool Search::read() {
         if (foes == max_foes) break;
         if (!e.alive || !e.visible || e.stats_round != world.round || dist(here, e.pos) > reach) continue;
         bool stunned = false, recall = false;
-        if (stuns || (casts && e.channel == Channel::recall)) {
-            try {
-                if (!visible_record(e.handle)) continue;
-                stunned = stuns && has_stun(e.handle);
-                recall = casts && e.channel == Channel::recall
-                         && aph::kept_recall(e.handle, e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
-            } catch (const cambc::error&) {
-                continue;
-            }
+        float hp = 0, shield = 0;
+        // Read live: after the goal, our hits this turn have landed.
+        try {
+            const auto* record = visible_record(e.handle);
+            if (!record) continue;
+            hp = record->health;
+            shield = e.shield > 0 ? shield_value(e.handle) : 0.0f;
+            stunned = stuns && has_stun(e.handle);
+            recall = casts && e.channel == Channel::recall
+                     && aph::kept_recall(e.handle, e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
+        } catch (const cambc::error&) {
+            continue;
         }
         auto& x = u[foes];
         x = Unit{};
         x.belief = &e;
         x.pos = e.pos;
-        x.health = e.health + e.shield;
+        x.health = hp + shield;
+        x.shield = shield;
         x.retaliation = e.retaliation();
         x.partner = linked_partner_health(world, e);
         x.bag = params::gem_value * static_cast<float>(pair_gems(world, e));
@@ -1058,7 +1034,7 @@ bool Search::read() {
             for (int i = 0; i < foes; ++i) {
                 auto& x = u[i];
                 if (dist(here, x.pos) > grid_r + land_radius) continue;
-                const float lost = raw > 0 ? my_damage_to(dash, x.belief->handle) : 0.0f, sh = x.belief->shield;
+                const float lost = raw > 0 ? my_damage_to(dash, x.belief->handle) : 0.0f, sh = x.shield;
                 x.land = sh <= 0 ? lost : lost > 0 ? lost + sh : std::min(raw, sh);
                 x.land_stun = a.stuns && x.stunnable ? stun_worth(world, *x.belief, raw > 0) : 0.0f;
             }
@@ -1869,21 +1845,6 @@ bool strike_possible(const World& world) {
         }
 
     mark(2);
-    // A cast worth its price from the start tile.
-    valued = {world.round, here, false};
-    for (const auto& sp : S.spells) {
-        if (sp.slot < 0) continue;
-        for (int t = 0; t < S.foes && sp.unit; ++t)
-            valued.any |= (S.u[t].cast_legal & gbit(S.cell(here))) && !S.u[t].suicidal[sp.slot]
-                          && S.u[t].spell[sp.slot] + S.u[t].spell_stun[sp.slot] > cast_cost;
-        if (!sp.ground) continue;
-        const Node root = S.root();
-        for (int q = 0; q < S.n_distinct && !valued.any; ++q) {
-            bool ok;
-            valued.any |= S.centre_value(tables.centres[tables.distinct[q]], sp.slot, root, ok) > cast_cost && ok;
-        }
-    }
-
     if constexpr (debug_search) {
         debug_block({
             // The exhaustive enumerator must agree with the search on every end tile; the old
@@ -2047,40 +2008,30 @@ bool strike_possible(const World& world) {
     return out;
 }
 
-[[gnu::flatten]] void strike_after(const World& world, Safety& safety) {
-    if (!world.me().alive || world.is_stale()) return;
+Planned strike_after(const World& world, Pathing& pathing, Safety& safety) {
+    if (!world.me().alive || world.is_stale()) return {};
     const auto state = my_state();
     if (state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::recalling)
         || state.contains(cambc::champion_state::teleporting))
-        return;
-    if (!state.contains(cambc::champion_state::can_attack) && !state.contains(cambc::champion_state::can_cast)) return;
-    Board b;
-    const auto& f = world.me().facts();
-    if (enemy_seen(world) && read_board(world, b, f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0))) {
-        Healths h = b.healths();
-        bool attacked = !b.attack;
-        if (b.attack) {
-            const Hit a = best_hit(b, h);
-            attacked = attack(b, a);
-            apply(b, a, h);
-        }
-        if (attacked && b.reset >= 0) {
-            const Hit again = best_hit(b, h);
-            if (again.target >= 0 && again.value > shield_worth(world, safety, b.shield, b.here) && use_slot(b.reset)) attack(b, again);
-        }
-    }
-    if (!state.contains(cambc::champion_state::can_cast)) return;
-    // A cast the search valued for a walk the goal did not take, or one a walk allows.
+        return {};
+    const auto& self = world.me();
+    const auto& f = self.facts();
     const vec2 here = my_position();
-    if (valued.round == world.round && valued.at == here) {
-        if (valued.any) cast_at_enemies(world);
-        return;
+    // Only a hit to make: a heal or shield alone is left to the turn's end.
+    const bool cast = state.contains(cambc::champion_state::can_cast);
+    const int basic = f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0);
+    int reach = state.contains(cambc::champion_state::can_attack) ? basic : -1;
+    for (int s = 0; s < 2 && cast; ++s) {
+        const auto& a = f.abilities[s];
+        if (!self.ability_ready(s, world.round)) continue;
+        // A reset gives back a spent attack.
+        if (a.kind == AbilityKind::attack_reset) reach = std::max(reach, basic);
+        else if (a.hits_enemies() && !a.lands() && !(a.excludes_walking && here != self.pos)) reach = std::max(reach, a.reach());
     }
-    if (here == world.me().pos) return;
-    bool walk_allows = false;
-    for (int s = 0; s < 2; ++s)
-        walk_allows |= f.abilities[s].hits_enemies() && !f.abilities[s].excludes_walking && world.me().ability_ready(s, world.round);
-    if (walk_allows) cast_at_enemies(world);
+    if (reach < 0 || !enemy_seen(world) || !enemy_within(world, here, reach)) return {};
+    Intent stay;
+    stay.anchored = true;
+    return plan_strikes(world, pathing, safety, stay);
 }
 
 [[gnu::flatten]] bool strike_enemy(const World& world) {
