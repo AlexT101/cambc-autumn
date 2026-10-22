@@ -329,6 +329,44 @@ Shipped changes are in [hecate/CHANGES.md](hyperion/CHANGES.md).
   attack and cast, so the replay is cheap and the champion acts every round; dropping the plan makes every replay a
   full turn that runs out again, often before acting. Both kept (184fdba) on the bet that heavy fight turns will
   fit a turn once their fuel is fixed; until then they cost turns in long fights. Not A/B'd.
+- Strike pricing (2026-10-22, fuel/strike-price e4727e7, 88e5a0b, 821b648; kept and merged, CHANGES 78). Goal field
+  only when 2+ end tiles compete, foes every candidate removes or with Strike damage 0 skipped in ranking, factor()
+  only with a Heart of Ruin, add and max fused. On 4c6cb30 52/52 identical: total -0.08%, price phase -13.8%.
+- Codegen (2026-10-22, no commit). cambc builds with -O3 -msimd128 -mbulk-memory -fwasm-exceptions through the repo's
+  cmake/CMakeLists.txt, but the ladder builds only src/ with its own copy, so flags can't ship. Locally: -flto (with
+  the wasm EH options at link, else EH breaks) -1.6%, inline-threshold=1000 -0.8%, a single-file build -0.3%, -O2
+  +0.3%, -Os +6.9%. The disassembly has hot loops fully inlined and no spills or EH in hot paths: the cost is wasm's
+  stack-machine instruction count (40% local.get/set). wasi-sdk-33's llvm-objdump.exe works on the module.
+- Wave-1c fuel gates removed (2026-10-22, fuel/no-gates-1c; held). On 2c3f771 at 100M 52/52 identical, total -0.70%.
+  A/B vs 2c3f771 48.5% of 1094 (45.6-51.5), out-of-fuel turns 16593 vs 3270 (5.1x). The culprit is pick_up's
+  farm-loop gate (restoring it alone: out-of-fuel turns on the 2 worst maps 1788 -> 96, main 61); the ward gate is a distant second.
+- Farm loop ungated (2026-10-22, fuel/farm-ungate a9d2b14 exact, 8f041c9 ungate + limit; not merged). The worst case
+  is the per-group loop on many-group maps (gen-band-102105911: 132 groups, 44k a call, ~120 pruned groups at ~300
+  each), not the from-here field (21 builds). A limit of 12 fresh clearing estimates a call binds 0.46%, but real
+  budget out-of-fuel turns on 6 heavy maps 2193 vs main's 416: the gate trims the loop on most turns there (15,229
+  fires in 12 games).
+- Farm loop best-first (2026-10-22, fuel/farm-bestfirst 3f3861a; not merged). A bound pass visiting highest bound
+  first costs ~210-235 a group (touching a group is the cost: loads, versions, bank terms): wide +3.8% mean. Needs
+  spatial buckets or an order kept across turns.
+- Prey (2026-10-22, no merge). ~5k a call (p99 28.5k); heavy calls are one key and one sim. Bound key first is not
+  exact (1 case), and the threat and Reach builds it skips are paid later in the turn (total -0.00%, p99 +1.4%).
+  Settling from covering memo entries saves ~0.05%, and the fight sim is not monotone (2 of ~660 settlements wrong).
+- Fight sim setup (2026-10-22, no commit). make_slot is already cached per turn. Non-plain act() (shield kits) is 44%
+  of sim fuel; sims that reach the horizon are 16% of sims and 37% of sim fuel; gating play_quiet +0.04%.
+- Strike == Reach shortcut (2026-10-22, fuel/strike-reach-eq 7a781ac; not merged). The exact condition (not Varg; no
+  ally, blocked or camp tile within the path radius; no wall or bush within sight reach) holds on 16% of builds with
+  0 mismatches, but the check costs more than it saves (+0.19%): a build's ~1k fixed work is the cost, not its tile
+  sets, and still enemies already reuse sets.
+- Reach builds (2026-10-22, no commit). Tile sets are recomputed in 98% of builds, since 91% have a camp in the 9x9
+  window (`sets_reusable_ = !camps`); the live-camp spot loop is ~400-480 a build. Grouping spots per camp group
+  (+0.48%), also without its cache (+0.27%): both dearer.
+- **Fuel merge 5** (2026-10-22, fuel/merge-5: strike-price; CHANGES 79). Wide bench vs merge 4 (2c3f771).
+  - At 100M: 52/52 identical. Total -0.08%; p99 91.7k -> 91.3k, turns over 100k 1981 -> 1944.
+  - At the real budget: out-of-fuel turns 450 -> 530 (23 games diverge; gen-chambers-102106111 b 22 -> 91).
+  - Vs hecate: 65.7% of 1094 (62.9-68.5; ladder 71.4, gen 65.8, gen-s1 64.8); out-of-fuel turns 2951 in 513 games vs
+    1967 in 457.
+  - Vs bbf6f05 (main at the session's start): 54.2% of 1094 (51.2-57.1; ladder 55.7, gen 53.5, gen-s1 54.7);
+    out-of-fuel turns 3323 in 511 games vs 8616 in 672 (-61%).
 - Savings rounds, byte-identical at 100M: round 1 −11% a turn; round 2 (bush clusters grown in the warm-up, measured
   worst costs in the estimates); exact fight simulation (fighters made once a turn, quiet turns reused; trade 4.7k ->
   4.0k a call); Reach (ways kept per recipe, static windows once per tile, lazy builds); WASM-aware (−4.2%); host-op

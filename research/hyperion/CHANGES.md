@@ -493,3 +493,13 @@ nemesis-v2, all maps both sides (main = replays/allmaps 390 games; fresh = repla
    76 at 100M 37/52 identical, p99 93.8k -> 91.7k, turns >100k 1981. Real budget out-of-fuel turns 868 -> 450. Vs
    hecate 65.1% of 1094 (62.2-67.8; ladder 68.6, gen 65.8, gen-s1 63.9), out-of-fuel turns 3130 vs 1864 (merge-3:
    63.9%, 4463 vs 1877). Vs merge-3 (4c6cb30) 50.7% of 1094 (47.8-53.7), out-of-fuel turns 3313 vs 4807 (-31%).
+78. 2026-10-22 (not yet submitted). Strike pricing fuel (fuel/strike-price e4727e7, 88e5a0b, 821b648),
+   behaviour-identical: the goal field is read only when two or more end tiles compete, each tile's gain once
+   (`Tile::gain`); a foe every candidate removes, or whose Strike damage is 0, is skipped in the ranking; the factor()
+   pass runs only with a Heart of Ruin; zero-damage blows skip add/top, and add and max are fused. On 4c6cb30 wide
+   bench at 100M 52/52 identical vs merge-3: total -0.08%, price phase -13.8% (71.3M -> 61.5M).
+79. 2026-10-22 (not yet submitted). 78 merged (fuel/merge-5). Wide bench at 100M vs merge-4 52/52 identical: total
+   -0.08%, p99 91.7k -> 91.3k, turns >100k 1981 -> 1944. Real budget out-of-fuel turns 450 -> 530 (23 games diverge;
+   gen-chambers-102106111 b alone 22 -> 91). Vs hecate 65.7% of 1094 (62.9-68.5; ladder 71.4, gen 65.8, gen-s1
+   64.8), out-of-fuel turns 2951 vs 1967. Vs bbf6f05 (main at the session's start) 54.2% of 1094 (51.2-57.1),
+   out-of-fuel turns 3323 vs 8616 (-61%).
