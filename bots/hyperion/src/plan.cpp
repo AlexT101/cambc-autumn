@@ -1613,13 +1613,6 @@ bool strike_possible(const World& world) {
 
     // Price the end tiles best bound first, the bound being hits and progress less the camps;
     // then each foe's Reach blow, largest Strike share first, while the tile can still win.
-    const Field* field = S.walks ? goal_field(world, pathing, intent) : nullptr;
-    const int here_steps = field ? field->at(here) : static_cast<int>(unreachable);
-    const auto gain_to = [&](vec2 p) {
-        if (here_steps == unreachable) return 0.0f;
-        const int c = field->at(p);
-        return c == unreachable ? 0.0f : static_cast<float>(here_steps - c) * S.step;
-    };
     struct Striker {
         const ChampionBelief* e;
         const Strike* strike;
@@ -1658,7 +1651,7 @@ bool strike_possible(const World& world) {
     // the shield, bounded by the shield's whole amount until the tile is priced.
     struct Tile {
         int c;
-        float bound, total, shield;
+        float bound, total, shield, gain;
         bool exact, done, keep;
         std::int8_t entry;
     };
@@ -1687,9 +1680,17 @@ bool strike_possible(const World& world) {
         float top = -1e30f;
         if (S.has >> c & 1) top = S.best[c].top();
         if (S.kept_has >> c & 1) top = std::max(top, tables.kept[c].top() + shield_top);
-        const float bound = top + gain_to(S.tile(c));
-        tiles[nt++] = {c, bound, bound, 0, false, false, !(S.has >> c & 1), 0};
+        tiles[nt++] = {c, top, top, 0, 0, false, false, !(S.has >> c & 1), 0};
     });
+    // Progress along the goal walk only ranks tiles against each other: a lone tile is chosen
+    // whatever it adds.
+    if (const Field* field = nt >= 2 && S.walks ? goal_field(world, pathing, intent) : nullptr)
+        if (const int here_steps = field->at(here); here_steps != unreachable)
+            for (int i = 0; i < nt; ++i) {
+                auto& t = tiles[i];
+                if (const int c = field->at(S.tile(t.c)); c != unreachable) t.gain = static_cast<float>(here_steps - c) * S.step;
+                t.total = t.bound = t.bound + t.gain;
+            }
     float best_total = -1e30f;
     int chosen = -1, queries = 0, priced = 0, share_stops = 0, bound_stops = 0;
     bool capped = false;
@@ -1713,7 +1714,7 @@ bool strike_possible(const World& world) {
             ++bound_stops;
             continue;
         }
-        const float base = gain_to(p) - camp;
+        const float base = t.gain - camp;
         const int nk = gather(t.c);
         bool kept = false;
         for (int j = 0; j < nk; ++j) kept |= cand[j].keep;
@@ -1798,7 +1799,7 @@ bool strike_possible(const World& world) {
             t.keep = cand[arg].keep;
             t.entry = cand[arg].entry;
             t.shield = 0;
-            t.total = cand[arg].raw - cand[arg].d + gain_to(p) - camp_at(p);
+            t.total = cand[arg].raw - cand[arg].d + t.gain - camp_at(p);
             if (t.total > best_total) best_total = t.total, chosen = i;
         }
 
