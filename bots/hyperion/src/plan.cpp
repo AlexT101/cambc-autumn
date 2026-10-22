@@ -1717,7 +1717,8 @@ bool strike_possible(const World& world) {
         const float base = t.gain - camp;
         const int nk = gather(t.c);
         bool kept = false;
-        for (int j = 0; j < nk; ++j) kept |= cand[j].keep;
+        std::uint16_t all_removed = 0xffff;
+        for (int j = 0; j < nk; ++j) kept |= cand[j].keep, all_removed &= cand[j].removed;
         float sh = shield_top;
         int arg = 0;
         const auto top = [&] {
@@ -1727,6 +1728,11 @@ bool strike_possible(const World& world) {
             return x + base;
         };
         const auto add = [&](int enemy, float b, int hor) {
+            if (hor < 0) {
+                for (int j = 0; j < nk; ++j)
+                    if (!(cand[j].removed >> enemy & 1)) cand[j].d += b;
+                return;
+            }
             for (int j = 0; j < nk; ++j)
                 if (!(cand[j].removed >> enemy & 1)) cand[j].d += b * factor(cand[j].leaf, hor);
         };
@@ -1734,10 +1740,18 @@ bool strike_possible(const World& world) {
         auto& order = ranked.a;
         int no = 0;
         for (int k = 0; k < ns; ++k) {
-            float most = 0;
-            for (int j = 0; j < nk; ++j)
-                if (!(cand[j].removed >> strikers[k].e->index & 1)) most = std::max(most, factor(cand[j].leaf, strikers[k].hor));
-            const float share = safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].e->pos)) * most;
+            const auto& sk = strikers[k];
+            const int index = sk.e->index;
+            if (all_removed >> index & 1) continue;
+            const float at = sk.strike->at(dist(p, sk.e->pos));
+            if (at <= 0) continue;
+            float most = 1;
+            if (sk.hor >= 0) {
+                most = 0;
+                for (int j = 0; j < nk; ++j)
+                    if (!(cand[j].removed >> index & 1)) most = std::max(most, factor(cand[j].leaf, sk.hor));
+            }
+            const float share = safety_params::hit_given_reach * at * most;
             if (share <= 0) continue;
             int m = no++;
             for (; m > 0 && order[m - 1].first < share; --m) order[m] = order[m - 1];
