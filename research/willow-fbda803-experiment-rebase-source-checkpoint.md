@@ -1,0 +1,16 @@
+# Latest-base isolated experiments source checkpoint
+
+2026-10-23. Two new source-only children of integrated latest canonical aggregate `337f42a54beb5890109e56b755237d8ea0d07abb240d095778f01e2098ab7b39`, whose upstream is fbda803. Parent composition/reconstruction is pinned in `research/willow-latest-fbda803-source-checkpoint.md`. This follows the user's request to continue from the latest Hyperion. Canonical contains neither experiment.
+
+| Child | Aggregate /29-file manifest | `src/bot.cpp` | Full parent delta |
+|---|---|---|---|
+| `bots/variants/willow-fbda803-deadline-stage-work/src` | `42980a43ac4312378b31a609d8f64f2e306dfd25fa8674798d9ed572739a3c27` | `2e9a3e1cd0d7e42fe5c88df1dc3c7cb27384f8ea875733efae832a4b1cfcbe9d` | `371fa1ac9be0df5ddec89e2669c95e2a9e233499e0a3ab75a8930bef29774f4b` |
+| `bots/variants/willow-fbda803-forecast-work/src` | `647a10e00c51290b2ba4a38b4cdc93a5f6c258c331d40cb3b1a23610ddbfeb1d` | `9ff694e9ef78f95b7fb3c0022ca35c9057cc4c652cfd7e42a4ab318b4ff15029` | `db922fa7f78ff82b3c63e89129ed33d4aa5187a1ca4f4a4da1f1c6407f4a35cf` |
+
+Patch files are `research/willow-fbda803-deadline-stage-source.patch` and `research/willow-fbda803-forecast-source.patch`. Corresponding complete manifests replace `.patch` with `-manifest.sha256`. Aggregate recipe from each bot directory: `shasum -a 256 src/* | shasum -a 256`; manifest is the exact first command output. Only `bot.cpp` differs in each child; all28 other files match integrated parent. Directories contain only `src`, no `.cambc`.
+
+Deadline staging is exactly the reviewed48 insertions/2 deletions arm from old aggregate73545517; forecast is exactly the reviewed94 insertions/1 deletion arm from old aggregate0e989629. They were applied as existing full patches onto copies of integrated latest source. A separate normalized-diff comparison removing only path/index/hunk-location headers found **identical full hunk bodies, including unchanged context**, against each old-parent policy delta. No additional holding-capture edits were needed inside either experimental delta: all inherited custom calls already use latest Pathing signatures. Thus each child retains complete latest108, three new upstream performance changes, qualified Willow behavior and optional97 handling.
+
+Old source/checkpoints remain immutable: `research/willow-deadline-stage-source-checkpoint.md` and `research/willow-forecast-formation-source-checkpoint.md` describe exact admission/execution and deliberate conservative exclusions. Staging keeps normal banking unchanged, makes only one strictly safe descent attempt after complete deadline exhaustion, and never forces tribute or loses gems/Focus. Forecast changes only an already-selected ready zero-gain formation move, reuses copied current records, keeps parent upper-bound/strict safety/expiry semantics and actual current-health healing. These children are alternatives, not a combined arm.
+
+Whitespace and stale-signature/conflict-marker checks are clean. No source was staged, committed, built or run; no script/tooling implementation, engine, extraction, canonical or release edit was made while rebasing these children. Source review of latest-base context precedes any Luna runtime. Neither source composition nor the earlier logical activation example claims a performance improvement or a Rows win.

@@ -1,0 +1,89 @@
+diff --git a/bots/hyperion/src/bot.cpp b/bots/variants/willow-fbda803-deadline-stage-work/src/bot.cpp
+index 8d02d7f..7d33175 100644
+--- a/bots/hyperion/src/bot.cpp
++++ b/bots/variants/willow-fbda803-deadline-stage-work/src/bot.cpp
+@@ -1717,6 +1717,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     return false;
+ }
+ 
++bool deadline_stage(World& world, Pathing& pathing, Safety& safety, const Memory& memory, const bitboard* zone);
++
+ // Carrying gems, farming on chains a capture onto the bag: it saves the walk to the altar and
+ // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
+ // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
+@@ -2155,6 +2157,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     const CampBelief* const camp_data = world.camps.data();
+     int* const steps_data = centre_steps.data();
+     const int bag_tribute = bag > 0 ? tribute_turns(bag) : 0;
++    bool deadline_rejected = false;
+     int k = 0;
+     for (; k < evaluated && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
+         const int g = (first + k) % n_groups;
+@@ -2259,8 +2262,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
+             if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
+             const int last = known.to_altar;
+-            return last != unreachable
+-                   && static_cast<float>(steps + wait + capture_rounds() + last + tribute_turns(bag + group.gems)) + clear_rounds > static_cast<float>(left);
++            const bool late = last != unreachable
++                              && static_cast<float>(steps + wait + capture_rounds() + last + tribute_turns(bag + group.gems)) + clear_rounds > static_cast<float>(left);
++            deadline_rejected |= late && gems + gold > 0;
++            return late;
+         };
+         const float worth = gems + gold;
+         if (claimed) {
+@@ -2376,6 +2381,16 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false;
+     if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false;
+     if (best < 0) {
++        if (decision == 'F' && bag > 0 && !banks_bag && deadline_rejected && !struck
++            && evaluated == n_groups && k == evaluated && my_position() == world.me().pos) {
++            const auto state = my_state();
++            if (state.contains(cambc::champion_state::can_move) && state.contains(cambc::champion_state::can_attack)
++                && state.contains(cambc::champion_state::can_cast)) {
++                debug_block({ std::printf("FSTAGE %d %u bag %d left %d\n", world.round, my_handle(), bag, left); });
++                deadline_stage(world, pathing, safety, memory, zone);
++                return true;
++            }
++        }
+         // Cut short before weighing even last turn's choice: walk on towards it.
+         if (k == 0 && memory.farm_group >= 0) memory.claim = memory.farm_group, walk_on(memory.farm_group);
+         return true;
+@@ -2706,6 +2721,37 @@ void forget_pack_zone(const World& world) { pack_zone_state(world).round = -1; }
+         pathing.set_guard(willow_step_guard(world, pathing, safety));
+ }
+ 
++bool deadline_stage(World& world, Pathing& pathing, Safety& safety, const Memory& memory, const bitboard* zone) {
++    for (const auto& altar : world.altars)
++        if (altar.enemy_lock) return false;
++    if (memory.avoid_altar >= 0 && world.round < memory.avoid_until) return false;
++    const auto& field = pathing.to_any_altar();
++    const vec2 here = my_position();
++    const int steps = field.at(here);
++    if (steps == 0 || steps == unreachable) return false;
++    const auto& blocked = pathing.blocked();
++    vec2 best = here;
++    int best_steps = steps;
++    for (const auto d : directions) {
++        const vec2 p = here + d;
++        if (!in_bounds(p) || !test(world.map().open_for_us, p) || test(blocked, p)
++            || (zone && test(*zone, p)) || (pathing.guard() && test(*pathing.guard(), p))) continue;
++        const int next = field.at(p);
++        if (next >= best_steps) continue;
++        const auto risk = support_exposure_raw(world, safety, p, true, true);
++        if (!risk.safe() || risk.stun) continue;
++        best = p, best_steps = next;
++    }
++    world.throw_if_stale();
++    if (best == here) return false;
++    const bool moved = pathing.try_move(best);
++    see_again(world, pathing, safety);
++    world.throw_if_stale();
++    debug_block({ std::printf("FSTAGE-MOVE %d %u %d,%d moved %d steps %d %d\n", world.round,
++        my_handle(), best.x, best.y, moved, steps, best_steps); });
++    return moved;
++}
++
+ // Our walk or dash brought an enemy into sight that could strike us, or that we could strike,
+ // before our next turn.
+ bool see_revealed(World& world, Pathing& pathing, Safety& safety) {

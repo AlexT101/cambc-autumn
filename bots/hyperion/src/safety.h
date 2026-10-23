@@ -200,7 +200,8 @@ struct Threat {
     // Unseen: tiles it can damage or stun, only those near or above `credible_weight`. Visible
     // threats' are drawn by enemy_area().
     bitboard area;
-    // Unseen: distance from `possible` around walls, capped at the reach; reused by the next build.
+    // Unseen: Chebyshev distance from `possible`, as Strike's, capped at unseen_radius(); reused
+    // by the next build.
     const cambc::distance_field* steps = nullptr;
     // Visible: whose blow() places it on the map, its Reach built on first need.
     Safety* owner = nullptr;

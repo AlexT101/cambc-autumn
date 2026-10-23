@@ -331,6 +331,39 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
   (shield kits, mostly Heart of Ruin's scaling) is 44% of simulation fuel, and sims reaching the horizon are 16% of
   sims but 37% of their fuel.
 
+- CHANGES 107-108's ladder deficit (2026-10-23) is fuel, not logic. 107+108 against 90d285e: ladder 36.2% at the real
+  budget (reproduced exactly), but 57.5% of the same 80 games with 100M for both (13 of the 14 maps lost from both
+  sides win at least one back); on two fresh suites of ladder mutations (`mapgen mutate`, one per ladder map, seeds
+  4242 and 9191) 53.8% and 50.0% (107 alone 50.0%, 108 against 107 53.8%). Its lost ladder games capture less
+  (resets +31%, tributed -11%) and die more (+13%); out-of-fuel turns there +21% (585 vs 483, spread over 31 of 56
+  games), on the fresh suites +4-6%.
+- Where 107-108's fuel goes (bench, 6 ladder maps vs hecate, 100M): 107 +2.9% a turn, 108 +0.5%. Almost all of 107 is
+  ad70701's recall end no longer moving an unseen champion to its spawn (+2.8%; the tribute half and the `acted`
+  dating cost nothing measurable; b74c16c reroutes 10 of 12 games at +0.6%, d833089 2 at +0.03%). It hits allies too: ours start a recall every turn end, so an ally out of sight used
+  to turn `inferred` after 5 turns and `work_arrival` gave it no delay; now it stays anchored at its sighting, so
+  `crew_work` stops writing claimed groups off as cleared by the crew and farm prices them in full. The ally half
+  alone is +2.4% on identical replays, all in `farm`; the enemy half costs nothing but changes 5 of 12 games. It is
+  mean cost on farm turns, not the fight turns that run out: 108 with the ally half reverted still had 592 vs 465
+  out-of-fuel turns on the ladder (42.5%). 108's costs are behavioural: `ward_sees` (search legality, +0.5%, p99
+  +2.4%) and the Chebyshev unseen threats (+0.2%). The others (kite, hold deadline, bush camps, hold dating) leave
+  every bench replay identical at <= +0.06%; `can_act_before` reroutes 6 of 12 games at +0.1%.
+
+- Tail profile after 107-108 (2026-10-23, test drafts, 100M; turns whose `decide` used >= 95k on 4 long-fight maps,
+  inclusive meters): step_guard 29.5k (25%), strike search 23.6k (read 8.5k, grow 6.4k, price 7.8k), chase/prey
+  22.5k, want_home 22.3k (`stand` sim 10.2k, `lethal` 6.6k); world update 16.8k before decide (`update_camps` 8.1k,
+  ~420 a group in view). Fight sims 22% (3.6 a turn at ~7.3k). Real-budget OOFs stop in the strike search 33%, farm
+  24%, `strike_after` 16%. A resumed turn spends a median 11.1k of its fresh budget before its own turn starts.
+  Exact cuts kept (16/16 identical, total -0.10%, p99 -0.5%, over-100k 606 -> 587): prey skips a (fight key, delayed)
+  pair it already lost (8.8% of prey sims); `groups_near` dedupes by a stamp (a miss 1.2-3.6k -> 1.0-2.0k on
+  gen-chambers); the release build drops the out-of-fuel printf (~2.5k a resumed turn; local builds still print it).
+  No gain: a per-turn sim memo by exact inputs (only prey's repeats, 1.9% of sims); four cached radii in
+  `groups_near` (-0.01%); noinline around `run()`/`act` for cheaper unwinds. Reusing the first search's read in
+  `strike_after` doesn't pay: it searched 31 times in a gen-chambers game (420k fuel, ~0.01%), once with the state
+  unchanged since the first search (the only exact reuse), 0-3 times on ambush, hooks and hourglass; it holds 16% of
+  OOF stops only because it runs last on heavy turns. Open: one `sdk_camp` read per member in `read_camps`
+  (needs a probe that it reports dead where `has_camp` is false); farm's `is_stale()` return lets act() go on with
+  heal, shield, ward and recall on a stale turn (~5-7k; throwing is a behaviour change).
+
 Tried and no gain (not merged):
 
 - Farm loop: a bound carried across turns (+0.5%; keeping last turn's target would disagree on up to ~29%); best-first
@@ -1004,3 +1037,44 @@ gameplay. Our existing frozen ee1b ready-heal bundle is the corresponding integr
 its earlier published80 result39–41 versus a97ae remains valid for that exact source.
 Keep the forecast experiment on a00fff until its isolated observation is complete.
 Upstream100M diagnostics motivate fuel work but do not replace normal-budget qualification.
+
+### Latest Hyperion base and bounded experiment findings
+
+The user requested the latest Hyperion again. Upstream is now `fbda80314d703877c3929e2dec8211c61f5d1e79`.
+Canonical source aggregate `337f42a54beb5890109e56b755237d8ea0d07abb240d095778f01e2098ab7b39`
+reconstructs exactly from the frozen ee1b audit108 integration plus the three new upstream
+C++ changes: repeated lost chase evaluations are reused, nearby camp groups use stamp
+deduplication, and resumed-turn out-of-fuel printing is Debug-only. These changes are19
+insertions/3 deletions across3 files relative to ee1b. Source identity and preserved Willow
+integration seams are documented in `willow-latest-fbda803-source-checkpoint.md`.
+The frozen new upstream comparator is `bots/baselines/hyperion-upstream-fbda803`, aggregate
+`15dcd64d35c179a726c02d3e775b1e3f263f9a4c33b5a8c745e7b13f66dd802d`.
+No performance result for an earlier source transfers to this integration. Native replay
+rollovers remain the fuel measure; absence of the removed Release print is not evidence
+that no turn exhausted fuel.
+
+The old-base forecast formation arm completed52 Debug games on native five-pick published
+maps. There were zero raw or parsed forecast activations in104 stdout streams; the largest
+stream was717548 bytes, below the1MiB capture limit. This is non-activation, so the planned
+Release80 was not run. The descriptive27–25 result is not competitive qualification.
+Final summary SHA `2f4f9f6782d9405de4ee8abc44cd7d107ab06622f6f8f99f8d2049baa59c328e`
+is in `replays/willow-forecast-formation-vs-a00fff/`; preserve the completed observation.
+
+The Monolith certificate's bounded rejection trace also found no admitted work. In the
+observed nomination only Willow entered the worker list. Her candidate stations could
+not cover every camp member: most failed the Monolith at(1,1), and the two stations that
+reached it failed the Gem Cluster at(0,2). Anchor, exposure and health-reserve checks were
+not reached. All34226 extracted chronological events matched the prior Debug game;
+that does not establish Release fuel parity or feasibility after relaxing the first check.
+Final predicate summary SHA `3af9fae110eaee15a02236d0cd751fe235e9b3b8a983ecbf62dbc6fcd6304457`
+is in `replays/willow-local-monolith-reject-trace/cert-reason-v2/`. No further Monolith
+runtime is scheduled from this arm.
+
+Both remaining experiments have source-only children on the new canonical base:
+deadline staging `42980a43ac4312378b31a609d8f64f2e306dfd25fa8674798d9ed572739a3c27`
+and forecast formation `647a10e00c51290b2ba4a38b4cdc93a5f6c258c331d40cb3b1a23610ddbfeb1d`.
+Their complete policy hunk bodies match the previously reviewed isolated changes exactly;
+see `willow-fbda803-experiment-rebase-source-checkpoint.md`. Neither is canonical or a
+numbered release. New development and testing proceeds from this latest base. The forecast
+arm needs a rejection diagnosis before any policy relaxation; the staging arm needs an
+actual own-view activation witness and normal-budget comparison.

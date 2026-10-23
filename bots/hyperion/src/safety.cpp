@@ -1102,6 +1102,7 @@ bool live_member(const World& world, int group, int member) {
 struct CampSpot {
     std::uint8_t bit, member;
     std::int16_t group;
+    bool bush;
 };
 std::vector<CampSpot> spot_pool;
 std::array<std::uint32_t, 100 * 100> spots_from;
@@ -1396,15 +1397,21 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
             for (int word = 0; word < 2; ++word)
                 for (std::uint64_t bits = word ? camps.hi : camps.lo; bits; bits &= bits - 1) {
                     const int i = 64 * word + std::countr_zero(bits);
-                    const auto& t = camp_tile(world, {origin_.x - win_r + i % win_n, origin_.y - win_r + i / win_n});
-                    if (t.group >= 0 && t.member != 255) spot_pool.push_back({static_cast<std::uint8_t>(i), t.member, t.group});
+                    const vec2 p{origin_.x - win_r + i % win_n, origin_.y - win_r + i / win_n};
+                    const auto& t = camp_tile(world, p);
+                    if (t.group >= 0 && t.member != 255)
+                        spot_pool.push_back({static_cast<std::uint8_t>(i), t.member, t.group, terrain(world.map()).bush(p)});
                 }
             spots_count[oi] = static_cast<std::uint8_t>(spot_pool.size() - spots_from[oi] + 1);
         }
-        Window live;
+        // A camp in a bush is unseen from outside its cluster, and a dash path may cross an unseen camp.
+        Window live, solid;
         for (const CampSpot *s = spot_pool.data() + spots_from[oi], *end = s + spots_count[oi] - 1; s != end; ++s)
-            if (live_member(world, s->group, s->member)) live |= tables.bits[s->bit];
-        pass &= ~live, land &= ~live;
+            if (live_member(world, s->group, s->member)) {
+                live |= tables.bits[s->bit];
+                if (!s->bush) solid |= tables.bits[s->bit];
+            }
+        pass &= ~solid, land &= ~live;
         units_ |= live;
     }
     const auto walk = [&](Window s) { return s | (dilate(s) & land); };
@@ -1890,8 +1897,11 @@ void Safety::build() {
         t.owner = nullptr;
         const int radius = unseen_radius(reach, tiles);
         auto& field = field_of(e.index);
+        // No walls: ranged attacks and ground casts ignore them, as Strike does, and king steps on
+        // an open board are Chebyshev distance.
+        static const bitboard open;
         clear_board(t.area);
-        field.compute(world_.map().walls, e.possible, t.area, static_cast<std::uint16_t>(radius));
+        field.compute(open, e.possible, t.area, static_cast<std::uint16_t>(radius));
         t.steps = &field;
         if (const auto after = fuel(); after < before) costliest_unseen() = std::max(costliest_unseen(), before - after);
     }
