@@ -1,6 +1,5 @@
 #include "comms.h"
 #include <algorithm>
-#include "support_mailbox.h"
 #include "world.h"
 
 namespace aph::comms {
@@ -20,8 +19,7 @@ namespace {
 //   [48, 56)  claimed group + 1, 0 = none
 //   [56, 59)  claiming ally's index
 //   [59, 62)  sighting write count
-//   [31, 32)  support payload; even rounds Prism requests, odd rounds Willow offers
-//   [62, 64)  support writer round modulo four
+//   [31, 32), [62, 64)  unused
 // The write count makes a sighting rewritten unchanged, with the same parity, still read as new.
 // A claim or a bag is a standing state, rewritten only when it changes or as a reminder.
 struct BitField {
@@ -44,10 +42,8 @@ constexpr std::uint64_t sighting_bits = sight_x.mask() | sight_y.mask() | sight_
 constexpr std::uint64_t bag_bits = bag_fours.mask() | bag_body.mask();
 constexpr std::uint64_t camp_bits = camp_group.mask() | camp_respawn.mask();
 constexpr std::uint64_t claim_bits = claim_group.mask() | claim_body.mask();
-constexpr std::uint64_t support_bits = support_mailbox::bits_mask;
 static_assert((sighting_bits & bag_bits) == 0 && ((sighting_bits | bag_bits) & camp_bits) == 0
               && ((sighting_bits | bag_bits | camp_bits) & claim_bits) == 0);
-static_assert(((sighting_bits | bag_bits | camp_bits | claim_bits) & support_bits) == 0);
 
 // The write count makes a sighting rewritten unchanged still read as new.
 void put_sighting(std::uint64_t& bits, const ChampionBelief& e, int round) {
@@ -69,44 +65,6 @@ struct State {
     int posted = -1;
 };
 State state;
-
-support_mailbox::State support;
-int support_intent_round = -1;
-bool support_intent_value = false;
-int ordinary_read_round = -1;
-bool endpoint_indices_ready = false;
-int prism_index = -1, willow_index = -1;
-
-void cache_endpoint_indices(const World& world) {
-    if (endpoint_indices_ready || !world.ready()) return;
-    for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
-        const auto type = world.allies[i].type;
-        if (type == cambc::champion_type::prism) prism_index = i;
-        if (type == cambc::champion_type::willow) willow_index = i;
-    }
-    // receive() follows a successful World::update() and the main guard; the roster is immutable.
-    endpoint_indices_ready = true;
-}
-
-bool has_support_pair() {
-    return endpoint_indices_ready && prism_index >= 0 && willow_index >= 0;
-}
-
-std::array<const ChampionBelief*, 2> endpoints(const World& world) {
-    std::array<const ChampionBelief*, 2> pair{};
-    if (!has_support_pair()) return pair;
-    pair[0] = &world.allies[prism_index];
-    pair[1] = &world.allies[willow_index];
-    return pair;
-}
-
-void receive_support(const World& world, std::uint64_t bits) {
-    const auto pair = endpoints(world);
-    std::array<support_mailbox::Endpoint, 2> endpoint{};
-    for (int i = 0; i < 2; ++i)
-        if (pair[i]) endpoint[i] = {true, pair[i]->alive, pair[i]->is_self, pair[i]->respawned_round};
-    support.receive(world.round, bits, endpoint);
-}
 
 // Raw reads and writes: the SDK's checked ones cost several times more.
 std::uint64_t read_bits() {
@@ -145,12 +103,8 @@ int dated(int parity) {
 }
 
 [[gnu::flatten]] void receive(World& world) {
-    world.throw_if_stale();
     const auto bits = state.now = read_bits();
     const int round = world.round;
-    ordinary_read_round = round;
-    cache_endpoint_indices(world);
-    if (has_support_pair()) receive_support(world, bits);
     state.fresh = changes(bits);
     if ((state.fresh & sighting_bits) && sight_x.get(bits) != 0) {
         const vec2 pos{sight_x.get(bits) - 1, sight_y.get(bits)};
@@ -172,7 +126,6 @@ int dated(int parity) {
 
 // No teammate acts during our turn: the bits are still those receive() read.
 void send(World& world, bool moved, bool refresh) {
-    if (ordinary_read_round != world.round) return;
     auto bits = state.now;
     const int round = world.round;
     const bool sighted = (state.fresh & sighting_bits) && sight_parity.get(bits) == (round & 1) && sight_x.get(bits) != 0;
@@ -242,34 +195,11 @@ void send(World& world, bool moved, bool refresh) {
             break;
         }
     }
-    world.throw_if_stale();
-    const auto pair = endpoints(world);
-    const int writer = round & 1;
-    if (pair[0] && pair[1] && pair[writer]->is_self) {
-        const bool positive = support_mailbox::publish_value(round, support_intent_round, support_intent_value,
-                                                             pair[0]->alive && pair[1]->alive);
-        support_mailbox::write(bits, round, positive);
-        dirty = true;
-    }
-    world.throw_if_stale();
-    if (dirty) {
-        write_bits(bits, round);
-        support.raw = support_mailbox::raw_bits(bits);
-    }
+    if (dirty) write_bits(bits, round);
 }
 
 void bag(int gems) { detail::posts.my_bag = gems; }
 
 void claim(int group) { detail::posts.mine = group < max_group ? group : -1; }
-
-bool support_request(const World& world) {
-    return has_support_pair() && support.valid(support_mailbox::prism, world.round);
-}
-
-bool support_available(const World& world) {
-    return has_support_pair() && support.valid(support_mailbox::willow, world.round);
-}
-
-void support_intent(int round, bool positive) { support_intent_round = round, support_intent_value = positive; }
 
 } // namespace aph::comms

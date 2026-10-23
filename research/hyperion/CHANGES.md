@@ -487,6 +487,11 @@ The 2026-10-23 audit's items that needed a decision, each A/B'd alone against 10
 - Together against 586586c: 50.6% of 1104 (47.7-53.6; ladder 48.8 of 80, gen 51.8, gen-s1 49.8), out-of-fuel turns
   5204 vs 4917 (+6%). Kept as level.
 
+The Willow-prefixed entries below preserve local branch history and its frozen-source results.
+Unprefixed entries retain upstream history. After integration of cb61eaa, canonical Hyperion is
+the vanilla upstream bot and official Willow work continues in `bots/astraeus`; historical
+references to a canonical source in these local entries refer to that entry's snapshot.
+
 ## Willow 109: coordinated Willow support and local Prism recovery (2026-10-23)
 
 Five-pick maps use Prism / Vesper / Marcella / Willow / Heart of Ruin. Three- and four-pick drafts retain main's
@@ -584,3 +589,18 @@ item and sustainable-crew experiments remain separate.
 
 No new release is implied by this integration. Exact pins, attempts and limits are recorded
 in EXPERIMENTS and `provenance/willow-upstream-c71be8c-20261023-v1/`.
+
+## 111: an ally's stun read with its stats (2026-10-23)
+
+An ally's stun is read with its stats when first seen in a round and kept on the belief. Safety read it live, and once
+our move hid a believed-visible ally (vision is personal) the read threw and lost the rest of the turn.
+
+- Against main, ladder + gen: 50.0% of 592 (ladder 48.8 of 80, gen 50.2), out-of-fuel turns 2339 vs 2481.
+
+## 112: a retreat step out of every reach (2026-10-23)
+
+When no step that keeps or shortens the walk home leaves every reach (`damage_bound` 0, camps included), `retreat_step`
+also takes one that lengthens it and does. A step that only lowers the exposure stays excluded: a pursuer takes it
+back (`fu/retreat`).
+
+- Against main c71be8c: 49.7% of 1104 (46.8-52.7; ladder 48.8, gen 49.4, gen-s1 50.2), out-of-fuel turns 3813 vs 3956.

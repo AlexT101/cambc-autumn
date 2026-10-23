@@ -23,18 +23,13 @@ inline DraftCampCounts count_draft_camps(std::span<const std::uint32_t> words) {
     return counts;
 }
 
-enum class DraftRole { prism, vesper_vale, marcella, ryth, vendetta, heart_of_ruin, willow };
+enum class DraftRole { prism, vesper_vale, marcella, ryth, vendetta, heart_of_ruin };
 
 inline std::array<DraftRole, 5> teacher_draft_roles(DraftCampCounts counts) {
     // A provisional separator inside the observed gap, rather than a recovered teacher constant.
     const bool vendetta = 3ull * counts.members > 10ull * counts.groups;
     return {DraftRole::prism, DraftRole::vesper_vale, DraftRole::marcella,
             vendetta ? DraftRole::vendetta : DraftRole::ryth, DraftRole::heart_of_ruin};
-}
-
-inline std::array<DraftRole, 5> willow_five_pick_roles() {
-    return {DraftRole::prism, DraftRole::vesper_vale, DraftRole::marcella,
-            DraftRole::willow, DraftRole::heart_of_ruin};
 }
 
 } // namespace aph

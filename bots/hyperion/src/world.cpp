@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <cstring>
 #include <span>
-#include <stdexcept>
 #include <tuple>
 
 namespace aph {
@@ -393,61 +392,6 @@ const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const {
         }
     }
     return out;
-}
-
-std::span<const StaticMap::StationCampMember> StaticMap::willow_station_members_near(vec2 p) const {
-    // Keep groups_near's per-evaluation scratch/cache effects even when this tile's member list is warm.
-    const auto& nearby = groups_near(p, max_camp_reach);
-    if (!in_bounds(p)) return {};
-    constexpr std::size_t page_side = 8;
-    const std::size_t page_width = (static_cast<std::size_t>(width) + page_side - 1) / page_side;
-    const std::size_t page_height = (static_cast<std::size_t>(height) + page_side - 1) / page_side;
-    if (willow_station_member_pages_.empty())
-        willow_station_member_pages_.resize(page_width * page_height);
-    const std::size_t page_index = static_cast<std::size_t>(p.y) / page_side * page_width
-                                 + static_cast<std::size_t>(p.x) / page_side;
-    if (!willow_station_member_pages_[page_index])
-        willow_station_member_pages_[page_index] = std::make_unique<StationCampMemberPage>();
-    const std::size_t in_page = (static_cast<std::size_t>(p.y) % page_side) * page_side
-                              + static_cast<std::size_t>(p.x) % page_side;
-    auto& range = willow_station_member_pages_[page_index]->ranges[in_page];
-    if (range.ready) {
-        if (range.count == 0) return {};
-        return {willow_station_member_pool_.data() + range.offset, range.count};
-    }
-
-    // Build off to the side so a failed scan/allocation never publishes a partial entry.
-    std::vector<StationCampMember> pending;
-    for (const int g : nearby) {
-        const auto& members = groups[g].members;
-        for (std::size_t i = 0; i < members.size(); ++i) {
-            const auto& m = members[i];
-            const int distance = dist(p, m.pos);
-            if (m.strength <= 0 || distance > m.reach) continue;
-            pending.push_back({static_cast<std::size_t>(g), i,
-                               std::max(0, m.reach + 1 - distance)});
-        }
-    }
-
-    const std::size_t offset = willow_station_member_pool_.size();
-    if (!pending.empty()) {
-        const std::size_t max_size = willow_station_member_pool_.max_size();
-        if (offset > max_size || pending.size() > max_size - offset)
-            throw std::length_error("Willow station camp-member index is too large");
-        const std::size_t required = offset + pending.size();
-        if (willow_station_member_pool_.capacity() < required) {
-            const std::size_t capacity = willow_station_member_pool_.capacity();
-            const std::size_t doubled = capacity == 0 ? 1
-                : capacity > max_size / 2 ? max_size : capacity * 2;
-            willow_station_member_pool_.reserve(std::max(required, doubled));
-        }
-        for (const auto& member : pending) willow_station_member_pool_.push_back(member);
-    }
-    range.offset = offset;
-    range.count = pending.size();
-    range.ready = true;
-    if (range.count == 0) return {};
-    return {willow_station_member_pool_.data() + range.offset, range.count};
 }
 
 const Field& StaticMap::make_ally_field() const {
@@ -1070,7 +1014,6 @@ void World::update() {
         }
     }
     FuelMeter meter{"update"};
-    ++camp_observation_epoch;
     read_vision();
     const auto tributing = tributing_enemies(); // before update_champions ends their channels
     guard("priorities", [&] { read_priorities(updated_round_ != round); });
@@ -1097,7 +1040,6 @@ void World::update() {
 
 [[gnu::flatten]] void World::observe() {
     FuelMeter meter{"observe"};
-    ++camp_observation_epoch;
     read_vision();
     update_champions(false);
     sight_pos_ = clear_pos_ = my_position();
@@ -1220,6 +1162,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.scale = damage_scale(b.facts().passive, b.health, b.max_health);
     b.stats_round = round;
     if (!full && last_seen == round) return; // nothing else changes during our turn
+    if (!enemy && !b.is_self) b.stun_pending = b.facts().passive != Passive::stun_immune && stun_pending(b.handle);
     // Also in observe() for a champion first seen after our move: a recall then still tells when
     // it lands, and its cooldowns show casts made out of sight.
     b.channel = state.contains(cambc::champion_state::recalling)         ? Channel::recall
@@ -1348,7 +1291,6 @@ void World::note_capture(int group, int respawn_round) {
     c.respawn_round = respawn_round;
     c.awake = Awake::asleep;
     c.asleep = 0;
-    c.asleep_read = 0;
     c.holder.reset();
     c.held_since = -1;
     note_stirring(group);
@@ -1604,7 +1546,6 @@ void restore(CampBelief& c, const CampGroup& G, int since) {
     for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
     c.awake = Awake::asleep;
     c.asleep = 0;
-    c.asleep_read = 0;
     ++c.version;
 }
 } // namespace
@@ -1670,11 +1611,6 @@ struct World::CampViews {
 [[gnu::flatten]] void World::update_camp(std::size_t g, bool in_view, CampViews& views) {
     const auto& G = map().groups[g];
     auto& c = camps[g];
-    const bool certify_sleep = me().type == cambc::champion_type::willow;
-    if (certify_sleep) {
-        c.asleep_read = 0;
-        c.asleep_read_epoch = 0;
-    }
 
     if (!in_view) {
         if (c.state == CampState::cleared && c.holder && round >= c.payout_round()) {
@@ -1692,7 +1628,6 @@ struct World::CampViews {
     }
 
     const auto [code, timer] = engine::group_state(G.handle);
-    if (certify_sleep && (code == 1 || code == 2)) c.asleep_read_epoch = camp_observation_epoch;
     const auto previous = c.state;
     const int previous_round = c.state_round;
     const int previous_respawn = c.respawn_round;
@@ -1765,7 +1700,6 @@ struct World::CampViews {
                     continue;
                 }
                 const auto read = engine::camp_awake(m.handle);
-                if (certify_sleep && read == Awake::asleep) c.asleep_read |= bit;
                 striker_awake |= read == Awake::awake;
                 striker_asleep |= read == Awake::asleep;
                 striker_unread |= !read;

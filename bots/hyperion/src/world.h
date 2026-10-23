@@ -5,7 +5,6 @@
 #include <deque>
 #include <memory>
 #include <optional>
-#include <span>
 #include <vector>
 #include "champions.h"
 #include "combat_priority.h"
@@ -143,13 +142,6 @@ struct StaticMap {
     int altar_at(vec2 p) const { return in_bounds(p) ? static_cast<int>(altar_lookup_[tile_index(p)]) - 1 : -1; }
     // Groups with a camp tile within `radius`, seen or not; a scratch vector, valid until the next call.
     const std::vector<int>& groups_near(vec2 p, int radius) const;
-    struct StationCampMember {
-        std::size_t group, member;
-        int depth;
-    };
-    // Static Willow station contributors at p, in groups_near/group-member order. Consume the span
-    // before asking for another tile; later cache misses may grow its backing pool.
-    std::span<const StationCampMember> willow_station_members_near(vec2 p) const;
 
     // Walking steps over static terrain (camps and units ignored).
     const Field& from_ally_spawn() const { return ally_field_ ? *ally_field_ : make_ally_field(); }
@@ -187,15 +179,6 @@ struct StaticMap {
     bitboard drafted_attack_tiles(int group, int member, int range) const;
 
 private:
-    struct StationCampMemberRange {
-        std::size_t offset = 0, count = 0;
-        bool ready = false;
-    };
-    struct StationCampMemberPage {
-        std::array<StationCampMemberRange, 8 * 8> ranges{};
-    };
-    mutable std::vector<std::unique_ptr<StationCampMemberPage>> willow_station_member_pages_;
-    mutable std::vector<StationCampMember> willow_station_member_pool_;
     const DraftPlan* plan_ = nullptr; // matching this map
     mutable std::vector<int> attack_bit_; // per drafted group: its members' first bit in plan_->data
     int drafted_steps(int group, int which) const;
@@ -289,6 +272,9 @@ struct ChampionBelief {
     bool fast_recall = false; // a Home emblem, when last seen: recall takes home_recall_time turn ends
     float taken = 1;          // damage taken per point dealt: durability_taken with a Durability emblem, when last seen
     bool acted = false; // had completed its turn when last read this round
+    // An ally's stun that will take its next turn, read when first seen this round: nothing changes
+    // it during our turn, though our move may take the ally out of sight.
+    bool stun_pending = false;
     // Turn-order priority for priority_round, and from the round after it.
     int priority = 0, next_priority = 0, priority_round = -1;
     int rank = 0; // place in its team's turn order, from the priorities last read
@@ -363,9 +349,6 @@ struct CampBelief {
     // Bit i: striking member i read asleep while the group is not. Only damage wakes it, and it
     // wakes every asleep member, so one seen to wake clears them all. Members past 64 count awake.
     std::uint64_t asleep = 0;
-    // Successful asleep reads for Willow's local escape; observe() expires this certificate.
-    std::uint64_t asleep_read = 0;
-    std::uint32_t asleep_read_epoch = 0;
     int last_damaged_round = -1; // a health drop we saw
     bool member_asleep(std::size_t i) const { return awake == Awake::asleep || (i < 64 && (asleep >> i & 1)); }
     bool maybe_asleep(std::size_t i) const { return awake != Awake::awake || (i < 64 && (asleep >> i & 1)); }
@@ -459,7 +442,6 @@ public:
     }
     int round = 0;
     int first_round = 0; // this instance's first play round
-    std::uint32_t camp_observation_epoch = 0;
 
     std::vector<ChampionBelief> allies; // in handle order, self included
     std::vector<ChampionBelief> enemies;

@@ -817,7 +817,7 @@ void Search::read_geometry() {
     Grid blocked = 0, walls = 0;
     read_into(pathing.blocked(), blocked);
     // Where we stand is never an end to drop: after the goal, it is the only one.
-    // An anchored search only ends on its own tile, which is never guarded.
+    // Unmoved, our own tile is the only end, and never guarded: the guard is not worked out.
     if (const bitboard* guard = moves ? pathing.guard() : nullptr) read_into(*guard, guarded), guarded &= ~gbit(cell(here));
     // Dash paths are blocked by walls, camps, visible enemies (probe-dash-enemy) and the enemy spawn.
     static bitboard foes_seen{cambc::uninitialized};
@@ -954,7 +954,8 @@ void Search::add_unseen(int s) {
     }
 }
 
-// Allies a heal could reach from some tile, each worth the health actually restored.
+// Allies a heal could reach from some tile, each worth what it restores, capped by what could hit
+// it before the slot is ready again. Seen from the start, or from a tile that sees it.
 void Search::read_mates() {
     if (heal < 0) return;
     float amount = 0;
@@ -984,7 +985,7 @@ void Search::read_mates() {
         }
         const float gain = std::min(amount, top - hp);
         if (!worth_healing(amount, gain, hp / top)) continue;
-        const float value = gain;
+        const float value = std::min(gain, static_cast<float>(ability_cooldown) * safety.damage_bound(a.pos));
         if (value <= 0) continue;
         const auto k = static_cast<std::int8_t>(n_mates);
         mates[n_mates++] = &a;
@@ -1933,7 +1934,7 @@ bool strike_possible(const World& world) {
     bool failed = false;
     // Its walk may end on a guarded tile it passes on the way to a landing.
     const auto guard = pathing.held_guard();
-    if (world.me().type != cambc::champion_type::willow) pathing.set_guard(nullptr);
+    pathing.set_guard(nullptr);
     while (done < seq.n) {
         // Out of fuel mid-plan, the rest would play in the next round on last round's positions.
         if (done > 0 && world.is_stale()) break;

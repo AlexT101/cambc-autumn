@@ -651,19 +651,6 @@ std::uint32_t fighting_allies(const World& world, vec2 p) {
     return out;
 }
 
-// A stun that will take its next turn. One at 0 turn ends left has already taken a turn and
-// expires at the next one's start.
-std::optional<bool> stun_pending(cambc::handle_champion_t c) {
-    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
-    std::uint32_t n = 0;
-    const auto code = cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n);
-    if (code == static_cast<std::int32_t>(cambc::error_code::api_not_in_vision)) return std::nullopt;
-    ok(code);
-    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
-        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return buffs[i].data.stun.duration > 0;
-    return false;
-}
-
 [[gnu::noinline]] void make_slot(const World& world, const ChampionBelief& c, int slot) {
     auto& m = made_fighters;
     const std::array<std::uint32_t, 3> from{static_cast<std::uint32_t>(c.type), std::bit_cast<std::uint32_t>(hit_strength(c)),
@@ -683,11 +670,7 @@ std::optional<bool> stun_pending(cambc::handle_champion_t c) {
     auto& f = m.fighter[slot];
     make_fighter(c, next, f, m.kit[slot]);
     if (c.teleport_pending()) f.arrives_at = std::max(0, c.channel_end_round - next);
-    else if (c.facts().passive != Passive::stun_immune) {
-        // Our move can hide a believed-visible ally: unknown stun must not promise its next turn.
-        const auto pending = stun_pending(c.handle);
-        if (!pending || *pending) f.arrives_at = 1;
-    }
+    else if (c.stun_pending) f.arrives_at = 1;
 }
 
 // `made`: bit i, Fighters::fighter[i] is this turn's.
@@ -2003,39 +1986,6 @@ int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out) {
         }
     }
     return n;
-}
-
-bool Safety::enemy_may_hit_within(vec2 p, int radius) {
-    for (auto left = live_enemies(); left; left &= left - 1) {
-        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (gone(e)) continue;
-        const int reach = foe(e).strike.reach;
-        if (reach < 0) continue;
-        if (e.visible) {
-            const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos;
-            if (dist(p, from) <= reach + radius) return true;
-        } else if (any_within(e.possible, p, reach + radius)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Safety::credible_enemy_may_hit_within(vec2 p, int radius) {
-    for (auto left = live_enemies(); left; left &= left - 1) {
-        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
-        if (gone(e)) continue;
-        const auto& x = foe(e);
-        const int reach = x.strike.reach;
-        if (reach < 0 || (!e.visible && !(x.weight > 0))) continue;
-        if (e.visible) {
-            const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos;
-            if (dist(p, from) <= reach + radius) return true;
-        } else if (any_within(e.possible, p, reach + radius)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool Safety::any_threat() {

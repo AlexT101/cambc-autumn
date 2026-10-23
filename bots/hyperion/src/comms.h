@@ -35,10 +35,6 @@ inline int bag_of(const World& world, int ally) {
 }
 // The group we work towards (-1 for none), posted when it changes.
 void claim(int group);
-// Dated local intent only; the receiver must still see and validate the other endpoint.
-bool support_request(const World& world);
-bool support_available(const World& world);
-void support_intent(int round, bool positive);
 // The group an ally (by index) claims, -1 for none or while it is dead.
 inline int claim_of(const World& world, int ally) {
     const auto& a = world.allies[ally];
