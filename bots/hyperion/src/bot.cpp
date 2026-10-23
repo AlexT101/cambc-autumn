@@ -3867,14 +3867,16 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
         if (a.target == Targeting::unit) unit_range = std::max(unit_range, a.range());
     }
     const int spell_reach = std::max(unit_range, ground_range > 0 ? ground_range + 1 : 0);
-    bool ground_stations = ground_range > 0;
-    if (ground_stations)
+    // A unit spell needs sight of its target: its stations see the member, as ground stations do.
+    bool ground_stations = ground_range > 0, unit_stations = !ground_stations && unit_range > 0;
+    const int sight_range = ground_stations ? ground_range + 1 : unit_range;
+    if (ground_stations || unit_stations)
         for (std::size_t i = 0; i < G.members.size(); ++i) {
             if ((!fresh && c.health[i] <= 0) || G.members[i].strength <= 0) continue;
-            const bool ready = pathing.prepare_member(g, static_cast<int>(i), ground_range + 1, end_reserve);
+            const bool ready = pathing.prepare_member(g, static_cast<int>(i), sight_range, end_reserve);
             world.throw_if_stale();
             if (!ready) {
-                ground_stations = false;
+                ground_stations = unit_stations = false;
                 break;
             }
         }
@@ -3886,7 +3888,8 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
         if (G.members[i].strength > 0) {
             attackers = true;
             draw_square(threat, p, static_cast<float>(G.members[i].reach));
-            if (!ground_stations) draw_square(near, p, static_cast<float>(station_range));
+            if (unit_stations) near |= pathing.member_attack_tiles(g, static_cast<int>(i), unit_range);
+            else if (!ground_stations) draw_square(near, p, static_cast<float>(station_range));
             if (ground_stations) {
                 const auto& viewers = pathing.member_attack_tiles(g, static_cast<int>(i), ground_range + 1);
                 if (unit_range > 0) {
