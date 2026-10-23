@@ -113,8 +113,11 @@ int main() {
             instance.play_turn();
         // Out of fuel, we resumed as this round's turn with a fresh budget: play it rather than end it.
         if (const auto now = aph::checked_round(); now != round) {
-            std::printf("r%u turn ran out of fuel, finished in r%u\n", round, now);
-            debug_block({ std::printf("OOF %u %s\n", round, aph::fuel_phase()); });
+            // A release-build line would cost the resumed turn ~2.5k.
+            debug_block({
+                std::printf("r%u turn ran out of fuel, finished in r%u\n", round, now);
+                std::printf("OOF %u %s\n", round, aph::fuel_phase());
+            });
             aph::note_shortcut("out-of-fuel");
             continue;
         }
