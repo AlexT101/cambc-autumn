@@ -4009,13 +4009,52 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
     return false;
 }
 
+// A visible enemy within `range` of `from` that one basic attack kills.
+const ChampionBelief* sure_kill(const World& world, vec2 from, int range) {
+    const float health = my_health();
+    const float strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health());
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible || dist(from, e.pos) > range || e.retaliation() >= health) continue;
+        const float shield = e.shield > 0 ? shield_value(e.handle) : 0.0f;
+        if (e.health + shield <= strength * e.taken) return &e;
+    }
+    return nullptr;
+}
+
+// Nothing but `enemy` could hit us at p before our next turn.
+bool only_threat(Safety& safety, vec2 p, int enemy) {
+    if (safety.camp_damage(p, true, true) > 0) return false;
+    std::array<Safety::ThreatAt, 16> at;
+    const int n = safety.threats_at(p, at);
+    for (int i = 0; i < n; ++i)
+        if (at[i].enemy != enemy && at[i].blow.hits) return false;
+    return true;
+}
+
 void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& me = cambc::self();
     decision = 'R';
     memory.claim = -1;
     memory.banking = bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing);
-    if (world.me().facts().walk_and_attack_independent() && attack_enemy(world)) reset_and_attack_enemy(world, true);
+    const bool melee = world.me().facts().walk_and_attack_independent();
+    const int range = world.me().facts().attack_range();
+    const vec2 here = my_position();
+    vec2 dead{-1, -1};
+    // A sure kill first. A ranged attack spends the walk, so only where standing is no worse:
+    // nothing else reaches us here, or the dash still lands out of every reach.
+    if (const auto* kill = my_can_attack() ? sure_kill(world, here, range) : nullptr;
+        kill && (melee || only_threat(safety, here, kill->index) || dash_clears(world, pathing, kill->pos))) {
+        try {
+            attack_champion(kill->handle);
+            dead = kill->pos;
+        } catch (const cambc::error&) {
+        }
+    }
+    // A melee kill one step off waits for the step, which may land beside it.
+    const bool held = melee && my_can_attack() && sure_kill(world, here, range + 1);
+    if (melee && !held) attack_enemy(world);
+    if (!my_can_attack()) reset_and_attack_enemy(world, true);
     cast_at_enemies(world, escape_step_value);
     if (!me.is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) safety.refresh();
@@ -4025,9 +4064,10 @@ void retreat(const World& world, Pathing& pathing, Safety& safety, Memory& memor
         return;
     }
     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
-    dash_away(world, pathing, pathing.to_ally_spawn());
+    dash_away(world, pathing, pathing.to_ally_spawn(), dead);
     reset_and_attack_enemy(world);
     if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+    if (melee && attack_enemy(world)) reset_and_attack_enemy(world, true);
     reset_and_attack_enemy(world);
 }
 

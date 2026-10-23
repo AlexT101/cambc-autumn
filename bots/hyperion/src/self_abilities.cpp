@@ -51,11 +51,12 @@ struct Hazard {
 
 // Enemies and awake monsters that could reach a tile within a dash of `here` before our next turn.
 // A scratch vector, valid until the next call: allocating costs more than the work.
-const std::vector<Hazard>& threats_near(const World& world, vec2 here) {
+// `dead`: an enemy we killed this turn, still alive in the beliefs.
+const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead = {-1, -1}) {
     static std::vector<Hazard> out;
     out.clear();
     for (const auto& e : world.enemies) {
-        if (!e.alive || !e.visible) continue;
+        if (!e.alive || !e.visible || e.pos == dead) continue;
         const int reach = threat_strike(world, e).reach;
         if (reach >= 0 && dist(here, e.pos) <= reach + dash_steps) out.push_back({e.pos, reach, false});
     }
@@ -373,18 +374,26 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     return dash_to_first(dash, pathing, landings);
 }
 
-bool dash_away(const World& world, Pathing& pathing, const Field& home) {
+bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dead) {
     if (!world.me().facts().has_dash()) return false;
     const int dash = ready(world, AbilityKind::dash);
     if (dash < 0) return false;
     const vec2 here = my_position();
-    const auto& threats = threats_near(world, here);
+    const auto& threats = threats_near(world, here, dead);
     const int here_danger = danger(threats, here);
     if (here_danger == 0) return false;
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return danger(threats, p) * 1000 + std::min<int>(home.at(p), 999); },
         [&](vec2 p, int score) { return score / 1000 < here_danger && !wakes_camp(world, p); });
     return dash_to_first(dash, pathing, landings);
+}
+
+bool dash_clears(const World& world, Pathing& pathing, vec2 dead) {
+    if (!world.me().facts().has_dash() || ready(world, AbilityKind::dash) < 0) return false;
+    const auto& threats = threats_near(world, my_position(), dead);
+    for (auto p : Tiles<5 * 5>{pathing.dash_landings()})
+        if (danger(threats, p) == 0 && !wakes_camp(world, p)) return true;
+    return false;
 }
 
 bool worth_healing(float amount, float gain, float fraction) {

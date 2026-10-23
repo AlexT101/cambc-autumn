@@ -38,8 +38,11 @@ bool dash_towards(const World& world, Pathing& pathing, const Field& field);
 bool dash_across(const World& world, Pathing& pathing, const Field& field);
 // Into attack range of `target`, else of a visible enemy we can finish or are beating; attack after it.
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target = nullptr);
-// Out of the reach of visible enemies and awake camps, tie-broken towards `home`.
-bool dash_away(const World& world, Pathing& pathing, const Field& home);
+// Out of the reach of visible enemies and awake camps, tie-broken towards `home`. `dead`: the
+// tile of an enemy we killed this turn, which the beliefs still hold alive.
+bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dead = {-1, -1});
+// A ready dash could land out of every visible enemy's and awake camp's reach, `dead` aside.
+bool dash_clears(const World& world, Pathing& pathing, vec2 dead);
 
 // Willow: the ally the heal restores most, if it restores enough or the ally is low.
 bool heal_ally(const World& world);
