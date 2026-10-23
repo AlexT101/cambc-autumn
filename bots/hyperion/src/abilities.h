@@ -30,4 +30,9 @@ float stun_worth(const World& world, const ChampionBelief& e, bool damaging);
 // A dash landing at p would hit a member of a sleeping group that strikes, waking it.
 bool landing_wakes(const World& world, vec2 p, int radius);
 
+constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
+
+// e is tracked, unseen and on few tiles, and its retaliation would kill us at `health`.
+bool unseen_suicidal(const ChampionBelief& e, float health);
+
 } // namespace aph

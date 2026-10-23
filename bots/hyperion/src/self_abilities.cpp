@@ -111,6 +111,22 @@ bool wakes_camp(const World& world, vec2 p) {
     return slot >= 0 && world.me().facts().abilities[slot].lands() && landing_wakes(world, p, world.me().facts().abilities[slot].radius);
 }
 
+// Heart of Ruin's landing hits enemies beside it, unseen ones too, and Ren strikes back even while
+// dying: keep it off any whose retaliation would kill us. `dead`: as threats_near's.
+bool landing_suicidal(const World& world, vec2 p, vec2 dead = {-1, -1}) {
+    const auto& f = world.me().facts();
+    const int slot = f.slot_of(AbilityKind::dash);
+    if (slot < 0 || !f.abilities[slot].lands()) return false;
+    const int radius = f.abilities[slot].radius;
+    float health = -1; // read on first need: most enemies never strike back
+    for (const auto& e : world.enemies) {
+        if (!e.alive || e.retaliation() <= 0 || (e.visible ? (e.pos == dead || dist(p, e.pos) > radius) : !e.tracked)) continue;
+        if (health < 0) health = my_health();
+        if (e.visible ? e.retaliation() >= health : (unseen_suicidal(e, health) && any_within(e.possible, p, radius))) return true;
+    }
+    return false;
+}
+
 bool dash_to_first(int dash, Pathing& pathing, const Landings& landings) {
     for (int i = 0; i < landings.count; ++i)
         if (cast(dash, landings.tiles[i])) {
@@ -134,7 +150,8 @@ bool travel_dash(const World& world, Pathing& pathing, int dash, int here_steps,
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return steps_at(p); },
         [&](vec2 p, int steps) {
-            return steps <= here_steps - dash_steps && danger(threats, p) <= here_danger && !wakes_camp(world, p);
+            return steps <= here_steps - dash_steps && danger(threats, p) <= here_danger && !wakes_camp(world, p)
+                   && !landing_suicidal(world, p);
         });
     return dash_to_first(dash, pathing, landings);
 }
@@ -306,7 +323,10 @@ bool dash_across(const World& world, Pathing& pathing, const Field& field) {
     const int here_danger = danger(enemies, here);
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return field.at(p); },
-        [&](vec2 p, int steps) { return steps <= here_steps - dash_steps && danger(enemies, p) <= here_danger && !wakes_camp(world, p); });
+        [&](vec2 p, int steps) {
+            return steps <= here_steps - dash_steps && danger(enemies, p) <= here_danger && !wakes_camp(world, p)
+                   && !landing_suicidal(world, p);
+        });
     return dash_to_first(dash, pathing, landings);
 }
 
@@ -370,7 +390,7 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     const auto landings = ranked(
         within(pathing.dash_landings(), at, range + walk),
         [&](vec2 p) { return (dist(p, at) > range ? 1000000 : 0) + danger(threats, p) * 1000 + std::min<int>(spawn.at(p), 999); },
-        [&](vec2 p, int) { return !wakes_camp(world, p); });
+        [&](vec2 p, int) { return !wakes_camp(world, p) && !landing_suicidal(world, p); });
     return dash_to_first(dash, pathing, landings);
 }
 
@@ -384,7 +404,7 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dea
     if (here_danger == 0) return false;
     const auto landings = ranked(
         pathing.dash_landings(), [&](vec2 p) { return danger(threats, p) * 1000 + std::min<int>(home.at(p), 999); },
-        [&](vec2 p, int score) { return score / 1000 < here_danger && !wakes_camp(world, p); });
+        [&](vec2 p, int score) { return score / 1000 < here_danger && !wakes_camp(world, p) && !landing_suicidal(world, p, dead); });
     return dash_to_first(dash, pathing, landings);
 }
 
@@ -392,7 +412,7 @@ bool dash_clears(const World& world, Pathing& pathing, vec2 dead) {
     if (!world.me().facts().has_dash() || ready(world, AbilityKind::dash) < 0) return false;
     const auto& threats = threats_near(world, my_position(), dead);
     for (auto p : Tiles<5 * 5>{pathing.dash_landings()})
-        if (danger(threats, p) == 0 && !wakes_camp(world, p)) return true;
+        if (danger(threats, p) == 0 && !wakes_camp(world, p) && !landing_suicidal(world, p, dead)) return true;
     return false;
 }
 
