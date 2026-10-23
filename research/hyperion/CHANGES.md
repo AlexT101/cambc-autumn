@@ -275,3 +275,16 @@ Marcella 1129 vs 1205); out-of-fuel turns 4984 vs 4688 (+6%, from more tiles rea
   readiness (18 entries).
 - `threat_strike`'s walk-then-strike term uses `strike_memo(c, round + 1)`, keeping the `Strike` bound that caps
   `Reach` valid (REACH-BOUND fired 0 times).
+
+## 96: a spell clear finishes an attacker under the camp value floor (2026-10-23)
+
+From the v38 replay analysis (REPLAY-ANALYSIS B1; REPLAY-FOLLOW-UPS R1-2, R2-2): on the ladder a Prism stood idle for
+up to 940 rounds beside a camp attacker with under 50 health (20.6k turns in 56 games, 4.6k gems held untributed).
+Against c6bd503: 50.4% of 1104 (ladder 51.2, gen 50.4, gen-s1 50.2); with each bot's own draft (Prism in every game)
+51.3%. Out-of-fuel turns level. Local self-play never shows the freeze (0 runs in the reference), so only the ladder
+can measure it.
+
+- In `camp_cast`'s `attackers_only` mode (only `spell_clear`), the value floor is the lower of `min_camp_value` and
+  the weakest live attacker's health. A cast is worth at most what it can remove, so the 50 floor refused every cast
+  at an attacker under 50, while the clear stood out of basic-attack range. Every damage spell's raw exceeds 50, so
+  only finishing casts pass. Covers Stellar, Tavi and Cassi on the same path.
