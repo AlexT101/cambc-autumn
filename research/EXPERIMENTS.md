@@ -190,6 +190,13 @@ another harmless group was kept (CHANGES 91).
   enemy's possible tiles (median ~300 for Marcella, ~650 for Vesper) are past what `credible_weight` counts, so the
   cutoff rarely decides (098927ae-3: 294-369 tiles when dropped). Never dropping: 48.5%, out-of-fuel turns +18%
   (50.5% at unlimited fuel). Kept past 10 rounds only while the set is <= 338 tiles (1a1a48c): 50.2%. Dropped.
+- Altar locks (REPLAY-ANALYSIS D2; `fu/locks`, 2026-10-23). Ladder: we placed 2,811, mostly in passing on our own and
+  middle altars; 118 cancelled 121 enemy tributes (20.3k gems), and enemies spent 8,722 basic attacks removing 1,712,
+  so most of the value is that tax. Enemy locks cancelled 112 of ours, mostly short channels that banked a median 31.5
+  rounds later (17 carriers died, 3.4k gems). Only 32 of 115 cancels had the locker seen carrying a lock within 3 of
+  the altar, so defending has almost no ceiling. A lock-carrier with nothing better walking into lock range of a
+  visible enemy tribute it can reach in time (`lock_tribute`, before `chase`): 50.2%; bags of 50+ only (46115ba):
+  50.0%. Out-of-fuel turns level. Dropped: a cancel only delays the bag.
 
 ## Fuel
 
