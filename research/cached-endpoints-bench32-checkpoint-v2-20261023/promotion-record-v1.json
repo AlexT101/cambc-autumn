@@ -1,0 +1,18 @@
+{
+  "schema": "cached-endpoints-canonical-comms-promotion/v1",
+  "canonical_root": "bots/hyperion",
+  "changed_path": "bots/hyperion/src/comms.cpp",
+  "before_source_aggregate_sha256": "337f42a54beb5890109e56b755237d8ea0d07abb240d095778f01e2098ab7b39",
+  "after_source_aggregate_sha256": "a67dc0a32d4b9d001a8c514dc86aa1d9f4aa9d91bc380f2df2ce59b649ce6d21",
+  "reviewed_a67_source_aggregate_sha256": "a67dc0a32d4b9d001a8c514dc86aa1d9f4aa9d91bc380f2df2ce59b649ce6d21",
+  "before_comms_sha256": "4dd44d8213cb2d038f395190510ede5dec8d7c073554a8501801000bfbb7c30d",
+  "after_comms_sha256": "1ff3ffe20ed621506a561afb9849ff9648e2a76a7025f0c0a125eba8748ac503",
+  "backup_path": "research/cached-endpoints-bench32-checkpoint-v2-20261023/canonical-comms-before-a67.cpp",
+  "backup_sha256": "4dd44d8213cb2d038f395190510ede5dec8d7c073554a8501801000bfbb7c30d",
+  "frozen_parent_path": "bots/variants/willow-fbda803-integrated-work",
+  "frozen_parent_aggregate_sha256": "337f42a54beb5890109e56b755237d8ea0d07abb240d095778f01e2098ab7b39",
+  "candidate_path": "bots/variants/willow-comms-cached-endpoints-work",
+  "candidate_comms_sha256": "1ff3ffe20ed621506a561afb9849ff9648e2a76a7025f0c0a125eba8748ac503",
+  "source_file_byte_equal_to_candidate_after_promotion": true,
+  "build_performed": false
+}

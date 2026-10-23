@@ -530,3 +530,16 @@ by observation and a fresh heal check. Existing all-ally current-range healing r
 
 Exact source aggregate `a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e` was submitted as
 Khaos_v33 / server44. The four-pick Willow replacement and local Monolith crew remain separate experiments.
+
+## 111: cache support communication endpoints (2026-10-23)
+
+Cache the immutable Prism/Willow ally indices and skip support mailbox work when that pair
+is absent. Ordinary communication keeps its own successful-read epoch; current liveness,
+respawn checks and the support protocol remain unchanged. Only `comms.cpp` changes.
+
+The default eight-map fuel bench, both sides against the frozen roster emulator, yields
+16/16 identical complete replay pairs at 100M fuel and 0.41% less total play fuel. An
+additional Boss pair for each draft also matches its parent at high fuel. The four
+default-budget Boss diagnostics recover one teacher-draft loss and leave Willow's two
+wins unchanged; this does not establish a broader win-rate improvement. Canonical source
+is a67dc0a3. No new release or submission yet; full pins and limitations are in EXPERIMENTS.

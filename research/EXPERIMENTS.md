@@ -1342,3 +1342,52 @@ directory, `bots/variants/ladder_manip`, has unknown contents and no recovered s
 has been asked about it. This is not a claim of exhaustive filesystem recovery. See
 `BOTS-RECOVERY-20261023.md`, `bots-recovery-source-audit.md`, and the immutable source inventory
 `recovery/incident-20261023-bots-recovery/recovery-index-v2.json`.
+
+### Cached support endpoints: initial fuel-only check
+
+The user closed the unknown `ladder_manip` recovery question with “ignore it”; its contents
+remain unknown. All four required benchmark executables were reproduced with exact original
+raw and injected hashes before runtime work resumed.
+
+Candidate a67dc0a3 changes only comms.cpp from canonical337f: cache immutable ally indices,
+skip irrelevant support-mailbox work when the Prism/Willow pair is absent, and keep the
+ordinary successful-read epoch separate from the support epoch. Current liveness and respawn
+checks remain per-turn. Astra source review found no behavioral blocker. The teacher-draft
+child is7c7819f3; its other28 files matcha67. Neither is a numbered release or canonical edit.
+
+Six Release games at100M fuel, Boss Battle both sides, check both present/absent pair cases.
+Teacher child uses the existing b810 high-fuel parent pair; canonical337f and cacheda67 each
+play a new pair against unchanged emulator10e5. All four complete unwrapped replay comparisons
+are byte-identical; opponent fuel totals also match exactly. All six new games have zero
+runner/native/caught/turn-order errors and zero native rollovers. Candidate play fuel changes:
+
+| Roster | Side A parent → child | Side B parent → child |
+| --- | ---: | ---: |
+| Teacher |189,520,692 →188,178,741 (−0.708%) |312,787,256 →310,147,402 (−0.844%) |
+| Willow |247,547,851 →246,838,444 (−0.287%) |362,646,513 →361,578,858 (−0.294%) |
+
+Typical per-turn savings are301 without the pair and118 with it; first-turn initialization
+costs differ. This recovers only part of the measured integration overhead. High fuel tests
+behavioral equivalence, not default-budget strength. Evidence and actual actor mapping:
+`replays/fish-comms-cached-diagnostic-20261023/initial-six-reconciliation-v1.{json,md}`.
+The four new default100k Boss checks give cached teacher1–1 (old teacher0–2) and cached
+Willow2–0 (original Willow also2–0). The Willow match lengths change983/953→983/1494;
+these two games do not establish a strength gain. Native play rollovers are13/16 for the
+teacher/emulator pair and12/11 for cached Willow/emulator. Native Bot Errors and turn-order
+markers are zero. The teacher matches contain one caught code5 per team, on different games;
+the cached Willow matches contain none. An initial verbal summary incorrectly reported zero
+rollovers/errors and a wrong cached-A roster; replay-derived correction is preserved in
+`replays/fish-comms-cached-default100k-20261023/correction-record-v1.{json,md}`.
+
+The repository `tools/fuel/bench.py` default eight-map set then runs both controls against
+unchanged10e5, each side, Release100M, one job:32 games,16 matched pairs. All16 complete
+replay payloads, winners and drafts are identical. Total play fuel falls3,305,958,229→
+3,292,319,906 (−0.41%);83,785 paired turns are cheaper and50 dearer. Excluding round1 gives
+83,763 turns and−0.4169%. The higher first-turn initialization cost is retained in the
+all-play comparison. These are fuel-equivalence tests, not strength qualification.
+
+The reviewed one-file comms change is retained in canonical, nowa67dc0a3; frozen337f remains
+intact for the BigWorld decision trace. Checkpoint, source review, source/build pins and exact
+commands are under `research/cached-endpoints-bench32-checkpoint-v2-20261023/` and
+`willow-comms-cached-endpoints-source-review.md`. Runtime evidence is under
+`replays/fish-comms-cached-fuelbench32-20261023/`. No numbered version or submission was made.

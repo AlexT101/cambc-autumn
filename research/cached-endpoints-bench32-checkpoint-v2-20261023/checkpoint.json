@@ -1,0 +1,124 @@
+{
+  "schema": "cached-endpoints-bench32-checkpoint/v1",
+  "source_review_pin": "a67dc0a32d4b9d001a8c514dc86aa1d9f4aa9d91bc380f2df2ce59b649ce6d21",
+  "source_artifacts": {
+    "a67_manifest": {
+      "path": "research/cached-endpoints-bench32-checkpoint-v2-20261023/a67-source-manifest.json",
+      "sha256": "9522bd6311367a611dc616da031e1750044b52dc19783afef96dbd6a2bbab278",
+      "source": "recovery/incident-20261023-bots-recovery/source-archives-v2/source-manifest.json"
+    },
+    "a67_patch": {
+      "path": "research/cached-endpoints-bench32-checkpoint-v2-20261023/a67-comms.patch",
+      "sha256": "7672d20023ea5c11eb1e6f862f6ad2c18c80200d8e26afba71a465413d47f663",
+      "source": "recovery/incident-20261023-bots-recovery/source-archives-v2/willow-comms-cached-endpoints.patch"
+    },
+    "teacher_manifest": {
+      "path": "research/cached-endpoints-bench32-checkpoint-v2-20261023/teacher-source-manifest.json",
+      "sha256": "6e6a2aea04472ccca1f63ad2220e4c8075a49d6347ec650d4490f16c49f3f6e1",
+      "source": "recovery/incident-20261023-bots-recovery/source-archives-v3/source-manifest.json"
+    }
+  },
+  "source_pins": {
+    "a67": {
+      "path": "bots/variants/willow-comms-cached-endpoints-work",
+      "source_aggregate_sha256": "a67dc0a32d4b9d001a8c514dc86aa1d9f4aa9d91bc380f2df2ce59b649ce6d21",
+      "source_file_count": 29,
+      "raw_wasm_sha256": "2c8392026a60cc0ca2c973edc4b8e486496a611d1369d6dd6c491bf3124e626d",
+      "injected_wasm_sha256": "945727db5a8457dd5fe1b0629e12bfd3144f45466e149afe7b1057a20066282b"
+    },
+    "teacher": {
+      "path": "bots/variants/willow-comms-cached-endpoints-teacher-work",
+      "source_aggregate_sha256": "7c7819f3a12a31d3d4ebd59e7270764ac850c2258c68b91a12fd3eb2d21f7049",
+      "source_file_count": 29,
+      "raw_wasm_sha256": "32d1f00ca9d5eb0cfea811aca0ada781382f4ad3109b4a95ce8257bf62eb9016",
+      "injected_wasm_sha256": "967a4c2b49f145b98020abb09bd051c4fd2d651b886351052ec65ec1b293af97"
+    },
+    "canonical337f": {
+      "path": "bots/variants/willow-fbda803-integrated-work",
+      "source_aggregate_sha256": "337f42a54beb5890109e56b755237d8ea0d07abb240d095778f01e2098ab7b39",
+      "source_file_count": 29,
+      "raw_wasm_sha256": "b57410fc7c05630bd0a38a2cfe412d0fce85689d53bcecac87c9c09dd05c95c0",
+      "injected_wasm_sha256": "136179f9c29491af62e5420505869c85e1b053a1817a744ecbba9bb720474086"
+    },
+    "emulator": {
+      "path": "bots/variants/hyperion-fish-roster-emulator-fbda803",
+      "source_aggregate_sha256": "10e5eeaabd57580f2ccd59240f36341209c2337fa9f190c8ea310b79943c90ac",
+      "source_file_count": 28,
+      "raw_wasm_sha256": "22fc50dfd1ab33d1e442e8882b1fe89572d61cb96980a7b629f774a5c255169b",
+      "injected_wasm_sha256": "f7873b5a06649bc0dfd9ae3bd9575fb629834b9b47e7823a09f517d0f5833175"
+    }
+  },
+  "build_mode": "Release",
+  "cli": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "replay_engine": {
+    "version": "v1_0_3",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "version_manifest_sha256": "5e0f0e706f4cd178b98ba1b9238ef0a4858e12020d2a4b2eb8cba49aac4afae7"
+  },
+  "bench_tool": {
+    "path": "tools/fuel/bench.py",
+    "sha256": "55e6306291081a82427938d9cc7f0a5e194b80b19d1569013e1fbd7f2b004355"
+  },
+  "benchmark": {
+    "outer_command": [
+      "nice",
+      "-n",
+      "19",
+      "python3",
+      "replays/fish-comms-cached-fuelbench32-20261023/safe_bench_adapter.py"
+    ],
+    "safe_adapter": "imports tools/fuel/bench.py unchanged; every requested rmtree is refused if its target exists and rejected if outside this new output root; jobs=1 and serial controls.",
+    "runs": [
+      [
+        "bench.py",
+        "run",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-fbda803-integrated-work",
+        "--opp",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/hyperion-fish-roster-emulator-fbda803",
+        "--release",
+        "--fuel",
+        "100000000",
+        "--jobs",
+        "1",
+        "--cli",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "--out",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/fish-comms-cached-fuelbench32-20261023/canonical.json",
+        "--games",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/fish-comms-cached-fuelbench32-20261023/games-canonical"
+      ],
+      [
+        "bench.py",
+        "run",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-comms-cached-endpoints-work",
+        "--opp",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/hyperion-fish-roster-emulator-fbda803",
+        "--release",
+        "--fuel",
+        "100000000",
+        "--jobs",
+        "1",
+        "--cli",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "--out",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/fish-comms-cached-fuelbench32-20261023/cached.json",
+        "--games",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/fish-comms-cached-fuelbench32-20261023/games-cached"
+      ]
+    ],
+    "compare": [
+      "/Library/Developer/CommandLineTools/usr/bin/python3",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/fuel/bench.py",
+      "compare",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/fish-comms-cached-fuelbench32-20261023/canonical.json",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/fish-comms-cached-fuelbench32-20261023/cached.json"
+    ],
+    "results_dir": "replays/fish-comms-cached-fuelbench32-20261023",
+    "reconciliation": "replays/fish-comms-cached-fuelbench32-20261023/reconciliation-v1.json"
+  },
+  "prior_incomplete_checkpoint_attempt": "research/cached-endpoints-bench32-checkpoint-20261023/ contains only the copied patch/manifests; validation stopped on an erroneous assumption that the emulator had 29 source files. It is preserved unchanged."
+}

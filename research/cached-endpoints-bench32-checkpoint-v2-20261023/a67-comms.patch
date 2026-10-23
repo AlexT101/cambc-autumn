@@ -1,0 +1,73 @@
+diff --git a/bots/variants/willow-fbda803-integrated-work/src/comms.cpp b/bots/variants/willow-comms-cached-endpoints-work/src/comms.cpp
+index 67f1458..6406ca4 100644
+--- a/bots/variants/willow-fbda803-integrated-work/src/comms.cpp
++++ b/bots/variants/willow-comms-cached-endpoints-work/src/comms.cpp
+@@ -73,13 +73,30 @@ State state;
+ support_mailbox::State support;
+ int support_intent_round = -1;
+ bool support_intent_value = false;
++int ordinary_read_round = -1;
++bool endpoint_indices_ready = false;
++int prism_index = -1, willow_index = -1;
++
++void cache_endpoint_indices(const World& world) {
++    if (endpoint_indices_ready || !world.ready()) return;
++    for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
++        const auto type = world.allies[i].type;
++        if (type == cambc::champion_type::prism) prism_index = i;
++        if (type == cambc::champion_type::willow) willow_index = i;
++    }
++    // receive() follows a successful World::update() and the main guard; the roster is immutable.
++    endpoint_indices_ready = true;
++}
++
++bool has_support_pair() {
++    return endpoint_indices_ready && prism_index >= 0 && willow_index >= 0;
++}
+ 
+ std::array<const ChampionBelief*, 2> endpoints(const World& world) {
+     std::array<const ChampionBelief*, 2> pair{};
+-    for (const auto& a : world.allies) {
+-        if (a.type == cambc::champion_type::prism) pair[0] = &a;
+-        if (a.type == cambc::champion_type::willow) pair[1] = &a;
+-    }
++    if (!has_support_pair()) return pair;
++    pair[0] = &world.allies[prism_index];
++    pair[1] = &world.allies[willow_index];
+     return pair;
+ }
+ 
+@@ -131,7 +148,9 @@ int dated(int parity) {
+     world.throw_if_stale();
+     const auto bits = state.now = read_bits();
+     const int round = world.round;
+-    receive_support(world, bits);
++    ordinary_read_round = round;
++    cache_endpoint_indices(world);
++    if (has_support_pair()) receive_support(world, bits);
+     state.fresh = changes(bits);
+     if ((state.fresh & sighting_bits) && sight_x.get(bits) != 0) {
+         const vec2 pos{sight_x.get(bits) - 1, sight_y.get(bits)};
+@@ -153,7 +172,7 @@ int dated(int parity) {
+ 
+ // No teammate acts during our turn: the bits are still those receive() read.
+ void send(World& world, bool moved, bool refresh) {
+-    if (support.read_round != world.round) return;
++    if (ordinary_read_round != world.round) return;
+     auto bits = state.now;
+     const int round = world.round;
+     const bool sighted = (state.fresh & sighting_bits) && sight_parity.get(bits) == (round & 1) && sight_x.get(bits) != 0;
+@@ -244,11 +263,11 @@ void bag(int gems) { detail::posts.my_bag = gems; }
+ void claim(int group) { detail::posts.mine = group < max_group ? group : -1; }
+ 
+ bool support_request(const World& world) {
+-    return support.valid(support_mailbox::prism, world.round);
++    return has_support_pair() && support.valid(support_mailbox::prism, world.round);
+ }
+ 
+ bool support_available(const World& world) {
+-    return support.valid(support_mailbox::willow, world.round);
++    return has_support_pair() && support.valid(support_mailbox::willow, world.round);
+ }
+ 
+ void support_intent(int round, bool positive) { support_intent_round = round, support_intent_value = positive; }
