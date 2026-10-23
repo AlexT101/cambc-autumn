@@ -13,8 +13,8 @@
 
 Out-of-fuel turns are still ~1.5x hecate's in A/Bs ([FUEL-PROFILE.md](FUEL-PROFILE.md)). Exact fuel cuts are mostly
 exhausted; gate removals so far were level at 100M but 4-5x the out-of-fuel turns. CHANGES 107-108 added ~2% and
-~6% in their A/Bs (the same REF reads 4530-4917 across runs); 108's Reach bush-camp passes (+9% alone) first if
-it persists.
+~6% in their A/Bs (the same REF reads 4530-4917 across runs). Not 108's Reach bush-camp passes (+9% alone): no
+ladder or gen map has a camp on a bush, so it never fires and that +9% was noise.
 
 1. The farm loop on many-group maps (132 groups: 44k a call, ~300 per pruned group): spatial buckets or an order kept
    across turns so pruned groups are never touched; then remove pick_up's farm-loop gate (farm-partial-evaluation).

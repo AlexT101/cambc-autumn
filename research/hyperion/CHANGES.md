@@ -477,7 +477,8 @@ The 2026-10-23 audit's items that needed a decision, each A/B'd alone against 10
 - The strike search treats a target our own ward sees as attackable from any tile in range (`Search::ward_sees`).
   49.9%.
 - Reach's dash paths cross live camps on bush tiles (unseen from outside their cluster), so it stays an upper bound.
-  51.1% (out-of-fuel turns 4931 vs 4530).
+  51.1% (out-of-fuel turns 4931 vs 4530), but no ladder, gen or gen-s1 map has a camp on a bush (the builder allows
+  one), so it never fired: both figures are noise.
 - `can_act_before` trusts only enemy priorities that can no longer change this round (test drafts only). 49.6%.
 - An ally hold on a group unseen last round is dated this round, the later possibility. 50.0%.
 - Together against 586586c: 50.6% of 1104 (47.7-53.6; ladder 48.8 of 80, gen 51.8, gen-s1 49.8), out-of-fuel turns
