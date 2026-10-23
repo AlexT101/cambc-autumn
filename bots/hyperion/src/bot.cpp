@@ -3173,7 +3173,7 @@ bool recall_outruns(const World& world, Safety& safety) {
 
 // Recall from a capture we hold (holding_capture), timed to land home the turn it pays: the gems
 // skip the walk when an altar is nearer by way of home, and the stop heals and shops.
-bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
+bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const vec2 here = my_position();
     if (safety.threatened(here)) return false;
     const int g = world.map().group_at(here);
@@ -3208,7 +3208,12 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     const int walk = pathing.to_any_altar().at(here);
     if (walk == unreachable) return false;
     const int sharers = 1 + allies_on(world, G.tiles());
-    return home_trip(world, pathing, channel, wins).rounds(walk, payout - world.round, G.gold / sharers) < static_cast<float>(walk);
+    if (!(home_trip(world, pathing, channel, wins).rounds(walk, payout - world.round, G.gold / sharers) < static_cast<float>(walk)))
+        return false;
+    // The ride banks the share: a payout earlier than we guessed (hold_start) finds us off the hold,
+    // where recall_to_bank keeps it only for a bag already banking.
+    memory.banking = true;
+    return true;
 }
 
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
@@ -3981,7 +3986,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         return true;
     decision = 'k';
     if (holding_capture(world)) {
-        if (capture_recall(world, pathing, safety)) {
+        if (capture_recall(world, pathing, safety, memory)) {
             decision = 'Q';
             return true;
         }
