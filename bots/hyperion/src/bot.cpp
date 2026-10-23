@@ -678,8 +678,8 @@ bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int tu
 bool place_ward(const World& world, Memory& memory, bool grow = true);
 bool see_revealed(World& world, Pathing& pathing, Safety& safety);
 
-// At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, or at
-// an altar carry_bag gave up waiting at, is judged again.
+// At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an
+// altar carry_bag gave up waiting at, or at one believed locked (the caller skipped it), is judged again.
 bool submit_here(const World& world, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     const vec2 here = my_position();
@@ -688,7 +688,9 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
         if (dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
         if (world.altars[a].enemy_lock && enemy_lock_live(altars[a].pos)) continue;
         const bool avoided = a == memory.avoid_altar && world.round < memory.avoid_until;
-        if ((avoided || here != world.me().pos) && !tribute_ok(world, safety, memory, tribute_turns(my_gems()))) return false;
+        if ((avoided || world.altars[a].enemy_lock || here != world.me().pos)
+            && !tribute_ok(world, safety, memory, tribute_turns(my_gems())))
+            return false;
         place_lock(world); // first: it cancels every tribute at its altar
         place_ward(world, memory); // first: no ward goes down while channelling
         try {
@@ -1433,12 +1435,18 @@ const ChampionBelief* prism_capture_holder(const World& world, const CampGroup& 
     return nullptr;
 }
 
+// A hold whose payout falls after the last round never pays.
+bool pays_too_late(const CampBelief& c) {
+    return c.held_since >= 0 && c.payout_round() > static_cast<int>(cambc::constants::max_rounds);
+}
+
 // On a cleared group's tile that no lower-id ally also holds, with no enemy on any of its tiles:
 // stepping off loses the capture's progress, and it pays within six rounds.
 bool holding_capture(const World& world) {
     const vec2 here = my_position();
     const int g = world.map().group_at(here);
     if (g < 0 || world.camps[g].state != CampState::cleared || winning_bag(world)) return false;
+    if (pays_too_late(world.camps[g])) return false;
     const auto& tiles = world.map().groups[g].tiles();
     // Prism stays while a lower-id holder leaves; the last holder never yields to a remote ally.
     if (const auto* prism = prism_capture_holder(world, world.map().groups[g]); prism && prism->is_self) return true;
@@ -2496,7 +2504,7 @@ bool awake_over(const World& world, int g, vec2 p) {
     const auto& c = world.camps[g];
     const auto& G = world.map().groups[g];
     if (c.state != CampState::alive || c.awake == Awake::asleep || !test(G.threat(), p)) return false;
-    if (c.asleep == 0) return true;
+    // G.threat() also covers dead and harmless members.
     for (std::size_t i = 0; i < G.members.size(); ++i)
         if (c.health[i] > 0 && G.members[i].strength > 0 && !c.member_asleep(i) && dist(p, G.members[i].pos) <= G.members[i].reach) return true;
     return false;
@@ -2525,7 +2533,9 @@ bool contesting(const World& world) {
     const vec2 here = my_position();
     const int g = world.map().group_at(here);
     if (g < 0 || world.map().groups[g].gems == 0 || world.camps[g].state != CampState::cleared || winning_bag(world)) return false;
-    return world.camps[g].holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
+    const auto& c = world.camps[g];
+    if (c.holder == team::enemy && pays_too_late(c)) return false;
+    return c.holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
 }
 
 // Our ground: no farther from our spawn than from theirs.
@@ -4439,7 +4449,12 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     } catch (const std::exception& e) {
         std::printf("r%u act error: %s\n", cambc::round_number(), e.what());
     }
-    set_turn_order(world, safety);
+    // Not StaleTurn: a stale turn abandons the rest.
+    try {
+        set_turn_order(world, safety);
+    } catch (const std::exception& e) {
+        std::printf("r%u turn order error: %s\n", cambc::round_number(), e.what());
+    }
     comms::claim(memory.claim);
     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
     memory.live_claim = live_claim;
