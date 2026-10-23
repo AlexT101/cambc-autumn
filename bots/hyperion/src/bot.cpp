@@ -121,9 +121,8 @@ void buy_lock() {
 
 bool carries_crystal() { return cambc::self().consumables()[cambc::consumable_type::tp_crystal].count() > 0; }
 
-// Once a hop to an altar only a crystal reaches (StaticMap::hops) would have beaten walking to bank.
-void buy_crystal(const Memory& memory) {
-    if (!memory.wants_crystal) return;
+// Carried for wall and hole shortcuts (crystal_across) and hops to altars only a crystal reaches.
+void buy_crystal(const Memory&) {
     auto& me = cambc::self();
     try {
         if (me.can_buy(cambc::consumable_type::tp_crystal)) me.buy(cambc::consumable_type::tp_crystal);
@@ -254,6 +253,48 @@ int attack_camp_targets(const World& world, const CampAttackTargets& targets) {
 // damage per hit goes first; Varg's splash wants the most live members next to its target.
 template <class Allowed> int attack_camp(const World& world, Allowed allowed) {
     return attack_camp_targets(world, camp_attack_targets(world, allowed));
+}
+
+// Steps a crystal must save over walking `field`, on top of its channel.
+inline constexpr int crystal_min_gain = 6;
+
+// Free crystal landings no walk reaches within the channel plus crystal_min_gain: only these can gain
+// enough (field.at(here) <= walk + field.at(landing)).
+bitboard crystal_landings(Pathing& pathing) {
+    static bitboard near{cambc::uninitialized};
+    const int need = cambc::constants::tp_crystal_time + crystal_min_gain;
+    pathing.static_walls().reachable_tiles_into(my_position(), static_cast<std::uint16_t>(need), near);
+    auto targets = pathing.teleport_targets();
+    drop(targets, near);
+    return targets;
+}
+
+// A crystal over a wall or hole line where it beats the walk by crystal_min_gain, with no enemy in
+// sight of either end and no awake camp at the landing: the channel cannot move or fight.
+bool crystal_across(const World& world, Pathing& pathing, Safety& safety, const Field& field) {
+    if (!carries_crystal() || !my_can_move()) return false;
+    const vec2 here = my_position();
+    const int here_steps = field.at(here);
+    const int need = cambc::constants::tp_crystal_time + crystal_min_gain;
+    if (here_steps == unreachable || here_steps <= need || enemy_within(world, here, vision_radius)) return false;
+    auto targets = crystal_landings(pathing);
+    if (board_empty(targets)) return false;
+    drop(targets, safety.camp_area());
+    drop(targets, safety.enemy_area());
+    vec2 best{-1, -1};
+    int best_steps = here_steps - need;
+    for (const vec2 l : targets.positions())
+        if (const int s = field.at(l); s < best_steps && !enemy_within(world, l, vision_radius)) best = l, best_steps = s;
+    if (best.x < 0) return false;
+    try {
+        if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) {
+            debug_block({ std::printf("CRYSTAL %d,%d -> %d,%d steps %d -> %d\n", here.x, here.y, best.x, best.y, here_steps, best_steps); });
+            pathing.invalidate();
+            return true;
+        }
+    } catch (const cambc::error&) {
+    }
+    return false;
 }
 
 // Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
@@ -783,13 +824,13 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
     }
     const int walk_steps = any_locked ? best_steps : pathing.to_any_altar().at(here);
     if (const auto hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
-        memory.wants_crystal = true;
         if (carries_crystal()) {
             take_hop(world, pathing, safety, hop.hop);
             return;
         }
     }
     const Field& field = any_locked ? pathing.to_altar(best) : pathing.to_any_altar();
+    if (crystal_across(world, pathing, safety, field)) return;
     if ((dash_across(world, pathing, field) || dash_towards(world, pathing, field)) && submit_here(world, safety, memory)) return;
     if (any_locked && world.altars[best].enemy_lock && break_lock(world, best) && !world.me().facts().walk_and_attack_independent())
         return;
@@ -1845,7 +1886,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         if (g < 0) return false;
         // Descending it walks around walls and live camps; a live route only helps past allies.
         const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
-            return dash_across(world, pathing, field) || pathing.descend(field, zone, groups[target].centre)
+            return crystal_across(world, pathing, safety, field) || dash_across(world, pathing, field)
+                   || pathing.descend(field, zone, groups[target].centre)
                    || pathing.step_towards(field, zone, groups[target].centre);
         };
         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
@@ -2330,6 +2372,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     }
     memory.farm_group = best;
     // Our fields price a dash over a hole line; live routes walk round it.
+    if (carries_crystal() && !board_empty(crystal_landings(pathing)))
+        if (const auto* field = pathing.prepare_approach(best, walk_range(world, best), end_reserve); field && crystal_across(world, pathing, safety, *field))
+            return true;
     const bool dasher = world.me().facts().has_dash();
     if (dasher && test(map.near_crossable, here))
         if (const auto* field = pathing.prepare_approach(best, walk_range(world, best), end_reserve); field && dash_across(world, pathing, *field))
@@ -4305,7 +4350,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (wants_shop(world, pathing, safety, memory)) {
         decision = 'S';
         memory.claim = -1;
-        step_safely(pathing, pathing.to_ally_spawn(), safety);
+        if (!crystal_across(world, pathing, safety, pathing.to_ally_spawn())) step_safely(pathing, pathing.to_ally_spawn(), safety);
         return;
     }
     if (chase(world, pathing, safety)) return;
