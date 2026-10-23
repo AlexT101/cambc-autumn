@@ -106,6 +106,17 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   26.5% (30-59 bags +85%, from `chain_bag_limit` 60), deaths with 10+ gems 939 vs 729, net tributed -6 a game.
   Chaining unless a credible enemy is within `pursuit_steps` plus our walk to an altar (a0fbff0): 48.9%, out-of-fuel
   turns +5.5%. Dropped. If tried on the ladder, use v1's limit of 30: the 30-59 bags cause most of the extra loss.
+- Worst ladder maps against the top 20 (`strat/maps`, 2026-10-23; 624 games, 57% overall). Adjusted for opponent
+  strength: 00interlock 21%, 00swirl 23%, 00rushbait_v2 25%, 00stampede 27%, 00corners 28%, 00great_wall 30%. In
+  general, losses come from groups about equally far from both spawns: the opponents take 405 gems a game there in our
+  losses against our 189 (wins: 117 against 313); home groups are level. No single decision rule behind it.
+  Shared-gem maps (2 ladder, 12 in gen + gen-s1): `kite()` stations only ground casters at groups whose strikers reach
+  4, so on 00stampede in r1-700 Prism kites 92% of its turns and the other four 0% (they farm gold); the opponents
+  took the first clear of the 160-gem group in 18 of 22 games, usually after our Prism did most of the damage
+  (1fd519dc-2: 11,880 vs 4,200). Non-kiters standing guard outside the group (ba53bab): 49.5%, class maps 9/28 (the
+  guards idled, gold fell to 1/3-1/20 of theirs). On shared-gem maps a champion without a station falling through to
+  `siege()` over big groups under `siege_ready` (13a6c1b): 50.1%, class 14/28. Held as ladder-motivated (13a6c1b):
+  self-play cannot show it, as both sides kite slowly.
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 
