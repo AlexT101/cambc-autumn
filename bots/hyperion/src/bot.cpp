@@ -1094,10 +1094,10 @@ void note_upkeep(const World& world, Safety& safety, float damage) {
         if (const int s = map.from_ally_spawn().at(here); s != unreachable) upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
 }
 
-// A Jungle, Power or Durability shard short of its emblem.
+// A Treasure, Jungle, Power or Durability shard short of its emblem.
 bool emblem_begun(const World& world) {
     const auto& owned = my_items();
-    for (const int family : {jungle, power, durability})
+    for (const int family : {treasure, jungle, power, durability})
         for (int stat = strength_stat; stat <= health_stat; ++stat)
             if (owned[shard_of(family, stat)] > 0) return true;
     return world.me().facts().passive == Passive::gem_focus
@@ -1232,6 +1232,14 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
     Emblem best = value(power, main);
     if (const auto e = value(jungle, main); e.saved > best.saved) best = e;
     if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
+    // Treasure first, in the stat the model picks and priced as the emblem it delays: +20% gold
+    // from round ~200 buys 5-8 more shards a champion (ladder), more than any first passive saves.
+    if (!has_family(owned, treasure)) {
+        int stat = best.stat;
+        for (int s = strength_stat; s <= health_stat; ++s)
+            if (owned[shard_of(treasure, s)] > 0) stat = s;
+        return {treasure, stat, best.saved, (5 - owned[shard_of(treasure, stat)]) * shard_price};
+    }
     return best;
 }
 
