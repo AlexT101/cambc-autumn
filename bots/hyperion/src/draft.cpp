@@ -251,6 +251,8 @@ std::span<const cambc::champion_draft> draft_order() {
             const auto roles = teacher_draft_roles(native_draft_counts());
             std::array<cambc::champion_draft, 5> order;
             for (std::size_t i = 0; i < order.size(); ++i) order[i] = native_pick(roles[i]);
+            // 4 picks keep Heart of Ruin over the Ryth/Vendetta slot (v38 ladder: 43% on 4-pick maps without it).
+            if (cambc::draft::team_size() == 4) std::swap(order[3], order[4]);
             return order;
         }();
         return chosen;
