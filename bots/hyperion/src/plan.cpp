@@ -429,6 +429,7 @@ struct Search {
     // Tiles within r of the visible unit at p that see it. attack_viewers leaves out bushes beyond
     // a step, but the start tile is exact: the unit is visible from there now.
     Grid viewers(vec2 p, int r) const {
+        if (ward_sees(p)) return square(p, r);
         const auto& rows = viewer_rows(p, r);
         const int shift = p.x - here.x - 1; // grid column less window column
         const std::uint32_t span = ((1u << (2 * r + 1)) - 1) << (4 - r);
@@ -438,6 +439,37 @@ struct Search {
             g |= static_cast<Grid>((shift >= 0 ? row << shift : row >> -shift) & 0x7F) << ((p.y + dy - here.y + grid_r) * grid_n);
         }
         return g | (dist(here, p) <= r ? gbit(cell(here)) : 0);
+    }
+    // Every grid tile within r of p.
+    Grid square(vec2 p, int r) const {
+        const int x0 = std::max(p.x - r - here.x, -grid_r) + grid_r, x1 = std::min(p.x + r - here.x, grid_r) + grid_r;
+        const int y0 = std::max(p.y - r - here.y, -grid_r) + grid_r, y1 = std::min(p.y + r - here.y, grid_r) + grid_r;
+        if (x0 > x1) return 0;
+        const Grid row = gbit(x1 + 1) - gbit(x0);
+        Grid g = 0;
+        for (int y = y0; y <= y1; ++y) g |= row << (y * grid_n);
+        return g;
+    }
+    // A unit our own ward sees stays visible to us wherever we move (wards.vision). Our ward is
+    // found on first need; its mask is cast again only when it moves.
+    mutable bool ward_known = false, warded = false;
+    bool ward_sees(vec2 p) const {
+        static bitboard sight{cambc::uninitialized};
+        static vec2 cast_at{-1, -1};
+        if (!ward_known) {
+            ward_known = true;
+            static std::array<cambc::detail::ward_info, 16> raw;
+            std::uint32_t k = 0;
+            ok(cambc::detail::sdk_wards(raw.data(), static_cast<std::uint32_t>(raw.size()), &k));
+            const auto own = static_cast<std::uint32_t>(world.map().team_a ? 0 : 1);
+            for (std::uint32_t i = 0; i < k && i < raw.size() && !warded; ++i) {
+                const auto& w = raw[i];
+                if (w.team != own || w.owner != my_handle() || w.disabled) continue;
+                warded = true;
+                if (const vec2 at{w.x, w.y}; at != cast_at) ok(cambc::detail::sdk_ward_vision(at.x, at.y, sight.ptr())), cast_at = at;
+            }
+        }
+        return warded && test(sight, p);
     }
     // attack_viewers by window row (bit x + 4), kept for the game for the two ranges asked most:
     // it depends on terrain alone.
