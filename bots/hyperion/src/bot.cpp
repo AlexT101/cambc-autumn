@@ -3989,7 +3989,9 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         const auto shop = [&] {
             return wants_shop(world, pathing, safety, memory) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
         };
-        if (recall_to_bank(world, pathing, safety, memory) || shop()) return true;
+        // Wanting home, the home keep's reach test binds these too: else we alternate a retreat
+        // step with a standing turn on a recall the pursuer cancels.
+        if ((!*home || recall_outruns(world, safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
         if (siege_heal_trip(memory, safety)) return sieged = true; // the trip keeps the siege until home
         // No walk leaves a pocket a crystal took us into.
         if (!test(pathing.foot(), my_position()) && (my_gems() == 0 || retaining_gems(world, pathing))) return true;
