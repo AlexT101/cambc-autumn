@@ -139,11 +139,18 @@ void read_strike(const World& world, ChampionBelief& b) {
 bool we_start(const World& world, int round) { return world.map().team_a == (round % 2 == 1); }
 
 // We can act before `e` next round unless its team starts and it is their first champion. Its
-// priority for next round is final once it has acted, or if its team never changes priority.
+// priority for next round is final once it has acted, or if its team never changes priority;
+// while either rank can change, `e` may go first.
 bool can_act_before(const World& world, const ChampionBelief& e) {
-    if (we_start(world, world.round + 1) || (world.enemy_priorities_change && !e.acted)) return true;
+    if (we_start(world, world.round + 1)) return true;
+    // Read this round after its turn: one first seen after our move keeps an older read.
+    const auto settled = [&](const ChampionBelief& c) {
+        return !world.enemy_priorities_change || (c.visible && c.acted && c.priority_round == world.round);
+    };
+    if (!settled(e)) return false;
     for (const auto& o : world.enemies)
-        if (&o != &e && (o.next_priority > e.next_priority || (o.next_priority == e.next_priority && o.handle < e.handle)))
+        if (&o != &e && settled(o)
+            && (o.next_priority > e.next_priority || (o.next_priority == e.next_priority && o.handle < e.handle)))
             return true;
     return false;
 }
