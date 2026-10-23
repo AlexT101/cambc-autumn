@@ -11,7 +11,7 @@ Always read `cambc-rules.yaml` if you haven't already. Your next message should 
 
 C++ only.
 - **hyperion** is the bot we work on: shipped changes in [CHANGES.md](research/hyperion/CHANGES.md), direction, the keep rule and open work in [TODO.md](research/hyperion/TODO.md).
-- **hecate** is hyperion as of 2026-10-21, the reference. Its `params::test_draft` is on, so `py tools/ab.py main hecate` gives both the same test drafts.
+- **hecate** is hyperion as of 2026-10-21, the reference. Its `params::test_draft` is on, as in the copies `ab.py` exports, so in `py tools/ab.py main hecate` each bot plays both of a map's test drafts, one from each side.
 - Drafts are compiled in (`params::draft_preference`).
 - `bots/baselines/` holds frozen A/B baselines: never edit them; delete one once current bots beat it ~80% of the time.
 - When copying a bot, leave out `.cambc/` (its CMake cache breaks the build).
