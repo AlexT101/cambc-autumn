@@ -125,6 +125,16 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   gem at middle groups worth 40+. `contest_capture` gates correctly (1,157 of 1,338 farm-instead turns were 5-8 tiles
   off with 1-5 hold rounds left). The remaining lever, skipping middle groups stronger enemies could reach, repeats
   ideas that lost (farm value halved near an enemy's reach 41.5%; reward discounted by reachable enemies -3 to -20).
+- Teleport crystals for travel (`strat/gaps`, 2026-10-23). Ladder (624 games): opponents started 2,539 teleports in
+  191 games (12 of 18 teams, ~4 a game, median 35 steps saved), mostly on 18 maps (00road_of_riches, 00great_wall,
+  01starvation, ...); we teleported 56 times, only to altars no walk reaches. On those maps we win 86.1% against teams
+  that never teleport and 51.5% against teams that do (elsewhere 65.2% vs 49.4%): ~19 points, also within ranks 11-20.
+  Always carrying a crystal and using it while farming, banking or going home to shop where a landing beats the walk
+  by 6+ steps, no enemy in sight of either end, no awake camp at the landing (37bbf44): 50.5% (ladder 50.0, gen 49.2,
+  gen-s1 52.0), out-of-fuel turns level; against v37 61.5% where its base scored 61.1%. ~4.6 uses a ladder game, on the
+  same maps; games with 10+ uses went 59.8% (82) against 49.3% with none, but they are under 10% of the suite. Steering
+  long walks to crystal sources (d64dfe1, 74f43a8): 50.0%, 49.5%, out-of-fuel turns +35-90%. Held as ladder-motivated
+  (37bbf44). Other gaps found: opponents ward more (~30 a champion a game vs 19; 27% off bushes, ours never).
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 
