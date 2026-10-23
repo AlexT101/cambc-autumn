@@ -334,3 +334,8 @@ turns 5075 vs 4976; the first version (no claimer credit at all, d79cf52) 49.3%.
   step closer raised our share past `spare_health` and the step back lowered it (00expanse group 9, r715-722: hits 177
   -> 190 -> 177 against a spare of 189). Unless the camp's health is seen falling (`last_damaged_round >= round - 1`),
   our share is now `strength / (strength + others)`, as if the claimer did nothing before we arrive.
+
+Cumulative check (2026-10-23): 92-99 (bc7fd2e) and v38 (c6bd503), each against `bots/baselines/v37` on its own draft
+(`--no-test-draft`, 1104 games): 57.2% (54.3-60.1; ladder 55.0, gen 61.3, gen-s1 53.5) against 54.8% (51.9-57.7;
+ladder 61.2, gen 56.4, gen-s1 52.1). Against our own v38 the same changes were 51.3% (92-96, f19997a). Self-play
+shows these ladder fixes as level; an outside opponent shows them ahead, within overlapping intervals.
