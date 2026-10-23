@@ -1,0 +1,75 @@
+{
+  "schema": "clock-recovery-build-postflight-v1",
+  "host_utc": "2026-10-23T16:14:15Z",
+  "workspace_toolchain": {
+    "sdk_header_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "imports_header_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "cmake_sha256": "a2f9978b9d948623b48ac4fca70692a604bc5cdac2c50c115558ba891a26b78c",
+    "cambc_toml_sha256": "a0e36b45e114dedb61b421a5f45d85127fe88a8474cffec6500bc9ec0b480a50",
+    "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "variants": {
+    "cb61-base": {
+      "source_aggregate": "369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea",
+      "source_original": "369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea",
+      "source_clone": "369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea",
+      "source_snapshot_after": "369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea",
+      "raw_sha256": "7f1d6402219ceea60a986b1b6f3e974e8e980d5ce5860acbf728648074e5e4a9",
+      "injected_sha256": "816498b45d45b17165567f99098ebfaf3e4baec3a22c7098707fd9174ca2ff2b",
+      "exit_code": 0,
+      "workspace_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/cb61-base",
+      "raw_artifact": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/cb61-base/.cambc/build-release/bot.wasm",
+      "injected_artifact": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/cb61-base/.cambc/build-release/bot-injected.wasm"
+    },
+    "cb61-band": {
+      "source_aggregate": "2a475721c8985cfcbd189e683ffac90ac05cdbf06280289899d21d9be851204e",
+      "source_original": "2a475721c8985cfcbd189e683ffac90ac05cdbf06280289899d21d9be851204e",
+      "source_clone": "2a475721c8985cfcbd189e683ffac90ac05cdbf06280289899d21d9be851204e",
+      "source_snapshot_after": "2a475721c8985cfcbd189e683ffac90ac05cdbf06280289899d21d9be851204e",
+      "raw_sha256": "96f3e6126706e5521ae10d8ae854e98f39f9d3fa21620eeaa86125cf6ccb7403",
+      "injected_sha256": "961cfcae3026bdac5c88d860fabc91aca2442b4d214d9af83eba06926e887b31",
+      "exit_code": 0,
+      "workspace_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/cb61-band",
+      "raw_artifact": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/cb61-band/.cambc/build-release/bot.wasm",
+      "injected_artifact": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/cb61-band/.cambc/build-release/bot-injected.wasm"
+    },
+    "old4db-band": {
+      "source_aggregate": "0620e6589ba0c1ff908d94538c525b517ed5d8ee3a443e9fe26a9ccc5449a724",
+      "source_original": "0620e6589ba0c1ff908d94538c525b517ed5d8ee3a443e9fe26a9ccc5449a724",
+      "source_clone": "0620e6589ba0c1ff908d94538c525b517ed5d8ee3a443e9fe26a9ccc5449a724",
+      "source_snapshot_after": "0620e6589ba0c1ff908d94538c525b517ed5d8ee3a443e9fe26a9ccc5449a724",
+      "raw_sha256": "714150a1c7ac1b390af176031f48a93bfe12a3fe9c0562344eb636893b850cc3",
+      "injected_sha256": "914bc0d917aeaf5402dee26cea2f3e7d8588bfd7e6b4b10625e1c4de5ddd4ca1",
+      "exit_code": 0,
+      "workspace_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/old4db-band",
+      "raw_artifact": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/old4db-band/.cambc/build-release/bot.wasm",
+      "injected_artifact": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/old4db-band/.cambc/build-release/bot-injected.wasm"
+    },
+    "cb61-gold-v2": {
+      "source_aggregate": "692b6ffe52ea70f9aef3e82609b7133548be295d0eff4cd238a7a5a43ea38fe2",
+      "source_original": "692b6ffe52ea70f9aef3e82609b7133548be295d0eff4cd238a7a5a43ea38fe2",
+      "source_clone": "692b6ffe52ea70f9aef3e82609b7133548be295d0eff4cd238a7a5a43ea38fe2",
+      "source_snapshot_after": "692b6ffe52ea70f9aef3e82609b7133548be295d0eff4cd238a7a5a43ea38fe2",
+      "raw_sha256": "8aeaeecbf6e6d604dcde1d4ec3110ea5d51b81e6c2119af8ff2e383605364354",
+      "injected_sha256": "a21e4051e659b7ae72833c4ad618f482e551496826ed233bbc935b85046f6950",
+      "exit_code": 0,
+      "workspace_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/cb61-gold-v2",
+      "raw_artifact": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/cb61-gold-v2/.cambc/build-release/bot.wasm",
+      "injected_artifact": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/cb61-gold-v2/.cambc/build-release/bot-injected.wasm"
+    },
+    "v33": {
+      "source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "source_original": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "source_clone": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "source_snapshot_after": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "raw_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "injected_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+      "exit_code": 0,
+      "workspace_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33",
+      "raw_artifact": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33/.cambc/build-release/bot.wasm",
+      "injected_artifact": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33/.cambc/build-release/bot-injected.wasm"
+    }
+  },
+  "v33_gate": "PASS: copied frozen v33 source rebuilt with exact expected raw and injected hashes",
+  "original_sources_unchanged": true
+}

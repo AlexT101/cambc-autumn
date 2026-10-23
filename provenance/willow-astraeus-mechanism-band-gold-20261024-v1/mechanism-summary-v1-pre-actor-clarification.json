@@ -1,0 +1,887 @@
+{
+  "schema": "willow-seven-mechanism-replay-summary-v1",
+  "inputs": "exactly seven new v1 run outputs plus one reused already-extracted unpatched 4db Band comparison; no replay decoding outside those outputs and the one exact control",
+  "new_games": [
+    {
+      "cell": "01-cb61-base-band-A",
+      "candidate_arm": "cb61-base",
+      "source_aggregate": "369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea",
+      "candidate_side": "A",
+      "map": "gen-band-102305906.map26a",
+      "replay_sha256": "6b0d97f5d54412956f81cf2035550ee3a63fdc29a0c87f256540be0927c6bc99",
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "winner_team": 1,
+      "rounds": 939,
+      "team_gems": [
+        236,
+        1013
+      ],
+      "draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_actions": {
+        "move": 1907,
+        "attack": 441,
+        "cast": 207,
+        "shop": 31,
+        "recall_start": 2647,
+        "recall_end": 23,
+        "tribute_start": 14,
+        "tribute_end": 14,
+        "capture_hold": 0
+      },
+      "first_departures_outside_spawn": {
+        "0": {
+          "round": 2,
+          "step": 311,
+          "kind": "move",
+          "from": [
+            4,
+            22
+          ],
+          "to": [
+            5,
+            21
+          ]
+        },
+        "1": {
+          "round": 2,
+          "step": 333,
+          "kind": "cast",
+          "from": [
+            5,
+            22
+          ],
+          "to": [
+            3,
+            24
+          ]
+        },
+        "2": {
+          "round": 3,
+          "step": 532,
+          "kind": "move",
+          "from": [
+            5,
+            25
+          ],
+          "to": [
+            6,
+            26
+          ]
+        }
+      },
+      "candidate_camp_damage_to_camps": 66743.4,
+      "candidate_attributed_group_clears": 37,
+      "candidate_capture_events": 36,
+      "candidate_capture_gold": 2523,
+      "candidate_kill_gold_from_death_events": 0,
+      "candidate_tribute_gold_from_tribute_end": 0,
+      "candidate_earned_gold_native": 2523,
+      "observed_components_gold_sum": 2523,
+      "earned_gold_unaccounted_by_these_components": 0,
+      "candidate_submitted_gems_native": 236,
+      "candidate_collected_gems_native": 657
+    },
+    {
+      "cell": "02-cb61-band-band-A",
+      "candidate_arm": "cb61-band",
+      "source_aggregate": "2a475721c8985cfcbd189e683ffac90ac05cdbf06280289899d21d9be851204e",
+      "candidate_side": "A",
+      "map": "gen-band-102305906.map26a",
+      "replay_sha256": "6446e7117719efaa0e15958f65c8ab6233cad9cb5a429d4163611d903f7d7914",
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "winner_team": 1,
+      "rounds": 928,
+      "team_gems": [
+        429,
+        1013
+      ],
+      "draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_actions": {
+        "move": 1633,
+        "attack": 644,
+        "cast": 316,
+        "shop": 50,
+        "recall_start": 2414,
+        "recall_end": 33,
+        "tribute_start": 27,
+        "tribute_end": 27,
+        "capture_hold": 0
+      },
+      "first_departures_outside_spawn": {
+        "0": {
+          "round": 2,
+          "step": 311,
+          "kind": "move",
+          "from": [
+            4,
+            22
+          ],
+          "to": [
+            5,
+            21
+          ]
+        },
+        "1": {
+          "round": 2,
+          "step": 333,
+          "kind": "cast",
+          "from": [
+            5,
+            22
+          ],
+          "to": [
+            3,
+            24
+          ]
+        },
+        "2": {
+          "round": 3,
+          "step": 532,
+          "kind": "move",
+          "from": [
+            5,
+            25
+          ],
+          "to": [
+            6,
+            26
+          ]
+        }
+      },
+      "candidate_camp_damage_to_camps": 70416.0,
+      "candidate_attributed_group_clears": 46,
+      "candidate_capture_events": 46,
+      "candidate_capture_gold": 3414,
+      "candidate_kill_gold_from_death_events": 0,
+      "candidate_tribute_gold_from_tribute_end": 0,
+      "candidate_earned_gold_native": 3414,
+      "observed_components_gold_sum": 3414,
+      "earned_gold_unaccounted_by_these_components": 0,
+      "candidate_submitted_gems_native": 429,
+      "candidate_collected_gems_native": 639
+    },
+    {
+      "cell": "03-old4db-band-band-A",
+      "candidate_arm": "old4db-band",
+      "source_aggregate": "0620e6589ba0c1ff908d94538c525b517ed5d8ee3a443e9fe26a9ccc5449a724",
+      "candidate_side": "A",
+      "map": "gen-band-102305906.map26a",
+      "replay_sha256": "9e0fadaa08e00abc30ec41f0a123481cb9f8c365b0e0e2475eec1728e3a5ee94",
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "winner_team": 1,
+      "rounds": 928,
+      "team_gems": [
+        429,
+        1013
+      ],
+      "draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_actions": {
+        "move": 1633,
+        "attack": 644,
+        "cast": 316,
+        "shop": 50,
+        "recall_start": 2414,
+        "recall_end": 33,
+        "tribute_start": 27,
+        "tribute_end": 27,
+        "capture_hold": 0
+      },
+      "first_departures_outside_spawn": {
+        "0": {
+          "round": 2,
+          "step": 311,
+          "kind": "move",
+          "from": [
+            4,
+            22
+          ],
+          "to": [
+            5,
+            21
+          ]
+        },
+        "1": {
+          "round": 2,
+          "step": 333,
+          "kind": "cast",
+          "from": [
+            5,
+            22
+          ],
+          "to": [
+            3,
+            24
+          ]
+        },
+        "2": {
+          "round": 3,
+          "step": 532,
+          "kind": "move",
+          "from": [
+            5,
+            25
+          ],
+          "to": [
+            6,
+            26
+          ]
+        }
+      },
+      "candidate_camp_damage_to_camps": 70416.0,
+      "candidate_attributed_group_clears": 46,
+      "candidate_capture_events": 46,
+      "candidate_capture_gold": 3414,
+      "candidate_kill_gold_from_death_events": 0,
+      "candidate_tribute_gold_from_tribute_end": 0,
+      "candidate_earned_gold_native": 3414,
+      "observed_components_gold_sum": 3414,
+      "earned_gold_unaccounted_by_these_components": 0,
+      "candidate_submitted_gems_native": 429,
+      "candidate_collected_gems_native": 639
+    },
+    {
+      "cell": "04-cb61-base-gold-A",
+      "candidate_arm": "cb61-base",
+      "source_aggregate": "369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea",
+      "candidate_side": "A",
+      "map": "01gold-rush.map26a",
+      "replay_sha256": "9671f4818af50bae8960a6ede1d358878ea23aa4fecd168ede4c1a567b443d33",
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "winner_team": 1,
+      "rounds": 2000,
+      "team_gems": [
+        704,
+        913
+      ],
+      "draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_actions": {
+        "move": 3364,
+        "attack": 1276,
+        "cast": 737,
+        "shop": 83,
+        "recall_start": 4904,
+        "recall_end": 61,
+        "tribute_start": 50,
+        "tribute_end": 48,
+        "capture_hold": 0
+      },
+      "first_departures_outside_spawn": {
+        "0": {
+          "round": 1,
+          "step": 60,
+          "kind": "move",
+          "from": [
+            1,
+            16
+          ],
+          "to": [
+            2,
+            15
+          ]
+        },
+        "1": {
+          "round": 1,
+          "step": 82,
+          "kind": "cast",
+          "from": [
+            2,
+            16
+          ],
+          "to": [
+            3,
+            14
+          ]
+        },
+        "2": {
+          "round": 1,
+          "step": 106,
+          "kind": "move",
+          "from": [
+            3,
+            16
+          ],
+          "to": [
+            4,
+            15
+          ]
+        }
+      },
+      "candidate_camp_damage_to_camps": 97875.9,
+      "candidate_attributed_group_clears": 77,
+      "candidate_capture_events": 79,
+      "candidate_capture_gold": 4709,
+      "candidate_kill_gold_from_death_events": 393,
+      "candidate_tribute_gold_from_tribute_end": 0,
+      "candidate_earned_gold_native": 5102,
+      "observed_components_gold_sum": 5102,
+      "earned_gold_unaccounted_by_these_components": 0,
+      "candidate_submitted_gems_native": 704,
+      "candidate_collected_gems_native": 847
+    },
+    {
+      "cell": "05-cb61-base-gold-B",
+      "candidate_arm": "cb61-base",
+      "source_aggregate": "369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea",
+      "candidate_side": "B",
+      "map": "01gold-rush.map26a",
+      "replay_sha256": "4177b44bd51c2c5667050ecc0309e5ee27ea7f0ca53b0ea5501dfe3321bb74fc",
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "winner_team": 1,
+      "rounds": 1707,
+      "team_gems": [
+        280,
+        1007
+      ],
+      "draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_actions": {
+        "move": 3027,
+        "attack": 1179,
+        "cast": 647,
+        "shop": 104,
+        "recall_start": 4457,
+        "recall_end": 71,
+        "tribute_start": 43,
+        "tribute_end": 42,
+        "capture_hold": 0
+      },
+      "first_departures_outside_spawn": {
+        "3": {
+          "round": 1,
+          "step": 71,
+          "kind": "move",
+          "from": [
+            29,
+            14
+          ],
+          "to": [
+            28,
+            15
+          ]
+        },
+        "4": {
+          "round": 1,
+          "step": 94,
+          "kind": "cast",
+          "from": [
+            28,
+            14
+          ],
+          "to": [
+            26,
+            16
+          ]
+        },
+        "5": {
+          "round": 1,
+          "step": 118,
+          "kind": "move",
+          "from": [
+            27,
+            14
+          ],
+          "to": [
+            26,
+            15
+          ]
+        }
+      },
+      "candidate_camp_damage_to_camps": 117614.2,
+      "candidate_attributed_group_clears": 99,
+      "candidate_capture_events": 101,
+      "candidate_capture_gold": 6200,
+      "candidate_kill_gold_from_death_events": 1238,
+      "candidate_tribute_gold_from_tribute_end": 0,
+      "candidate_earned_gold_native": 7438,
+      "observed_components_gold_sum": 7438,
+      "earned_gold_unaccounted_by_these_components": 0,
+      "candidate_submitted_gems_native": 1007,
+      "candidate_collected_gems_native": 1018
+    },
+    {
+      "cell": "06-cb61-gold-v2-gold-A",
+      "candidate_arm": "cb61-gold-v2",
+      "source_aggregate": "692b6ffe52ea70f9aef3e82609b7133548be295d0eff4cd238a7a5a43ea38fe2",
+      "candidate_side": "A",
+      "map": "01gold-rush.map26a",
+      "replay_sha256": "c6337390a621c6c2015b249e967dd5b20dcce05bc7239f70e8f28430167cd588",
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "winner_team": 0,
+      "rounds": 1439,
+      "team_gems": [
+        1001,
+        176
+      ],
+      "draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_actions": {
+        "move": 2537,
+        "attack": 751,
+        "cast": 508,
+        "shop": 103,
+        "recall_start": 3756,
+        "recall_end": 64,
+        "tribute_start": 45,
+        "tribute_end": 45,
+        "capture_hold": 0
+      },
+      "first_departures_outside_spawn": {
+        "0": {
+          "round": 1,
+          "step": 60,
+          "kind": "move",
+          "from": [
+            1,
+            16
+          ],
+          "to": [
+            2,
+            15
+          ]
+        },
+        "1": {
+          "round": 1,
+          "step": 82,
+          "kind": "cast",
+          "from": [
+            2,
+            16
+          ],
+          "to": [
+            3,
+            14
+          ]
+        },
+        "2": {
+          "round": 1,
+          "step": 106,
+          "kind": "move",
+          "from": [
+            3,
+            16
+          ],
+          "to": [
+            4,
+            15
+          ]
+        }
+      },
+      "candidate_camp_damage_to_camps": 114491.5,
+      "candidate_attributed_group_clears": 102,
+      "candidate_capture_events": 103,
+      "candidate_capture_gold": 6658,
+      "candidate_kill_gold_from_death_events": 1219,
+      "candidate_tribute_gold_from_tribute_end": 0,
+      "candidate_earned_gold_native": 7877,
+      "observed_components_gold_sum": 7877,
+      "earned_gold_unaccounted_by_these_components": 0,
+      "candidate_submitted_gems_native": 1001,
+      "candidate_collected_gems_native": 1001
+    },
+    {
+      "cell": "07-cb61-gold-v2-gold-B",
+      "candidate_arm": "cb61-gold-v2",
+      "source_aggregate": "692b6ffe52ea70f9aef3e82609b7133548be295d0eff4cd238a7a5a43ea38fe2",
+      "candidate_side": "B",
+      "map": "01gold-rush.map26a",
+      "replay_sha256": "9acf1504d69f20e9cda64ce25222ff2a101246078dc3b5aa2749f7ae454fbf38",
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "winner_team": 0,
+      "rounds": 1830,
+      "team_gems": [
+        1001,
+        363
+      ],
+      "draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_actions": {
+        "move": 3050,
+        "attack": 1174,
+        "cast": 687,
+        "shop": 90,
+        "recall_start": 4362,
+        "recall_end": 67,
+        "tribute_start": 30,
+        "tribute_end": 30,
+        "capture_hold": 0
+      },
+      "first_departures_outside_spawn": {
+        "3": {
+          "round": 1,
+          "step": 71,
+          "kind": "move",
+          "from": [
+            29,
+            14
+          ],
+          "to": [
+            28,
+            15
+          ]
+        },
+        "4": {
+          "round": 1,
+          "step": 94,
+          "kind": "cast",
+          "from": [
+            28,
+            14
+          ],
+          "to": [
+            26,
+            16
+          ]
+        },
+        "5": {
+          "round": 1,
+          "step": 118,
+          "kind": "move",
+          "from": [
+            27,
+            14
+          ],
+          "to": [
+            26,
+            15
+          ]
+        }
+      },
+      "candidate_camp_damage_to_camps": 98141.1,
+      "candidate_attributed_group_clears": 85,
+      "candidate_capture_events": 81,
+      "candidate_capture_gold": 5140,
+      "candidate_kill_gold_from_death_events": 526,
+      "candidate_tribute_gold_from_tribute_end": 0,
+      "candidate_earned_gold_native": 5666,
+      "observed_components_gold_sum": 5666,
+      "earned_gold_unaccounted_by_these_components": 0,
+      "candidate_submitted_gems_native": 363,
+      "candidate_collected_gems_native": 671
+    }
+  ],
+  "reused_unpatched_4db_control": {
+    "cell": "08-reused-unpatched-4db-band-control",
+    "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-band-102305906-candidate-A.repl26a",
+    "replay_sha256": "cdbd5b2619aa504fcaf8ede78ac48ca8d0a85cdda4dad436a75f28c25b879ac7",
+    "source_aggregate": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd",
+    "raw_wasm_sha256": "2c9e89bef3b1fe38fdc6fe42d633cdb61f79839ef3778d8cd6d10a62abe142fb",
+    "injected_wasm_sha256": "47ef6140ff6255ddd840f910dcd70e2920014d4c6a9dd9c9e680502530e00e4f",
+    "winner_team": 1,
+    "rounds": 965,
+    "draft": {
+      "rounds": 3,
+      "picks": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ]
+      ],
+      "pickIds": [
+        [
+          5,
+          1,
+          11,
+          -1,
+          -1
+        ],
+        [
+          5,
+          1,
+          11,
+          -1,
+          -1
+        ]
+      ]
+    },
+    "candidate_roster": [
+      "Prism",
+      "Vesper Vale",
+      "Heart of Ruin"
+    ],
+    "candidate_capture_events": 42,
+    "candidate_capture_gold": 3304,
+    "candidate_kill_gold_from_death_events": 0,
+    "candidate_tribute_gold_from_tribute_end": 0,
+    "candidate_earned_gold_native": 3304,
+    "observed_components_gold_sum": 3304,
+    "earned_gold_unaccounted_by_these_components": 0
+  },
+  "caveat": "Gold components count capture shares, death-event killer gold, and tribute_end earnedGold only. Any nonzero residual is deliberately reported, not inferred away. First departure means the first move/dash destination outside the engine-decoded spawn rectangle; it is not itself proof of a strategic retreat or desired route.",
+  "version_note": "Reconstructed pre-champion-vs-team clarification from the earlier summary shape; all rows/metrics match the corrected v2 except added actor stats and corrected-round prose."
+}

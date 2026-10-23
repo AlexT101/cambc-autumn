@@ -2285,3 +2285,57 @@ Source/tool/map/artifact and unique-command reconciliation passes; the failed ex
 and a separate future adapter repair are preserved. Authoritative receipts are
 `provenance/willow-ward-demand-viewers-20261024-v2/candidate16-postflight-recovered-v2.json`
 and `candidate16-fuel-tail-summary-v1.json`. No normal-fuel strength claim follows.
+
+### Upstream Astraeus integrated; isolated mechanism checks
+
+Commit `c5ad40f` merges cb61eaa. Canonical `bots/astraeus` is the exact 29-file
+upstream source 369742e3; canonical Hyperion is the exact 28-file upstream source
+f2229059. The old4db source and every candidate remain frozen separately. Source
+and SDK diffs against cb61eaa are empty. Earlier test results in this log still
+belong to their named source snapshots; they are not results for new Astraeus.
+
+The first control build failed before compilation because the host clock was
+earlier than source/CMake timestamps, causing repeated Ninja regeneration. Its
+logs and unchanged source snapshots are preserved. A fresh isolated workspace
+copies identical bytes with current copy timestamps; the system clock and original
+source timestamps are unchanged. Five sequential Release builds then succeeded.
+The rebuilt frozen v33 matches both its recorded raw and injected WASM hashes.
+See `provenance/willow-astraeus-clock-recovery-20261024-v1/build-postflight.json`.
+
+Source reviews pass for the remembered-camp farm-route overlay and corrected
+gold-occupancy terminal v2. The route overlay uses current native occupancy plus
+remembered living camps outside current native vision; visible empty tiles remove
+only that remembered contribution. Gold v2 avoids temporary group bitboards and
+retains signed progress toward unrelated objectives. Both remain isolated.
+
+Seven source-known Release games are authorized at explicit 100k fuel, jobs 1:
+cb61 control and route candidate on Band 102305906 A; the route candidate on old4db
+on the same cell; cb61 control and Gold v2 on Gold Rush, both physical sides.
+The existing unpatched4db Band replay is reused only as an eighth comparison
+record. These are mechanism checks for useful departure and economic continuation,
+not a seven-game strength or release threshold.
+
+All seven games completed once with no runner failures. Every side has zero native
+BotError, zero caught-action errors and no turn-order errors. Play fuel rollovers
+remain separate from those checks. Source and raw/injected artifact pins are
+unchanged. The existing event extractor processed exactly the seven new replays
+with one thread in23 seconds, with no hard or soft validation errors; the old4db
+control was reused without another decode.
+
+The Band route candidate turns the formerly idle HoR into a productive farmer:
+664 earned gold, 200 gems collected and banked, and12,416.79 camp damage, versus
+zero for that champion in cb61 control. The first changed move is at13; the
+candidate attacks a camp at37, captures group30 at136 and tributes at141. Team
+banking rises236→429, though both lose (control939, candidate928). The old4db route
+candidate has the same observed output; its reused unpatched control loses at965.
+This demonstrates useful departure from the stall, not a competitive win.
+
+On Gold Rush, cb61 control loses A704–913 at2000 and wins B1007–280 at1707.
+Gold v2 wins A1001–176 at1439 and loses B363–1001 at1830. The first accepted
+action differences are HoR's landing at14 on A and Vesper's dash at25 on B.
+The latter begins a gold hold but abandons it before payout. The enemy captures
+the group at31 in control (HoR receives100 gold), versus39 in v2 (Vesper receives133
+gold); delay and the different recipient bonus must be assessed separately. These
+outcomes nominate continuation and commitment
+analysis; they do not establish a net strength gain or prove that the extra
+no-strike terminal, rather than an ordinary leaf's occupancy credit, was selected.

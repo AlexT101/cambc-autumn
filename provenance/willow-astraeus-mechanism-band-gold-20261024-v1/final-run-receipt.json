@@ -1,0 +1,1388 @@
+{
+  "schema": "willow-astraeus-mechanism-seven-game-run-receipt-v1",
+  "created_utc": "2026-10-23T16:26:38.684522+00:00",
+  "status": "COMPLETE",
+  "scope": "Seven reviewed new default-native-draft Release 100k cells, sequential jobs=1. Reused 4db comparison is outside seven new games. No broad follow-on runs.",
+  "command": [
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "CMAKE_BUILD_PARALLEL_LEVEL=1",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "run-batch",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/seven-new-games.manifest.txt",
+    "--jobs",
+    "1",
+    "--color",
+    "never",
+    "--release",
+    "--fuel-quantum",
+    "100000"
+  ],
+  "run_started_utc": "2026-10-23T16:17:06.161353+00:00",
+  "run_finished_utc": "2026-10-23T16:17:22.555325+00:00",
+  "run_exit_code": 0,
+  "run_stdout_sha256": "364ccd3b7308b21f1dbb6d4d14fc0834938bed98752a96ac7aad48faf36260a4",
+  "run_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "manifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/seven-new-games.manifest.txt",
+  "manifest_sha256": "d545485aff6095de9855bd3f3ab4e64dbed2d89a16ce0d60ce2ad3b2f71d4cf0",
+  "preflight_receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/run-preflight-receipt.json",
+  "preflight_receipt_sha256": "faeb15ded7154da8f54204194b41a8acaed9ce7ab7adbe789beca1c5ef151fd8",
+  "seven_rows": [
+    {
+      "cell": "01-cb61-base-band-A",
+      "candidate_arm": "cb61-base",
+      "candidate_source_aggregate": "369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea",
+      "candidate_raw_wasm_sha256": "7f1d6402219ceea60a986b1b6f3e974e8e980d5ce5860acbf728648074e5e4a9",
+      "candidate_injected_wasm_sha256": "816498b45d45b17165567f99098ebfaf3e4baec3a22c7098707fd9174ca2ff2b",
+      "opponent_source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "opponent_raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "opponent_injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-band-102305906.map26a",
+      "map_sha256": "4110feb17b928769e36303ba38a54d5f2cbc2f432e042ebd8697bfa9cdfee221",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/outputs/01-cb61-base-band-A.repl26a",
+      "replay_sha256": "6b0d97f5d54412956f81cf2035550ee3a63fdc29a0c87f256540be0927c6bc99",
+      "physical_order": [
+        "candidate",
+        "v33"
+      ],
+      "candidate_side": "A",
+      "actual_rosters": {
+        "A": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "B": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ]
+      },
+      "native_draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "result": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 939,
+        "gems": [
+          236,
+          1013
+        ],
+        "steps": 183875
+      },
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "compact_native_status": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/audit-logs/cb61-base/native-status.json",
+        "mode": "v1_0_3_compact_timeline",
+        "sides": [
+          {
+            "physical_side": "A",
+            "bot": "cb61-base",
+            "play": {
+              "rollover": 6,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "audit_sha256": "5a2dae419f75001ce8d30619bb169cd801d587231ce7cd79577c8c80378617a6"
+    },
+    {
+      "cell": "02-cb61-band-band-A",
+      "candidate_arm": "cb61-band",
+      "candidate_source_aggregate": "2a475721c8985cfcbd189e683ffac90ac05cdbf06280289899d21d9be851204e",
+      "candidate_raw_wasm_sha256": "96f3e6126706e5521ae10d8ae854e98f39f9d3fa21620eeaa86125cf6ccb7403",
+      "candidate_injected_wasm_sha256": "961cfcae3026bdac5c88d860fabc91aca2442b4d214d9af83eba06926e887b31",
+      "opponent_source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "opponent_raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "opponent_injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-band-102305906.map26a",
+      "map_sha256": "4110feb17b928769e36303ba38a54d5f2cbc2f432e042ebd8697bfa9cdfee221",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/outputs/02-cb61-band-band-A.repl26a",
+      "replay_sha256": "6446e7117719efaa0e15958f65c8ab6233cad9cb5a429d4163611d903f7d7914",
+      "physical_order": [
+        "candidate",
+        "v33"
+      ],
+      "candidate_side": "A",
+      "actual_rosters": {
+        "A": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "B": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ]
+      },
+      "native_draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "result": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 928,
+        "gems": [
+          429,
+          1013
+        ],
+        "steps": 182082
+      },
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "compact_native_status": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/audit-logs/cb61-band/native-status.json",
+        "mode": "v1_0_3_compact_timeline",
+        "sides": [
+          {
+            "physical_side": "A",
+            "bot": "cb61-band",
+            "play": {
+              "rollover": 7,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "audit_sha256": "3ba0ebe4db9d7dcea33f18218a5c18691dcea96874f07f846e60e4868082fef3"
+    },
+    {
+      "cell": "03-old4db-band-band-A",
+      "candidate_arm": "old4db-band",
+      "candidate_source_aggregate": "0620e6589ba0c1ff908d94538c525b517ed5d8ee3a443e9fe26a9ccc5449a724",
+      "candidate_raw_wasm_sha256": "714150a1c7ac1b390af176031f48a93bfe12a3fe9c0562344eb636893b850cc3",
+      "candidate_injected_wasm_sha256": "914bc0d917aeaf5402dee26cea2f3e7d8588bfd7e6b4b10625e1c4de5ddd4ca1",
+      "opponent_source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "opponent_raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "opponent_injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-band-102305906.map26a",
+      "map_sha256": "4110feb17b928769e36303ba38a54d5f2cbc2f432e042ebd8697bfa9cdfee221",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/outputs/03-old4db-band-band-A.repl26a",
+      "replay_sha256": "9e0fadaa08e00abc30ec41f0a123481cb9f8c365b0e0e2475eec1728e3a5ee94",
+      "physical_order": [
+        "candidate",
+        "v33"
+      ],
+      "candidate_side": "A",
+      "actual_rosters": {
+        "A": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "B": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ]
+      },
+      "native_draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "result": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 928,
+        "gems": [
+          429,
+          1013
+        ],
+        "steps": 182083
+      },
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "compact_native_status": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/audit-logs/old4db-band/native-status.json",
+        "mode": "v1_0_3_compact_timeline",
+        "sides": [
+          {
+            "physical_side": "A",
+            "bot": "old4db-band",
+            "play": {
+              "rollover": 7,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "audit_sha256": "c44fea27806a3b122861cd6d28d0ce65a73998373b7939f79f5154c5d7a6d2d5"
+    },
+    {
+      "cell": "04-cb61-base-gold-A",
+      "candidate_arm": "cb61-base",
+      "candidate_source_aggregate": "369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea",
+      "candidate_raw_wasm_sha256": "7f1d6402219ceea60a986b1b6f3e974e8e980d5ce5860acbf728648074e5e4a9",
+      "candidate_injected_wasm_sha256": "816498b45d45b17165567f99098ebfaf3e4baec3a22c7098707fd9174ca2ff2b",
+      "opponent_source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "opponent_raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "opponent_injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a",
+      "map_sha256": "6e564fdf09fdf67a4182a909d6985737b488742e64f2c3e164204e78bc64c898",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/outputs/04-cb61-base-gold-A.repl26a",
+      "replay_sha256": "9671f4818af50bae8960a6ede1d358878ea23aa4fecd168ede4c1a567b443d33",
+      "physical_order": [
+        "candidate",
+        "v33"
+      ],
+      "candidate_side": "A",
+      "actual_rosters": {
+        "A": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "B": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ]
+      },
+      "native_draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "result": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 2000,
+        "gems": [
+          704,
+          913
+        ],
+        "steps": 242500
+      },
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "compact_native_status": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/audit-logs/cb61-base/native-status.json",
+        "mode": "v1_0_3_compact_timeline",
+        "sides": [
+          {
+            "physical_side": "A",
+            "bot": "cb61-base",
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "play": {
+              "rollover": 15,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 15,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "audit_sha256": "5a2dae419f75001ce8d30619bb169cd801d587231ce7cd79577c8c80378617a6"
+    },
+    {
+      "cell": "05-cb61-base-gold-B",
+      "candidate_arm": "cb61-base",
+      "candidate_source_aggregate": "369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea",
+      "candidate_raw_wasm_sha256": "7f1d6402219ceea60a986b1b6f3e974e8e980d5ce5860acbf728648074e5e4a9",
+      "candidate_injected_wasm_sha256": "816498b45d45b17165567f99098ebfaf3e4baec3a22c7098707fd9174ca2ff2b",
+      "opponent_source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "opponent_raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "opponent_injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a",
+      "map_sha256": "6e564fdf09fdf67a4182a909d6985737b488742e64f2c3e164204e78bc64c898",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/outputs/05-cb61-base-gold-B.repl26a",
+      "replay_sha256": "4177b44bd51c2c5667050ecc0309e5ee27ea7f0ca53b0ea5501dfe3321bb74fc",
+      "physical_order": [
+        "v33",
+        "candidate"
+      ],
+      "candidate_side": "B",
+      "actual_rosters": {
+        "A": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "B": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ]
+      },
+      "native_draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "result": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 1707,
+        "gems": [
+          280,
+          1007
+        ],
+        "steps": 206046
+      },
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "compact_native_status": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/audit-logs/cb61-base/native-status.json",
+        "mode": "v1_0_3_compact_timeline",
+        "sides": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "cb61-base",
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "audit_sha256": "5a2dae419f75001ce8d30619bb169cd801d587231ce7cd79577c8c80378617a6"
+    },
+    {
+      "cell": "06-cb61-gold-v2-gold-A",
+      "candidate_arm": "cb61-gold-v2",
+      "candidate_source_aggregate": "692b6ffe52ea70f9aef3e82609b7133548be295d0eff4cd238a7a5a43ea38fe2",
+      "candidate_raw_wasm_sha256": "8aeaeecbf6e6d604dcde1d4ec3110ea5d51b81e6c2119af8ff2e383605364354",
+      "candidate_injected_wasm_sha256": "a21e4051e659b7ae72833c4ad618f482e551496826ed233bbc935b85046f6950",
+      "opponent_source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "opponent_raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "opponent_injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a",
+      "map_sha256": "6e564fdf09fdf67a4182a909d6985737b488742e64f2c3e164204e78bc64c898",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/outputs/06-cb61-gold-v2-gold-A.repl26a",
+      "replay_sha256": "c6337390a621c6c2015b249e967dd5b20dcce05bc7239f70e8f28430167cd588",
+      "physical_order": [
+        "candidate",
+        "v33"
+      ],
+      "candidate_side": "A",
+      "actual_rosters": {
+        "A": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "B": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ]
+      },
+      "native_draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "result": {
+        "winner": 0,
+        "outcome": 1,
+        "rounds": 1439,
+        "gems": [
+          1001,
+          176
+        ],
+        "steps": 174611
+      },
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "compact_native_status": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/audit-logs/cb61-gold-v2/native-status.json",
+        "mode": "v1_0_3_compact_timeline",
+        "sides": [
+          {
+            "physical_side": "A",
+            "bot": "cb61-gold-v2",
+            "play": {
+              "rollover": 9,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 9,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {}
+          }
+        ]
+      },
+      "audit_sha256": "08cece5823d651e7aef8fb789a36e482fca2a761e1fd5b469adfc2610f113046"
+    },
+    {
+      "cell": "07-cb61-gold-v2-gold-B",
+      "candidate_arm": "cb61-gold-v2",
+      "candidate_source_aggregate": "692b6ffe52ea70f9aef3e82609b7133548be295d0eff4cd238a7a5a43ea38fe2",
+      "candidate_raw_wasm_sha256": "8aeaeecbf6e6d604dcde1d4ec3110ea5d51b81e6c2119af8ff2e383605364354",
+      "candidate_injected_wasm_sha256": "a21e4051e659b7ae72833c4ad618f482e551496826ed233bbc935b85046f6950",
+      "opponent_source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "opponent_raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "opponent_injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a",
+      "map_sha256": "6e564fdf09fdf67a4182a909d6985737b488742e64f2c3e164204e78bc64c898",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/outputs/07-cb61-gold-v2-gold-B.repl26a",
+      "replay_sha256": "9acf1504d69f20e9cda64ce25222ff2a101246078dc3b5aa2749f7ae454fbf38",
+      "physical_order": [
+        "v33",
+        "candidate"
+      ],
+      "candidate_side": "B",
+      "actual_rosters": {
+        "A": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "B": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ]
+      },
+      "native_draft": {
+        "rounds": 3,
+        "picks": [
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ],
+          [
+            "Prism",
+            "Vesper Vale",
+            "Heart of Ruin"
+          ]
+        ],
+        "pickIds": [
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ],
+          [
+            5,
+            1,
+            11,
+            -1,
+            -1
+          ]
+        ]
+      },
+      "result": {
+        "winner": 0,
+        "outcome": 1,
+        "rounds": 1830,
+        "gems": [
+          1001,
+          363
+        ],
+        "steps": 221086
+      },
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "compact_native_status": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/audit-logs/cb61-gold-v2/native-status.json",
+        "mode": "v1_0_3_compact_timeline",
+        "sides": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "cb61-gold-v2",
+            "play": {
+              "rollover": 7,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champion_statuses": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 7,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "audit_sha256": "08cece5823d651e7aef8fb789a36e482fca2a761e1fd5b469adfc2610f113046"
+    }
+  ],
+  "reused_unpatched_control": {
+    "cell": "08-reused-unpatched-4db-band-control",
+    "is_new_game": false,
+    "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-band-102305906-candidate-A.repl26a",
+    "replay_sha256": "cdbd5b2619aa504fcaf8ede78ac48ca8d0a85cdda4dad436a75f28c25b879ac7",
+    "source_aggregate": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd",
+    "raw_wasm_sha256": "2c9e89bef3b1fe38fdc6fe42d633cdb61f79839ef3778d8cd6d10a62abe142fb",
+    "injected_wasm_sha256": "47ef6140ff6255ddd840f910dcd70e2920014d4c6a9dd9c9e680502530e00e4f",
+    "opponent_source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+    "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-band-102305906.map26a",
+    "map_sha256": "4110feb17b928769e36303ba38a54d5f2cbc2f432e042ebd8697bfa9cdfee221",
+    "candidate_physical_side": "A",
+    "winner_team": "B",
+    "rounds": 965,
+    "status_line": "[+] TEAM B WIN (hyperion-deployed-v33-a00fff)  integration-candidate vs hyperion-deployed-v33-a00fff  gen-band-102305906  Round 0965/2000",
+    "important": "This is the unpatched old4db 4db4eecb source result; it is not substituted for the new 0620e658 old4dbBand candidate row."
+  },
+  "post_run_pin_check": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-mechanism-band-gold-20261024-v1/post-run-pin-check.json",
+    "sha256": "99c9055c23fafc3763a479bcdf3e3f8d84612dffa9cb56c73fd2a51497108db5",
+    "all_pass": true
+  },
+  "extraction": {
+    "index": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/analysis-v1/index.json",
+    "index_sha256": "5860a239ff4c513329e50c1ff9c4cc70342ee4e49b2e65d6605f558dbac1e3f2",
+    "process_receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/extract-logs/extract-process.json",
+    "process_receipt_sha256": "993d76194bac39fdd65c66e95d37b894ada45a4ef91962f7d01a6f7665471045",
+    "exit_code": 0,
+    "stdout_sha256": "f3454864369a42142307d34d0af2ce885946771cfc8030dba21da9a6397c5ec9",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "validation_all_7_ok": true,
+    "soft_notes": 0,
+    "engine_v1_0_3_entry": {
+      "asset": "v1_0_3-DRqNt1t2.wasm",
+      "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+      "bytes": 638472,
+      "snapshotSize": 184760
+    }
+  },
+  "audits_by_arm": {
+    "cb61-base": {
+      "native_status_sha256": "5a2dae419f75001ce8d30619bb169cd801d587231ce7cd79577c8c80378617a6",
+      "caught_stdout_json_sha256": "69a2771a4711af3720ab2669382d6b5341f635e7b4953cb321acd6ed9801d973",
+      "caught_act_error_lines": {
+        "cb61-base": 0,
+        "v33": 0
+      },
+      "turn_order_audit_sha256": "9e4cd712ea870e0f1ccf46f7e9a88c3b1dec2bef4a53f4f7c1629d50ca7de1e7",
+      "turn_order_validation": {
+        "ok": true,
+        "scanned_matches": 3,
+        "issues": 0
+      },
+      "turn_order_markers_by_bot": {
+        "cb61-base": 0,
+        "v33": 0
+      },
+      "native_totals_by_bot": {
+        "cb61-base": {
+          "games": 3,
+          "play": {
+            "rollover": 10,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "v33": {
+          "games": 3,
+          "play": {
+            "rollover": 24,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    },
+    "cb61-band": {
+      "native_status_sha256": "3ba0ebe4db9d7dcea33f18218a5c18691dcea96874f07f846e60e4868082fef3",
+      "caught_stdout_json_sha256": "1ed95e7d727c3c6aaadcb4598acdf8ec3bf8e3647902ba77b5b595bf19c84c5d",
+      "caught_act_error_lines": {
+        "cb61-band": 0,
+        "v33": 0
+      },
+      "turn_order_audit_sha256": "3d9b23b86727eb41988e7ef6a89ebabca5320d35a8adcda8ef6ad4ed1e18b84a",
+      "turn_order_validation": {
+        "ok": true,
+        "scanned_matches": 1,
+        "issues": 0
+      },
+      "turn_order_markers_by_bot": {
+        "cb61-band": 0,
+        "v33": 0
+      },
+      "native_totals_by_bot": {
+        "cb61-band": {
+          "games": 1,
+          "play": {
+            "rollover": 7,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "v33": {
+          "games": 1,
+          "play": {
+            "rollover": 3,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    },
+    "old4db-band": {
+      "native_status_sha256": "c44fea27806a3b122861cd6d28d0ce65a73998373b7939f79f5154c5d7a6d2d5",
+      "caught_stdout_json_sha256": "952413632ecb2ba7552481d97c67a231171caf02d73a4b181c819eca9d29912c",
+      "caught_act_error_lines": {
+        "old4db-band": 0,
+        "v33": 0
+      },
+      "turn_order_audit_sha256": "2afb8026984ee60f7ace7369f839c62144fc2521ce9f5fddef5135523c7dd203",
+      "turn_order_validation": {
+        "ok": true,
+        "scanned_matches": 1,
+        "issues": 0
+      },
+      "turn_order_markers_by_bot": {
+        "old4db-band": 0,
+        "v33": 0
+      },
+      "native_totals_by_bot": {
+        "old4db-band": {
+          "games": 1,
+          "play": {
+            "rollover": 7,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "v33": {
+          "games": 1,
+          "play": {
+            "rollover": 3,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    },
+    "cb61-gold-v2": {
+      "native_status_sha256": "08cece5823d651e7aef8fb789a36e482fca2a761e1fd5b469adfc2610f113046",
+      "caught_stdout_json_sha256": "ca48f163047ddd0c5861a42186ec48fbd592a88d04987131bba4664568f4ed16",
+      "caught_act_error_lines": {
+        "cb61-gold-v2": 0,
+        "v33": 0
+      },
+      "turn_order_audit_sha256": "d18efbeb67941902b10757f47d5e4afbe78b004e2fd43f27c40d9878fe2c4929",
+      "turn_order_validation": {
+        "ok": true,
+        "scanned_matches": 2,
+        "issues": 0
+      },
+      "turn_order_markers_by_bot": {
+        "cb61-gold-v2": 0,
+        "v33": 0
+      },
+      "native_totals_by_bot": {
+        "cb61-gold-v2": {
+          "games": 2,
+          "play": {
+            "rollover": 16,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "v33": {
+          "games": 2,
+          "play": {
+            "rollover": 4,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    }
+  },
+  "corrected_outcome_axes": {
+    "cb61_base_band_A": {
+      "winner_team": "B",
+      "rounds": 939,
+      "candidate_side": "A"
+    },
+    "cb61_band_A": {
+      "winner_team": "B",
+      "rounds": 928,
+      "candidate_side": "A",
+      "candidate_team_native_totals": {
+        "earnedGold": 3414,
+        "collectedGems": 639,
+        "submittedGems": 429
+      },
+      "candidate_actor_2_HoR": {
+        "earnedGold": 664,
+        "collectedGems": 200,
+        "submittedGems": 200,
+        "monsterDamageDone": 12416.79,
+        "deaths": 1
+      }
+    },
+    "unpatched_4db_control_A": {
+      "winner_team": "B",
+      "rounds": 965,
+      "candidate_side": "A",
+      "rounds_longer_than_cb61_band": 37
+    },
+    "comparison": {
+      "base_lasts_11_rounds_longer_than_cb61_band": true,
+      "unpatched_4db_control_lasts_37_rounds_longer_than_cb61_band": true,
+      "cb61_band_candidate_and_fresh_old4dbBand_candidate_same_observed_Band_outcome_rounds_and_work": true
+    }
+  },
+  "detailed_reports": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/analysis-v1/mechanism-summary.json",
+      "sha256": "2751737428535e736dbc59148770602f184f697aab3b3eabca871af07afda579"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/analysis-v1/gold-paired-event-comparison.json",
+      "sha256": "bb8d168023a94c8e440d6f71db9536dbfa4d3dbca1bfee89e05be8dfb48eec4f"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-mechanism-band-gold-20261024-v1/analysis-v1/index.json",
+      "sha256": "5860a239ff4c513329e50c1ff9c4cc70342ee4e49b2e65d6605f558dbac1e3f2"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "schema": "mechanism-run-post-pin-check-v1",
+  "checked_utc": "2026-10-23T16:26:16.780794+00:00",
+  "arms": [
+    {
+      "arm": "cb61-base",
+      "source_aggregate_recorded": "369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea",
+      "workspace_src_matches_snapshot": true,
+      "workspace_src_files": 29,
+      "original_src_matches_snapshot": true,
+      "raw_sha256": "7f1d6402219ceea60a986b1b6f3e974e8e980d5ce5860acbf728648074e5e4a9",
+      "raw_matches_record": true,
+      "injected_sha256": "816498b45d45b17165567f99098ebfaf3e4baec3a22c7098707fd9174ca2ff2b",
+      "injected_matches_record": true
+    },
+    {
+      "arm": "cb61-band",
+      "source_aggregate_recorded": "2a475721c8985cfcbd189e683ffac90ac05cdbf06280289899d21d9be851204e",
+      "workspace_src_matches_snapshot": true,
+      "workspace_src_files": 29,
+      "original_src_matches_snapshot": true,
+      "raw_sha256": "96f3e6126706e5521ae10d8ae854e98f39f9d3fa21620eeaa86125cf6ccb7403",
+      "raw_matches_record": true,
+      "injected_sha256": "961cfcae3026bdac5c88d860fabc91aca2442b4d214d9af83eba06926e887b31",
+      "injected_matches_record": true
+    },
+    {
+      "arm": "old4db-band",
+      "source_aggregate_recorded": "0620e6589ba0c1ff908d94538c525b517ed5d8ee3a443e9fe26a9ccc5449a724",
+      "workspace_src_matches_snapshot": true,
+      "workspace_src_files": 29,
+      "original_src_matches_snapshot": true,
+      "raw_sha256": "714150a1c7ac1b390af176031f48a93bfe12a3fe9c0562344eb636893b850cc3",
+      "raw_matches_record": true,
+      "injected_sha256": "914bc0d917aeaf5402dee26cea2f3e7d8588bfd7e6b4b10625e1c4de5ddd4ca1",
+      "injected_matches_record": true
+    },
+    {
+      "arm": "cb61-gold-v2",
+      "source_aggregate_recorded": "692b6ffe52ea70f9aef3e82609b7133548be295d0eff4cd238a7a5a43ea38fe2",
+      "workspace_src_matches_snapshot": true,
+      "workspace_src_files": 29,
+      "original_src_matches_snapshot": true,
+      "raw_sha256": "8aeaeecbf6e6d604dcde1d4ec3110ea5d51b81e6c2119af8ff2e383605364354",
+      "raw_matches_record": true,
+      "injected_sha256": "a21e4051e659b7ae72833c4ad618f482e551496826ed233bbc935b85046f6950",
+      "injected_matches_record": true
+    },
+    {
+      "arm": "v33",
+      "source_aggregate_recorded": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "workspace_src_matches_snapshot": true,
+      "workspace_src_files": 29,
+      "original_src_matches_snapshot": true,
+      "raw_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "raw_matches_record": true,
+      "injected_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+      "injected_matches_record": true
+    }
+  ],
+  "all_pass": true,
+  "run_batch_noop_builds": "run-batch stdout said all five arms up to date; no post-run source/artifact hash drift observed"
+}
