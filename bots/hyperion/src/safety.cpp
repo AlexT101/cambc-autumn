@@ -697,6 +697,7 @@ void join_allies(const World& world, Side& us, vec2 p, std::uint32_t& made) { fi
 
 int next_turn_round(const World& world, const ChampionBelief& c) {
     // Read for those in sight; ranks are a guess when priorities change unseen.
+    if (c.teleport_pending()) return std::max(c.acted ? world.round + 1 : world.round, c.channel_end_round);
     if (c.visible && !c.is_self) return c.acted ? world.round + 1 : world.round;
     return world.slot(c, world.round) > world.slot(world.me(), world.round) ? world.round : world.round + 1;
 }
@@ -794,7 +795,9 @@ const Strike& strike(const ChampionBelief& c, int turn_round) { return strike_me
 int turns_before_ours(const World& world, const ChampionBelief& c) {
     const auto& me = world.me();
     const bool now = c.visible ? !c.acted : world.slot(c, world.round) > world.slot(me, world.round);
-    return (now ? 1 : 0) + (world.slot(c, world.round + 1) < world.slot(me, world.round + 1) ? 1 : 0);
+    // A teleport's channel turns are not its own.
+    const int from = c.teleport_pending() ? c.channel_end_round : world.round;
+    return (now && from <= world.round ? 1 : 0) + (from <= world.round + 1 && world.slot(c, world.round + 1) < world.slot(me, world.round + 1) ? 1 : 0);
 }
 
 namespace {
@@ -822,6 +825,8 @@ float most_damage(const ChampionBelief& c) {
 } // namespace
 
 const Strike& threat_strike(const World& world, const ChampionBelief& c) {
+    static const Strike none;
+    if (c.teleport_pending() && turns_before_ours(world, c) == 0) return none;
     const int round = next_turn_round(world, c);
     auto& m = strike_memo(c, round);
     const auto& s = m.value;
@@ -1902,6 +1907,7 @@ const Reach& Safety::reach_of(const ChampionBelief& e) {
 
 Blow Safety::blow(const ChampionBelief& e, vec2 p) {
     const auto& s = struck(e).strike;
+    if (e.teleport_pending() && in_bounds(e.tp_dest)) return s.blow(dist(p, e.tp_dest)); // it acts from there
     if (s.reach < 0 || !in_square(p, e.pos, s.reach)) return {};
     const auto& r = reach_of(e);
     const Blow b = r.at(p);
@@ -1919,7 +1925,8 @@ Blow Safety::blow(const ChampionBelief& e, vec2 p) {
 
 int Safety::approach(const ChampionBelief& e, vec2 p) {
     const int reach = struck(e).strike.reach;
-    return blow(e, p).hits ? 0 : std::max(1, dist(p, e.pos) - reach);
+    const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos;
+    return blow(e, p).hits ? 0 : std::max(1, dist(p, from) - reach);
 }
 
 int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out) {

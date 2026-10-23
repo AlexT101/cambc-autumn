@@ -104,6 +104,8 @@ float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
     if (e.channel == Channel::tribute) v += params::tribute_value + params::gem_value * static_cast<float>(e.gems);
     if (e.channel == Channel::tribute && enemy_tribute_wins(world, e)) v += winning_tribute_value;
     if (!damaging && kept_recall(e)) v += params::recall_value;
+    // A cancelled teleport wastes its channel and crystal, as a cancelled recall does.
+    if (e.teleport_pending()) v += params::recall_value;
     return v;
 }
 

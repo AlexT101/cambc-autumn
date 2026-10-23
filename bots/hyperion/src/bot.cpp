@@ -3034,23 +3034,32 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& altars = world.map().altars;
     const int range = self.facts().attack_range();
     int steps = std::max(0, dist(here, e.pos) - range);
-    if (e.channel == Channel::tribute) {
+    vec2 from = e.pos;
+    int delay = 0;
+    if (e.channel == Channel::tribute || e.teleport_pending()) {
         // It completes at its turn start in its end round: the last round we act before that.
         const int end = e.channel_end_round;
         const bool first = end == world.round ? !e.acted : world.slot(self, end) < world.slot(e, end);
         const int last = first ? end : end - 1;
+        int stop = steps;
         if (e.facts().passive != Passive::stun_immune)
             if (const int reach = self.ready_stun_reach(last); reach >= 0)
-                steps = std::min(steps, std::max(0, dist(here, e.pos) - reach));
-        if (const int a = tribute_altar(world, e.pos); a >= 0 && carried_locks() > 0)
-            steps = std::min(steps, std::max(0, dist(here, altars[a].pos) - 2));
-        return steps <= last - world.round ? steps : unreachable;
+                stop = std::min(stop, std::max(0, dist(here, e.pos) - reach));
+        if (e.channel == Channel::tribute) {
+            if (const int a = tribute_altar(world, e.pos); a >= 0 && carried_locks() > 0)
+                stop = std::min(stop, std::max(0, dist(here, altars[a].pos) - 2));
+            return stop <= last - world.round ? stop : unreachable;
+        }
+        // A teleport not stopped in time lands, and it walks on from there.
+        if (stop <= last - world.round) return stop;
+        if (in_bounds(e.tp_dest)) from = e.tp_dest, steps = std::max(0, dist(here, from) - range);
+        delay = std::max(0, end - world.round);
     }
     int a = -1;
     for (int k = 0; k < static_cast<int>(altars.size()); ++k)
-        if (a < 0 || dist(e.pos, altars[k].pos) < dist(e.pos, altars[a].pos)) a = k;
+        if (a < 0 || dist(from, altars[k].pos) < dist(from, altars[a].pos)) a = k;
     if (a < 0) return unreachable;
-    const int theirs = std::max(0, dist(e.pos, altars[a].pos) - 1) + tribute_turns(pair_gems(world, e));
+    const int theirs = delay + std::max(0, dist(from, altars[a].pos) - 1) + tribute_turns(pair_gems(world, e));
     return std::max(0, dist(here, altars[a].pos) - 1 - range) < theirs ? steps : unreachable;
 }
 
@@ -3072,6 +3081,12 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     for (auto left = safety.seen_enemies(); left; left &= left - 1) {
         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (n == static_cast<int>(order.size()) || dist(here, e.pos) > vision_radius || test(near_enemy_spawn, e.pos)) continue;
+        // A teleport under way cannot fight back, but leaves unless we reach it before it lands.
+        if (e.teleport_pending()) {
+            const int end = e.channel_end_round;
+            const bool first = end == world.round ? !e.acted : world.slot(world.me(), end) < world.slot(e, end);
+            if (std::max(0, dist(here, e.pos) - range) > (first ? end : end - 1) - world.round) continue;
+        }
         // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
         // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
         // but a bag has to stop at an altar to score, and a kill takes it. An enemy holding a

@@ -1168,8 +1168,25 @@ void World::update_champion(ChampionBelief& b, bool full) {
         b.channel_end_round = fire_round(round, left.value_or(0), acted);
     }
     // The crystal's destination: a free tile within 3, terrain in between ignored.
+    b.tp_dest = {-1, -1};
     if (enemy && b.channel == Channel::teleport) {
-        or_into(b.possible, within(s.open_for_them, b.pos, teleport_crystal_range), b.possible);
+        // Its reservation is listed only while we see the destination tile.
+        std::array<cambc::detail::teleport_info, 8> tps;
+        std::uint32_t n = 0;
+        if (cambc::detail::sdk_teleports(tps.data(), static_cast<std::uint32_t>(tps.size()), &n) == 0)
+            for (std::uint32_t i = 0; i < std::min<std::uint32_t>(n, static_cast<std::uint32_t>(tps.size())); ++i)
+                if (tps[i].champion == h) b.tp_dest = {tps[i].destination.x, tps[i].destination.y};
+        debug_block({
+            static std::array<int, 8> last{};
+            if (last[b.index & 7] != b.channel_end_round) {
+                last[b.index & 7] = b.channel_end_round;
+                std::printf("ETP %d enemy %d d_me %d end %d dest %d,%d d_dest %d\n", round, b.index, dist(b.pos, me().pos),
+                            b.channel_end_round, b.tp_dest.x, b.tp_dest.y, b.tp_dest.x < 0 ? -1 : dist(b.tp_dest, me().pos));
+            }
+        });
+        // It lands there unless a stun or death cancels it, which leaves it here.
+        if (in_bounds(b.tp_dest)) set_tile(b.possible, b.tp_dest);
+        else or_into(b.possible, within(s.open_for_them, b.pos, teleport_crystal_range), b.possible);
         also_undashed(b, b.possible);
         b.lineage = 0;
     }
@@ -1437,6 +1454,12 @@ bool World::grow(ChampionBelief& b, int turns) {
     // priorities read only in sight): count it now, so `possible` grows too much rather than
     // missing a tile, and date `possible` after that turn so the next update does not count it again.
     const auto to = std::max(now(), Moment{round, slot(b, round)});
+    // A teleport seen under way pins it until it lands, at its turn start in channel_end_round:
+    // that turn is counted.
+    if (b.seen_channel == Channel::teleport) {
+        const Moment lands{b.channel_end_round, slot(b, b.channel_end_round) - 1};
+        if (b.at < lands) b.at = std::min(to, lands);
+    }
     const int turns = turns_between(b, b.at, to);
     // With no turns to add, every enemy of a lineage gets the same prune this pass.
     if (!turns) {
