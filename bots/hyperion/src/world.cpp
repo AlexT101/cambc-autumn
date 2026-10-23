@@ -414,6 +414,13 @@ const bitboard& StaticMap::make_dash_foot() const {
     return dash_foot_.emplace(std::move(b));
 }
 
+const bitboard& StaticMap::make_landing_dash_foot() const {
+    FuelMeter meter{"dash_foot"};
+    bitboard b;
+    if (!ally_spawn_tiles.empty()) landing_dash_walls.reachable_tiles_into(ally_spawn_tiles[0], unreachable, b);
+    return landing_dash_foot_.emplace(std::move(b));
+}
+
 const std::vector<StaticMap::Hop>& StaticMap::make_hops() const {
     FuelMeter meter{"hops"};
     auto& hops = hops_.emplace();
@@ -820,6 +827,13 @@ void find_crossings(StaticMap& s) {
     copy_into(s.blocked_for_us, s.dash_walls);
     drop(s.dash_walls, s.crossable);
     square_dilate(s.crossable, 1, s.near_crossable);
+    clear_board(t);
+    for (const auto& g : s.groups)
+        if (g.strength > 0)
+            for (const auto& m : g.members) set_tile(t, m.pos);
+    square_dilate(t, 2, ahead);
+    and_into(s.crossable, ahead, behind);
+    or_into(s.dash_walls, behind, s.landing_dash_walls);
 }
 
 } // namespace

@@ -92,9 +92,10 @@ struct StaticMap {
     // stampede's shared block.
     bool shared_gems = false;
     int max_camp_reach = 0; // longest reach of any camp member on the map
-    // Walkable from our spawn, every camp counted as cleared; the same through dash_walls.
+    // Walkable from our spawn, every camp counted as cleared; the same through dash_walls and landing_dash_walls.
     const bitboard& foot() const { return foot_ ? *foot_ : make_foot(); }
     const bitboard& dash_foot() const { return dash_foot_ ? *dash_foot_ : make_dash_foot(); }
+    const bitboard& landing_dash_foot() const { return landing_dash_foot_ ? *landing_dash_foot_ : make_landing_dash_foot(); }
     // An altar no walk reaches but a teleport crystal does: from a source tile on foot to a landing
     // tile within its range, terrain ignored, then the walk.
     struct Hop {
@@ -125,6 +126,9 @@ struct StaticMap {
     bitboard crossable;
     bitboard near_crossable{cambc::uninitialized}; // within 1 of a crossable tile
     bitboard dash_walls{cambc::uninitialized}; // blocked_for_us without crossable: a dasher's static walls
+    // dash_walls for a dash that hits where it lands: no crossing within 2 of a harmful camp, which
+    // the landing could wake (dash_across refuses it).
+    bitboard landing_dash_walls{cambc::uninitialized};
     bitboard near_enemy_spawn; // within 1 of an enemy spawn tile
     bitboard walls_and_bushes{cambc::uninitialized};
     bitboard standable{cambc::uninitialized}; // ~(camp_tiles | blocked_for_us)
@@ -184,10 +188,11 @@ private:
     inline static std::array<std::uint16_t, max_tiles> group_lookup_{}; // group index + 1, or 0
     inline static std::array<std::uint16_t, max_tiles> altar_lookup_{}; // altar index + 1, or 0
     mutable std::optional<Field> ally_field_, enemy_field_;
-    mutable std::optional<bitboard> foot_, dash_foot_;
+    mutable std::optional<bitboard> foot_, dash_foot_, landing_dash_foot_;
     mutable std::optional<std::vector<Hop>> hops_;
     const bitboard& make_foot() const;
     const bitboard& make_dash_foot() const;
+    const bitboard& make_landing_dash_foot() const;
     const std::vector<Hop>& make_hops() const;
     mutable std::deque<BushCluster> bush_clusters_; // found so far; references stay valid
     mutable bitboard clustered_;                     // their tiles

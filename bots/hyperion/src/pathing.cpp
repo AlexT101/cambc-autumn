@@ -20,9 +20,23 @@ Pathing::Pathing(const World& world) : world_{world} {}
 
 const StaticMap& Pathing::map() const { return world_.map(); }
 
-const bitboard& Pathing::static_walls() const { return world_.me().facts().has_dash() ? map().dash_walls : map().blocked_for_us; }
+namespace {
+// 0: no dash; 1: a dash; 2: a dash that hits where it lands (StaticMap::landing_dash_walls).
+int dash_kind(const ChampionFacts& f) {
+    const int dash = f.slot_of(AbilityKind::dash);
+    return dash < 0 ? 0 : f.abilities[dash].lands() ? 2 : 1;
+}
+} // namespace
 
-const bitboard& Pathing::foot() const { return world_.me().facts().has_dash() ? map().dash_foot() : map().foot(); }
+const bitboard& Pathing::static_walls() const {
+    const int kind = dash_kind(world_.me().facts());
+    return kind == 0 ? map().blocked_for_us : kind == 1 ? map().dash_walls : map().landing_dash_walls;
+}
+
+const bitboard& Pathing::foot() const {
+    const int kind = dash_kind(world_.me().facts());
+    return kind == 0 ? map().foot() : kind == 1 ? map().dash_foot() : map().landing_dash_foot();
+}
 
 void Pathing::begin_turn() {
     guard_ = nullptr; // a turn abandoned as stale left its guard set
@@ -188,7 +202,11 @@ const Field* Pathing::search_approach(int group, int range, int steps) {
         copy_into(s.groups[group].tiles(), goals);
     } else {
         clear_board(goals);
-        for (const auto& m : s.groups[group].members) draw_square(goals, m.pos, static_cast<float>(range));
+        // Live members only: in range of a dead one, dash_across saw no gain and stayed.
+        const auto& members = s.groups[group].members;
+        const bool any_live = std::any_of(members.begin(), members.end(), [&](const auto& m) { return test(made.camps, m.pos); });
+        for (const auto& m : members)
+            if (!any_live || test(made.camps, m.pos)) draw_square(goals, m.pos, static_cast<float>(range));
         // Not static_walls(): a dasher cannot stand on the tiles it jumps.
         or_into(s.blocked_for_us, made.camps, open);
         not_into(open, open);
