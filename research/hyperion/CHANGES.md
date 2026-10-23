@@ -358,3 +358,18 @@ Against dd3f481: 52.5% of 1104 (ladder 53.8, gen 53.5, gen-s1 51.4), out-of-fuel
   build is unchanged.
 - Untried: Treasure in Health, which most opponents use on champions other than Vesper; our Prism carries ~180
   unspent gold at r1000 against 66 for opponents' Prisms.
+
+## 102: 4-pick maps draft Heart of Ruin over Ryth/Vendetta (2026-10-23)
+
+From the v38 ladder games against the top 20 (624 distinct): we won 63% of 3-pick and 60% of 5-pick games but 43%
+of 4-pick games (49/115, CI 34-52), the only count whose draft (the teacher draft truncated: Prism, Vesper, Marcella,
+Ryth/Vendetta) has no Heart of Ruin. Each opponent's own 5-pick rate predicts 55.4% there (z -2.86; odds ratio 0.54
+for opponent and side), against top-10 (36% vs 52%) and ranks 11-20 (55% vs 70%) alike. Pick order cannot matter:
+picks are simultaneous and both teams may take the same champion.
+
+Each on its own draft (`--no-test-draft`; test drafts hide draft changes) against c986e10: 53.0% of 1104 (50.0-55.9;
+ladder 52.5, gen 53.1, gen-s1 52.9), 4-pick maps 60.0% of 330 (54.6-65.1), the rest identical. Fresh suite (seed 9417):
+54.1% of 512, 4-pick 62.5% of 168. Against `bots/baselines/v37`: 60.1% (57.2-63.0), 4-pick 66.1%, where c986e10 had
+57.2% and 57.6%. Out-of-fuel turns 2858 vs 2533 (Heart of Ruin's turns cost more).
+
+- `draft_order()`: with 4 picks, the fourth pick is Heart of Ruin, swapped with the Ryth/Vendetta role.
