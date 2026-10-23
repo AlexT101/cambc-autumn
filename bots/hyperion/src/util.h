@@ -145,6 +145,16 @@ inline bool has_stun(cambc::handle_champion_t c) {
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
     return false;
 }
+// A champion in sight has a stun that will take its next turn. One at 0 turn ends left has already
+// taken a turn and expires at the next one's start.
+inline bool stun_pending(cambc::handle_champion_t c) {
+    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+    std::uint32_t n = 0;
+    ok(cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
+    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return buffs[i].data.stun.duration > 0;
+    return false;
+}
 // A camp in sight is stunned: it skips its next attack. False out of sight, without a throw.
 inline bool camp_stunned(std::uint32_t camp) {
     static std::array<cambc::detail::camp_buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;

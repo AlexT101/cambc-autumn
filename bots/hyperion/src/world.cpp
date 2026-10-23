@@ -1162,6 +1162,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.scale = damage_scale(b.facts().passive, b.health, b.max_health);
     b.stats_round = round;
     if (!full && last_seen == round) return; // nothing else changes during our turn
+    if (!enemy && !b.is_self) b.stun_pending = b.facts().passive != Passive::stun_immune && stun_pending(b.handle);
     // Also in observe() for a champion first seen after our move: a recall then still tells when
     // it lands, and its cooldowns show casts made out of sight.
     b.channel = state.contains(cambc::champion_state::recalling)         ? Channel::recall
