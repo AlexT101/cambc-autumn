@@ -1,0 +1,61 @@
+{
+  "schema": "compact-panel-provenance-copy/v1",
+  "source_root": "replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3",
+  "artifacts": [
+    {
+      "path": "audits/cb61-base-caught-act-errors.json",
+      "sha256": "65245fdd54c6d077919d27fbaeb24505b8b066ea196f6a042a51d6ce94496f21",
+      "bytes": 783
+    },
+    {
+      "path": "audits/cb61-base-native-status-compact.json",
+      "sha256": "fa0d9f1a529e629399fa024d2d03ded8fba76e135ca4b9a57c25958b168a264e",
+      "bytes": 286682
+    },
+    {
+      "path": "audits/cb61-base-turn-order-errors.json",
+      "sha256": "058822f0a2b571d7220e07c3e77d595331972142cf1627bce0795f72ed6a2acc",
+      "bytes": 90839
+    },
+    {
+      "path": "audits/cb61-route-caught-act-errors.json",
+      "sha256": "c6f99ec93a04cd458eb5eb527f043b588eb8389fe741807d8fdb650b1640f71c",
+      "bytes": 800
+    },
+    {
+      "path": "audits/cb61-route-native-status-compact.json",
+      "sha256": "0b2e07c9c586e27325ddcf89040cfaf1a1fb9c575ada0151590aba78e0c3064e",
+      "bytes": 295242
+    },
+    {
+      "path": "audits/cb61-route-turn-order-errors.json",
+      "sha256": "d49473a0db5a751e3c1f2bdc0f7e90a3e7bfa86cea2b5751a3ea95bae9cff27f",
+      "bytes": 94387
+    },
+    {
+      "path": "final-panel-receipt-v1.json",
+      "sha256": "b96bc42f457dbdcf48faa4a0b7dc6efcd79d21c3104045bea9321ce85e4446f6",
+      "bytes": 179012
+    },
+    {
+      "path": "paired-outcomes-v1.json",
+      "sha256": "225e4957ba723fbac24735f357315907408d3aba318f296a86135f65e763cc06",
+      "bytes": 143995
+    },
+    {
+      "path": "panel-preflight.json",
+      "sha256": "623aacbd0546e89c84e240e778b0775ccae482e780fdd099f5c75cf8fb91296a",
+      "bytes": 321522
+    },
+    {
+      "path": "run-attempt.json",
+      "sha256": "422b4477c1df10ba9936946853868064494897cdd6374304a76a6414afe66e24",
+      "bytes": 1877
+    },
+    {
+      "path": "run-batch.manifest.txt",
+      "sha256": "8e340c68c9dc11481b27056248ab97e7576764b2850027293bad51c20e917244",
+      "bytes": 146983
+    }
+  ]
+}

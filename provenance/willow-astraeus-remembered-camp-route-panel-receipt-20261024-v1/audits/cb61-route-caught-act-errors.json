@@ -1,0 +1,32 @@
+{
+  "batch": "replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/audit-inputs/cb61-remembered-camp-route",
+  "results_sha256": "e7235a4daf455237d025e6c22ede0e0f2e6271caaf7dec8a46deff7a0d32e90f",
+  "candidate": "cb61-band",
+  "reference": "v33",
+  "completed": 111,
+  "bots": {
+    "cb61-band": {
+      "bot_index": 0,
+      "matches_with_errors": 0,
+      "error_lines": 0,
+      "match_round_instances": 0,
+      "physical_side_lines": {
+        "A": 0,
+        "B": 0
+      },
+      "error_code_counts": {}
+    },
+    "v33": {
+      "bot_index": 1,
+      "matches_with_errors": 0,
+      "error_lines": 0,
+      "match_round_instances": 0,
+      "physical_side_lines": {
+        "A": 0,
+        "B": 0
+      },
+      "error_code_counts": {}
+    }
+  },
+  "rows": []
+}

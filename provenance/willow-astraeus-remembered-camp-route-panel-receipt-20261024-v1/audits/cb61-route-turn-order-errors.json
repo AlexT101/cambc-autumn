@@ -1,0 +1,3141 @@
+{
+  "schema": "turn-order-error-audit/v1",
+  "batch": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/audit-inputs/cb61-remembered-camp-route",
+  "results_sha256": "e7235a4daf455237d025e6c22ede0e0f2e6271caaf7dec8a46deff7a0d32e90f",
+  "scheduled": 111,
+  "completed": 111,
+  "bots": [
+    {
+      "bot_index": 0,
+      "bot": "cb61-band",
+      "lines": 0,
+      "matches_with_markers": 0,
+      "rounds": {},
+      "texts": {}
+    },
+    {
+      "bot_index": 1,
+      "bot": "v33",
+      "lines": 0,
+      "matches_with_markers": 0,
+      "rounds": {},
+      "texts": {}
+    }
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "map": "00ambush.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/001-cb61-remembered-camp-route-00ambush-candidate-A.repl26a",
+      "replay_sha256": "a4fb16a0408ec8e94b3710ac0de7707e71a5fb17b2dceea24355008fe02c8bd9",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "map": "00ambush.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/001-cb61-remembered-camp-route-00ambush-candidate-B.repl26a",
+      "replay_sha256": "a9ddd9f5e0ecd96bfc413ce63af89761738ed08d1ead9be9ac88328ce529c48f",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "map": "00collision.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/002-cb61-remembered-camp-route-00collision-candidate-A.repl26a",
+      "replay_sha256": "f8698146ccffb56e72bc610cf06d4aa3ef02e5f5a33ecdf37b70ce2660c9a7ac",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "map": "00collision.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/002-cb61-remembered-camp-route-00collision-candidate-B.repl26a",
+      "replay_sha256": "17e4700a9ecdfaaf4edca4c60840166eeb1cbee558d9a342b661eef4c17cfe99",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "map": "00contest.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/003-cb61-remembered-camp-route-00contest-candidate-A.repl26a",
+      "replay_sha256": "d2ece2a7bc08ecf861cd3e593dcb66b288671b95a9903c82f04d874e8b9bcd89",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "map": "00contest.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/003-cb61-remembered-camp-route-00contest-candidate-B.repl26a",
+      "replay_sha256": "4a5f0302f2b9c503ebb22c4d29834e29e058548bedc27715743c15de15764c57",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "map": "00corners.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/004-cb61-remembered-camp-route-00corners-candidate-A.repl26a",
+      "replay_sha256": "054d9dd1cad8f8545f69b4cb01369264f288bebb112fee1e85f25a9344ef3c29",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "map": "00corners.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/004-cb61-remembered-camp-route-00corners-candidate-B.repl26a",
+      "replay_sha256": "70f8c38cc8cb2c2ca2fffa367b9b2b70083e960e4a205398834d3238f4a7ae70",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "map": "00eight.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/005-cb61-remembered-camp-route-00eight-candidate-A.repl26a",
+      "replay_sha256": "41b2244ec14f2b108a88adff412567ff35f8461d2341e6ada3f701e00b5c7cfa",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "map": "00eight.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/005-cb61-remembered-camp-route-00eight-candidate-B.repl26a",
+      "replay_sha256": "3d2f4fd48106ccf20d2eab75f9382ba83bff1101430418000abf5cdd5c0a7442",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "map": "00elkring.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/006-cb61-remembered-camp-route-00elkring-candidate-A.repl26a",
+      "replay_sha256": "31b81394f0475fe23f3d95c7a96c62c28c14c64c7aef0925ecb8d3058251e594",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "map": "00elkring.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/006-cb61-remembered-camp-route-00elkring-candidate-B.repl26a",
+      "replay_sha256": "d886d0e2842f9c07db097e9ff63c01b147124c01ad7c8edec5fb9101cefccd35",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 12,
+      "map": "00expanse.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/007-cb61-remembered-camp-route-00expanse-candidate-A.repl26a",
+      "replay_sha256": "97419287beb705bbb866002218fb859de944a3643ae12d7b4e175d34e12b3e35",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 13,
+      "map": "00expanse.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/007-cb61-remembered-camp-route-00expanse-candidate-B.repl26a",
+      "replay_sha256": "055d4d1e09c0fc9f75c12c250c15ff7aadc6d5fbb33ff1a106be3ef2219bf7dc",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 14,
+      "map": "00fragment.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/008-cb61-remembered-camp-route-00fragment-candidate-A.repl26a",
+      "replay_sha256": "57d64a06143135b56965a0fc361b7c496413b7ea629b09215e472a03dd14336b",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 15,
+      "map": "00fragment.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/008-cb61-remembered-camp-route-00fragment-candidate-B.repl26a",
+      "replay_sha256": "557b097fe75f31c23c31f6e38e16044ffc6ee558609fd335fcb41151981f1c00",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 16,
+      "map": "00gem-fields.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/009-cb61-remembered-camp-route-00gem-fields-candidate-A.repl26a",
+      "replay_sha256": "73c6b23ad7a9da06e722b93675bc68cb9062e4318eb39edca451bde204ad45aa",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 17,
+      "map": "00gem-fields.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/009-cb61-remembered-camp-route-00gem-fields-candidate-B.repl26a",
+      "replay_sha256": "2d77ad2f4b45f7738cb1c8bcd23d2a2df3c27ef826dc163da9b352d4d316f7d1",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 18,
+      "map": "00gemfight.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/010-cb61-remembered-camp-route-00gemfight-candidate-A.repl26a",
+      "replay_sha256": "2ec2ef07cc8c68e43a1e460f60553493210c25f73e666c4f35ae8a7777f572b8",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 19,
+      "map": "00gemfight.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/010-cb61-remembered-camp-route-00gemfight-candidate-B.repl26a",
+      "replay_sha256": "9ead5038372bf2ee6f1f3f2aaaf1c717f79d295cf59e7889faf3eba2c27bbcd9",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 20,
+      "map": "00great-wall.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/011-cb61-remembered-camp-route-00great-wall-candidate-A.repl26a",
+      "replay_sha256": "949a1507e175195eff30564b6124b9223a0982556a2f33cbdc3dc46bdb521da0",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 21,
+      "map": "00great-wall.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/011-cb61-remembered-camp-route-00great-wall-candidate-B.repl26a",
+      "replay_sha256": "835a57a670512663aaf67248d72cd9388a2c7ba8eb8198f2d52e5f5fbb85e2c7",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 22,
+      "map": "00interlock.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/012-cb61-remembered-camp-route-00interlock-candidate-A.repl26a",
+      "replay_sha256": "182bf4fc5eef4858f75c14bd5c1cde7fc07e8f1a5036b7fa3d08e6f05c2ce1ce",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 23,
+      "map": "00interlock.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/012-cb61-remembered-camp-route-00interlock-candidate-B.repl26a",
+      "replay_sha256": "32cfdf1e316bde6986691d9584e29952101db8442776501561a5bb2100be2338",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 24,
+      "map": "00lanes.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/013-cb61-remembered-camp-route-00lanes-candidate-A.repl26a",
+      "replay_sha256": "7aab18825f94ab6200baa709acaacb72063690de790b59874695121166d7fe27",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 25,
+      "map": "00lanes.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/013-cb61-remembered-camp-route-00lanes-candidate-B.repl26a",
+      "replay_sha256": "718b779c9477727b0c8617eedddfa3e695919a0c6b6721c467a0997be3b3f5d1",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 26,
+      "map": "00lost-world.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/014-cb61-remembered-camp-route-00lost-world-candidate-A.repl26a",
+      "replay_sha256": "049c7d24624f740ceed74daa7ae133d17eaec9ba008a9968c0e72b4b26dfd525",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 27,
+      "map": "00lost-world.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/014-cb61-remembered-camp-route-00lost-world-candidate-B.repl26a",
+      "replay_sha256": "7cb0fc8615edbeb099cf6415049a388a8c4a0869526b020e006196c6d059a008",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 28,
+      "map": "00monolith.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/015-cb61-remembered-camp-route-00monolith-candidate-A.repl26a",
+      "replay_sha256": "26dc2967ad331bf42932ad75588833d04b1307940e16fc3598eda6e5ede557ad",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 29,
+      "map": "00monolith.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/015-cb61-remembered-camp-route-00monolith-candidate-B.repl26a",
+      "replay_sha256": "b59095ba660751df8f2febfc24bae91bee8349a50ec9f5e60c3f4dddff80c889",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 30,
+      "map": "00packs.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/016-cb61-remembered-camp-route-00packs-candidate-A.repl26a",
+      "replay_sha256": "7d853834ad2c309526c4104592f262fc2e4acc3f56417140404f2dedeaf17896",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 31,
+      "map": "00packs.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/016-cb61-remembered-camp-route-00packs-candidate-B.repl26a",
+      "replay_sha256": "f865bf661b2830f5f17c63911dc9afd64abd458c89aaac3c84309b5d67b5230d",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 32,
+      "map": "00pilgrimage.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/017-cb61-remembered-camp-route-00pilgrimage-candidate-A.repl26a",
+      "replay_sha256": "56fb9f0f6bb7d18e9d2aaf33a3db37cb1f0a39b8d8463413cd9a39003ef3a232",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 33,
+      "map": "00pilgrimage.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/017-cb61-remembered-camp-route-00pilgrimage-candidate-B.repl26a",
+      "replay_sha256": "d31fbba4761b63846aeaebc104a8448a7ad8586905efcaa61e131524a2574145",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 34,
+      "map": "00quadrants.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/018-cb61-remembered-camp-route-00quadrants-candidate-A.repl26a",
+      "replay_sha256": "61e06538282322979f1099922238e8d9d37a7971445bf34e2c3f9405d73f3df5",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 35,
+      "map": "00quadrants.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/018-cb61-remembered-camp-route-00quadrants-candidate-B.repl26a",
+      "replay_sha256": "95732c8868d3dd7005cd52da72e583500193d7b1e2f681ef80730e827cace8fc",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 36,
+      "map": "00reverse-spiral.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/019-cb61-remembered-camp-route-00reverse-spiral-candidate-A.repl26a",
+      "replay_sha256": "e10a17700c14f7808f713ee09441435788fbdc8b83e01feab48dc45bc571be24",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 37,
+      "map": "00reverse-spiral.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/019-cb61-remembered-camp-route-00reverse-spiral-candidate-B.repl26a",
+      "replay_sha256": "fedeeda6ceb61cdeb9580b3c11a278690357349b04dad6135af5c0fa2c800e9e",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 38,
+      "map": "00road-of-riches.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/020-cb61-remembered-camp-route-00road-of-riches-candidate-A.repl26a",
+      "replay_sha256": "0df164cc5047848384b9328bca8c54941bfdabf109525a4828d80ba51b535a5f",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 39,
+      "map": "00road-of-riches.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/020-cb61-remembered-camp-route-00road-of-riches-candidate-B.repl26a",
+      "replay_sha256": "179dc44c3e38724a74841ca0bdad1aa5d068c0b051d12ee182cb6c0892609517",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 40,
+      "map": "00rows.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/021-cb61-remembered-camp-route-00rows-candidate-A.repl26a",
+      "replay_sha256": "dc86006ed23565a56770864c4922499a72a032cd5ddc8755f2644e0122c9e4a1",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 41,
+      "map": "00rows.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/021-cb61-remembered-camp-route-00rows-candidate-B.repl26a",
+      "replay_sha256": "0fcbc8508facf99bfca3850c928c6e17ea13556dab00f4f0bccb8eb0c3ff4e3c",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 42,
+      "map": "00rushbait-v2.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/022-cb61-remembered-camp-route-00rushbait-v2-candidate-A.repl26a",
+      "replay_sha256": "9aed53f7eb555ce0a7f9c622cfcb1a516c113e29143bc5002fe2e52df4fec8f5",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 43,
+      "map": "00rushbait-v2.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/022-cb61-remembered-camp-route-00rushbait-v2-candidate-B.repl26a",
+      "replay_sha256": "adeaa1de0ab66aa0b042cd2dbfe4f423ba2bb8da30d63f7ad5e09a1c8ce856a5",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 44,
+      "map": "00split.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/023-cb61-remembered-camp-route-00split-candidate-A.repl26a",
+      "replay_sha256": "5595e0060d2f45a6a777b553bbedb6daf5d7aef914e0753607c954b6da127c06",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 45,
+      "map": "00split.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/023-cb61-remembered-camp-route-00split-candidate-B.repl26a",
+      "replay_sha256": "d9ef79c91f16fef78109b21951a0d21ee107e82b9583cc94e7ee78a8ad958722",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 46,
+      "map": "00stampede.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/024-cb61-remembered-camp-route-00stampede-candidate-A.repl26a",
+      "replay_sha256": "5560af46b37147a430986fa9e09522ce8022a9d2a282c1d95e10d812cd0ed74b",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 47,
+      "map": "00stampede.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/024-cb61-remembered-camp-route-00stampede-candidate-B.repl26a",
+      "replay_sha256": "a81ca4c7cfc29cd9ee31a47fe41d305c0c93039ddd326f3be4172b37dce2529c",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 48,
+      "map": "00swirl.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/025-cb61-remembered-camp-route-00swirl-candidate-A.repl26a",
+      "replay_sha256": "845831f4d8ee770131749d8417b242da77d6505e03a6db9e1eafca83438bcfdf",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 49,
+      "map": "00swirl.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/025-cb61-remembered-camp-route-00swirl-candidate-B.repl26a",
+      "replay_sha256": "9c0835df1b178a350076dd32cf5b273f6da70d8f4515c1bb6c9c0c9cd3148f76",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 50,
+      "map": "01big-world.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/026-cb61-remembered-camp-route-01big-world-candidate-A.repl26a",
+      "replay_sha256": "8d47bf36fde386e2d765c36f748342233dc06eb842bd610bf49d18ca9a1b7b08",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 51,
+      "map": "01big-world.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/026-cb61-remembered-camp-route-01big-world-candidate-B.repl26a",
+      "replay_sha256": "ed9c86db6824b97d3c85319764e08b1a068a48ba9ea6214f22999adb9ac7dfd4",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 52,
+      "map": "01boss-battle.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/027-cb61-remembered-camp-route-01boss-battle-candidate-A.repl26a",
+      "replay_sha256": "0f7e188eedc5602a4f053a5ed3dafa008c268b5a6a8c7b4d394862015cb30f70",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 53,
+      "map": "01boss-battle.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/027-cb61-remembered-camp-route-01boss-battle-candidate-B.repl26a",
+      "replay_sha256": "84e222e66c778a68ed802092f1b18b931f1c9b51f6f74bf90b463f90bf9909c4",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 54,
+      "map": "01broken-curve.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/028-cb61-remembered-camp-route-01broken-curve-candidate-A.repl26a",
+      "replay_sha256": "6d2fcb355ed3c80223dfd20e0efd870a2ae80e8ae86bcf236e037be41b4f4ef6",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 55,
+      "map": "01broken-curve.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/028-cb61-remembered-camp-route-01broken-curve-candidate-B.repl26a",
+      "replay_sha256": "e39afcd330f8c95f85550c5595541a00f58f6362a1f77027c3f3a0ec68bf52e2",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 56,
+      "map": "01concentrated-wealth.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/029-cb61-remembered-camp-route-01concentrated-wealth-candidate-A.repl26a",
+      "replay_sha256": "17e8226db914c7bcd701a48e7e182475820983b6bf82739bd1c878d1d47ca526",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 57,
+      "map": "01concentrated-wealth.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/029-cb61-remembered-camp-route-01concentrated-wealth-candidate-B.repl26a",
+      "replay_sha256": "aaae2bcb6c53a436b8bc82085d324caea98b5956f9fc9aaea827833e74690dd0",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 58,
+      "map": "01corridors.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/030-cb61-remembered-camp-route-01corridors-candidate-A.repl26a",
+      "replay_sha256": "4abee24efac0b4c2c3a24191778661a2717077cc30a219fbc8505fdba08c55d2",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 59,
+      "map": "01corridors.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/030-cb61-remembered-camp-route-01corridors-candidate-B.repl26a",
+      "replay_sha256": "a6fce4dff0cc0009330d228bf6a884c830f2441335b1c5ccd91008e4ba8c53dc",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 60,
+      "map": "01elk-arena.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/031-cb61-remembered-camp-route-01elk-arena-candidate-A.repl26a",
+      "replay_sha256": "877ec992b66c2b1625e4a29cb182787b0e162c4fb722a9a56e5ffc543b907b07",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 61,
+      "map": "01elk-arena.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/031-cb61-remembered-camp-route-01elk-arena-candidate-B.repl26a",
+      "replay_sha256": "b613fe1e3d60ec1a52e4cce4c16d1634e85cc0e3081439f9903dbbfc89af1eb1",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 62,
+      "map": "01fracture.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/032-cb61-remembered-camp-route-01fracture-candidate-A.repl26a",
+      "replay_sha256": "285424148aca22510df3c781b4752fe6052d770159d8964d01a09ff1d5df50d8",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 63,
+      "map": "01fracture.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/032-cb61-remembered-camp-route-01fracture-candidate-B.repl26a",
+      "replay_sha256": "af6644cd0d266aad3c2de297a2d1c5cf7bdb1d71fbbe5ea04610a263d12b40a0",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 64,
+      "map": "01gold-rush.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/033-cb61-remembered-camp-route-01gold-rush-candidate-A.repl26a",
+      "replay_sha256": "e4ce54e642bbe83e4d84715b313437f9240986f60cb304ac7fb98f8bd7e7f62a",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 65,
+      "map": "01gold-rush.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/033-cb61-remembered-camp-route-01gold-rush-candidate-B.repl26a",
+      "replay_sha256": "8420b06d9257b6c2b89f9cf28c5e776c74ded8f3df323baf87ed6eb184e38396",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 66,
+      "map": "01hooks.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/034-cb61-remembered-camp-route-01hooks-candidate-A.repl26a",
+      "replay_sha256": "520cc82fe360d100f7ce9c261fe8945d5bb907f0fe240ac38d4825fcf3606c97",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 67,
+      "map": "01hooks.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/034-cb61-remembered-camp-route-01hooks-candidate-B.repl26a",
+      "replay_sha256": "d409f1db55e1e25e390ba6bf11ea9f144e2f509f3b219799ad6877dfb4847953",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 68,
+      "map": "01islands.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/035-cb61-remembered-camp-route-01islands-candidate-A.repl26a",
+      "replay_sha256": "a80ccad1a823719c1dc2e77cb996ce425b2ec66fcb0ad9d5aaabdae6f23b5c1d",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 69,
+      "map": "01islands.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/035-cb61-remembered-camp-route-01islands-candidate-B.repl26a",
+      "replay_sha256": "cee16292c620cff3caeca9daf01490d9dd8a345d3c0eb33aa2451e9d1ed69156",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 70,
+      "map": "01shortcut.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/036-cb61-remembered-camp-route-01shortcut-candidate-A.repl26a",
+      "replay_sha256": "2448d063e36ea18ee7521cb358712608b2f75e6aba2d82debdb67848f756d25f",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 71,
+      "map": "01shortcut.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/036-cb61-remembered-camp-route-01shortcut-candidate-B.repl26a",
+      "replay_sha256": "9c3ce4484cd9b9b3e7991aaeea9dae0fe5cb9292ee4e5f1ddc3b3a2967c60de2",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 72,
+      "map": "01starfish.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/037-cb61-remembered-camp-route-01starfish-candidate-A.repl26a",
+      "replay_sha256": "150d031426ed7eed543aa3cc384a086b4e57733e53542c274a9ff658b1179ab9",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 73,
+      "map": "01starfish.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/037-cb61-remembered-camp-route-01starfish-candidate-B.repl26a",
+      "replay_sha256": "29c826dd5b8d7e3c10c384ef3e9f0a056c4447c637fc54f7bd0a7609bbc1b00c",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 74,
+      "map": "01starvation.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/038-cb61-remembered-camp-route-01starvation-candidate-A.repl26a",
+      "replay_sha256": "9472057214519e256150115e2f507f27c0ea4e67e58c3c3b85548fae44c4a7a8",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 75,
+      "map": "01starvation.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/038-cb61-remembered-camp-route-01starvation-candidate-B.repl26a",
+      "replay_sha256": "36dc1403ede02c1c965cec60a6929d82fc6829ae34d9e13b9f089ea69b0ecc8f",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 76,
+      "map": "01the-farm.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/039-cb61-remembered-camp-route-01the-farm-candidate-A.repl26a",
+      "replay_sha256": "1a0c86d830393068ec0e4066cfdc241ad2c1092415800e8f91113aba984aa5f7",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 77,
+      "map": "01the-farm.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/039-cb61-remembered-camp-route-01the-farm-candidate-B.repl26a",
+      "replay_sha256": "66daefc90db5d9769f1e520a6d3111b07c76dc5939157a1585356b144343196a",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 78,
+      "map": "01yellow-brick-road.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/040-cb61-remembered-camp-route-01yellow-brick-road-candidate-A.repl26a",
+      "replay_sha256": "7ca998e3cd6cd938b94ae5a1c2e8411de829ace349289230d94c7e90ecb1f466",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 79,
+      "map": "01yellow-brick-road.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/040-cb61-remembered-camp-route-01yellow-brick-road-candidate-B.repl26a",
+      "replay_sha256": "e81f195f065691eef3ac474cca89f6c0b3c44c485a81b5a70082daf1c7af2022",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 80,
+      "map": "gen-band-102305906.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/041-cb61-remembered-camp-route-gen-band-102305906-candidate-B.repl26a",
+      "replay_sha256": "7628aab2b146d8da060b44745e40a74817fdfbe213162f0dd376ca1f043fa63d",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 81,
+      "map": "gen-caves-102300400.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/042-cb61-remembered-camp-route-gen-caves-102300400-candidate-A.repl26a",
+      "replay_sha256": "ff40afce01cfe9d2e14343a4ab46c8082e8393dc60e6c146fcf3d173fb76346d",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 82,
+      "map": "gen-caves-102300400.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/042-cb61-remembered-camp-route-gen-caves-102300400-candidate-B.repl26a",
+      "replay_sha256": "7c0f4a05e290eaf9afeaffb040279dd37192b62a5c93ff8d04382dc325c527ac",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 83,
+      "map": "gen-cells-102306600.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/043-cb61-remembered-camp-route-gen-cells-102306600-candidate-A.repl26a",
+      "replay_sha256": "a105c35fdd59b9e550869a34ae2883521519529b34e02b0fc3fce1033981016f",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 84,
+      "map": "gen-cells-102306600.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/043-cb61-remembered-camp-route-gen-cells-102306600-candidate-B.repl26a",
+      "replay_sha256": "087c87fdaf8f0f2026d6709cc898a259a04b290fd1dc1debee4f83347aa5dc5a",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 85,
+      "map": "gen-city-102306900.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/044-cb61-remembered-camp-route-gen-city-102306900-candidate-A.repl26a",
+      "replay_sha256": "6ad80fcb7c0234c89aeeeed9825ad5641dd729957ce2edd7b6cad8bb8a1d7f01",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 86,
+      "map": "gen-city-102306900.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/044-cb61-remembered-camp-route-gen-city-102306900-candidate-B.repl26a",
+      "replay_sha256": "21238370121045318e63e819f7a0aabccd34a76f57c26fb4597f532c09f7195e",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 87,
+      "map": "gen-huge-shared-102307800.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/045-cb61-remembered-camp-route-gen-huge-shared-102307800-candidate-A.repl26a",
+      "replay_sha256": "44754b275182fa8f08348e11d70dbe4b36bc246ec4ff6154ef0515ab88d4f58f",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 88,
+      "map": "gen-huge-shared-102307800.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/045-cb61-remembered-camp-route-gen-huge-shared-102307800-candidate-B.repl26a",
+      "replay_sha256": "3b0719461c0eba82186c9370a16830f8333fad432837bc12284b353fc64616d2",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 89,
+      "map": "gen-random-102301700.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/046-cb61-remembered-camp-route-gen-random-102301700-candidate-A.repl26a",
+      "replay_sha256": "f81c8e9ca7bd846c64f33cf129bbe82efc9a0f6e44f5277446745a7a84897e0a",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 90,
+      "map": "gen-random-102301700.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/046-cb61-remembered-camp-route-gen-random-102301700-candidate-B.repl26a",
+      "replay_sha256": "0fa8c3087e7e9a49c4cbed6acbaf17c4b0a350c33ad8230a7fb79c0d235d3f03",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 91,
+      "map": "mut-big-world-102302100.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/047-cb61-remembered-camp-route-mut-big-world-102302100-candidate-A.repl26a",
+      "replay_sha256": "dffdb565bdbff53356167cf8996241bc9a5b4df52c44dbdcb544900f45ce7243",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 92,
+      "map": "mut-big-world-102302100.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/047-cb61-remembered-camp-route-mut-big-world-102302100-candidate-B.repl26a",
+      "replay_sha256": "b3c03d0998494d121b07dea61a3f9e892c1631a9815d8d53cce195a6328958e2",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 93,
+      "map": "mut-expanse-102303700.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/048-cb61-remembered-camp-route-mut-expanse-102303700-candidate-A.repl26a",
+      "replay_sha256": "efd98a1deeb99ec41e3505b0f834016ee8fde0f24650fcb32786574b7ff5e43f",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 94,
+      "map": "mut-expanse-102303700.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/048-cb61-remembered-camp-route-mut-expanse-102303700-candidate-B.repl26a",
+      "replay_sha256": "2beaa74497f9a85ea74a7c108a3dc2ee787655268b9030e96d436fa5c3c606f6",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 95,
+      "map": "gen-band-102405900.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/049-cb61-remembered-camp-route-gen-band-102405900-candidate-A.repl26a",
+      "replay_sha256": "d73164f0567e1a59195173f2ad675bbc5752b158d7398cb7e132e5aa8e425316",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 96,
+      "map": "gen-band-102405900.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/049-cb61-remembered-camp-route-gen-band-102405900-candidate-B.repl26a",
+      "replay_sha256": "0240a53482ef4a76f78821b53960547e0e273de1ca5b9502988975beb8c44499",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 97,
+      "map": "gen-caves-102400400.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/050-cb61-remembered-camp-route-gen-caves-102400400-candidate-A.repl26a",
+      "replay_sha256": "851448bf3cc95942e4fdd86698184613f669821ce09cd4e0a9fc5a514e70c02e",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 98,
+      "map": "gen-caves-102400400.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/050-cb61-remembered-camp-route-gen-caves-102400400-candidate-B.repl26a",
+      "replay_sha256": "6d5e32f93636608240b2f4250d9e4e9861b49c23631c0172475f3ef69f4a0eea",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 99,
+      "map": "gen-cells-102406600.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/051-cb61-remembered-camp-route-gen-cells-102406600-candidate-A.repl26a",
+      "replay_sha256": "63caa8704b32cf97a5c493b07ceadfb496127870c78c0a9393ab641104545685",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 100,
+      "map": "gen-cells-102406600.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/051-cb61-remembered-camp-route-gen-cells-102406600-candidate-B.repl26a",
+      "replay_sha256": "51b42ee8c4949a9a6f300f2b8de55106fa7a6f424ad52c5b8652ff3a23c231a5",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 101,
+      "map": "gen-city-102406900.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/052-cb61-remembered-camp-route-gen-city-102406900-candidate-A.repl26a",
+      "replay_sha256": "72d7b33b812bce60d74e215836ec712c5a0105ae3bab0615d495be004af5ba35",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 102,
+      "map": "gen-city-102406900.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/052-cb61-remembered-camp-route-gen-city-102406900-candidate-B.repl26a",
+      "replay_sha256": "19526af5ff7134951cfcb5c591189e75b4c3c706d2760ebba015a8fbced786f5",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 103,
+      "map": "gen-huge-shared-102407800.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/053-cb61-remembered-camp-route-gen-huge-shared-102407800-candidate-A.repl26a",
+      "replay_sha256": "b17ed5c2f0871d94f53e36705d36773fd48eab6c8159dcbf37b2bbf71c31d20c",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 104,
+      "map": "gen-huge-shared-102407800.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/053-cb61-remembered-camp-route-gen-huge-shared-102407800-candidate-B.repl26a",
+      "replay_sha256": "610d0d2545980e37e144fc55a8174733fb2070fb82e4e36e0a9d7542ae45d331",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 105,
+      "map": "gen-random-102401700.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/054-cb61-remembered-camp-route-gen-random-102401700-candidate-A.repl26a",
+      "replay_sha256": "9bbb3418e185fbf15fe572e3856a4c54117b87f0eaf6e1e177f20609dcca6abb",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 106,
+      "map": "gen-random-102401700.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/054-cb61-remembered-camp-route-gen-random-102401700-candidate-B.repl26a",
+      "replay_sha256": "e744d456f6f36d111e1970132f8a8ccd0a5995ffc9b3d5f396a59c191bdff31e",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 107,
+      "map": "mut-big-world-102402100.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/055-cb61-remembered-camp-route-mut-big-world-102402100-candidate-A.repl26a",
+      "replay_sha256": "31b6a152f95ceca11fecb822896080a63669d085a592c2851b95d7c7d46a68d0",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 108,
+      "map": "mut-big-world-102402100.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/055-cb61-remembered-camp-route-mut-big-world-102402100-candidate-B.repl26a",
+      "replay_sha256": "363f46b504b8ad01cc2bc053ec564c8ec184080eccae3809d12955b46c98ece6",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 109,
+      "map": "mut-expanse-102403700.map26a",
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/056-cb61-remembered-camp-route-mut-expanse-102403700-candidate-A.repl26a",
+      "replay_sha256": "6da68fc5cb854942580a180fe2308ba2352700cf26d1d3f46015f27f45ef406d",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    },
+    {
+      "index": 110,
+      "map": "mut-expanse-102403700.map26a",
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/outputs/056-cb61-remembered-camp-route-mut-expanse-102403700-candidate-B.repl26a",
+      "replay_sha256": "4300245aab602afc76dbeee9f2a53a72335d131f4313aaa2bf338c655f4ace71",
+      "bots": [
+        {
+          "bot_index": 0,
+          "bot": "cb61-band",
+          "physical_side": "B",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        },
+        {
+          "bot_index": 1,
+          "bot": "v33",
+          "physical_side": "A",
+          "markers": 0,
+          "parsed": 0,
+          "events": []
+        }
+      ]
+    }
+  ],
+  "issues": [],
+  "validation": {
+    "ok": true,
+    "scanned_matches": 111,
+    "issues": 0
+  }
+}

@@ -2344,3 +2344,36 @@ gold); delay and the different recipient bonus must be assessed separately. Thes
 outcomes nominate continuation and commitment
 analysis; they do not establish a net strength gain or prove that the extra
 no-strike terminal, rather than an ordinary leaf's occupancy credit, was selected.
+
+### Broader route comparison and latest upstream
+
+The remembered-camp route comparison completed 112 matched physical-side cells
+per arm against frozen v33: both cb61 control and route candidate finish 57–55.
+There are seven wins gained, seven lost, 50 shared wins and 48 shared losses.
+Coverage is all 40 published maps plus eight generated families from each of two
+existing suites. It deliberately includes the known Band witness and is diagnostic
+regression coverage, not independent held-out confirmation. Of 224 comparison
+records, 220 are new games and four reuse pinned Band/Gold Rush mechanism runs.
+All fresh games completed with zero native BotError, caught-action errors or
+turn-order errors. Native play rollovers remain; the fresh-arm totals have unequal
+109/111-game denominators and are not a paired fuel-overhead estimate. Selected
+Band B and Starvation A losses and Yellow Brick Road A gain are under causal review.
+The route fix remains isolated pending that review; a level win count does not
+invalidate its demonstrated useful departure from the Band A stall.
+
+Merge `a564c25` incorporates upstream `f7d54e9`. Canonical Astraeus now has aggregate
+`f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824`; Hyperion and SDK
+are unchanged. Four added lines let stationary Prism use an available basic attack
+while waiting for Willow: an enemy first, otherwise a harmless camp. The frozen
+cb61 experiment arms are unchanged. Upstream reports 49.5% of 600 and 52/52 wide
+replays identical, with 31 branch entries but no attack target; these are upstream
+reports and do not exercise successful attacks. Source review finds no interface
+collision. A nonlethal Ren retaliation can still cost HP despite consuming no walk
+or cast; that is a narrow future fixture, not an observed regression or a new policy.
+
+The next isolated Willow arm values observed marginal ally healing in the shopper's
+existing recovery-round units, alongside lost own farming and recovery cost. It
+preserves the first Treasure policy and prices later full and partial purchases
+consistently. The current 60% heal-efficiency threshold is replayed, including cases
+where more Focus suppresses a previously worthwhile heal. See
+`willow-cb61-service-shopper-design-20261024-v2.md`. No new release was submitted.

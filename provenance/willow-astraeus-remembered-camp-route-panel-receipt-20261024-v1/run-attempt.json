@@ -1,0 +1,21 @@
+{
+  "schema": "cb61-remembered-camp-route-v3-run-attempt-v1",
+  "status": "RUN_COMPLETED_EXIT_0",
+  "started_utc": "2026-10-23T16:34:29.034200+00:00",
+  "manifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/run-batch.manifest.txt",
+  "manifest_sha256": "8e340c68c9dc11481b27056248ab97e7576764b2850027293bad51c20e917244",
+  "fresh_rows": 220,
+  "reuse_count": 4,
+  "command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc run-batch /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/run-batch.manifest.txt --jobs 1 --color never --release --fuel-quantum 100000",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/logs/run.stdout.txt",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-remembered-camp-route-cb61-v33-panel-preflight-20261024-v3/logs/run.stderr.txt",
+  "preflight_status": "AUTHORIZED_CORRECTED_PANEL_READY_TO_EXECUTE",
+  "preflight_checks_passed": true,
+  "run_completed": true,
+  "completed_utc": "2026-10-23T16:49:36.070465+00:00",
+  "exit_code": 0,
+  "saved_replays": 220,
+  "stdout_sha256": "1eeea965de96ae41d88fd93c48228181377ddedcdff8d8789194f78ad0ba36ab",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

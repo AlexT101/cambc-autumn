@@ -1,0 +1,413 @@
+diff -ru provenance/willow-astraeus-service-shopper-20261024-v1/before-src/bot.cpp provenance/willow-astraeus-service-shopper-20261024-v1/after-src/bot.cpp
+--- provenance/willow-astraeus-service-shopper-20261024-v1/before-src/bot.cpp	2026-10-23 12:47:11
++++ provenance/willow-astraeus-service-shopper-20261024-v1/after-src/bot.cpp	2026-10-23 12:57:59
+@@ -1127,6 +1127,122 @@
+ };
+ Upkeep upkeep;
+ 
++struct ServiceSample {
++    HealServiceScan scan;
++    int ordinal = 0;
++};
++struct ServiceProfile {
++    std::array<ServiceSample, 8> samples{};
++    int count = 0, next = 0, start = 0, exposure = 0;
++};
++struct ServiceStats {
++    float strength = 0, focus = 0, health = 0;
++    bool operator==(const ServiceStats&) const = default;
++};
++struct ServiceHistory {
++    ServiceProfile pending, published;
++    ServiceStats stats;
++    ServiceSample staged;
++    int last_round = -1, staged_round = -1, staged_planner = 0;
++    bool confirmed = false, visit = false, have_stats = false, staged_known = false, treasure = false;
++    std::uint32_t revision = 0, item_epoch = 0, staged_epoch = 0;
++    unsigned ordinary = 0, covered = 0, missing = 0, planner = 0, unknown = 0;
++} service_history;
++
++void reset_service_pending(bool alive) {
++    auto& h = service_history;
++    h.pending.count = h.pending.next = 0;
++    h.pending.start = upkeep.turns - static_cast<int>(alive);
++    h.pending.exposure = 0;
++}
++
++void begin_service_turn(const World& world, const cambc::detail::champion_info* record) {
++    if (world.me().type != cambc::champion_type::willow) return;
++    auto& h = service_history;
++    const bool gap = h.last_round != world.round - 1 || !h.confirmed;
++    if (gap) {
++        h.unknown += h.staged_round >= 0 || h.staged_planner > 0;
++        reset_service_pending(record != nullptr);
++        h.visit = false;
++    }
++    if (record) {
++        const ServiceStats now{record->strength, record->focus, record->max_health};
++        if (!h.have_stats || !(h.stats == now)) reset_service_pending(true);
++        h.stats = now;
++        h.have_stats = true;
++    }
++    h.last_round = world.round;
++    h.confirmed = false;
++    h.staged_round = -1;
++    h.staged_planner = 0;
++    // Reuse the observed position and stored spawn list, without a new native tile query.
++    const auto& spawn = world.map().ally_spawn_tiles;
++    const bool shopping = !record || std::find(spawn.begin(), spawn.end(), vec2{record->x, record->y}) != spawn.end();
++    if (!shopping) h.visit = false;
++    else if (!h.visit) {
++        h.visit = true;
++        h.published = h.pending;
++        h.published.exposure = std::max(0, upkeep.turns - h.pending.start);
++        ++h.revision;
++        debug_block({
++            int known = 0;
++            for (int i = 0; i < h.published.count; ++i) known += h.published.samples[i].scan.known;
++            std::printf("SERVICE-PUBLISH %d revision %u samples %d known %d exposure %d ordinary %u covered %u missing %u planner %u unknown %u\n",
++                        world.round, h.revision, h.published.count, known, h.published.exposure,
++                        h.ordinary, h.covered, h.missing, h.planner, h.unknown);
++        });
++    }
++}
++
++void finish_service_turn(const World& world, bool current) {
++    if (world.me().type != cambc::champion_type::willow) return;
++    auto& h = service_history;
++    h.confirmed = current;
++    if (!current) {
++        h.unknown += h.staged_round >= 0 || h.staged_planner > 0;
++        h.staged_round = -1;
++        h.staged_planner = 0;
++        reset_service_pending(world.me().alive);
++        return;
++    }
++    h.planner += static_cast<unsigned>(h.staged_planner);
++    h.staged_planner = 0;
++    if (h.staged_round < 0) return;
++    if (h.staged_round != world.round || h.staged_epoch != h.item_epoch || !h.staged_known) {
++        ++h.unknown;
++    } else {
++        ++h.ordinary;
++        h.covered += h.staged.scan.known;
++        h.missing += !h.staged.scan.known;
++        auto& p = h.pending;
++        if (p.count == static_cast<int>(p.samples.size())) p.start = p.samples[p.next].ordinal;
++        else ++p.count;
++        p.samples[p.next] = h.staged;
++        p.next = (p.next + 1) % static_cast<int>(p.samples.size());
++    }
++    h.staged_round = -1;
++}
++
++float observed_service(float cap) {
++    const auto& p = service_history.published;
++    if (p.exposure <= 0) return 0;
++    float rounds = 0;
++    for (int i = 0; i < p.count; ++i) {
++        const auto& scan = p.samples[i].scan;
++        if (!scan.known) continue;
++        const HealServiceRecipient* best = nullptr;
++        float best_gain = 0;
++        for (int j = 0; j < scan.count; ++j) {
++            const auto& r = scan.recipients[j];
++            const float gain = std::min(cap, r.deficit);
++            if (!worth_healing(cap, gain, r.fraction)) continue;
++            if (!best || gain > best_gain || (gain == best_gain && r.fraction < best->fraction)) best = &r, best_gain = gain;
++        }
++        if (best) rounds += best_gain * best->trip_weight;
++    }
++    return rounds / static_cast<float>(p.exposure);
++}
++
+ // At the turn's start: camps hit in the camp phase, from where we ended last turn.
+ void note_upkeep(const World& world, Safety& safety, float damage) {
+     const auto& map = world.map();
+@@ -1158,6 +1274,17 @@
+     int recall = static_cast<int>(cambc::constants::recall_time);
+ };
+ 
++void service_purchase(const World& world, const Build& bought, int family, bool completes) {
++    if (world.me().type != cambc::champion_type::willow) return;
++    auto& h = service_history;
++    ++h.item_epoch;
++    reset_service_pending(world.me().alive);
++    h.stats = {world.me().strength + bought.strength, world.me().focus + bought.focus, world.me().max_health + bought.max_health};
++    h.have_stats = true;
++    h.treasure |= family == treasure && completes;
++    // The published profile remains fixed throughout this contiguous shop visit.
++}
++
+ void add_shards(Build& b, const ChampionFacts& f, int stat, float shards) {
+     if (stat == strength_stat) b.strength += shards * f.strength.growth;
+     if (stat == focus_stat) b.focus += shards * f.focus.growth;
+@@ -1221,6 +1348,35 @@
+     return clearing * clear + taken * (static_cast<float>(b.recall) + steps) / usable;
+ }
+ 
++struct BuildUtility {
++    const World& world;
++    const Upkeep& upkeep;
++    float others;
++    const Build& now;
++    bool service;
++    float own_base, multiplier, service_base;
++    mutable std::array<float, 16> focuses, services;
++    mutable int cached = 0;
++    BuildUtility(const World& w, const Upkeep& u, float o, const Build& n, bool use_service)
++        : world{w}, upkeep{u}, others{o}, now{n}, service{use_service}, own_base{upkeep_cost(w, u, o, n, n)},
++          multiplier{use_service ? w.me().facts().abilities[w.me().facts().slot_of(AbilityKind::heal)].multiplier : 0},
++          service_base{use_service ? observed_service(multiplier * n.focus) : 0} {
++        if (service) focuses[0] = now.focus, services[0] = service_base, cached = 1;
++    }
++    float service_delta(const Build& b) const {
++        if (!service) return 0;
++        for (int i = 0; i < cached; ++i)
++            if (focuses[i] == b.focus) return services[i] - service_base;
++        const float value = observed_service(multiplier * b.focus);
++        if (cached < static_cast<int>(focuses.size())) focuses[cached] = b.focus, services[cached++] = value;
++        return value - service_base;
++    }
++    float saved(const Build& b) const {
++        return own_base - upkeep_cost(world, upkeep, others, now, b)
++               + service_delta(b);
++    }
++};
++
+ // Our mean steps from spawn while alive: the walk back out after a heal.
+ float spawn_steps() { return upkeep.spawn_turns > 0 ? upkeep.spawn_steps / static_cast<float>(upkeep.spawn_turns) : 0.0f; }
+ 
+@@ -1251,7 +1407,9 @@
+                     has_family(owned, home) ? home_recall_time : recall_turns(world)};
+     float others = 0;
+     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
+-    const float base = upkeep_cost(world, u, others, now, now);
++    const bool service = self.type == cambc::champion_type::willow && has_family(owned, treasure);
++    if (self.type == cambc::champion_type::willow) service_history.treasure = has_family(owned, treasure);
++    const BuildUtility utility{world, u, others, now, service};
+     const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
+         const unsigned left = 5 - owned[shard_of(family, stat)];
+         Build b = now;
+@@ -1261,7 +1419,17 @@
+         if (family == durability) b.taken = 0.9f;
+         if (family == monster) b.camp_dealt = 1.1f;
+         if (family == home) b.recall = home_recall_time;
+-        return {family, stat, base - upkeep_cost(world, u, others, now, b), left * shard_price};
++        const float saved = utility.saved(b);
++        debug_block({
++            static unsigned rows = 0;
++            if (service && service_history.published.count > 0 && rows < 256) {
++                ++rows;
++                std::printf("SERVICE-QUOTE %d revision %u family %d stat %d left %u cap %.9g next_cap %.9g service %.9g saved %.9g cost %u\n",
++                            world.round, service_history.revision, family, stat, left, utility.multiplier * now.focus,
++                            utility.multiplier * b.focus, utility.service_delta(b), saved, left * shard_price);
++            }
++        });
++        return {family, stat, saved, left * shard_price};
+     };
+     if (f.passive == Passive::gem_focus && owned[shard_of(monster, health_stat)] > 0) return value(monster, health_stat);
+     if (f.passive == Passive::gem_focus && owned[shard_of(monster, focus_stat)] > 0) return value(monster, focus_stat);
+@@ -1305,6 +1473,8 @@
+             if (owned[shard_of(treasure, s)] > 0) stat = s;
+         return {treasure, stat, best.saved, (5 - owned[shard_of(treasure, stat)]) * shard_price};
+     }
++    if (service)
++        if (const auto e = value(bruiser, focus_stat); e.saved > best.saved) best = e;
+     return best;
+ }
+ 
+@@ -1322,6 +1492,12 @@
+         gold -= shard_price * count;
+         add_shards(bought, world.me().facts(), stat, static_cast<float>(count));
+         if (have + count == 5) add_completion(bought, world.me().facts(), family, stat);
++        service_purchase(world, bought, family, have + count == 5);
++        debug_block({
++            if (world.me().type == cambc::champion_type::willow)
++                std::printf("SERVICE-BUY %d revision %u family %d stat %d count %u have %u saved %.9g cost %u\n",
++                            world.round, service_history.revision, family, stat, count, have, saved, cost);
++        });
+     }
+     return gold < start;
+ }
+@@ -1346,6 +1522,7 @@
+         float share, strength, focus, max_health;
+         int main;
+         bool home, monster;
++        std::uint32_t service_revision;
+         bool operator==(const Key&) const = default;
+     };
+     static Key last{-1};
+@@ -1353,7 +1530,8 @@
+     const auto& self = world.me();
+     if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world),
+                       self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
+-                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)}; !(now == last)) {
++                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster),
++                      self.type == cambc::champion_type::willow && service_history.treasure ? service_history.revision : 0}; !(now == last)) {
+         last = now;
+         kept.next = best_emblem(world);
+         kept.gain = now.share * kept.next.saved * rounds_per_gem;
+@@ -1393,8 +1571,18 @@
+     }
+     float others = 0;
+     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
+-    quote.gain = gems_share(world) * rounds_per_gem
+-                 * (upkeep_cost(world, u, others, now, now) - upkeep_cost(world, u, others, now, bought));
++    const BuildUtility utility{world, u, others, now, self.type == cambc::champion_type::willow && has_family(owned, treasure)};
++    quote.gain = gems_share(world) * rounds_per_gem * utility.saved(bought);
++    debug_block({
++        static unsigned rows = 0;
++        if (utility.service && rows < 128) {
++            ++rows;
++            std::printf("SERVICE-PREFIX %d revision %u family %d stat %d count %u completes %d cap %.9g next_cap %.9g service %.9g saved %.9g gain %.9g\n",
++                        world.round, service_history.revision, quote.next.family, quote.next.stat, quote.count,
++                        static_cast<int>(completes), utility.multiplier * now.focus, utility.multiplier * bought.focus,
++                        utility.service_delta(bought), utility.saved(bought), quote.gain);
++        }
++    });
+     return quote;
+ }
+ 
+@@ -5006,6 +5194,19 @@
+ 
+ } // namespace
+ 
++void record_heal_service(const World& world, const HealServiceScan& scan) {
++    if (world.me().type != cambc::champion_type::willow) return;
++    auto& h = service_history;
++    h.staged = {scan, upkeep.turns};
++    h.staged_round = world.round;
++    h.staged_epoch = h.item_epoch;
++    h.staged_known = scan.round == world.round && scan.observations == world.observations;
++}
++
++void record_planner_heal_service(const World& world) {
++    if (world.me().type == cambc::champion_type::willow) ++service_history.staged_planner;
++}
++
+ // The walk to our farm choice, from where we stand. Before the turn's optional work: what is left
+ // after it then pays for that work rather than the walk.
+ void prepare_walk(const World& world, Pathing& pathing, const Memory& memory, std::uint64_t fuel_floor) {
+@@ -5088,6 +5289,7 @@
+     siege_group() = -1;
+     const int camp_hits_before = camp_hits();
+     if (world.me().alive) note_upkeep(world, safety, memory.damage);
++    begin_service_turn(world, record);
+     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
+     // A failed act still posts the claim, the bag and the health that next turn's damage reads.
+     try {
+@@ -5101,7 +5303,9 @@
+     } catch (const std::exception& e) {
+         std::printf("r%u turn order error: %s\n", cambc::round_number(), e.what());
+     }
+-    if (!world.is_stale() && world.me().alive) {
++    const bool current_turn = !world.is_stale();
++    finish_service_turn(world, current_turn);
++    if (current_turn && world.me().alive) {
+         bool intent = support_requested;
+         // support_offered was judged in the vision we had: a ward since may show a threat.
+         if (world.me().type == cambc::champion_type::willow && support_offered) {
+diff -ru provenance/willow-astraeus-service-shopper-20261024-v1/before-src/plan.cpp provenance/willow-astraeus-service-shopper-20261024-v1/after-src/plan.cpp
+--- provenance/willow-astraeus-service-shopper-20261024-v1/before-src/plan.cpp	2026-10-23 12:47:11
++++ provenance/willow-astraeus-service-shopper-20261024-v1/after-src/plan.cpp	2026-10-23 12:55:22
+@@ -1974,6 +1974,7 @@
+         case Op::heal:
+             try {
+                 ok = cast_slot_on(S.heal, S.mates[a.unit]->handle);
++                if (ok) record_planner_heal_service(world);
+             } catch (const cambc::error&) {
+             }
+             break;
+diff -ru provenance/willow-astraeus-service-shopper-20261024-v1/before-src/self_abilities.cpp provenance/willow-astraeus-service-shopper-20261024-v1/after-src/self_abilities.cpp
+--- provenance/willow-astraeus-service-shopper-20261024-v1/before-src/self_abilities.cpp	2026-10-23 12:47:11
++++ provenance/willow-astraeus-service-shopper-20261024-v1/after-src/self_abilities.cpp	2026-10-23 12:55:22
+@@ -466,6 +466,9 @@
+     const int range = world.me().facts().abilities[slot].range();
+     std::optional<cambc::handle_champion_t> best;
+     float best_gain = 0, best_fraction = 0;
++    HealServiceScan service;
++    service.round = world.round;
++    service.observations = world.observations;
+     // Read live: allies come into sight as we move.
+     for (auto p : positions_within(live_champion_tiles(team::ally), here, range)) {
+         if (p == here || test(world.map().ally_spawn, p)) continue;
+@@ -475,21 +478,45 @@
+             // Allies start a recall at every turn end and cancel it unless wanted, so only one
+             // they kept going will reach spawn and heal there.
+             int recall = static_cast<int>(cambc::constants::recall_time);
++            bool known_ally = false;
+             for (const auto& a : world.allies)
+-                if (a.handle == c && a.fast_recall) recall = home_recall_time;
++                if (a.handle == c) {
++                    known_ally = a.stats_round == world.round;
++                    if (a.fast_recall) recall = home_recall_time;
++                }
+             if (kept_recall(c, recall)) continue;
+             const auto& live = record_of(c);
+             const float gain = std::min(amount, live.max_health - live.health);
+             const float fraction = live.health / live.max_health;
++            // Copy scalar demand before imports overwrite the shared live-record storage.
++            const float deficit = live.max_health - live.health, max_health = live.max_health;
++            if (service.count < static_cast<int>(service.recipients.size())) {
++                auto& r = service.recipients[service.count++];
++                r.deficit = deficit;
++                r.fraction = fraction;
++                if (!known_ally || !(max_health > 0) || !world.map().from_ally_spawn_ready()) service.known = false;
++                else {
++                    try {
++                        const int steps = world.map().from_ally_spawn().at(p);
++                        if (steps == unreachable) service.known = false;
++                        else r.trip_weight = static_cast<float>(recall + steps) / (max_health * (1 - params::recall_health_fraction));
++                    } catch (const cambc::error&) {
++                        service.known = false; // coverage failure must not change the live target comparison
++                    }
++                }
++            } else service.known = false;
+             if (!worth_healing(amount, gain, fraction)) continue;
+             if (!best || gain > best_gain || (gain == best_gain && fraction < best_fraction))
+                 best = c, best_gain = gain, best_fraction = fraction;
+         } catch (const cambc::error&) {
++            service.known = false;
+         }
+     }
+     if (!best) return false;
+     try {
+-        return cast_slot_on(heal, *best);
++        const bool cast = cast_slot_on(heal, *best);
++        if (cast) record_heal_service(world, service);
++        return cast;
+     } catch (const cambc::error&) {
+         return false;
+     }
+diff -ru provenance/willow-astraeus-service-shopper-20261024-v1/before-src/self_abilities.h provenance/willow-astraeus-service-shopper-20261024-v1/after-src/self_abilities.h
+--- provenance/willow-astraeus-service-shopper-20261024-v1/before-src/self_abilities.h	2026-10-23 12:47:11
++++ provenance/willow-astraeus-service-shopper-20261024-v1/after-src/self_abilities.h	2026-10-23 12:55:22
+@@ -1,6 +1,7 @@
+ // Attack resets, dashes, heals and shields. Each casts at most once and returns true if it did;
+ // only one cast succeeds per turn, so call the most valuable first.
+ #pragma once
++#include <array>
+ #include <optional>
+ #include "util.h"
+ 
+@@ -46,6 +47,19 @@
+ 
+ // Willow: the ally the heal restores most, if it restores enough or the ally is low.
+ bool heal_ally(const World& world);
++// Scalar live-scan copies, in native scan order. World supports at most 16 bodies per side.
++struct HealServiceRecipient {
++    float deficit = 0, fraction = 0, trip_weight = 0;
++};
++struct HealServiceScan {
++    std::array<HealServiceRecipient, 16> recipients{};
++    int count = 0, round = -1;
++    std::uint32_t observations = 0;
++    bool known = true;
++};
++// Successful casts are staged until play_turn's existing current-round check confirms them.
++void record_heal_service(const World& world, const HealServiceScan& scan);
++void record_planner_heal_service(const World& world);
+ // A heal restoring `gain` of `amount` to an ally at `fraction` of its health is worth the cooldown.
+ bool worth_healing(float amount, float gain, float fraction);
+ // A visible healer, us or an ally, could heal now, restoring `amount`: an ally's cooldowns are not
