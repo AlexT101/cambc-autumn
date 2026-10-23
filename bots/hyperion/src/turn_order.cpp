@@ -119,6 +119,8 @@ ChampionBelief& live_self(const World& world, cambc::champion_state& state) {
     b.health = info.health;
     b.strength = info.strength;
     b.focus = info.focus;
+    // Absorbed before our health by every blow before our next turn: it expires only at its start.
+    b.shield = now.shield_slot >= 0 ? shield_value(now.handle) : 0.0f;
     return b;
 }
 
@@ -186,7 +188,7 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
         if (e->channel_end_round != world.round + 1) continue;
         if (e->channel == Channel::tribute && ours.stuns[d] && e->facts().passive != Passive::stun_immune)
             wish.offer(kill, params::tribute_value + params::gem_value * static_cast<float>(e->gems));
-        if (e->channel == Channel::recall && ours.at(d) > 0) wish.offer(kill, params::recall_value);
+        if (e->channel == Channel::recall && (ours.at(d) > 0 || ours.stuns[d])) wish.offer(kill, params::recall_value);
         if (e->channel == Channel::teleport && ours.stuns[d] && e->facts().passive != Passive::stun_immune)
             wish.offer(kill, params::recall_value);
     }
@@ -221,7 +223,7 @@ void offer_channel(const ChampionBelief& self, cambc::champion_state state, Safe
 // died: otherwise our turn only removed camp members.
 bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, bool seen) {
     // With none in sight the ceiling places nothing, and its unseen strikes cost less.
-    if (!seen) return safety.damage_ceiling(self.pos) >= self.health;
+    if (!seen) return safety.damage_ceiling(self.pos) >= self.health + self.shield;
     float damage = safety.camp_damage(self.pos, true, true);
     bool hit = false;
     for (const auto& e : world.enemies) {
@@ -232,7 +234,7 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
         hit = true;
         damage += s.damage[static_cast<std::size_t>(d)] * (e.visible && !e.acted && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f);
     }
-    return hit && damage >= self.health;
+    return hit && damage >= self.health + self.shield;
 }
 
 // Enemies yet to act this round strike before our next turn whatever the order; acting first
@@ -250,7 +252,7 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         // With two turns before ours, the blow already covers both.
         damage += t.blow.damage * (e.visible && !e.acted && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f);
     }
-    if (enemy && damage >= self.health) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
+    if (enemy && damage >= self.health + self.shield) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
 }
 
 // A heal before the enemies' turns keeps an ally alive whom they would otherwise kill.
