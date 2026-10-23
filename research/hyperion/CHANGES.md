@@ -300,3 +300,12 @@ REPLAY-FOLLOW-UPS R1-6, R2-4). Against 04d5464: 50.4% of 1104 (ladder 47.5, gen 
   its tile next turn or a ready dash still lands out of every reach (`dash_clears`).
 - `dash_away` leaves the just-killed enemy out of its threats.
 - Melee: a kill one step off waits for the step, and an attack still unspent after the step is used on an enemy.
+
+## 98: an unseen bush is not cover from an enemy whose ward we do not see (2026-10-23)
+
+From the v38 replay analysis (REPLAY-ANALYSIS A4: 196 ladder deaths on bush tiles whose cluster held an enemy ward we
+had not seen; REPLAY-FOLLOW-UPS R1-7). Against d474506: 50.3% of 1104 (ladder 52.5, gen 50.6, gen-s1 49.6),
+out-of-fuel turns 5063 vs 5109. In the A/B replays, deaths on stepping into a bush 63 vs 81; turns in bushes equal.
+
+- `Reach::at`: when we do not see an enemy's ward, a bush tile we cannot see counts as seen by that enemy from
+  anywhere, since a ward hidden in the cluster sees all of it. Bushes we stand in or watch are judged as before.
