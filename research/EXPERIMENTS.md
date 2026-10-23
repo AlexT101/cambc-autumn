@@ -348,6 +348,20 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
   +2.4%) and the Chebyshev unseen threats (+0.2%). The others (kite, hold deadline, bush camps, hold dating) leave
   every bench replay identical at <= +0.06%; `can_act_before` reroutes 6 of 12 games at +0.1%.
 
+- Tail profile after 107-108 (2026-10-23, test drafts, 100M; turns whose `decide` used >= 95k on 4 long-fight maps,
+  inclusive meters): step_guard 29.5k (25%), strike search 23.6k (read 8.5k, grow 6.4k, price 7.8k), chase/prey
+  22.5k, want_home 22.3k (`stand` sim 10.2k, `lethal` 6.6k); world update 16.8k before decide (`update_camps` 8.1k,
+  ~420 a group in view). Fight sims 22% (3.6 a turn at ~7.3k). Real-budget OOFs stop in the strike search 33%, farm
+  24%, `strike_after` 16%. A resumed turn spends a median 11.1k of its fresh budget before its own turn starts.
+  Exact cuts kept (16/16 identical, total -0.10%, p99 -0.5%, over-100k 606 -> 587): prey skips a (fight key, delayed)
+  pair it already lost (8.8% of prey sims); `groups_near` dedupes by a stamp (a miss 1.2-3.6k -> 1.0-2.0k on
+  gen-chambers); the release build drops the out-of-fuel printf (~2.5k a resumed turn; local builds still print it).
+  No gain: a per-turn sim memo by exact inputs (only prey's repeats, 1.9% of sims); four cached radii in
+  `groups_near` (-0.01%); noinline around `run()`/`act` for cheaper unwinds. Open: reuse the first search's read in
+  `strike_after` (~8.5k on heavy turns, needs a no-change check); one `sdk_camp` read per member in `read_camps`
+  (needs a probe that it reports dead where `has_camp` is false); farm's `is_stale()` return lets act() go on with
+  heal, shield, ward and recall on a stale turn (~5-7k; throwing is a behaviour change).
+
 Tried and no gain (not merged):
 
 - Farm loop: a bound carried across turns (+0.5%; keeping last turn's target would disagree on up to ~29%); best-first
