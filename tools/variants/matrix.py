@@ -25,7 +25,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from make_variant import ROOT, bot_dir, champions, make_variant, parse_draft  # noqa: E402
 
-RUNNER = ROOT / "run_batched.py"
+RUNNER = ROOT / "tools" / "run_batched.py"
 DEFAULT_FILLER = "varg,tavi,ryth,stellar,ren"
 
 

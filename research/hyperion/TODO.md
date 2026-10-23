@@ -4,7 +4,7 @@
 
 - A robust, intuitive, logical bot: behaviour derived from the rules (reach, sight, cooldowns, health, walking
   distance, measured rates) over tuned constants, fixed decision orders or special cases.
-- Logical changes stay even when level or slightly below 50%; drop only what is clearly worse (below ~47% over 1102
+- Logical changes stay even when level or slightly below 50%; drop only what is clearly worse (below ~47% over ~1100
   games) or wrong.
 - No new fuel gates. Make work cheap or bounded instead; the plan is [FUEL-GATES.md](FUEL-GATES.md).
 - Keep the teleport, Tavi and Willow code.

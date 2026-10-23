@@ -177,7 +177,7 @@ def main():
     for label, extra in plan:
         batch = ROOT / "replays" / f"batch-{stamp}-ab-{name}-{slug(label)}"
         log = out_dir / f"{slug(label)}.log"
-        command = [sys.executable, str(ROOT / "run_batched.py"), str(sides[0]["path"]), str(sides[1]["path"]),
+        command = [sys.executable, str(ROOT / "tools" / "run_batched.py"), str(sides[0]["path"]), str(sides[1]["path"]),
                    "--threads", str(args.threads), "--output", str(batch), *extra]
         if args.fuel is not None:
             command += ["--fuel", str(args.fuel)]

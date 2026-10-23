@@ -162,7 +162,7 @@ For ad-hoc scripts, `tools/replay/analysis/data.py` has the loaders: `resolve(so
 Checks a bot's world beliefs against the replay's ground truth. Build the bot with `debug_beliefs = true` in `bots/<bot>/src/util.h`; each champion then prints a `BD` line (varint-encoded, with every unseen enemy's `possible` set as raw 8x8 chunks) in rounds 1-3 and every `debug_beliefs_period` rounds, kept in `team-a.stdout` / `team-b.stdout` inside local `.repl26a` zips. The dump costs about 5-20k fuel (it skips itself below 25k left) and limits itself to a share of the team's 1 MiB of output.
 
 ```
-py run_batched.py <bot> <opponent>                     # with the flag on
+py tools/run_batched.py <bot> <opponent>                     # with the flag on
 node tools/replay/extract.mjs replays/batch-X
 py tools/replay/audit_beliefs.py replays/batch-X [--examples 8] [--out report.md]
 ```
