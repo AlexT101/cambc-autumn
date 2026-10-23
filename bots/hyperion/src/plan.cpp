@@ -21,6 +21,17 @@ constexpr float cast_cost = 40; // a slot's next 8 rounds, as cast_at_enemies pr
 constexpr int max_foes = 8;
 constexpr bool debug_search = true; // SRCH and SRCH-REFUSED lines, inside debug_block
 
+// Search's attack_viewers by window row, for the two ranges asked most (ability_range, our attack
+// range); here so that warm_tile can fill them.
+using ViewerRows = std::array<std::uint16_t, 9>;
+std::array<std::array<ViewerRows, 100 * 100>, 2> viewer_rows_cache;
+std::array<std::array<std::uint8_t, 100 * 100>, 2> viewer_rows_known;
+
+void fill_viewer_rows(const World& world, vec2 p, int r, ViewerRows& out) {
+    const auto w = attack_viewers(world, p, r);
+    for (int y = 0; y < 9; ++y) out[y] = static_cast<std::uint16_t>(w.shr(9 * y).lo & 0x1FF);
+}
+
 // ---- The basic attack from where we stand, for strike_enemy ----
 
 struct Foe {
@@ -473,23 +484,17 @@ struct Search {
     }
     // attack_viewers by window row (bit x + 4), kept for the game for the two ranges asked most:
     // it depends on terrain alone.
-    using Rows = std::array<std::uint16_t, 9>;
+    using Rows = ViewerRows;
     const Rows& viewer_rows(vec2 p, int r) const {
-        static std::array<std::array<Rows, 100 * 100>, 2> rows;
-        static std::array<std::array<std::uint8_t, 100 * 100>, 2> known;
         static Rows scratch;
-        const auto fill = [&](Rows& out) {
-            const auto w = attack_viewers(world, p, r);
-            for (int y = 0; y < 9; ++y) out[y] = static_cast<std::uint16_t>(w.shr(9 * y).lo & 0x1FF);
-        };
         const int slot = r == ability_range ? 0 : r == range ? 1 : -1;
         const auto i = static_cast<std::size_t>(p.x + p.y * world.map().width);
-        if (slot < 0 || i >= known[0].size()) {
-            fill(scratch);
+        if (slot < 0 || i >= viewer_rows_known[0].size()) {
+            fill_viewer_rows(world, p, r, scratch);
             return scratch;
         }
-        if (!known[slot][i]) fill(rows[slot][i]), known[slot][i] = 1;
-        return rows[slot][i];
+        if (!viewer_rows_known[slot][i]) fill_viewer_rows(world, p, r, viewer_rows_cache[slot][i]), viewer_rows_known[slot][i] = 1;
+        return viewer_rows_cache[slot][i];
     }
 
     // The camp groups a landing on cell c touches, by cell.
@@ -812,7 +817,8 @@ void Search::read_geometry() {
     Grid blocked = 0, walls = 0;
     read_into(pathing.blocked(), blocked);
     // Where we stand is never an end to drop: after the goal, it is the only one.
-    if (const bitboard* guard = pathing.guard()) read_into(*guard, guarded), guarded &= ~gbit(cell(here));
+    // Unmoved, our own tile is the only end, and never guarded: the guard is not worked out.
+    if (const bitboard* guard = moves ? pathing.guard() : nullptr) read_into(*guard, guarded), guarded &= ~gbit(cell(here));
     // Dash paths are blocked by walls, camps, visible enemies (probe-dash-enemy) and the enemy spawn.
     static bitboard foes_seen{cambc::uninitialized};
     camps_into(t);
@@ -1649,6 +1655,15 @@ void Search::grow(const Node& s) {
 
 } // namespace
 
+void warm_tile(const World& world, vec2 p) {
+    warm_reach_tile(world, p);
+    const auto i = static_cast<std::size_t>(p.x + p.y * world.map().width);
+    if (i >= viewer_rows_known[0].size()) return;
+    const int ranges[2] = {ability_range, world.me().facts().attack_range()};
+    for (int s = 0; s < 2; ++s)
+        if (!viewer_rows_known[s][i]) fill_viewer_rows(world, p, ranges[s], viewer_rows_cache[s][i]), viewer_rows_known[s][i] = 1;
+}
+
 bool strike_possible(const World& world) {
     const auto& self = world.me();
     if (!self.alive || !enemy_seen(world)) return false;
@@ -1918,7 +1933,7 @@ bool strike_possible(const World& world) {
     int done = 0;
     bool failed = false;
     // Its walk may end on a guarded tile it passes on the way to a landing.
-    const bitboard* guard = pathing.guard();
+    const auto guard = pathing.held_guard();
     pathing.set_guard(nullptr);
     while (done < seq.n) {
         // Out of fuel mid-plan, the rest would play in the next round on last round's positions.
@@ -2016,7 +2031,7 @@ bool strike_possible(const World& world) {
         dropped[tiles[alt].c] = true;
         seq = concrete(tiles[alt]);
     }
-    pathing.set_guard(guard);
+    pathing.restore_guard(guard);
     world.throw_if_stale();
     if constexpr (debug_search) {
         debug_block({

@@ -39,7 +39,7 @@ const bitboard& Pathing::foot() const {
 }
 
 void Pathing::begin_turn() {
-    guard_ = nullptr; // a turn abandoned as stale left its guard set
+    guard_ = nullptr, guard_fn_ = nullptr; // a turn abandoned as stale left its guard set
     blocked_fresh_ = false;
     pos_fresh_ = false;
     if (bumped_round_ != world_.round) {
@@ -394,7 +394,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     std::array<int, 8> aim_of{};
     for (auto d : directions) {
         const vec2 p = me + d;
-        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard_ && test(*guard_, p))) continue;
+        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard() && test(*guard(), p))) continue;
         const int steps = field.at(p);
         if (steps >= here) continue;
         const int towards = aim ? aim_distance(p, *aim) : 0;
@@ -443,7 +443,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     } else if (avoid) {
         or_into(walls, *avoid, walls);
     }
-    if (guard_) or_into(walls, *guard_, walls);
+    if (guard()) or_into(walls, *guard(), walls);
     set_tile(walls, me, false);
     const int cap = std::min<int>(max_steps, unreachable);
     auto& kept = kept_route_;
@@ -525,7 +525,7 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
 
 [[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
     if (refused) *refused = true;
-    if (guard_ && test(*guard_, tile)) return false;
+    if (guard() && test(*guard(), tile)) return false;
     try {
         if (cambc::self().move_absolute(tile)) {
             invalidate();
@@ -569,7 +569,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
         const vec2 a = me + d;
         if (!in_bounds(a) || !test(allies, a)) continue;
         // route() blocks these again after freeing a; inside danger, a is in our own region.
-        if ((guard_ && test(*guard_, a)) || (avoid && test(*avoid, a) && !test(*avoid, me))) continue;
+        if ((guard() && test(*guard(), a)) || (avoid && test(*avoid, a) && !test(*avoid, me))) continue;
         if (test(goals, a)) {
             opened = true;
             continue;
@@ -590,7 +590,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
         int best_dist = 0;
         for (auto e : directions) {
             const vec2 p = me + e;
-            if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard_ && test(*guard_, p))) continue;
+            if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard() && test(*guard(), p))) continue;
             if (const int d2 = dist(p, a); d2 > best_dist) best = p, best_dist = d2;
         }
         return best && try_move(*best);
@@ -664,7 +664,7 @@ bool Pathing::step_closer(vec2 target, const bitboard* avoid, std::optional<vec2
     int best_dist = dist(me, target);
     for (auto d : directions) {
         const vec2 p = me + d;
-        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard_ && test(*guard_, p))) continue;
+        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard() && test(*guard(), p))) continue;
         if (const int d2 = dist(p, target); d2 < best_dist
             || (best && d2 == best_dist && aim && aim_distance(p, *aim) < aim_distance(*best, *aim)))
             best = p, best_dist = d2;
@@ -699,9 +699,9 @@ const bitboard& dash_landings_from(const StaticMap& map, vec2 from, const bitboa
 const bitboard& Pathing::dash_landings() {
     static bitboard off{cambc::uninitialized};
     const bitboard* also = nullptr;
-    if (bumped_any_ && guard_) or_into(bumped_, *guard_, off), also = &off;
+    if (bumped_any_ && guard()) or_into(bumped_, *guard(), off), also = &off;
     else if (bumped_any_) also = &bumped_;
-    else if (guard_) also = guard_;
+    else if (guard()) also = guard();
     return dash_landings_from(map(), my_pos(), also);
 }
 

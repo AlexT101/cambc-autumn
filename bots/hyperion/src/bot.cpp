@@ -2831,12 +2831,10 @@ const std::uint8_t* open_bits(const World& world) {
 
 // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
 // there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
-const bitboard* step_guard(const World& world, Safety& safety) {
+const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius) {
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
     static bitboard guard{cambc::uninitialized};
-    const auto& self = world.me();
-    const vec2 here = my_position();
     std::array<const ChampionBelief*, 8> foes;
     std::array<const Strike*, 8> strikes;
     Unwritten<vec2, 8> positions;
@@ -2847,9 +2845,6 @@ const bitboard* step_guard(const World& world, Safety& safety) {
             n < static_cast<int>(foes.size()) && in_square(here, e.pos, Strike::max_reach + 2) && safety.strike_of(e).reach >= 0)
             strikes[n] = &safety.strike_of(e), at[n] = e.pos, foes[n++] = &e;
     if (n == 0) return nullptr;
-    int radius = 1;
-    for (int s = 0; s < 2; ++s)
-        if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = 2;
     // Who can hit a tile, and how hard: a tile no worse than ours is as safe as ours. `bound`
     // by distance alone, never below the exact exposure, which only the foes in it can add to;
     // only those `reaching` a step or dash can be in it.
@@ -3023,6 +3018,15 @@ const bitboard* step_guard(const World& world, Safety& safety) {
         }
     }
     return any ? &guard : nullptr;
+}
+
+// step_guard from where we stand, worked out when a step or dash first needs it.
+void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
+    const auto& self = world.me();
+    int radius = 1;
+    for (int s = 0; s < 2; ++s)
+        if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = 2;
+    pathing.defer_guard(step_guard, safety, my_position(), radius);
 }
 
 // The first altar without an enemy lock that a tribute from p reaches, or -1.
@@ -4304,7 +4308,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         return;
     }
 
-    pathing.set_guard(step_guard(world, safety));
+    guard_steps(world, pathing, safety);
     if (yield_capture(world, pathing, safety, memory)) return;
     if (take_capture_handoff(world, pathing, safety, memory)) return;
     const bool holding = holding_capture(world, pathing) || contesting(world);
@@ -4337,7 +4341,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (!me.is_alive()) return;
     if (!my_can_attack() || !my_can_cast()) safety.refresh();
     // The guard was placed around the tile we started on: the goal steps from where the search left us.
-    if (my_position() != world.me().pos && (my_can_move() || my_can_cast())) pathing.set_guard(step_guard(world, safety));
+    if (my_position() != world.me().pos && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
     if (holding) {
         hold_capture(world, memory, attacked);
         return;
