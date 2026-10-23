@@ -3153,6 +3153,10 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     }
     // Chasing is optional: leave enough for the walk after it and the turn's end.
     const auto reserve = search_cost_estimate(2 * vision_radius) + end_reserve;
+    // The fights already lost: chase_trade reads only these and the turn's state, not the target.
+    Unwritten<std::uint64_t, 8> lost_fights;
+    auto& lost = lost_fights.a;
+    int n_lost = 0;
     for (int i = 0; i < n; ++i) {
         if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
             note_shortcut("prey-cut-short");
@@ -3181,6 +3185,8 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
                 }
                 if (!support) delayed |= 1u << j;
             }
+        const std::uint64_t fight = std::uint64_t{key} << 32 | delayed;
+        if (std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
         const auto t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked);
         debug_block({
             static int traced = 0;
@@ -3191,6 +3197,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
             }
         });
         if (!t.lost && !(linked && t.self_falls)) return &target;
+        lost[n_lost++] = fight;
     }
     return nullptr;
 }
