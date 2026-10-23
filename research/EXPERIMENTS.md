@@ -197,6 +197,12 @@ another harmless group was kept (CHANGES 91).
   the altar, so defending has almost no ceiling. A lock-carrier with nothing better walking into lock range of a
   visible enemy tribute it can reach in time (`lock_tribute`, before `chase`): 50.2%; bags of 50+ only (46115ba):
   50.0%. Out-of-fuel turns level. Dropped: a cancel only delays the bag.
+- Prism's earnings gap is not its turn logic (2026-10-23, 624 ladder games, freezes of 50+ rounds left out): ours 239
+  gems per 1,000 alive rounds, the 85 enemy Prisms 324. Kill gems are 64 of the 85 (20 vs 84): 42% of theirs came from
+  35 kills of our Prism and its kept bag (retention), and 42% from one game (03898b90-1). Capture gems 220 vs 240 (not
+  significant); where both sides had a Prism ours did 15% more camp damage and 16% more captures but earned 14.5 gems
+  a capture against 19.4 (Monolith captures 23 vs 37 per 1k explain 14 of the 31 points; the rest is group choice).
+  Its idle time (14.7% vs 8.2%) is mostly holds, kite stations and respawn waits, by design. No change made.
 
 ## Fuel
 
