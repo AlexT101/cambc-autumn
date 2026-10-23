@@ -130,7 +130,7 @@ teleport_crystal:
 
 death:
   dead_turns: "A dead champion's bot still runs each turn, sees only through its ward, and can only shop."
-  respawn: "A champion that died in round D respawns at its turn start in round D+61, or D+60 if it died before its own turn that round. It needs a free own spawn tile and returns with full health, both abilities ready, no gems and its items."
+  respawn: "A champion that died in round D respawns at its turn start in round D+61, or D+60 if it died before its own turn that round. It needs a free own spawn tile and returns with full health, both abilities ready, no gems, and its gold, items and consumables."
   respawn_turn: "It cannot walk, attack or cast on its respawn turn."
 
 memory:
