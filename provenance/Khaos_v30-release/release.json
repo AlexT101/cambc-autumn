@@ -1,0 +1,730 @@
+{
+  "schemaVersion": 1,
+  "status": "submitted",
+  "releaseName": "Khaos_v30",
+  "preparedAt": "2026-10-23",
+  "source": {
+    "directory": "bots/Khaos_v30/src",
+    "copiedFrom": "bots/variants/willow-prism-coordinated-work/src",
+    "aggregateRecipe": "(cd <botdir> && shasum -a 256 src/* | shasum -a 256)",
+    "aggregateSha256": "130a17af668a432a8a5582ec0736b1ef13c22e05245bc5742e472f3d02a620a5",
+    "fileCount": 30,
+    "files": [
+      {
+        "path": "src/abilities.cpp",
+        "sha256": "2d7f476bb5146a73043547637c2ea562393a74fad724c4285a216d5886b79931",
+        "bytes": 30505
+      },
+      {
+        "path": "src/abilities.h",
+        "sha256": "91cd79631223f7fc193849323353f55d5da2ac313f10c0eb24dd17875b2650df",
+        "bytes": 1474
+      },
+      {
+        "path": "src/bot.cpp",
+        "sha256": "94fa88cf925bb624b514816d26002dbde2a5cd82ad4991a7c96489f95a0ad071",
+        "bytes": 262796
+      },
+      {
+        "path": "src/bot.h",
+        "sha256": "79686dd97aea7627b34c45a8d67d958a7c2f54d46a75b33b809aec433f333f31",
+        "bytes": 2173
+      },
+      {
+        "path": "src/champions.h",
+        "sha256": "2ef629ef356748dedff8180d848e98ffb489851f597a43c17e4a3a269c737103",
+        "bytes": 7348
+      },
+      {
+        "path": "src/combat_priority.h",
+        "sha256": "252817d10e02d4c781ce4b3f65dda49f47c06646f07fa843c29f2ef08dda452d",
+        "bytes": 4679
+      },
+      {
+        "path": "src/comms.cpp",
+        "sha256": "4dd44d8213cb2d038f395190510ede5dec8d7c073554a8501801000bfbb7c30d",
+        "bytes": 11096
+      },
+      {
+        "path": "src/comms.h",
+        "sha256": "c3c16283e1087f880797ce219bb1ebb3beefdb051561e2556a47acdc33b0ac4c",
+        "bytes": 2010
+      },
+      {
+        "path": "src/crew_work.h",
+        "sha256": "a1cd30a2d4cc4261e5712d51150afc0c57cfd41a41e8ff1e1bab6c71df85ca75",
+        "bytes": 844
+      },
+      {
+        "path": "src/draft.cpp",
+        "sha256": "8c6bdf2bf463ef5ddb900a09592b2f738f00f3fa0e6d150cfbe8e255c3f35ae7",
+        "bytes": 13490
+      },
+      {
+        "path": "src/draft.h",
+        "sha256": "2b02e4650c9fa33cc31dec70e1197214cefe924880769394eeabf5f729a6f97b",
+        "bytes": 2160
+      },
+      {
+        "path": "src/draft_selection.h",
+        "sha256": "f5cac5ee5326814461a6c7d9bc9816b883da259ed547e89e5c60e0a60632a4c9",
+        "bytes": 1209
+      },
+      {
+        "path": "src/gold_value.h",
+        "sha256": "031698fe54597e22f25dc24319a579bcd826ba67d05f7a9dc2a9d314fd3d9d02",
+        "bytes": 1426
+      },
+      {
+        "path": "src/idle_priority.h",
+        "sha256": "08446b354e64091d0cfd8145e9f40ec195279d14ddffa7e1e9e77f49d141db74",
+        "bytes": 424
+      },
+      {
+        "path": "src/main.cpp",
+        "sha256": "266da320e863f159b1fa9c03ede8c2fd2d86599b058f49e99d61274f6cd68f36",
+        "bytes": 5274
+      },
+      {
+        "path": "src/params.h",
+        "sha256": "13ad36b26ae6788d334bce09696826ed19ae4b66858f1dd6652b604b109d16ae",
+        "bytes": 4794
+      },
+      {
+        "path": "src/pathing.cpp",
+        "sha256": "165a48d18e06e9e4d6c58d7ca6c0b593ac9649c53942532228acd95b6d6f4dac",
+        "bytes": 30023
+      },
+      {
+        "path": "src/pathing.h",
+        "sha256": "92b53299407c13d05ab0f56508268ebaee82abecaecf4eed7dbf8779f024c5c8",
+        "bytes": 10469
+      },
+      {
+        "path": "src/plan.cpp",
+        "sha256": "2c3155190f18fc6a4ad39fc556742c9c25d3d062840d1dd676a9caadd81618b1",
+        "bytes": 92073
+      },
+      {
+        "path": "src/plan.h",
+        "sha256": "6cbf2ab5a50189c91d54652a43770842279159f3c2ecc5b699a20a9a2bcd2ac8",
+        "bytes": 2036
+      },
+      {
+        "path": "src/safety.cpp",
+        "sha256": "90f7c86a5e0e5561f14f724d55fa339136fc3998aebe0fc12ec6141f01d3c7cc",
+        "bytes": 101516
+      },
+      {
+        "path": "src/safety.h",
+        "sha256": "42dfeb1fc9256290e950cf0d659507d0df3e86eedaec005800c1f2bc2c177abb",
+        "bytes": 22150
+      },
+      {
+        "path": "src/self_abilities.cpp",
+        "sha256": "2750d7d4c01ca2fa0e744a562ceef6ef7801874414f90182f45230b90cb47f73",
+        "bytes": 21205
+      },
+      {
+        "path": "src/self_abilities.h",
+        "sha256": "f795c6d406a177a1d0701a0a7afa6b37fe8dc71e63d35bbed5777db76a1de1d7",
+        "bytes": 3256
+      },
+      {
+        "path": "src/support_mailbox.h",
+        "sha256": "f70193e17987e7cf83976648ae3d7742299662373dad20aeac62051446fa76b0",
+        "bytes": 2655
+      },
+      {
+        "path": "src/turn_order.cpp",
+        "sha256": "9b4b402b295669b9f98ca807edb271a76b4070fcee391982de86c3d5a0673e83",
+        "bytes": 15328
+      },
+      {
+        "path": "src/turn_order.h",
+        "sha256": "8688629c75774c1f78793e8fbb72e676e60d8b6dc5672ebfc39dca8b1bd4c03e",
+        "bytes": 328
+      },
+      {
+        "path": "src/util.h",
+        "sha256": "c8a164c5fa55f0bce4e51eee417a0d65eb39ffbf922b4ab70bedc914905b67a8",
+        "bytes": 25379
+      },
+      {
+        "path": "src/world.cpp",
+        "sha256": "a6d97083cd06cbd4f866a3ce99fbfb2713473a29b7b1731999766788352018cb",
+        "bytes": 84832
+      },
+      {
+        "path": "src/world.h",
+        "sha256": "be117eed96f3cfb7974c6c9375d2a3266eb231a822e1e4541a694d0e5e0618a6",
+        "bytes": 30064
+      }
+    ],
+    "noCambcCopied": true,
+    "exactCandidateAggregateMatch": true,
+    "sourceAggregatePostBuildSha256": "130a17af668a432a8a5582ec0736b1ef13c22e05245bc5742e472f3d02a620a5",
+    "sourceUnchangedDuringBuild": true
+  },
+  "qualification": [
+    {
+      "label": "published40",
+      "batchPath": "replays/willow-prism-coordinated/batch-run-01-release-published40",
+      "setupPath": "replays/willow-prism-coordinated/setup-before-batch-01-release-published40.json",
+      "setupSha256": "b843f8b09f8de7b7a98327d65d41f8b70c00e1dc10ebddb07ba8246b30d46205",
+      "resultsPath": "replays/willow-prism-coordinated/batch-run-01-release-published40/results.json",
+      "resultsSha256": "15a61157911d8c03b732bcf369f43ff8a086aa68b25acb7e587bb6adafcbd970",
+      "nativeAuditPath": "replays/willow-prism-coordinated/batch-run-01-release-published40/native-status-compact.json",
+      "nativeAuditSha256": "47c32c243a79c080f60e1879b8561079d4ff4a51291a62d4d9da8c2c84254e4f",
+      "caughtActErrorsPath": "replays/willow-prism-coordinated/batch-run-01-release-published40/caught-act-errors-both.json",
+      "caughtActErrorsSha256": "b35880465081d01cb5b8fe2f324071e3ebe2b6612ea2307170dd7d3b4e08f862",
+      "diagnosticSummaryPath": "replays/willow-prism-coordinated/batch-run-01-release-published40/diagnostic-summary.json",
+      "diagnosticSummarySha256": "d8b1404ecb3ea4a17a48992955318e6d958ee44db5c91dc14ccd666f40b500b0",
+      "games": 80,
+      "winsByStableBotIndex": [
+        51,
+        29
+      ],
+      "ties": 0,
+      "runnerErrors": 0,
+      "mapIndex": null,
+      "mapIndexSha256": null,
+      "mapCount": null,
+      "nativeStatus": [
+        {
+          "bot": "willow-prism-coordinated-work",
+          "bot_index": 0,
+          "games": 80,
+          "play": {
+            "rollover": 469,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "Khaos_v29",
+          "bot_index": 1,
+          "games": 80,
+          "play": {
+            "rollover": 216,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "caughtActErrors": {
+        "willow-prism-coordinated-work": {
+          "bot_index": 0,
+          "matches_with_errors": 0,
+          "error_lines": 0,
+          "match_round_instances": 0,
+          "physical_side_lines": {
+            "A": 0,
+            "B": 0
+          },
+          "error_code_counts": {}
+        },
+        "Khaos_v29": {
+          "bot_index": 1,
+          "matches_with_errors": 2,
+          "error_lines": 2,
+          "match_round_instances": 2,
+          "physical_side_lines": {
+            "A": 1,
+            "B": 1
+          },
+          "error_code_counts": {
+            "97": 2
+          }
+        }
+      },
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+      },
+      "engine": {
+        "version": "v1_0_3",
+        "path": "tools/replay/engine/v1_0_3.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      "mode": "Release",
+      "fuel": "default/no override (100000)",
+      "nativeDraft": true,
+      "testDraftEnabled": false,
+      "threads": 1,
+      "pinsPath": "replays/willow-prism-coordinated/batch-run-01-release-published40/pins.json",
+      "pinsSha256": "54565c7d0ade718cc4fa0efd09cf9cca40322f7f4235ce2218b84de57819a790",
+      "setupCorrection": null
+    },
+    {
+      "label": "gen1023",
+      "batchPath": "replays/willow-prism-coordinated/batch-run-02-release-gen1023",
+      "setupPath": "replays/willow-prism-coordinated/setup-before-batch-02-release-gen1023.json",
+      "setupSha256": "45a94b7493568fb50a221b9051468384ed99e54c6b323e65cb8ba96dcf6f8877",
+      "resultsPath": "replays/willow-prism-coordinated/batch-run-02-release-gen1023/results.json",
+      "resultsSha256": "2ec467dc16be525195b8086c0a51858c9430b27f2d67250fce7c3d6c22eecac7",
+      "nativeAuditPath": "replays/willow-prism-coordinated/batch-run-02-release-gen1023/native-status-compact.json",
+      "nativeAuditSha256": "48881fa64d2230bcd52f3cea5a6179faa6d7f9258f697c8472f0bf11afaa16e2",
+      "caughtActErrorsPath": "replays/willow-prism-coordinated/batch-run-02-release-gen1023/caught-act-errors-both.json",
+      "caughtActErrorsSha256": "fbf0761590c0aee40858a19d031ce92407b91df364a7924d2c1d0487bc342e07",
+      "diagnosticSummaryPath": "replays/willow-prism-coordinated/batch-run-02-release-gen1023/diagnostic-summary.json",
+      "diagnosticSummarySha256": "6b1af423f7c5a4c675a5f1270ffbfe31e967647e553fcd461620426147323f64",
+      "games": 512,
+      "winsByStableBotIndex": [
+        256,
+        256
+      ],
+      "ties": 0,
+      "runnerErrors": 0,
+      "mapIndex": null,
+      "mapIndexSha256": null,
+      "mapCount": null,
+      "nativeStatus": [
+        {
+          "bot": "willow-prism-coordinated-work",
+          "bot_index": 0,
+          "games": 512,
+          "play": {
+            "rollover": 1889,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "Khaos_v29",
+          "bot_index": 1,
+          "games": 512,
+          "play": {
+            "rollover": 1158,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "caughtActErrors": {
+        "willow-prism-coordinated-work": {
+          "bot_index": 0,
+          "matches_with_errors": 0,
+          "error_lines": 0,
+          "match_round_instances": 0,
+          "physical_side_lines": {
+            "A": 0,
+            "B": 0
+          },
+          "error_code_counts": {}
+        },
+        "Khaos_v29": {
+          "bot_index": 1,
+          "matches_with_errors": 17,
+          "error_lines": 24,
+          "match_round_instances": 24,
+          "physical_side_lines": {
+            "A": 8,
+            "B": 16
+          },
+          "error_code_counts": {
+            "97": 24
+          }
+        }
+      },
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+      },
+      "engine": {
+        "version": "v1_0_3",
+        "path": "tools/replay/engine/v1_0_3.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      "mode": "Release",
+      "fuel": "default/no override (100000)",
+      "nativeDraft": true,
+      "testDraftEnabled": false,
+      "threads": 1,
+      "pinsPath": "replays/willow-prism-coordinated/batch-run-02-release-gen1023/pins.json",
+      "pinsSha256": "82ce3d1e9d053bf8739947904130a70e4564e074b525e6be0b2b28b8ddf4673b",
+      "setupCorrection": null
+    },
+    {
+      "label": "gen-s1-1024",
+      "batchPath": "replays/willow-prism-coordinated/batch-run-03-release-gen-s1-1024",
+      "setupPath": "replays/willow-prism-coordinated/setup-before-batch-03-release-gen-s1-1024.json",
+      "setupSha256": "0a4037f69855de6a6917a912f1b07a43ca4ecf9d8ae10c6d18ba34535c402aaf",
+      "resultsPath": "replays/willow-prism-coordinated/batch-run-03-release-gen-s1-1024/results.json",
+      "resultsSha256": "4521e19e05d11cd45be66c3c1724e48d40bfae8b3734e27a82a91a32dabb40a5",
+      "nativeAuditPath": "replays/willow-prism-coordinated/batch-run-03-release-gen-s1-1024/native-status-compact.json",
+      "nativeAuditSha256": "01de745f3ed7e3c63dfe9be3360d03e68c08c64b3790eaed42fd2843d97cf740",
+      "caughtActErrorsPath": "replays/willow-prism-coordinated/batch-run-03-release-gen-s1-1024/caught-act-errors-both.json",
+      "caughtActErrorsSha256": "768118d6bf67d123cf5ba392d42e69f26c33c6f1f29f88400b45cc084af82934",
+      "diagnosticSummaryPath": "replays/willow-prism-coordinated/batch-run-03-release-gen-s1-1024/diagnostic-summary.json",
+      "diagnosticSummarySha256": "29df19990a1b99119a79a4dfc73fc18b1ed0204732f7b58d29cd576428746b9b",
+      "games": 512,
+      "winsByStableBotIndex": [
+        261,
+        251
+      ],
+      "ties": 0,
+      "runnerErrors": 0,
+      "mapIndex": "maps/gen-s1/index.json",
+      "mapIndexSha256": "fcd775d0cd1ca47322070933cc003a947bdc4954860a358c77b2de8b1af8f7ac",
+      "mapCount": null,
+      "nativeStatus": [
+        {
+          "bot": "willow-prism-coordinated-work",
+          "bot_index": 0,
+          "games": 512,
+          "play": {
+            "rollover": 1863,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "Khaos_v29",
+          "bot_index": 1,
+          "games": 512,
+          "play": {
+            "rollover": 1555,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "caughtActErrors": {
+        "willow-prism-coordinated-work": {
+          "bot_index": 0,
+          "matches_with_errors": 1,
+          "error_lines": 1,
+          "match_round_instances": 1,
+          "physical_side_lines": {
+            "A": 1,
+            "B": 0
+          },
+          "error_code_counts": {
+            "5": 1
+          }
+        },
+        "Khaos_v29": {
+          "bot_index": 1,
+          "matches_with_errors": 16,
+          "error_lines": 18,
+          "match_round_instances": 18,
+          "physical_side_lines": {
+            "A": 8,
+            "B": 10
+          },
+          "error_code_counts": {
+            "97": 18
+          }
+        }
+      },
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+      },
+      "engine": {
+        "version": "v1_0_3",
+        "path": "tools/replay/engine/v1_0_3.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      "mode": "Release",
+      "fuel": "default/no override (100000)",
+      "nativeDraft": true,
+      "testDraftEnabled": false,
+      "threads": 1,
+      "pinsPath": "replays/willow-prism-coordinated/batch-run-03-release-gen-s1-1024/pins.json",
+      "pinsSha256": "c535dc0acc1001823e8c71945a7a3065c2e9b6d538a5dff9a31ca4c2da21997b",
+      "setupCorrection": null
+    },
+    {
+      "label": "heldout-2026102308",
+      "batchPath": "replays/willow-prism-coordinated/batch-run-04-release-heldout-2026102308",
+      "setupPath": "replays/willow-prism-coordinated/setup-before-batch-04-release-heldout-2026102308.json",
+      "setupSha256": "c4942110ace7076f34a788efd5f0d40b440795498ad208a932f20bd4a0a67688",
+      "resultsPath": "replays/willow-prism-coordinated/batch-run-04-release-heldout-2026102308/results.json",
+      "resultsSha256": "a21c86ab8ea698567306a91a543af48d4332a93b00c1a03b7b41f8cd6de976ac",
+      "nativeAuditPath": "replays/willow-prism-coordinated/batch-run-04-release-heldout-2026102308/native-status-compact.json",
+      "nativeAuditSha256": "5c86030d157e1fcf533b61914203fbf97671331d16190ef7652d9f81a2997351",
+      "caughtActErrorsPath": "replays/willow-prism-coordinated/batch-run-04-release-heldout-2026102308/caught-act-errors-both.json",
+      "caughtActErrorsSha256": "8ef231b8acf2f9ec3f95ee261b4535cb20f4c3191009de1f2273316478a7e01a",
+      "diagnosticSummaryPath": "replays/willow-prism-coordinated/batch-run-04-release-heldout-2026102308/diagnostic-summary.json",
+      "diagnosticSummarySha256": "f4041f7e75fced8a63de2133c8df26ef73e7ee90658dfe8d9f854318aed32be9",
+      "games": 512,
+      "winsByStableBotIndex": [
+        259,
+        253
+      ],
+      "ties": 0,
+      "runnerErrors": 0,
+      "mapIndex": "maps/gen-willow-prism-heldout-2026102308/index.json",
+      "mapIndexSha256": "ff7ccaddf4b8d8486408c744de606bd66222de473e1df739fb52bd9fc5bade2a",
+      "mapCount": 256,
+      "nativeStatus": [
+        {
+          "bot": "willow-prism-coordinated-work",
+          "bot_index": 0,
+          "games": 512,
+          "play": {
+            "rollover": 1708,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "Khaos_v29",
+          "bot_index": 1,
+          "games": 512,
+          "play": {
+            "rollover": 950,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "caughtActErrors": {
+        "willow-prism-coordinated-work": {
+          "bot_index": 0,
+          "matches_with_errors": 1,
+          "error_lines": 1,
+          "match_round_instances": 1,
+          "physical_side_lines": {
+            "A": 1,
+            "B": 0
+          },
+          "error_code_counts": {
+            "98": 1
+          }
+        },
+        "Khaos_v29": {
+          "bot_index": 1,
+          "matches_with_errors": 27,
+          "error_lines": 45,
+          "match_round_instances": 45,
+          "physical_side_lines": {
+            "A": 25,
+            "B": 20
+          },
+          "error_code_counts": {
+            "97": 44,
+            "98": 1
+          }
+        }
+      },
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+      },
+      "engine": {
+        "version": "v1_0_3",
+        "path": "tools/replay/engine/v1_0_3.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      "mode": "Release",
+      "fuel": "default/no override (100000)",
+      "nativeDraft": true,
+      "testDraftEnabled": false,
+      "threads": 1,
+      "pinsPath": "replays/willow-prism-coordinated/batch-run-04-release-heldout-2026102308/pins.json",
+      "pinsSha256": "964ae6772e2ec3a0c0210bea0ad9bcd5616ae030907fed25ad20579f710babc0",
+      "setupCorrection": {
+        "path": "replays/willow-prism-coordinated/setup-before-batch-04-source-hash-correction.json",
+        "sha256": "3873108b2b9a28ac6705bba8aeda547ecb10903ab7aedc498284ab5f27717cb6",
+        "status": "transparent after-launch correction; the initial setup used a noncanonical aggregate recipe; canonical exact bot-root hashes were independently rechecked and source files were unchanged"
+      }
+    }
+  ],
+  "qualificationSummary": {
+    "first1104": {
+      "games": 1104,
+      "winsByStableBotIndex": [
+        568,
+        536
+      ]
+    },
+    "heldout": {
+      "games": 512,
+      "winsByStableBotIndex": [
+        259,
+        253
+      ],
+      "splitByPickCount": {
+        "3": {
+          "games": 154,
+          "bot0_wins": 81,
+          "bot1_wins": 73
+        },
+        "4": {
+          "games": 170,
+          "bot1_wins": 86,
+          "bot0_wins": 84
+        },
+        "5": {
+          "games": 188,
+          "bot1_wins": 94,
+          "bot0_wins": 94
+        }
+      },
+      "setupCorrectionCaveat": "after-launch, source files unchanged"
+    },
+    "combined": {
+      "games": 1616,
+      "winsByStableBotIndex": [
+        827,
+        789
+      ],
+      "ties": 0,
+      "runnerErrors": 0,
+      "nativePlayRolloverByBot": [
+        5929,
+        3879
+      ],
+      "nativePlayBotErrorByBot": [
+        0,
+        0
+      ],
+      "caughtActErrorCountsByBot": {
+        "Khaos_v30": {
+          "2": 1,
+          "98": 1
+        },
+        "Khaos_v29": {
+          "97": 88,
+          "98": 1
+        }
+      },
+      "notes": [
+        "Stable bot index 0 is Khaos_v30; index 1 is Khaos_v29. Wins and actor statuses are not remapped by physical side.",
+        "Known candidate code-5 invalid_argument was localized to dead/off-map Vesper actor1 after an out-of-fuel/resume context; caller remains unconfirmed.",
+        "Heldout setup source aggregate was corrected transparently after run launch; see correction sidecar."
+      ]
+    }
+  },
+  "build": {
+    "status": "success",
+    "command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc build bots/Khaos_v30 --release --output provenance/Khaos_v30-release/Khaos_v30-release.wasm",
+    "cli": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+      "version": "cambc 3.0.5",
+      "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+    },
+    "mode": "Release",
+    "completedAt": "2026-10-23",
+    "rawWasmPath": "bots/Khaos_v30/.cambc/build-release/bot.wasm",
+    "rawWasmSha256": "cc23c57b34cd32853849ecd97aba4113efbaaf13e5282811f0d94f3acae3c9cc",
+    "injectedWasmPath": "bots/Khaos_v30/.cambc/build-release/bot-injected.wasm",
+    "injectedWasmSha256": "728b61f9810aabbc43edfbc90e81adef92b029e986471c026fb4540a8a79abcd",
+    "stableOutputPath": "provenance/Khaos_v30-release/Khaos_v30-release.wasm",
+    "stableOutputSha256": "728b61f9810aabbc43edfbc90e81adef92b029e986471c026fb4540a8a79abcd",
+    "qualifiedCandidateRawWasmSha256": "cc23c57b34cd32853849ecd97aba4113efbaaf13e5282811f0d94f3acae3c9cc",
+    "qualifiedCandidateInjectedWasmSha256": "728b61f9810aabbc43edfbc90e81adef92b029e986471c026fb4540a8a79abcd",
+    "exactRawAndInjectedWasmByteIdentity": true,
+    "cliVersion": "cambc 3.0.5",
+    "cliSha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "enginePath": "tools/replay/engine/v1_0_3.wasm",
+    "engineSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+  },
+  "bundle": {
+    "status": "success",
+    "command": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc bundle bots/Khaos_v30 --output provenance/Khaos_v30-release/Khaos_v30-cli-3.0.5.bundle.zip",
+    "path": "provenance/Khaos_v30-release/Khaos_v30-cli-3.0.5.bundle.zip",
+    "sha256": "d15c8410d7ebc9c2c19ffa0f1b5d366911988f9c102806278a2f3b3358b32b5f",
+    "bytes": 220406,
+    "entryCount": 30,
+    "srcOnly": true,
+    "entriesByteIdenticalToSource": true,
+    "cliVersion": "cambc 3.0.5",
+    "cliSha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "authenticatedTeamCheck": {
+    "status": "read-only check by root before upload",
+    "teamUuid": "547efb5b-57e5-4355-8501-3b331f506d62",
+    "ready": true,
+    "rank": 4,
+    "quotaRemaining": 0,
+    "quotaLimit": 50
+  },
+  "submissionPreparation": {
+    "status": "submitted",
+    "submissionAuthorized": true,
+    "authorization": "Root submitted Khaos_v30 through the pinned CLI; this record update does not trigger another submission."
+  },
+  "submission": {
+    "status": "success",
+    "submittedAt": "2026-10-23",
+    "submittedBy": "root",
+    "method": "pinned cambc 3.0.5 CLI",
+    "serverResponsePath": "provenance/Khaos_v30-release/submit-response.txt",
+    "serverResponseSha256": "12204b152855cf41f8c84e7f758914ce9ba44ae419581e7031e3abde00a4bfd2",
+    "serverBotVersion": 40,
+    "serverUploadBytes": 220406,
+    "localBundlePath": "provenance/Khaos_v30-release/Khaos_v30-cli-3.0.5.bundle.zip",
+    "localBundleBytes": 220406,
+    "localBundleSha256": "d15c8410d7ebc9c2c19ffa0f1b5d366911988f9c102806278a2f3b3358b32b5f",
+    "uploadedPayloadRetrieved": false,
+    "payloadIdentityClaim": "Server-reported byte count matches the locally prepared CLI bundle. The remote payload was not retrieved, so byte identity is not independently verified.",
+    "candidateRawWasmSha256": "cc23c57b34cd32853849ecd97aba4113efbaaf13e5282811f0d94f3acae3c9cc",
+    "candidateInjectedWasmSha256": "728b61f9810aabbc43edfbc90e81adef92b029e986471c026fb4540a8a79abcd",
+    "preparedRawWasmMatchesQualifiedCandidate": true,
+    "preparedInjectedWasmMatchesQualifiedCandidate": true
+  }
+}

@@ -267,6 +267,11 @@ public:
         Blow blow;
     };
     int threats_at(vec2 p, std::array<ThreatAt, 16>& out);
+    // Conservative enemy-only broad phase: could any threat reach a Chebyshev-radius window?
+    // A false positive is fine; false negatives would skip exact threats_at() work.
+    bool enemy_may_hit_within(vec2 p, int radius);
+    // As above, but omits unseen enemies that threats_at() would omit for zero credibility.
+    bool credible_enemy_may_hit_within(vec2 p, int radius);
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.

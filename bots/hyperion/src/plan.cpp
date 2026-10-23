@@ -916,8 +916,7 @@ void Search::add_unseen(int s) {
     }
 }
 
-// Allies a heal could reach from some tile, each worth what it restores, capped by what could hit
-// it before the slot is ready again. Seen from the start, or from a tile that sees it.
+// Allies a heal could reach from some tile, each worth the health actually restored.
 void Search::read_mates() {
     if (heal < 0) return;
     float amount = 0;
@@ -947,7 +946,7 @@ void Search::read_mates() {
         }
         const float gain = std::min(amount, top - hp);
         if (!worth_healing(amount, gain, hp / top)) continue;
-        const float value = std::min(gain, static_cast<float>(ability_cooldown) * safety.damage_bound(a.pos));
+        const float value = gain;
         if (value <= 0) continue;
         const auto k = static_cast<std::int8_t>(n_mates);
         mates[n_mates++] = &a;
@@ -1882,7 +1881,7 @@ bool strike_possible(const World& world) {
     bool failed = false;
     // Its walk may end on a guarded tile it passes on the way to a landing.
     const bitboard* guard = pathing.guard();
-    pathing.set_guard(nullptr);
+    if (world.me().type != cambc::champion_type::willow) pathing.set_guard(nullptr);
     while (done < seq.n) {
         // Out of fuel mid-plan, the rest would play in the next round on last round's positions.
         if (done > 0 && world.is_stale()) break;

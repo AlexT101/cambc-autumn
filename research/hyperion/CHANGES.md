@@ -245,3 +245,31 @@ interpreting that as an isolated instruction-cost comparison. Source aggregate `
 - Production arithmetic and holder predicates have host fixtures. The numbered release was copied without
   `.cambc`; its raw and injected Release WASM both match the qualified candidate. Release provenance is in
   `provenance/Khaos_v29-release/release.json`. Willow changes remain in experimental variants.
+
+## 93: Willow and Prism coordination (2026-10-23)
+
+Submitted as local Khaos_v30 / server version40. Against frozen Khaos_v29, native drafts and Release/default
+100k fuel:568–536 over1,104 published/generated games, then259–253 on fresh seed2026102308. Combined827–789
+/1,616 (51.18%), a modest bundle-level result. Native bot/draft and runner errors were zero, but caught API
+errors were2 vs89 and native play rollovers5,929 vs3,879. Five-pick games account for most additional rollovers.
+Source aggregate `130a17af668a432a8a5582ec0736b1ef13c22e05245bc5742e472f3d02a620a5`.
+
+- Four/five-pick drafts use Prism, Vesper, Marcella and Willow, with Heart of Ruin fifth. Three picks use
+  Prism, Vesper and Heart of Ruin. This keeps a damage/economy core while reserving Willow for larger teams.
+- Willow and Prism exchange short-lived support requests/availability through three unused communication
+  bits. Recovery waits and formation detours are bounded; readiness messages never count as received health.
+  Death, respawn and stale messages clear eligibility. Other visible allies remain eligible for healing.
+- One local station cache serves Willow formation, healing and escape. Strict enemy/camp safety governs
+  approaching to help. Escape compares the burden of leaving camp reach, heals first when possible, and
+  retains captures/banking. Safe stationary turns can attack; real healing or route progress resets idle limits.
+- Prism's ordinary basic admission checks newly awakened camp exposure on allied channel/capture holders
+  and lethal allied recipients, using bounded fresh group reads. It does not model all self-wake costs.
+- Gold-holder eligibility now rechecks visibility before live queries. Willow can finish or select Jungle
+  Health through existing item valuation; its isolated contribution was not established by the benchmark.
+- The support mailbox host fixtures pass. Release raw/injected WASM match the qualified candidate exactly.
+  The candidate retains one off-map distance-field fault on a resumed dead Vesper turn and one early
+  no-visible-entity fault also seen in the reference mirror. The exact high-level field caller is unresolved.
+  Provenance records the original fresh-suite source-hash recipe correction after run launch, unchanged
+  sources, all audits and the submission receipt in `provenance/Khaos_v30-release/release.json`.
+
+The dense-camp draft, post-dash retreat and cost children remain separate experiments.

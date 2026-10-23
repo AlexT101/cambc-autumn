@@ -33,6 +33,7 @@ cambc::champion_draft native_pick(DraftRole role) {
     case DraftRole::prism: return C::prism;
     case DraftRole::vesper_vale: return C::vesper_vale;
     case DraftRole::marcella: return C::marcella;
+    case DraftRole::willow: return C::willow;
     case DraftRole::ryth: return C::ryth;
     case DraftRole::vendetta: return C::vendetta;
     case DraftRole::heart_of_ruin: return C::heart_of_ruin;
@@ -246,9 +247,9 @@ std::span<const cambc::champion_draft> draft_order() {
         return chosen;
     }
     const auto picks = cambc::draft::team_size();
-    if (picks == 4 || picks == 5) {
-        static const auto chosen = [] {
-            const auto roles = teacher_draft_roles(native_draft_counts());
+    if (picks == 3 || picks == 4 || picks == 5) {
+        static const auto chosen = [picks] {
+            const auto roles = willow_prism_draft_roles(picks);
             std::array<cambc::champion_draft, 5> order;
             for (std::size_t i = 0; i < order.size(); ++i) order[i] = native_pick(roles[i]);
             return order;
