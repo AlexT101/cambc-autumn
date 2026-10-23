@@ -143,6 +143,11 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   Ruin (8e53ec9): 49.0% (gold earned -5-10%, deaths unchanged); first Bruiser in Health on those (5f91ee8): 50.2%.
   Out-of-fuel turns level. Dropped. If retried: a fight-survival term for Health in the emblem model, judged against
   v37 or on the ladder, not a stat fixed per champion.
+- From the teammate's v40 (`origin/codex/willow-prism`), ported together (`port/v40-bits` 15d87ae, 2026-10-23): a
+  Prism refusing a camp attack whose wakes would hit an ally holding a capture, recalling or tributing, or kill one;
+  a healthy Vesper on a cleared gold-only group with no enemy seen holding it so her +33% applies. Against eba051e:
+  49.7% of 1104; against v37 on own drafts 68.1% (main 67.3%); out-of-fuel turns level. Rare: in 6 local games the
+  wake check vetoed 28 attacks (all for a recalling or tributing ally), the Vesper hold fired in 1. Not merged.
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 
