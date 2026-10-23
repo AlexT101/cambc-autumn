@@ -1,0 +1,217 @@
+diff --git a/bots/variants/willow-upstream-presence-work/src/bot.cpp b/bots/variants/willow-upstream-sleep-transit-work/src/bot.cpp
+index 0a5723e..40d8806 100644
+--- a/bots/variants/willow-upstream-presence-work/src/bot.cpp
++++ b/bots/variants/willow-upstream-sleep-transit-work/src/bot.cpp
+@@ -4370,6 +4370,75 @@ bool stationary_support_output(const World& world, int work) {
+     return hit;
+ }
+ 
++// Add each potential striker once along this ray, using only successful current asleep reads.
++bool sleeping_escape_members(const World& world, vec2 p, vec2 entry, vec2 ray, int steps,
++                             float& damage, bool& camp) {
++    camp = false;
++    const auto members = world.map().willow_station_members_near(p);
++    for (const auto& indexed : members) {
++        const auto& c = world.camps[indexed.group];
++        if (c.asleep_read_epoch != world.camp_observation_epoch || c.state_round != world.round) return false;
++        if (c.state == CampState::cleared) continue;
++        if (c.state != CampState::alive) return false;
++        const std::size_t i = indexed.member;
++        if (c.health_round[i] != world.round) return false;
++        const auto& m = world.map().groups[indexed.group].members[i];
++        if (!(c.health[i] > 0) || i >= 64 || !(c.asleep_read >> i & 1)
++            || !c.member_asleep(i) || !test(world.visible, m.pos)) return false;
++        camp = true;
++        bool counted = false;
++        for (int before = 0; before < steps; ++before)
++            if (dist(entry + ray * before, m.pos) <= m.reach) {
++                counted = true;
++                break;
++            }
++        if (!counted) damage += m.strength;
++    }
++    return true;
++}
++
++bool sleeping_escape_bailout(const World& world, const bitboard& blocked, vec2 here, vec2 entry,
++                             float health, float& reserve, int& exit_steps) {
++    float entry_damage = 0;
++    bool camp = false;
++    if (!sleeping_escape_members(world, entry, entry, {}, 0, entry_damage, camp) || !camp
++        || !(health > entry_damage)) return false;
++    const vec2 proposed = entry - here;
++    std::array<vec2, 8> rays{proposed, -proposed};
++    int count = 2;
++    for (const vec2 d : directions)
++        if (d != proposed && d != -proposed) rays[count++] = d;
++    for (const vec2 ray : rays) {
++        float damage = entry_damage;
++        vec2 p = entry;
++        for (int steps = 1; steps <= world.map().max_camp_reach + 1; ++steps) {
++            p += ray;
++            if (!in_bounds(p) || !test(world.map().open_for_us, p) || test(blocked, p)
++                || world.map().group_at(p) >= 0) break;
++            if (!sleeping_escape_members(world, p, entry, ray, steps, damage, camp)) break;
++            // Every striker along the path may wake; no ally tanking or future heal is borrowed.
++            const float cost = damage * static_cast<float>(steps + 1);
++            if (!(health > cost)) break;
++            if (!camp) {
++                reserve = cost;
++                exit_steps = steps;
++                return true;
++            }
++        }
++    }
++    return false;
++}
++
++bool visible_escape_pursuer(const World& world, Safety& safety, vec2 here) {
++    for (const auto& e : world.enemies) {
++        if (!e.alive || !e.visible || e.age(world.round) > 1) continue;
++        const int reach = safety.strike_of(e).reach;
++        const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos;
++        if (reach >= 0 && dist(here, from) <= reach + params::pursuit_steps) return true;
++    }
++    return false;
++}
++
+ bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave) {
+     if (stunned_turn) return false;
+     pathing.set_guard(willow_step_guard(world, pathing, safety));
+@@ -4453,6 +4522,39 @@ bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Me
+                     && (best < 0 || better(current[k], current[best]))) best = k;
+             world.throw_if_stale();
+             if (best < 0) break;
++            bool sleep_transit = false;
++            // A camp-free stay/reversal can trap an escape beside a freshly sleeping camp.
++            // Reuse the parent's already-ready home field and certify just its best alternative.
++            if (leave && can_move && world.map().from_ally_spawn_ready()) {
++                const auto& home = world.map().from_ally_spawn();
++                const int here_steps = home.at(here), original_steps = home.at(current[best].p);
++                if (here_steps != unreachable && original_steps >= here_steps
++                    && visible_escape_pursuer(world, safety, here)) {
++                    int transit = -1;
++                    for (int k = 1; k < 9; ++k) {
++                        const auto& tile = current[k];
++                        if (tried[k] || !tile.legal || !tile.risk.camp || tile.risk.enemy || tile.risk.stun
++                            || tile.risk.imminent != 0 || tile.risk.damage != 0 || tile.risk.camp_imminent != 0
++                            || world.map().group_at(tile.p) >= 0 || home.at(tile.p) >= here_steps) continue;
++                        if (transit < 0 || better(tile, current[transit])) transit = k;
++                    }
++                    float reserve = 0;
++                    int exit_steps = 0;
++                    if (transit >= 0 && sleeping_escape_bailout(world, pathing.blocked(), here, current[transit].p,
++                                                              health, reserve, exit_steps)) {
++                        debug_block({
++                            std::printf("WT %d %u from %d,%d old %d,%d/%d to %d,%d/%d hp %.1f reserve %.1f exit %d\n",
++                                world.round, static_cast<std::uint32_t>(world.me().handle), here.x, here.y,
++                                current[best].p.x, current[best].p.y, original_steps,
++                                current[transit].p.x, current[transit].p.y, home.at(current[transit].p),
++                                health, reserve, exit_steps);
++                        });
++                        best = transit;
++                        sleep_transit = true;
++                    }
++                }
++            }
++            world.throw_if_stale();
+             const vec2 target = current[best].p;
+             if (target == here) break;
+             tried[best] = true;
+@@ -4461,6 +4563,10 @@ bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Me
+             const auto* guard = pathing.guard();
+             pathing.set_guard(nullptr);
+             const bool moved = pathing.try_move(target);
++            debug_block({
++                if (sleep_transit) std::printf("WT-MOVE %d %u %d,%d moved %d\n", world.round,
++                    static_cast<std::uint32_t>(world.me().handle), target.x, target.y, moved);
++            });
+             pathing.set_guard(guard);
+             if (moved) {
+                 see_again(world, pathing, safety);
+diff --git a/bots/variants/willow-upstream-presence-work/src/world.cpp b/bots/variants/willow-upstream-sleep-transit-work/src/world.cpp
+index a77f47f..c9bc8c8 100644
+--- a/bots/variants/willow-upstream-presence-work/src/world.cpp
++++ b/bots/variants/willow-upstream-sleep-transit-work/src/world.cpp
+@@ -1064,6 +1064,7 @@ void World::update() {
+         }
+     }
+     FuelMeter meter{"update"};
++    ++camp_observation_epoch;
+     read_vision();
+     const auto tributing = tributing_enemies(); // before update_champions ends their channels
+     guard("priorities", [&] { read_priorities(updated_round_ != round); });
+@@ -1090,6 +1091,7 @@ void World::update() {
+ 
+ [[gnu::flatten]] void World::observe() {
+     FuelMeter meter{"observe"};
++    ++camp_observation_epoch;
+     read_vision();
+     update_champions(false);
+     sight_pos_ = clear_pos_ = my_position();
+@@ -1340,6 +1342,7 @@ void World::note_capture(int group, int respawn_round) {
+     c.respawn_round = respawn_round;
+     c.awake = Awake::asleep;
+     c.asleep = 0;
++    c.asleep_read = 0;
+     c.holder.reset();
+     c.held_since = -1;
+     note_stirring(group);
+@@ -1595,6 +1598,7 @@ void restore(CampBelief& c, const CampGroup& G, int since) {
+     for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
+     c.awake = Awake::asleep;
+     c.asleep = 0;
++    c.asleep_read = 0;
+     ++c.version;
+ }
+ } // namespace
+@@ -1660,6 +1664,11 @@ struct World::CampViews {
+ [[gnu::flatten]] void World::update_camp(std::size_t g, bool in_view, CampViews& views) {
+     const auto& G = map().groups[g];
+     auto& c = camps[g];
++    const bool certify_sleep = me().type == cambc::champion_type::willow;
++    if (certify_sleep) {
++        c.asleep_read = 0;
++        c.asleep_read_epoch = 0;
++    }
+ 
+     if (!in_view) {
+         if (c.state == CampState::cleared && c.holder && round >= c.payout_round()) {
+@@ -1677,6 +1686,7 @@ struct World::CampViews {
+     }
+ 
+     const auto [code, timer] = engine::group_state(G.handle);
++    if (certify_sleep && (code == 1 || code == 2)) c.asleep_read_epoch = camp_observation_epoch;
+     const auto previous = c.state;
+     const int previous_round = c.state_round;
+     const int previous_respawn = c.respawn_round;
+@@ -1749,6 +1759,7 @@ struct World::CampViews {
+                     continue;
+                 }
+                 const auto read = engine::camp_awake(m.handle);
++                if (certify_sleep && read == Awake::asleep) c.asleep_read |= bit;
+                 striker_awake |= read == Awake::awake;
+                 striker_asleep |= read == Awake::asleep;
+                 striker_unread |= !read;
+diff --git a/bots/variants/willow-upstream-presence-work/src/world.h b/bots/variants/willow-upstream-sleep-transit-work/src/world.h
+index 82144fb..1486b34 100644
+--- a/bots/variants/willow-upstream-presence-work/src/world.h
++++ b/bots/variants/willow-upstream-sleep-transit-work/src/world.h
+@@ -362,6 +362,9 @@ struct CampBelief {
+     // Bit i: striking member i read asleep while the group is not. Only damage wakes it, and it
+     // wakes every asleep member, so one seen to wake clears them all. Members past 64 count awake.
+     std::uint64_t asleep = 0;
++    // Successful asleep reads for Willow's local escape; observe() expires this certificate.
++    std::uint64_t asleep_read = 0;
++    std::uint32_t asleep_read_epoch = 0;
+     int last_damaged_round = -1; // a health drop we saw
+     bool member_asleep(std::size_t i) const { return awake == Awake::asleep || (i < 64 && (asleep >> i & 1)); }
+     bool maybe_asleep(std::size_t i) const { return awake != Awake::awake || (i < 64 && (asleep >> i & 1)); }
+@@ -455,6 +458,7 @@ public:
+     }
+     int round = 0;
+     int first_round = 0; // this instance's first play round
++    std::uint32_t camp_observation_epoch = 0;
+ 
+     std::vector<ChampionBelief> allies; // in handle order, self included
+     std::vector<ChampionBelief> enemies;

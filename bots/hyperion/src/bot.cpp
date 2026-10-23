@@ -704,8 +704,8 @@ bool place_ward(const World& world, Memory& memory, bool grow = true);
 bool see_revealed(World& world, Pathing& pathing, Safety& safety);
 bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const Field& field);
 
-// At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, or at
-// an altar carry_bag gave up waiting at, is judged again.
+// At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an
+// altar carry_bag gave up waiting at, or at one believed locked (the caller skipped it), is judged again.
 bool submit_here(const World& world, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     const vec2 here = my_position();
@@ -714,7 +714,9 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
         if (dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
         if (world.altars[a].enemy_lock && enemy_lock_live(altars[a].pos)) continue;
         const bool avoided = a == memory.avoid_altar && world.round < memory.avoid_until;
-        if ((avoided || here != world.me().pos) && !tribute_ok(world, safety, memory, tribute_turns(my_gems()))) return false;
+        if ((avoided || world.altars[a].enemy_lock || here != world.me().pos)
+            && !tribute_ok(world, safety, memory, tribute_turns(my_gems())))
+            return false;
         place_lock(world); // first: it cancels every tribute at its altar
         place_ward(world, memory); // first: no ward goes down while channelling
         try {
@@ -1467,12 +1469,18 @@ const ChampionBelief* prism_capture_holder(const World& world, const CampGroup& 
     return nullptr;
 }
 
+// A hold whose payout falls after the last round never pays.
+bool pays_too_late(const CampBelief& c) {
+    return c.held_since >= 0 && c.payout_round() > static_cast<int>(cambc::constants::max_rounds);
+}
+
 // On a cleared group's tile that no lower-id ally also holds, with no enemy on any of its tiles:
 // stepping off loses the capture's progress, and it pays within six rounds.
 bool holding_capture(const World& world) {
     const vec2 here = my_position();
     const int g = world.map().group_at(here);
     if (g < 0 || world.camps[g].state != CampState::cleared || winning_bag(world)) return false;
+    if (pays_too_late(world.camps[g])) return false;
     const auto& tiles = world.map().groups[g].tiles();
     // Prism stays while a lower-id holder leaves; the last holder never yields to a remote ally.
     if (const auto* prism = prism_capture_holder(world, world.map().groups[g]); prism && prism->is_self) return true;
@@ -2530,7 +2538,7 @@ bool awake_over(const World& world, int g, vec2 p) {
     const auto& c = world.camps[g];
     const auto& G = world.map().groups[g];
     if (c.state != CampState::alive || c.awake == Awake::asleep || !test(G.threat(), p)) return false;
-    if (c.asleep == 0) return true;
+    // G.threat() also covers dead and harmless members.
     for (std::size_t i = 0; i < G.members.size(); ++i)
         if (c.health[i] > 0 && G.members[i].strength > 0 && !c.member_asleep(i) && dist(p, G.members[i].pos) <= G.members[i].reach) return true;
     return false;
@@ -2559,7 +2567,9 @@ bool contesting(const World& world) {
     const vec2 here = my_position();
     const int g = world.map().group_at(here);
     if (g < 0 || world.map().groups[g].gems == 0 || world.camps[g].state != CampState::cleared || winning_bag(world)) return false;
-    return world.camps[g].holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
+    const auto& c = world.camps[g];
+    if (c.holder == team::enemy && pays_too_late(c)) return false;
+    return c.holder == team::enemy || enemy_on(world, world.map().groups[g].tiles());
 }
 
 // Our ground: no farther from our spawn than from theirs.
@@ -4370,7 +4380,78 @@ bool stationary_support_output(const World& world, int work) {
     return hit;
 }
 
-bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave) {
+// Add each potential striker once along this ray, using only successful current asleep reads.
+bool sleeping_escape_members(const World& world, vec2 p, vec2 entry, vec2 ray, int steps,
+                             float& damage, bool& camp) {
+    camp = false;
+    const auto members = world.map().willow_station_members_near(p);
+    for (const auto& indexed : members) {
+        const auto& c = world.camps[indexed.group];
+        if (c.asleep_read_epoch != world.camp_observation_epoch || c.state_round != world.round) return false;
+        if (c.state == CampState::cleared) continue;
+        if (c.state != CampState::alive) return false;
+        const std::size_t i = indexed.member;
+        if (c.health_round[i] != world.round) return false;
+        const auto& m = world.map().groups[indexed.group].members[i];
+        if (!(c.health[i] > 0) || i >= 64 || !(c.asleep_read >> i & 1)
+            || !c.member_asleep(i) || !test(world.visible, m.pos)) return false;
+        camp = true;
+        bool counted = false;
+        for (int before = 0; before < steps; ++before)
+            if (dist(entry + ray * before, m.pos) <= m.reach) {
+                counted = true;
+                break;
+            }
+        if (!counted) damage += m.strength;
+    }
+    return true;
+}
+
+bool sleeping_escape_bailout(const World& world, const bitboard& blocked, vec2 here, vec2 entry,
+                             float health, float& reserve, int& exit_steps) {
+    float entry_damage = 0;
+    bool camp = false;
+    if (!sleeping_escape_members(world, entry, entry, {}, 0, entry_damage, camp) || !camp
+        || !(health > entry_damage)) return false;
+    const vec2 proposed = entry - here;
+    std::array<vec2, 8> rays{proposed, -proposed};
+    int count = 2;
+    for (const vec2 d : directions)
+        if (d != proposed && d != -proposed) rays[count++] = d;
+    for (const vec2 ray : rays) {
+        float damage = entry_damage;
+        vec2 p = entry;
+        for (int steps = 1; steps <= world.map().max_camp_reach + 1; ++steps) {
+            p += ray;
+            if (!in_bounds(p) || !test(world.map().open_for_us, p) || test(blocked, p)
+                || world.map().group_at(p) >= 0) break;
+            if (!sleeping_escape_members(world, p, entry, ray, steps, damage, camp)) break;
+            // Every striker along the path may wake; no ally tanking or future heal is borrowed.
+            const float cost = damage * static_cast<float>(steps + 1);
+            if (!(health > cost)) break;
+            if (!camp) {
+                reserve = cost;
+                exit_steps = steps;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool visible_escape_pursuer(const World& world, Safety& safety, vec2 here) {
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible || e.age(world.round) > 1) continue;
+        const int reach = safety.strike_of(e).reach;
+        const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos;
+        if (reach >= 0 && dist(here, from) <= reach + params::pursuit_steps) return true;
+    }
+    return false;
+}
+
+bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave,
+                              bool* protected_work = nullptr) {
+    if (protected_work) *protected_work = true;
     if (stunned_turn) return false;
     pathing.set_guard(willow_step_guard(world, pathing, safety));
     const auto& stations = *willow_stations;
@@ -4380,6 +4461,7 @@ bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Me
     const bool capture = holding_capture(world) || contesting(world);
     const bool bank = bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing);
     const bool shop = !bank && wants_shop(world, pathing, safety, memory);
+    if (protected_work) *protected_work = capture || bank || shop;
     world.throw_if_stale();
     if (!forced && capture) {
         if (yield_capture(world, pathing, safety, memory)) {
@@ -4453,6 +4535,39 @@ bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Me
                     && (best < 0 || better(current[k], current[best]))) best = k;
             world.throw_if_stale();
             if (best < 0) break;
+            bool sleep_transit = false;
+            // A camp-free stay/reversal can trap an escape beside a freshly sleeping camp.
+            // Reuse the parent's already-ready home field and certify just its best alternative.
+            if (leave && can_move && world.map().from_ally_spawn_ready()) {
+                const auto& home = world.map().from_ally_spawn();
+                const int here_steps = home.at(here), original_steps = home.at(current[best].p);
+                if (here_steps != unreachable && original_steps >= here_steps
+                    && visible_escape_pursuer(world, safety, here)) {
+                    int transit = -1;
+                    for (int k = 1; k < 9; ++k) {
+                        const auto& tile = current[k];
+                        if (tried[k] || !tile.legal || !tile.risk.camp || tile.risk.enemy || tile.risk.stun
+                            || tile.risk.imminent != 0 || tile.risk.damage != 0 || tile.risk.camp_imminent != 0
+                            || world.map().group_at(tile.p) >= 0 || home.at(tile.p) >= here_steps) continue;
+                        if (transit < 0 || better(tile, current[transit])) transit = k;
+                    }
+                    float reserve = 0;
+                    int exit_steps = 0;
+                    if (transit >= 0 && sleeping_escape_bailout(world, pathing.blocked(), here, current[transit].p,
+                                                              health, reserve, exit_steps)) {
+                        debug_block({
+                            std::printf("WT %d %u from %d,%d old %d,%d/%d to %d,%d/%d hp %.1f reserve %.1f exit %d\n",
+                                world.round, static_cast<std::uint32_t>(world.me().handle), here.x, here.y,
+                                current[best].p.x, current[best].p.y, original_steps,
+                                current[transit].p.x, current[transit].p.y, home.at(current[transit].p),
+                                health, reserve, exit_steps);
+                        });
+                        best = transit;
+                        sleep_transit = true;
+                    }
+                }
+            }
+            world.throw_if_stale();
             const vec2 target = current[best].p;
             if (target == here) break;
             tried[best] = true;
@@ -4461,6 +4576,10 @@ bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Me
             const auto* guard = pathing.guard();
             pathing.set_guard(nullptr);
             const bool moved = pathing.try_move(target);
+            debug_block({
+                if (sleep_transit) std::printf("WT-MOVE %d %u %d,%d moved %d\n", world.round,
+                    static_cast<std::uint32_t>(world.me().handle), target.x, target.y, moved);
+            });
             pathing.set_guard(guard);
             if (moved) {
                 see_again(world, pathing, safety);
@@ -4607,8 +4726,97 @@ bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const
     return true;
 }
 
+bool immediate_camp_finish(const World& world, vec2 here, float basic) {
+    const int range = world.me().facts().attack_range();
+    for (const int g : world.map().groups_near(here, range)) {
+        const auto& c = world.camps[g];
+        const auto& members = world.map().groups[g].members;
+        for (std::size_t i = 0; i < members.size(); ++i) {
+            if (dist(here, members[i].pos) > range || !test(world.visible, members[i].pos)) continue;
+            if (c.state_round != world.round) return true;
+            if (c.state != CampState::alive) continue;
+            // Preserve even an individual member finish, with a ready-reset upper bound.
+            if (c.health_round[i] != world.round || !(c.health[i] > 0) || c.health[i] <= 2 * basic) return true;
+        }
+    }
+    return false;
+}
+
+bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety) {
+    if (stunned_turn || !my_can_move()) return false;
+    const vec2 here = my_position();
+    if (test(world.map().ally_spawn, here)) return false;
+    float amount = 0;
+    if (!support_ready(world, world.me(), amount)) return false;
+    pathing.set_guard(willow_step_guard(world, pathing, safety));
+    const auto& stations = *willow_stations;
+    const auto quiet = [](const SupportExposure& risk) {
+        return risk.safe() && !risk.stun && risk.imminent == 0;
+    };
+    if (!quiet(stations.tiles[0].risk)) return false;
+    struct HealTarget {
+        vec2 pos;
+        Reach::Window viewers;
+        float gain, fraction;
+    };
+    std::array<HealTarget, 8> targets;
+    int target_count = 0;
+    float basic = 0;
+    for (const auto& a : world.allies) {
+        if (a.is_self || !a.alive || !a.visible || dist(here, a.pos) > 5 || test(world.map().ally_spawn, a.pos)) continue;
+        const auto* live = visible_record(a.handle);
+        if (!live) continue;
+        const vec2 pos{live->x, live->y};
+        const float gain = std::min(amount, live->max_health - live->health), fraction = live->health / live->max_health;
+        if (kept_recall(a.handle, a.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time))
+            || !worth_healing(amount, gain, fraction)) continue;
+        // The live record proves visibility, including our ward's: heal here without spending a walk.
+        if (dist(here, pos) <= 4) return false;
+        if (basic == 0) basic = my_strength() * (has_family(my_items(), monster) ? 1.1f : 1.0f);
+        // Two present basics and a possible return step's basic, even when reset is cooling down.
+        if (!(gain > 3 * basic)) continue;
+        targets[target_count++] = {pos, attack_viewers(world, pos, 4), gain, fraction};
+    }
+    if (target_count == 0 || immediate_camp_finish(world, here, basic)) return false;
+    vec2 best = here;
+    float best_gain = 0, best_fraction = 0;
+    for (int k = 1; k < 9; ++k) {
+        const auto& tile = stations.tiles[k];
+        if (!tile.legal || !quiet(tile.risk)) continue;
+        const int g = world.map().group_at(tile.p);
+        if (g >= 0 && world.camps[g].state == CampState::cleared) continue;
+        for (int t = 0; t < target_count; ++t) {
+            const auto& target = targets[t];
+            if (!support_view(target.viewers, target.pos, tile.p)) continue;
+            if (target.gain > best_gain || (target.gain == best_gain && target.fraction < best_fraction))
+                best = tile.p, best_gain = target.gain, best_fraction = target.fraction;
+        }
+    }
+    world.throw_if_stale();
+    if (best == here) return false;
+    debug_block({
+        std::printf("WIH %d %u from %d,%d to %d,%d gain %.1f fraction %.3f basic %.1f\n", world.round,
+            static_cast<std::uint32_t>(world.me().handle), here.x, here.y, best.x, best.y, best_gain, best_fraction, basic);
+    });
+    const bool moved = pathing.try_move(best);
+    if (moved) support_owned = true;
+    see_again(world, pathing, safety);
+    world.throw_if_stale();
+    if (!moved) {
+        support_retreat = !support_exposure(world, safety, my_position()).safe();
+        return false;
+    }
+    const bool healed = heal_ally(world);
+    debug_block({ std::printf("WIH-DONE %d %u moved 1 healed %d\n", world.round,
+        static_cast<std::uint32_t>(world.me().handle), healed); });
+    decision = 'h';
+    return true;
+}
+
 // A single current-plus-neighbours pass owns both formation and local recovery.
-bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool protected_work) {
+bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool protected_work,
+                   bool& mate_eligible) {
+    mate_eligible = false;
     const bool willow = world.me().type == cambc::champion_type::willow;
     const bool prism = world.me().type == cambc::champion_type::prism;
     if ((!willow && !prism) || stunned_turn) return false;
@@ -4653,6 +4861,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
                                   || (mate->channel == Channel::recall
                                       && kept_recall(mate->handle, mate->fast_recall ? home_recall_time
                                                                                  : static_cast<int>(cambc::constants::recall_time)));
+    mate_eligible = !observed_channel;
     if (observed_channel || protected_work || test(world.map().ally_spawn, here)) {
         if (memory.recovery_start >= 0) close_recovery(memory, health);
         if (prism && observed_channel && !protected_work) support_retreat = !recovered_for_work(world, safety, memory);
@@ -4881,18 +5090,30 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     const bool mend = on_spawn && my_health() < my_max_health();
     const bool leave = !mend && (home ? *home : want_home(world, safety, memory.siege));
+    bool willow_protected = true;
     if (!mend && willow
-        && willow_economy_or_escape(world, pathing, safety, memory, leave)) return;
+        && willow_economy_or_escape(world, pathing, safety, memory, leave, &willow_protected)) return;
     const bool strikes = willow ? strike_possible(world) : ordinary_strikes;
+    bool mate_eligible = false;
     if (!mend && (world.me().type == cambc::champion_type::willow || world.me().type == cambc::champion_type::prism)
         && support_endpoint(world, willow ? cambc::champion_type::prism : cambc::champion_type::willow)) {
         const bool protected_work = holding_capture(world) || contesting(world)
                                     || (bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing))
                                     || wants_shop(world, pathing, safety, memory);
         const bool protect = protected_work && (!leave || world.me().type == cambc::champion_type::prism);
-        if (local_support(world, pathing, safety, memory, leave, protect)) return;
+        if (local_support(world, pathing, safety, memory, leave, protect, mate_eligible)) return;
         if (support_retreat) {
             if (world.me().type == cambc::champion_type::willow) heal_ally(world);
+            retreat(world, pathing, safety, memory);
+            support_owned = true;
+            return;
+        }
+    }
+    if (willow && !mend && !leave && !strikes && !stunned_turn && !willow_protected
+        && !mate_eligible && !support_owned && !support_retreat) {
+        if (willow_independent_heal_step(world, pathing, safety)) return;
+        if (support_retreat) {
+            heal_ally(world);
             retreat(world, pathing, safety, memory);
             support_owned = true;
             return;
@@ -5088,7 +5309,12 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     } catch (const std::exception& e) {
         std::printf("r%u act error: %s\n", cambc::round_number(), e.what());
     }
-    set_turn_order(world, safety);
+    // Not StaleTurn: a stale turn abandons the rest.
+    try {
+        set_turn_order(world, safety);
+    } catch (const std::exception& e) {
+        std::printf("r%u turn order error: %s\n", cambc::round_number(), e.what());
+    }
     if (!world.is_stale() && world.me().alive) {
         bool intent = support_requested;
         if (world.me().type == cambc::champion_type::willow && support_offered) {

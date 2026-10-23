@@ -442,7 +442,52 @@ Developed on top of 105 (`strat/teleport2` cafa84c) and merged without it, as a 
 - Locally rare (visible enemy teleports per team-game: 0.47 ladder, 0.09 gen). With 105 and a crystal-buying rule,
   against 105 alone (8dbc020): 50.5% of 1104 (47.6-53.5), teleport class suite 50.6% of 512.
 
-## 107: coordinated Willow support and local Prism recovery (2026-10-23)
+## 107: exact fixes from the 2026-10-23 code audit (2026-10-23)
+
+TODO bugs whose fix uses information already read or a rule the bot already applies elsewhere; one A/B for the batch.
+
+- `submit_here` judges a tribute at an altar believed locked: a melee carrier's own fifth hit on the lock no longer
+  starts an unjudged tribute (or one past round 2000).
+- No holding or contesting a capture whose payout falls after the last round (`pays_too_late`).
+- An unseen channel's assumed end no longer replaces the last sighting (`pos`, `pos_round`), which had made
+  `note_sighting` drop a teammate's sighting; a tribute's bag is emptied only when the enemy score rose
+  (`update_scores`). Health still resets to full after an unseen recall.
+- A visible enemy's fix is dated by its own `acted` flag (`Moment::end` once it has acted), as are `hold_start` and the
+  respawn round, rather than by ranks that stale priorities can misorder.
+- Heart of Ruin's landings (search and `self_abilities` dashes) keep off a seen or tracked Ren whose retaliation kills
+  us (`unseen_suicidal`, `landing_suicidal`).
+- Fights delay a visible ally with a stun still to serve (`stun_pending`, duration > 0) by a turn, and a teleporting
+  one until it lands.
+- `awake_over` checks live striking members only (`G.threat()` holds dead ones too).
+- Turn order (role < 0 champions): a stun alone bids to cancel a recall; `offer_escape`/`may_escape` count our shield.
+- A `set_turn_order` error no longer skips the claim and bag posts and the memory update.
+- Against 90d285e: 49.7% of 1104 (46.8-52.7; ladder 42.5 of 80, gen 50.8, gen-s1 49.8), out-of-fuel turns 4973 vs
+  4855. Kept as level.
+
+## 108: audit judgment calls (2026-10-23)
+
+Reverted from main (2026-10-23) while a ladder deficit is checked: main with 107-108 against 90d285e was 49.5% of
+1104 but 36.2% of 80 on the ladder, out-of-fuel turns +10%. The change is merge d5cbc2f (branch `audit/p2`).
+
+The 2026-10-23 audit's items that needed a decision, each A/B'd alone against 107 (586586c), then together.
+
+- Unseen threats measure range by Chebyshev distance from `possible` (a wall-free field), as Strike does: ground casts
+  and ranged attacks across a wall line count, and `threats_at` answers the same before and after the build. 49.9%.
+- A carrier drops a hold only when waiting for the payout would leave too little time to bank the bag and its share
+  before the round limit, while banking now still fits (`holding_capture`). 51.0%.
+- kite() stations for a unit-spell caster without a ground spell (Marcella) are tiles that see the monster
+  (`member_attack_tiles` at unit range), with the distance squares as the fuel fallback. 50.3%.
+- The strike search treats a target our own ward sees as attackable from any tile in range (`Search::ward_sees`).
+  49.9%.
+- Reach's dash paths cross live camps on bush tiles (unseen from outside their cluster), so it stays an upper bound.
+  51.1% (out-of-fuel turns 4931 vs 4530), but no ladder, gen or gen-s1 map has a camp on a bush (the builder allows
+  one), so it never fired: both figures are noise.
+- `can_act_before` trusts only enemy priorities that can no longer change this round (test drafts only). 49.6%.
+- An ally hold on a group unseen last round is dated this round, the later possibility. 50.0%.
+- Together against 586586c: 50.6% of 1104 (47.7-53.6; ladder 48.8 of 80, gen 51.8, gen-s1 49.8), out-of-fuel turns
+  5204 vs 4917 (+6%). Kept as level.
+
+## 109: coordinated Willow support and local Prism recovery (2026-10-23)
 
 Five-pick maps use Prism / Vesper / Marcella / Willow / Heart of Ruin. Three- and four-pick drafts retain main's
 choices. Willow evaluates safe local formation and useful heals for visible allies; a compact mailbox coordinates
@@ -463,3 +508,25 @@ unavailable or the short recovery window expires. Banking and capture work remai
 
 Submitted as local Khaos_v32 / server43. Source aggregate `db5b37d5e5c609c2c616d3a39c0f1eb7f5adebf401dcd1be8848e0eede237ab8`;
 qualification and receipt are in `research/EXPERIMENTS.md` and `provenance/Khaos_v32-release/`.
+This branch originally numbered the entry107; it is renumbered109 when merging upstream107 and reverted108.
+
+## 110: Willow ready healing and bounded retreat repair on audit107 (2026-10-23)
+
+Integrates upstream107 and its live-ally visibility repair while retaining the upstream108 revert. Willow can
+make a safe one-step ready heal for a nearby non-Prism ally when the useful healing exceeds the charged basic
+attack opportunity cost and no protected work or immediate camp finish is displaced. Actual movement is followed
+by observation and a fresh heal check. Existing all-ally current-range healing remains available.
+
+- A stalled owned retreat can cross a currently verified sleeping-camp boundary toward home with an independently
+  affordable exit reserve. Unknown health or unsafe enemy/stun exposure declines the step; this is not general
+  permission to route through damaging camps.
+- Optional live-ally stun queries treat native97 after visibility changes as unavailable information; other error
+  codes still propagate. The tested ready-heal action preserves the intended move and delivered healing.
+- Against frozen main b7bfcb7:569–535/1104, native rollovers5283/3406, no runner or native bot errors. Caught
+  action errors: candidate2 code5; reference86 code97 and3 code5. The candidate's rare Releasecode5 witnesses
+  remain unresolved; unchanged-source Debug trajectories diverged and did not reproduce them.
+- Direct fresh seed2026102341 against deployed v32:251–261/512, rollovers2403/2286, no caught action, runner,
+  native bot or turn-order errors. This supports a near-level logical repair, not established superiority.
+
+Exact source aggregate `a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e` is being prepared as
+Khaos_v33. The four-pick Willow replacement and local Monolith crew remain separate, unqualified experiments.

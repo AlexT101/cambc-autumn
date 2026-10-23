@@ -1,0 +1,11 @@
+# Main107 + Willow integration review
+
+2026-10-23. **No integration blocker found.** Independently read the complete ee1b→child delta, the upstream eaee598→b7bfcb7 revert, actual decide/signature seams and direct b7bf safety/plan differences. Recomputed child aggregate `a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e`. No source edits, build or runtime by reviewer.
+
+The six-file child delta is39 insertions/106 deletions, matching upstream35/102 plus four added support caller adaptations. No stale two-argument holding-capture call, old want-home/tribute arity or conflict marker remains. The decide conflict preserves Willow economy/escape ownership before combat, exact mate-eligibility and protection outputs, independent ready-heal admission and support-retreat handling. The restored upstream hold predicate is consistently used by capture, bank-heal, Prism recovery and decide protection.
+
+The108 revert is intentional and complete at the reviewed seams: wall-aware unseen fields, prior capture dating/late-hold behavior, prior priority judgments, camp dash blocking, unit-only kite geometry and removal of Search's ward-grid extension. The support broadphase still uses destination-aware visible teleport geometry; as a broadphase its Chebyshev envelope can overadmit a detailed check without undoing the reverted wall-aware detailed model. The independent helper's real ward-visible current-heal check remains distinct from the removed Search extension.
+
+The107 acted/teleport/stun logic and ee1b optional97 repair remain intact: one existing buff import, unknown before buffer use, other errors propagate, positive/unknown delay one modeled turn, duration0/absent do not. Direct baseline differences in safety and plan contain only those established additions and the existing support broadphase/restored-health valuation/Willow guard preservation. Transit and ready-heal helpers have no policy changes beyond the four hold-signature adaptations.
+
+This approves the integration for compiler/runtime qualification, not the competitive quality of reverted upstream judgments. Earlier ee1b39–41 and caught-error results do not qualify this new source. No objective-crew or itemization policy is included. Preserve the frozen source for subsequent checks.

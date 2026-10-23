@@ -1,0 +1,9 @@
+# Live-ally stun query repair: source review
+
+2026-10-23. **No blocker found.** Independently inspected the actual `safety.cpp`-only 9+/3- delta from06b266 and recomputed aggregate `ee1b404d8e50bc188c092739142d6a1f5bcf078756f643588d2693ccf94c7b10`. No source edits, compiler or runtime by reviewer.
+
+The fault path is real in source: `World::observe` deliberately skips already-read allies, so cached `visible` may remain true after our move hides one. `make_slot` then performs a fresh native buff query. The repair changes only that existing import's handling: SDK `api_not_in_vision` is97 and now returns unknown before reading the shared buffer; `ok(code)` still propagates every other failure, including98. Successful reads preserve positive-stun versus zero-duration/absent-stun behavior.
+
+`std::optional<bool>` is used correctly: `!pending || *pending` short-circuits an unknown value and delays the ally one modeled turn; a present false value does not delay it. Enemy/self/dead/nonvisible gates, acted-based start, teleport arrival and stun immunity remain unchanged. Existing `make_fighter` initialization resets the arrival field before the override. Includes already supply optional. There is one native import per existing eligible call, no eager World scan, new field, retry, extra visibility query or blanket catch.
+
+Unknown therefore supplies no next-turn ally output credit; it is not a proof the ally was stunned or will definitely become available later. The change prevents this specific exception path. Saved code97 messages lack stack attribution, so this does **not** prove all34 panel markers came from it or are eliminated. Qualify successful positive/zero/absent reads,97 unknown, other-error propagation, immunity/teleport bypass and the ordinary published run. No runtime success is claimed here.

@@ -1064,6 +1064,7 @@ void World::update() {
         }
     }
     FuelMeter meter{"update"};
+    ++camp_observation_epoch;
     read_vision();
     const auto tributing = tributing_enemies(); // before update_champions ends their channels
     guard("priorities", [&] { read_priorities(updated_round_ != round); });
@@ -1090,6 +1091,7 @@ void World::update() {
 
 [[gnu::flatten]] void World::observe() {
     FuelMeter meter{"observe"};
+    ++camp_observation_epoch;
     read_vision();
     update_champions(false);
     sight_pos_ = clear_pos_ = my_position();
@@ -1129,6 +1131,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
 
     // A champion in view is alive: liveness is read only for one out of view.
     const auto* info = engine::champion(h);
+    const auto state = cambc::champion_state::from_bits_retain(info ? static_cast<std::uint32_t>(info->state) : 0u);
+    const bool acted = info && !b.is_self && state.contains(cambc::champion_state::completed_turn);
     if (full) {
         const bool alive_now = info || engine::alive(h);
         if (!alive_now) {
@@ -1149,10 +1153,12 @@ void World::update_champion(ChampionBelief& b, bool full) {
         if (!b.alive) {
             // Respawned on its spawn, at its turn start this round or (after our turn) last round.
             // The respawn turn allows no casting, so abilities are ready this round or next. Only
-            // ours, or one whose turn came before ours in both rounds, is surely this round's.
+            // ours, or one whose turn came before ours in both rounds, is surely this round's; one in
+            // view yet to act this round respawned at an earlier turn start.
             b.alive = true;
             b.respawn_earliest = b.respawn_latest = -1;
-            const bool before_us = slot(b, round) < slot(me(), round) && slot(b, round - 1) < slot(me(), round - 1);
+            const bool before_us = info ? acted && slot(b, round - 1) < slot(me(), round - 1)
+                                        : slot(b, round) < slot(me(), round) && slot(b, round - 1) < slot(me(), round - 1);
             b.respawned_round = b.is_self || before_us ? round : round - 1;
             b.pos = spawn();
             b.pos_round = round;
@@ -1168,16 +1174,13 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.visible = info != nullptr;
     if (!info) {
         // A channel completes at its owner's turn start.
+        // A stun, lock or damage may have cancelled it: a tribute's bag is emptied by update_scores
+        // only when the score shows it landed, and a recall leaves `pos` to the last sighting.
         if (b.channel != Channel::none
             && (round > b.channel_end_round || (round == b.channel_end_round && slot(b, round) < slot(me(), round)))) {
-            if (b.channel == Channel::tribute) b.gems = 0;
             if (b.channel == Channel::recall) {
-                b.pos = spawn();
-                b.pos_round = b.channel_end_round;
-                b.pos_source = Source::inferred;
                 b.health = b.max_health;
                 b.scale = 1;
-                // Damage or a stun could have cancelled it, so add the spawn, not replace.
                 if (enemy) {
                     or_into(b.possible, s.enemy_spawn, b.possible);
                     also_undashed(b, s.enemy_spawn);
@@ -1194,13 +1197,12 @@ void World::update_champion(ChampionBelief& b, bool full) {
     }
 
     const int last_seen = b.stats_round;
-    const auto state = cambc::champion_state::from_bits_retain(static_cast<std::uint32_t>(info->state));
-    const bool acted = !b.is_self && state.contains(cambc::champion_state::completed_turn);
     b.acted = acted;
     if (enemy) {
         const vec2 seen{info->x, info->y};
-        // Fixed there at this turn's update already, and nothing moves during our turn.
-        if (full || last_seen != round || b.pos != seen) fix(b, seen, now());
+        // Fixed there at this turn's update already, and nothing moves during our turn. Dated by
+        // its own flag, not our slot: stale ranks can misplace its turn against ours.
+        if (full || last_seen != round || b.pos != seen) fix(b, seen, {round, acted ? Moment::end : -1});
     }
     b.pos = {info->x, info->y};
     b.pos_round = round;
@@ -1340,6 +1342,7 @@ void World::note_capture(int group, int respawn_round) {
     c.respawn_round = respawn_round;
     c.awake = Awake::asleep;
     c.asleep = 0;
+    c.asleep_read = 0;
     c.holder.reset();
     c.held_since = -1;
     note_stirring(group);
@@ -1595,6 +1598,7 @@ void restore(CampBelief& c, const CampGroup& G, int since) {
     for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
     c.awake = Awake::asleep;
     c.asleep = 0;
+    c.asleep_read = 0;
     ++c.version;
 }
 } // namespace
@@ -1660,6 +1664,11 @@ struct World::CampViews {
 [[gnu::flatten]] void World::update_camp(std::size_t g, bool in_view, CampViews& views) {
     const auto& G = map().groups[g];
     auto& c = camps[g];
+    const bool certify_sleep = me().type == cambc::champion_type::willow;
+    if (certify_sleep) {
+        c.asleep_read = 0;
+        c.asleep_read_epoch = 0;
+    }
 
     if (!in_view) {
         if (c.state == CampState::cleared && c.holder && round >= c.payout_round()) {
@@ -1677,6 +1686,7 @@ struct World::CampViews {
     }
 
     const auto [code, timer] = engine::group_state(G.handle);
+    if (certify_sleep && (code == 1 || code == 2)) c.asleep_read_epoch = camp_observation_epoch;
     const auto previous = c.state;
     const int previous_round = c.state_round;
     const int previous_respawn = c.respawn_round;
@@ -1749,6 +1759,7 @@ struct World::CampViews {
                     continue;
                 }
                 const auto read = engine::camp_awake(m.handle);
+                if (certify_sleep && read == Awake::asleep) c.asleep_read |= bit;
                 striker_awake |= read == Awake::awake;
                 striker_asleep |= read == Awake::asleep;
                 striker_unread |= !read;
@@ -1854,7 +1865,8 @@ int World::hold_start(const CampGroup& G, team holder, int earliest, bool cleare
     if (earliest >= round || (earliest >= 0 && !cleared_by_us)) return round;
     const auto& list = holder == team::ally ? allies : enemies;
     for (const auto& c : list)
-        if (c.alive && c.pos_round == round && test(G.tiles(), c.pos) && (c.is_self || slot(c, round) > slot(me(), round)))
+        if (c.alive && c.pos_round == round && test(G.tiles(), c.pos)
+            && (c.is_self || (c.visible ? !c.acted : slot(c, round) > slot(me(), round))))
             return round - 1;
     return round;
 }
@@ -1917,18 +1929,23 @@ std::uint32_t World::tributing_enemies() const {
     score.enemy = enemy;
     if (ally_scores_.empty()) ally_scores_.reserve(cambc::constants::max_rounds + 1);
     if (static_cast<int>(ally_scores_.size()) <= round) ally_scores_.resize(round + 1, ally);
+    // No tribute landed: an ended channel was cancelled, and its bag kept.
     if (enemy_delta <= 0) return;
 
     // An enemy tribute just landed: empty the bag of whoever most plausibly made it. One enemy that
-    // was tributing before this update and no longer is had its bag read, or emptied as its
-    // channel ended, by update_champion; failing that, an unseen one whose bag matches.
+    // was tributing before this update and no longer is made it (a visible one's bag was just
+    // read); failing that, an unseen one whose bag matches.
+    ChampionBelief* tributer = nullptr;
     int candidates = 0;
     for (std::size_t i = 0; i < enemies.size(); ++i) {
-        const auto& b = enemies[i];
-        candidates += (tributing >> i & 1) && b.alive && b.channel != Channel::tribute;
+        auto& b = enemies[i];
+        if ((tributing >> i & 1) && b.alive && b.channel != Channel::tribute) tributer = &b, ++candidates;
     }
-    if (candidates == 1) return;
-    ChampionBelief* tributer = nullptr;
+    if (candidates == 1) {
+        if (!tributer->visible) tributer->gems = 0;
+        return;
+    }
+    tributer = nullptr;
     candidates = 0;
     for (auto& b : enemies)
         if (b.alive && !b.visible && b.gems == enemy_delta) tributer = &b, ++candidates;

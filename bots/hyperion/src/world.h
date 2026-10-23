@@ -247,6 +247,7 @@ enum class Channel : std::uint8_t { none, recall, tribute, teleport };
 
 // A point in the turn order: after the turn in `slot` of `round` (-1: the round's start).
 struct Moment {
+    static constexpr int end = 64; // a slot after every turn of the round
     int round = 0;
     int slot = -1;
     auto operator<=>(const Moment&) const = default;
@@ -362,6 +363,9 @@ struct CampBelief {
     // Bit i: striking member i read asleep while the group is not. Only damage wakes it, and it
     // wakes every asleep member, so one seen to wake clears them all. Members past 64 count awake.
     std::uint64_t asleep = 0;
+    // Successful asleep reads for Willow's local escape; observe() expires this certificate.
+    std::uint64_t asleep_read = 0;
+    std::uint32_t asleep_read_epoch = 0;
     int last_damaged_round = -1; // a health drop we saw
     bool member_asleep(std::size_t i) const { return awake == Awake::asleep || (i < 64 && (asleep >> i & 1)); }
     bool maybe_asleep(std::size_t i) const { return awake != Awake::awake || (i < 64 && (asleep >> i & 1)); }
@@ -455,6 +459,7 @@ public:
     }
     int round = 0;
     int first_round = 0; // this instance's first play round
+    std::uint32_t camp_observation_epoch = 0;
 
     std::vector<ChampionBelief> allies; // in handle order, self included
     std::vector<ChampionBelief> enemies;
