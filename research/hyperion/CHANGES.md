@@ -412,6 +412,8 @@ Cumulative check (2026-10-23): 92-104 (07d4261) against v38 (c6bd503), test draf
 
 ## 105: teleport crystals for travel (2026-10-23)
 
+Reverted from main (2026-10-23) until it is refined; the change is commit 17cab26 (branch `strat/teleport`).
+
 From the v38 ladder games: top teams teleport ~4 times a game (12 of 18 teams, median 35 steps saved), and on the maps
 where they do we win ~19 points less against teams that teleport than against teams that don't; we only hopped to
 altars no walk reaches (EXPERIMENTS "Teleport crystals for travel"). Measured on its map class: the 9 ladder maps where
