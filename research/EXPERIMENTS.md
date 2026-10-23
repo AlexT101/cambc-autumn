@@ -967,3 +967,40 @@ workers, a solo-capable anchor, an existing boss claim or a damaged boss can sti
 The full-clear current-health reserve and fixed-station member coverage can independently
 reject work. A bounded diagnostic will identify the actual rejection before any policy
 change; removing the claim filter alone is not an established remedy.
+
+### Rows branch witness and next Willow formation experiment
+
+Bounded Debug traces now reproduce the original four-pick Release RowsA extracted actions.
+The detailed reason run matches all30132 chronological event rows. At1158 Prism has evaluated
+all9 groups without a ranked option: group0 exceeds the wait limit;1/3/5/8 fail the solo
+deadline;4/7 fail crew remaining-health eligibility;6 is the excluded mixed Monolith. Group2
+is known respawning until1171, with a visible ally claim,12 travel steps and1 arrival wait.
+Its shared clear estimate is4.607rounds and value0.406786, but `too_late` rejects it. At1159,
+arrival wait becomes0, the deadline admits it and Prism walks toward it. Retention remains
+true in both turns. This establishes the no-ranked-work/deadline seam; it does not establish
+that arbitrary early tribute, retaining a stale farm target, or weakening the deadline wins.
+The interpretation/proposal remains separate from Willow. Evidence and corrected diagnostic
+parent pins are in `replays/willow-four-pick-debug-trace/rows-A-reason/`; the initially wrong
+setup-parent hash is preserved with its correction note. These are extracted-event matches,
+not an assertion that Debug and Release spend identical fuel.
+
+Root and Astra approve the isolated forecast-formation source
+`0e989629893b451a0c164cac5757cf8b41eb1b2be36ef2766d1afc26a8bdfb59`
+for runtime. Only an already-selected, zero-current-gain Willow formation move may change:
+it can establish next-phase heal access to a currently visible, already-acted worker taking
+conditional camp damage. Current output/heals, strict station safety, original formation
+expiry, claims and draft stay unchanged. The forecast supplies value only; it never lends
+HP or assumes a future heal. Shield-capable recipients are excluded because cached ally
+shield0 does not prove absence. Source is94 insertions/1 deletion inbot.cpp from exacta00fff;
+patch SHA `b2ae65a1587925ac5cdf40c552add256b2b555052870f9700f895573ea146ef7`.
+Independent actual review SHA
+`60185755509ea12bb75fd8a349110b1bb5cb9193f5d89f2dc64caa2f90e77486`.
+Debug native five-pick activation comes first; no activation means no broad competitive
+claim. With useful activation, the next panel is published80 at Release/default fuel.
+
+New upstream7a5d178 reapplies108 throughcafb6f5. Its Hyperion source tree is exactly the
+previous eaee598 tree, so this is a known source revision restored, not newly discovered
+gameplay. Our existing frozen ee1b ready-heal bundle is the corresponding integration;
+its earlier published80 result39–41 versus a97ae remains valid for that exact source.
+Keep the forecast experiment on a00fff until its isolated observation is complete.
+Upstream100M diagnostics motivate fuel work but do not replace normal-budget qualification.
