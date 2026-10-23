@@ -466,6 +466,9 @@ TODO bugs whose fix uses information already read or a rule the bot already appl
 
 ## 108: audit judgment calls (2026-10-23)
 
+Reverted from main (2026-10-23) while a ladder deficit is checked: main with 107-108 against 90d285e was 49.5% of
+1104 but 36.2% of 80 on the ladder, out-of-fuel turns +10%. The change is merge d5cbc2f (branch `audit/p2`).
+
 The 2026-10-23 audit's items that needed a decision, each A/B'd alone against 107 (586586c), then together.
 
 - Unseen threats measure range by Chebyshev distance from `possible` (a wall-free field), as Strike does: ground casts
