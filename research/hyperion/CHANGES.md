@@ -288,3 +288,15 @@ can measure it.
   the weakest live attacker's health. A cast is worth at most what it can remove, so the 50 floor refused every cast
   at an attacker under 50, while the clear stood out of basic-attack range. Every damage spell's raw exceeds 50, so
   only finishing casts pass. Covers Stellar, Tavi and Cassi on the same path.
+
+## 97: a sure kill before retreating (2026-10-23)
+
+From the v38 replay analysis (REPLAY-ANALYSIS C1: 119 retreat turns in 90 games walked away from a one-hit kill;
+REPLAY-FOLLOW-UPS R1-6, R2-4). Against 04d5464: 50.4% of 1104 (ladder 47.5, gen 51.2, gen-s1 50.0), out-of-fuel turns
+4898 vs 4926. About 0.1 kill-first turns a game locally.
+
+- `retreat()` first attacks a visible enemy in range that one basic attack kills (health and shield, `taken`, Ren's
+  retaliation guarded). A ranged champion, whose attack spends the walk, takes it only where nothing else can hit
+  its tile next turn or a ready dash still lands out of every reach (`dash_clears`).
+- `dash_away` leaves the just-killed enemy out of its threats.
+- Melee: a kill one step off waits for the step, and an attack still unspent after the step is used on an enemy.
