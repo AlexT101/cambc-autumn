@@ -7,6 +7,7 @@
 #include "comms.h"
 #include "draft.h"
 #include "pathing.h"
+#include "plan.h"
 #include "safety.h"
 #include "util.h"
 #include "world.h"
@@ -31,7 +32,78 @@ template <class F> bool run(const char* phase, F&& f) {
     return false;
 }
 
+// Spare fuel fills the terrain-only tables a fight reads, nearest tiles first: around visible
+// enemies, then around us (wider while dead). Never changes play: each fills as a miss would. Bound
+// by the fuel spent this turn against the real budget, so it fills the same at any budget.
+struct TableQueue {
+    static constexpr std::uint64_t tile_reserve = 6000; // a tile's tables on 100x100, with margin
+    // Filled tiles (or walls) as bits by row and by column, 2 words each: a ring's sides are 4 spans.
+    std::vector<std::uint64_t> rows, cols;
+    std::vector<std::uint8_t> rings; // by tile: rings around it all done, + 1
+
+    // The first clear bit in [lo, hi] of a 2-word line, or -1.
+    static int first_clear(const std::uint64_t* line, int lo, int hi) {
+        for (int w = lo >> 6; w <= hi >> 6; ++w) {
+            const int a = std::max(lo, w * 64) - w * 64, b = std::min(hi, w * 64 + 63) - w * 64;
+            const std::uint64_t span = (b == 63 ? ~std::uint64_t{0} : (std::uint64_t{2} << b) - 1) & (~std::uint64_t{0} << a);
+            if (const std::uint64_t m = ~line[w] & span) return w * 64 + std::countr_zero(m);
+        }
+        return -1;
+    }
+
+    void run(const aph::World& world, std::uint64_t start, std::uint64_t budget) {
+        const auto& map = world.map();
+        const int W = map.width, H = map.height;
+        const auto room = [&] {
+            const auto left = aph::fuel();
+            return left >= aph::end_reserve + tile_reserve && start - left + aph::end_reserve + tile_reserve <= budget;
+        };
+        if (!room()) return;
+        if (rings.empty()) {
+            rows.assign(static_cast<std::size_t>(2 * H), 0), cols.assign(static_cast<std::size_t>(2 * W), 0);
+            rings.assign(static_cast<std::size_t>(W * H), 0);
+        }
+        const auto fill = [&](int x, int y) {
+            if (!room()) return false;
+            if (!aph::test(map.walls, {x, y})) aph::warm_tile(world, {x, y});
+            rows[static_cast<std::size_t>(2 * y + (x >> 6))] |= std::uint64_t{1} << (x & 63);
+            cols[static_cast<std::size_t>(2 * x + (y >> 6))] |= std::uint64_t{1} << (y & 63);
+            return true;
+        };
+        const auto around = [&](aph::vec2 c, int radius) {
+            auto& done = rings[static_cast<std::size_t>(c.x + c.y * W)];
+            for (int r = done; r <= radius; ++r) {
+                const int x0 = std::max(0, c.x - r), x1 = std::min(W - 1, c.x + r);
+                const int y0 = std::max(0, c.y - r + 1), y1 = std::min(H - 1, c.y + r - 1);
+                while (true) {
+                    int x = -1, y = -1;
+                    for (const int row : {c.y - r, c.y + r})
+                        if (x < 0 && row >= 0 && row < H) {
+                            x = first_clear(&rows[static_cast<std::size_t>(2 * row)], x0, x1);
+                            y = row;
+                        }
+                    for (const int col : {c.x - r, c.x + r})
+                        if (x < 0 && col >= 0 && col < W && y0 <= y1) {
+                            y = first_clear(&cols[static_cast<std::size_t>(2 * col)], y0, y1);
+                            x = y < 0 ? -1 : col;
+                        }
+                    if (x < 0) break;
+                    if (!fill(x, y)) return false;
+                }
+                done = static_cast<std::uint8_t>(r + 1);
+            }
+            return true;
+        };
+        const auto& me = world.me();
+        if (me.alive)
+            for (const auto& e : world.enemies)
+                if (e.alive && e.visible && !around(e.pos, 2)) return;
+        if (me.pos.x >= 0) around(me.pos, me.alive ? 8 : 20);
+    }
+};
+
 struct Instance {
+    TableQueue tables;
     aph::DraftState draft;
     std::unique_ptr<aph::World> world;
     std::unique_ptr<aph::Pathing> pathing;
@@ -45,6 +117,7 @@ struct Instance {
     }
 
     [[gnu::flatten]] void play_turn() {
+        const auto start = aph::fuel();
         aph::FuelMeter meter{"turn"};
         const bool updated = run("world", [&] {
             if (!world) world = std::make_unique<aph::World>();
@@ -97,6 +170,8 @@ struct Instance {
                     if (warmed_up) std::printf("WARM %u done\n", cambc::round_number());
                 });
             });
+        if (!world->is_stale())
+            run("warm tables", [&] { tables.run(*world, start, world->round == world->first_round ? 200000 : 100000); });
         aph::print_fuel_log();
     }
 };

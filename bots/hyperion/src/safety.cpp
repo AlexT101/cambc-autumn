@@ -1303,6 +1303,11 @@ std::array<std::uint8_t, 100 * 100> statics_around;
 
 } // namespace
 
+void warm_reach_tile(const World& world, vec2 p) {
+    (void)static_window(world, p);
+    (void)sight(world, p, true);
+}
+
 void warm_reach(const World& world, std::uint64_t fuel_floor) {
     if (!world.me().alive || !fuel_ok(fuel_floor + 8000)) return;
     const vec2 here = my_position();
