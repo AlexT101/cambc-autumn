@@ -1780,7 +1780,11 @@ struct World::CampViews {
                                      : previous == CampState::respawning
                                          ? std::max(previous_round + 1, previous_respawn)
                                          : std::max(previous_round, previous_respawn);
-                c.held_since = holder ? hold_start(G, *holder, earliest, c.cleared_by_us >= previous_round) : -1;
+                // Unseen last round, a contest may have ended this round before our turn: our hold
+                // dates from then; an enemy's stays early, as dating it late could lose us the contest.
+                if (!holder) c.held_since = -1;
+                else if (*holder == team::ally && previous_round < round - 1) c.held_since = round;
+                else c.held_since = hold_start(G, *holder, earliest, c.cleared_by_us >= previous_round);
             }
         }
     } else {
