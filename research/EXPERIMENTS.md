@@ -1182,8 +1182,8 @@ Frozen `bots/baselines/hyperion-upstream-4c4eacc` is its root Hyperion source,28
 aggregate7f773ba81b8acc1b3d8912ca48ef98be007b4820ca83f5b7b89ff15b75c3f36f.
 It is not the unrelated v40 baseline added by that commit. Every source file matches Git.
 Its ordinary farm/gold/shop formulas match current337f, apart from capture-signature
-wiring; this is not full behavioral equivalence. Its fifth role is Ryth/Vendetta by existing
-camp density instead of Willow. The saved public results do not prove an executed4c4
+wiring; this is not full behavioral equivalence. Its fourth pick is Ryth/Vendetta by existing
+camp density instead of Willow, followed by HoR fifth. The saved public results do not prove an executed4c4
 submission or the reported historical win rate. Controls will compare the exact old bot,
 current gameplay with that old draft, and unchanged current Willow against the same frozen
 policy with Fish's roster; this emulator is explicitly not Fish's private gameplay.
@@ -1268,3 +1268,58 @@ real early healing, all to Marcella, and becomes injured herself. Prism's injury
 has no recorded current/one-step Willow heal geometry. Missing allied own-view/branch
 information prevents claiming a missed legal heal. See the allocation and paired-control
 reviews; no speculative future healing was added to safety or farm values.
+
+### Native upstream control and optional97 isolation
+
+Frozen native fbda803 completes the same52 roster-emulator cells at30–22. Its native play
+rollovers are331/377 (candidate/emulator), caught code97 rounds8/18, with no runner failures,
+native Bot Errors or turn-order markers. The24 teacher-Vendetta cells yield13 wins and
+the28 teacher-Ryth cells17. Thus the old4c4→fbda change loses five wins in the former
+stratum while gaining four in the latter; fbda→current teacher loses another three/two.
+The near-equal whole-panel4c4/fbda totals do not exclude an upstream layout interaction.
+These are paired diagnostics on an already examined panel, not held-out selector evidence.
+The full52 comparison is in `replays/fish-roster-emulator-panel-20261023/08-fbda803-vs-roster-emulator-full52/`;
+comparison JSON SHA `719e1d592944cd4be5cabc428dbe6beca2722d54bbb72d3fca0481a23fa79554`.
+
+Source-reviewed97 ablations complete a2×2: upstream with the safe optional handler37c3,
+and current teacher with the old throwing handler e9a9. Only the two safety.cpp hunks
+change in each child. The eight initial default100k games, Elk Arena and Boss Battle
+both sides, give37c3 four wins and e9a9 four losses. Both new arms have zero runner/native
+Bot Errors, caught action errors and turn-order markers. Restoring exceptions is an
+experimental factor, not a release proposal. Complete source pins and review are in
+`fish-optional97-factorial-source-checkpoint.md` and its source review.
+
+On Boss specifically, upstream throw and upstream optional both win2–0 with2/2 candidate
+rollovers; current teacher optional and current teacher throw both lose0–2 with8/16.
+No caught error is reported in these cells. The same-handler37c3/b810 event streams first
+differ in round1, but the first mismatch compares different actors, so that ordinal event
+comparison does not identify a specific wrong decision or equivalent input state.
+
+Four authorized Release100M diagnostic games compare37c3 and b810 on Boss A/B, raising
+both candidate and emulator budgets. The complete unwrapped replay payload is identical
+between codebases on each side; candidate wins both in893/1759 rounds. There are no native
+rollovers, native/caught errors or turn-order markers. This supports a budget-mediated
+integration effect in those cells, not a default-budget qualification. Candidate fuel is
+186,693,253→189,520,692 on A and307,336,356→312,787,256 on B: current teacher uses1.51%/1.77%
+more than upstream optional, across identical gameplay. Every candidate champion's total
+is higher, with median-profile differences506–711 fuel. The responsible helper is not yet
+identified. The protocol-preserving absent-pair comms optimization is the next small
+source candidate, not a claimed complete explanation of the Fish regression.
+
+Two additional100M games accidentally used e9a9 instead of b810. They remain preserved
+and explicitly excluded in `04-current-teacher-throw97-highfuel/EXCLUDED-ARM.md`; the correct
+b810 pair is folder05. A preliminary verbal B-loss report confused winner bot index with
+physical side. Reconciliation of raw winner indices confirms the corrected high-fuel2–0
+and all earlier31/32/25/30-of52 totals; no wider-table correction was needed.
+Evidence is in `replays/fish-optional97-factorial-vs-emulator/winner-fuel-reconciliation.json`,
+SHA `fb564d02c0b8dfda8c3c7a404297c493f177f45a7e6bd5477f71185ccc9869ee`, and
+`fish-factorial-causal-fuel-review.md`. Canonical337f and the submitted release remain unchanged.
+
+Separate known-information four-pick review does not establish a combat bug from two
+nominated deaths. Shortcut Prism cannot leave adjacent ready Vendetta's melee threat with
+one walk after the altar lock; his stun buys a turn, and the later stun marker is expired.
+Gemfight HoR's round51 step increases enemy separation. Earlier route choices remain
+questions, not proven missed escapes. See `willow-current-fish-four-pick-losses.md`.
+The upstream unseen-recall crew hypothesis likewise needs its narrow positive-delay claim
+gate to occur; its formula can increase our projected reward share. No observation-metadata
+reversal or harmless-camp finishing policy was added without a witnessed decision error.
