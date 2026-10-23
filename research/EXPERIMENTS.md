@@ -2159,3 +2159,37 @@ again at22, while the bot retains the earlier observation. The movement oscillat
 coincides with different live-route and cached-approach paths. Causal review is checking
 their exact goal and wall semantics before selecting a correction; later trace output
 is not qualified by this prefix comparison.
+
+### Latest ranked intake, upstream Willow fixes and ward fuel check
+
+The ranked intake through03:40:12.979Z adds20 games,8–12. Fifteen use the normal
+Prism-first draft and go8–7. The five Univardisty games all use anomalous Willow-first
+drafts and go0–5; two own drafts exactly repeat earlier same-map/side Claudus anomalies.
+Several normal-draft wins and losses also repeat prior map/side/draft comparisons.
+This does not establish opponent adaptation. The Gemfight draft prefix has eight
+Input/Draft-champion pairs and no recorded draft rollover, BotError or End-turn;
+that sequence alone does not identify the submission or prove explicit-versus-automatic
+pick provenance. See `incoming-loss-followup-20261024-v3.md` and its preserved inputs.
+
+Fetched cb61eaa, which adds upstream Astraeus Willow visibility/readiness corrections
+and cost reductions after e72724a. The exact29-file freeze and untouched control have
+aggregate `369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea`.
+Upstream reports52/52 cost-only replay equivalence and pooled51.5% of600 for the later
+logic changes; these are upstream reports, not our independently reproduced results.
+The local source review finds no blocker, while Band pathing and economic-search
+mechanisms remain separate. See `willow-astraeus-cb61eaa-source-review-20261024-v1.md`.
+
+The isolated ward-demand v2 optimization completed16/16 own-draft games at100M
+diagnostic fuel against the fixed Fish-roster emulator. Every native replay payload
+is byte-identical to the paired4db control. Draft and first-round fuel are identical,
+but play fuel rises1,286,959 over3,933,913,698 control fuel across83,835 samples;
+turns above100k rise564→567 and nearest-rank p99 rises94,378→94,531. This version
+does not deliver the intended fuel improvement and is not promoted.
+
+Two tooling issues were reconciled without rerunning games: the preflight initially
+compared whole-ZIP hashes to recorded inner-payload hashes (all16 payload pins match),
+and the adapter failed serializing tuple-keyed ledger data after saving all16 results.
+Source/tool/map/artifact and unique-command reconciliation passes; the failed exit
+and a separate future adapter repair are preserved. Authoritative receipts are
+`provenance/willow-ward-demand-viewers-20261024-v2/candidate16-postflight-recovered-v2.json`
+and `candidate16-fuel-tail-summary-v1.json`. No normal-fuel strength claim follows.
