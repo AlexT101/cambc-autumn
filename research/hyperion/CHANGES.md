@@ -486,3 +486,25 @@ The 2026-10-23 audit's items that needed a decision, each A/B'd alone against 10
 - An ally hold on a group unseen last round is dated this round, the later possibility. 50.0%.
 - Together against 586586c: 50.6% of 1104 (47.7-53.6; ladder 48.8 of 80, gen 51.8, gen-s1 49.8), out-of-fuel turns
   5204 vs 4917 (+6%). Kept as level.
+
+## 109: end-of-turn table queue (2026-10-23)
+
+Spare fuel at the turn's end fills the terrain-only tables a fight reads (static windows, far sight masks, the search's
+viewer rows), nearest tiles first: within 2 of visible enemies, then within 8 of us (20 while dead). The queue stops
+once the turn has spent its real budget less a reserve, counted from the turn's start, so it fills the same at 100M
+and never pushes a turn over. Each table fills as a miss would: play is unchanged (FUEL-GATES rule 3).
+
+- 100M, byte-identical replays: 6-map test-draft screen 12/12, turns over 100k 1555 -> 1458; default bench 16/16,
+  199 -> 175. Filling every tile on turn 1 (up to 41M) reaches 1427 on the screen.
+- Against main a5749c4: 48.9% of 1104 (46.0-51.9), out-of-fuel turns 4610 vs 4818.
+
+## 110: step_guard on first need (2026-10-23)
+
+The guard is set with the inputs that change mid-turn (our tile, the dash radius) and built when a step, a dash or a
+moving search first reads it; an anchored search (its own tile the only end) no longer reads it. Turns that never
+step skip it: holding, a ranged champion that attacked, the guard after the search when the goal stays.
+
+- 100M, byte-identical: screen 12/12, turns over 100k 1458 -> 1334 (p99 -2.4%, turns over 120k -6k); default bench
+  175 -> 159.
+- 109 + 110 against main a5749c4: 49.4% of 1104 (ladder 45.0 of 80, gen 49.6, gen-s1 49.8), out-of-fuel turns 3822 vs
+  5058 (-24%).
