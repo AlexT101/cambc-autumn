@@ -243,6 +243,10 @@ another harmless group was kept (CHANGES 91).
   sight: 49.6%, out-of-fuel turns level. Remembered wards were stale 90% of the time in a traced game against hecate
   (3439 wrong, 394 right; wards in sight 909/909 right). Known limit, accepted: an enemy's fresh ward placed in its
   own turn (sight counts at once) is not modelled, so `Reach` is bolder than reality beside our bush clusters.
+- An ally's stun read with its stats when first seen in a round, kept on the belief (branch `astraeus`, 34ea5de,
+  2026-10-23). Safety used to read it live, and after our move hid a believed-visible ally (vision is personal) the read
+  threw and lost the rest of the turn. Against main, ladder + gen only: 50.0% of 592 (ladder 48.8 of 80, gen 50.2),
+  out-of-fuel turns 2339 vs 2481. Level; a correctness fix, kept on the branch.
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
 - `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
   2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next
