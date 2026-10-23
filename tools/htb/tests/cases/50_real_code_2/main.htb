@@ -1,0 +1,5 @@
+#include <cstdio>
+int main() {
+    static_assert(sim::even(10));
+    std::printf("%lld %zu %zu %d %d\n", sim::scaled(3), model::Features{}.size(), net::Features{}.size(), sim::built(), pathing::path_built());
+}

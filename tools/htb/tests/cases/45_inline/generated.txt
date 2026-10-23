@@ -1,8 +1,10 @@
-src/headers/a.h ~ inline bool is_even(unsigned n) { return n == 0 ? true : is_odd(n - 1); }
+# inline functions: declared in the header, defined whole in the file's .inline.h (after every class)
+src/headers/a.h ~ inline bool is_even(unsigned n);
+src/headers/a.inline.h ~ { return n == 0 ? true : is_odd(n - 1); }
+src/headers/a.inline.h ~ { return ax * bx + ay * by; }
 src/headers/a.h ~ inline void add(int v) { total += v * step(); }
-src/headers/a.h ~ inline int dot(int ax, int ay, int bx, int by) { return ax * bx + ay * by; }
 src/a.inl !~ is_even
 src/a.inl !~ Counter::add
 src/a.inl !~ Counter::step
 src/a.inl ~ int Counter::get() const
-src/headers/z.h ~ inline int read_base() { return g_base; }
+src/headers/z.inline.h ~ { return g_base; }

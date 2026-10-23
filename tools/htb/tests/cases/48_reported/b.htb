@@ -1,0 +1,3 @@
+struct Later {
+    static constexpr int extra() { return 2; }
+};

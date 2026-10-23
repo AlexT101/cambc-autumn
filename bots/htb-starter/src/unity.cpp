@@ -18,6 +18,7 @@
 #include "headers/draft.h"
 #include "headers/main.h"
 #include "headers/random.h"
+#include "headers/bot.inline.h"
 
 #include "bot.inl"
 #include "draft.inl"

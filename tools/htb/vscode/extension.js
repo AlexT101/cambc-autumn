@@ -71,17 +71,45 @@ function startClient(context) {
   return client.start();
 }
 
+// One hgen run per bot at a time; a save and the file events around it share one run.
+const runs = new Map();     // bot -> { timer, running, again }
+const SOURCES = /\.(htb|h|hh|hpp|hxx|inl|ipp|tpp)$/;   // .htb files, and headers hgen copies into src/
+function scheduleHgen(file) {
+  const bot = botDirOf(file);
+  if (!bot) return;
+  const top = path.relative(bot, file).split(path.sep)[0];
+  if (['src', '.cambc', 'build'].includes(top)) return;   // hgen's own output: never a reason to run it
+  const r = runs.get(bot) || {};
+  runs.set(bot, r);
+  clearTimeout(r.timer);
+  r.timer = setTimeout(async () => {
+    if (r.running) { r.again = true; return; }
+    r.running = true;
+    do { r.again = false; await runHgen(bot); } while (r.again);
+    r.running = false;
+  }, 300);
+}
+
 async function activate(context) {
   out = vscode.window.createOutputChannel('HTB');
   context.subscriptions.push(out);
-  // Fresh declarations for every .htb bot in the workspace before clangd reads them.
-  const files = await vscode.workspace.findFiles('bots/*/*.htb', '**/{src,.cambc}/**');
+  // Fresh declarations for every .htb bot in the workspace (files in subfolders too) before clangd reads them.
+  const files = await vscode.workspace.findFiles('bots/*/**/*.htb', '**/{src,.cambc,node_modules}/**');
   await Promise.all([...new Set(files.map((u) => botDirOf(u.fsPath)).filter(Boolean))].map(runHgen));
   context.subscriptions.push(vscode.workspace.onDidSaveTextDocument((doc) => {
-    if (doc.languageId !== 'htb') return;
-    const bot = botDirOf(doc.fileName);
-    if (bot) runHgen(bot);
+    if (SOURCES.test(doc.fileName)) scheduleHgen(doc.fileName);
   }));
+  // Files added, deleted or renamed (here or outside VS Code, e.g. by git) change what the other files see.
+  const watcher = vscode.workspace.createFileSystemWatcher('**/bots/*/**/*.{htb,h,hh,hpp,hxx,inl,ipp,tpp}');
+  for (const event of [watcher.onDidCreate, watcher.onDidDelete, watcher.onDidChange])
+    context.subscriptions.push(event((uri) => scheduleHgen(uri.fsPath)));
+  context.subscriptions.push(watcher);
+  // A deleted or renamed folder of .htb files reports only the folder.
+  context.subscriptions.push(vscode.workspace.onDidDeleteFiles((e) => e.files.forEach((u) => scheduleHgen(u.fsPath))));
+  context.subscriptions.push(vscode.workspace.onDidRenameFiles((e) => e.files.forEach((f) => {
+    scheduleHgen(f.oldUri.fsPath);
+    scheduleHgen(f.newUri.fsPath);
+  })));
   context.subscriptions.push(vscode.commands.registerCommand('htb.restart', async () => {
     if (client) await client.stop();
     await startClient(context);

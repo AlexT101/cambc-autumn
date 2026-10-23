@@ -1,0 +1,20 @@
+#include <vector>
+
+namespace aph {
+struct Belief {
+    int id = 0;
+    const Facts& facts() const { return table[id % 2]; }
+};
+
+class World {
+public:
+    std::vector<Belief> enemies{Belief{0}, Belief{1}};
+    bool enemy_seen() const { return !enemies.empty(); }    // same name as the free function below
+    const Belief& me() const { return enemies[0]; }
+};
+
+inline bool enemy_seen(const World& world) { return world.enemy_seen(); }
+// Reaches Facts only through what it calls.
+inline float first_mult(const World& world) { return world.me().facts().mult; }
+inline int act(const World& world) { return int(world.enemies.size()); }
+}

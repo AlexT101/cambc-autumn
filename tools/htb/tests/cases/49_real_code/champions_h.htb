@@ -1,0 +1,23 @@
+#include <array>
+
+namespace aph {
+struct Facts {
+    Kind kind;
+    Targeting target;
+    float mult;
+    bool stuns;
+};
+
+namespace facts_detail {
+using K = Kind;
+using T = Targeting;
+// Its signature uses T, an alias declared just above: it can't be declared before that.
+constexpr Facts damage(T target, float mult, bool stuns = false) { return {K::attack, target, mult, stuns}; }
+}
+
+// Built at compile time from this file's own constexpr function with a default argument.
+inline constexpr std::array<Facts, 2> table = [] {
+    using namespace facts_detail;
+    return std::array<Facts, 2>{damage(T::enemy, 1.5f), damage(T::self, 2.0f, true)};
+}();
+}
