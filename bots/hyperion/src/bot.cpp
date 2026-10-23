@@ -1094,10 +1094,10 @@ void note_upkeep(const World& world, Safety& safety, float damage) {
         if (const int s = map.from_ally_spawn().at(here); s != unreachable) upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
 }
 
-// A Treasure, Jungle, Power or Durability shard short of its emblem.
+// A Treasure, Jungle, Power, Durability or Bruiser shard short of its emblem.
 bool emblem_begun(const World& world) {
     const auto& owned = my_items();
-    for (const int family : {treasure, jungle, power, durability})
+    for (const int family : {treasure, jungle, power, durability, bruiser})
         for (int stat = strength_stat; stat <= health_stat; ++stat)
             if (owned[shard_of(family, stat)] > 0) return true;
     return world.me().facts().passive == Passive::gem_focus
@@ -1118,6 +1118,14 @@ void add_shards(Build& b, const ChampionFacts& f, int stat, float shards) {
         b.max_health += shards * f.health.growth;
         if (f.passive == Passive::health_strength) b.strength += 0.01f * shards * f.health.growth;
     }
+}
+
+// What completing an emblem adds beyond its shards: Power a sixth shard, Bruiser one of each other stat.
+void add_completion(Build& b, const ChampionFacts& f, int family, int stat) {
+    if (family == power) add_shards(b, f, stat, 1);
+    if (family == bruiser)
+        for (int s = strength_stat; s <= health_stat; ++s)
+            if (s != stat) add_shards(b, f, s, 1);
 }
 
 // Where every gem is behind a siege, our upkeep before a camp has hit us: every turn on the nearest
@@ -1200,7 +1208,8 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
     const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
         const unsigned left = 5 - owned[shard_of(family, stat)];
         Build b = now;
-        add_shards(b, f, stat, static_cast<float>(left + (family == power)));
+        add_shards(b, f, stat, static_cast<float>(left));
+        add_completion(b, f, family, stat);
         if (family == jungle) b.camp_taken = 0.7f;
         if (family == durability) b.taken = 0.9f;
         if (family == monster) b.camp_dealt = 1.1f;
@@ -1210,13 +1219,16 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
     if (f.passive == Passive::gem_focus && owned[shard_of(monster, health_stat)] > 0) return value(monster, health_stat);
     if (f.passive == Passive::gem_focus && owned[shard_of(monster, focus_stat)] > 0) return value(monster, focus_stat);
     // In the stat it was begun in: the main stat follows our use and can change.
-    const int begun[5][2] = {{jungle, strength_stat}, {jungle, focus_stat}, {power, strength_stat}, {power, focus_stat}, {durability, health_stat}};
+    const int begun[8][2] = {{jungle, strength_stat}, {jungle, focus_stat}, {power, strength_stat}, {power, focus_stat}, {durability, health_stat},
+                             {bruiser, strength_stat}, {bruiser, focus_stat}, {bruiser, health_stat}};
     for (const auto& [family, stat] : begun)
         if (owned[shard_of(family, stat)] > 0) return value(family, stat);
     if (f.passive == Passive::gem_focus) {
         for (const int family : {power, jungle, home})
             if (owned[shard_of(family, health_stat)] > 0) return value(family, health_stat);
         Emblem best = value(power, health_stat);
+        if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
+        if (const auto e = value(bruiser, focus_stat); e.saved > best.saved) best = e;
         if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
         if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
         if (!has_family(owned, monster))
@@ -1232,6 +1244,8 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
     Emblem best = value(power, main);
     if (const auto e = value(jungle, main); e.saved > best.saved) best = e;
     if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
+    if (const auto e = value(bruiser, main); e.saved > best.saved) best = e;
+    if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
     // Treasure first, in the stat the model picks and priced as the emblem it delays: +20% gold
     // from round ~200 buys 5-8 more shards a champion (ladder), more than any first passive saves.
     if (!has_family(owned, treasure)) {
@@ -1255,7 +1269,8 @@ bool buy_shards(const World& world) {
         const unsigned count = std::min<unsigned>(5 - have, gold / shard_price);
         if (!buy(shard_of(family, stat), count)) break;
         gold -= shard_price * count;
-        add_shards(bought, world.me().facts(), stat, static_cast<float>(count + (family == power && have + count == 5)));
+        add_shards(bought, world.me().facts(), stat, static_cast<float>(count));
+        if (have + count == 5) add_completion(bought, world.me().facts(), family, stat);
     }
     return gold < start;
 }
@@ -1309,8 +1324,9 @@ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
                     has_family(owned, home) ? home_recall_time : recall_turns(world)};
     Build bought = now;
     const bool completes = quote.count == left;
-    add_shards(bought, f, quote.next.stat, static_cast<float>(quote.count + (completes && quote.next.family == power)));
+    add_shards(bought, f, quote.next.stat, static_cast<float>(quote.count));
     if (completes) {
+        add_completion(bought, f, quote.next.family, quote.next.stat);
         if (quote.next.family == jungle) bought.camp_taken = 0.7f;
         if (quote.next.family == durability) bought.taken = 0.9f;
         if (quote.next.family == monster) bought.camp_dealt = 1.1f;
