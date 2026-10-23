@@ -187,6 +187,8 @@ void offer_kills(const World& world, const ChampionBelief& self, const Strike& o
         if (e->channel == Channel::tribute && ours.stuns[d] && e->facts().passive != Passive::stun_immune)
             wish.offer(kill, params::tribute_value + params::gem_value * static_cast<float>(e->gems));
         if (e->channel == Channel::recall && ours.at(d) > 0) wish.offer(kill, params::recall_value);
+        if (e->channel == Channel::teleport && ours.stuns[d] && e->facts().passive != Passive::stun_immune)
+            wish.offer(kill, params::recall_value);
     }
 }
 

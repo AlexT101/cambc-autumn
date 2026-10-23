@@ -285,6 +285,10 @@ struct ChampionBelief {
     Channel channel = Channel::none;
     Channel seen_channel = Channel::none; // hidden completion may clear channel while retaining the seen position
     int channel_end_round = -1;
+    vec2 tp_dest{-1, -1}; // a visible enemy teleport's destination, when we see it
+    // A visible enemy's teleport: it cannot act before channel_end_round, then lands at tp_dest
+    // (within 3) unless we stun or kill it first.
+    bool teleport_pending() const { return alive && visible && channel == Channel::teleport; }
 
     // Enemies only: every tile it could be on, from what we have seen and how champions move.
     // Unseen teleports are not modelled. Unread while dead or !tracked. Left uninitialised until

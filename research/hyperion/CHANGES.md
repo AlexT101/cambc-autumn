@@ -426,3 +426,18 @@ uses a game, out-of-fuel turns 4949 vs 4747 (+4%).
 - Always carry a crystal. While farming, banking or walking home to shop, use it where a landing beats the walk by 6+
   steps, with no enemy in sight of either end and no awake camp at the landing.
 - Fresh suite (seed 7341, 256 general maps) against 4c4eacc: 50.2% of 512 (45.9-54.5), out-of-fuel turns 1746 vs 1703.
+
+## 106: enemy teleports land at their destination (2026-10-23)
+
+A seen enemy teleport (`channel_end_round`, its reserved landing) lands at its turn start in `channel_end_round` and
+acts that turn; a stun or kill by us leaves it in place. Before, only tracking widened its `possible` to tiles within 3.
+Developed on top of 105 (`strat/teleport2` cafa84c) and merged without it, as a bug fix, without an A/B of its own.
+
+- Safety: its next turn starts at landing; it threatens nothing if it lands after our next turn, otherwise strikes
+  from the landing tile (from its own tile when the landing is unseen).
+- The fight search leaves it out until it lands; `prey` skips one we can't reach before it lands, and
+  `intercept_steps` stops it by stun or hit in time or races its walk from the landing.
+- A stun values cancelling a teleport like cancelling a recall; turn order offers to act first to stun one about to
+  land. Tracking stops spreading its `possible` until it lands, narrowing it to its tile and the landing when known.
+- Locally rare (visible enemy teleports per team-game: 0.47 ladder, 0.09 gen). With 105 and a crystal-buying rule,
+  against 105 alone (8dbc020): 50.5% of 1104 (47.6-53.5), teleport class suite 50.6% of 512.
