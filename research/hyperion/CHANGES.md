@@ -374,3 +374,19 @@ ladder 52.5, gen 53.1, gen-s1 52.9), 4-pick maps 60.0% of 330 (54.6-65.1), the r
 
 - `draft_order()`: with 4 picks, the fourth pick is Heart of Ruin, swapped with the Ryth/Vendetta role.
 - With 101 merged, against e2ad48c (101 alone), own drafts: 52.4% of 1104 (49.5-55.4; ladder 48.8, gen 52.1, gen-s1 53.3).
+
+## 103: Bruiser emblems in the emblem model (2026-10-23)
+
+From the v38 ladder games (624 distinct, both teams' purchases): the opponents' extra health is Bruiser. Their most
+common completed builds on Ryth (136), Vendetta (121), Vesper (113) and Marcella (106) are Treasure > Jungle > Bruiser;
+Bruiser is 66% of opponent Marcella's spending and 38-56% on Heart of Ruin, Ryth, Vendetta and Prism, in the main stat
+and Health about equally. A Bruiser emblem is 7 shards' stats for 5 (Power's 6); `best_emblem` never priced it.
+
+Against e2ad48c (101): 56.2% of 1104 (53.2-59.1; ladder 51.2, gen 56.1, gen-s1 57.0), out-of-fuel turns 4969 vs 4751;
+fresh suite (seed 8431) 54.5% of 512 (50.2-58.8); pooled ~55.7% of 1616.
+
+- `best_emblem` also prices Bruiser in the main stat and in Health (Prism: Health and Focus); Treasure still comes
+  first, in the stat the model picks. A begun Bruiser is finished first; `emblem_begun` counts its shards.
+- `add_completion` gives a completed emblem its extra stats (Power's sixth shard, Bruiser's other two), used by
+  `value()`, `buy_shards` and `affordable_prefix`.
+- Prism's mean ~180 unspent gold at r1000 is a tail (median 20): Prisms holding 200-365 gems that rarely go home.
