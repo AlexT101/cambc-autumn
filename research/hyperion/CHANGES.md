@@ -423,3 +423,4 @@ uses a game, out-of-fuel turns 4949 vs 4747 (+4%).
 
 - Always carry a crystal. While farming, banking or walking home to shop, use it where a landing beats the walk by 6+
   steps, with no enemy in sight of either end and no awake camp at the landing.
+- Fresh suite (seed 7341, 256 general maps) against 4c4eacc: 50.2% of 512 (45.9-54.5), out-of-fuel turns 1746 vs 1703.
