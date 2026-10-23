@@ -2202,7 +2202,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             // Only a better share counts, and the final pick takes none an affordable group beats.
             if (value <= shared_value || (best >= 0 && value <= best_value) || too_late(rounds)) continue;
             float joint_rounds = 0;
-            const float hits = soften * min_camp_damage(world, g, strength + others, &joint_rounds) * (strength * rounds / health);
+            // Our share as if the claimer did nothing before we arrive: crediting its work during our
+            // walk grows our share with every step closer, so near the cap each step turned us back.
+            const float hits = soften * min_camp_damage(world, g, strength + others, &joint_rounds) * (strength / (strength + others));
             if (hits > spare_health) continue;
             shared = g, shared_value = value, shared_steps = steps;
             continue;
