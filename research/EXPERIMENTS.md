@@ -1442,3 +1442,111 @@ and default-budget paired tests precede any canonical change.
 Compact trace evidence, complete instrumentation diff/header, source/build pins and fidelity
 limits: `willow-bigworld-witness-checkpoint-20261023/PROVENANCE.md`. The validated diagnosis and
 bounded implementation contract are in `willow-bigworld-validated-crew-diagnosis.md`.
+
+### Sustainable crew: mixed default-budget result and Boss fuel diagnostic
+
+Reviewed candidate69010aea from a67 aligns early ranged passing, ranked affordability and
+struggling-ally help. It preserves ordinary melee/harmless passing, existing grouped estimates,
+spell kiting and risky-own fallback. Source review caught and corrected an overly broad early
+scope and a stale-world check placed before the new lazy certificate. Canonical staysa67.
+
+Four published maps, both sides, fixed10e5 emulator, native drafts, Release/100000: candidate
+and parent each win4/8. Candidate gains Gemfight B and loses Boss B. Gemfight is four-pick,
+without Willow; the three five-pick maps therefore finish2/6 versus3/6. The opponent emulates
+Fish's roster only on five-pick maps and retains native upstream picks otherwise. No private
+Fish policy is reproduced. Fourteen new games plus two source/build/map-matched reused Boss
+controls complete with zero runner failures, native Bot Errors, caught action errors or
+turn-order markers. Native play rollovers are35/38 for candidate/emulator and33/26 for
+parent/emulator. This small panel neither qualifies a release nor establishes aggregate strength.
+
+The verified BigWorld comparisons show an economic cost despite less incoming camp damage.
+At common round904 on A, candidate banked+carried capital is765 versus958; incoming camp damage
+is22,380 versus28,746 and completed recalls32 versus35. At common round946 on B, capital is782
+versus891, incoming damage17,858 versus25,978, recalls33 versus37, and deaths1 versus4. Fewer
+injuries alone do not establish an improvement. First action differences involve healthy actors:
+A Prism takes a different step at43; B Vesper walks at39 where the parent attacks, resets and
+attacks again. Those events do not identify the rejected alternatives or exact decision branch.
+
+Boss A first differs at round1: candidate Prism has native rollover status6 and no action,
+while parent Prism acts and moves. The candidate later wins only329–301 at2000; parent wins
+at983. Boss B first differs through two acted routes at3; candidate loses at1070 while parent
+wins at1494. Whole-game rollover totals cannot explain these specific divergence points.
+
+Two separate candidate Boss games at100M, reusing matched a67 high-fuel controls, both win:
+767/1099 rounds versus parent1204/1812. Actions and whole champion/gem snapshots match through
+A36/B37; first differences are Prism's route at37 and Vesper's dash/move at38. On these matched
+180/185-own-turn prefixes, candidate fuel is3.782%/3.722% lower. At100M both A-side Prisms act
+and take the same first move; their first turns cost570,851/575,995, so neither high-fuel turn
+fits the ordinary first-turn budget. This separates a budget-sensitive opening from later
+policy differences; it does not prove the entire default-budget loss is caused by one rollover.
+Both high-fuel games have zero native rollovers, Bot Errors and turn-order markers. High fuel
+is diagnostic only, not release qualification.
+
+Artifacts: `replays/willow-sustainable-crew-fish-panel-20261023-v2/` and
+`replays/willow-sustainable-crew-boss-100m-fuel-diagnostic-20261023-v1/`. Use the former's
+`postflight-v2.json` for explicit native-side versus canonical-arm winner indices, and
+`bigworld-paired-summary-v2.txt`. The initial BigWorld summary paired the wrong Boss parent
+paths; it is preserved as invalid and excluded. All35 extraction soft notes concern derived
+earned gold or champion-damage counters; reported snapshot capital, native results and incoming
+camp damage do not depend on those fields. Incoming event damage was checked against native
+monsterDamageTaken. Binary CAMSTAT files named `.stats.json` are not JSON.
+
+A new source-only fallback experimentfd99d107 retains current-HP-bounded risky shared work
+only after affordable choices, preserves incumbent crew identity through an unevaluated route
+fallback, and clears rejected work consistently. It reuses existing calculations and does not
+restore the Boolean ally-occupancy waiver. This addresses static consistency gaps, not a proved
+cause of the observed first divergences. Source review passes. Neither experiment is a
+numbered release or a canonical gameplay change.
+
+The fd99 follow-up wins5/8 against the same fixed10e5, compared with4/8 for6901 and a67.
+It wins BigWorld A, both Boss sides, Expanse B and Gemfight B. Five-pick cells are4/6 versus
+2/6 and3/6 respectively; four-pick Gemfight is1/2 versus2/2 and1/2. This small mixed panel
+does not justify fitting a map/draft selector. Native play rollovers are41/41 for fd99/emulator;
+runner failures, native Bot Errors, caught action errors and turn-order markers are zero.
+Eight extractions succeed with12 soft derived-stat notes (9 earnedGold,3 championDamageTaken).
+
+The initially reported4/8 count was wrong: Gemfight B is a candidate win. Native final
+winner/scores and run-log TEAM A/B lines agree on5/8. Use `RESULTS-v2.md` and
+`postflight-v2.json` under `replays/willow-sustainable-crew-fallback-fish-panel-20261023-v1/`;
+v1 prose is superseded. Native physical-team indices and canonical bot indices are explicit.
+BigWorld A at the common904-round endpoint still has less own capital than a67 (749 versus958),
+despite eventually winning1014–874 at1085. This is not evidence of universally faster farming
+or proof of an unlogged branch. Boss A wins377–0 only at2000 and Boss B0–1013 at1975, both
+slower than a67's wins. An80-game published-map direct fd99-versus-frozen-a67 panel is next.
+
+### Willow shopping and role-dependent Treasure research
+
+The canonical a67 shop chooses main stats from basic attacks and damaging casts, excluding
+Willow's healing; its upkeep model prices her own clearing and recovery, not allied healing
+or support availability. Health/mitigation alternatives exist, but fresh Focus is absent.
+This is a support-value gap, not proof that Focus-first or Health-first wins. Healing must
+not be added to raw_output, which also drives camp damage and crew affordability.
+
+Willow gains50HP,3Strength or5Focus per30-gold shard; Focus adds up to15HP to each actual
+heal and helps only when the old heal cap binds. Her worth-healing threshold also grows
+with heal size. Exact a67 BigWorld/Boss A examples show meaningful farming and healing:
+239/329 basic attacks,20/53 heals,6695.8/17162 actual healing, and zero Willow deaths.
+Both retain120Focus. BigWorld finishes TreasureStrength but only four JungleStrength
+shards, so she never receives completed Jungle protection. These native totals and exported
+actions do not expose all above-cap recipient deficits or establish a counterfactual benefit.
+
+Treasure grants its five shards' stats plus20% base capture/kill gold. Vesper's additive
+bonus changes1.33→1.53, others1.00→1.20; the extra absolute payout is identical per base
+gold. Actual future recipient income and the delayed alternative emblem matter, so no blanket
+removal from non-Vesper roles is justified. Our initial claim that Marcella's tribute passive
+was excluded is contradicted by two exact-a67 replays: BigWorld A rounds327→328 have a41-gem
+tribute and98 additional displayed gold, with completed Treasure and no capture/kill/shop in
+that round (82×1.2=98.4 before floor). Full Boss A accounting also matches2.4 gold per tributed
+gem. This is strong replay evidence that Treasure boosts tribute-generated gold; a minimal
+engine probe is queued before changing the rule reference. The earlier user statement was
+corrected immediately when this evidence appeared.
+Historical CHANGES101 found broad/fresh Treasure-first gains; generic forced Health and
+additional speculative Treasure-return pricing did not improve their historical baselines.
+
+Two separate source-only a67 experiments are being prepared: allow one existing-model-selected
+Jungle/Durability before Treasure for Willow, preserving begun items; and, after economy plus
+protection, substitute one newly selected BruiserStrength with BruiserFocus. The latter keeps
+the same150gold and50HP, trades12Strength for20Focus, and quotes the actual chosen stats
+without inventing healing-as-DPS savings. Historical same-shop337f games show some Bruiser
+activation, but each new arm still requires actual purchase evidence and runtime validation.
+Research: `willow-support-items-and-treasure-review.md`. Canonical remainsa67.

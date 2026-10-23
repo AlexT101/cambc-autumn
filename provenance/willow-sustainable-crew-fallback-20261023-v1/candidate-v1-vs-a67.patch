@@ -1,0 +1,299 @@
+diff --git a/bots/variants/willow-comms-cached-endpoints-work/src/bot.cpp b/bots/variants/willow-sustainable-crew-fallback-work/src/bot.cpp
+index 8d02d7f..1e7a967 100644
+--- a/bots/variants/willow-comms-cached-endpoints-work/src/bot.cpp
++++ b/bots/variants/willow-sustainable-crew-fallback-work/src/bot.cpp
+@@ -1728,17 +1728,24 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     const int range = world.me().facts().attack_range();
+     const float strength = floored_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
+     const float max_health = my_max_health();
+-    const float spare_health = (my_health() - params::recall_health_fraction * max_health) / params::camp_risk;
++    const float health = my_health();
++    const float spare_health = (health - params::recall_health_fraction * max_health) / params::camp_risk;
+     const int bag = bankable_bag(world, pathing);
+     const bool banks_bag = bag > 0 && !retaining_gems(world, pathing);
+     const int short_by = gems_short(world);
+     if (world.is_stale()) return true;
++    const bool ordinary_ranged = decision == 'F' && !world.me().facts().walk_and_attack_independent();
+     // Groups in passing pay too (gold clusters are never chosen below), but not one whose clear
+     // costs more health than we can spare.
+     const auto affordable = [&](int g) __attribute__((always_inline)) {
+-        if (g == memory.farm_group || groups[g].strength <= 0) return true;
++        if (groups[g].strength <= 0) return true;
++        if (g == memory.farm_group) {
++            // A ranged crew hit spends the walk: reconsider damaged work before committing it.
++            return !ordinary_ranged || !memory.crew || memory.damage <= 0;
++        }
+         float rounds = 0;
+-        return soften * min_camp_damage(world, g, strength, &rounds, reflect) <= spare_health || ally_engaged(world, g);
++        return soften * min_camp_damage(world, g, strength, &rounds, reflect) <= spare_health
++               || (!ordinary_ranged && ally_engaged(world, g));
+     };
+     std::array<std::uint64_t, 4> ally_claims{}; // bit g: comms carries groups below 255
+     for (const auto& a : world.allies)
+@@ -1892,7 +1899,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+ 
+     // Short of fuel, walk on towards the last choice rather than run out mid-turn. Static fields
+     // are kept, so after the first walk to a group this costs a descent.
+-    const int previous = memory.farm_group;
++    const int previous = memory.farm_group, previous_claim = memory.claim;
++    const bool previous_crew = memory.crew;
++    bool previous_rejected = false;
+     const auto walk_on = [&](int g) __attribute__((always_inline)) {
+         if (g < 0) return false;
+         // Descending it walks around walls and live camps; a live route only helps past allies.
+@@ -1902,10 +1911,11 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         };
+         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
+         // Too short of fuel to search the way to a new choice: last turn's, whose way is known.
+-        if (previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous))) {
++        if (previous >= 0 && previous != g && !previous_rejected && pathing.approach_ready(previous, walk_range(world, previous))) {
+             note_shortcut("farm-kept-target");
+-            memory.farm_group = memory.claim = previous;
+-            memory.crew = false;
++            memory.farm_group = previous;
++            memory.claim = previous_claim;
++            memory.crew = previous_crew;
+             return walk(*pathing.approach(previous, walk_range(world, previous)), previous);
+         }
+         if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone, groups[g].centre);
+@@ -1939,8 +1949,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     float from_altar_value = 0;
+     // Unaffordable groups, then allies' claims, only when nothing else is left: idling is worse.
+     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable, shared = -1, shared_steps = unreachable;
++    int risky_shared = -1, risky_shared_steps = unreachable;
+     bool best_spell = false;
+-    float best_value = 0, risky_value = 0, shared_value = 0;
++    float best_value = 0, risky_value = 0, shared_value = 0, risky_shared_value = 0;
+     // Per base gold of a group: we are paid it with our bonuses.
+     const float paid = gold_paid(world);
+     const float per_gold = prices(world).per_gold * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);
+@@ -2042,6 +2053,41 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         }
+         return total;
+     };
++    struct CrewClear {
++        float health = 0, health_left = 0, output = 0, rounds = 0, part = 0;
++        bool viable() const { return health > 0 && health_left > 0; }
++    };
++    const auto crew_clear = [&](int g, int steps, int waiting) __attribute__((always_inline)) {
++        CrewClear clear;
++        const auto& group = groups[g];
++        const auto& belief = world.camps[g];
++        const bool fresh = belief.state == CampState::respawning;
++        for (std::size_t i = 0; i < group.members.size(); ++i)
++            clear.health += fresh ? group.members[i].max_health : belief.health[i];
++        const int working = std::max(0, steps - waiting);
++        const auto crew = crew_work(g, working, waiting);
++        clear.output = crew.output;
++        clear.health_left = clear.health - std::max(0.0f, crew.output * static_cast<float>(working) - crew.delayed_damage);
++        debug_block({
++            const float old_left = clear.health - crew.output * static_cast<float>(working);
++            if (world.round <= 5 && clear.health_left != old_left)
++                std::printf("FCWINDOW %d %u group %d handle %u centre %d %d steps %d working %d hp %.3f old_left %.3f new_left %.3f\n",
++                            world.round, my_handle(), g, group.handle, group.centre.x, group.centre.y, steps, working,
++                            static_cast<double>(clear.health), static_cast<double>(old_left), static_cast<double>(clear.health_left));
++        });
++        if (clear.viable()) {
++            clear.rounds = clear.health_left / (strength + clear.output);
++            clear.part = strength * clear.rounds / clear.health;
++        }
++        return clear;
++    };
++    const auto crew_hits = [&](int g, const CrewClear& clear) __attribute__((always_inline)) {
++        float joint_rounds = 0;
++        // Without observed damage, do not credit work before our arrival to our share.
++        const bool worked = world.camps[g].last_damaged_round >= world.round - 1;
++        return soften * min_camp_damage(world, g, strength + clear.output, &joint_rounds)
++               * (worked ? clear.part : strength / (strength + clear.output));
++    };
+     // A group too costly for us alone is still ours to call if an ally in reach with no claim of
+     // its own can join: valued, like a crew's, by our share of the work.
+     float unclaimed_partner_output = 0;
+@@ -2110,6 +2156,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     if (const Clearing now{strength, reflect, spells, basic, range}; clearing == 0 || !(now == last_clearing))
+         last_clearing = now, ++clearing;
+     int help_group = -1, help_steps = unreachable;
++    bool help_checked = false, help_certified = false;
++    bool help_forecast_known = false;
++    CrewClear help_forecast;
+     // First readings of each group (clears, fields) can cost several times the estimate: stop with
+     // enough left for the walk after it, and read last turn's choice first so that a cut-short loop
+     // still weighs it.
+@@ -2160,8 +2209,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         const int g = (first + k) % n_groups;
+         const auto& group = group_data[g];
+         const auto& belief = camp_data[g];
+-        if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
++        if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g))) {
++            if (g == previous) previous_rejected = true;
+             continue;
++        }
+         const bool claimed = g < 256 && (claimed_bits[g >> 6] >> (g & 63) & 1);
+         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
+         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
+@@ -2239,13 +2290,22 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+             }
+         }
+         const int steps = steps_known;
+-        if (steps == unreachable) continue;
++        if (steps == unreachable) {
++            if (g == previous) previous_rejected = true;
++            continue;
++        }
+         // A group still respawning when we would arrive costs the wait there.
+         const int wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - steps) : 0;
+-        if (wait > params::max_wait) continue;
++        if (wait > params::max_wait) {
++            if (g == previous) previous_rejected = true;
++            continue;
++        }
+         if (!banks_bag && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
+-            && steps < help_steps && struggling(g))
++            && steps < help_steps && struggling(g)) {
+             help_group = g, help_steps = steps;
++            help_checked = help_certified = false;
++            help_forecast_known = false;
++        }
+         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
+         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
+         const float trip = std::max(0.0f, static_cast<float>(steps + wait) - bank_now + bank);
+@@ -2264,37 +2324,41 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         };
+         const float worth = gems + gold;
+         if (claimed) {
+-            if (belief.state == CampState::cleared) continue;
++            if (belief.state == CampState::cleared) {
++                if (g == previous) previous_rejected = true;
++                continue;
++            }
+             const bool fresh = belief.state == CampState::respawning;
+-            float health = 0;
+-            for (std::size_t i = 0; i < group.members.size(); ++i) health += fresh ? group.members[i].max_health : belief.health[i];
+             const int waiting = fresh ? std::max(0, belief.respawn_round - round) : 0;
+-            const int working = std::max(0, steps - waiting);
+-            const auto crew = crew_work(g, working, waiting);
+-            const float others = crew.output;
+-            const float health_left = health - std::max(0.0f, others * static_cast<float>(working) - crew.delayed_damage);
+-            debug_block({
+-                const float old_left = health - others * static_cast<float>(working);
+-                if (world.round <= 5 && health_left != old_left)
+-                    std::printf("FCWINDOW %d %u group %d handle %u centre %d %d steps %d working %d hp %.3f old_left %.3f new_left %.3f\n",
+-                                world.round, my_handle(), g, group.handle, group.centre.x, group.centre.y, steps, working,
+-                                static_cast<double>(health), static_cast<double>(old_left), static_cast<double>(health_left));
+-            });
+-            if (health <= 0 || health_left <= 0) continue;
++            const auto clear = crew_clear(g, steps, waiting);
++            if (g == help_group) help_forecast = clear, help_forecast_known = true;
++            if (!clear.viable()) {
++                if (g == help_group) help_checked = true;
++                if (g == previous) previous_rejected = true;
++                continue;
++            }
+             // A capture that wins the game is the team's, not a share: what counts is how soon.
+-            const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
++            const float rounds = clear.rounds, part = wins ? 1.0f : clear.part;
+             // No capture rounds: the claimer holds it, and the crew moves on once it is cleared.
+             const float value = rate(world, worth * part, trip + rounds);
+             // Only a better share counts, and the final pick takes none an affordable group beats.
+-            if (value <= shared_value || (best >= 0 && value <= best_value) || too_late(rounds)) continue;
+-            float joint_rounds = 0;
+-            // Unless we see the camp's health falling, our share is as if the claimer did nothing before
+-            // we arrive: crediting work the camp does not show grows our share with every step closer,
+-            // so near the cap each step turned us back.
+-            const bool worked = belief.last_damaged_round >= round - 1;
+-            const float hits = soften * min_camp_damage(world, g, strength + others, &joint_rounds)
+-                               * (worked ? strength * rounds / health : strength / (strength + others));
+-            if (hits > spare_health) continue;
++            if (value <= shared_value || (best >= 0 && value <= best_value)) continue;
++            if (too_late(rounds)) {
++                if (g == help_group) help_checked = true;
++                if (g == previous) previous_rejected = true;
++                continue;
++            }
++            const float hits = crew_hits(g, clear);
++            if (g == help_group) help_checked = true, help_certified = hits <= spare_health;
++            if (hits > spare_health) {
++                if (belief.state == CampState::alive && spare_health > 0 && hits < health / params::camp_risk) {
++                    if (value > risky_shared_value)
++                        risky_shared = g, risky_shared_value = value, risky_shared_steps = steps;
++                } else if (g == previous) {
++                    previous_rejected = true;
++                }
++                continue;
++            }
+             shared = g, shared_value = value, shared_steps = steps;
+             continue;
+         }
+@@ -2341,7 +2405,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+             damage = 0;
+             clear_rounds = kite;
+         }
+-        if (too_late(clear_rounds)) continue;
++        if (too_late(clear_rounds)) {
++            if (g == previous) previous_rejected = true;
++            continue;
++        }
+         const float cycle = trip + clear_rounds + capture_rounds();
+         float value = rate(world, worth, cycle);
+         if (damage > spare_health && partner_output > 0 && belief.state == CampState::alive) {
+@@ -2353,7 +2420,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+                 value = rate(world, worth * part, joint_cycle);
+             }
+         }
+-        if (damage > spare_health && !ally_engaged(world, g)) {
++        if (damage > spare_health) {
+             if (value > risky_value) risky = g, risky_value = value, risky_steps = steps;
+         } else {
+             if (value > best_value) best = g, best_value = value, best_steps = steps, best_spell = spell;
+@@ -2367,20 +2434,43 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     if (k < evaluated) note_shortcut("farm-partial-evaluation");
+     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+     if (banks_bag && attack_in_range()) return true;
++    // Rate pruning may skip the nearest struggling crew. Certify that one proposal at most once.
++    if (help_group >= 0 && !help_checked) {
++        const auto clear = help_forecast_known ? help_forecast : crew_clear(help_group, help_steps, 0);
++        auto& known = group_facts[help_group];
++        if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(help_group);
++        const bool timely = known.to_altar == unreachable
++                            || static_cast<float>(help_steps + capture_rounds() + known.to_altar
++                                                  + tribute_turns(bag + groups[help_group].gems)) + clear.rounds <= static_cast<float>(left);
++        help_certified = clear.viable() && timely && crew_hits(help_group, clear) <= spare_health;
++    }
+     if (world.is_stale()) return true;
+-    if (best < 0) best = risky, best_steps = risky_steps, best_value = risky_value;
+-    memory.claim = best;
+-    memory.crew = false;
+     bool spell = best >= 0 && best_spell;
++    bool crew = false;
+     if (shared >= 0 && (best < 0 || shared_value > best_value))
+-        best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false;
+-    if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false;
++        best = shared, best_steps = shared_steps, crew = true, spell = false;
++    if (help_certified) best = help_group, best_steps = help_steps, crew = true, spell = false;
+     if (best < 0) {
+-        // Cut short before weighing even last turn's choice: walk on towards it.
+-        if (k == 0 && memory.farm_group >= 0) memory.claim = memory.farm_group, walk_on(memory.farm_group);
++        best = risky, best_steps = risky_steps;
++        if (risky_shared >= 0 && (best < 0 || risky_shared_value > risky_value))
++            best = risky_shared, best_steps = risky_shared_steps, crew = true;
++        spell = false;
++    }
++    if (best < 0) {
++        if (previous_rejected) {
++            memory.farm_group = memory.claim = -1;
++            memory.crew = false;
++        } else {
++            // No evaluated rejection: preserve the incumbent's ownership through a partial scan.
++            memory.farm_group = previous;
++            memory.claim = previous_claim;
++            memory.crew = previous_crew;
++            if (k == 0 && previous >= 0) walk_on(previous);
++        }
+         return true;
+     }
+-    memory.farm_group = best;
++    memory.farm_group = memory.claim = best;
++    memory.crew = crew;
+     // Our fields price a dash over a hole line; live routes walk round it.
+     const bool dasher = world.me().facts().has_dash();
+     if (dasher && test(map.near_crossable, here))

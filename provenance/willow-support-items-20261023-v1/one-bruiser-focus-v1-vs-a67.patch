@@ -1,0 +1,16 @@
+diff --git a/bots/variants/willow-comms-cached-endpoints-work/src/bot.cpp b/bots/variants/willow-one-bruiser-focus-work/src/bot.cpp
+index 8d02d7f..7b5bd28 100644
+--- a/bots/variants/willow-comms-cached-endpoints-work/src/bot.cpp
++++ b/bots/variants/willow-one-bruiser-focus-work/src/bot.cpp
+@@ -1290,6 +1290,11 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
+             if (owned[shard_of(treasure, s)] > 0) stat = s;
+         return {treasure, stat, best.saved, (5 - owned[shard_of(treasure, stat)]) * shard_price};
+     }
++    // One fresh Bruiser trades its main stat for support after economy and initial protection.
++    if (self.type == cambc::champion_type::willow && best.family == bruiser && best.stat == strength_stat
++        && (has_family(owned, jungle) || has_family(owned, durability))
++        && owned[emblem_of(bruiser, focus_stat)] == 0)
++        return value(bruiser, focus_stat);
+     return best;
+ }
+ 
