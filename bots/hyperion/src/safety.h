@@ -63,7 +63,8 @@ struct Strike {
 // at a unit beside the tile. Damage as Strike's.
 class Reach {
 public:
-    // Its next turn, or with `twice` its next two: a walk first, or a second basic attack.
+    // Its next turn, or with `twice` its next two: a walk first, or a second basic attack. The second
+    // turn falls in turn_round + 1, so a slot coming ready then counts for it.
     void build(const World& world, const ChampionBelief& e, int turn_round, bool twice);
     Blow at(vec2 p) const;
     int reach() const { return reach_; } // Chebyshev bound on the tiles it can affect
@@ -107,7 +108,8 @@ private:
     int add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked);
     void set_reach();
     // The ways from the tile sets, unless the recipe is unchanged.
-    void build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool twice);
+    // ready2: the slots ready on its second turn (ready's, unless twice).
+    void build_ways(const ChampionBelief& e, std::array<bool, 2> ready, std::array<bool, 2> ready2, bool twice);
     std::array<Window, tile_sets> tiles_;
     std::array<std::int8_t, tile_sets> extent_; // farthest tile of each from the enemy
     const World* world_ = nullptr;
@@ -127,7 +129,7 @@ private:
     struct Recipe {
         cambc::champion_type type{};
         std::uint32_t strength = 0, focus = 0;
-        std::uint8_t slots = 0;
+        std::uint8_t slots = 0; // bits 0-1 ready, 2-3 ready on the second turn
         bool twice = false, valid = false;
         bool operator==(const Recipe&) const = default;
     };
@@ -137,7 +139,8 @@ private:
         int count = 0;
         int basic = -1; // the plain basic attack's way
     };
-    std::array<Ways, 8> ways_by_;
+    // By each slot's turns ready (0-2) and twice.
+    std::array<Ways, 18> ways_by_;
     Ways* ways_ = &ways_by_[0];
     float strength_ = 0;
     bool twice_ = false;

@@ -755,6 +755,7 @@ struct StrikeMemo {
     std::uint32_t strength, focus;
     Strike value;
     bool widened_known;
+    std::uint8_t slots, widened_slots; // widened_slots: the second turn's
     Strike widened;
 };
 
@@ -780,6 +781,7 @@ StrikeMemo& strike_memo(const ChampionBelief& c, int turn_round) {
         m.strength = s;
         m.focus = focus;
         m.value = compute_strike(c.facts(), hs, hf, slots);
+        m.slots = static_cast<std::uint8_t>(slots);
         m.widened_known = false;
     }
     return m;
@@ -820,21 +822,26 @@ float most_damage(const ChampionBelief& c) {
 } // namespace
 
 const Strike& threat_strike(const World& world, const ChampionBelief& c) {
-    auto& m = strike_memo(c, next_turn_round(world, c));
+    const int round = next_turn_round(world, c);
+    auto& m = strike_memo(c, round);
     const auto& s = m.value;
     if (s.reach < 0 || turns_before_ours(world, c) < 2) return s;
-    if (m.widened_known) return m.widened;
+    // Its second turn falls in the next round: a walk first, then what is ready by then.
+    const auto& m2 = strike_memo(c, round + 1);
+    const auto& s2 = m2.value;
+    if (m.widened_known && m.widened_slots == m2.slots) return m.widened;
     m.widened_known = true;
+    m.widened_slots = m2.slots;
     const auto& f = c.facts();
     const int basic_reach = f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0) + (f.ranged ? 0 : 1);
     auto& out = m.widened;
     for (int d = 0; d <= Strike::max_reach; ++d) {
-        const float walked = s.at(std::max(0, d - 1));
+        const float walked = s2.at(std::max(0, d - 1));
         const float twice = s.hits(d) ? s.at(d) + (d <= basic_reach ? hit_strength(c) : 0.0f) : 0.0f;
         out.damage[d] = std::max(walked, twice);
-        out.stuns[d] = s.stuns[std::max(0, d - 1)]; // s.stuns holds from 0 out to some distance
+        out.stuns[d] = s2.stuns[std::max(0, d - 1)]; // s2.stuns holds from 0 out to some distance
     }
-    out.reach = std::min(Strike::max_reach, s.reach + 1);
+    out.reach = std::min(Strike::max_reach, s2.reach + 1);
     return out;
 }
 
@@ -1316,8 +1323,10 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     const auto& f = e.facts();
     const bool uncertain = e.cooldowns_uncertain();
     const std::array<bool, 2> ready{uncertain || e.ability_ready(0, turn_round), uncertain || e.ability_ready(1, turn_round)};
+    const std::array<bool, 2> ready2 =
+        twice ? std::array<bool, 2>{ready[0] || e.ability_ready(0, turn_round + 1), ready[1] || e.ability_ready(1, turn_round + 1)} : ready;
     const int dash_slot = f.slot_of(AbilityKind::dash);
-    const bool dash = dash_slot >= 0 && ready[static_cast<std::size_t>(dash_slot)];
+    const bool dash = dash_slot >= 0 && ready2[static_cast<std::size_t>(dash_slot)];
     // Our champions around it, which block its walks and landings; they stay put through our turn.
     static int allies_round = -1;
     static std::array<vec2, 8> allies;
@@ -1337,7 +1346,7 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     const auto kind = static_cast<std::uint8_t>(twice | dash << 1);
     if (sets_reusable_ && sets_origin_ == origin_ && sets_kind_ == kind && sets_occupied_.lo == occupied.lo
         && sets_occupied_.hi == occupied.hi) {
-        build_ways(e, ready, twice);
+        build_ways(e, ready, ready2, twice);
         return;
     }
     sets_origin_ = origin_;
@@ -1386,15 +1395,15 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
         extent_[dashed] = extent(tiles_[dashed]);
         if (twice) tiles_[dashed_walked] = walk(tiles_[dashed]), extent_[dashed_walked] = extent(tiles_[dashed_walked]);
     }
-    build_ways(e, ready, twice);
+    build_ways(e, ready, ready2, twice);
 }
 
-void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool twice) {
+void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, std::array<bool, 2> ready2, bool twice) {
     const auto& f = e.facts();
     const float s = hit_strength(e), focus = hit_focus(e);
     const Recipe recipe{e.type, std::bit_cast<std::uint32_t>(s), std::bit_cast<std::uint32_t>(focus),
-                        static_cast<std::uint8_t>(ready[0] | ready[1] << 1), twice, true};
-    ways_ = &ways_by_[static_cast<std::size_t>(recipe.slots | recipe.twice << 2)];
+                        static_cast<std::uint8_t>(ready[0] | ready[1] << 1 | ready2[0] << 2 | ready2[1] << 3), twice, true};
+    ways_ = &ways_by_[static_cast<std::size_t>(ready[0] + ready2[0] + 3 * (ready[1] + ready2[1]) + 9 * twice)];
     auto& ws = *ways_;
     if (recipe == ws.recipe) {
         set_reach();
@@ -1412,7 +1421,7 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, bool 
         const int basic = add(from(basic_from), range, true, s, false, walked);
         if (!walked) ws.basic = basic;
         for (std::size_t slot = 0; slot < 2; ++slot) {
-            if (!ready[slot]) continue;
+            if (!(walked ? ready2 : ready)[slot]) continue;
             const auto& a = f.abilities[slot];
             const float spell = a.multiplier * focus;
             switch (a.kind) {
