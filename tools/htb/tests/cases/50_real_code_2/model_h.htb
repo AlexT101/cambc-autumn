@@ -1,0 +1,18 @@
+#include <array>
+
+// Two constants named NUM_FEATURES, in different namespaces, each used by its own alias.
+namespace model {
+inline constexpr int NUM_FEATURES = 20;
+using Features = std::array<double, NUM_FEATURES>;
+}
+namespace net {
+inline constexpr int NUM_FEATURES = 18;
+using Features = std::array<double, NUM_FEATURES>;
+}
+namespace pathing {
+namespace {
+using vec = simcore::Vec;
+int build(int x) { return x * 10; }    // another file-private `build`, in an unrelated namespace
+}
+int path_built() { return build(2) + vec{3}.x; }
+}

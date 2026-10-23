@@ -1,0 +1,8 @@
+namespace simcore {
+using i64 = long long;      // its own name: not sim.htb's `using simcore::i64`
+inline constexpr i64 FP = 1000;
+constexpr bool odd(unsigned n) { return n == 0 ? false : sim::even(n - 1); }
+struct Vec {
+    int x;
+};
+}

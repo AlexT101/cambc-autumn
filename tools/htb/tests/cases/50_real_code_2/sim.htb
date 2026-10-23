@@ -1,0 +1,16 @@
+// Distilled from porting Helios. Sorts before sim_core_h.htb, and brings in its names.
+namespace sim {
+using simcore::FP;
+using simcore::i64;
+
+i64 scaled(i64 hp) { return hp * FP; }
+
+// A cycle somewhere else in the same files (these two need each other) must not reorder the rest.
+constexpr bool even(unsigned n) { return n == 0 ? true : simcore::odd(n - 1); }
+
+namespace {
+using vec = simcore::Vec;     // the same alias in two files' anonymous namespaces is allowed
+int build(int x) { return x + 1; }    // file-private, but no other `build` shares its namespace
+}
+int built() { return build(1) + vec{2}.x; }
+}

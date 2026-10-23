@@ -16,6 +16,7 @@ Every case goes through:
   4. clangd on every .htb file, opened the way the HTB extension opens them
   5. robustness: every .htb file cut off at every token, with each token deleted, with junk inserted
      before each token, and 150 seeded random multi-token edits, must not crash (or hang) hgen
+Works on macOS, Linux and Windows (LLVM from Homebrew, PATH or C:\\Program Files\\LLVM).
 --fast skips 4 and 5. Two more checks run with every full run (or by name):
   lifecycle    editing, deleting and renaming files; files hgen didn't write in src/; --check; --watch;
                your own .clangd settings kept
@@ -28,7 +29,6 @@ import os
 import random
 import time
 import shutil
-import signal
 import subprocess
 import sys
 import tempfile
@@ -42,6 +42,8 @@ import hgen  # noqa: E402
 import htbcheck  # noqa: E402
 
 CASES = HERE / "cases"
+os.environ["PYTHONIOENCODING"] = "utf-8"     # hgen and htbcheck, run from here, print UTF-8 whatever the console
+EXE = "prog.exe" if os.name == "nt" else "prog"
 META = ("expect.txt", "errors.txt", "notes.txt", "editor.txt", "wasm.txt", "generated.txt")
 
 
@@ -49,8 +51,11 @@ def first(*paths):
     return next((p for p in paths if p and os.path.exists(p)), None)
 
 
-CXX = first("/opt/homebrew/opt/llvm/bin/clang++", "/usr/local/opt/llvm/bin/clang++", shutil.which("clang++"))
-CLANGD = first("/opt/homebrew/opt/llvm/bin/clangd", "/usr/local/opt/llvm/bin/clangd", shutil.which("clangd"))
+LLVM_WIN = os.path.join(os.environ.get("ProgramFiles", ""), "LLVM", "bin")    # where install.py looks too
+CXX = first("/opt/homebrew/opt/llvm/bin/clang++", "/usr/local/opt/llvm/bin/clang++", shutil.which("clang++"),
+            os.path.join(LLVM_WIN, "clang++.exe"))
+CLANGD = first("/opt/homebrew/opt/llvm/bin/clangd", "/usr/local/opt/llvm/bin/clangd", shutil.which("clangd"),
+               os.path.join(LLVM_WIN, "clangd.exe"))
 WASI = htbcheck.wasi_clang()
 LSP = HERE.parent / "vscode" / "node_modules" / "vscode-jsonrpc"   # clangd_diag.js talks LSP through it
 
@@ -81,14 +86,14 @@ def check_build(name, bot, meta, tmp, fails):
         if not WASI:
             fails.append("needs cambc's compiler (run `cambc build` on any bot once)")
             return
-        w = subprocess.run(wasm_command(unity), cwd=bot.parent, capture_output=True, text=True)
+        w = subprocess.run(wasm_command(unity), cwd=bot.parent, capture_output=True, text=True, encoding="utf-8", errors="replace")
         if w.returncode != 0:
             fails.append("wasm build failed:\n  " + "\n  ".join([l for l in w.stderr.splitlines() if "error" in l][:10]))
         return
-    exe = tmp / "prog"
-    b = subprocess.run([CXX, "-std=c++20", "-o", str(exe), str(unity)], cwd=bot.parent, capture_output=True, text=True)
+    exe = tmp / EXE
+    b = subprocess.run([CXX, "-std=c++20", "-o", str(exe), str(unity)], cwd=bot.parent, capture_output=True, text=True, encoding="utf-8", errors="replace")
     errors = [l for l in b.stderr.splitlines() if ": error:" in l]
-    into_src = [l for l in errors if "/src/" in l.split(": error:")[0] or l.startswith("src/")]
+    into_src = [l for l in errors if "/src/" in l.split(": error:")[0].replace("\\", "/") or l.startswith("src/")]
     if into_src:
         fails.append("errors point into generated src/:\n  " + "\n  ".join(into_src[:5]))
     if meta["errors.txt"] is not None:
@@ -99,7 +104,7 @@ def check_build(name, bot, meta, tmp, fails):
             fails.append(f"no error at {', '.join(missing)}; errors were:\n  " + "\n  ".join(errors[:8]))
         if WASI:    # the command-line checker must point at the same lines
             c = subprocess.run([sys.executable, str(HERE.parent / "htbcheck.py"), str(bot)], cwd=bot.parent,
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, encoding="utf-8", errors="replace")
             shown = [l for l in c.stdout.splitlines() if "error" in l]
             gone = located(shown, name, meta["errors.txt"])
             if c.returncode == 0 or gone:
@@ -108,7 +113,7 @@ def check_build(name, bot, meta, tmp, fails):
     elif b.returncode != 0:
         fails.append("native build failed:\n  " + "\n  ".join((errors or b.stderr.splitlines())[:10]))
     else:
-        r = subprocess.run([str(exe)], capture_output=True, text=True, timeout=20)
+        r = subprocess.run([str(exe)], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20)
         got = [l.rstrip() for l in r.stdout.splitlines()]
         want = meta["expect.txt"] or []
         if r.returncode != 0:
@@ -118,7 +123,7 @@ def check_build(name, bot, meta, tmp, fails):
                     enumerate(zip(want + [None] * len(got), got + [None] * len(want))) if w != g][:10]
             fails.append("output differs:\n" + "\n".join(diff))
     if WASI:
-        w = subprocess.run(wasm_command(unity), cwd=bot.parent, capture_output=True, text=True)
+        w = subprocess.run(wasm_command(unity), cwd=bot.parent, capture_output=True, text=True, encoding="utf-8", errors="replace")
         if (w.returncode == 0) != (b.returncode == 0):
             fails.append(f"wasm compiler disagrees with the native build (wasm exit {w.returncode}):\n  "
                          + "\n  ".join([l for l in w.stderr.splitlines() if "error" in l][:8]))
@@ -135,7 +140,7 @@ def check_editor(name, bot, meta, fails):
                       else [CXX, "-std=c++20", str(unity)]) + ["-c", "-o", "unity.o"]}]))
     files = [str(p) for p in hgen.bot_files(bot, (hgen.SOURCE,))]
     r = subprocess.run(["node", str(HERE / "clangd_diag.js"), CLANGD, str(bot), *files],
-                       capture_output=True, text=True, timeout=180)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
     try:
         diags = json.loads(r.stdout)
     except ValueError:
@@ -144,7 +149,7 @@ def check_editor(name, bot, meta, fails):
     want = set(meta["editor.txt"] or [])
     seen = set()
     for f, ds in diags.items():
-        rel = os.path.relpath(f, bot)
+        rel = os.path.relpath(f, bot).replace(os.sep, "/")
         if ds is None:
             fails.append(f"editor: clangd never answered for {rel}")
             continue
@@ -164,81 +169,87 @@ JUNK = ["{", "}", "(", ")", "<", ">", "template <", "class", "struct X", "enum",
         ";", ",", "static", "friend", "try", "catch (...)", "requires", "->", "[[", "]]", "extern \"C\""]
 
 
-class Hang(Exception):
-    pass
+def variants(f):
+    """Half-written versions of an .htb file: cut at every token, each token deleted, junk inserted
+    before each token, and 150 seeded random multi-token edits."""
+    text = hgen.read(f)
+    toks, comments = hgen.tokenize(text)
+    cuts = sorted({t.end for t in toks} | {t.start + 1 for t in toks if t.end - t.start > 1}
+                  | {(s + e) // 2 for s, e in comments})
+    out = [(f"cut at {pos}", text[:pos]) for pos in cuts]
+    out += [(f"without the {t.text!r} at {t.start}", text[:t.start] + text[t.end:]) for t in toks]
+    out += [(f"with {j!r} inserted at {t.start}", text[:t.start] + j + " " + text[t.start:])
+            for n, t in enumerate(toks) for j in [JUNK[n % len(JUNK)]]]
+    rng = random.Random(f.name)
+    for n in range(150):
+        ts, ops = list(toks), []
+        for _ in range(rng.randint(1, 4)):
+            if not ts:
+                break
+            i, op = rng.randrange(len(ts)), rng.choice(["del", "dup", "swap", "junk"])
+            ops.append(f"{op}@{ts[i].start}")
+            if op == "del":
+                del ts[i]
+            elif op == "dup":
+                ts.insert(i, ts[i])
+            elif op == "swap" and i + 1 < len(ts):
+                ts[i], ts[i + 1] = ts[i + 1], ts[i]
+            else:
+                ts.insert(i, hgen.Tok("p", rng.choice(JUNK), 0, 0))
+        out.append((f"after random edits {' '.join(ops)}",
+                    "\n".join(t.text if t.end == 0 else text[t.start:t.end] for t in ts)))
+    return out
 
 
-def _alarm(signum, frame):
-    raise Hang()
-
-
-def check_robust(bot, fails):
-    """hgen runs on every save, so half-written files must never crash (or hang) it."""
-    files = hgen.bot_files(bot, (hgen.SOURCE,))
-    original_read, override = hgen.read, {}
+def robust_main(bot, progress):
+    """`run.py --robust BOT PROGRESS`: hgen over every variant, each noted in PROGRESS first, so the parent can
+    time the whole run and say where it hung. Prints the failures as JSON."""
+    original_read, override, fails = hgen.read, {}, []
     hgen.read = lambda p: override[Path(p)] if Path(p) in override else original_read(p)
-    signal.signal(signal.SIGALRM, _alarm)
+    for f in hgen.bot_files(bot, (hgen.SOURCE,)):
+        broken = 0
+        for what, variant in variants(f):
+            progress.write_text(f"{f.name} {what}", encoding="utf-8")
+            override[Path(f)] = variant
+            try:
+                hgen.Bot(bot).generate()
+            except Exception:
+                tb = traceback.format_exc().strip().splitlines()
+                fails.append(f"robustness: hgen crashes on {f.name} {what}: {tb[-1]} ({tb[-3].strip()})")
+                broken += 1
+            if broken >= 3:
+                break
+        override.pop(Path(f), None)
+    print(json.dumps(fails))
+
+
+def check_robust(bot, tmp, fails):
+    """hgen runs on every save, so half-written files must never crash (or hang) it. In a subprocess with a
+    timeout, which works everywhere (Windows has no SIGALRM)."""
+    progress = tmp / "robust-progress.txt"
     try:
-        for f in files:
-            text = original_read(f)
-            toks, comments = hgen.tokenize(text)
-            cuts = sorted({t.end for t in toks} | {t.start + 1 for t in toks if t.end - t.start > 1}
-                          | {(s + e) // 2 for s, e in comments})
-            variants = [(f"cut at {pos}", text[:pos]) for pos in cuts]
-            variants += [(f"without the {t.text!r} at {t.start}", text[:t.start] + text[t.end:]) for t in toks]
-            variants += [(f"with {j!r} inserted at {t.start}", text[:t.start] + j + " " + text[t.start:])
-                         for n, t in enumerate(toks) for j in [JUNK[n % len(JUNK)]]]
-            rng = random.Random(f.name)
-            for n in range(150):
-                ts, ops = list(toks), []
-                for _ in range(rng.randint(1, 4)):
-                    if not ts:
-                        break
-                    i, op = rng.randrange(len(ts)), rng.choice(["del", "dup", "swap", "junk"])
-                    ops.append(f"{op}@{ts[i].start}")
-                    if op == "del":
-                        del ts[i]
-                    elif op == "dup":
-                        ts.insert(i, ts[i])
-                    elif op == "swap" and i + 1 < len(ts):
-                        ts[i], ts[i + 1] = ts[i + 1], ts[i]
-                    else:
-                        ts.insert(i, hgen.Tok("p", rng.choice(JUNK), 0, 0))
-                variants.append((f"after random edits {' '.join(ops)}",
-                                 "\n".join(t.text if t.end == 0 else text[t.start:t.end] for t in ts)))
-            broken = 0
-            for what, variant in variants:
-                override[Path(f)] = variant
-                signal.alarm(5)
-                try:
-                    hgen.Bot(bot).generate()
-                except Hang:
-                    fails.append(f"robustness: hgen hangs on {f.name} {what}")
-                    broken += 1
-                except Exception:
-                    tb = traceback.format_exc().strip().splitlines()
-                    fails.append(f"robustness: hgen crashes on {f.name} {what}: {tb[-1]} ({tb[-3].strip()})")
-                    broken += 1
-                finally:
-                    signal.alarm(0)
-                if broken >= 3:
-                    break
-            override.pop(Path(f), None)
-    finally:
-        hgen.read = original_read
+        r = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--robust", str(bot), str(progress)],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600)
+    except subprocess.TimeoutExpired:
+        fails.append(f"robustness: hgen hangs on {progress.read_text(encoding='utf-8', errors='replace')}")
+        return
+    try:
+        fails.extend(json.loads(r.stdout.strip().splitlines()[-1]))
+    except (ValueError, IndexError):
+        fails.append(f"robustness check failed to run: {r.stderr[-600:]}")
 
 
 def hgen_run(*args, cwd=None):
     return subprocess.run([sys.executable, str(HERE.parent / "hgen.py"), *map(str, args)], capture_output=True,
-                          text=True, cwd=cwd)
+                          text=True, encoding="utf-8", errors="replace", cwd=cwd)
 
 
 def build_and_run(bot, tmp):
-    exe = tmp / "prog"
-    b = subprocess.run([CXX, "-std=c++20", "-o", str(exe), str(bot / "src" / "unity.cpp")], capture_output=True, text=True)
+    exe = tmp / EXE
+    b = subprocess.run([CXX, "-std=c++20", "-o", str(exe), str(bot / "src" / "unity.cpp")], capture_output=True, text=True, encoding="utf-8", errors="replace")
     if b.returncode != 0:
         return "build failed: " + b.stderr[:400]
-    return subprocess.run([str(exe)], capture_output=True, text=True, timeout=20).stdout.strip()
+    return subprocess.run([str(exe)], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20).stdout.strip()
 
 
 def check_lifecycle(tmp, fails):
@@ -255,7 +266,7 @@ def check_lifecycle(tmp, fails):
         return
     if hgen_run("--check", bot).returncode != 0:
         fails.append("lifecycle: --check says a fresh src/ is out of date")
-    clangd = (bot / ".clangd").read_text()
+    clangd = (bot / ".clangd").read_text(encoding="utf-8")
     if "-DMY_OWN_FLAG" not in clangd or "sub/b\\.htb" not in clangd:
         fails.append(f"lifecycle: .clangd lost your settings or the file blocks:\n{clangd[:300]}")
     write("a.htb", "int a_val() { return 1 + extra(); }\nint extra() { return 10; }\n")
@@ -269,27 +280,27 @@ def check_lifecycle(tmp, fails):
     r = hgen_run(bot)
     left = [p for p in [bot / "src/headers/sub/b.h", bot / "src/sub/b.inl", bot / "src/sub", bot / ".cambc/hgen/sub/b.h"]
             if p.exists()]
-    if left or "sub/b\\.htb" in (bot / ".clangd").read_text() or build_and_run(bot, tmp) != "11":
+    if left or "sub/b\\.htb" in (bot / ".clangd").read_text(encoding="utf-8") or build_and_run(bot, tmp) != "11":
         fails.append(f"lifecycle: deleting sub/b.htb left {[str(p.relative_to(bot)) for p in left]}: {r.stdout}")
     (bot / "a.htb").rename(bot / "renamed.htb")
     hgen_run(bot)
     if (bot / "src/a.inl").exists() or not (bot / "src/renamed.inl").exists() or build_and_run(bot, tmp) != "11":
         fails.append("lifecycle: renaming a.htb didn't move its output")
     write("src/mine.cpp", "// mine\n")
-    before = (bot / "src/renamed.inl").read_text()
+    before = (bot / "src/renamed.inl").read_text(encoding="utf-8")
     write("renamed.htb", "int a_val() { return 5; }\n")
     r = hgen_run(bot)
-    if r.returncode != 1 or "left alone" not in r.stdout or (bot / "src/renamed.inl").read_text() != before:
+    if r.returncode != 1 or "left alone" not in r.stdout or (bot / "src/renamed.inl").read_text(encoding="utf-8") != before:
         fails.append(f"lifecycle: a file hgen didn't write in src/ should stop it: exit {r.returncode}, {r.stdout}")
     (bot / "src/mine.cpp").unlink()
     w = subprocess.Popen([sys.executable, str(HERE.parent / "hgen.py"), "--watch", str(bot)], stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT, text=True)
+                         stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
     try:
         time.sleep(1.0)
         write("renamed.htb", "int a_val() { return 7; }\n")
         for _ in range(50):
             time.sleep(0.2)
-            if "return 7" in (bot / "src/renamed.inl").read_text():
+            if "return 7" in (bot / "src/renamed.inl").read_text(encoding="utf-8"):
                 break
         else:
             fails.append("lifecycle: --watch didn't pick up a saved file within 10 s")
@@ -356,20 +367,20 @@ def check_case(name, fast, keep):
         bot = tmp / "bots" / name
         shutil.copytree(src, bot, symlinks=True, ignore=shutil.ignore_patterns(*META))
         meta = {m: lines_of(src / m) for m in META}
-        r = subprocess.run([sys.executable, str(HERE.parent / "hgen.py"), str(bot)], capture_output=True, text=True)
+        r = subprocess.run([sys.executable, str(HERE.parent / "hgen.py"), str(bot)], capture_output=True, text=True, encoding="utf-8", errors="replace")
         out = r.stdout + r.stderr
         if r.returncode != 0 or "Traceback" in out:
             return name, [f"hgen failed:\n{out}"], tmp
         again = subprocess.run([sys.executable, str(HERE.parent / "hgen.py"), "--check", str(bot)],
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, encoding="utf-8", errors="replace")
         if again.returncode != 0:
             fails.append(f"hgen isn't stable: a second run would change src/:\n  {again.stdout.strip()}")
-        leaked = [p for p in (bot / "src").rglob("*") if p.is_file() and str(tmp) in p.read_text(errors="replace")]
+        leaked = [p for p in (bot / "src").rglob("*") if p.is_file() and str(tmp) in p.read_text(encoding="utf-8", errors="replace")]
         if leaked:
             fails.append(f"generated files hold this machine's paths: {[str(p.relative_to(bot)) for p in leaked]}")
         for rule in meta["generated.txt"] or []:
             path, op, want = rule.partition(" !~ ") if " !~ " in rule else rule.partition(" ~ ")
-            got = (bot / path).read_text() if (bot / path).exists() else None
+            got = (bot / path).read_text(encoding="utf-8") if (bot / path).exists() else None
             if got is None or (want in got) != (op == " ~ "):
                 fails.append(f"generated code: {path} should {'' if op == ' ~ ' else 'not '}contain {want!r}"
                              + ("" if got is not None else " (no such file)"))
@@ -383,7 +394,7 @@ def check_case(name, fast, keep):
         if not fast:
             if CLANGD and LSP.exists() and shutil.which("node"):
                 check_editor(name, bot, meta, fails)
-            check_robust(bot, fails)
+            check_robust(bot, tmp, fails)
         return name, fails, tmp
     except Exception:
         return name, fails + ["runner error:\n" + traceback.format_exc()], tmp
@@ -393,6 +404,11 @@ def check_case(name, fast, keep):
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8", errors="replace")
+    if sys.argv[1:2] == ["--robust"]:
+        robust_main(Path(sys.argv[2]), Path(sys.argv[3]))
+        return 0
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("cases", nargs="*")
     ap.add_argument("--fast", action="store_true", help="skip the editor and robustness checks")
@@ -401,7 +417,7 @@ def main():
     args = ap.parse_args()
     names = args.cases or sorted(p.name for p in CASES.iterdir() if p.is_dir()) + ([] if args.fast else ["lifecycle", "stress"])
     if not CXX:
-        sys.exit("no clang++ found")
+        sys.exit("no clang++ found: install LLVM (macOS: brew install llvm; Windows: winget install LLVM.LLVM)")
     editor = (CLANGD if LSP.exists() and shutil.which("node") else "skipped: needs node and `npm install` in tools/htb/vscode"
               ) if CLANGD else "not found: editor checks skipped"
     print(f"clang++ {CXX}\nclangd  {editor}\nwasm    {WASI or 'not found: skipped'}\n")

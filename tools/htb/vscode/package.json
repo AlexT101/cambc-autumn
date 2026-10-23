@@ -2,7 +2,7 @@
   "name": "htb",
   "displayName": "HTB (C++ written like Java)",
   "description": "Squiggles, completion, hover and go to definition for .htb bots (tools/htb/hgen.py), served by clangd.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "herbert",
   "license": "UNLICENSED",
   "repository": {
@@ -18,7 +18,7 @@
   ],
   "activationEvents": [
     "onLanguage:htb",
-    "workspaceContains:bots/*/*.htb"
+    "workspaceContains:bots/*/**/*.htb"
   ],
   "main": "./extension.js",
   "contributes": {

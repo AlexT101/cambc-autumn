@@ -76,6 +76,8 @@ def version_key(p):
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):   # a Windows console's code page can't show every file name
+        stream.reconfigure(errors="replace")
     ok = setup_bots()
     packages = sorted(glob.glob(str(HERE / "vscode" / "htb-*.vsix")), key=version_key)
     code = code_cli()

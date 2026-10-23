@@ -1,0 +1,12 @@
+namespace aph {
+class World;
+
+// Reaches Facts only through calls, like hyperion's camp_attack_targets.
+template <class Allowed>
+float best_mult(const World& world, Allowed allowed, float floor = 0.0f) {
+    float best = floor;
+    for (const auto& e : world.enemies)
+        if (allowed(e) && e.facts().mult > best) best = e.facts().mult;
+    return best;
+}
+}

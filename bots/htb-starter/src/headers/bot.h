@@ -107,18 +107,7 @@ bool move_towards_closest(cambc::bitboard goals);
 // Compute the attack mask once, rather than once per visible target.
 #line 136 "bots/htb-starter/bot.htb"
 template<class Targets>
-bool attack_first_in_range(const Targets& targets) {
-    auto& me = cambc::self();
-    if (targets.empty() || !me.can_attack()) return false;
-    const auto attack_tiles = me.attack_tiles();
-    for (const auto& target : targets) {
-        if (target.is_visible() && attack_tiles.is_set(target.position()) && target.health() > 0) {
-            me.attack(target);
-            return true;
-        }
-    }
-    return false;
-}
+bool attack_first_in_range(const Targets& targets);
 
 // Attack a camp already in range, otherwise move toward the nearest camp tiles.
 #line 151 "bots/htb-starter/bot.htb"

@@ -1,0 +1,37 @@
+namespace aph {
+class World;
+
+namespace {
+using Window = Reach::Window;
+using aph::first_mult;
+constexpr Window full() { return Window{255}; }
+struct Probe {
+    int v;
+};
+// File-private, a class parameter and a default: the editor once found calls to it ambiguous.
+int probe_value(const Probe& p, const int* bonus = nullptr) { return p.v + (bonus ? *bonus : 0); }
+int use_probe() { return probe_value(Probe{4}); }
+int act(int x) { return x * 2; }    // file-private, and world_h.htb has a public act
+}
+
+class Safety {
+public:
+    explicit Safety(const World& w) : world_(w) {}
+    template <class F>
+    int each(F&& f) const;
+    int window_bits() const { return full().bits; }
+
+private:
+    const World& world_;
+};
+
+// A member template defined outside its class; reaches World's members through world_.
+template <class F>
+int Safety::each(F&& f) const {
+    int total = 0;
+    for (const auto& e : world_.enemies) total += f(e);
+    return total;
+}
+
+int safety_probe() { return use_probe() + act(0); }
+}

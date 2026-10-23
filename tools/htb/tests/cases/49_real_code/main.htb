@@ -1,0 +1,8 @@
+#include <cstdio>
+int main() {
+    aph::World w;
+    aph::Safety s(w);
+    std::printf("%d %.1f %.1f %d\n", aph::enemy_seen(w), aph::first_mult(w),
+                aph::best_mult(w, [](const aph::Belief&) { return true; }), s.each([](const aph::Belief& b) { return b.id + 1; }));
+    std::printf("%d %d %d %d\n", s.window_bits(), aph::safety_probe(), int(aph::table[1].stuns), aph::act(w));
+}

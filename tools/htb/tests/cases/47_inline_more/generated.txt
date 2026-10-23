@@ -1,7 +1,8 @@
-src/headers/a.h ~ inline void Meter::reset() { value = 0; }
+src/headers/a.inline.h ~ inline void Meter::reset() { value = 0; }
 src/headers/a.h ~ constexpr int Meter::doubled() const { return value * 2; }
-src/headers/a.h ~ inline int safe_div(int a, int b) try {
-src/headers/a.h ~ inline int build_kind() { return 1; }
+src/headers/a.h ~ inline int safe_div(int a, int b);
+src/headers/a.inline.h ~ inline int safe_div(int a, int b)
+src/headers/a.inline.h ~ { return 1; }
 src/a.inl !~ Meter::reset
 src/a.inl !~ Meter::doubled
 src/a.inl !~ safe_div
