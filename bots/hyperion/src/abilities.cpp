@@ -18,7 +18,6 @@ constexpr float winning_tribute_value = 5000; // a stun that stops the enemy's g
 constexpr float min_value = 40;
 constexpr float min_landing_value = 250; // a landing moves us off the goal's way
 constexpr float min_camp_value = 50;
-constexpr int max_unseen_tiles = 9; // unseen enemies spread over more tiles are not aimed at
 constexpr int hold_range = 6;       // camp casts wait while a visible enemy is this close
 
 bool walked(const World& world) { return my_position() != world.me().pos; }
@@ -118,6 +117,12 @@ bool landing_wakes(const World& world, vec2 p, int radius) {
             if (c.health[i] > 0 && dist(p, groups[g].members[i].pos) <= radius) return true;
     }
     return false;
+}
+
+bool unseen_suicidal(const ChampionBelief& e, float health) {
+    const float back = e.retaliation();
+    return e.alive && !e.visible && e.tracked && back > 0 && back >= health && !board_empty(e.possible)
+           && static_cast<int>(board_count(e.possible)) <= max_unseen_tiles;
 }
 
 namespace {

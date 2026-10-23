@@ -901,7 +901,7 @@ void Search::add_unseen(int s) {
     for (const auto& e : world.enemies) {
         if (!e.alive || e.visible || !e.tracked || board_empty(e.possible)) continue;
         const int count = static_cast<int>(board_count(e.possible));
-        if (count > 9) continue;
+        if (count > max_unseen_tiles) continue;
         const float hp = e.health > 0 ? e.health : e.max_health;
         const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0.0f;
         const float back = raw > 0 ? e.retaliation() : 0.0f;
@@ -1148,6 +1148,11 @@ bool Search::read() {
             for (int k = 0; k < n_members; ++k)
                 if (tables.members[k].sleeper && dist(here, tables.members[k].pos) <= grid_r + land_radius)
                     mark(tables.members[k].pos, land_bad);
+            // The landing hits unseen enemies too, which land_at cannot price: keep it off a
+            // tracked Ren whose retaliation kills us, as cast_at_enemies does.
+            for (const auto& e : world.enemies)
+                if (unseen_suicidal(e, health))
+                    for (auto p : positions_within(e.possible, here, grid_r + land_radius)) mark(p, land_bad);
         }
         land_here = landings(cell(here));
         plain_here = land_here & ~land_hits;
