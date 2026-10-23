@@ -43,7 +43,7 @@ const PLAN = [
   ['close-spawns', 6], ['far-spawns', 5],
   ['golem-heavy', 5], ['monolith-heavy', 4], ['gem-centre', 5], ['huge-shared', 6], ['tiny-groups', 4], ['sparse-camps', 4], ['dense-camps', 3], ['monsters-only', 2], ['clusters-only', 2],
 ];
-const SUITES = { gen: { dir: 'maps/gen', plan: PLAN, seed: 1021 } };
+const SUITES = { gen: { dir: 'maps/gen', plan: PLAN, seed: 1023 }, 'gen-s1': { dir: 'maps/gen-s1', plan: PLAN, seed: 1024 } };
 const LADDER_DIR = path.join(ROOT, 'maps');
 const EXOTIC_PRESETS = new Set(Object.entries(PRESETS).filter(([, v]) => v.exotic).map(([k]) => k));
 
@@ -391,7 +391,7 @@ const USAGE = `usage: node tools/mapgen/mapgen.mjs <command>
   mutate MAP [--seed N] --op OP [--op OP]... [--out FILE] [--show]
       OP: walls|holes|bushes *F (scale), +P/-P (add/remove fraction of the map), camps *F (rescale
       distance from spawn), camps|altars +N/-N, picks=N, altars=mid (move walkable altars to the centre)
-  suite [--out DIR] [--seed S] [--oversample K]   rebuild maps/gen from the PLAN (only changed files are rewritten)
+  suite [NAME] [--out DIR] [--seed S] [--oversample K]   rebuild maps/gen (or NAME: gen-s1) from the PLAN (only changed files are rewritten)
   check FILE... [--show] [--json]           validate maps (any .map26a) and print metrics
   diversity SET... [--json]                  compare map sets (a dir, file, or comma-joined list each) with
       the ladder maps in maps/ in a normalised metric space: nearest-ladder distance, spread, shares

@@ -9,7 +9,7 @@ byte-identical while the fuel it records drops.
     py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json
 
 `run` options: --opp (default hecate), --maps (default a small mixed set; ladder names or map paths),
---set wide (26 ladder, maps/gen and maps/gen-s1 maps instead), --test-draft (play a copy of each bot
+--set wide (26 ladder and maps/gen-bench maps instead), --test-draft (play a copy of each bot
 whose params::test_draft is off with it on, so both draft a top-10 ladder composition by map and side),
 --per-map, --fuel (per-turn quantum, default 100000000; 0 for the real 100000), --jobs. Each game's
 bundle is kept under --games (default replays/fuel/games/<out stem>/). Fuel used per turn comes from
@@ -36,11 +36,11 @@ DEFAULT_MAPS = ["00ambush", "00lanes", "01hooks", "00corners", "00contest", "00i
 MAP_SETS = {"wide": [
     "00ambush", "00lanes", "01hooks", "00corners", "00contest", "00interlock", "00fragment", "00expanse", "00swirl",
     "00pilgrimage", "00monolith", "01boss-battle",
-    *(f"maps/gen/gen-{m}.map26a" for m in (
+    *(f"maps/gen-bench/gen-{m}.map26a" for m in (
         "chambers-102106111", "hourglass-102105800", "huge-shared-102107800", "labyrinth-102106300",
         "classic-102100000", "monolith-heavy-102107600", "city-102106900", "close-spawns-102107300",
         "long-thin-102107200", "caves-102100400", "dense-camps-102108100", "open-field-102107100")),
-    "maps/gen-s1/gen-chambers-102206117.map26a", "maps/gen-s1/gen-hourglass-102205812.map26a",
+    "maps/gen-bench/gen-chambers-102206117.map26a", "maps/gen-bench/gen-hourglass-102205812.map26a",
 ]}
 HEADER = 77
 BUDGET = 100_000

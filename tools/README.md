@@ -27,7 +27,8 @@ py tools/run_batched.py --watch         # progress of the newest batch, from ano
 ## Maps: tools/mapgen
 
 - `maps/` holds the ladder maps as SDK updates ship them (`00ambush`, `01big-world`, ...); delete any uuid-suffixed copies an update adds. Ladder replays drop the prefix; extract.mjs and mapgen accept either.
-- `maps/gen/` (seed 1021) and `maps/gen-s1/` are 256-map generated suites: exotic and ladder-like presets plus ladder mutations, symmetric, everything reachable on foot. `index.json` records each map's preset, spec and metrics.
+- `maps/gen/` (seed 1023) and `maps/gen-s1/` (seed 1024) are 256-map generated suites, regenerated 2026-10-22: exotic and ladder-like presets plus ladder mutations, symmetric, everything reachable on foot. `index.json` records each map's preset, spec and metrics.
+- `maps/gen-bench/` holds the 14 generated maps of the fuel bench's wide set, kept from the older suites so fuel results stay comparable. No A/B suite reads it.
 - [mapgen.mjs](mapgen/mapgen.mjs) builds maps through the engine WASM's map builder, seeded; presets in [generate.mjs](mapgen/generate.mjs), shapes in [shapes.mjs](mapgen/shapes.mjs).
 
 ```
@@ -36,7 +37,7 @@ node tools/mapgen/mapgen.mjs gen donut --seed 3 [--set altar_mode=central] --out
 node tools/mapgen/mapgen.mjs mutate expanse --op "walls*0.5" --op "camps*1.3" --out x.map26a   # mirror-preserving edits
 node tools/mapgen/mapgen.mjs check maps maps/gen                   # validity, reachability, metrics
 node tools/mapgen/mapgen.mjs diversity maps/gen DIR                # map sets against the ladder maps
-node tools/mapgen/mapgen.mjs suite [--out DIR --seed S]            # rebuild maps/gen, or a fresh suite
+node tools/mapgen/mapgen.mjs suite [gen-s1] [--out DIR --seed S]   # rebuild maps/gen (or gen-s1), or a fresh suite
 ```
 
 ## Forced drafts: tools/variants
@@ -65,7 +66,7 @@ py tools/fuel/cap_variant.py hecate --run-fuel 10000000                   # a co
 py tools/ab.py main variants/hecate-cap100000-at10000000 --fuel 10000000  # so only CAND gets 10M
 ```
 
-- **bench.py:** `--maps` takes ladder names or paths; `--set wide` is 26 maps (12 ladder, 12 gen, 2 gen-s1); `--test-draft` gives both bots the ladder test compositions; `all` counts play turns from round 2. Wide-set baselines (bbf6f05): `replays/fuel/wide-base-100M.json`, `wide-base-real.json`.
+- **bench.py:** `--maps` takes ladder names or paths; `--set wide` is 26 maps (12 ladder, the 14 in `maps/gen-bench/`); `--test-draft` gives both bots the ladder test compositions; `all` counts play turns from round 2. Wide-set baselines (bbf6f05): `replays/fuel/wide-base-100M.json`, `wide-base-real.json`.
 - The 16-game bench swings by ±20 out-of-fuel turns and has no shared-gem map: judge out-of-fuel turns on a full A/B.
 - hyperion prints `SHORTCUT round champion what` where fuel made it choose worse and `OOF round phase` for each turn that ran out (both in `debug_block`). `debug_fuel` in util.h gives per-phase costs (`FuelMeter`, ~170 a meter). Where the fuel goes: [FUEL-PROFILE.md](../research/hyperion/FUEL-PROFILE.md).
 - cap_variant.py: keep `--run-fuel` at or below 30M (at 100M instances trap near round 1000, `probe-fueladjust`); a turn that ran out resumes uncapped.

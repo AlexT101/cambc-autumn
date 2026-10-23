@@ -22,7 +22,7 @@ Comment only counterintuitive behaviour or reasoning, concisely.
 ## Testing
 
 - **Judge a change** with `py tools/ab.py CAND REF` against a frozen baseline: ~1100 games (ladder, `maps/gen`, `maps/gen-s1`, both sides), noise about ±1.5 points. There are no feature flags; single maps and small samples are noise, and local games are deterministic, so reruns add nothing.
-- **Confirm a gain** on a suite no A/B has used (gen-s1 has been in every A/B since 2026-10-21): `node tools/mapgen/mapgen.mjs suite --out DIR --seed S`, then `--suites DIR`.
+- **Confirm a gain** on a suite no A/B has used: `node tools/mapgen/mapgen.mjs suite --out DIR --seed S`, then `--suites DIR`.
 - **Record** results in [research/EXPERIMENTS.md](research/EXPERIMENTS.md), which also lists what already won or lost.
 - `cambc run --map NAME` finds only maps directly under `maps/`, by full name (`00interlock`); pass `maps/gen/<file>.map26a` for generated ones.
 
