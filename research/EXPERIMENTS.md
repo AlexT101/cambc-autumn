@@ -162,6 +162,16 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   within 3; nothing reads its known landing (`teleports_into`, used only by pathing). Safety and the fight search treat
   a channelling enemy as able to act from its tile; `prey`/`intercept_steps` ignore `channel_end_round`; stun
   targeting values cancelling a tribute but not a teleport; `World::grow` spreads `possible` though the channel pins it.
+  Fixed on `strat/teleport2` (cafa84c, on teleport base 8dbc020): a seen teleport lands at its reserved tile at its
+  turn start in `channel_end_round` and acts that turn, in safety, the fight search, `prey`/`intercept_steps`, stun
+  value and tracking. Locally rare (visible enemy teleports per team-game: 1.2 on the teleport class suite, 0.47
+  ladder, 0.09 gen), so the A/B is level: with the crystal rule below, 50.5% of 1104 against 8dbc020, class suite
+  50.6% of 512. Held, not on main with the teleport code.
+- Crystals only on maps with shortcuts (`strat/teleport2-buy` 1355c53): the draft samples the map and champions buy
+  no crystal with fewer than 4 shortcut tiles unless an altar hop needs one. Champions rebuy after every death
+  (5.5 buys per team-game on maps with no use; `can_buy` checks the carried count, so crystals seem lost at death,
+  unprobed). Unused crystal gold per team-game 32 → 25.5 ladder, 36 → 24 gen. 49.1% of 1104 against 8dbc020.
+  Dropped; a rule against rebuying after an unused crystal dies would cut more of the waste.
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 
