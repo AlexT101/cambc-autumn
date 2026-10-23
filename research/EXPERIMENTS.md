@@ -1223,3 +1223,48 @@ panel. One nice19 worker, build/runtime threads1; no additional live UR. Pre-gam
 sources, actual Release raw/injected WASMs, CLI/engine and map identities. This small
 mechanism comparison is not broad qualification or identification of the live submitted
 source. Full outcome and actual roster/native-status audits will follow completion.
+
+### Full roster control panel: the blanket fallback does not hold
+
+All156 games completed: exact4c4 wins31/52, current Willow337f wins32/52, current
+teacher-draft controlb810 wins25/52. Native play rollovers are357/378,850/389,413/434
+(candidate/emulator). Runner failures, native Bot Errors and turn-order markers are zero;
+all candidate caught action errors are zero. The emulator catches code97 in16/15/21
+rounds respectively. Preserve those failures as a reference-policy limitation; do not
+repair the frozen opponent halfway through the comparison or call these actual Fish wins.
+
+Every actual draft and physical-side mapping was decoded. The28 teacher-Ryth cells yield
+13/18/15 wins for4c4/current Willow/current teacher. The24 teacher-Vendetta cells yield
+18/14/10. Current Willow beats the current teacher in both strata: paired current-only
+versus teacher-only wins are5–2 and9–5. Thus neither the blanket prefix fallback nor
+retaining current Vendetta solely under the existing density rule is supported by this
+panel. Big World remains a specific nomination, not a validated named-map exception.
+
+The same-roster4c4/current-teacher comparison instead localizes a question to Vendetta
+cells: ten4c4-only wins versus two current-only; the Ryth cells have three versus five.
+A frozen native fbda803 control on the same52 cells is the next isolation step, separating
+upstream107/108 changes from shared changes in the Willow integration. This is evaluation
+of existing source controls, not new held-out evidence for a selector fitted to this panel.
+
+Panel summary JSON SHA `93e438a8171d307f692b10f5674559720e5f672fa832790f91ae7d2cc73f19f7`,
+Markdown SHA `374b9a15c14a55fbf36fb41ac3292881a57270434e9bde54f975dd496e626351`, under
+`replays/fish-roster-emulator-panel-20261023/`. Final source/build/map/audit/replay pins:
+`provenance/fish-roster-emulator-preflight/setup-after-extension.json`, SHA
+`d7ea862bd77f3a8c775ed8f5a862a0170637b0430eaf9c187ace766405c31173`.
+
+Latest upstream a5749c4 was merged in e17a156; it adds the frozen v44 baseline and research
+notes, with no Hyperion gameplay delta. Its baseline source is byte-identical to our
+released Khaos_v33/a00fff. A separate source-matched four-game calibration against the
+same emulator loses all four Expanse/BigWorld sides, with10/5 native rollovers and no runner,
+native, caught or turn-order errors. This arm is separate from the156-game panel. The
+newer development source's1–3 on those same cells does not establish general improvement.
+Canonical remains337f; no new numbered release or live UR was made.
+
+The paired BigWorld mechanism review also narrows the explanation. At round400 own camp
+damage is nearly equal between Willow and teacher controls, but capture ownership differs
+substantially. Vendetta's first shared group6 clear/payout is63/69 versus107/115; later
+Vesper receives much more gold and gems despite similar output. Willow does deliver2120
+real early healing, all to Marcella, and becomes injured herself. Prism's injury window
+has no recorded current/one-step Willow heal geometry. Missing allied own-view/branch
+information prevents claiming a missed legal heal. See the allocation and paired-control
+reviews; no speculative future healing was added to safety or farm values.
