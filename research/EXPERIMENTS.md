@@ -166,7 +166,7 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   turn start in `channel_end_round` and acts that turn, in safety, the fight search, `prey`/`intercept_steps`, stun
   value and tracking. Locally rare (visible enemy teleports per team-game: 1.2 on the teleport class suite, 0.47
   ladder, 0.09 gen), so the A/B is level: with the crystal rule below, 50.5% of 1104 against 8dbc020, class suite
-  50.6% of 512. Held, not on main with the teleport code.
+  50.6% of 512. Merged alone, without an A/B, as CHANGES 106 (7581f1c).
 - Crystals only on maps with shortcuts (`strat/teleport2-buy` 1355c53): the draft samples the map and champions buy
   no crystal with fewer than 4 shortcut tiles unless an altar hop needs one. Champions rebuy after every death
   (5.5 buys per team-game on maps with no use; `can_buy` checks the carried count, so crystals seem lost at death,
