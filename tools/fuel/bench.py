@@ -88,8 +88,11 @@ def with_test_draft(bot):
     return target
 
 
-def build(bot):
-    r = subprocess.run(["cambc", "build", str(bot)], cwd=ROOT, capture_output=True, text=True)
+def build(bot, cli="cambc", release=False):
+    cmd = [cli, "build", str(bot)]
+    if release:
+        cmd.append("--release")
+    r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
     if r.returncode != 0:
         sys.exit(f"build failed for {bot}:\n{r.stdout[-2000:]}{r.stderr[-2000:]}")
 
@@ -98,13 +101,15 @@ def fuel_turns(data):
     return [struct.unpack_from("<Q", data, i)[0] for i in range(HEADER, len(data) - 7, 8)]
 
 
-def play(bot, opp, map_name, side, fuel, games_dir):
+def play(bot, opp, map_name, side, fuel, games_dir, cli="cambc", release=False):
     a, b = (bot, opp) if side == "a" else (opp, bot)
     map_path, map_name = map_name, map_key(map_name)
     out = games_dir / f"{map_name}-{side}"
     shutil.rmtree(out, ignore_errors=True)
     out.mkdir(parents=True)
-    cmd = ["cambc", "run", str(a), str(b), "--map", map_path, "-o", str(out)]
+    cmd = [cli, "run", str(a), str(b), "--map", map_path, "-o", str(out)]
+    if release:
+        cmd.append("--release")
     if fuel:
         cmd += ["--fuel", str(fuel)]
     r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
@@ -159,19 +164,19 @@ def cmd_run(args):
     if args.test_draft:
         bot, opp = with_test_draft(bot), with_test_draft(opp)
     maps = MAP_SETS[args.set] if args.set else args.maps
-    build(bot)
-    build(opp)
+    build(bot, args.cli, args.release)
+    build(opp, args.cli, args.release)
     out = Path(args.out)
     games_dir = Path(args.games) if args.games else ROOT / "replays" / "fuel" / "games" / out.stem
     jobs = [(m, s) for m in maps for s in "ab"]
     with ThreadPoolExecutor(args.jobs) as ex:
-        games = list(ex.map(lambda j: play(bot, opp, j[0], j[1], args.fuel, games_dir), jobs))
+        games = list(ex.map(lambda j: play(bot, opp, j[0], j[1], args.fuel, games_dir, args.cli, args.release), jobs))
     # Concurrent runs of one bot can race on its build output; such games are replayed one at a time.
     for i, g in enumerate(games):
         for _ in range(2):
             if "error" not in games[i]:
                 break
-            games[i] = play(bot, opp, g["path"], g["side"], args.fuel, games_dir)
+            games[i] = play(bot, opp, games[i]["path"], games[i]["side"], args.fuel, games_dir, args.cli, args.release)
     for g in games:
         if "error" in g:
             print(f"{g['map']}-{g['side']}: ERROR {g['error'][-300:]}")
@@ -179,6 +184,7 @@ def cmd_run(args):
     every = [t for g in ok for t in after_round1(g)]
     r1 = [t for g in ok for t in g["round1"]]
     result = {"bot": str(named[0]), "opp": str(named[1]), "played": [str(bot), str(opp)], "test_draft": args.test_draft,
+              "release": args.release, "cli": args.cli,
               "fuel": args.fuel, "games": games, "all": summary(every), "round1": summary(r1)}
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, indent=1))
@@ -234,6 +240,8 @@ def main():
     r.add_argument("--maps", nargs="+", default=DEFAULT_MAPS)
     r.add_argument("--set", choices=sorted(MAP_SETS), help="a named map list instead of --maps")
     r.add_argument("--test-draft", action="store_true")
+    r.add_argument("--release", action="store_true", help="build and run in Release mode")
+    r.add_argument("--cli", default="cambc", help="CLI executable path (default: cambc from PATH)")
     r.add_argument("--per-map", action="store_true")
     r.add_argument("--fuel", type=int, default=100_000_000)
     r.add_argument("--jobs", type=int, default=12)

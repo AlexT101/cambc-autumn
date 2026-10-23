@@ -542,4 +542,328 @@ The authenticated `--team me` history resolves Pantheon (`547efb5b-57e5-4355-850
 across different opponents. One CLI submit succeeded as **server version43**, with note
 `Khaos_v32 - Willow support on latest Hyperion`. Its reported222393 upload bytes match local bundle
 size; remote payload identity is not claimed. Exact response and pre/post submission provenance
-are in `provenance/Khaos_v32-release/`. No unranked group was queued for this release yet.
+are in `provenance/Khaos_v32-release/`.
+
+### v32 live exploration and Willow cost follow-up
+
+One authorized five-game live unranked group against policy wonk finished **2–3**: losses on
+Monolith, Swirl and Hooks; wins on Quadrants and Boss Battle. Group
+`c3943bec-ee4d-4a9a-a468-71e269d08154` and its exact CLI request/responses are preserved in
+`provenance/Khaos_v32-release/live-ur-policy-wonk/`. Download ZIP SHA is
+`8c74d86cda5dbba99651dc7c80284b17ac7c01539710200d1bc7e799fe662f9f`.
+These are live exploratory games, not frozen-source benchmark results: the CLI does not expose
+the submitted source/version for either participant. v43 was the intended current submission.
+Our five-pick draft includes Willow on Monolith, Quadrants and Boss Battle; four-pick Swirl/Hooks
+do not include her. Replay extraction and actor-own-view diagnosis are next; no loss mechanism
+or draft advantage is inferred from this small outcome split.
+
+The four existing qualification panels' offline audit localizes five-pick rollovers by normalized
+roster slot. Candidate/reference totals are5028/2723 over602 games; slot3 contributes2209/350,
+or1859 of the2305 excess. Published extraction verifies slot3 as Willow versus Vendetta; the
+generated panels remain explicitly slot-labeled pending champion decoding. These are interrupted
+turn counts, not fuel totals or routine-level attribution. No new engine runs were used.
+See `research/willow-upstream-five-pick-rollover-slots-20261023.md` and its pinned JSON.
+
+The sleeping-camp transit child is source-only pending review. Root/Astra found that current
+zero-health beliefs are not sufficient dead-member certificates because the existing health
+reader conflates hidden/missing results. The repaired child rejects such members in alive
+groups while still accepting freshly cleared groups. No production release changed.
+
+### Sleeping-camp transit: focused mechanism and upstream refresh
+
+Repaired source `de1c99aae1085f767a510c465e015cca50fbf979c0319f6037d70d554bd3d001`
+compiled and completed two Release/default100k Elkring games against frozen8be8eaa. As A it
+lost737–1034 at970; as B it lost319–1375 at760. Candidate/reference native rollovers1/0,
+native bot errors0/0, caught action errors0/0. The candidate's sole rollover belongs to HoR,
+not Willow. These two games are an activation check, not a performance estimate.
+
+Separate debug games show two admitted transitions and successful moves at305–306 on A:
+2,25→2,24→2,23. B has no transit activation. This confirms entry and continuation are executable;
+debug is not a fuel-exact witness for Release. The previous A loss was583–1089 and B319–1375,
+but a changed single deterministic outcome does not establish a competitive gain. Artifacts and
+mode-separated audits: `replays/willow-upstream-sleep-transit-focused/`; final pins SHA
+`aab7fd10e7a341ee144161ae3ed0ff7bda35795eadb6e23a9d20b383d8f4e1ad`.
+
+Remote main then advanced to `eaee5986e7df268757a492eabc130518200f8f0a`, fetched without
+changing canonical or frozen sources. Its audit107/108 includes threat-distance/timing, unavailable
+allies, ward visibility, capture deadlines and other fixes. Next qualification will integrate the
+qualified support package and reviewed transit onto that source first. The original v32 stays
+frozen; the new integration is an unnumbered experiment until submittable.
+
+A second authorized live group was queued once against Intercontinental Fish, group
+`a8a24ba0-7d50-4761-aaf3-0ab5eb8b2533`, on the same five maps with reversed sides. Exact CLI
+request/response and quota preflight are in `provenance/Khaos_v32-release/live-ur-intercontinental-fish/`.
+Its opponent and submitted-source versions remain unpinned; this is separate exploratory evidence.
+
+### Mate-view reuse: exact behavior, no measured saving
+
+Source-only child `bafc493445ca013c6f6e11984631d9262d0b537f0f6af070e44df0ca1d872418`
+reuses the mate's already-computed heal-view value. Against the same fixed hecate on eight maps,
+both sides, parent db5b and child each completed 16 Release games with explicit 100M fuel. All 16
+replay payload hashes match exactly; no game errors. Recorded fuel rises 3,044,894,192→3,044,906,613
+(+12,421, +0.000408%); after-round-1 mean 37,178→37,179 and p99 90,403→90,403. No Willow-only
+attribution is made. This does not demonstrate useful savings, so it is preserved but excluded
+from the latest-main integration. Artifacts: `replays/willow-heal-view-reuse-100m/`; final pins SHA
+`32cc083a5e0d1886704b3fc71549f240a1241dff4c8e91b6151f68fdeaee1da8`.
+Root review caught a retry-indentation regression in the benchmark's new opt-in CLI/Release
+options. Luna repaired it and verified the failed-match retry with a subprocess-free mock.
+The completed benchmark had no failed games, so its results are unaffected; the pins retain the
+script hashes from execution and after repair. No benchmark rerun was needed.
+
+### Live policy wonk loss diagnosis
+
+Actor-own review rules out a proposed Monolith recall/heal veto: Willow heals Prism at666,
+then recalls with her heal on cooldown and only full-health Prism visible. Prism's later206-gem
+death is a separate visible lethal-spell/nonlethal-exclusive-cast decision, needing branch/risk
+confirmation after the new upstream integration. Opponent Willow's Monolith heal position is
+inside camp range with closer allies tanking; it demonstrates a useful service geometry, not
+guaranteed future tank protection. A safe-ring ally rendezvous and independent one-step ready
+heals merit bounded design before relaxing camp exposure. See
+`research/willow-policy-wonk-monolith-own-view-diagnosis.md`.
+
+Swirl/Hooks begin with higher realized capture income for us, but later deaths and fewer
+productive cycles dominate. Our paid capture gems75/154 trail the opponent's1080/1034; simply
+banking the remaining bags cannot close those gaps. Own-view HoR sequences distinguish actual
+stuns from idle turns and newly revealed opponents from hindsight. Swirl has real allied follow-up;
+Hooks' re-entry after retreat merits a branch/routing witness. No generic no-follow-up penalty or
+forced unsafe capture is inferred. See `research/policy-wonk-four-pick-loss-review.md`.
+
+### Latest-main integration: first native panel
+
+The source-only integration `c71fc5730dc64f0463faea9c2edd6ef3a849332b86e5264ae4720c223b482d83`
+combines the qualified support package and reviewed sleeping-camp transit with upstream
+`eaee5986e7df268757a492eabc130518200f8f0a`. Against its frozen source aggregate
+`a97aeefdf861fa71e26bf9908e7cb26eeb326b95cf3ef50b58cd62b810aed925`, the same published40
+map panel (both sides, Release/default100k, native drafts) finishes **37–43**. Pick strata are
+3-pick6–6, 4-pick8–8, and 5-pick23–29. Native rollovers are587/366, with zero native bot
+errors and zero runner failures. Caught action-error lines are17/17, all code97
+(`api_not_in_vision`); these are not actor-attributed. Both source aggregates remain pinned.
+This small panel warrants diagnosis and the first fixed generated512, not release or rejection.
+Results: `replays/willow-audit-transit-vs-eaee598/batch-run-01-release-published40/`.
+
+Root review found double-escaped raw regexes in the new turn-order-marker audit. Its initial
+zero-marker result is invalid pending a repaired positive-case check and offline rescan;
+match outcomes and the independent native/caught-action audits are unaffected. Preserve the
+initial report and provenance rather than silently replacing them. No match rerun is needed.
+The repaired parser now has positive/negative checks, and the offline rescan confirms zero
+turn-order markers on both sides. Astra also caught actor IDs being mislabeled as champion
+types in the initial optional fuel breakdown. Luna rebuilt that mapping from each replay's
+actual champion rows; team totals, map pick counts and wins are unchanged. Invalid originals
+remain beside `summary-corrected.md`, `pick-strata-corrected.json` and
+`setup-after-batch-run-01-corrected.json` (SHA `4ae344d6…`). Use those corrected artifacts.
+
+### Live Fish exploration and Monolith comparison
+
+The authorized Fish group finished **4–1**: Monolith391–1054 lost; Swirl1065–333,
+Quadrants1012–854, Boss Battle1146–0, and Hooks1001–66 won. Live sources remain unverified.
+All five extractions pass hard validation; native rollovers31/0 and native bot errors0/0.
+Our five available stdout files have no caught action-error markers; opponent stdout is absent.
+See `replays/Khaos_v32-live-UR/intercontinental-fish/analysis-final/` and its summary/pins.
+
+Fish's Monolith draft is Vesper/Vendetta/HoR/Cassi&Issac/Ryth: five picks, six bodies, no healer.
+Both Monolith captures supply512 gems; outside those objectives our captured gems674 exceed
+Fish's553. Our Prism never dies and retains261 gems at the finish; banking that bag alone
+would still not win. This differs from policy wonk's visible lethal-burst loss. Three short
+actor-own windows are approved to check a possible Willow heal opportunity, Prism's late
+known-information choices, and Fish's second Monolith clear. No draft exception or forced
+late bank is inferred from final scores. Preliminary evidence is recorded in
+`research/willow-fish-monolith-loss-review.md`, with own-view conclusions explicitly pending.
+
+### Independent Willow ready heal: reviewed source, runtime pending
+
+Separate child `bots/variants/willow-audit-ready-heal-work/src` has aggregate
+`06b266efc20e36955c22ea9db743e1a71ea9ab9eb82463825f8284f0af33f68f` on frozen c71fc.
+Root and Astra read the actual109-line bot.cpp addition and caller seams with no source blocker.
+It reuses existing economy and mate-eligibility outputs, preserving the eligible-Prism path.
+On an ordinary quiet turn without an eligible mate, Willow can take one strictly safe step to
+heal another visible ally. Present gain must exceed three camp basics; immediate resource
+finishes and capture/bank/shop/escape remain protected. A useful ally healable on the current
+tile declines the step, including visibility supplied by Willow's ward. Successful movement
+refreshes observations, uses the real healing action and owns the remainder of the turn.
+No new claim, promised heal, formation timer or fuel gate is added. Runtime is still pending;
+the published/gen integration panels use c71fc and say nothing about this child.
+See `research/willow-audit-ready-heal-source-checkpoint.md` and its source-review note.
+
+The approved Fish own view strengthens the r415 opportunity: Willow has a ready heal and sees
+Marcella missing224 HP, with no visible enemy or Prism. Actual Strength70 gives a three-basic
+price210. Reaching healing range delays entering the small cleared camp by two turns, not one;
+the exact source admission remains to be checked at runtime. Fish's later Monolith clear instead
+shows Vesper's465-Strength sustained attacks with a closer visible HoR tank. It supports reviewing
+objective crew coordination, not forcing a late Prism bank or assuming unseen enemy knowledge.
+
+### New live-ally stun query: bounded visibility repair
+
+Source inspection finds that `World::observe` skips same-round allies already read, while
+upstream's new fighter construction uses that cached `visible` bit to make a live buff query.
+Walking out of sight can therefore make the query throw97 even after observation. This is a
+provable source mismatch; the saved17/17 exceptions have not all been attributed to it.
+Source-only child `bots/variants/willow-audit-live-ally-work/src`, aggregate
+`ee1b404d8e50bc188c092739142d6a1f5bcf078756f643588d2693ccf94c7b10`, adds a9-line safety.cpp
+repair to ready-heal06b266. The same single buff import returns unknown on97 before reading
+its output buffer, while other error codes propagate. Unknown or positive pending stun delays
+the ally one turn; known absent/expired stun preserves immediate eligibility. Teleport and
+stun-immune paths remain unchanged. No eager World scan, extra SDK call or fuel gate is added.
+Root/Astra actual reviews pass; focused build/runtime is next after the active frozen gen panel.
+
+### Audit-era follow-up results and upstream108 revert
+
+Frozen c71fc versus a97ae completes fixed gen1023 **263–249/512**, strata3p79–81,
+4p76–74, 5p108–94. Native rollovers2214/1346, native bot errors0/0, runner errors0;
+caught97 lines30/20 and turn-order markers0/0. The published+gen592 aggregate is300–292,
+including5p131–123. This qualifies neither a different source nor the still-unrun second gen
+panel. Results SHA `f17139cfc0b4c71af5b49b5ecd9f2567e974e44d84462e3ea4b616afcb8f90eb`;
+artifacts and setup-after are under `replays/willow-audit-transit-vs-eaee598/`.
+
+The ee1b ready-heal/visibility bundle compiles and completes four Release/default-fuel focused
+games: Monolith versus c71fc1–1, LostWorld versus a97ae1–1. Candidate native rollovers1+6,
+reference0+8; no runner/native bot errors. No candidate caught errors; LostWorld reference has
+two97 lines. Two separate Debug Monolith games complete1–1 with a positive new helper event:
+Willow actor8/B at199 cancels a recall, steps34,21→35,22 and heals visible HoR240 HP.
+Debug and Release own-view windows both confirm the action and resulting1000 HP; their replay
+payload SHA is identical `93903c1226015f2b0ff03ffefb8b2eee9d5411a77b46688c2c9b5258200b3948`.
+This payload equality supports behavior for that pair, not Debug/Release fuel equality. Root
+rejected an earlier claim that structural timeline parity alone proved state parity; the repaired
+record separates that limited check from actual payload and bounded own-view equality. Use
+`replays/willow-audit-live-ally-focused/focused-summary-corrected-v2.json` and its sidecars.
+
+The same ee1b source then completes the published80 versus a97ae **39–41**, native
+rollovers653/376, native bot errors0/0, runner errors0. Candidate caught errors0 versus23
+reference97 lines in12 matches; turn-order markers0/0. This supports the narrow visibility
+repair and leaves broad competitive qualification open. Results SHA
+`992e1ef365c9c740981383ad409c009c7c8f2b0c1cef6c8549ea13f39573b9dc`;
+full pins are in `replays/willow-audit-live-ally-vs-eaee598/setup-after.json`.
+
+Before generated follow-up, origin/main advances to `b7bfcb7`, reverting CHANGES108 while
+Alex investigates a ladder deficit. CHANGES107 and its live-ally stun query remain. Freeze all
+completed sources/results; integrate that exact revert into a separate source child retaining
+our support/transit/ready-heal/visibility repair, and compare against a newly frozen main.
+Canonical v32 and server43 remain unchanged. The separate local Monolith crew design is not
+part of this integration; its timing must account for allies that already acted so the tank does
+not abandon merely because the ranged partner spent its current attack.
+
+### Main107 integration: source approved, qualification running
+
+New frozen child `bots/variants/willow-audit107-ready-heal-work/src`, aggregate
+`a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e`, applies the exact
+eaee598-to-b7bfcb7 upstream revert to ee1b, with four added support call sites adapted to the
+restored hold signature. Root and Astra read the actual complete parent delta and decide/safety
+seams; no integration blocker remains. Support, transit, independent ready healing and the
+optional97 buff-query repair are preserved. No Monolith or item policy is included.
+The comparator is frozen b7bfcb7 source, aggregate
+`d6bac05921106e332ee4648b5034e748c65aff111cef3f5110d503bedcf1834a`.
+Luna is authorized to run the published80 and both fixed512 generated panels serially at
+Release/default fuel, one worker. Prior source results do not transfer to this candidate.
+
+The separate local Monolith experiment is authorized from the same frozen parent, following
+`research/willow-local-monolith-crew-design.md` (SHA
+`61f2c432b9b744cc760e95d254b3fca04a7fa49b9dd97bc11c601ad1bc0babcf`). It compares a
+nearby certified crew against ordinary farming, preserves the existing sealing/Monolith-only
+path, uses bounded fresh member records and current-health exit reserves, and accounts for
+acted allies using first-attack delays rather than deleting their sustained damage. This is an
+opportunistic local basic-attack arm, not remote assembly or a claim that the historical losses
+would reverse. Implementation and qualification are still pending. Willow service analysis
+continues separately; no map-specific draft exception follows from the two live losses.
+
+New107 candidate a00fff completes published80 **40–40**, native rollovers531/302,
+native bot errors0/0 and runner errors0. Caught action errors are candidate0/reference10
+code97 lines; turn-order markers0/0. Fixed gen1023 then completes **265–247/512**,
+strata3p80–80,4p80–70,5p105–97. Native rollovers2522/1638 (5p1991/1117), native bot
+errors0/0, runner errors0 and turn-order markers0/0. Results SHA
+`2d484f69c891edd8799afff172ff9e3dbc413ace3684cce689f12c8417007543`; all artifacts are in
+`replays/willow-audit107-ready-heal-vs-b7bfcb7/`. The second fixed generated panel is running.
+
+Gen1023 caught errors are candidate2 code5 versus reference44 code97. Candidate witnesses are
+game038/gen-blob-102306208 physicalB r701 (replay archive
+`ed2024b3307baf0d8d2e64fed6154d282e30fe3b6e76c9bd994f665aab84abac`) and
+game475/mut-elk-arena-102303400 physicalA r1008. Both say invalid metadata/alignment/overlap/
+argument, without an actor or API call site. This error category occurred in earlier db5b and
+8be8eaa panels too; that does not prove these instances have the same cause. Preserve exact
+Release evidence and run two bounded Debug reproductions after qualification/recipient views.
+Do not equate caught exceptions with native Bot Error statuses or silently suppress code5.
+
+Willow follow-up review confirms that healing already ranks all visible allies. The fixed Prism
+relationship restricts formation/recovery, not all-ally heal selection. A recipient's short
+rendezvous may avoid moving Willow, but must pay actual lost melee/exclusive-cast work and be
+survivable without an unreceived heal. Two recipient-own windows are pending; no mailbox
+extension or recipient policy is authorized yet. See
+`research/willow-nonprism-support-rendezvous-review.md`.
+
+Fixed gen1024 completes **264–248/512**, strata3p85–91,4p88–76,5p91–81.
+Native rollovers2230/1466, native bot errors0/0, runner errors0 and turn-order markers0/0.
+Candidate caught errors0; reference32 code97 plus3 code5. Results SHA
+`b0d77ae7ec8a0924715adea0b0c975b4e54624a2124dfcf26cb156df140187ab`.
+The completed1104 comparison is **569–535**, native rollovers5283/3406, candidate caught
+errors2 code5 versus reference86 code97 and3 code5. This is modest support, with a continuing
+fuel cost. Root checked the actual gen1024 audit to correct a compressed agent prose report;
+the underlying audit has the right32/3 counts. Published results SHA is
+`c4459a1be8554c55056d943db6a83f2cc4d85241c0cfa8507291dc1476323f7f`.
+
+Two recipient views are now exported under the live Fish/policy-wonk actor-window folders,
+with source identity explicitly unverified. Their pins are in
+`replays/Khaos_v32-live-UR/recipient-followup-actor-window-pins.json`. Two unchanged-source
+Debug code5 reproductions are authorized next. After those, compare frozen a00fff directly
+against deployed db5b on unused generated seed2026102341 (256 maps, both sides), retaining
+Release/default-fuel qualification and exact provenance. No v33 preparation/upload yet.
+
+The isolated four-pick P/V/M/W arm is authorized for source preparation from a00fff, with
+gameplay and all other draft sizes unchanged. Use native drafts: test-draft mode overrides
+the lineup and cannot test this comparison. No map/counterpick selector is authorized.
+
+### Willow follow-up: recipient evidence and bounded side work
+
+The two unchanged-source Debug reproductions do not reproduce candidate code5, but they also
+do not reproduce the Release trajectories. Blob diverges on the first decoded action; Elk has
+252 identical event rows before diverging at round10. Both reference wins are diagnostics,
+not new competitive observations or a code5 fix. Preserve the original Release witnesses.
+The comparison record is `debug-code5-diagnostic/release-debug-comparison.json` beneath the
+main107 replay folder, SHA `712da25d2c80e7e8001bebde481fd08ad180e2a13bcbb2bda77b3dcaa9ca9cfc`.
+Fresh512 against deployed db5b is now running on the pinned unused seed2026102341.
+
+Recipient-own views do not justify a new addressed mailbox or non-Prism formation policy.
+Fish Marcella415 can see ready Willow, but a return step costs the next turn's basic or
+exclusive spell; current health and remaining camp work do not establish added useful
+activity from the224 heal. Policy-wonk Marcella794 already receives the actual360 heal;
+moving her for a hypothetical safe-ring Willow would not repair a missed service in that
+history. Retain the separate Willow-side ready-heal change. Final recipient review SHA is
+`c712fac099685e143ed30933c63d0025ac95027ab32005a028f82beac32d48fd`.
+
+Root and Astra approve the isolated native four-pick source, aggregate
+`157f5f79cddb45424ff2c25ce707e705d315c324267c5587a3f7b711f06ab06b`, for subsequent
+comparison against exact a00fff. Only the fourth native four-pick choice becomes Willow;
+first three picks, gameplay and three-/five-pick choices remain unchanged. The full source
+patch SHA is `2a2d11dc1dbe98504da248dfcbd1a5eceede55c4acdbc3b32f14de66e26366f3`.
+No runtime result yet. Map geometry can later explain service access and lost frontline
+value; no named-map or enemy-Tavi selector follows from the two live losses. Current draft
+order is cached on its first call, so reacting to later revealed enemy picks would require
+an explicit draft change. Simultaneous picks remain unknown.
+
+The separate Monolith crew source was held after actual review of bbd869. The four repairs
+address outside-group damage on cleared capture tiles, current vision before trusting raw
+group clearance, contributors with an explicit conflicting claim, and empty-handed winning
+capture travel/tribute pricing. Corrected source56f17fe is now under final review; it remains
+uncompiled and separate from both the release candidate and four-pick Willow study.
+
+Fresh seed2026102341 completes **251–261/512 against deployed db5b**, native rollovers
+2403/2286, native bot errors0/0, caught action errors0/0, runner errors0 and turn-order
+markers0/0. Map-index draft-size strata are3p77–85/162,4p80–78/158,5p94–98/192;
+their rollovers are523/536,289/304,1591/1446 respectively. These are map-size strata,
+not champion-event attribution. Results SHA
+`45dec6c0f08024723f093d88c92a5a3861ebdfdd6467f3bddaf37bb05d36d76d`, native audit SHA
+`8d1ec74f0f05c09209a7749400bab952f6a0b56208b4905d4dac2e7a3d16ec16` in
+`replays/willow-audit107-vs-db5b-heldout-2026102341/batch-run-01-release-seed2026102341/`.
+The preserved invalid first setup draft omitted the `src/` prefix from the aggregate recipe;
+it was corrected before launch without changing source/maps. See the adjacent correction
+note and authoritative pre-run setup SHA
+`6c0ceb8b8eb746036cf360464a77d1e7ac672467c2fab3cc03c1f40da3ef4620`.
+
+Root accepts a00fff for Khaos_v33 preparation as a logical repair with near-level direct
+results, not demonstrated win-rate superiority. The1104 upstream comparison and512 deployed
+comparison have different opponents and must remain separate. Preserve the two unresolved
+Releasecode5 witnesses; their failed Debug reproduction does not close them. The fresh batch
+has117 additional rollovers, concentrated in five-pick play. Only source-identical clone/build/
+bundle preparation is authorized now; no four-pick or Monolith experiment enters this release.
+
+Root and Astra also approve Monolith56f17fe for later bounded runtime. Separate repair review
+SHA `0dcf42eeb01a9083b8d4edfed7a81012a2321018a403d0bc1d008e91960b1f1b`; no source
+blocker remains, but activation, fuel and actual outcomes remain unmeasured. Four-pick Willow
+is the next main experiment.

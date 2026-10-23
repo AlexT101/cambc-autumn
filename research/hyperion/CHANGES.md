@@ -449,8 +449,9 @@ choices. Willow evaluates safe local formation and useful heals for visible alli
 bounded local recovery with Prism. Recovery requires actual current heal readiness and stops when service is
 unavailable or the short recovery window expires. Banking and capture work remain authoritative.
 
-- A cached nine-station guard keeps Willow away from enemy and damaging-camp reach, including known pending
-  teleport destinations. Camp-member indexing bounds repeated station work; refreshes preserve changed vision.
+- Cached nine-station checks keep proactive support outside enemy and damaging-camp reach, including known
+  pending teleport destinations. The movement guard marks enemy risk; ordinary farming retains its own camp
+  affordability checks. Camp-member indexing bounds repeated station work; refreshes preserve changed vision.
 - Nonurgent bank travel can take a useful safe heal step. Willow may price Jungle Health and finishes a begun
   partial build, while retaining main's Treasure-first and Bruiser/completion model.
 - Against frozen8be8eaa on native drafts, Release/default100k: 568–536/1104; untouched seed2026102318:

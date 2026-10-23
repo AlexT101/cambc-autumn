@@ -196,7 +196,7 @@
     "memberCount": 29,
     "membersExactlySourceFiles": true,
     "contentsVerifiedAgainstSource": true,
-    "remoteUpload": "not uploaded; no remote byte-identity claim"
+    "remoteUpload": "CLI confirmed server version 43 and matching upload byte count; remote payload was not retrieved, so no remote byte-identity claim"
   },
   "submission": {
     "status": "submitted",
