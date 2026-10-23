@@ -175,6 +175,11 @@ another harmless group was kept (CHANGES 91).
 - `retreat_step` taking a sideways step over a free homeward one only when it leaves every reach (`fu/retreat`
   e617c90; sideways steps with damage > 0 were followed by death 688 times in 6,277 chased turns, 376 expected at
   the direct-step rate, an association): 50.3%, out-of-fuel turns level. Dropped.
+- Tracking unseen enemies past 10 rounds (REPLAY-ANALYSIS A4; `fu/tracking`, 2026-10-23). The untracked killers were
+  last seen a median 31 rounds before the kill (quartiles 19-88; 28 of 148 within 15). By 10 rounds an unseen
+  enemy's possible tiles (median ~300 for Marcella, ~650 for Vesper) are past what `credible_weight` counts, so the
+  cutoff rarely decides (098927ae-3: 294-369 tiles when dropped). Never dropping: 48.5%, out-of-fuel turns +18%
+  (50.5% at unlimited fuel). Kept past 10 rounds only while the set is <= 338 tiles (1a1a48c): 50.2%. Dropped.
 
 ## Fuel
 
