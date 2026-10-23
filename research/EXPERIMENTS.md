@@ -148,6 +148,18 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   a healthy Vesper on a cleared gold-only group with no enemy seen holding it so her +33% applies. Against eba051e:
   49.7% of 1104; against v37 on own drafts 68.1% (main 67.3%); out-of-fuel turns level. Rare: in 6 local games the
   wake check vetoed 28 attacks (all for a recalling or tributing ally), the Vesper hold fired in 1. Not merged.
+- The teammate's Willow code (v40 0500905, v41 ff250ad: ~1,140 lines of bot code) is not ported: our draft never
+  picks Willow (1 of the 30 test compositions does), its evidence is level (v41 808-808 against v40), and it raised
+  out-of-fuel turns ~50% with Willow drafted. Port it only alongside a draft that uses Willow. v41's dense-map 5-pick
+  draft (Vendetta for Heart of Ruin) runs against CHANGES 102's evidence.
+- Step then teleport (`fu/step-teleport` 1cf1047, 2026-10-23): `crystal_across` also takes landings 4 away by stepping
+  to a safe neighbour first. In 18 traced games on the teleport maps a one-step-away landing qualified on 269 turns
+  when none did from the current tile, but 71 were crossed next round anyway, 74 within 2-12 rounds, and when both
+  qualified stepping was usually 1 step better. Teleport class suite: 48.6% of 512 (44.3-53.0). Dropped.
+- Teleporting enemies (untested gaps, 26946fc): only `world.cpp` widens a teleporting enemy's `possible` to tiles
+  within 3; nothing reads its known landing (`teleports_into`, used only by pathing). Safety and the fight search treat
+  a channelling enemy as able to act from its tile; `prey`/`intercept_steps` ignore `channel_end_round`; stun
+  targeting values cancelling a tribute but not a teleport; `World::grow` spreads `possible` though the channel pins it.
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 
