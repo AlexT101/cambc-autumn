@@ -30,6 +30,29 @@ exhausted; gate removals so far were level at 100M but 4-5x the out-of-fuel turn
    and left to sleep again (archipelago, 00contest).
 8. `tools/ab.py` fuel per side, to measure what fuel costs one bot.
 
+## Bugs, ranked
+
+Verified in code 2026-10-22. Logic fixes: A/B each, keep if level.
+
+1. **Mid-turn state after our own actions.** Safety and World assume beliefs fixed for the turn; our actions break it:
+   - a killed enemy becomes an unseen threat after `observe()` (only a full update reads liveness; `see_again` runs
+     after the strike plan): in observe(), check `engine::alive` for enemies seen this round and now out of sight;
+   - camps we wake are not in Safety (`stirring_` is set only by `update_camps`): note the wake when our hit or
+     cast touches an asleep group;
+   - kills leave walls: `live_camps()` keeps killed members until a full update, and `blocked_` survives attacks;
+   - fighters keep turn-start health, shields and cooldowns (`made_` survives `refresh`/`invalidate`);
+   - an enemy revealed by a refused step onto its tile: `revealed()` skips our own tile (CHANGES 89).
+2. Dashers' altar distances: `centre_to_altar` takes `drafted_altar_steps` (walking) unconditionally; guard it as
+   `draft_spawn_graph` guards spawn steps (bot.cpp).
+3. Enemy stun status in Safety's threats and fights (the planner reads it only for `stunnable`).
+4. `capture_taken` counts allies bound elsewhere (tributing, recalling, claimed another group).
+5. The strike search never opens tiles of units it kills (`free_`/`pass_` fixed in `read_geometry`): a kill can open
+   a walk or dash path (a blocker in a corridor; Vendetta's refreshed dash through a cleared camp).
+6. A fully shield-absorbed spell ignores Durability in the planner: `min(raw, shield)` should be
+   `min(raw * taken, shield)` (plan.cpp `x.spell`, `x.land`).
+7. Varg's fallback attacks (`camp_attack_targets`, champion splash) wake neighbouring sleeping groups, unpriced
+   (test drafts only).
+
 ## Candidates
 
 Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle removals and keep them if level.
@@ -44,8 +67,7 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
 - Two-band turn order with double turns (from HerbertTheBird's deleted herbert bot, `git show e32257b:bots/herbert/src/bands.cpp`):
   priorities in a secret LAST band [1, M) and FIRST band [M, 2M); moving LAST -> FIRST buys two actions in a row.
   Never tried here.
-- Open from the 2026-10-22 audit (CHANGES 83-90): capture_taken counting allies bound elsewhere; camps killed
-  mid-turn still walls in approach fields; Varg's splash waking camps, priced (test drafts only: we never draft Varg);
-  enemy stun status and our own mid-turn health in Safety's fights.
-- Known bugs: retreat_step walks back into an Elk's reach when the way home passes it (`recall_outruns` ignores
-  camps); idle turns under a Golem (dense-camps).
+- The enemy's two-turn chain (both slots across two turns, slots readied for turn 2): lost as w2-chain (47.1%,
+  ladder 52.9, out-of-fuel turns +20%). Retry only once fuel work frees room, or narrowed to slots readied for turn 2.
+- Known bugs, unverified: retreat_step walks back into an Elk's reach when the way home passes it (`recall_outruns`
+  ignores camps); idle turns under a Golem (dense-camps).
