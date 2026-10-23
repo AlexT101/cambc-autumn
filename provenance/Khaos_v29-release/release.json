@@ -1,0 +1,618 @@
+{
+  "schemaVersion": 1,
+  "status": "submitted",
+  "releaseName": "Khaos_v29",
+  "preparedAt": "2026-10-23",
+  "source": {
+    "directory": "bots/Khaos_v29/src",
+    "copiedFrom": "bots/willow-vesper-cache-fixtures-v1/src",
+    "aggregateRecipe": "(cd <botdir> && shasum -a 256 src/* | shasum -a 256)",
+    "aggregateSha256": "f71154064f1b2073ffa17391be4519d33f1a0af17710cf19e60f1942b3fcda9b",
+    "fileCount": 29,
+    "files": [
+      {
+        "path": "src/abilities.cpp",
+        "sha256": "2d7f476bb5146a73043547637c2ea562393a74fad724c4285a216d5886b79931",
+        "bytes": 30505
+      },
+      {
+        "path": "src/abilities.h",
+        "sha256": "91cd79631223f7fc193849323353f55d5da2ac313f10c0eb24dd17875b2650df",
+        "bytes": 1474
+      },
+      {
+        "path": "src/bot.cpp",
+        "sha256": "e798fb49d959473ebe9fea6b40d44df26dc640fc2dfe73af0b7a4ebcf549fad1",
+        "bytes": 225046
+      },
+      {
+        "path": "src/bot.h",
+        "sha256": "595448fe3de5b4ad43ad2463829acb234f88b36c0a05d3e70031917b46aabb2a",
+        "bytes": 1746
+      },
+      {
+        "path": "src/champions.h",
+        "sha256": "2ef629ef356748dedff8180d848e98ffb489851f597a43c17e4a3a269c737103",
+        "bytes": 7348
+      },
+      {
+        "path": "src/combat_priority.h",
+        "sha256": "252817d10e02d4c781ce4b3f65dda49f47c06646f07fa843c29f2ef08dda452d",
+        "bytes": 4679
+      },
+      {
+        "path": "src/comms.cpp",
+        "sha256": "69424421a643dedb89b1026e71bfc63792163aac1394e67cf683f4135045c081",
+        "bytes": 9051
+      },
+      {
+        "path": "src/comms.h",
+        "sha256": "7ff7983febffcb15ed8688ede07a30d6dd0093fe13476932853c0e36034e72fb",
+        "bytes": 1788
+      },
+      {
+        "path": "src/crew_work.h",
+        "sha256": "a1cd30a2d4cc4261e5712d51150afc0c57cfd41a41e8ff1e1bab6c71df85ca75",
+        "bytes": 844
+      },
+      {
+        "path": "src/draft.cpp",
+        "sha256": "5a9b90205bd5cbcd1af3f073495bd65c47306669e13a464ac17b7292a06f2bd2",
+        "bytes": 13436
+      },
+      {
+        "path": "src/draft.h",
+        "sha256": "2b02e4650c9fa33cc31dec70e1197214cefe924880769394eeabf5f729a6f97b",
+        "bytes": 2160
+      },
+      {
+        "path": "src/draft_selection.h",
+        "sha256": "b8e156af1884abc4985d17fed11b0f2323f624e27a62e0c9a9852b7c2f6fa74c",
+        "bytes": 1250
+      },
+      {
+        "path": "src/gold_value.h",
+        "sha256": "031698fe54597e22f25dc24319a579bcd826ba67d05f7a9dc2a9d314fd3d9d02",
+        "bytes": 1426
+      },
+      {
+        "path": "src/idle_priority.h",
+        "sha256": "08446b354e64091d0cfd8145e9f40ec195279d14ddffa7e1e9e77f49d141db74",
+        "bytes": 424
+      },
+      {
+        "path": "src/main.cpp",
+        "sha256": "266da320e863f159b1fa9c03ede8c2fd2d86599b058f49e99d61274f6cd68f36",
+        "bytes": 5274
+      },
+      {
+        "path": "src/params.h",
+        "sha256": "3234d52aea6001674030d35e2f05c646da72f23dc6d6a929ae5e66844b08390f",
+        "bytes": 5046
+      },
+      {
+        "path": "src/pathing.cpp",
+        "sha256": "165a48d18e06e9e4d6c58d7ca6c0b593ac9649c53942532228acd95b6d6f4dac",
+        "bytes": 30023
+      },
+      {
+        "path": "src/pathing.h",
+        "sha256": "92b53299407c13d05ab0f56508268ebaee82abecaecf4eed7dbf8779f024c5c8",
+        "bytes": 10469
+      },
+      {
+        "path": "src/plan.cpp",
+        "sha256": "62db0369be12728dca261c0017218494c74c7375f10426869330e1f5ef881347",
+        "bytes": 92198
+      },
+      {
+        "path": "src/plan.h",
+        "sha256": "6cbf2ab5a50189c91d54652a43770842279159f3c2ecc5b699a20a9a2bcd2ac8",
+        "bytes": 2036
+      },
+      {
+        "path": "src/safety.cpp",
+        "sha256": "6fc02aef35d8ff19ae1e1f9cd0c4964bee96cbdcb058b7c07683dc7b927092db",
+        "bytes": 99997
+      },
+      {
+        "path": "src/safety.h",
+        "sha256": "8dd9a044a63e137676bd8cadd29fc8b9ec1a7d1907324f2bd2f188cefde8bded",
+        "bytes": 21767
+      },
+      {
+        "path": "src/self_abilities.cpp",
+        "sha256": "2750d7d4c01ca2fa0e744a562ceef6ef7801874414f90182f45230b90cb47f73",
+        "bytes": 21205
+      },
+      {
+        "path": "src/self_abilities.h",
+        "sha256": "f795c6d406a177a1d0701a0a7afa6b37fe8dc71e63d35bbed5777db76a1de1d7",
+        "bytes": 3256
+      },
+      {
+        "path": "src/turn_order.cpp",
+        "sha256": "9b4b402b295669b9f98ca807edb271a76b4070fcee391982de86c3d5a0673e83",
+        "bytes": 15328
+      },
+      {
+        "path": "src/turn_order.h",
+        "sha256": "8688629c75774c1f78793e8fbb72e676e60d8b6dc5672ebfc39dca8b1bd4c03e",
+        "bytes": 328
+      },
+      {
+        "path": "src/util.h",
+        "sha256": "c8a164c5fa55f0bce4e51eee417a0d65eb39ffbf922b4ab70bedc914905b67a8",
+        "bytes": 25379
+      },
+      {
+        "path": "src/world.cpp",
+        "sha256": "a6d97083cd06cbd4f866a3ce99fbfb2713473a29b7b1731999766788352018cb",
+        "bytes": 84832
+      },
+      {
+        "path": "src/world.h",
+        "sha256": "be117eed96f3cfb7974c6c9375d2a3266eb231a822e1e4541a694d0e5e0618a6",
+        "bytes": 30064
+      }
+    ],
+    "noCambcCopied": true
+  },
+  "qualification": [
+    {
+      "label": "official80",
+      "batchPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-02-release-full-ladder",
+      "setupPath": "replays/willow-vesper-cache-fixtures-v1/setup-before-batch-02-release-full-ladder.json",
+      "setupSha256": "8c7eb01f1075aabd8acbebb688c3a550a3b35da5f183227f234aedc602df4701",
+      "resultsPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-02-release-full-ladder/results.json",
+      "resultsSha256": "0a74eb85a729039fc1246b947ae1bfaccb390379f23f4553ed4b12cf646049e9",
+      "nativeAuditPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-02-release-full-ladder/native-status-audit.json",
+      "nativeAuditSha256": "6ff36563b29431218c84a39b39518eaa431c6f779a4512cc3bf8adcfc5a371be",
+      "nativeAuditSchema": "native-turn-status-audit/v1",
+      "games": 80,
+      "maps": 40,
+      "winsByStableBotIndex": [
+        41,
+        39
+      ],
+      "nativeStatusByStableBotIndex": [
+        {
+          "bot_index": 0,
+          "bot": "willow-vesper-cache-fixtures-v1",
+          "games": 80,
+          "playTurnRollover": 256,
+          "playBotError": 0,
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot_index": 1,
+          "bot": "hyperion-upstream-1594989",
+          "games": 80,
+          "playTurnRollover": 232,
+          "playBotError": 0,
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "mapManifest": {
+        "path": "replays/willow-vesper-cache-fixtures-v1/setup-before-batch-02-release-full-ladder.json",
+        "sha256": "8c7eb01f1075aabd8acbebb688c3a550a3b35da5f183227f234aedc602df4701",
+        "generatedPool": null,
+        "seed": null,
+        "oversample": null,
+        "mapCount": 40
+      },
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+      },
+      "cliInvocations": {
+        "build": [
+          "build",
+          "<bot>",
+          "--release"
+        ],
+        "run_batch": [
+          "run-batch",
+          "<manifest>",
+          "--jobs",
+          "1",
+          "--color",
+          "never",
+          "--release"
+        ]
+      },
+      "release": true,
+      "fuel": "default (100000 runtime quantum; no fuel override)",
+      "threads": 1
+    },
+    {
+      "label": "gen-seed1023",
+      "batchPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-03-release-gen256-seed1023",
+      "setupPath": "replays/willow-vesper-cache-fixtures-v1/setup-before-batch-03-release-gen256-seed1023.json",
+      "setupSha256": "207ada61eb3450f8eb80abd161bd77324e03e68a6a3f730f788448b72c2cdeae",
+      "resultsPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-03-release-gen256-seed1023/results.json",
+      "resultsSha256": "6be316986f8fde17b965725903aaefa5646fa4896c71677d5c3acdeae5f462c5",
+      "nativeAuditPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-03-release-gen256-seed1023/native-status-audit.json",
+      "nativeAuditSha256": "cb7223088d069ef209d1fd3b5dff7c40d8da3de6445056da13e2a0de13b610df",
+      "nativeAuditSchema": "native-turn-status-audit/v1",
+      "games": 512,
+      "maps": 256,
+      "winsByStableBotIndex": [
+        271,
+        241
+      ],
+      "nativeStatusByStableBotIndex": [
+        {
+          "bot_index": 0,
+          "bot": "willow-vesper-cache-fixtures-v1",
+          "games": 512,
+          "playTurnRollover": 1205,
+          "playBotError": 0,
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot_index": 1,
+          "bot": "hyperion-upstream-1594989",
+          "games": 512,
+          "playTurnRollover": 1121,
+          "playBotError": 0,
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "mapManifest": {
+        "path": "replays/willow-vesper-cache-fixtures-v1/setup-before-batch-03-release-gen256-seed1023.json",
+        "sha256": "207ada61eb3450f8eb80abd161bd77324e03e68a6a3f730f788448b72c2cdeae",
+        "generatedPool": "maps/gen",
+        "seed": 1023,
+        "oversample": null,
+        "mapCount": 256
+      },
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+      },
+      "cliInvocations": {
+        "build": [
+          "build",
+          "<bot>",
+          "--release"
+        ],
+        "run_batch": [
+          "run-batch",
+          "<manifest>",
+          "--jobs",
+          "1",
+          "--color",
+          "never",
+          "--release"
+        ]
+      },
+      "release": true,
+      "fuel": "default (100000 runtime quantum; no fuel override)",
+      "threads": 1
+    },
+    {
+      "label": "gen-s1-seed1024",
+      "batchPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-04-release-gen-s1-seed1024",
+      "setupPath": "replays/willow-vesper-cache-fixtures-v1/setup-before-batch-04-release-gen-s1-seed1024.json",
+      "setupSha256": "95b4dc5ef10bce9ac271457eb24e20668c1b3eebf9c0474899aaa41ce6e27e5c",
+      "resultsPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-04-release-gen-s1-seed1024/results.json",
+      "resultsSha256": "f612cd20979d249366fa8c22f9284b87476e0707423b584fd3c8c83cb6b8c431",
+      "nativeAuditPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-04-release-gen-s1-seed1024/native-status-audit.json",
+      "nativeAuditSha256": "71153da942d7f5a8705982ffd4eed280a15f532498f948f7e055177ccbcd7044",
+      "nativeAuditSchema": "native-turn-status-audit/v1",
+      "games": 512,
+      "maps": 256,
+      "winsByStableBotIndex": [
+        260,
+        252
+      ],
+      "nativeStatusByStableBotIndex": [
+        {
+          "bot_index": 0,
+          "bot": "willow-vesper-cache-fixtures-v1",
+          "games": 512,
+          "playTurnRollover": 1200,
+          "playBotError": 0,
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot_index": 1,
+          "bot": "hyperion-upstream-1594989",
+          "games": 512,
+          "playTurnRollover": 1148,
+          "playBotError": 0,
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "mapManifest": {
+        "path": "replays/willow-vesper-cache-fixtures-v1/setup-before-batch-04-release-gen-s1-seed1024.json",
+        "sha256": "95b4dc5ef10bce9ac271457eb24e20668c1b3eebf9c0474899aaa41ce6e27e5c",
+        "generatedPool": "maps/gen-s1",
+        "seed": 1024,
+        "oversample": 3,
+        "mapCount": 256
+      },
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+      },
+      "cliInvocations": {
+        "build": [
+          "build",
+          "<bot>",
+          "--release"
+        ],
+        "run_batch": [
+          "run-batch",
+          "<manifest>",
+          "--jobs",
+          "1",
+          "--color",
+          "never",
+          "--release"
+        ]
+      },
+      "release": true,
+      "fuel": "default (100000 runtime quantum; no fuel override)",
+      "threads": 1
+    },
+    {
+      "label": "heldout-seed-2026102307",
+      "batchPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-05-release-heldout-seed-2026102307",
+      "setupPath": "replays/willow-vesper-cache-fixtures-v1/setup-before-batch-05-release-heldout-seed-2026102307.json",
+      "setupSha256": "a32d909b67a4ebcc05775f073b72e30cee1209657e543aa0a716bd1267df102a",
+      "resultsPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-05-release-heldout-seed-2026102307/results.json",
+      "resultsSha256": "5e06be39517a5932831be17c4f9b32fdf7039a14cba2c65e9c334449fc3e0669",
+      "nativeAuditPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-05-release-heldout-seed-2026102307/native-status-compact.json",
+      "nativeAuditSha256": "4e8779aecc14eda86c4eddd7170c514b395cd88c163bc3fb21e8f8933aff872c",
+      "nativeAuditSchema": "native-turn-status-audit/v1",
+      "games": 512,
+      "maps": 256,
+      "winsByStableBotIndex": [
+        261,
+        251
+      ],
+      "nativeStatusByStableBotIndex": [
+        {
+          "bot_index": 0,
+          "bot": "willow-vesper-cache-fixtures-v1",
+          "games": 512,
+          "playTurnRollover": 873,
+          "playBotError": 0,
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot_index": 1,
+          "bot": "hyperion-upstream-1594989",
+          "games": 512,
+          "playTurnRollover": 795,
+          "playBotError": 0,
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "mapManifest": {
+        "path": "replays/willow-vesper-cache-fixtures-v1/setup-before-batch-05-release-heldout-seed-2026102307.json",
+        "sha256": "a32d909b67a4ebcc05775f073b72e30cee1209657e543aa0a716bd1267df102a",
+        "generatedPool": "heldout-seed-2026102307",
+        "seed": 2026102307,
+        "oversample": 3,
+        "mapCount": 256
+      },
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+      },
+      "cliInvocations": {
+        "build": [
+          "build",
+          "<bot>",
+          "--release"
+        ],
+        "run_batch": [
+          "run-batch",
+          "<manifest>",
+          "--jobs",
+          "1",
+          "--color",
+          "never",
+          "--release"
+        ]
+      },
+      "release": true,
+      "fuel": "default (100000 runtime quantum; no fuel override)",
+      "threads": 1
+    }
+  ],
+  "qualificationSummary": {
+    "games": 1104,
+    "winsByStableBotIndex": [
+      572,
+      532
+    ],
+    "baseline": "bots/baselines/hyperion-upstream-1594989",
+    "baselineSourceAggregate": "eb4829b9aca06271e2c754435c400a5f21b2534745cd0373de29a2c8b707b02c",
+    "note": "80 published ladder matches plus two 256-map both-side generated suites; all Release/default fuel."
+  },
+  "heldout": {
+    "games": 512,
+    "winsByStableBotIndex": [
+      261,
+      251
+    ],
+    "suite": "seed 2026102307, 256 generated maps, both sides",
+    "resultPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-05-release-heldout-seed-2026102307/results.json",
+    "resultsSha256": "5e06be39517a5932831be17c4f9b32fdf7039a14cba2c65e9c334449fc3e0669",
+    "nativeAuditPath": "replays/willow-vesper-cache-fixtures-v1/batch-run-05-release-heldout-seed-2026102307/native-status-compact.json",
+    "nativeAuditSha256": "4e8779aecc14eda86c4eddd7170c514b395cd88c163bc3fb21e8f8933aff872c"
+  },
+  "combined": {
+    "games": 1616,
+    "winsByStableBotIndex": [
+      833,
+      783
+    ],
+    "nativeStatusByStableBotIndex": [
+      {
+        "bot": "willow-vesper-cache-fixtures-v1",
+        "playTurnRollover": 3534,
+        "playBotError": 0
+      },
+      {
+        "bot": "hyperion-upstream-1594989",
+        "playTurnRollover": 3296,
+        "playBotError": 0
+      }
+    ],
+    "draftAndOtherStatuses": "zero rollover and zero bot errors in every batch"
+  },
+  "build": {
+    "status": "successful",
+    "command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc build bots/Khaos_v29 --release",
+    "cliVersion": "cambc 3.0.5",
+    "cliPath": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "cliSha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "mode": "Release",
+    "CMAKE_BUILD_PARALLEL_LEVEL": 1,
+    "CMakeCacheSha256": "80c19d2e4f7d42933ece7afc3ee811ed871c42bdcbdade8c7f07193309943ea4",
+    "cacheModeEvidence": {
+      "CMAKE_BUILD_TYPE": "Release",
+      "CAMBC_DEBUG": "OFF"
+    },
+    "releaseWasmPath": "bots/Khaos_v29/.cambc/build-release/bot.wasm",
+    "releaseWasmSha256": "473922224348bedc27539029ed3d3dc6ae1ff32c57aedac7a1ca8c7006c41f0f",
+    "injectedWasmPath": "bots/Khaos_v29/.cambc/build-release/bot-injected.wasm",
+    "injectedWasmSha256": "83986c9cd339a8aa2ee36032c756eae73d46a7954783898f9f835eea1f990452",
+    "qualifiedCandidateReleaseWasmSha256": "473922224348bedc27539029ed3d3dc6ae1ff32c57aedac7a1ca8c7006c41f0f",
+    "qualifiedCandidateInjectedWasmSha256": "83986c9cd339a8aa2ee36032c756eae73d46a7954783898f9f835eea1f990452",
+    "rawAndInjectedWasmMatchQualifiedCandidate": true,
+    "engine": "v1_0_3",
+    "engineWasmSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "engineCatalogSha256": "5e0f0e706f4cd178b98ba1b9238ef0a4858e12020d2a4b2eb8cba49aac4afae7"
+  },
+  "bundle": {
+    "path": "provenance/Khaos_v29-release/Khaos_v29.zip",
+    "sha256": "15a535d6d37083c5ff64997f272d6991898e3b4fe6f1fa30b48107a8284543ea",
+    "bytes": 209803,
+    "contents": "29 source files under src/ only; verified each archived file byte-identical to bots/Khaos_v29/src"
+  },
+  "authenticatedTeamCheck": {
+    "command": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc match-groups quota --json",
+    "team": {
+      "name": "Pantheon",
+      "id": "547efb5b-57e5-4355-8501-3b331f506d62"
+    },
+    "quota": {
+      "limit": 50,
+      "resetsAt": "2026-10-23T07:20:10.529Z",
+      "used": 1
+    },
+    "requesterRank": 9,
+    "credentialsOrAuthMaterialRecorded": false
+  },
+  "submissionPreparation": {
+    "command": "cambc submit bots/Khaos_v29 --note 'Khaos_v29: Vesper gold/Treasure cache bundle; qualified on 1,616 games'",
+    "note": "Khaos_v29: Vesper gold/Treasure cache bundle; qualified on 1,616 games",
+    "executed": true,
+    "status": "submitted",
+    "executedBy": "root",
+    "version": 39,
+    "responsePath": "provenance/Khaos_v29-release/submit-response.txt",
+    "responseSha256": "ada3ff8280c2ef8dd7d877d851f1b1cc60cac8f47c9641be60a881909f206c65"
+  },
+  "submission": {
+    "team": {
+      "name": "Pantheon",
+      "id": "547efb5b-57e5-4355-8501-3b331f506d62"
+    },
+    "version": 39,
+    "command": "cambc submit bots/Khaos_v29 --note 'Khaos_v29: Vesper gold/Treasure cache bundle; qualified on 1,616 games'",
+    "note": "Khaos_v29: Vesper gold/Treasure cache bundle; qualified on 1,616 games",
+    "responsePath": "provenance/Khaos_v29-release/submit-response.txt",
+    "responseSha256": "ada3ff8280c2ef8dd7d877d851f1b1cc60cac8f47c9641be60a881909f206c65",
+    "responseText": "Uploading /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/Khaos_v29 (210730 bytes)...\nSubmitted bot version 39. View submissions at https://2026a.battlecode.co.uk/game/submissions",
+    "uploadedDirectoryBytes": 210730,
+    "preparedZipBytes": 209803,
+    "preparedZipSha256": "15a535d6d37083c5ff64997f272d6991898e3b4fe6f1fa30b48107a8284543ea",
+    "uploadedPayloadMatchesPreparedZip": "not byte-identical to the separately prepared ZIP; the remote upload payload was not retrieved. A fresh local cambc bundle output generated from bots/Khaos_v29 matches the prepared ZIP in member names/order and all uncompressed member bytes, but the ZIP byte streams differ.",
+    "discrepancy": "The submit log reports 210730 bytes, exactly matching a fresh local cambc bundle output. That archive and the prepared ZIP contain the same 29 src/ entries with identical uncompressed bytes (748379 bytes total), but use different deflate encodings: the CLI archive has 207670 compressed payload bytes, the prepared archive has 206743, a 927-byte difference. ZIP timestamps also differ (CLI bundle uses 1980-01-01; prepared ZIP uses source timestamps). The actual remote upload payload was not downloaded, so it is not claimed identical to either local archive.",
+    "resubmitted": false,
+    "cliBundleComparison": {
+      "command": "cambc bundle bots/Khaos_v29 --output provenance/Khaos_v29-release/Khaos_v29-cli-3.0.5.bundle.zip",
+      "path": "provenance/Khaos_v29-release/Khaos_v29-cli-3.0.5.bundle.zip",
+      "sha256": "ddd580cbc4bd04aa30a9e946e0f6f86944fd14bfa695ea2d2c2068c492d6c8cd",
+      "bytes": 210730,
+      "entries": 29,
+      "uncompressedBytes": 748379,
+      "compressedPayloadBytes": 207670,
+      "matchesSubmitReportedByteCount": true,
+      "matchesPreparedZipEntryNamesAndOrder": true,
+      "matchesPreparedZipUncompressedMemberBytes": true,
+      "preparedZipCompressedPayloadBytes": 206743,
+      "compressedPayloadDifferenceBytes": 927,
+      "cliZipTimestamp": "1980-01-01T00:00:00",
+      "preparedZipTimestamp": "2026-10-23T02:59:46",
+      "remotePayloadRetrieved": false
+    }
+  }
+}

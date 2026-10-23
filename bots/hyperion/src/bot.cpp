@@ -16,6 +16,7 @@
 #include "abilities.h"
 #include "comms.h"
 #include "crew_work.h"
+#include "gold_value.h"
 #include "params.h"
 #include "pathing.h"
 #include "plan.h"
@@ -802,6 +803,21 @@ bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family) {
     return owned[emblem_of(family, strength_stat)] + owned[emblem_of(family, focus_stat)] + owned[emblem_of(family, health_stat)] > 0;
 }
 
+int gold_percent(const World& world) {
+    const auto& owned = my_items();
+    const int passive = world.me().facts().passive == Passive::bonus_gold
+                            ? static_cast<int>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) : 0;
+    const std::array<unsigned, 3> emblems{
+        owned[emblem_of(treasure, strength_stat)], owned[emblem_of(treasure, focus_stat)],
+        owned[emblem_of(treasure, health_stat)]};
+    return gold_value::percent(passive, gold_value::treasure_owned(emblems));
+}
+
+// The SDK hides fractional gold already banked: this is a conservative incoming budget.
+std::uint32_t incoming_gold(int base, int percent) {
+    return gold_value::incoming(base, percent);
+}
+
 } // namespace
 
 float camp_hit_factor() {
@@ -1086,6 +1102,9 @@ bool emblem_begun(const World& world) {
     for (const int family : {jungle, power, durability})
         for (int stat = strength_stat; stat <= health_stat; ++stat)
             if (owned[shard_of(family, stat)] > 0) return true;
+    if (world.me().facts().passive == Passive::bonus_gold)
+        for (int stat = strength_stat; stat <= health_stat; ++stat)
+            if (owned[shard_of(treasure, stat)] > 0) return true;
     return world.me().facts().passive == Passive::gem_focus
         && (owned[shard_of(home, health_stat)] > 0 || owned[shard_of(monster, health_stat)] > 0
             || owned[shard_of(monster, focus_stat)] > 0);
@@ -1199,6 +1218,14 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
     const int begun[5][2] = {{jungle, strength_stat}, {jungle, focus_stat}, {power, strength_stat}, {power, focus_stat}, {durability, health_stat}};
     for (const auto& [family, stat] : begun)
         if (owned[shard_of(family, stat)] > 0) return value(family, stat);
+    if (f.passive == Passive::bonus_gold && !has_family(owned, treasure)) {
+        for (int family = monster; family <= bruiser; ++family)
+            for (int stat = strength_stat; stat <= health_stat; ++stat)
+                if (family != treasure && owned[shard_of(family, stat)] > 0) return value(family, stat);
+        for (int stat = strength_stat; stat <= health_stat; ++stat)
+            if (owned[shard_of(treasure, stat)] > 0) return value(treasure, stat);
+        return value(treasure, strength_stat);
+    }
     if (f.passive == Passive::gem_focus) {
         for (const int family : {power, jungle, home})
             if (owned[shard_of(family, health_stat)] > 0) return value(family, health_stat);
@@ -1249,15 +1276,26 @@ const Prices& prices(const World& world) {
     struct Key {
         float share, strength, focus, max_health;
         int main;
-        bool home, monster;
+        bool home, monster, treasure;
+        std::uint64_t inventory;
         bool operator==(const Key&) const = default;
     };
     static Key last{-1};
     static Prices kept;
     const auto& self = world.me();
+    const auto& owned = my_items();
+    std::uint64_t inventory = 0;
+    if (self.facts().passive == Passive::bonus_gold) {
+        std::array<std::uint8_t, 21> shards{};
+        for (unsigned family = 0; family < 7; ++family)
+            for (unsigned stat = 0; stat < 3; ++stat)
+                shards[family * 3 + stat] = static_cast<std::uint8_t>(owned[shard_of(static_cast<int>(family), static_cast<int>(stat))]);
+        inventory = gold_value::inventory_stamp(shards);
+    }
     if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world),
-                      self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
-                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)}; !(now == last)) {
+                      self.facts().passive == Passive::gem_focus && has_family(owned, home),
+                      self.facts().passive == Passive::gem_focus && has_family(owned, monster),
+                      has_family(owned, treasure), inventory}; !(now == last)) {
         last = now;
         kept.next = best_emblem(world);
         kept.gain = now.share * kept.next.saved * rounds_per_gem;
@@ -1351,7 +1389,7 @@ int capture_share(const World& world, int g) {
     const int sharers = 1 + allies_on(world, tiles);
     const bool lowest = allies_on(world, tiles, world.me().index) == 0;
     const int gems = world.map().groups[g].gems;
-    return gems / sharers + (lowest ? gems % sharers : 0);
+    return gold_value::share(gems, sharers, lowest);
 }
 
 // A group other than a Monolith too big for one champion or a crew, like stampede's shared block
@@ -1387,6 +1425,33 @@ const ChampionBelief* prism_capture_holder(const World& world, const CampGroup& 
     return nullptr;
 }
 
+const ChampionBelief* preferred_capture_holder(const World& world, const CampGroup& G) {
+    if (G.gems > 0) return prism_capture_holder(world, G);
+    if (G.gold <= 0 || G.strength > 0 || G.has_monolith || enemy_seen(world)) return nullptr;
+    const int g = world.map().group_at(G.centre);
+    if (g < 0 || world.camps[g].state != CampState::cleared || enemy_on(world, G.tiles())) return nullptr;
+    for (const auto& m : G.members)
+        if (!test(world.visible, m.pos)) return nullptr;
+    for (const auto& a : world.allies) {
+        if (!a.alive || !a.visible || a.facts().passive != Passive::bonus_gold) continue;
+        const vec2 p = a.is_self ? my_position() : a.pos;
+        const bool standing = test(G.tiles(), p);
+        const bool healthy = a.health >= params::hurt_health_fraction * a.max_health;
+        const bool forbidden_channel = a.channel == Channel::tribute || a.channel == Channel::teleport;
+        const bool winning_bag = world.score.ally + a.gems >= static_cast<int>(cambc::constants::winning_gems);
+        const bool recall_kept = a.channel == Channel::recall
+                                 && kept_recall(a.handle, a.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
+        if (!standing || !healthy || forbidden_channel || winning_bag || recall_kept) continue;
+        bool pressure = false;
+        for (const auto& e : world.enemies)
+            pressure |= e.alive && e.age(world.round) <= params::track_horizon
+                        && dist(e.pos, p) <= vision_radius + e.age(world.round);
+        if (gold_value::gold_only_holder(a.alive, a.visible, standing, healthy, forbidden_channel, winning_bag, recall_kept,
+                                         pressure)) return &a;
+    }
+    return nullptr;
+}
+
 // On a cleared group's tile that no lower-id ally also holds, with no enemy on any of its tiles:
 // stepping off loses the capture's progress, and it pays within six rounds.
 bool holding_capture(const World& world) {
@@ -1394,8 +1459,8 @@ bool holding_capture(const World& world) {
     const int g = world.map().group_at(here);
     if (g < 0 || world.camps[g].state != CampState::cleared || winning_bag(world)) return false;
     const auto& tiles = world.map().groups[g].tiles();
-    // Prism stays while a lower-id holder leaves; the last holder never yields to a remote ally.
-    if (const auto* prism = prism_capture_holder(world, world.map().groups[g]); prism && prism->is_self) return true;
+    // The preferred occupant stays while another leaves; nobody yields to a remote ally.
+    if (const auto* preferred = preferred_capture_holder(world, world.map().groups[g]); preferred && preferred->is_self) return true;
     return allies_on(world, tiles, world.me().index) < holders(world.map().groups[g]) && !enemy_on(world, tiles);
 }
 
@@ -1405,8 +1470,8 @@ bool yield_capture(const World& world, Pathing& pathing, Safety& safety, Memory&
     const auto& map = world.map();
     const int g = map.group_at(here);
     if (g < 0 || world.camps[g].state != CampState::cleared) return false;
-    const auto* prism = prism_capture_holder(world, map.groups[g]);
-    if (!prism || prism->is_self || safety.any_threat() || safety.camp_damage(prism->pos) > 0) return false;
+    const auto* preferred = preferred_capture_holder(world, map.groups[g]);
+    if (!preferred || preferred->is_self || safety.any_threat() || safety.camp_damage(preferred->pos) > 0) return false;
     const auto& blocked = pathing.blocked();
     for (const auto d : directions) {
         const vec2 p = here + d;
@@ -1527,7 +1592,7 @@ bool step_onto_cleared(const World& world, Pathing& pathing, int g) {
             return false;
         }
     }
-    if (prism_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G)) return false;
+    if (preferred_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G)) return false;
     const vec2 here = my_position();
     for (const auto d : directions)
         if (in_bounds(here + d) && test(G.tiles(), here + d) && pathing.try_move(here + d)) return true;
@@ -1601,7 +1666,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const auto& G = map.groups[g];
         const auto& c = world.camps[g];
         if (c.state != CampState::cleared || c.state_round != world.round || G.has_monolith || G.gems + G.gold == 0
-            || test(G.tiles(), here) || prism_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G) || enemy_on(world, G.tiles()))
+            || test(G.tiles(), here) || preferred_capture_holder(world, G) || allies_on(world, G.tiles()) >= holders(G) || enemy_on(world, G.tiles()))
             continue;
         const int steps = steps_to(G, here);
         if (steps > 4) continue;
@@ -1720,7 +1785,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             }
             // A different ally's actual claim wins even over our stale incumbent/claim.
             if ((h < 256 && (ally_claims[h >> 6] >> (h & 63) & 1))
-                || prism_capture_holder(world, H) || allies_on(world, H.tiles()) >= holders(H)) {
+                || preferred_capture_holder(world, H) || allies_on(world, H.tiles()) >= holders(H)) {
                 reject("resource-owned");
                 continue;
             }
@@ -1782,7 +1847,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
 
     // Holders keep a capture going, and more only split the reward.
     const auto ally_holding = [&](int g) __attribute__((always_inline)) {
-        return prism_capture_holder(world, groups[g]) || allies_on(world, groups[g].tiles()) >= holders(groups[g]);
+        return preferred_capture_holder(world, groups[g]) || allies_on(world, groups[g].tiles()) >= holders(groups[g]);
     };
 
     const vec2 here = my_position();
@@ -1843,7 +1908,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable, shared = -1, shared_steps = unreachable;
     bool best_spell = false;
     float best_value = 0, risky_value = 0, shared_value = 0;
-    const float per_gold = prices(world).per_gold * (gold_farmer ? params::gold_farmer_weight : 1.0f);
+    const int gold_bonus = gold_percent(world);
+    const float per_gold = prices(world).per_gold * (gold_farmer ? params::gold_farmer_weight : 1.0f)
+                           * static_cast<float>(gold_bonus) / 100.0f;
     // An ally in sight clearing its claimed damaging group gets help only if finishing it alone
     // would take it below the recall line: one champion per camp otherwise.
     const auto struggling = [&](int g) __attribute__((always_inline)) {
@@ -1982,8 +2049,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     if (const Context now{bag, short_by, pathing.centres_ready(), banks_bag}; context == 0 || !(now == last_context))
         last_context = now, ++context;
     static float last_per_gold = 0;
+    static int last_gold_bonus = 0;
     static std::uint32_t gold_context = 0;
-    if (gold_context == 0 || per_gold != last_per_gold) last_per_gold = per_gold, ++gold_context;
+    if (gold_context == 0 || per_gold != last_per_gold || gold_bonus != last_gold_bonus)
+        last_per_gold = per_gold, last_gold_bonus = gold_bonus, ++gold_context;
     const auto centre_field = [&](int g) __attribute__((always_inline)) {
         auto& known = group_facts[g];
         if (!known.centre) known.centre = pathing.from_centre(g);
@@ -2071,7 +2140,6 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         if (known.context != context || known.sticky != (g == farm_group)) {
             if (known.tribute == 0) {
                 known.tribute = tribute_turns(group.gems);
-                known.gold_in = static_cast<std::uint32_t>(group.gold / holders(group));
             }
             const Field* to_bank = to_altar ? to_altar : wins ? &pathing.to_any_altar() : nullptr;
             // A recall only goes home: the way out from an altar is walked.
@@ -2096,6 +2164,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         }
         if (known.gold_context != gold_context) {
             known.gold = known.weight * per_gold * static_cast<float>(group.gold);
+            known.gold_in = incoming_gold(group.gold / holders(group), gold_bonus);
             known.gold_context = gold_context;
         }
         if (known.version != belief.version || known.fastest_strength != strength)
@@ -3195,7 +3264,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
             const int sharers = 1 + allies_on(world, G.tiles());
             const bool lowest = allies_on(world, G.tiles(), world.me().index) == 0;
             const int base = G.gold / sharers + (lowest ? G.gold % sharers : 0);
-            gold_in = static_cast<unsigned>(base + (has_family(my_items(), treasure) ? base / 5 : 0));
+            gold_in = incoming_gold(base, gold_percent(world));
         }
         const float value = affordable_prefix(world, gold_in).gain
                             + heal_rounds(world, my_max_health() - my_health(), spawn_steps());
@@ -3205,7 +3274,10 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety) {
     const int walk = pathing.to_any_altar().at(here);
     if (walk == unreachable) return false;
     const int sharers = 1 + allies_on(world, G.tiles());
-    return home_trip(world, pathing, channel, wins).rounds(walk, payout - world.round, G.gold / sharers) < static_cast<float>(walk);
+    const bool lowest = allies_on(world, G.tiles(), world.me().index) == 0;
+    const int base = G.gold / sharers + (lowest ? G.gold % sharers : 0);
+    return home_trip(world, pathing, channel, wins).rounds(walk, payout - world.round, incoming_gold(base, gold_percent(world)))
+           < static_cast<float>(walk);
 }
 
 // With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
@@ -3309,7 +3381,7 @@ int enemy_hold_left(const World& world, const CampBelief& c) {
 // Allies in sight on G, or nearer its centre than `here` (ties to the lower index), already make
 // enough holders.
 bool capture_taken(const World& world, const CampGroup& G, vec2 here) {
-    if (const auto* prism = prism_capture_holder(world, G)) return !prism->is_self;
+    if (const auto* preferred = preferred_capture_holder(world, G)) return !preferred->is_self;
     int ahead = 0;
     for (const auto& a : world.allies)
         ahead += !a.is_self && a.alive && a.visible

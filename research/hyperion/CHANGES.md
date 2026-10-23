@@ -225,3 +225,23 @@ From the teammate's v37 (Khaos line). Against 90 (e14e7c3), each on its own draf
 
 - After its basic attack at a harmless group, Prism's stun (slot 0) that would deal less than its full damage to what
   is left goes to a visible member of another live harmless group within range, if that takes more (`camp_cast`).
+
+## 92: Vesper gold value, Treasure and capture allocation (2026-10-23)
+
+Submitted as local Khaos_v29 / server version 39. Against frozen upstream 1594989, with native drafts and
+Release/default fuel: 572–532 over the full 1,104-game suite, then 261–251 on fresh seed 2026102307. Combined
+833–783 / 1,616 (51.55%), zero bot errors. Native play rollovers 3,534 vs 3,296; changed trajectories prevent
+interpreting that as an isolated instruction-cost comparison. Source aggregate `f71154064f1b2073ffa17391be4519d33f1a0af17710cf19e60f1942b3fcda9b`.
+
+- Farm values and capture-to-shopping estimates apply each recipient's real gold bonus once. Vesper's 33% and
+  Treasure's 20% add to 53%; capture shares are split before bonuses. Hidden fractional balances are conservatively
+  omitted from incoming integer budgets. Gem valuation is unchanged.
+- Vesper finishes partial emblems, builds one Treasure Strength emblem, then resumes the existing item chooser.
+  Partial-shard inventory and owned Treasure enter the relevant price-cache key. Treasure provides five shards'
+  stats; Power provides six. The benchmark tests this whole bundle, not Treasure alone.
+- Fully visible, cleared, harmless gold-only camps can prefer a healthy Vesper already occupying a camp tile.
+  Allies do not vacate for a remote intention or change Prism's priority on gem-bearing camps. Camp last hits
+  do not own the capture payout.
+- Production arithmetic and holder predicates have host fixtures. The numbered release was copied without
+  `.cambc`; its raw and injected Release WASM both match the qualified candidate. Release provenance is in
+  `provenance/Khaos_v29-release/release.json`. Willow changes remain in experimental variants.
