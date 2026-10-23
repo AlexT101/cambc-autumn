@@ -5,10 +5,13 @@ The harness re-runs the 390 ladder games that submission v38 (`bots/hyperion` at
 - **Analysts** studying deaths, fight-sim predictions, ability timing, missed kills, gem losses, target oscillation and ward or bush blindness start at [the loader](#loader-v38libpy) and [EXAMPLES.md](EXAMPLES.md).
 - **Trace format:** [TRACE_SCHEMA.md](trace-bot/TRACE_SCHEMA.md).
 
-Status, 2026-10-23:
-- all 390 games re-run and validated;
-- 16 games traced;
-- the full trace batch has not been run yet (step 4 below).
+Status, 2026-10-23: the manifest now holds 830 games, every v38 game against the top 20 of 2026-10-22's ladder (471-359). All are re-run, validated, traced and extracted:
+- release re-runs exact against the ladder: 830 / 830;
+- recorder runs exact: 788 / 830;
+- traces exact against their recorder run: 826 / 830, and 784 exact against the ladder.
+  - The 4 others are 2 distinct games (1ad29aed-1, 24da266c-1 and 25933c0a-1 are byte-identical, plus f318bf0f-5). Each departs only in its last round (r520, r701), and `ladder_trusted_through` already stops before that round.
+
+The validation section below describes the first 390 games.
 
 **Layout.** Everything committed lives here:
 - the pipeline scripts;
@@ -69,6 +72,7 @@ Times: "4 cores" were measured here. "16 threads" is an estimate scaled from tho
 - Every step takes `--keys K1,K2` to work on some games only.
 - `batch.py --stages gen,build,release,rec,validate,summary` runs part of the pipeline.
 - `--force` redoes work.
+- `trace_batch.py --slot-prefix NAME` names its slot bots `ws/bots/<NAME><N>`; concurrent runs must use different prefixes, or they rebuild each other's slots.
 - `trace_batch.py --level 2 --rounds R0-R1 --keys K --force` adds the level-2 detail (TF, TQ, TE `sides`, `cast_cand`, `farm_cand`) for a round window. Only `rec_data.cpp` is rebuilt.
 
 **After a recorder change** (a new `harness_rec.h` changes the wasm stamps): `batch.py` reruns the recorder runs. A trace whose `rec.stdout` is newer than its `trace_validation.json` is then stale (`Game.trace_stale`), and the next `trace_batch.py` run redoes it.

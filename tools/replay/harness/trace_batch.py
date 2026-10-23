@@ -238,6 +238,7 @@ def main():
     ap.add_argument("--keys", default="")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--slots", type=int, default=2)
+    ap.add_argument("--slot-prefix", default="v38-trace-s", help="slot bot directory names; give concurrent runs different prefixes")
     ap.add_argument("--level", type=int, default=1)
     ap.add_argument("--rounds", default="")
     ap.add_argument("--batch", default=str(V38 / "runs/batch"))
@@ -260,7 +261,7 @@ def main():
     if r.returncode != 0:
         raise SystemExit(r.stderr)
     zz = zz_path.read_bytes()
-    slots = [WS / "bots" / f"v38-trace-s{i}" for i in range(args.slots)]
+    slots = [WS / "bots" / f"{args.slot_prefix}{i}" for i in range(args.slots)]
     for s in slots:
         sync_slot(s, zz)
     lock = threading.Lock()
