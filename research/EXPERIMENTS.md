@@ -117,6 +117,14 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   guards idled, gold fell to 1/3-1/20 of theirs). On shared-gem maps a champion without a station falling through to
   `siege()` over big groups under `siege_ready` (13a6c1b): 50.1%, class 14/28. Held as ladder-motivated (13a6c1b):
   self-play cannot show it, as both sides kite slowly.
+- Middle groups (0.42-0.58 of the spawn-to-spawn walk) are lost late, to strength, not to a contest rule (2026-10-23,
+  624 games). In losses we take 249 middle gems a game against 506 (band 0.45-0.55); before r300 it is level (56 vs
+  67), after r500 208 vs 451. Their lifetime gold over ours grows 1.13x (r100) to 1.49x (r800) and max health 1.10x to
+  1.55x; their captures paid ~1.09-1.17x base gold (Treasure, now CHANGES 101). Before r400 our split of camp damage
+  (home ~65%, middle 28%) is the same in wins and losses, and both teams use ~2.5 champions and ~29 camp damage per
+  gem at middle groups worth 40+. `contest_capture` gates correctly (1,157 of 1,338 farm-instead turns were 5-8 tiles
+  off with 1-5 hold rounds left). The remaining lever, skipping middle groups stronger enemies could reach, repeats
+  ideas that lost (farm value halved near an enemy's reach 41.5%; reward discounted by reachable enemies -3 to -20).
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 
