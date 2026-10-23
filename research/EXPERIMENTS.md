@@ -357,8 +357,10 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
   pair it already lost (8.8% of prey sims); `groups_near` dedupes by a stamp (a miss 1.2-3.6k -> 1.0-2.0k on
   gen-chambers); the release build drops the out-of-fuel printf (~2.5k a resumed turn; local builds still print it).
   No gain: a per-turn sim memo by exact inputs (only prey's repeats, 1.9% of sims); four cached radii in
-  `groups_near` (-0.01%); noinline around `run()`/`act` for cheaper unwinds. Open: reuse the first search's read in
-  `strike_after` (~8.5k on heavy turns, needs a no-change check); one `sdk_camp` read per member in `read_camps`
+  `groups_near` (-0.01%); noinline around `run()`/`act` for cheaper unwinds. Reusing the first search's read in
+  `strike_after` doesn't pay: it searched 31 times in a gen-chambers game (420k fuel, ~0.01%), once with the state
+  unchanged since the first search (the only exact reuse), 0-3 times on ambush, hooks and hourglass; it holds 16% of
+  OOF stops only because it runs last on heavy turns. Open: one `sdk_camp` read per member in `read_camps`
   (needs a probe that it reports dead where `has_camp` is false); farm's `is_stale()` return lets act() go on with
   heal, shield, ward and recall on a stale turn (~5-7k; throwing is a behaviour change).
 
