@@ -38,19 +38,16 @@ Mirror of the online handbook at https://2026a.battlecode.co.uk/game/docs and th
 
 ## Guides
 
-| Guide | C++ | Rust | Python | OCaml |
-| --- | --- | --- | --- | --- |
-| Getting Started | [C++](./guides/cpp/first-bot.md) | [Rust](./guides/rust/first-bot.md) | [Python](./guides/python/first-bot.md) | [OCaml](./guides/ocaml/first-bot.md) |
-| Bitboards | [C++](./guides/cpp/bitboards.md) | [Rust](./guides/rust/bitboards.md) | [Python](./guides/python/bitboards.md) | [OCaml](./guides/ocaml/bitboards.md) |
-| Distance Fields | [C++](./guides/cpp/distance-fields.md) | [Rust](./guides/rust/distance-fields.md) | [Python](./guides/python/distance-fields.md) | [OCaml](./guides/ocaml/distance-fields.md) |
-| VSCode | [C++](./guides/cpp/vscode.md) | [Rust](./guides/rust/vscode.md) | [Python](./guides/python/vscode.md) | [OCaml](./guides/ocaml/vscode.md) |
+| Guide | C++ |
+| --- | --- |
+| Getting Started | [C++](./guides/cpp/first-bot.md) |
+| Bitboards | [C++](./guides/cpp/bitboards.md) |
+| Distance Fields | [C++](./guides/cpp/distance-fields.md) |
+| VSCode | [C++](./guides/cpp/vscode.md) |
 
 ## Bot API reference
 
 - [C++](./api/cpp.md)
-- [Rust](./api/rust.md)
-- [Python](./api/python.md)
-- [OCaml](./api/ocaml.md)
 
 ## LLM exports
 

@@ -4,6 +4,3 @@ The single-file Markdown references the website offers under **Reference → Age
 
 - [GameRules.md](./GameRules.md)
 - [BotAPICpp.md](./BotAPICpp.md)
-- [BotAPIRust.md](./BotAPIRust.md)
-- [BotAPIPython.md](./BotAPIPython.md)
-- [BotAPIOCaml.md](./BotAPIOCaml.md)

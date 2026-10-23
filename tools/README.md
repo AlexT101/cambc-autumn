@@ -138,7 +138,6 @@ py fetch_replays.py --mine                          # all our groups (Pantheon) 
 
 - **Options:** `--kind ranked|unranked|all`, `--since 2026-10-13`, `--max-groups N` (0 for all), `--out` (default `replays/ladder/`), `--threads`.
 - Each five-game group gets `<time>-<teamA>-vs-<teamB>-<id>/` with `<n>-<map>.repl26a` and `group.json`. Groups already downloaded are skipped.
-- [research/SUBMISSIONS.md](../research/SUBMISSIONS.md) tells our versions apart in `replays/mine/`.
 
 `py bulk_replays.py` unpacks bulk day exports from `replay-bulk-zip/` into `replay-bulk/<day>/`:
 - It keeps only ranked games between two of the day's top 15 teams (Bradley-Terry, `ranking.json`).

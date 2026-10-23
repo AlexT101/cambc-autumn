@@ -18,7 +18,8 @@ import { loadModule, unsupportedLog } from './evaljs.mjs';
 const SITE = 'https://2026a.battlecode.co.uk';
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(REPO, 'docs');
-const LANGS = ['cpp', 'rust', 'python', 'ocaml'];
+// We only write C++ bots; add 'rust', 'python', 'ocaml' back for their guides and API pages.
+const LANGS = ['cpp'];
 const FENCE = { cpp: 'cpp', rust: 'rust', python: 'python', ocaml: 'ocaml' };
 
 // ---------------------------------------------------------------- fetching
@@ -340,7 +341,7 @@ function apiMarkdown(lang) {
   const overview = articleFor('bot-api', lang);
   const others = LANGS.filter(l => l !== lang).map(l => `[${langLabel[l]}](./${l}.md)`).join(' · ');
   const parts = [`# ${overview.title}: ${langLabel[lang]}`, `*${overview.summary}*`,
-    `Start with [Getting Started](${rel(file, pathOf('first-bot', lang))}). Other languages: ${others}.`,
+    `Start with [Getting Started](${rel(file, pathOf('first-bot', lang))}).${others ? ` Other languages: ${others}.` : ''}`,
     '## Contents', groupsInOrder.map(g => `- [${g}](#${slug(g)}) (${entries.filter(e => e.group === g).length})`).join('\n')];
   for (const g of groupsInOrder) {
     parts.push(`<a id="${slug(g)}"></a>\n\n## ${g}`);

@@ -10,7 +10,7 @@ Read the rest of `docs/` (generated; WebFetch can't read the site) or `rules-ver
 
 ## Bots
 
-C++ only; ignore `sdk/rust`, `sdk/python`, `sdk/ocaml` and non-C++ docs.
+C++ only. The other languages' SDKs are gitignored (`cambc` refresh still writes them) and `docs/` is C++ only.
 - **hyperion** is the bot we work on: shipped changes in [CHANGES.md](research/hyperion/CHANGES.md), direction and the keep rule in [TODO.md](research/hyperion/TODO.md). It was named hecate until 2026-10-21.
 - **hecate** is now hyperion as it was at the 2026-10-21 session start (the former baseline hecate-v8), kept as the pre-changes reference. Its `params::test_draft` is on, so `py tools/ab.py main hecate` gives both bots the same test drafts.
 - Each bot's draft is compiled in (`params::draft_preference`).

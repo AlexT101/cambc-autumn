@@ -2,7 +2,7 @@
 
 *Public C++ SDK functions, methods and camp-group state types.*
 
-Start with [Getting Started](../guides/cpp/first-bot.md). Other languages: [Rust](./rust.md) · [Python](./python.md) · [OCaml](./ocaml.md).
+Start with [Getting Started](../guides/cpp/first-bot.md).
 
 ## Contents
 

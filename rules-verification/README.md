@@ -17,7 +17,7 @@ cambc run rules-verification/probes/<A> rules-verification/probes/<B> --map <map
 
 | YAML | Probes |
 |---|---|
-| `champions` (stats, abilities, modifiers), `camps.types`, settings, items | `probe-designs` (all designs from the engine); `probe-facts` (hyperion's champions.h against the engine) |
+| `champions` (stats, abilities, modifiers), `camps.types`, settings, items | `probe-designs` (all designs from the engine); `probe-facts` (hyperion's champions.h against the engine); `probe-heart` (Heart of Ruin, draft id 11, drafts and plays) |
 | `result.round_limit`, `fuel` | `probe-fuel`, `probe-fuel-b..e`; `probe-firstturn` |
 | `map.coordinates`, `map.symmetry` | `probe-introspect` |
 | `map.corners`, diagonal sight | `probe-corner` |
@@ -28,7 +28,7 @@ cambc run rules-verification/probes/<A> rules-verification/probes/<B> --map <map
 | `recall` with a shield | `probe-shield-recall` |
 | `economy.emblems` Durability with a shield (the -10% applies before absorption) | `probe-durability-shield` |
 | `camps.wake`, `camps.sleep`, `camps.attack` | `probe-camps`, `probe-camps-b`, `probe-stunwake`, `probe-sleep-range`, `probe-sleep-timing`; ties: `probe-denial` scenario 6 |
-| `capture`, `gems.tribute`, `economy.gold`, `economy.bonuses` | `probe-capture`, `probe-capture-b`, `probe-reset`, `probe-reset-b`, `probe-denial`; contest: `probe-misc` scenario 2 |
+| `capture`, `gems.tribute`, `economy.gold`, `economy.bonuses` | `probe-capture`, `probe-capture-b`, `probe-reset`, `probe-reset-b`, `probe-denial` (team B: `probe-denial-b`, which run.sh fills); contest: `probe-misc` scenario 2 |
 | `combat.modifiers`, `altar_locks`, `economy.health_purchase` | `probe-misc`, `probe-misc-b` |
 | `rounds.turn_start`, buffs, shields, Marcella, Ren, Prism, Vendetta, Varg passives | `probe-effects`, `probe-effects-b` |
 | Varg's splash from a camp target | `probe-varg-splash` |

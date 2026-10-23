@@ -17,3 +17,11 @@ replay-bulk-zip/
 # .htb bots (tools/htb)
 tools/htb/vscode/node_modules/
 bots/*/.cache/
+
+# Non-C++ SDKs: `cambc` refresh rewrites them, we only use C++
+sdk/rust/
+sdk/python/
+sdk/ocaml/
+sdk/templates/rust/
+sdk/templates/python/
+sdk/templates/ocaml/
