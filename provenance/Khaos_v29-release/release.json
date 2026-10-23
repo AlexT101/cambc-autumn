@@ -591,7 +591,6 @@
     "responsePath": "provenance/Khaos_v29-release/submit-response.txt",
     "responseSha256": "ada3ff8280c2ef8dd7d877d851f1b1cc60cac8f47c9641be60a881909f206c65",
     "responseText": "Uploading /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/Khaos_v29 (210730 bytes)...\nSubmitted bot version 39. View submissions at https://2026a.battlecode.co.uk/game/submissions",
-    "uploadedDirectoryBytes": 210730,
     "preparedZipBytes": 209803,
     "preparedZipSha256": "15a535d6d37083c5ff64997f272d6991898e3b4fe6f1fa30b48107a8284543ea",
     "uploadedPayloadMatchesPreparedZip": "not byte-identical to the separately prepared ZIP; the remote upload payload was not retrieved. A fresh local cambc bundle output generated from bots/Khaos_v29 matches the prepared ZIP in member names/order and all uncompressed member bytes, but the ZIP byte streams differ.",
@@ -613,6 +612,8 @@
       "cliZipTimestamp": "1980-01-01T00:00:00",
       "preparedZipTimestamp": "2026-10-23T02:59:46",
       "remotePayloadRetrieved": false
-    }
+    },
+    "cliReportedUploadBytes": 210730,
+    "reportedBytesMatchFreshCliBundle": true
   }
 }
