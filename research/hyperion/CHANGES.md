@@ -309,3 +309,15 @@ out-of-fuel turns 5063 vs 5109. In the A/B replays, deaths on stepping into a bu
 
 - `Reach::at`: when we do not see an enemy's ward, a bush tile we cannot see counts as seen by that enemy from
   anywhere, since a ward hidden in the cluster sees all of it. Bushes we stand in or watch are judged as before.
+
+## 99: altar_access floods the static walk only when needed (2026-10-23)
+
+Fuel only: `tools/fuel/bench.py` wide set with test drafts at 100M, 52 of 52 replays identical. Against 0ba0eba: 50.0%
+of 1104 (ladder 47.5, gen 50.8, gen-s1 49.6), out-of-fuel turns 5144 vs 5335 (-3.6%). On the opening maps at the
+real budget (big-world, ambush, yellow-brick-road, starvation, reverse-spiral) 39 vs 72, in round 1 4 vs 24.
+
+- `altar_access` read `pathing.foot()` every call, a flood of ~28k on 100x100 until the warm-up caches it; round 1 on
+  those maps cost ~275k against 200k. It now reads it only when a tribute tile lies off our walk (where it can change
+  `open`) or none is open (for `opened`).
+- Where the fuel goes on turns over 100k (own cost a turn): fight sims 24.6k (~6.9 at 3.6k), step_guard 11k,
+  update_camps 8.3k, Reach and threat builds 7.4k, blow 7.1k, Search::read 7k, camp_damage 5.9k, grow 5.1k.
