@@ -172,6 +172,11 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   (32 → 25.5 per team-game ladder, 36 → 24 gen) assumed crystals are lost at death, from 5.5 buys per team-game on
   maps with no shortcut use; `probe-death-items` shows they are kept, so those buys follow crystals spent some other
   way (altar hops, uncounted uses) and the waste figure is unreliable. 49.1% of 1104 against 8dbc020. Dropped.
+- Audit judgment calls not kept (2026-10-23, against 586586c): an unseen enemy keeping its last-seen health after an
+  assumed recall instead of full (`p2/recall-health` f5ae7f4): 48.4% of 1104, dropped. Held: dropping our own winning
+  tribute to stop an enemy tribute that lands first, unless a visible ally acting in time can stun it or lock its
+  altar (`p2/intercept-first-main` 99248f8): 50.5% of 1104 (47.6-53.5), but both teams near 1000 at once is too rare
+  locally to measure; a logic call, not a measured one.
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 

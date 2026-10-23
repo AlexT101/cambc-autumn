@@ -463,3 +463,22 @@ TODO bugs whose fix uses information already read or a rule the bot already appl
 - A `set_turn_order` error no longer skips the claim and bag posts and the memory update.
 - Against 90d285e: 49.7% of 1104 (46.8-52.7; ladder 42.5 of 80, gen 50.8, gen-s1 49.8), out-of-fuel turns 4973 vs
   4855. Kept as level.
+
+## 108: audit judgment calls (2026-10-23)
+
+The 2026-10-23 audit's items that needed a decision, each A/B'd alone against 107 (586586c), then together.
+
+- Unseen threats measure range by Chebyshev distance from `possible` (a wall-free field), as Strike does: ground casts
+  and ranged attacks across a wall line count, and `threats_at` answers the same before and after the build. 49.9%.
+- A carrier drops a hold only when waiting for the payout would leave too little time to bank the bag and its share
+  before the round limit, while banking now still fits (`holding_capture`). 51.0%.
+- kite() stations for a unit-spell caster without a ground spell (Marcella) are tiles that see the monster
+  (`member_attack_tiles` at unit range), with the distance squares as the fuel fallback. 50.3%.
+- The strike search treats a target our own ward sees as attackable from any tile in range (`Search::ward_sees`).
+  49.9%.
+- Reach's dash paths cross live camps on bush tiles (unseen from outside their cluster), so it stays an upper bound.
+  51.1% (out-of-fuel turns 4931 vs 4530).
+- `can_act_before` trusts only enemy priorities that can no longer change this round (test drafts only). 49.6%.
+- An ally hold on a group unseen last round is dated this round, the later possibility. 50.0%.
+- Together against 586586c: 50.6% of 1104 (47.7-53.6; ladder 48.8 of 80, gen 51.8, gen-s1 49.8), out-of-fuel turns
+  5204 vs 4917 (+6%). Kept as level.
