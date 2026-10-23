@@ -339,3 +339,22 @@ Cumulative check (2026-10-23): 92-99 (bc7fd2e) and v38 (c6bd503), each against `
 (`--no-test-draft`, 1104 games): 57.2% (54.3-60.1; ladder 55.0, gen 61.3, gen-s1 53.5) against 54.8% (51.9-57.7;
 ladder 61.2, gen 56.4, gen-s1 52.1). Against our own v38 the same changes were 51.3% (92-96, f19997a). Self-play
 shows these ladder fixes as level; an outside opponent shows them ahead, within overlapping intervals.
+
+## 101: Treasure emblem first (2026-10-23)
+
+From the v38 ladder games (624 distinct, both teams): the opponents' extra gold is almost all the Treasure emblem.
+Base capture gold is level (4,823 ours vs 4,750 a game); their bonus on top is +16.2% (+772) against our +1.6% (+75).
+About 75% of opponent Heart of Ruin, Marcella, Ryth, Vendetta and Vesper builds include Treasure, usually first,
+completed around r190-280; 16 of 18 top teams use it; we never bought it. Our champions earn 750-1,330 capture and
+kill gold after r220, so +20% is 150-265 gold each, 5-8 shards, against one shard given up next to Power. (Opponents
+opening Treasure do not beat us more often than others of the same type: confounded by team strength.)
+
+Against dd3f481: 52.5% of 1104 (ladder 53.8, gen 53.5, gen-s1 51.4), out-of-fuel turns 4687 vs 4732; fresh suite
+(seed 5291) 52.7% of 512; pooled ~52.6% of 1616 (~50.1-55.0). Against `bots/baselines/v37` on its own draft: 59.1%
+(56.1-61.9; ladder 65.0, gen 62.3, gen-s1 54.9), where 92-99 scored 57.2%.
+
+- `best_emblem`: until a champion owns a Treasure emblem it builds Treasure, in the stat the emblem model would pick
+  (or the one it has begun), priced as the emblem it delays. `emblem_begun` counts Treasure shards. Prism's Focus
+  build is unchanged.
+- Untried: Treasure in Health, which most opponents use on champions other than Vesper; our Prism carries ~180
+  unspent gold at r1000 against 66 for opponents' Prisms.
