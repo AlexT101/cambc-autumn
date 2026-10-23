@@ -225,3 +225,15 @@ From the teammate's v37 (Khaos line). Against 90 (e14e7c3), each on its own draf
 
 - After its basic attack at a harmless group, Prism's stun (slot 0) that would deal less than its full damage to what
   is left goes to a visible member of another live harmless group within range, if that takes more (`camp_cast`).
+
+## 92: long winning-bag tributes wait for a safe window (2026-10-23)
+
+From the v38 replay analysis (REPLAY-ANALYSIS A1, D2; REPLAY-FOLLOW-UPS R1-1, R2-1). Against c6bd503: 50.0% of 1104
+(level on every suite; 5 of 552 map pairs played differently, none changed a result), out-of-fuel turns 4833 vs 4831.
+Self-play rarely builds bags big enough; the ladder did (26 deaths and ~25k gems handed over in 19 games, mostly
+01boss_battle). Replaying 76b6692e-4 with the patch: Marcella cancels her 158-turn winning channel at r948, where on
+the ladder she kept it and died at r956.
+
+- `any_risk` takes a winning bag's tribute at any risk only when its channel is `tribute_window` (6) turns or fewer;
+  a longer one goes through `tribute_safe` like any bag.
+- `tribute_ok` never starts or keeps a channel that cannot finish by round 2000.
