@@ -1,0 +1,36 @@
+diff -ru provenance/willow-astraeus-gold-contest-terminal-20261024-v2/ported-v1-src/plan.cpp provenance/willow-astraeus-gold-contest-terminal-20261024-v2/after-src/plan.cpp
+--- provenance/willow-astraeus-gold-contest-terminal-20261024-v2/ported-v1-src/plan.cpp	2026-10-23 23:47:06
++++ provenance/willow-astraeus-gold-contest-terminal-20261024-v2/after-src/plan.cpp	2026-10-23 23:47:31
+@@ -862,16 +862,19 @@
+             const auto& G = world.map().groups[g];
+             const auto& b = world.camps[g];
+             if (G.has_monolith || G.gems != 0 || G.gold <= 0 || b.state != CampState::cleared
+-                || b.state_round != world.round || !(G.tiles() & ~world.visible).is_empty()) return;
++                || b.state_round != world.round) return;
++            // Members already name every capture tile; avoid temporary or lazy group boards.
++            for (const auto& member : G.members)
++                if (!test(world.visible, member.pos)) return;
+             std::uint32_t occupants = 0;
+             bool other_ally = false;
+             for (const auto& a : world.allies)
+-                if (a.alive && (a.visible || a.is_self) && test(G.tiles(), a.is_self ? here : a.pos)) {
++                if (a.alive && (a.visible || a.is_self) && world.map().group_at(a.is_self ? here : a.pos) == g) {
+                     occupants |= 1u << a.index;
+                     other_ally |= !a.is_self;
+                 }
+             for (const auto& e : world.enemies)
+-                if (e.alive && e.visible && test(G.tiles(), e.pos)) {
++                if (e.alive && e.visible && world.map().group_at(e.pos) == g) {
+                     occupants |= 1u << (16 + e.index);
+                     enemies[k] |= static_cast<std::uint16_t>(1u << e.index);
+                 }
+@@ -1878,7 +1881,8 @@
+         if (const int here_steps = field->at(here); here_steps != unreachable)
+             for (int i = 0; i < nt; ++i) {
+                 auto& t = tiles[i];
+-                if (!(S.economic & gbit(t.c)))
++                // Only the same capture objective duplicates occupancy; other routes keep their signed progress.
++                if (!(S.economic & gbit(t.c)) || intent.to_altar || world.map().group_at(S.tile(t.c)) != intent.group)
+                     if (const int c = field->at(S.tile(t.c)); c != unreachable) t.gain = static_cast<float>(here_steps - c) * S.step;
+                 t.total = t.bound = t.bound + t.gain;
+             }

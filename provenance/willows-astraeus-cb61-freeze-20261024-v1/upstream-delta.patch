@@ -1,0 +1,412 @@
+diff --git a/bots/astraeus/src/bot.cpp b/bots/astraeus/src/bot.cpp
+index e2f263f..2f5c78d 100644
+--- a/bots/astraeus/src/bot.cpp
++++ b/bots/astraeus/src/bot.cpp
+@@ -67,6 +67,10 @@ struct Stations {
+     vec2 origin{-1, -1};
+     std::uint32_t observations = 0;
+ };
++Stations& stations_cache() {
++    static Stations s;
++    return s;
++}
+ const Stations& stations(const World& world, Safety& safety, vec2 here);
+ void guard_steps(const World& world, Pathing& pathing, Safety& safety);
+ 
+@@ -3075,10 +3079,15 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
+ 
+ // step_guard from where we stand, worked out when a step or dash first needs it.
+ void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
+-    // Willow holds no fight: every tile want_home would leave is guarded.
++    // Willow holds no fight: every tile want_home would leave is guarded. With no enemy in reach of
++    // a step, an empty board, not null: see_again works out a held guard again.
+     if (world.me().type == cambc::champion_type::willow) {
+-        pathing.defer_guard([](const World& w, Safety& s, vec2 here, int) { return &stations(w, s, here).guard; }, safety,
+-                            my_position(), 1);
++        pathing.defer_guard(
++            [](const World& w, Safety& s, vec2 here, int) {
++                static const bitboard none;
++                return s.credible_enemy_may_hit_within(here, 1) ? &stations(w, s, here).guard : &none;
++            },
++            safety, my_position(), 1);
+         return;
+     }
+     const auto& self = world.me();
+@@ -4328,10 +4337,11 @@ bool each_camp_striker(const World& world, vec2 p, F&& f) {
+ // hit is unsafe. `enemies`: false when no enemy can hit p, which spares their search.
+ SupportExposure exposure_at(const World& world, Safety& safety, vec2 p, bool enemies = true) {
+     SupportExposure risk;
+-    risk.damage = risk.imminent = safety.camp_damage(p, true, true);
+     if (enemies) {
+         const auto b = safety.bound(p);
+         risk.damage = b.damage, risk.imminent = b.doubled, risk.enemy = b.threat, risk.stun = b.stuns;
++    } else {
++        risk.damage = risk.imminent = safety.camp_damage(p, true, true);
+     }
+     each_camp_striker(world, p, [&](int g, std::size_t i, const CampMember&) {
+         const auto& c = world.camps[g];
+@@ -4346,11 +4356,11 @@ SupportExposure exposure_at(const World& world, Safety& safety, vec2 p, bool ene
+ // Worked out on first need after we move or see again. Its guard board stays at one address: a
+ // guard Pathing holds reads the latest.
+ const Stations& stations(const World& world, Safety& safety, vec2 here) {
+-    static Stations s;
++    auto& s = stations_cache();
+     if (s.observations == world.observations && s.origin == here) return s;
+     world.throw_if_stale();
+-    s.observations = world.observations;
+-    s.origin = here;
++    // Keyed only once complete: a read that throws part-way leaves nothing to reuse.
++    s.origin = {-1, -1};
+     clear_board(s.guard);
+     const bool enemies = safety.credible_enemy_may_hit_within(here, 1);
+     for (int k = 0; k < 9; ++k) {
+@@ -4362,9 +4372,29 @@ const Stations& stations(const World& world, Safety& safety, vec2 here) {
+         if (tile.risk.enemy) set_tile(s.guard, tile.p);
+     }
+     world.throw_if_stale();
++    s.observations = world.observations;
++    s.origin = here;
+     return s;
+ }
+ 
++// stations(here).tiles[0].risk alone, for when no step or guard read follows this turn: after
++// Willow's walk, or at the turn's end.
++SupportExposure exposure_here(const World& world, Safety& safety) {
++    const vec2 here = my_position();
++    if (const auto& s = stations_cache(); s.observations == world.observations && s.origin == here) return s.tiles[0].risk;
++    static struct {
++        std::uint32_t observations = 0;
++        vec2 p{-1, -1};
++        SupportExposure risk;
++    } memo;
++    if (memo.observations != world.observations || memo.p != here) {
++        const bool open = in_bounds(here) && test(world.map().open_for_us, here);
++        memo.risk = open ? exposure_at(world, safety, here, safety.credible_enemy_may_hit_within(here, 1)) : SupportExposure{};
++        memo.observations = world.observations, memo.p = here;
++    }
++    return memo.risk;
++}
++
+ // Ours, or a free open tile a step reaches.
+ bool station_legal(Pathing& pathing, const Station& tile, vec2 here) {
+     return tile.open && (tile.p == here || (my_can_move() && !test(pathing.blocked(), tile.p)));
+@@ -4411,7 +4441,6 @@ void close_recovery(Memory& memory, float health) {
+         memory.recovery_reentry = health >= 0;
+     }
+     if (health < 0) memory.recovery_reentry = false, memory.recovery_closed_group = -1;
+-    memory.recovery = Memory::Recovery::idle;
+     memory.recovery_start = -1;
+     memory.recovery_turns = 0;
+     memory.recovery_closed_health = health;
+@@ -4432,6 +4461,41 @@ int heal_range(const ChampionBelief& healer) {
+     return f.abilities[f.slot_of(AbilityKind::heal)].range();
+ }
+ 
++// A unit our own ward sees stays visible to us wherever we step (wards.vision). Read per call: a
++// ward can go down mid-turn without a re-observe (submit_here); its mask is cast again only when it moves.
++bool own_ward_sees(const World& world, vec2 p) {
++    static bitboard sight{cambc::uninitialized};
++    static vec2 cast_at{-1, -1};
++    static std::array<cambc::detail::ward_info, 16> raw;
++    std::uint32_t k = 0;
++    ok(cambc::detail::sdk_wards(raw.data(), static_cast<std::uint32_t>(raw.size()), &k));
++    const auto own = static_cast<std::uint32_t>(world.map().team_a ? 0 : 1);
++    for (std::uint32_t i = 0; i < k && i < raw.size(); ++i) {
++        const auto& w = raw[i];
++        if (w.team != own || w.owner != my_handle() || w.disabled) continue;
++        if (const vec2 at{w.x, w.y}; at != cast_at) ok(cambc::detail::sdk_ward_vision(at.x, at.y, sight.ptr())), cast_at = at;
++        return test(sight, p);
++    }
++    return false;
++}
++
++// Tiles within `range` of a visible ally from which we see it, as the search's viewers(): exact
++// where attack_viewers leaves out bushes beyond a step for our own tile, which sees it now, and
++// every tile when our ward sees it.
++Reach::Window heal_viewers(const World& world, vec2 target, int range) {
++    range = std::clamp(range, 0, 4); // the window's radius
++    Reach::Window w;
++    if (own_ward_sees(world, target)) {
++        for (int y = -range; y <= range; ++y)
++            for (int x = -range; x <= range; ++x) w |= Reach::Window::bit(9 * (y + 4) + x + 4);
++        return w;
++    }
++    w = attack_viewers(world, target, range);
++    if (const vec2 here = my_position(); dist(here, target) <= range)
++        w |= Reach::Window::bit(9 * (here.y - target.y + 4) + here.x - target.x + 4);
++    return w;
++}
++
+ struct HealView {
+     HealTarget target;
+     Reach::Window viewers; // tiles that see it within heal range
+@@ -4443,7 +4507,7 @@ int heal_views(const World& world, vec2 p, float amount, std::array<HealView, 8>
+     int n = 0;
+     for (const auto& a : world.allies)
+         if (dist(p, a.pos) <= range + 1)
+-            if (const auto t = heal_target(world, a, amount)) out[n++] = {*t, attack_viewers(world, t->pos, range)};
++            if (const auto t = heal_target(world, a, amount)) out[n++] = {*t, heal_viewers(world, t->pos, range)};
+     return n;
+ }
+ 
+@@ -4520,7 +4584,9 @@ bool immediate_camp_finish(const World& world, vec2 here, float basic) {
+             if (c.state_round != world.round) return true;
+             if (c.state != CampState::alive) continue;
+             // Preserve even an individual member finish, with a ready-reset upper bound.
+-            if (c.health_round[i] != world.round || !(c.health[i] > 0) || c.health[i] <= 2 * basic) return true;
++            if (c.health_round[i] != world.round) return true;
++            if (!(c.health[i] > 0)) continue; // dead: nothing left to finish
++            if (c.health[i] <= 2 * basic) return true;
+         }
+     }
+     return false;
+@@ -4536,7 +4602,6 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
+     const auto quiet = [](const SupportExposure& risk) {
+         return risk.safe() && !risk.stun && risk.imminent == 0;
+     };
+-    if (!quiet(stations(world, safety, here).tiles[0].risk)) return false;
+     std::array<HealView, 8> views;
+     int n = heal_views(world, here, amount, views);
+     if (n == 0 || heal_lands_from(world, here, views, n)) return false;
+@@ -4545,6 +4610,7 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
+     n = static_cast<int>(std::remove_if(views.begin(), views.begin() + n,
+                                         [&](const HealView& v) { return !(v.target.gain > 3 * basic); }) - views.begin());
+     if (n == 0 || immediate_camp_finish(world, here, basic)) return false;
++    if (!quiet(stations(world, safety, here).tiles[0].risk)) return false;
+     const vec2 best = heal_station(world, pathing, safety, here, views, n, [&](const Station& tile) { return quiet(tile.risk); },
+                                    [](const Station&) { return 0; });
+     world.throw_if_stale();
+@@ -4621,8 +4687,6 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+         memory.formation_start = -1;
+         return false;
+     }
+-    memory.support_observed = mate->pos;
+-    memory.support_seen = world.round;
+     const bool observed_channel = mate->channel == Channel::tribute || mate->channel == Channel::teleport
+                                   || (mate->channel == Channel::recall
+                                       && kept_recall(mate->handle, mate->fast_recall ? home_recall_time
+@@ -4640,9 +4704,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     const auto& healer = willow ? world.me() : *mate;
+     const bool ready = heal_ready(world, healer, amount);
+     if (willow && ready) view_count = heal_views(world, here, amount, views);
+-    const auto formation_view = attack_viewers(world, mate->pos, heal_range(healer));
+-    const auto here_risk = support_exposure(world, safety, here);
+-    const auto mate_risk = prism ? support_exposure(world, safety, mate->pos) : SupportExposure{};
++    Reach::Window formation_view;
+     if (prism) {
+         if (memory.recovery_start >= 0 && (health > memory.recovery_health || !ready)) {
+             close_recovery(memory, health);
+@@ -4650,11 +4712,12 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+             return false;
+         }
+         const float gain = std::min(amount, my_max_health() - health);
+-        if (!ready || !mate_risk.safe() || !worth_healing(amount, gain, health / my_max_health())) return abandon_recovery();
++        if (!ready || !worth_healing(amount, gain, health / my_max_health()) || !support_exposure(world, safety, mate->pos).safe())
++            return abandon_recovery();
+         if (memory.recovery_start < 0 && memory.recovery_closed_health >= 0 && health >= memory.recovery_closed_health) return false;
++        formation_view = attack_viewers(world, mate->pos, heal_range(healer));
+         const float usable = my_max_health() * (1 - params::recall_health_fraction);
+-        const float out = world.map().from_ally_spawn_ready() ? world.map().from_ally_spawn().at(here)
+-                                                            : static_cast<float>(dist(here, world.map().ally_spawn_centre));
++        const float out = static_cast<float>(world.map().from_ally_spawn().at(here));
+         const float saved = gain / usable * (static_cast<float>(recall_turns(world)) + out);
+         const int detour = support_view(formation_view, mate->pos, here) ? 0 : 1;
+         const int wait = mate->acted ? 1 : 0;
+@@ -4664,9 +4727,11 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+             support_retreat = !recovered_for_work(world, safety, memory);
+             return false;
+         }
++    } else {
++        formation_view = heal_viewers(world, mate->pos, heal_range(healer));
+     }
++    const auto here_risk = support_exposure(world, safety, here);
+     const int work = willow ? comms::claim_of(world, mate->index) : memory.farm_group;
+-    if (willow && work >= 0) memory.formation_group = work;
+     if (willow && !ready && here_risk.safe() && stationary_support_output(world, work)) {
+         support_owned = true;
+         memory.claim = -1;
+@@ -4697,7 +4762,6 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+         if (!in_bounds(p) || (p != here && (!my_can_move() || !test(world.map().standable, p) || test(blocked, p)))) continue;
+         const int camp = world.map().group_at(p);
+         if (willow && p != here && camp >= 0 && world.camps[camp].state == CampState::cleared) continue;
+-        if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
+         const bool in_range = support_view(formation_view, mate->pos, p);
+         const int gap = in_range ? 0 : dist(p, mate->pos);
+         if (prism) {
+@@ -4718,6 +4782,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+                 || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos))) continue;
+         } else if (willow && gain <= 0 && (active_clear || formation_expired
+                                           || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos)))) continue;
++        if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
+         const int home = dist(p, world.map().ally_spawn_centre);
+         if (!found || gain > best_gain || (gain == best_gain && gap < best_gap)
+             || (gain == best_gain && gap == best_gap && (p == here || (best != here && home < best_home))))
+@@ -4728,7 +4793,6 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+         support_owned = true;
+         if (prism) {
+             if (memory.recovery_start < 0) memory.recovery_start = world.round, memory.recovery_group = memory.farm_group;
+-            memory.recovery = best == here ? Memory::Recovery::recovering : Memory::Recovery::withdrawing;
+             ++memory.recovery_turns;
+             memory.recovery_health = health;
+         } else {
+@@ -4751,7 +4815,9 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+         }
+         commit_support();
+         see_revealed(world, pathing, safety);
+-        if (!support_exposure(world, safety, my_position()).safe()) {
++        if (!(willow ? exposure_here(world, safety) : support_exposure(world, safety, my_position())).safe()) {
++            // The heal we stepped for costs no walk; healed_before means the cast is spent.
++            if (willow && !healed_before) heal_ally(world);
+             support_owned = true;
+             memory.claim = -1;
+             memory.crew = false;
+@@ -4784,7 +4850,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+                                   && dist(best, world.map().groups[work].centre) < dist(here, world.map().groups[work].centre));
+     if (productive || route_progress) memory.formation_start = -1, memory.formation_turns = 0;
+     float offered = 0;
+-    support_offered = heal_ready(world, world.me(), offered) && support_exposure(world, safety, my_position()).safe();
++    support_offered = heal_ready(world, world.me(), offered) && exposure_here(world, safety).safe();
+     decision = 'h';
+     return true;
+ }
+@@ -5043,7 +5109,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
+             if (end_ward) {
+                 see_again(world, pathing, safety);
+                 float amount = 0;
+-                intent = heal_ready(world, world.me(), amount) && support_exposure(world, safety, my_position()).safe();
++                intent = heal_ready(world, world.me(), amount) && exposure_here(world, safety).safe();
+             }
+         }
+         world.throw_if_stale();
+diff --git a/bots/astraeus/src/bot.h b/bots/astraeus/src/bot.h
+index 4b91337..61b47e1 100644
+--- a/bots/astraeus/src/bot.h
++++ b/bots/astraeus/src/bot.h
+@@ -7,7 +7,6 @@ class World;
+ class Pathing;
+ 
+ struct Memory {
+-    enum class Recovery { idle, withdrawing, recovering };
+     int round = -1;    // of our previous turn
+     float health = 0;  // at its end
+     float damage = 0;  // taken since, as of this turn's start
+@@ -21,13 +20,11 @@ struct Memory {
+     int wait_altar = -1, wait_since = -1;   // the altar we wait at for a safe tribute, since when
+     int avoid_altar = -1, avoid_until = -1; // one we gave up waiting at, skipped until that round
+     bool wants_crystal = false; // a crystal hop to an altar would have beaten walking to bank
+-    int recovery_start = -1, recovery_turns = 0, support_seen = -1;
+-    Recovery recovery = Recovery::idle;
++    int recovery_start = -1, recovery_turns = 0;
+     int recovery_group = -1, recovery_closed_group = -1;
+     bool recovery_reentry = false;
+     float recovery_health = 0, recovery_closed_health = -1;
+-    vec2 support_observed{-1, -1};
+-    int formation_start = -1, formation_turns = 0, formation_group = -1;
++    int formation_start = -1, formation_turns = 0;
+     vec2 ward{-1, -1};    // our latest ward
+     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
+ };
+diff --git a/bots/astraeus/src/comms.cpp b/bots/astraeus/src/comms.cpp
+index eb3a285..dde56d5 100644
+--- a/bots/astraeus/src/comms.cpp
++++ b/bots/astraeus/src/comms.cpp
+@@ -75,17 +75,26 @@ support_mailbox::State support;
+ int support_intent_round = -1;
+ bool support_intent_value = false;
+ 
++// Prism and Willow, found once: the picks are fixed after the draft.
+ std::array<const ChampionBelief*, 2> endpoints(const World& world) {
+-    std::array<const ChampionBelief*, 2> pair{};
+-    for (const auto& a : world.allies) {
+-        if (a.type == cambc::champion_type::prism) pair[0] = &a;
+-        if (a.type == cambc::champion_type::willow) pair[1] = &a;
++    static std::array<int, 2> index{-2, -2};
++    if (index[0] == -2) {
++        index = {-1, -1};
++        for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
++            if (world.allies[i].type == cambc::champion_type::prism) index[0] = i;
++            if (world.allies[i].type == cambc::champion_type::willow) index[1] = i;
++        }
+     }
++    std::array<const ChampionBelief*, 2> pair{};
++    for (int i = 0; i < 2; ++i)
++        if (index[i] >= 0) pair[i] = &world.allies[index[i]];
+     return pair;
+ }
+ 
++// Only the pair reads the mailbox.
+ void receive_support(const World& world, std::uint64_t bits) {
+     const auto pair = endpoints(world);
++    if (!pair[0] || !pair[1] || (!pair[0]->is_self && !pair[1]->is_self)) return;
+     std::array<support_mailbox::Endpoint, 2> endpoint{};
+     for (int i = 0; i < 2; ++i)
+         if (pair[i]) endpoint[i] = {true, pair[i]->alive, pair[i]->is_self, pair[i]->respawned_round};
+diff --git a/bots/astraeus/src/self_abilities.cpp b/bots/astraeus/src/self_abilities.cpp
+index c8802e8..1c91998 100644
+--- a/bots/astraeus/src/self_abilities.cpp
++++ b/bots/astraeus/src/self_abilities.cpp
+@@ -425,9 +425,16 @@ bool heal_ready(const World& world, const ChampionBelief& healer, float& amount)
+     const auto* live = visible_record(healer.handle);
+     if (!live) return false;
+     const auto state = cambc::champion_state::from_bits_retain(live->state);
+-    if (!state.contains(cambc::champion_state::can_cast) || state.contains(cambc::champion_state::recalling)
+-        || state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::teleporting))
++    if (state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::teleporting)) return false;
++    if (healer.is_self) {
++        if (!state.contains(cambc::champion_state::can_cast) || state.contains(cambc::champion_state::recalling)) return false;
++    } else if (healer.stun_pending
++               || (state.contains(cambc::champion_state::recalling)
++                   && kept_recall(healer.handle, healer.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time)))) {
++        // An ally's turn allowances are not ours to read between its turns. A recall started at a
++        // turn end is cancelled next turn unless wanted: only one kept through a turn stops the heal.
+         return false;
++    }
+     const float focus = live->focus;
+     const int slot = healer.facts().slot_of(AbilityKind::heal);
+     if (slot < 0) return false;
+diff --git a/bots/astraeus/src/world.cpp b/bots/astraeus/src/world.cpp
+index 7dff5b5..8b4359c 100644
+--- a/bots/astraeus/src/world.cpp
++++ b/bots/astraeus/src/world.cpp
+@@ -1014,7 +1014,6 @@ void World::update() {
+         }
+     }
+     FuelMeter meter{"update"};
+-    observed_ = false;
+     ++observations;
+     read_vision();
+     const auto tributing = tributing_enemies(); // before update_champions ends their channels
+@@ -1042,7 +1041,6 @@ void World::update() {
+ 
+ [[gnu::flatten]] void World::observe() {
+     FuelMeter meter{"observe"};
+-    observed_ = true;
+     ++observations;
+     read_vision();
+     update_champions(false);
+diff --git a/bots/astraeus/src/world.h b/bots/astraeus/src/world.h
+index 6633d6c..63ea7de 100644
+--- a/bots/astraeus/src/world.h
++++ b/bots/astraeus/src/world.h
+@@ -385,13 +385,6 @@ public:
+     void update();
+     void observe();
+     std::uint32_t observations = 0; // update() and observe() calls: beliefs change only with one
+-    // Only update() reads camps: until an observe(), their beliefs show the vision we have.
+-    bool camps_current() const { return !observed_; }
+-    // A camp tile of group g was in view at update().
+-    bool group_in_view(int g) const {
+-        const auto w = static_cast<std::size_t>(g >> 6);
+-        return w < group_visible_.size() && (group_visible_[w] >> (g & 63) & 1);
+-    }
+     // An enemy in sight from p, within r of it, that this turn's reads did not see: our own move
+     // revealed it. False at the tile vision was last read from.
+     bool revealed(vec2 p, int r) const;
+@@ -536,7 +529,6 @@ private:
+     vec2 sight_pos_{-1, -1};         // where update() or observe() last looked from
+     mutable vec2 clear_pos_{-1, -1}; // where revealed() last found nothing new
+     std::vector<std::uint64_t> group_visible_; // update_camps() scratch, bit g
+-    bool observed_ = false; // observe() ran since update()
+     // Bit g: unseen, update_camps() could still change it (a hold paying out, a return, an
+     // awake group's wakefulness going unknown).
+     std::vector<std::uint64_t> camps_pending_;

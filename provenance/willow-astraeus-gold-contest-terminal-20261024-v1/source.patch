@@ -1,0 +1,283 @@
+diff -ru provenance/willow-astraeus-gold-contest-terminal-20261024-v1/before-src/bot.cpp provenance/willow-astraeus-gold-contest-terminal-20261024-v1/after-src/bot.cpp
+--- provenance/willow-astraeus-gold-contest-terminal-20261024-v1/before-src/bot.cpp	2026-10-23 23:27:07
++++ provenance/willow-astraeus-gold-contest-terminal-20261024-v1/after-src/bot.cpp	2026-10-23 23:30:02
+@@ -1337,25 +1337,31 @@
+     Emblem next;
+     float gain, per_gold;
+ };
+-const Prices& prices(const World& world) {
+-    struct Key {
+-        float share, strength, focus, max_health;
+-        int main;
+-        bool home, monster;
+-        bool operator==(const Key&) const = default;
+-    };
+-    static Key last{-1};
+-    static Prices kept;
++struct PriceKey {
++    float share, strength, focus, max_health;
++    int main;
++    bool home, monster;
++    bool operator==(const PriceKey&) const = default;
++};
++PriceKey price_key(const World& world) {
+     const auto& self = world.me();
+-    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world),
+-                      self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
+-                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)}; !(now == last)) {
+-        last = now;
+-        kept.next = best_emblem(world);
+-        kept.gain = now.share * kept.next.saved * rounds_per_gem;
+-        kept.per_gold = now.share * kept.next.saved / static_cast<float>(std::max(1u, kept.next.cost));
++    return {gems_share(world), self.strength, self.focus, self.max_health, main_stat(world),
++            self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
++            self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)};
++}
++PriceKey last_price_key{-1};
++Prices kept_prices;
++const Prices* current_prices(const World& world) {
++    return price_key(world) == last_price_key ? &kept_prices : nullptr;
++}
++const Prices& prices(const World& world) {
++    if (const PriceKey now = price_key(world); !(now == last_price_key)) {
++        last_price_key = now;
++        kept_prices.next = best_emblem(world);
++        kept_prices.gain = now.share * kept_prices.next.saved * rounds_per_gem;
++        kept_prices.per_gold = now.share * kept_prices.next.saved / static_cast<float>(std::max(1u, kept_prices.next.cost));
+     }
+-    return kept;
++    return kept_prices;
+ }
+ 
+ struct PurchaseQuote {
+@@ -4877,6 +4883,14 @@
+         // The goal most likely walks to an altar when carrying, else to the farm choice.
+         intent.to_altar = bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing);
+         intent.group = memory.farm_group;
++        if (!holding && !memory.banking && !winning_bag(world) && !closing(world, pathing)
++            && (bankable_bag(world, pathing) == 0 || retaining_gems(world, pathing))) {
++            // Search never triggers emblem repricing just to obtain an economic quote.
++            if (const auto* quote = current_prices(world); quote && quote->per_gold > 0) {
++                intent.gold_denial = rate(world, quote->per_gold, static_cast<float>(capture_rounds())) * params::gem_value;
++                intent.gold_capture = intent.gold_denial * gold_paid(world);
++            }
++        }
+         struck = true;
+         const auto planned = plan_strikes(world, pathing, safety, intent);
+         attacked = planned.attacked;
+@@ -4889,6 +4903,12 @@
+         // A cast the search left priced the shield at nothing, blind to the goal's coming camp hit:
+         // judged here, before farm's camp reset or dash takes it.
+         shield_if_needed(world, safety, memory.claim);
++        if (planned.economic) {
++            memory.claim = world.map().group_at(my_position());
++            memory.crew = false;
++            decision = 'F';
++            return;
++        }
+     }
+     decision = holding ? 'P' : attacked ? 'A' : decision;
+     if (!me.is_alive()) return;
+diff -ru provenance/willow-astraeus-gold-contest-terminal-20261024-v1/before-src/plan.cpp provenance/willow-astraeus-gold-contest-terminal-20261024-v1/after-src/plan.cpp
+--- provenance/willow-astraeus-gold-contest-terminal-20261024-v1/before-src/plan.cpp	2026-10-23 23:27:07
++++ provenance/willow-astraeus-gold-contest-terminal-20261024-v1/after-src/plan.cpp	2026-10-23 23:30:02
+@@ -413,6 +413,17 @@
+     // Landings never taken: those striking camps but no foe, and those waking a sleeping striker
+     // (as the old menu's landing_wakes; a woken pack keeps hitting while the fight stays).
+     Grid land_bad = 0;
++    Grid economic = 0;
++    std::array<float, 49> gold{};
++    std::array<std::uint16_t, 49> gold_enemies{};
++    void read_economics();
++    void economic_moves();
++    float occupancy_value(int c, const Node& s) const {
++        std::uint16_t alive = gold_enemies[c];
++        for (int i = 0; i < foes; ++i)
++            if (s.dead >> i & 1) alive &= static_cast<std::uint16_t>(~(1u << u[i].belief->index));
++        return gold[c] * (alive ? intent.gold_denial : intent.gold_capture);
++    }
+ 
+     union {
+         std::array<Act, max_depth> stack;
+@@ -832,6 +843,94 @@
+     free_n = moves && can_walk ? free_ & dilate(gbit(cell(here))) & ~gbit(cell(here)) : 0;
+ }
+ 
++void Search::read_economics() {
++    if (intent.anchored || intent.gold_denial <= 0 || intent.gold_capture <= 0
++        || world.round + cambc::constants::capture_time + 1 > static_cast<int>(cambc::constants::max_rounds)) return;
++    std::array<int, 49> checked;
++    std::array<bool, 49> qualified;
++    std::array<std::uint16_t, 49> enemies;
++    int count = 0;
++    each_bit(free_ | gbit(cell(here)), [&](int c) {
++        const int g = world.map().group_at(tile(c));
++        if (g < 0) return;
++        int k = 0;
++        while (k < count && checked[k] != g) ++k;
++        if (k == count) {
++            checked[count++] = g;
++            qualified[k] = false;
++            enemies[k] = 0;
++            const auto& G = world.map().groups[g];
++            const auto& b = world.camps[g];
++            if (G.has_monolith || G.gems != 0 || G.gold <= 0 || b.state != CampState::cleared
++                || b.state_round != world.round || !(G.tiles() & ~world.visible).is_empty()) return;
++            std::uint32_t occupants = 0;
++            bool other_ally = false;
++            for (const auto& a : world.allies)
++                if (a.alive && (a.visible || a.is_self) && test(G.tiles(), a.is_self ? here : a.pos)) {
++                    occupants |= 1u << a.index;
++                    other_ally |= !a.is_self;
++                }
++            for (const auto& e : world.enemies)
++                if (e.alive && e.visible && test(G.tiles(), e.pos)) {
++                    occupants |= 1u << (16 + e.index);
++                    enemies[k] |= static_cast<std::uint16_t>(1u << e.index);
++                }
++            if (other_ally || occupants != b.occupants) return;
++            const bool ally = (occupants & 0xffffu) != 0, enemy = enemies[k] != 0;
++            if (b.holder != (ally == enemy ? std::optional<team>{}
++                            : std::optional<team>{ally ? team::ally : team::enemy})) return;
++            if (b.holder == team::enemy && (b.held_since < 0 || b.payout_round() <= world.round)) return;
++            qualified[k] = true;
++        }
++        if (qualified[k]) {
++            economic |= gbit(c);
++            gold[c] = static_cast<float>(world.map().groups[g].gold);
++            gold_enemies[c] = enemies[k];
++        }
++    });
++}
++
++// No-strike movement serves only qualified occupancy. Ordinary growth keeps its node budget.
++void Search::economic_moves() {
++    if (!economic || !moves || walked_first) return;
++    const auto offer_move = [&](Grid ends, Node s, Act first, Act second, int depth, auto mid) {
++        ends &= economic;
++        if (!ends) return;
++        s.depth = static_cast<std::int8_t>(depth);
++        s.owed = false;
++        stack[0] = first;
++        if (depth == 2) stack[1] = second;
++        std::int16_t leaf = -1;
++        offer(ends, leaf_value(s), s, leaf, mid);
++    };
++    if (can_walk) {
++        Node s = root();
++        s.walk = false;
++        if (!melee) s.attack = false;
++        offer_move(free_n, s, {Op::walk}, {}, 1,
++                   [](int c, std::int8_t& w, std::int8_t&) { w = static_cast<std::int8_t>(c); });
++    }
++    if (!dash_ready) return;
++    Node dashed = root();
++    dashed.cast = dashed.dash = false;
++    dashed.value -= dash_cost;
++    // Damage landings belong to ordinary growth: this path claims no unperformed hit or stun.
++    offer_move(plain_here, dashed, {Op::dash}, {}, 1,
++               [](int c, std::int8_t&, std::int8_t& d) { d = static_cast<std::int8_t>(c); });
++    if (!can_walk) return;
++    Node both = dashed;
++    both.walk = false;
++    if (!melee) both.attack = false;
++    each_bit(free_n, [&](int m) {
++        offer_move(landings(m) & ~land_hits, both, {Op::walk}, {Op::dash}, 2,
++                   [m](int c, std::int8_t& w, std::int8_t& d) { w = static_cast<std::int8_t>(m); d = static_cast<std::int8_t>(c); });
++    });
++    each_bit(plain_here, [&](int m) {
++        offer_move(dilate(gbit(m)) & free_ & ~gbit(m), both, {Op::dash}, {Op::walk}, 2,
++                   [m](int c, std::int8_t& w, std::int8_t& d) { d = static_cast<std::int8_t>(m); w = static_cast<std::int8_t>(c); });
++    });
++}
++
+ // Live members of the groups near enough for the turn to hit: our attacks reach 3 + 1 + Varg's
+ // splash, a landing 3 + 1, a ground cast 5.
+ void Search::read_members() {
+@@ -1136,6 +1235,7 @@
+         for (int j = 0; j < foes && u[i].belief->facts().passive == Passive::linked_pair; ++j)
+             if (j != i && u[j].belief->facts().passive == Passive::linked_pair) u[i].link = static_cast<std::int8_t>(j);
+     read_geometry();
++    read_economics();
+     // Camps matter only to what can touch them.
+     if (touches) read_members();
+     read_camps();
+@@ -1408,6 +1508,11 @@
+     each_bit(ends, [&](int c) {
+         ++offers;
+         float x = v;
++        if (economic & gbit(c)) {
++            // Occupancy replaces the same turn's hypothetical later farm walk.
++            x += occupancy_value(c, s);
++            if (s.walk && !s.excl && walks) x -= step;
++        }
+         if (s.touched) {
+             float cost, on_us;
+             if (!wake_at(s.touched, c, cost, on_us) || s.hurt + on_us >= health) return;
+@@ -1692,6 +1797,7 @@
+         S.settle(walk);
+     }
+     S.grow(S.root());
++    S.economic_moves();
+     mark(1);
+     const vec2 here = S.here;
+ 
+@@ -1772,7 +1878,8 @@
+         if (const int here_steps = field->at(here); here_steps != unreachable)
+             for (int i = 0; i < nt; ++i) {
+                 auto& t = tiles[i];
+-                if (const int c = field->at(S.tile(t.c)); c != unreachable) t.gain = static_cast<float>(here_steps - c) * S.step;
++                if (!(S.economic & gbit(t.c)))
++                    if (const int c = field->at(S.tile(t.c)); c != unreachable) t.gain = static_cast<float>(here_steps - c) * S.step;
+                 t.total = t.bound = t.bound + t.gain;
+             }
+     float best_total = -1e30f;
+@@ -1914,6 +2021,18 @@
+         }
+ 
+     mark(2);
++    debug_block({
++        static unsigned rows = 0;
++        if (S.economic && rows < 256) {
++            ++rows;
++            const vec2 end = chosen >= 0 ? S.tile(tiles[chosen].c) : here;
++            std::printf("GOLDTERM %d %u eligible %llx denial %.9g capture %.9g chosen %d %d economic %d total %.9g\n",
++                        world.round, static_cast<unsigned>(world.me().handle), static_cast<unsigned long long>(S.economic),
++                        intent.gold_denial, intent.gold_capture, end.x, end.y,
++                        chosen >= 0 && (S.economic & gbit(tiles[chosen].c)) != 0,
++                        chosen >= 0 ? tiles[chosen].total : 0.0f);
++        }
++    });
+     // A search that ran out of fuel resumes in the next round: its plan is last round's.
+     world.throw_if_stale();
+     // Carry it out. A move a hidden unit refuses takes the next-ranked plan from where we stand.
+@@ -2051,6 +2170,9 @@
+     if (failed) out.attacked |= strike_enemy(world);
+     // A tile left unpriced by the query cap had no shield priced: the turn's end decides it.
+     out.searched = chosen >= 0 && !failed && tiles[chosen].exact;
++    out.economic = chosen >= 0 && !failed && done == seq.n
++                   && (S.economic & gbit(tiles[chosen].c)) != 0
++                   && my_position() == S.tile(tiles[chosen].c);
+ 
+     if constexpr (debug_search) {
+         debug_block({
+diff -ru provenance/willow-astraeus-gold-contest-terminal-20261024-v1/before-src/plan.h provenance/willow-astraeus-gold-contest-terminal-20261024-v1/after-src/plan.h
+--- provenance/willow-astraeus-gold-contest-terminal-20261024-v1/before-src/plan.h	2026-10-23 23:27:07
++++ provenance/willow-astraeus-gold-contest-terminal-20261024-v1/after-src/plan.h	2026-10-23 23:30:02
+@@ -21,6 +21,8 @@
+     bool to_altar = false;
+     int group = -1;
+     float step_value = 0;
++    // One turn of base-gold denial or our prospective capture, already in strike units.
++    float gold_denial = 0, gold_capture = 0;
+ };
+ 
+ // A visible enemy near enough to strike this turn, by walk, dash and attack range.
+@@ -30,6 +32,7 @@
+     bool attacked = false;
+     bool moved = false;    // the goal's walk is spent
+     bool searched = false; // the search chose the turn's cast, heals and shields included
++    bool economic = false; // the priced occupancy is this turn's goal
+ };
+ 
+ // Before the goal acts.

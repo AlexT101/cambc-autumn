@@ -1,0 +1,275 @@
+diff -ru provenance/willow-astraeus-remembered-camp-route-20261024-v1/before-src/bot.cpp provenance/willow-astraeus-remembered-camp-route-20261024-v1/after-src/bot.cpp
+--- provenance/willow-astraeus-remembered-camp-route-20261024-v1/before-src/bot.cpp	2026-10-23 23:51:09
++++ provenance/willow-astraeus-remembered-camp-route-20261024-v1/after-src/bot.cpp	2026-10-23 23:52:32
+@@ -1690,7 +1690,7 @@
+         return true;
+     }
+     if (zone) reach |= *zone;
+-    if (!pathing.step_towards(goals, &reach, cap, G.centre)) return false;
++    if (!pathing.step_towards(goals, &reach, cap, G.centre, Pathing::RoutePolicy::farm)) return false;
+     if (!test(reach, my_position())) hit();
+     return true;
+ }
+@@ -1727,7 +1727,7 @@
+         if (!ours) continue;
+         memory.farm_group = memory.claim = g;
+         memory.crew = false;
+-        return pathing.step_towards(G.tiles(), nullptr, steps + max_detour);
++        return pathing.step_towards(G.tiles(), nullptr, steps + max_detour, std::nullopt, Pathing::RoutePolicy::farm);
+     }
+     return false;
+ }
+@@ -1912,8 +1912,8 @@
+         if (g < 0) return false;
+         // Descending it walks around walls and live camps; a live route only helps past allies.
+         const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
+-            return dash_across(world, pathing, field) || pathing.descend(field, zone, groups[target].centre)
+-                   || pathing.step_towards(field, zone, groups[target].centre);
++            return dash_across(world, pathing, field) || pathing.descend(field, zone, groups[target].centre, Pathing::RoutePolicy::farm)
++                   || pathing.step_towards(field, zone, groups[target].centre, Pathing::RoutePolicy::farm);
+         };
+         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
+         // Too short of fuel to search the way to a new choice: last turn's, whose way is known.
+@@ -1923,9 +1923,9 @@
+             memory.crew = false;
+             return walk(*pathing.approach(previous, walk_range(world, previous)), previous);
+         }
+-        if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone, groups[g].centre);
++        if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone, groups[g].centre, Pathing::RoutePolicy::farm);
+         note_shortcut("crow-flies-farm");
+-        return pathing.step_closer(groups[g].centre, zone, groups[g].centre);
++        return pathing.step_closer(groups[g].centre, zone, groups[g].centre, Pathing::RoutePolicy::farm);
+     };
+     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.
+     const auto walk_reserve = [&](int g) __attribute__((always_inline)) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(world, g)); };
+@@ -2416,7 +2416,7 @@
+     if (world.camps[best].state == CampState::cleared) {
+         if (!zone) dash_towards(world, pathing, groups[best].tiles(), cap);
+         if (search) {
+-            if (!pathing.step_towards(off_zone(groups[best].tiles()), zone, cap, groups[best].centre) && dasher) walk_on(best);
++            if (!pathing.step_towards(off_zone(groups[best].tiles()), zone, cap, groups[best].centre, Pathing::RoutePolicy::farm) && dasher) walk_on(best);
+         } else {
+             note_shortcut("farm-no-route");
+             walk_on(best);
+@@ -2449,12 +2449,12 @@
+     const Field* dash_route = nullptr;
+     if (!zone && dash_towards(world, pathing, goals, cap, &dash_route) && attack_camp(world, passing) >= 0) return true;
+     if (dash_route) world.throw_if_stale();
+-    bool walked = dash_route && pathing.descend(*dash_route, zone, groups[best].centre);
++    bool walked = dash_route && pathing.descend(*dash_route, zone, groups[best].centre, Pathing::RoutePolicy::farm);
+     debug_block({ if (walked) std::printf("DASH-FOLLOW %d %u group %d\n", world.round, my_handle(), best); });
+     if (!walked)
+         walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
+-                     ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
+-                           || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre)
++                     ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre, Pathing::RoutePolicy::farm)
++                           || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre, Pathing::RoutePolicy::farm)
+                      : (note_shortcut("farm-no-route"), walk_on(best));
+     if (!walked && dasher) walk_on(best);
+     if (walked) {
+diff -ru provenance/willow-astraeus-remembered-camp-route-20261024-v1/before-src/pathing.cpp provenance/willow-astraeus-remembered-camp-route-20261024-v1/after-src/pathing.cpp
+--- provenance/willow-astraeus-remembered-camp-route-20261024-v1/before-src/pathing.cpp	2026-10-23 23:51:09
++++ provenance/willow-astraeus-remembered-camp-route-20261024-v1/after-src/pathing.cpp	2026-10-23 23:52:32
+@@ -368,6 +368,27 @@
+     return blocked_;
+ }
+ 
++void Pathing::farm_occupied_into(bitboard& out) {
++    world_.throw_if_stale();
++    // Pair fresh native occupancy and vision: World/blocked() may predate our move or camp kill.
++    // Visible emptiness overrides belief; native occupied camps still block after a respawn.
++    static bitboard unseen{cambc::uninitialized}, remembered{cambc::uninitialized};
++    occupied_into(out);
++    vision_into(unseen);
++    not_into(unseen, unseen);
++    and_into(live_camps(), unseen, remembered);
++    or_into(out, remembered, out);
++    world_.throw_if_stale();
++}
++
++const bitboard& Pathing::walking_blocked(RoutePolicy policy) {
++    if (policy == RoutePolicy::visible) return blocked();
++    static bitboard walls{cambc::uninitialized};
++    farm_occupied_into(walls);
++    set_tile(walls, my_pos(), false);
++    return walls;
++}
++
+ void Pathing::invalidate() {
+     blocked_fresh_ = false;
+     pos_fresh_ = false;
+@@ -385,10 +406,10 @@
+     return pos_;
+ }
+ 
+-Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
++Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboard* avoid, std::optional<vec2> aim, RoutePolicy policy) {
+     const vec2 me = my_pos();
+     const int here = field.at(me);
+-    const auto& walls = blocked();
++    const auto& walls = walking_blocked(policy);
+     Neighbours out;
+     std::array<int, 8> steps_of{};
+     std::array<int, 8> aim_of{};
+@@ -408,7 +429,7 @@
+     return out;
+ }
+ 
+-[[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through, std::optional<vec2> aim) {
++[[gnu::flatten]] Pathing::Route Pathing::route(const bitboard& goals, const bitboard* avoid, int max_steps, vec2 through, std::optional<vec2> aim, RoutePolicy policy) {
+     world_.throw_if_stale();
+     Route r;
+     route_exhausted_ = false;
+@@ -422,7 +443,8 @@
+     static vec2 origin_at{-1, -1};
+     // A route is mostly followed by a step, which makes blocked() stale: unless it is fresh, the
+     // walls are read straight into the route's board. Our tile is freed below.
+-    if (blocked_fresh_) copy_into(blocked_, walls);
++    if (policy == RoutePolicy::farm) farm_occupied_into(walls);
++    else if (blocked_fresh_) copy_into(blocked_, walls);
+     else occupied_into(walls);
+     if (in_bounds(through)) set_tile(walls, through, false);
+     if (avoid && test(*avoid, me)) {
+@@ -541,22 +563,22 @@
+     return false;
+ }
+ 
+-[[gnu::flatten]] bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim) {
++[[gnu::flatten]] bool Pathing::step_towards(const bitboard& goals, const bitboard* avoid, int max_steps, std::optional<vec2> aim, RoutePolicy policy) {
+     if (!my_can_move()) return false;
+     // Only a hidden blocker makes a retry worth its search.
+     for (int attempt = 0; attempt < 3; ++attempt) {
+-        const auto r = route(goals, avoid, max_steps, {-1, -1}, aim);
++        const auto r = route(goals, avoid, max_steps, {-1, -1}, aim, policy);
+         bool bumped = false;
+         for (int i = 0; i < r.count; ++i) {
+             if (try_move(r.first_steps[i])) return true;
+             bumped |= test(bumped_, r.first_steps[i]);
+         }
+-        if (!bumped) return r.steps == unreachable && make_way(goals, avoid, max_steps);
++        if (!bumped) return r.steps == unreachable && make_way(goals, avoid, max_steps, policy);
+     }
+     return false;
+ }
+ 
+-bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_steps) {
++bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_steps, RoutePolicy policy) {
+     const vec2 me = my_pos();
+     static bitboard allies{cambc::uninitialized};
+     occupancy_into(team::ally, allies);
+@@ -585,7 +607,7 @@
+         const auto ally = cambc::vision::champion_at(a);
+         const auto mine = self.gem_count(), theirs = ally.gem_count();
+         if (mine > theirs || (mine == theirs && self.champion_name() > ally.champion_name())) return false;
+-        const auto& walls = blocked();
++        const auto& walls = walking_blocked(policy);
+         std::optional<vec2> best;
+         int best_dist = 0;
+         for (auto e : directions) {
+@@ -633,33 +655,33 @@
+     return false;
+ }
+ 
+-bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
++bool Pathing::step_towards(const Field& field, const bitboard* avoid, std::optional<vec2> aim, RoutePolicy policy) {
+     const int here = field.at(my_pos());
+     if (here == 0 || !my_can_move()) return false;
+     bool searched = false;
+     if (here != unreachable) {
+         const int cap = here + max_detour;
+         if (!fuel_ok(search_cost_estimate(cap) + end_reserve)) note_shortcut("static-descend");
+-        else if (step_towards(field.goals, avoid, cap, aim)) return true;
++        else if (step_towards(field.goals, avoid, cap, aim, policy)) return true;
+         else searched = true;
+     }
+-    if (descend(field, avoid, aim)) return true;
++    if (descend(field, avoid, aim, policy)) return true;
+     // Live camps can block the static way for longer than max_detour (a dead-end pocket whose way
+     // out a camp holds): a wider search walks round them, unless the last ran dry.
+-    return searched && !route_exhausted_ && step_towards(field.goals, avoid, here + 6 * max_detour, aim);
++    return searched && !route_exhausted_ && step_towards(field.goals, avoid, here + 6 * max_detour, aim, policy);
+ }
+ 
+-bool Pathing::descend(const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
++bool Pathing::descend(const Field& field, const bitboard* avoid, std::optional<vec2> aim, RoutePolicy policy) {
+     if (!my_can_move()) return false;
+-    for (auto p : closer_neighbours(field, avoid, aim))
++    for (auto p : closer_neighbours(field, avoid, aim, policy))
+         if (try_move(p)) return true;
+     return false;
+ }
+ 
+-bool Pathing::step_closer(vec2 target, const bitboard* avoid, std::optional<vec2> aim) {
++bool Pathing::step_closer(vec2 target, const bitboard* avoid, std::optional<vec2> aim, RoutePolicy policy) {
+     if (!my_can_move()) return false;
+     const vec2 me = my_pos();
+-    const auto& walls = blocked();
++    const auto& walls = walking_blocked(policy);
+     std::optional<vec2> best;
+     int best_dist = dist(me, target);
+     for (auto d : directions) {
+diff -ru provenance/willow-astraeus-remembered-camp-route-20261024-v1/before-src/pathing.h provenance/willow-astraeus-remembered-camp-route-20261024-v1/after-src/pathing.h
+--- provenance/willow-astraeus-remembered-camp-route-20261024-v1/before-src/pathing.h	2026-10-23 23:51:09
++++ provenance/willow-astraeus-remembered-camp-route-20261024-v1/after-src/pathing.h	2026-10-23 23:52:32
+@@ -25,6 +25,7 @@
+ 
+ class Pathing {
+ public:
++    enum class RoutePolicy { visible, farm };
+     explicit Pathing(const World& world);
+ 
+     void begin_turn();
+@@ -77,14 +78,15 @@
+     // A hidden blocker fails a move without spending the walk; the other first steps are tried,
+     // then the route is replanned.
+     // An optional aim breaks equal-distance ties, retaining compass order for equal aim distance.
+-    bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
++    // Farm walking also retains believed-live camps outside current native vision.
++    bool step_towards(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt, RoutePolicy policy = RoutePolicy::visible);
+     bool step_towards_funded(const bitboard& goals, std::uint64_t fuel_floor);
+     // A live route within `max_detour` of the static distance, else greedy descent of the field.
+-    bool step_towards(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
++    bool step_towards(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt, RoutePolicy policy = RoutePolicy::visible);
+     // Cheap fallbacks without a search, when fuel is short: a step down the field, or one that
+     // gets closer to the target as the crow flies.
+-    bool descend(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
+-    bool step_closer(vec2 target, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
++    bool descend(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt, RoutePolicy policy = RoutePolicy::visible);
++    bool step_closer(vec2 target, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt, RoutePolicy policy = RoutePolicy::visible);
+     // False, spending nothing, if illegal, guarded or blocked by a hidden unit; `refused`: set
+     // unless a hidden unit was the reason.
+     bool try_move(vec2 tile, bool* refused = nullptr);
+@@ -116,6 +118,8 @@
+     bitboard teleport_targets(); // free open or bush tiles within 3, not camp tiles or enemy spawn
+ 
+ private:
++    void farm_occupied_into(bitboard& out);
++    const bitboard& walking_blocked(RoutePolicy policy);
+     vec2 my_pos(); // our tile, read again after invalidate() or in a new round
+     struct Neighbours {
+         std::array<vec2, 8> tiles;
+@@ -124,13 +128,13 @@
+         const vec2* end() const { return tiles.data() + count; }
+     };
+     // Free neighbours that get strictly closer on a static field, nearest first.
+-    Neighbours closer_neighbours(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt);
++    Neighbours closer_neighbours(const Field& field, const bitboard* avoid = nullptr, std::optional<vec2> aim = std::nullopt, RoutePolicy policy = RoutePolicy::visible);
+     struct Route {
+         int steps = unreachable; // 0: already on a goal; unreachable: none within the cap
+         int count = 0;
+         std::array<vec2, 8> first_steps; // the first `count`: all equally short, compass order unless aimed
+     };
+-    Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, vec2 through = {-1, -1}, std::optional<vec2> aim = std::nullopt);
++    Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, vec2 through = {-1, -1}, std::optional<vec2> aim = std::nullopt, RoutePolicy policy = RoutePolicy::visible);
+     // The latest route's search: its distances from the goals, and whether it found no way
+     // although it stopped short of its cap, so that no wider search finds one either.
+     cambc::distance_field route_field_;
+@@ -147,7 +151,7 @@
+     // Two allies head-on with no way past: the one with fewer gems (ties: lower champion) backs off.
+     // Right after a route that found no way, with the same arguments: read from its field.
+     // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.
+-    bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps);
++    bool make_way(const bitboard& goals, const bitboard* avoid, int max_steps, RoutePolicy policy);
+     int approach_steps(int group, int range);
+     const Field* search_approach(int group, int range, int steps); // approach() once known not ready
+     using Slot = std::unique_ptr<Field>;
