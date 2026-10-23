@@ -262,3 +262,16 @@ against f07babf: 51.4% of 1104 (ladder 51.2, gen 50.4, gen-s1 52.3), out-of-fuel
 - `capture_recall` sets `memory.banking` when it keeps a ride to bank the share. `hold_start` guesses the later payout
   when a hold changed hands, so the ride can land a round late, off the hold; `recall_to_bank` then cancelled it with
   one turn left and the bot restarted it (ladder: 1,962 wasted channel turns in 276 games).
+
+## 95: an enemy's second turn counts what comes ready by then (2026-10-23)
+
+From the v38 replay analysis (REPLAY-ANALYSIS A3a: 203 deaths, mostly one-cast Marcella kills; REPLAY-FOLLOW-UPS
+R1-4, R2-5). The narrowed form of w2-chain (EXPERIMENTS): one cast across both turns, no two-slot chaining. Against
+6410707: 50.1% of 1104 (ladder 55.0, gen 49.4, gen-s1 50.0); deaths 6734 vs 6879 (ladder suite 625 vs 724, to
+Marcella 1129 vs 1205); out-of-fuel turns 4984 vs 4688 (+6%, from more tiles reading dangerous, not the check's cost).
+
+- `Reach::build`: an enemy acting twice before our turn checks readiness at `turn_round + 1` for its walk-then-act
+  moves, and builds dash tiles if the dash is ready on either turn. Its move sets are cached by both turns'
+  readiness (18 entries).
+- `threat_strike`'s walk-then-strike term uses `strike_memo(c, round + 1)`, keeping the `Strike` bound that caps
+  `Reach` valid (REACH-BOUND fired 0 times).
