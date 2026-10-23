@@ -387,3 +387,12 @@ Tried and no gain (not merged):
   p99 up and heavy maps flat).
 - Codegen-level: raw bitboard reads instead of `is_set`; `always_inline` on the SDK's check() (+2%); flatten on decide
   (+0.7%); per-round static caches in small inlined helpers (+0.1-0.5%); memoising turns_to_kill_idle (+0.01%).
+
+- Fuel ideas screen (2026-10-23, a5749c4, isolated copies; 6 maps / 12 games, test drafts, 100M,
+  normal local -O3 builds): all three candidates kept 12/12 replays byte-identical; none improved p99.
+  Baseline mean/p99/turns >100k: 41977/114160/1555. Stop generating rejected children after the existing
+  24-node search cap: 41982/114245/1561 (up to 23777 saved on one turn, but only 63 cheaper vs 9272
+  dearer). Direct raw-chunk rectangle tests for any_within: 42180/114209/1563 (+0.48% total fuel).
+  Singleton unseen threats as direct Chebyshev distance instead of a field: 41981/114160/1555.
+  No real-budget OOF gain claimed; no Hyperion changes. Details, artifacts, and untested structural
+  ideas: [FUEL-IDEAS-2026-10-23.md](hyperion/FUEL-IDEAS-2026-10-23.md).
