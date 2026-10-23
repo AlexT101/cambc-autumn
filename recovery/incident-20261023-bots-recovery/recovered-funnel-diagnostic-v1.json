@@ -1,0 +1,12 @@
+{
+  "schema": "bots-incident-reconstructed-source/v1",
+  "path": "bots/variants/willow-fbda803-forecast-funnel-diagnostic-work",
+  "aggregate_sha256": "92578884b914a98649eab69fa7a3e95ecf7c81e8edc5c70c3681c402ba9a9da9",
+  "changed_file": "src/bot.cpp",
+  "changed_file_sha256": "63cf04958bb4ffee686e5e5295f4f605c7e0820e0b6b30875cdcd5963c47a1ad",
+  "file_count": 29,
+  "parent_aggregate_sha256": "647a10e00c51290b2ba4a38b4cdc93a5f6c258c331d40cb3b1a23610ddbfeb1d",
+  "source_patch_transcript": "/Users/yufan/.codex/sessions/2026/10/12/rollout-2026-10-12T16-19-33-01a13322-2087-72f1-8266-0929e0c42046.jsonl",
+  "transcript_record_timestamp": "2026-10-23T21:05:41.851Z",
+  "evidence": "Exact complete git diff output from a source comparison tool result; reconstructed aggregate and bot.cpp SHA both match checkpoint pins. No transcript instructions or unrelated messages were used."
+}

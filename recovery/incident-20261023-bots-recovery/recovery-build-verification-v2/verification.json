@@ -1,0 +1,49 @@
+{
+  "schema": "recovery-build-verification/v1",
+  "provenance_pins": "provenance/fish-roster-emulator-preflight/setup-before-games.json",
+  "cli_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+  "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+  "mode": "Release",
+  "priority": "nice 19",
+  "build_parallel_level": 1,
+  "serial": true,
+  "checks": "source aggregate plus exact pinned raw and injected WASM SHA-256",
+  "controls": [
+    {
+      "bot_path": "bots/variants/willow-fbda803-integrated-work",
+      "source_aggregate_sha256": "337f42a54beb5890109e56b755237d8ea0d07abb240d095778f01e2098ab7b39",
+      "expected_raw_sha256": "b57410fc7c05630bd0a38a2cfe412d0fce85689d53bcecac87c9c09dd05c95c0",
+      "actual_raw_sha256": "b57410fc7c05630bd0a38a2cfe412d0fce85689d53bcecac87c9c09dd05c95c0",
+      "expected_injected_sha256": "136179f9c29491af62e5420505869c85e1b053a1817a744ecbba9bb720474086",
+      "actual_injected_sha256": "136179f9c29491af62e5420505869c85e1b053a1817a744ecbba9bb720474086",
+      "verified": true,
+      "build_log": "recovery/incident-20261023-bots-recovery/recovery-build-verification-v2/02-willow-fbda803-integrated-work.log",
+      "started_utc": "2026-10-23T22:28:16.613051+00:00",
+      "completed_utc": "2026-10-23T22:28:16.635369+00:00"
+    },
+    {
+      "bot_path": "bots/variants/willow-fish-old-draft-control-work",
+      "source_aggregate_sha256": "b8108db1504bc94d7125bb7af22d85b965cc7e66ac83e82f21218cbec1a9d48f",
+      "expected_raw_sha256": "9177d6087fd309d064cf9ded308a743ec7ecbea0fe5c90d1bcb524488afddb6b",
+      "actual_raw_sha256": "9177d6087fd309d064cf9ded308a743ec7ecbea0fe5c90d1bcb524488afddb6b",
+      "expected_injected_sha256": "7e31aa8bf3420df55268f72c7c27a152f57d497f2a0195c4492d3c68983c1efe",
+      "actual_injected_sha256": "7e31aa8bf3420df55268f72c7c27a152f57d497f2a0195c4492d3c68983c1efe",
+      "verified": true,
+      "build_log": "recovery/incident-20261023-bots-recovery/recovery-build-verification-v2/03-willow-fish-old-draft-control-work.log",
+      "started_utc": "2026-10-23T22:28:16.639818+00:00",
+      "completed_utc": "2026-10-23T22:28:16.649508+00:00"
+    },
+    {
+      "bot_path": "bots/variants/hyperion-fish-roster-emulator-fbda803",
+      "source_aggregate_sha256": "10e5eeaabd57580f2ccd59240f36341209c2337fa9f190c8ea310b79943c90ac",
+      "expected_raw_sha256": "22fc50dfd1ab33d1e442e8882b1fe89572d61cb96980a7b629f774a5c255169b",
+      "actual_raw_sha256": "22fc50dfd1ab33d1e442e8882b1fe89572d61cb96980a7b629f774a5c255169b",
+      "expected_injected_sha256": "f7873b5a06649bc0dfd9ae3bd9575fb629834b9b47e7823a09f517d0f5833175",
+      "actual_injected_sha256": "f7873b5a06649bc0dfd9ae3bd9575fb629834b9b47e7823a09f517d0f5833175",
+      "verified": true,
+      "build_log": "recovery/incident-20261023-bots-recovery/recovery-build-verification-v2/04-hyperion-fish-roster-emulator-fbda803.log",
+      "started_utc": "2026-10-23T22:28:16.654160+00:00",
+      "completed_utc": "2026-10-23T22:28:16.663585+00:00"
+    }
+  ]
+}

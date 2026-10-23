@@ -1,0 +1,19 @@
+{
+  "schema": "bots-incident-recovery-aliases/v1",
+  "items": [
+    {
+      "path": "bots/baselines/hyperion-deployed-v33-a00fff",
+      "source": "bots/Khaos_v33/src",
+      "aggregate_sha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "file_count": 29,
+      "status": "published and verified"
+    },
+    {
+      "path": "bots/baselines/willow-local-monolith-crew-bbd869",
+      "source": "bots/variants/willow-local-monolith-crew-v2-work/src",
+      "aggregate_sha256": "bbd8695f18843d8fe750edb7f5cd8114292b837cb8893625a9637537c2aecefa",
+      "file_count": 29,
+      "status": "published and verified"
+    }
+  ]
+}

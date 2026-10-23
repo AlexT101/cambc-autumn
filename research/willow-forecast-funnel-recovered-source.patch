@@ -1,0 +1,166 @@
+diff --git a/bots/variants/willow-fbda803-forecast-work/src/bot.cpp b/bots/variants/willow-fbda803-forecast-funnel-diagnostic-work/src/bot.cpp
+index 400c987..a1f1921 100644
+--- a/bots/variants/willow-fbda803-forecast-work/src/bot.cpp
++++ b/bots/variants/willow-fbda803-forecast-funnel-diagnostic-work/src/bot.cpp
+@@ -4842,12 +4842,20 @@ struct FormationWorker {
+ vec2 forecast_formation_step(const World& world, vec2 here, vec2 parent, float amount,
+                             const std::array<FormationWorker, 8>& workers, int count) {
+     const auto& map = world.map();
++    int claimed = 0, current_claim = 0, working_claim = 0, damaging_claim = 0, worthy_claim = 0;
++    int rejected_stale = 0, rejected_not_working = 0, rejected_damage = 0, rejected_worth = 0;
++    const auto trace = [&](int reason, int finalist, float gain, float parent_upper) {
++        debug_block({ std::printf("WFFG %d %u reason %d workers %d claims %d current %d working %d damaging %d worthy %d reject %d %d %d %d final %d gain %.0f upper %.0f\n",
++            world.round, my_handle(), reason, count, claimed, current_claim, working_claim, damaging_claim,
++            worthy_claim, rejected_stale, rejected_not_working, rejected_damage, rejected_worth,
++            finalist, gain, parent_upper); });
++    };
+     // Preserve any possible stationary basic/cast, without taking an action to test it.
+     for (const auto& e : world.enemies)
+-        if (e.alive && e.visible && dist(here, e.pos) <= ability_range) return parent;
++        if (e.alive && e.visible && dist(here, e.pos) <= ability_range) { trace(1, -1, 0, 0); return parent; }
+     for (int y = -3; y <= 3; ++y)
+         for (int x = -3; x <= 3; ++x)
+-            if (const vec2 p = here + vec2{x, y}; in_bounds(p) && map.group_at(p) >= 0) return parent;
++            if (const vec2 p = here + vec2{x, y}; in_bounds(p) && map.group_at(p) >= 0) { trace(2, -1, 0, 0); return parent; }
+ 
+     int finalist = -1;
+     float gain = 0, fraction = 0, parent_upper = 0;
+@@ -4855,10 +4863,12 @@ vec2 forecast_formation_step(const World& world, vec2 here, vec2 parent, float a
+         const auto& w = workers[a];
+         const int g = comms::claim_of(world, w.ally->index);
+         if (g < 0 || g >= static_cast<int>(world.camps.size())) continue;
++        ++claimed;
+         const auto& G = map.groups[g];
+         const auto& c = world.camps[g];
+         if (G.members.size() > 16 || c.state != CampState::alive || c.state_round != world.round
+-            || c.last_damaged_round != world.round) continue;
++            || c.last_damaged_round != world.round) { ++rejected_stale; continue; }
++        ++current_claim;
+         int work_range = w.ally->facts().attack_range();
+         for (const auto& ability : w.ally->facts().abilities)
+             if (ability.hits_enemies()) work_range = std::max(work_range, ability.reach());
+@@ -4879,22 +4889,27 @@ vec2 forecast_formation_step(const World& world, vec2 here, vec2 parent, float a
+             for (const auto& other : world.enemies) nearest &= !competes(other);
+             if (nearest) damage += member.strength;
+         }
+-        if (!working || !(damage > 0) || w.health <= damage) continue;
++        if (!working) { ++rejected_not_working; continue; }
++        ++working_claim;
++        if (!(damage > 0) || w.health <= damage) { ++rejected_damage; continue; }
++        ++damaging_claim;
+         // Both owned mitigation passives assumed; shield-capable recipients were excluded.
+         const float injury = 0.63f * damage;
+         const float projected = std::min(amount, w.top - w.health + injury);
+         const float projected_fraction = (w.health - injury) / w.top;
+-        if (!worth_healing(amount, projected, projected_fraction)) continue;
++        if (!worth_healing(amount, projected, projected_fraction)) { ++rejected_worth; continue; }
++        ++worthy_claim;
+         if (dist(parent, w.pos) <= 4) parent_upper = std::max(parent_upper, projected);
+         if (finalist < 0 || projected > gain || (projected == gain && projected_fraction < fraction)
+             || (projected == gain && projected_fraction == fraction
+                 && static_cast<std::uint32_t>(w.ally->handle) < static_cast<std::uint32_t>(workers[finalist].ally->handle)))
+             finalist = a, gain = projected, fraction = projected_fraction;
+     }
+-    if (finalist < 0 || gain <= parent_upper) return parent;
++    if (finalist < 0) { trace(3, finalist, gain, parent_upper); return parent; }
++    if (gain <= parent_upper) { trace(4, finalist, gain, parent_upper); return parent; }
+     const vec2 recipient = workers[finalist].pos;
+     const auto viewers = attack_viewers(world, recipient, 4);
+-    if (support_view(viewers, recipient, here) || support_view(viewers, recipient, parent)) return parent;
++    if (support_view(viewers, recipient, here) || support_view(viewers, recipient, parent)) { trace(5, finalist, gain, parent_upper); return parent; }
+     vec2 best = parent;
+     int best_home = unreachable;
+     for (int k = 1; k < 9; ++k) {
+@@ -4906,6 +4921,8 @@ vec2 forecast_formation_step(const World& world, vec2 here, vec2 parent, float a
+         const int home = dist(tile.p, map.ally_spawn_centre);
+         if (best == parent || home < best_home) best = tile.p, best_home = home;
+     }
++    if (best == parent || best_home == unreachable) { trace(6, finalist, gain, parent_upper); return parent; }
++    trace(0, finalist, gain, parent_upper);
+     debug_block({ if (best != parent) std::printf("WFF %d %u parent %d,%d step %d,%d ally %u gain %.3f upper %.3f\n",
+         world.round, my_handle(), parent.x, parent.y, best.x, best.y,
+         static_cast<std::uint32_t>(workers[finalist].ally->handle), gain, parent_upper); });
+@@ -4919,7 +4936,10 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     mate_eligible = false;
+     const bool willow = world.me().type == cambc::champion_type::willow;
+     const bool prism = world.me().type == cambc::champion_type::prism;
+-    if ((!willow && !prism) || stunned_turn) return false;
++    if ((!willow && !prism) || stunned_turn) {
++        if (willow) debug_block({ std::printf("WFFEARLY %d %u gate 0 stunned 1\n", world.round, my_handle()); });
++        return false;
++    }
+     const auto* mate = support_endpoint(world, willow ? cambc::champion_type::prism : cambc::champion_type::willow);
+     const vec2 here = my_position();
+     const float health = my_health();
+@@ -4951,6 +4971,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     }
+     if (prism && memory.farm_group != memory.recovery_closed_group) memory.recovery_closed_health = -1;
+     if (!mate || !mate->alive || !mate->visible || !mate->can_act(world.round) || !visible_record(mate->handle)) {
++        if (willow) debug_block({ std::printf("WFFEARLY %d %u gate 1 mate 0\n", world.round, my_handle()); });
+         abandon_recovery();
+         memory.formation_start = -1;
+         return false;
+@@ -4963,6 +4984,8 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+                                                                                  : static_cast<int>(cambc::constants::recall_time)));
+     mate_eligible = !observed_channel;
+     if (observed_channel || protected_work || test(world.map().ally_spawn, here)) {
++        if (willow) debug_block({ std::printf("WFFEARLY %d %u gate 2 channel %d protected %d spawn %d\n",
++            world.round, my_handle(), observed_channel, protected_work, test(world.map().ally_spawn, here)); });
+         if (memory.recovery_start >= 0) close_recovery(memory, health);
+         if (prism && observed_channel && !protected_work) support_retreat = !recovered_for_work(world, safety, memory);
+         return false;
+@@ -4977,6 +5000,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     int target_count = 0;
+     std::array<FormationWorker, 8> workers;
+     int worker_count = 0;
++    int worker_records = 0, worker_unacted = 0, worker_shield = 0, worker_channel = 0;
+     float amount = 0;
+     const bool ready = willow ? support_ready(world, world.me(), amount) : support_ready(world, *mate, amount);
+     if (willow && ready) {
+@@ -4989,10 +5013,17 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+             if (kept_recall(a.handle, a.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time))) continue;
+             const auto state = cambc::champion_state::from_bits_retain(record.state);
+             const vec2 pos{record.x, record.y};
+-            if (!leave && hp > 0 && top > 0 && dist(here, pos) <= 5 && !test(world.map().ally_spawn, pos)
+-                && a.facts().slot_of(AbilityKind::shield) < 0 && state.contains(cambc::champion_state::completed_turn)
+-                && !state.contains(cambc::champion_state::submitting_gems) && !state.contains(cambc::champion_state::teleporting))
+-                workers[worker_count++] = {&a, pos, hp, top};
++            ++worker_records;
++            const bool completed_turn = state.contains(cambc::champion_state::completed_turn);
++            const bool channelled = state.contains(cambc::champion_state::submitting_gems)
++                                    || state.contains(cambc::champion_state::teleporting);
++            worker_unacted += !completed_turn;
++            worker_channel += channelled;
++            if (!leave && hp > 0 && top > 0 && dist(here, pos) <= 5 && !test(world.map().ally_spawn, pos)) {
++                const bool has_shield = a.facts().slot_of(AbilityKind::shield) >= 0;
++                worker_shield += has_shield;
++                if (!has_shield && completed_turn && !channelled) workers[worker_count++] = {&a, pos, hp, top};
++            }
+             const float gain = std::min(amount, top - hp);
+             if (!worth_healing(amount, gain, hp / top)) continue;
+             targets[target_count++] = {&a, attack_viewers(world, a.pos, 4), gain, hp / top};
+@@ -5026,6 +5057,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     const int work = willow ? comms::claim_of(world, mate->index) : memory.farm_group;
+     if (willow && work >= 0) memory.formation_group = work;
+     if (willow && !ready && here_risk.safe() && stationary_support_output(world, work)) {
++        debug_block({ std::printf("WFFEARLY %d %u gate 3 ready 0 stationary 1 work %d\n", world.round, my_handle(), work); });
+         support_owned = true;
+         memory.claim = -1;
+         memory.crew = false;
+@@ -5090,9 +5122,14 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+             || (gain == best_gain && gap == best_gap && (p == here || (best != here && home < best_home))))
+             found = true, best = p, best_gain = gain, best_gap = gap, best_home = home, best_risk = risk;
+     }
++    const bool forecast_eligible = willow && ready && !leave && !protected_work && !formation_expired && !active_clear
++                                   && best != here && best_gain == 0 && target_count == 0 && worker_count > 0;
++    if (willow) debug_block({ std::printf("WFFLOW %d %u ready %d leave %d protected %d expired %d active %d workers %d records %d unacted %d shield %d channel %d targets %d found %d best_here %d best_gain %.0f forecast %d\n",
++        world.round, my_handle(), ready, leave, protected_work, formation_expired, active_clear, worker_count,
++        worker_records, worker_unacted, worker_shield, worker_channel, target_count, found, best == here, best_gain,
++        forecast_eligible); });
+     if (!found) return abandon_recovery();
+-    if (willow && ready && !leave && !protected_work && !formation_expired && !active_clear
+-        && best != here && best_gain == 0 && target_count == 0 && worker_count > 0) {
++    if (forecast_eligible) {
+         best = forecast_formation_step(world, here, best, amount, workers, worker_count);
+     }
+     const auto commit_support = [&] {

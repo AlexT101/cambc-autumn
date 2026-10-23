@@ -1,0 +1,324 @@
+{
+  "schema": "bots-incident-recovery-index/v2",
+  "created_utc": "2026-10-23T22:24:09Z",
+  "original_repository_head": "87cbbfe9893aac323c11403768c8f895d829e99b",
+  "recovery_scope": "Source-only trees reconstructed from recorded archives, immutable Git trees, exact source patches/manifests, and exact source diffs retained in the own-task transcript. Each published aggregate was recomputed from on-disk src/* using the pinned recipe; files that had a per-file pin were checked against it.",
+  "status_capture_note": "recovery-manifest.json retains its captured Git status verbatim; that capture occurred after Khaos_v32 and Khaos_v33 were already restored. It is not a pre-incident or pre-recovery status snapshot. Original provenance and research pins were not edited.",
+  "verified_recoveries": [
+    {
+      "path": "bots/Khaos_v32",
+      "aggregate_sha256": "db5b37d5e5c609c2c616d3a39c0f1eb7f5adebf401dcd1be8848e0eede237ab8",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/Khaos_v33",
+      "aggregate_sha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/baselines/hyperion-upstream-4c4eacc",
+      "aggregate_sha256": "7f773ba81b8acc1b3d8912ca48ef98be007b4820ca83f5b7b89ff15b75c3f36f",
+      "file_count": 28,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/baselines/hyperion-upstream-fbda803",
+      "aggregate_sha256": "15dcd64d35c179a726c02d3e775b1e3f263f9a4c33b5a8c745e7b13f66dd802d",
+      "file_count": 28,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/baselines/hyperion-upstream-8be8eaa",
+      "aggregate_sha256": "d8d3cc1da72aaf62eb65fc5de8402b9c3a98a8aade1fabeb5cd9841b3ff01e2c",
+      "file_count": 28,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/baselines/hyperion-upstream-b7bfcb7",
+      "aggregate_sha256": "d6bac05921106e332ee4648b5034e748c65aff111cef3f5110d503bedcf1834a",
+      "file_count": 28,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/baselines/hyperion-upstream-eaee598",
+      "aggregate_sha256": "a97aeefdf861fa71e26bf9908e7cb26eeb326b95cf3ef50b58cd62b810aed925",
+      "file_count": 28,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/fish-current-teacher-throw97-control-work",
+      "aggregate_sha256": "e9a9a1824ed8567978d04a5f3683fd57e43f757dc7d56d374269cd8b9fac6902",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/fish-fbda-optional97-control-work",
+      "aggregate_sha256": "37c3ccb7aa7a21ba888ed109b0381a72fd8a35bab07f783def73e567c084311f",
+      "file_count": 28,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-audit-live-ally-work",
+      "aggregate_sha256": "ee1b404d8e50bc188c092739142d6a1f5bcf078756f643588d2693ccf94c7b10",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-audit-ready-heal-work",
+      "aggregate_sha256": "06b266efc20e36955c22ea9db743e1a71ea9ab9eb82463825f8284f0af33f68f",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-audit-transit-work",
+      "aggregate_sha256": "c71fc5730dc64f0463faea9c2edd6ef3a849332b86e5264ae4720c223b482d83",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-audit107-ready-heal-work",
+      "aggregate_sha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-deadline-stage-work",
+      "aggregate_sha256": "735455173eaf268651c50db97711dbfc4b99bed874686711c291025e7a4ffd37",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-fbda803-deadline-stage-work",
+      "aggregate_sha256": "42980a43ac4312378b31a609d8f64f2e306dfd25fa8674798d9ed572739a3c27",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-fbda803-forecast-value-work",
+      "aggregate_sha256": "0bac63b780ffcb0437d6d1a387ee02df4f9394a91e0719140339d7f2d67b03fe",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-fbda803-forecast-work",
+      "aggregate_sha256": "647a10e00c51290b2ba4a38b4cdc93a5f6c258c331d40cb3b1a23610ddbfeb1d",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-fbda803-integrated-work",
+      "aggregate_sha256": "337f42a54beb5890109e56b755237d8ea0d07abb240d095778f01e2098ab7b39",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-fish-old-draft-control-work",
+      "aggregate_sha256": "b8108db1504bc94d7125bb7af22d85b965cc7e66ac83e82f21218cbec1a9d48f",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-fish-prefix-draft-work",
+      "aggregate_sha256": "2797a671218912fd2499227996293711e3db012284b3b09a464c79867d23dd36",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-forecast-formation-work",
+      "aggregate_sha256": "0e989629893b451a0c164cac5757cf8b41eb1b2be36ef2766d1afc26a8bdfb59",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-four-pick-work",
+      "aggregate_sha256": "157f5f79cddb45424ff2c25ce707e705d315c324267c5587a3f7b711f06ab06b",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-local-monolith-crew-v1-work",
+      "aggregate_sha256": "5b0a9d8738a7faebf1350eabe202f987f73758248ac96fc7c0d6cae71def4701",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-local-monolith-crew-v2-work",
+      "aggregate_sha256": "bbd8695f18843d8fe750edb7f5cd8114292b837cb8893625a9637537c2aecefa",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-local-monolith-crew-work",
+      "aggregate_sha256": "56f17feceab5d8aa7278a9ff71bdc607a25b8e771fb8d28c72e30889d83a85d7",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-upstream-coordinated-work",
+      "aggregate_sha256": "1670a7e8ea2c11424ec9b6759dc0fa6af14115cc2842eb60f63a310b6c6b534b",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-upstream-heal-view-reuse-work",
+      "aggregate_sha256": "bafc493445ca013c6f6e11984631d9262d0b537f0f6af070e44df0ca1d872418",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-upstream-presence-work",
+      "aggregate_sha256": "db5b37d5e5c609c2c616d3a39c0f1eb7f5adebf401dcd1be8848e0eede237ab8",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-upstream-sleep-transit-v1-work",
+      "aggregate_sha256": "1544343d782595a6d5774586f5ffd00425c2be4714b99995c4a43a5b80127f85",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-upstream-sleep-transit-work",
+      "aggregate_sha256": "de1c99aae1085f767a510c465e015cca50fbf979c0319f6037d70d554bd3d001",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": []
+    },
+    {
+      "path": "bots/variants/willow-comms-pair-index-work",
+      "status": "present empty at incident recovery; left untouched; no verified source pin"
+    },
+    {
+      "path": "bots/baselines/hyperion-deployed-v33-a00fff",
+      "aggregate_sha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": [],
+      "evidence": "Recovered as a documented alias of bots/Khaos_v33; see recovered-aliases-v1.json."
+    },
+    {
+      "path": "bots/baselines/willow-local-monolith-crew-bbd869",
+      "aggregate_sha256": "bbd8695f18843d8fe750edb7f5cd8114292b837cb8893625a9637537c2aecefa",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": [],
+      "evidence": "Recovered as the documented frozen v2 alias; see recovered-aliases-v1.json."
+    },
+    {
+      "path": "bots/variants/willow-fbda803-forecast-funnel-diagnostic-work",
+      "aggregate_sha256": "92578884b914a98649eab69fa7a3e95ecf7c81e8edc5c70c3681c402ba9a9da9",
+      "file_count": 29,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": [],
+      "evidence": "Exact source diff extracted from own-task source-comparison tool output; both aggregate and bot.cpp SHA matched checkpoint pins."
+    },
+    {
+      "path": "bots/variants/hyperion-fish-roster-emulator-fbda803",
+      "aggregate_sha256": "10e5eeaabd57580f2ccd59240f36341209c2337fa9f190c8ea310b79943c90ac",
+      "file_count": 28,
+      "source_only": true,
+      "verified": true,
+      "extra_entries": [],
+      "evidence": "Exact source diff extracted from own-task source-comparison tool output; both aggregate and draft.cpp SHA matched checkpoint pins."
+    }
+  ],
+  "transcript_recovery": {
+    "session_log": "/Users/yufan/.codex/sessions/2026/10/12/rollout-2026-10-12T16-19-33-01a13322-2087-72f1-8266-0929e0c42046.jsonl",
+    "emulator_evidence_record": "2026-10-23T21:26:51.029Z; complete git diff output only; reconstructed draft.cpp SHA and aggregate match checkpoint",
+    "funnel_diagnostic_evidence_record": "2026-10-23T21:05:41.851Z; complete git diff output only; reconstructed bot.cpp SHA and aggregate match checkpoint",
+    "ladder_manip_search": "The transcript source/tool records before recovery audit contained no ladder_manip references. No creator command or source was found; contents remain unknown. Transcript files were read only."
+  },
+  "known_unresolved": [
+    {
+      "path": "bots/variants/ladder_manip",
+      "status": "contents unknown. Searched repository/sibling sources and the own-task transcript source/tool records; no pre-audit source/tool reference or recoverable source was found. Do not infer empty contents."
+    },
+    {
+      "path": "bots/variants/willow-comms-pair-index-work",
+      "status": "empty and no valid source pin known; left untouched."
+    },
+    {
+      "path": "runtime artifacts / .cambc",
+      "status": "not restored or rebuilt. Khaos ZIPs contain only source files; no exact build artifacts were available in surviving release archives."
+    }
+  ],
+  "backup_note": "Verified staging copies and exact transcript diffs remain under recovery/incident-20261023-bots-recovery/verified-stage-*; no additional full archive was created to avoid duplicating those source backups.",
+  "component_manifests": [
+    "recovery-manifest.json",
+    "recovery-index-v1.json",
+    "recovered-git-baselines-v3.json",
+    "recovered-fish-controls-v4.json",
+    "recovered-identical-variants.json",
+    "recovered-local-monolith-v2.json",
+    "recovered-upstream-patches-v3.json",
+    "recovered-audit-chain-v2.json",
+    "recovered-fbda-experiments-v1.json",
+    "recovered-aliases-v1.json",
+    "recovered-funnel-diagnostic-v1.json",
+    "recovered-fish-emulator-v1.json"
+  ]
+}

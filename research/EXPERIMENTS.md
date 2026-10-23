@@ -1323,3 +1323,22 @@ questions, not proven missed escapes. See `willow-current-fish-four-pick-losses.
 The upstream unseen-recall crew hypothesis likewise needs its narrow positive-delay claim
 gate to occur; its formula can increase our projected reward share. No observation-metadata
 reversal or harmless-camp finishing policy was added without a witnessed decision error.
+
+### Local source recovery interruption
+
+A helper accidentally deleted the local bots directory during variant preparation. Development
+paused immediately; no new match or submission occurred. Tracked canonical337f was restored
+fromHEAD87cbbfe and rehashed. Thirty-four documented source trees were reconstructed from
+release ZIPs, immutable Git sources, exact patches and original task tool records, then
+independently checked. Replays, maps, research, original source/build pins and release receipts
+were outside the deleted directory and remain intact. The fixed emulator10e5 and diagnostic9257
+also match their original file and aggregate hashes. Their previously unsaved full patches are
+now preserved as `fish-roster-emulator-recovered-source.patch` and
+`willow-forecast-funnel-recovered-source.patch`.
+
+The newly rebuilt Khaos_v33 raw and injected WASMs exactly match its original release pins.
+Other reference binaries must likewise be checked before reuse. One pre-existing ignored
+directory, `bots/variants/ladder_manip`, has unknown contents and no recovered source; the user
+has been asked about it. This is not a claim of exhaustive filesystem recovery. See
+`BOTS-RECOVERY-20261023.md`, `bots-recovery-source-audit.md`, and the immutable source inventory
+`recovery/incident-20261023-bots-recovery/recovery-index-v2.json`.

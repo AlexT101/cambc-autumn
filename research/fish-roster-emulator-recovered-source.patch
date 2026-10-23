@@ -1,0 +1,25 @@
+diff --git a/bots/baselines/hyperion-upstream-fbda803/src/draft.cpp b/bots/variants/hyperion-fish-roster-emulator-fbda803/src/draft.cpp
+index 065ef9d..560935e 100644
+--- a/bots/baselines/hyperion-upstream-fbda803/src/draft.cpp
++++ b/bots/variants/hyperion-fish-roster-emulator-fbda803/src/draft.cpp
+@@ -246,7 +246,19 @@ std::span<const cambc::champion_draft> draft_order() {
+         return chosen;
+     }
+     const auto picks = cambc::draft::team_size();
+-    if (picks == 4 || picks == 5) {
++    // Diagnostic roster emulator only: match the five-pick Fish champion bodies, not its policy.
++    // This branch leaves three- and four-pick native selection unchanged.
++    if (picks == 5) {
++        static constexpr std::array fish_roster{
++            cambc::champion_draft::vesper_vale,
++            cambc::champion_draft::vendetta,
++            cambc::champion_draft::heart_of_ruin,
++            cambc::champion_draft::varg,
++            cambc::champion_draft::cassi_and_issac,
++        };
++        return fish_roster;
++    }
++    if (picks == 4) {
+         static const auto chosen = [] {
+             const auto roles = teacher_draft_roles(native_draft_counts());
+             std::array<cambc::champion_draft, 5> order;

@@ -1,0 +1,12 @@
+{
+  "schema": "bots-incident-reconstructed-source/v1",
+  "path": "bots/variants/hyperion-fish-roster-emulator-fbda803",
+  "aggregate_sha256": "10e5eeaabd57580f2ccd59240f36341209c2337fa9f190c8ea310b79943c90ac",
+  "changed_file": "src/draft.cpp",
+  "changed_file_sha256": "4f69a438903fae3f29dd867c86ae0ba3bf67a13b109ce6a0428bf97c8fa3c470",
+  "file_count": 28,
+  "parent_aggregate_sha256": "15dcd64d35c179a726c02d3e775b1e3f263f9a4c33b5a8c745e7b13f66dd802d",
+  "source_patch_transcript": "/Users/yufan/.codex/sessions/2026/10/12/rollout-2026-10-12T16-19-33-01a13322-2087-72f1-8266-0929e0c42046.jsonl",
+  "transcript_record_timestamp": "2026-10-23T21:26:51.029Z",
+  "evidence": "Complete source diff from prior git diff --no-index tool result. Reconstructed aggregate and draft.cpp SHA both match the checkpoint pins; no unrelated conversation or reasoning was used."
+}
