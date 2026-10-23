@@ -1497,7 +1497,7 @@ Blow Reach::at(vec2 p) const {
     const int dx = p.x - origin_.x, dy = p.y - origin_.y;
     if (const auto& t = terrain(world_->map()); std::max(std::abs(dx), std::abs(dy)) <= reach_ && t.inside(p)) {
         // Who sees p, in this window; worked out on first need. If its own ward sees p, it sees
-        // it from anywhere.
+        // it from anywhere. So may a ward we do not see, hidden in a bush cluster we cannot see into.
         union Sight {
             Sight() {}
             Window w;
@@ -1513,7 +1513,7 @@ Blow Reach::at(vec2 p) const {
         const auto seen = [&](bool far, Window& m) __attribute__((always_inline)) {
             if (ward < 0) {
                 if (ward_ == unknown_ward) ward_ = ward_of(*world_, owner_);
-                ward = ward_ >= 0 && ward_sees(t, ward_, p);
+                ward = ward_ >= 0 ? ward_sees(t, ward_, p) : t.bush(p) && !test(world_->visible, p);
             }
             m = ward ? win_full : sight_from(*world_, p, far, dx, dy);
         };
