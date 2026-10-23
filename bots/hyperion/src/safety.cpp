@@ -1884,8 +1884,11 @@ void Safety::build() {
         t.owner = nullptr;
         const int radius = unseen_radius(reach, tiles);
         auto& field = field_of(e.index);
+        // No walls: ranged attacks and ground casts ignore them, as Strike does, and king steps on
+        // an open board are Chebyshev distance.
+        static const bitboard open;
         clear_board(t.area);
-        field.compute(world_.map().walls, e.possible, t.area, static_cast<std::uint16_t>(radius));
+        field.compute(open, e.possible, t.area, static_cast<std::uint16_t>(radius));
         t.steps = &field;
         if (const auto after = fuel(); after < before) costliest_unseen() = std::max(costliest_unseen(), before - after);
     }
