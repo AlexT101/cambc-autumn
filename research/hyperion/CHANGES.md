@@ -406,3 +406,6 @@ A consistency fix for 101: `farm` priced a group's base gold, though our share i
   what the next emblem saves (`per_gold = share x saved / cost`), and gems are the score; we capture more base gold
   than top teams in every round bucket (r400-800: 1808 vs 1744). Treasure's price also adding its +20% return on our
   share's gold (03366f6): 50.7%, out-of-fuel turns +24%; dropped.
+
+Cumulative check (2026-10-23): 92-104 (07d4261) against v38 (c6bd503), test drafts (so without 102's draft): 61.1% of
+1104 (58.1-63.9; ladder 63.8, gen 62.7, gen-s1 59.0), out-of-fuel turns 5128 vs 4506 (+14%).
