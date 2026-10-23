@@ -347,3 +347,199 @@ Tried and no gain (not merged):
   p99 up and heavy maps flat).
 - Codegen-level: raw bitboard reads instead of `is_set`; `always_inline` on the SDK's check() (+2%); flatten on decide
   (+0.7%); per-round static caches in small inlined helpers (+0.1-0.5%); memoising turns_to_kill_idle (+0.01%).
+
+### Willow continuation on current main, 2026-10-23
+
+Continue from unchanged `8be8eaa11fdfe6b63668be6235bf9364be2ce05c` (Hyperion source Git tree
+`4e37607def220c27c5dc21c0159dd160581a4e35`), preserving CHANGES92–104 and106;105 remains reverted.
+The old Willow/v41 source is exactly preserved upstream as `bots/baselines/v41` (Git tree
+`b783f32ed1c1069eddbb1a80e5e9cb04e3626d25`, aggregate
+`a2794129e115abb70faaa5a7e3c66b9728898b0e52c5542fa7885091eaec0bb6`). It is not the current main bot.
+Fresh Pantheon history at16:40UTC uses P/V/M/Ryth-or-Vendetta/HoR, consistent with main's native
+five-pick roster, without proving the uploaded source revision. CLI draft IDs use `champion_draft`
+(Cassi/Issac one pick), not the native expanded `champion_type` enum.
+
+Old-parent side experiments completed in the separate `willow-prism-development` checkout. They
+remain frozen diagnostics and must not be relabelled as qualification against this new main:
+
+- Willow affordable-prefix shopping `303aa2ac…` versus a279: published80 finishes40–40, native
+  rollovers607/521; gen1023/512 finishes258–254, rollovers2374/2226. Zero runner/native/caught errors
+  in both panels. Actual purchase/service trajectories differ, but no clear competitive gain is
+  established. A lazy unused-quote variant `dcd00dda…` passes8/8 high-fuel replay-payload identity
+  against303, costs+0.00842%, then scores39–41 and rollovers623/532 versus a279 at native fuel.
+  Do not carry that optimization as a gain. The new Treasure/Bruiser model requires new evaluation.
+- Vesper post-basic capture dash `4eea39fb…` versus a279: a same-puppet Cat pair matches through280;
+  the child dashes onto the cleared group281 and receives the same reward287 versus289, followed by
+  the same item purchase two rounds earlier. This verifies the mechanism, not general win rate.
+  Its native published80 scores37–43, rollovers491/542, zero runner/native/caught errors. Preserve
+  it for diagnosis rather than automatically adding it to the main Willow port. The first ec3
+  source failed compilation on a private `engine` reader;4eea uses the proper raw SDK read.
+
+The authorized next experiment is a coherent Willow support/controller port onto8be8eaa, with
+five-pick P/V/M/Willow/HoR and unchanged main three/four-pick drafts. Retain all newer item, banking,
+retreat, pathing and threat behavior. In particular the old credible-enemy broad phase must match
+the new known teleport destination origin; copying old Safety would introduce a false negative.
+Port only the reviewed support/recovery/mailbox, strict station/index, bank heal and compatible
+optional Jungle Health logic. Exclude dropped global wake/gold-holder policy, the unused farm-heal
+chooser, prefix shopping, lazy quote variant, Vesper capture dash and reverted travel teleports.
+Source review and new baseline qualification are still pending. No new numbered bot or submission.
+
+The coherent port is preserved as `1670a7e8ea2c11424ec9b6759dc0fa6af14115cc2842eb60f63a310b6c6b534b`
+(`bots/variants/willow-upstream-coordinated-work`). Root's actual-delta review found no wholesale
+replacement of newer main algorithms. Before runtime, root and Astra requested one bounded roster
+presence specialization: skip Prism's added protected-work/shop quote when Willow was not drafted,
+using type presence only so a dead or hidden partner still receives normal recovery cleanup. The
+separate child `bots/variants/willow-upstream-presence-work` is
+`db5b37d5e5c609c2c616d3a39c0f1eb7f5adebf401dcd1be8848e0eede237ab8`; its one-condition parent delta
+is `b23a1a36f7140b0d8f342ed3f7592da03150cb2eacba4593af4ee3a5f15fa10c`. Root read this exact
+delta and independently rehashed the child. This removes unnecessary no-partner work, not all
+support overhead, and does not claim three/four-pick replay identity. Both original and child
+source/checkpoint/full patches are preserved; canonical main and the new frozen baseline stay
+`d8d3cc1da72aaf62eb65fc5de8402b9c3a98a8aade1fabeb5cd9841b3ff01e2c`.
+
+Preservation has one explicit behavioral qualification: CHANGES97's generic retreat body remains,
+but Willow's owned forced-escape path returns before it. That path can choose no move without a
+stationary finishing attack. In the older303 Starfish loss, actor3's r724 reversal avoids a visible
+enemy Prism's threat; the r725-727 aftermath instead nominates a missing camp finish. At r725 the
+exported Wolf33/G14 has105 HP against Willow's70 Strength and ready-looking reset, but native
+readiness, visibility and same-group wake consequences still need an exact pre-return probe.
+The separate one-round diagnostic spec is preserved in the old worktree; no finishing policy or
+claimed safe escape is inferred from the replay summary, and it is not bundled into this port.
+
+Runtime preflight pins CLI3.0.5, engine1.0.3 and the40 published maps. A minimal opt-in runner
+update passes exact `--cli` and `--release` through both build and run-batch while retaining the
+runner's default behavior. Root reviewed the actual diff. First80 native games await final Astra
+review; no build or result is claimed here. One already-downloaded current Procless loss is also
+being extracted for separate own-view diagnosis; its uploaded source revision is unverified.
+
+### Willow presence package against8be8eaa: first native80
+
+Root and Astra passed the actual full port plus presence condition before runtime. Candidate
+`db5b37d5…` versus frozen `d8d3cc1d…` completed the40 published maps, both sides, Release/default100k,
+native drafts, CLI3.0.5/engine1.0.3, one nice19 worker: **43–37**, runner failures0, native bot-error
+turns0/0, native fuel rollovers512/317. By pick count: three6–6/12 with20/18 rollovers; four7–9/16
+with60/57; five30–22/52 with432/242. Only the five-pick candidate drafts Willow. This is a small
+initial panel, not qualification or an isolated controller effect.
+
+The separate stdout audit finds one candidate caught code5 (`invalid_argument`) at round696 in
+`061-01elk-arena-12.repl26a`, candidate physicalA; reference0. The line has no actor identifier.
+That stdout also has a rollover at695, but no causal or Willow attribution is established. Keep
+this follow-up distinct from the zero native Bot Error counts. The replay archive is
+`cfb585cc255a84315b0edd642136030fc532f3478078104ac61772880330a582`.
+
+Within52 five-pick games, candidate/reference engine-stat per-game means: healing9676.75/0,
+gold6923.52/6024.71, deaths4.79/7.10, collected gems1031.96/874.33 and scored836.06/692.21.
+Correctly attributed event means: captures53.56/52.62, clears55.10/52.85 and tributes25.52/25.21.
+These describe the paired games with different rosters, not independent causal estimates or
+promised healing value. Increased native fuel cost is concentrated in five-pick play.
+
+Root caught an event-summary attribution error: `t` is the actor's turn index, not its team.
+The corrected v3 uses explicit capture team, actor `a`, death victim `v`, and clearing/waking `by`
+looked up in the replay's champion roster. Event-kind totals match extractor counts, no supported
+events remain unattributed, and derived deaths match engine deaths in every pick-count stratum.
+Earlier bad summaries are preserved under `pre-…` filenames; do not reuse their recall/tribute/
+death/clear totals. Canonical corrected JSON SHA:
+`aac4f53620484fa0e875f2c9c31ab7b023fad7cde804ff4b9de9f3ff047cc948`.
+Results SHA `52d982dcc9f2ea08715a9bdd4a9540ed66944e1f82829b30f9afed7c573b25fb`;
+final panel pins SHA `0fdb2f2e3a5dd6681f99abf2220ea4d0ed1134fd753a5eac7aded8495b1e1d99`.
+All files are under `replays/willow-upstream-presence-vs-8be8eaa/batch-run-01-release-published40/`.
+Root authorized the unchanged sources on fixed gen1023/512 and gen-s1 seed1024/512 next, serially,
+to complete1104. No fresh holdout, release number or submission is yet authorized by these results.
+
+### Separate public loss: Pantheon versus procless, Lost World
+
+The fresh CLI match-show response confirms PantheonA lost to proclessB on00lost_world in match
+`32a2bf5f-cab7-4574-b183-f3920cf50942`; uploaded source/version remains absent. Raw/extracted evidence
+is in the old worktree's `replays/public-procless-lost-world-20261023/`, including the separately
+saved `match-cli-response.json` and metadata supplement. The original summary's first-tribute
+labels were reversed only in Markdown: correctedA32/B174 matches the original structured JSON
+and raw events; the original Markdown is preserved. Native statuses verify A18/B1 rollovers,
+including AHoR4's363–375 interruption, with no native bot errors. No routine cause is identified.
+
+Astra's eight-turn own-view review of APrism0 r286–293 narrows the218-gem death without treating
+global hindsight as bot knowledge. At289, staying19,11 is already in visible Ryth's AoE reach;
+the reversal19,12 additionally enters visible Marcella's direct spell reach. Holes and live camps
+form a real pocket, so neither a safe recall nor a complete escape is established. At291 the
+successful407-damage exclusive AoE, then35 basic, cannot kill/stun1700HP Marcella and legally
+precludes walking. The useful question is the pre-cast choice; calling the absent later walk a
+bug would be wrong. No ally is visibly available in these frames, and neither roster has Willow.
+This motivates a bounded prospective escape/cast review, not an attributed current-source repair.
+Detailed evidence and limits: `research/public-procless-lost-world-loss-review.md`.
+
+### Willow presence package: fixed seed1023 and loss follow-up
+
+The unchanged `db5b37d5…` candidate versus `d8d3cc1d…` completed the exact frozen seed1023
+256-map pool, both sides, Release/default100k/native drafts: **263–249/512**, runner failures0,
+native bot errors0/0 and caught action errors0/0. Three-pick81–79/160, four77–73/150 and
+five105–97/202. Native fuel rollovers are2209/1532, so the modest result does not establish a
+cost-free gain. Published plus this panel totals306–286/592; five-pick135–119/254. Seed1024 is
+running serially with the same frozen sources and exact previous map hashes; no fresh holdout,
+numbered release or submission has been made. The authoritative artifacts are under
+`replays/willow-upstream-presence-vs-8be8eaa/batch-run-02-release-gen1023/`; results SHA is
+`10fac11df1e916d2cbb13997506aed59d2b088f263b32bc2168955826ecbce74`. The pick-size helper is
+limited to win/runner-error strata, not event attribution.
+
+The published-panel loss review nominates two Elkring Willow sequences for actor-own export:
+`012-00elkring-21`, actor8/B rounds665–673, and `011-00elkring-12`, actor3/A rounds305–313.
+The former loses a385-gem bag after cancelling a long tribute and taking stationary/reversing
+escape steps; the latter repeats the stay/reversal shape after banking without a bag. Neither
+Willow has a native fuel rollover. Global rows do not establish an available safe escape, so
+no comparator change is inferred yet. See `research/willow-upstream-published-loss-window-review.md`.
+The older Starfish stationary-finish diagnostic remains source-only and blocked on independent
+instrumentation review; it is not part of the tested candidate.
+
+The second fixed generated pool, seed1024, completed **262–250/512**, with three91–85/176,
+four81–83/164 and five90–82/172. Native rollovers1970/1331; runner failures and native bot errors
+remain0/0. Its caught-action audit is candidate0/reference1: reference physicalA code5 at1782 in
+`174-gen-donut-102405600-21.repl26a`. Results SHA:
+`6480c68b7c548ec45bd6ca255ee42e33aedf9a69084d7956e98903e29d25f659`.
+
+Combined published40 plus both frozen generated pools: **568–536/1104**, five-pick **225–201/426**.
+Native rollovers4691/3180; caught code5 lines1/1; no runner failures or native bot errors. The
+generated-only pick split attributes3070/1769 rollovers to five-pick games, versus293/288 in
+three-pick and816/806 in four-pick. This is a roster-level cost difference, not a measured Willow
+routine attribution. Root rehashed the unchanged candidate as `db5b37d5…` and verified remote main
+still8be8eaa. The modest coherent result warrants an untouched256-map/both-sides holdout using
+unused seed2026102318, after the two small actor-own exports. No numbered release yet.
+
+The support cost review identifies a conditional per-enemy broadphase saving and a small duplicate
+mate-view calculation, but no measured savings. Existing station/Reach caches already avoid many
+apparent repeats; preserve refreshes and threat timing. See `research/willow-upstream-support-cost-review.md`.
+The separate old Starfish v4 diagnostic now passes bounded source correction review and awaits
+compiler validation; it still has no runtime evidence and is absent from the tested source.
+
+### Khaos_v32 qualification and next Willow arm
+
+Untouched seed2026102318 completes **257–255/512**, with three87–93/180, four76–80/156 and
+five94–82/176. Runner failures, native bot errors and caught action errors are all0/0. Native
+rollovers2044/1445, including1526/712 in five-pick games. Results SHA
+`7fd621aed78de24f23ae2505a3b5365edc4ae119a1928d1f98181a551e27b097`; post-run pins are in
+`replays/willow-upstream-presence-vs-8be8eaa/batch-run-04-release-fresh-2026102318/`.
+
+Across all1616 games, the candidate is **825–791**, with **319–283/602** in five-pick games.
+Native rollovers total6735/4625; caught errors1/1; no runner failures or native bot errors.
+The overall holdout is essentially level, while the active five-pick roster has a modest positive
+result on each of the four panels. This supports keeping the coherent Willow package as a
+qualified alternate release, not claiming a large or universal gain. Fuel cost remains an explicit
+weakness. Root authorized packaging the exact unchanged `db5b37d5…` as complete local Khaos_v32;
+server submission and canonical integration are not yet claimed. Remote main remains8be8eaa.
+
+Actor-own Elkring review now supplies a concrete next experiment: A309–313 stalls or reverses at
+a visibly sleeping Elk boundary because the owned escape ranks any camp-free tile above a
+sleeping-camp tile before considering home progress. A narrow stalled-escape transit fallback
+will retain the normal comparator and safety elsewhere, require successful fresh asleep reads,
+strict home progress, no modeled enemy hit/stun, and actual HP covering a bounded local camp-wake
+bailout. Include non-progressing reversals so entry is not immediately undone. The B-side hidden
+Elk does not establish the same opportunity and must remain unknown. No safe recall or continued
+37-turn tribute is proved. The source-only experiment starts from db5b separately; no change to
+the qualified release. Design/evidence: `research/willow-elkring-own-view-diagnosis.md`.
+
+Release completed: Khaos_v32's29-file source clone and canonical `bots/hyperion/src` both rehash to
+`db5b37d5…`. Its Release raw/injected WASM are byte-identical to the qualified candidate. The CLI
+bundle has29 verified source members,222393 bytes, SHA
+`46f92918e1745b9e12994b4ae58a326d4d7e2fea20ce089cf32c1d182630df5c`.
+The authenticated `--team me` history resolves Pantheon (`547efb5b-57e5-4355-8501-3b331f506d62`)
+across different opponents. One CLI submit succeeded as **server version43**, with note
+`Khaos_v32 - Willow support on latest Hyperion`. Its reported222393 upload bytes match local bundle
+size; remote payload identity is not claimed. Exact response and pre/post submission provenance
+are in `provenance/Khaos_v32-release/`. No unranked group was queued for this release yet.

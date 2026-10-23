@@ -441,3 +441,24 @@ Developed on top of 105 (`strat/teleport2` cafa84c) and merged without it, as a 
   land. Tracking stops spreading its `possible` until it lands, narrowing it to its tile and the landing when known.
 - Locally rare (visible enemy teleports per team-game: 0.47 ladder, 0.09 gen). With 105 and a crystal-buying rule,
   against 105 alone (8dbc020): 50.5% of 1104 (47.6-53.5), teleport class suite 50.6% of 512.
+
+## 107: coordinated Willow support and local Prism recovery (2026-10-23)
+
+Five-pick maps use Prism / Vesper / Marcella / Willow / Heart of Ruin. Three- and four-pick drafts retain main's
+choices. Willow evaluates safe local formation and useful heals for visible allies; a compact mailbox coordinates
+bounded local recovery with Prism. Recovery requires actual current heal readiness and stops when service is
+unavailable or the short recovery window expires. Banking and capture work remain authoritative.
+
+- A cached nine-station guard keeps Willow away from enemy and damaging-camp reach, including known pending
+  teleport destinations. Camp-member indexing bounds repeated station work; refreshes preserve changed vision.
+- Nonurgent bank travel can take a useful safe heal step. Willow may price Jungle Health and finishes a begun
+  partial build, while retaining main's Treasure-first and Bruiser/completion model.
+- Against frozen8be8eaa on native drafts, Release/default100k: 568–536/1104; untouched seed2026102318:
+  257–255/512. Five-pick games are225–201 and94–82 respectively. These roster comparisons support a modest
+  logical keep, not a large or universal advantage or an isolated healing effect.
+- Fuel remains a weakness: 6735 versus4625 native rollover turns across1616 games. No runner failures or native
+  bot errors; caught action errors1/1. The owned Willow escape can still stall at sleeping-camp boundaries;
+  that separate follow-up is not included here.
+
+Submitted as local Khaos_v32 / server43. Source aggregate `db5b37d5e5c609c2c616d3a39c0f1eb7f5adebf401dcd1be8848e0eede237ab8`;
+qualification and receipt are in `research/EXPERIMENTS.md` and `provenance/Khaos_v32-release/`.

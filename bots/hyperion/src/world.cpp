@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <span>
+#include <stdexcept>
 #include <tuple>
 
 namespace aph {
@@ -386,6 +387,61 @@ const std::vector<int>& StaticMap::groups_near(vec2 p, int radius) const {
         }
     }
     return out;
+}
+
+std::span<const StaticMap::StationCampMember> StaticMap::willow_station_members_near(vec2 p) const {
+    // Keep groups_near's per-evaluation scratch/cache effects even when this tile's member list is warm.
+    const auto& nearby = groups_near(p, max_camp_reach);
+    if (!in_bounds(p)) return {};
+    constexpr std::size_t page_side = 8;
+    const std::size_t page_width = (static_cast<std::size_t>(width) + page_side - 1) / page_side;
+    const std::size_t page_height = (static_cast<std::size_t>(height) + page_side - 1) / page_side;
+    if (willow_station_member_pages_.empty())
+        willow_station_member_pages_.resize(page_width * page_height);
+    const std::size_t page_index = static_cast<std::size_t>(p.y) / page_side * page_width
+                                 + static_cast<std::size_t>(p.x) / page_side;
+    if (!willow_station_member_pages_[page_index])
+        willow_station_member_pages_[page_index] = std::make_unique<StationCampMemberPage>();
+    const std::size_t in_page = (static_cast<std::size_t>(p.y) % page_side) * page_side
+                              + static_cast<std::size_t>(p.x) % page_side;
+    auto& range = willow_station_member_pages_[page_index]->ranges[in_page];
+    if (range.ready) {
+        if (range.count == 0) return {};
+        return {willow_station_member_pool_.data() + range.offset, range.count};
+    }
+
+    // Build off to the side so a failed scan/allocation never publishes a partial entry.
+    std::vector<StationCampMember> pending;
+    for (const int g : nearby) {
+        const auto& members = groups[g].members;
+        for (std::size_t i = 0; i < members.size(); ++i) {
+            const auto& m = members[i];
+            const int distance = dist(p, m.pos);
+            if (m.strength <= 0 || distance > m.reach) continue;
+            pending.push_back({static_cast<std::size_t>(g), i,
+                               std::max(0, m.reach + 1 - distance)});
+        }
+    }
+
+    const std::size_t offset = willow_station_member_pool_.size();
+    if (!pending.empty()) {
+        const std::size_t max_size = willow_station_member_pool_.max_size();
+        if (offset > max_size || pending.size() > max_size - offset)
+            throw std::length_error("Willow station camp-member index is too large");
+        const std::size_t required = offset + pending.size();
+        if (willow_station_member_pool_.capacity() < required) {
+            const std::size_t capacity = willow_station_member_pool_.capacity();
+            const std::size_t doubled = capacity == 0 ? 1
+                : capacity > max_size / 2 ? max_size : capacity * 2;
+            willow_station_member_pool_.reserve(std::max(required, doubled));
+        }
+        for (const auto& member : pending) willow_station_member_pool_.push_back(member);
+    }
+    range.offset = offset;
+    range.count = pending.size();
+    range.ready = true;
+    if (range.count == 0) return {};
+    return {willow_station_member_pool_.data() + range.offset, range.count};
 }
 
 const Field& StaticMap::make_ally_field() const {

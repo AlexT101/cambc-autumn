@@ -270,6 +270,10 @@ public:
         Blow blow;
     };
     int threats_at(vec2 p, std::array<ThreatAt, 16>& out);
+    // Conservative enemy-only bounds, using the same teleport origin/timing as blow().
+    bool enemy_may_hit_within(vec2 p, int radius);
+    // Omits unseen enemies with zero credibility, as threats_at() does.
+    bool credible_enemy_may_hit_within(vec2 p, int radius);
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
     // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.

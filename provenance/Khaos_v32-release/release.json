@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "status": "submitted",
+  "releaseName": "Khaos_v32",
+  "preparedAt": "2026-10-23",
+  "source": {
+    "directory": "bots/Khaos_v32/src",
+    "copiedFrom": "bots/variants/willow-upstream-presence-work/src",
+    "aggregateRecipe": "(cd <botdir> && shasum -a 256 src/* | shasum -a 256)",
+    "aggregateSha256": "db5b37d5e5c609c2c616d3a39c0f1eb7f5adebf401dcd1be8848e0eede237ab8",
+    "fileCount": 29,
+    "sourceManifest": "provenance/Khaos_v32-release/source-manifest.json",
+    "sourceManifestSha256": "fab28b8547f5918e7dbe8827fc7aa5511cc28239b29cc77e28ceaa080f81e330",
+    "sourceOnlyClone": true,
+    "postBuildGeneratedRootFiles": [
+      "compile_commands.json"
+    ]
+  },
+  "qualificationSummary": {
+    "games": 1616,
+    "winsByBotIndex": [
+      825,
+      791
+    ],
+    "fivePickGames": 602,
+    "fivePickWinsByBotIndex": [
+      319,
+      283
+    ],
+    "heldoutSeed": 2026102318,
+    "heldoutGames": 512,
+    "heldoutWinsByBotIndex": [
+      257,
+      255
+    ],
+    "publishedAndGeneratedGames": 1104,
+    "publishedAndGeneratedWinsByBotIndex": [
+      568,
+      536
+    ],
+    "qualificationBatches": [
+      {
+        "label": "published40",
+        "path": "replays/willow-upstream-presence-vs-8be8eaa/batch-run-01-release-published40",
+        "games": 80,
+        "wins_by_bot_index": [
+          43,
+          37
+        ],
+        "runner_errors": 0,
+        "results_sha256": "52d982dcc9f2ea08715a9bdd4a9540ed66944e1f82829b30f9afed7c573b25fb",
+        "native_audit_sha256": "955a96b3d8a5241e1150928799d2e28cfcb615cdaeced8df8905ba3968fed6e2",
+        "native_rollovers_by_bot_index": [
+          512,
+          317
+        ],
+        "native_errors_by_bot_index": [
+          0,
+          0
+        ],
+        "caught_action_audit_sha256": "98318bc0a93d3e471b10503a4b7e9de73f3814bbaeed65a605de7b4153c4c33a",
+        "caught_action_error_codes_by_bot": {
+          "willow-upstream-presence-work": {
+            "5": 1
+          },
+          "hyperion-upstream-8be8eaa": {}
+        }
+      },
+      {
+        "label": "gen1023",
+        "path": "replays/willow-upstream-presence-vs-8be8eaa/batch-run-02-release-gen1023",
+        "games": 512,
+        "wins_by_bot_index": [
+          263,
+          249
+        ],
+        "runner_errors": 0,
+        "results_sha256": "10fac11df1e916d2cbb13997506aed59d2b088f263b32bc2168955826ecbce74",
+        "native_audit_sha256": "efea05afbd4319ba133f4d5506d20f7094efa375ca2434a1f5dc1db8c7e7c5b0",
+        "native_rollovers_by_bot_index": [
+          2209,
+          1532
+        ],
+        "native_errors_by_bot_index": [
+          0,
+          0
+        ],
+        "caught_action_audit_sha256": "d4997ff323c1626242c36596d73d4e24472608dd7bdcf0a97288d52d37aed7aa",
+        "caught_action_error_codes_by_bot": {
+          "willow-upstream-presence-work": {},
+          "hyperion-upstream-8be8eaa": {}
+        }
+      },
+      {
+        "label": "gen-s1-1024",
+        "path": "replays/willow-upstream-presence-vs-8be8eaa/batch-run-03-release-gen-s1",
+        "games": 512,
+        "wins_by_bot_index": [
+          262,
+          250
+        ],
+        "runner_errors": 0,
+        "results_sha256": "6480c68b7c548ec45bd6ca255ee42e33aedf9a69084d7956e98903e29d25f659",
+        "native_audit_sha256": "4401b378d3ffff8aad61464a17d146250043d53e823790a950837af8189a58d0",
+        "native_rollovers_by_bot_index": [
+          1970,
+          1331
+        ],
+        "native_errors_by_bot_index": [
+          0,
+          0
+        ],
+        "caught_action_audit_sha256": "d6fbe57109690e73260c9a5237144465fca78ac1613c3ae5712fbf6e14fdb021",
+        "caught_action_error_codes_by_bot": {
+          "willow-upstream-presence-work": {},
+          "hyperion-upstream-8be8eaa": {
+            "5": 1
+          }
+        }
+      },
+      {
+        "label": "heldout-2026102318",
+        "path": "replays/willow-upstream-presence-vs-8be8eaa/batch-run-04-release-fresh-2026102318",
+        "games": 512,
+        "wins_by_bot_index": [
+          257,
+          255
+        ],
+        "runner_errors": 0,
+        "results_sha256": "7fd621aed78de24f23ae2505a3b5365edc4ae119a1928d1f98181a551e27b097",
+        "native_audit_sha256": "8dfbf80b8a500a6ae5067fdbe1751ba9ac27cb51c661d0ce64d14c57bb8bc292",
+        "native_rollovers_by_bot_index": [
+          2044,
+          1445
+        ],
+        "native_errors_by_bot_index": [
+          0,
+          0
+        ],
+        "caught_action_audit_sha256": "1da6094d92a73f859f27d31e862bea1ef923c5b23810249ef3e73f19e9ce91c0",
+        "caught_action_error_codes_by_bot": {
+          "willow-upstream-presence-work": {},
+          "hyperion-upstream-8be8eaa": {}
+        }
+      }
+    ],
+    "interpretation": "Logical keep with fuel-cost concern; results are not a claim of statistically established superiority."
+  },
+  "runtime": {
+    "cliPath": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "cliVersion": "cambc 3.0.5",
+    "cliSha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engineVersion": "v1_0_3",
+    "enginePath": "tools/replay/engine/v1_0_3.wasm",
+    "engineSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "engineBytes": 638472,
+    "sdkCppFileCount": 7,
+    "sdkCppFilelistSha256": "422bf6d1881c934c7767dc357704a620d5ee3946a08ebd5c127363293bd4afe7",
+    "cmakeListsSha256": "a2f9978b9d948623b48ac4fca70692a604bc5cdac2c50c115558ba891a26b78c",
+    "cambcRulesSha256": "d963bb09b693999936408e50b367d8e923f0a70b65513564e4d86da1bf55ce8a",
+    "cambcTomlSha256": "a0e36b45e114dedb61b421a5f45d85127fe88a8474cffec6500bc9ec0b480a50"
+  },
+  "build": {
+    "mode": "Release",
+    "command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc build bots/Khaos_v32 --release",
+    "buildJobs": 1,
+    "cmakeCache": "bots/Khaos_v32/.cambc/build-release/CMakeCache.txt",
+    "cmakeCacheSha256": "5a52648988613a1d4ff27e31dbfdbc1c6edbaa9e72ec5cf92a86b6358b1de7c1",
+    "compileCommands": "bots/Khaos_v32/.cambc/build-release/compile_commands.json",
+    "compileCommandsSha256": "14781c02d1ecfff6d52b437dd3e01f73585ca36fc018cf6228ae27fda4d76aba",
+    "generatedCompileCommandsAtBotRoot": "bots/Khaos_v32/compile_commands.json",
+    "generatedCompileCommandsAtBotRootSha256": "af97adbd2968bc7859c41f694c6d8dc625d54df1db98874745032f7347935d13",
+    "artifacts": {
+      "bot.wasm": {
+        "path": "bots/Khaos_v32/.cambc/build-release/bot.wasm",
+        "bytes": 1642771,
+        "sha256": "71e65c98472bb4e96b254c49a3f02424fdde0a05c39a992a6a2d0c1ab34e8121",
+        "candidate_artifact_sha256": "71e65c98472bb4e96b254c49a3f02424fdde0a05c39a992a6a2d0c1ab34e8121",
+        "byte_identical_to_qualified_candidate": true
+      },
+      "bot-injected.wasm": {
+        "path": "bots/Khaos_v32/.cambc/build-release/bot-injected.wasm",
+        "bytes": 884519,
+        "sha256": "3cd666887b0b68e228152fd1518915776ad842b777a1754440fa389065d177dc",
+        "candidate_artifact_sha256": "3cd666887b0b68e228152fd1518915776ad842b777a1754440fa389065d177dc",
+        "byte_identical_to_qualified_candidate": true
+      }
+    },
+    "artifactIdentity": "Both raw and injected WASM compare byte-for-byte equal to the tested qualified candidate build."
+  },
+  "bundle": {
+    "command": "nice -n 19 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc bundle --output provenance/Khaos_v32-release/Khaos_v32.zip bots/Khaos_v32",
+    "path": "provenance/Khaos_v32-release/Khaos_v32.zip",
+    "bytes": 222393,
+    "sha256": "46f92918e1745b9e12994b4ae58a326d4d7e2fea20ce089cf32c1d182630df5c",
+    "memberCount": 29,
+    "membersExactlySourceFiles": true,
+    "contentsVerifiedAgainstSource": true,
+    "remoteUpload": "not uploaded; no remote byte-identity claim"
+  },
+  "submission": {
+    "status": "submitted",
+    "uploaded": true,
+    "serverVersion": 43,
+    "note": "Khaos_v32 - Willow support on latest Hyperion",
+    "teamId": "547efb5b-57e5-4355-8501-3b331f506d62",
+    "teamIdVerification": "Root-confirmed from authenticated CLI metadata immediately before submission; no follow-up API call was made.",
+    "submittedAtLocal": "2026-10-23T14:00:33-0400",
+    "command": "nice -n 19 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc submit -n 'Khaos_v32 - Willow support on latest Hyperion' bots/Khaos_v32",
+    "sourceAggregateVerifiedImmediatelyBeforeSubmit": "db5b37d5e5c609c2c616d3a39c0f1eb7f5adebf401dcd1be8848e0eede237ab8",
+    "cliReportedUploadBytes": 222393,
+    "preparedBundleBytes": 222393,
+    "preparedBundleSha256": "46f92918e1745b9e12994b4ae58a326d4d7e2fea20ce089cf32c1d182630df5c",
+    "remotePayloadRetrieved": false,
+    "remotePayloadSha256": null,
+    "responseFile": "provenance/Khaos_v32-release/submit-response.txt",
+    "responseFileSha256": "5e8ecbf462d11e5a20b4bee5b54db92193cfeb9d4bf4fc5396b7e0015a396bde",
+    "responseText": "Uploading /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/Khaos_v32 (222393 bytes)...\nSubmitted bot version 43. View submissions at https://2026a.battlecode.co.uk/game/submissions\n",
+    "previousReleaseJson": "provenance/Khaos_v32-release/release.pre-submission.json",
+    "previousReleaseJsonSha256": "5a7efd8bcbe8ec3adfe7830593b1cb3b5221dce6bcccacfe2c675098e0366ba8",
+    "receiptLimitation": "CLI confirmed submission version 43 and reported the upload byte count. The remote payload was not downloaded, so no remote payload hash/byte-identity claim is made."
+  }
+}

@@ -5,6 +5,7 @@ them in parallel; separate concurrent `cambc run` calls race on the bots' build 
 
 import argparse
 from datetime import datetime
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -178,7 +179,7 @@ def clear_copied_cache(bot):
             return
 
 
-def build_bots(cli, bots, env, log):
+def build_bots(cli, bots, env, log, release=False):
     """Build each bot with `cambc build`, writing the output to `log`; return the first bot that
     fails, or None. run-batch's own compiles fail on Windows ("unable to open output file"), so
     it must find nothing left to build."""
@@ -186,7 +187,10 @@ def build_bots(cli, bots, env, log):
         for bot in bots:
             clear_copied_cache(bot)
             print(f"Building {bot.name}...", flush=True)
-            built = subprocess.run([cli, "build", str(bot)], cwd=ROOT, env=env, stdout=subprocess.PIPE,
+            command = [cli, "build", str(bot)]
+            if release:
+                command.append("--release")
+            built = subprocess.run(command, cwd=ROOT, env=env, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
             stream.write(built.stdout)
             if built.returncode:
@@ -209,6 +213,9 @@ def main():
                         "all of them, or N sampled by --gen-seed")
     parser.add_argument("--gen-seed", type=nonnegative_int, default=0, help="Seed for choosing --gen N maps (default: 0)")
     parser.add_argument("--output", type=Path, help="New results directory (default: replays/batch-TIMESTAMP)")
+    parser.add_argument("--cli", type=Path, help="Use this exact cambc executable (default: resolve cambc from PATH)")
+    parser.add_argument("--release", action="store_true",
+                        help="Pass --release to both cambc build and cambc run-batch (default: preserve debug mode)")
     parser.add_argument("--fuel", type=positive_int, help="Fuel per turn (run-batch --fuel-quantum)")
     parser.add_argument("--timeout", type=positive_int, metavar="SECONDS",
                         help="Wall-clock limit per match; a match over it counts as an error")
@@ -229,9 +236,14 @@ def main():
         maps = find_maps(args.maps_dir or ROOT / "maps", args.gen, args.gen_seed)
         if not maps:
             raise ValueError(f"No .map26a files found in {args.maps_dir or ROOT / 'maps'}")
-        cli = shutil.which("cambc")
+        cli = str(args.cli.resolve()) if args.cli else shutil.which("cambc")
         if cli is None:
             raise ValueError("cambc is not on PATH. Install it with: python -m pip install cambc")
+        if not Path(cli).is_file():
+            raise ValueError(f"cambc executable does not exist: {cli}")
+        cli_version = subprocess.run([cli, "--version"], check=True, capture_output=True,
+                                      text=True, encoding="utf-8", errors="replace").stdout.strip()
+        cli_sha256 = hashlib.sha256(Path(cli).read_bytes()).hexdigest()
         output = (args.output or ROOT / "replays" / datetime.now().strftime("batch-%Y%m%d-%H%M%S-%f")).resolve()
         for path in (*bots, *maps, output):
             manifest_path(path)
@@ -284,6 +296,15 @@ def main():
                 print(f"\r{line}\x1b[K")
             redraw(progress(len(records), len(jobs), wins, errors))
         report = {"bots": [str(p) for p in bots], "fuel": args.fuel, "timeout": args.timeout,
+                  "release": args.release,
+                  "cli": {"path": cli, "version": cli_version, "sha256": cli_sha256},
+                  "cli_invocations": {
+                      "build": ["build", "<bot>"] + (["--release"] if args.release else []),
+                      "run_batch": ["run-batch", "<manifest>", "--jobs", str(workers), "--color", "never"]
+                          + (["--fuel-quantum", str(args.fuel)] if args.fuel is not None else [])
+                          + (["--timeout", str(args.timeout)] if args.timeout is not None else [])
+                          + (["--release"] if args.release else []),
+                  },
                   "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None,
                   "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
                   "scheduled": len(jobs), "completed": len(records), "wins": wins,
@@ -295,6 +316,8 @@ def main():
         command += ["--fuel-quantum", str(args.fuel)]
     if args.timeout is not None:
         command += ["--timeout", str(args.timeout)]
+    if args.release:
+        command.append("--release")
     env = os.environ.copy()
     env["NO_COLOR"] = "1"
     log = output / "run.log"
@@ -302,7 +325,7 @@ def main():
     match_started = {}
     finished = set()
     status = None
-    failed_build = build_bots(cli, bots, env, log)
+    failed_build = build_bots(cli, bots, env, log, release=args.release)
     if failed_build is None:
         if live:
             redraw(progress(0, len(jobs), wins, errors))

@@ -1963,6 +1963,39 @@ int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out) {
     return n;
 }
 
+bool Safety::enemy_may_hit_within(vec2 p, int radius) {
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e)) continue;
+        const int reach = foe(e).strike.reach;
+        if (reach < 0) continue;
+        if (e.visible) {
+            const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos;
+            if (dist(p, from) <= reach + radius) return true;
+        } else if (any_within(e.possible, p, reach + radius)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Safety::credible_enemy_may_hit_within(vec2 p, int radius) {
+    for (auto left = live_enemies(); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e)) continue;
+        const auto& x = foe(e);
+        const int reach = x.strike.reach;
+        if (reach < 0 || (!e.visible && !(x.weight > 0))) continue;
+        if (e.visible) {
+            const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos;
+            if (dist(p, from) <= reach + radius) return true;
+        } else if (any_within(e.possible, p, reach + radius)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Safety::any_threat() {
     if (built_) return threat_count_ > 0;
     for (auto left = live_enemies(); left; left &= left - 1) {

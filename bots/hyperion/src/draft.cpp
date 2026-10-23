@@ -36,6 +36,7 @@ cambc::champion_draft native_pick(DraftRole role) {
     case DraftRole::ryth: return C::ryth;
     case DraftRole::vendetta: return C::vendetta;
     case DraftRole::heart_of_ruin: return C::heart_of_ruin;
+    case DraftRole::willow: return C::willow;
     }
     return C::prism;
 }
@@ -248,7 +249,8 @@ std::span<const cambc::champion_draft> draft_order() {
     const auto picks = cambc::draft::team_size();
     if (picks == 4 || picks == 5) {
         static const auto chosen = [] {
-            const auto roles = teacher_draft_roles(native_draft_counts());
+            const auto roles = cambc::draft::team_size() == 5 ? willow_five_pick_roles()
+                                                            : teacher_draft_roles(native_draft_counts());
             std::array<cambc::champion_draft, 5> order;
             for (std::size_t i = 0; i < order.size(); ++i) order[i] = native_pick(roles[i]);
             // 4 picks keep Heart of Ruin over the Ryth/Vendetta slot (v38 ladder: 43% on 4-pick maps without it).
