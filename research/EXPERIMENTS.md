@@ -1512,7 +1512,23 @@ v1 prose is superseded. Native physical-team indices and canonical bot indices a
 BigWorld A at the common904-round endpoint still has less own capital than a67 (749 versus958),
 despite eventually winning1014–874 at1085. This is not evidence of universally faster farming
 or proof of an unlogged branch. Boss A wins377–0 only at2000 and Boss B0–1013 at1975, both
-slower than a67's wins. An80-game published-map direct fd99-versus-frozen-a67 panel is next.
+slower than a67's wins.
+
+The direct published40-map panel subsequently finishes35–45/80 for fd99 against frozena67,
+with physical-side wins17/40 on A and18/40 on B. Both use native drafts, Release and explicit
+100000 fuel, one low-priority worker. Native play rollovers are589/572; runner failures,
+native Bot Errors, caught action markers and turn-order markers are zero. Extraction succeeds
+80/80, with133 soft derived earnedGold notes and no hard failures. Native outcomes and rosters
+do not depend on those derived counters. The runner's stdout was not persisted; this limit is
+recorded, and each outcome comes from the saved native replay with explicit physical mapping.
+Source and raw/injected WASM pins match the frozen artifacts. See
+`replays/willow-sustainable-crew-fallback-vs-a67-published80-20261023-v1/RESULTS-v1.md` and
+`postflight-v1.json`. The initial chat-only side split20/15 was incorrect; the authoritative
+native table has17/18. Native draft-round partitions are3-pick5/12,4-pick4/16 and5-pick26/52;
+this describes the panel and is not a fitted draft selector. This weaker panel does not qualify
+a release. The next diagnosis
+separates useful short ranged contributions from committing to an unaffordable full clear;
+neither that hypothesis nor the value of another refinement is proved by aggregate wins.
 
 ### Willow shopping and role-dependent Treasure research
 
@@ -1550,3 +1566,22 @@ the same150gold and50HP, trades12Strength for20Focus, and quotes the actual chos
 without inventing healing-as-DPS savings. Historical same-shop337f games show some Bruiser
 activation, but each new arm still requires actual purchase evidence and runtime validation.
 Research: `willow-support-items-and-treasure-review.md`. Canonical remainsa67.
+
+### Upstream c71be8c integration prepared separately
+
+Origin/main advanced froma5749c4 toc71be8c with end-of-turn terrain-table preparation and
+deferred generic step guards. An isolated a67 child,4db4eecb, incorporates those eight source
+files while preserving eager Willow station guards, their refresh behavior and protection
+during plan execution. Its actual-source review passes; no canonical merge or runtime claim
+follows from that. Full parent/upstream/integration snapshots and exact deltas are preserved in
+`provenance/willow-upstream-c71be8c-20261023-v1/`.
+
+Upstream reports complete replay identity on its own28 high-fuel screen games and fewer
+real-budget rollovers on1104 games, but those artifacts were unavailable locally and those
+results do not validate this combined Willow source. Our qualification requires16 paired
+Release100M games against frozen a67 with the fixed10e5 opponent, then separate default-budget
+checks. The queue intentionally spends spare fuel, so total fuel alone is not its objective;
+heavy-turn costs, rollover behavior and preserved actions matter. First cold initialization
+allocates13200 payload bytes at100×100 after a6000 per-tile allowance plus10000 end reserve.
+This is a source-review concern about the reserve, not a proven rollover. See
+`willow-upstream-c71be8c-source-review.md`.

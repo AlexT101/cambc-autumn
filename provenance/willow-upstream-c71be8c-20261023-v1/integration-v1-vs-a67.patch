@@ -1,0 +1,447 @@
+diff --git a/bots/variants/willow-comms-cached-endpoints-work/src/bot.cpp b/bots/variants/willow-upstream-c71be8c-work/src/bot.cpp
+index 8d02d7f..c5e7e5d 100644
+--- a/bots/variants/willow-comms-cached-endpoints-work/src/bot.cpp
++++ b/bots/variants/willow-upstream-c71be8c-work/src/bot.cpp
+@@ -2868,13 +2868,10 @@ const std::uint8_t* open_bits(const World& world) {
+ 
+ // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
+ // there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
+-const bitboard* step_guard(const World& world, Safety& safety, Pathing& pathing) {
++const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius) {
+     world.throw_if_stale();
+-    if (world.me().type == cambc::champion_type::willow) return willow_step_guard(world, pathing, safety);
+     if (!enemy_seen(world)) return nullptr;
+     static bitboard guard{cambc::uninitialized};
+-    const auto& self = world.me();
+-    const vec2 here = my_position();
+     std::array<const ChampionBelief*, 8> foes;
+     std::array<const Strike*, 8> strikes;
+     Unwritten<vec2, 8> positions;
+@@ -2885,9 +2882,6 @@ const bitboard* step_guard(const World& world, Safety& safety, Pathing& pathing)
+             n < static_cast<int>(foes.size()) && in_square(here, e.pos, Strike::max_reach + 2) && safety.strike_of(e).reach >= 0)
+             strikes[n] = &safety.strike_of(e), at[n] = e.pos, foes[n++] = &e;
+     if (n == 0) return nullptr;
+-    int radius = 1;
+-    for (int s = 0; s < 2; ++s)
+-        if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = 2;
+     // Who can hit a tile, and how hard: a tile no worse than ours is as safe as ours. `bound`
+     // by distance alone, never below the exact exposure, which only the foes in it can add to;
+     // only those `reaching` a step or dash can be in it.
+@@ -3063,6 +3057,20 @@ const bitboard* step_guard(const World& world, Safety& safety, Pathing& pathing)
+     return any ? &guard : nullptr;
+ }
+ 
++// Willow's station cache also serves support decisions, so keep its guard eager.
++void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
++    if (world.me().type == cambc::champion_type::willow) {
++        world.throw_if_stale();
++        pathing.set_guard(willow_step_guard(world, pathing, safety));
++        return;
++    }
++    const auto& self = world.me();
++    int radius = 1;
++    for (int s = 0; s < 2; ++s)
++        if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = 2;
++    pathing.defer_guard(step_guard, safety, my_position(), radius);
++}
++
+ // The first altar without an enemy lock that a tribute from p reaches, or -1.
+ int altar_here(const World& world, vec2 p) {
+     const auto& altars = world.map().altars;
+@@ -5157,7 +5165,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+         return;
+     }
+ 
+-    pathing.set_guard(step_guard(world, safety, pathing));
++    guard_steps(world, pathing, safety);
+     if (yield_capture(world, pathing, safety, memory)) return;
+     if (take_capture_handoff(world, pathing, safety, memory)) return;
+     const bool holding = holding_capture(world, pathing) || contesting(world);
+@@ -5190,7 +5198,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     if (!me.is_alive()) return;
+     if (!my_can_attack() || !my_can_cast()) safety.refresh();
+     // The guard was placed around the tile we started on: the goal steps from where the search left us.
+-    if (my_position() != world.me().pos && (my_can_move() || my_can_cast())) pathing.set_guard(step_guard(world, safety, pathing));
++    if (my_position() != world.me().pos && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
+     if (holding) {
+         hold_capture(world, memory, attacked);
+         return;
+diff --git a/bots/variants/willow-comms-cached-endpoints-work/src/main.cpp b/bots/variants/willow-upstream-c71be8c-work/src/main.cpp
+index 1de5c19..d48c567 100644
+--- a/bots/variants/willow-comms-cached-endpoints-work/src/main.cpp
++++ b/bots/variants/willow-upstream-c71be8c-work/src/main.cpp
+@@ -7,6 +7,7 @@
+ #include "comms.h"
+ #include "draft.h"
+ #include "pathing.h"
++#include "plan.h"
+ #include "safety.h"
+ #include "util.h"
+ #include "world.h"
+@@ -31,7 +32,78 @@ template <class F> bool run(const char* phase, F&& f) {
+     return false;
+ }
+ 
++// Spare fuel fills the terrain-only tables a fight reads, nearest tiles first: around visible
++// enemies, then around us (wider while dead). Never changes play: each fills as a miss would. Bound
++// by the fuel spent this turn against the real budget, so it fills the same at any budget.
++struct TableQueue {
++    static constexpr std::uint64_t tile_reserve = 6000; // a tile's tables on 100x100, with margin
++    // Filled tiles (or walls) as bits by row and by column, 2 words each: a ring's sides are 4 spans.
++    std::vector<std::uint64_t> rows, cols;
++    std::vector<std::uint8_t> rings; // by tile: rings around it all done, + 1
++
++    // The first clear bit in [lo, hi] of a 2-word line, or -1.
++    static int first_clear(const std::uint64_t* line, int lo, int hi) {
++        for (int w = lo >> 6; w <= hi >> 6; ++w) {
++            const int a = std::max(lo, w * 64) - w * 64, b = std::min(hi, w * 64 + 63) - w * 64;
++            const std::uint64_t span = (b == 63 ? ~std::uint64_t{0} : (std::uint64_t{2} << b) - 1) & (~std::uint64_t{0} << a);
++            if (const std::uint64_t m = ~line[w] & span) return w * 64 + std::countr_zero(m);
++        }
++        return -1;
++    }
++
++    void run(const aph::World& world, std::uint64_t start, std::uint64_t budget) {
++        const auto& map = world.map();
++        const int W = map.width, H = map.height;
++        const auto room = [&] {
++            const auto left = aph::fuel();
++            return left >= aph::end_reserve + tile_reserve && start - left + aph::end_reserve + tile_reserve <= budget;
++        };
++        if (!room()) return;
++        if (rings.empty()) {
++            rows.assign(static_cast<std::size_t>(2 * H), 0), cols.assign(static_cast<std::size_t>(2 * W), 0);
++            rings.assign(static_cast<std::size_t>(W * H), 0);
++        }
++        const auto fill = [&](int x, int y) {
++            if (!room()) return false;
++            if (!aph::test(map.walls, {x, y})) aph::warm_tile(world, {x, y});
++            rows[static_cast<std::size_t>(2 * y + (x >> 6))] |= std::uint64_t{1} << (x & 63);
++            cols[static_cast<std::size_t>(2 * x + (y >> 6))] |= std::uint64_t{1} << (y & 63);
++            return true;
++        };
++        const auto around = [&](aph::vec2 c, int radius) {
++            auto& done = rings[static_cast<std::size_t>(c.x + c.y * W)];
++            for (int r = done; r <= radius; ++r) {
++                const int x0 = std::max(0, c.x - r), x1 = std::min(W - 1, c.x + r);
++                const int y0 = std::max(0, c.y - r + 1), y1 = std::min(H - 1, c.y + r - 1);
++                while (true) {
++                    int x = -1, y = -1;
++                    for (const int row : {c.y - r, c.y + r})
++                        if (x < 0 && row >= 0 && row < H) {
++                            x = first_clear(&rows[static_cast<std::size_t>(2 * row)], x0, x1);
++                            y = row;
++                        }
++                    for (const int col : {c.x - r, c.x + r})
++                        if (x < 0 && col >= 0 && col < W && y0 <= y1) {
++                            y = first_clear(&cols[static_cast<std::size_t>(2 * col)], y0, y1);
++                            x = y < 0 ? -1 : col;
++                        }
++                    if (x < 0) break;
++                    if (!fill(x, y)) return false;
++                }
++                done = static_cast<std::uint8_t>(r + 1);
++            }
++            return true;
++        };
++        const auto& me = world.me();
++        if (me.alive)
++            for (const auto& e : world.enemies)
++                if (e.alive && e.visible && !around(e.pos, 2)) return;
++        if (me.pos.x >= 0) around(me.pos, me.alive ? 8 : 20);
++    }
++};
++
+ struct Instance {
++    TableQueue tables;
+     aph::DraftState draft;
+     std::unique_ptr<aph::World> world;
+     std::unique_ptr<aph::Pathing> pathing;
+@@ -45,6 +117,7 @@ struct Instance {
+     }
+ 
+     [[gnu::flatten]] void play_turn() {
++        const auto start = aph::fuel();
+         aph::FuelMeter meter{"turn"};
+         const bool updated = run("world", [&] {
+             if (!world) world = std::make_unique<aph::World>();
+@@ -97,6 +170,8 @@ struct Instance {
+                     if (warmed_up) std::printf("WARM %u done\n", cambc::round_number());
+                 });
+             });
++        if (!world->is_stale())
++            run("warm tables", [&] { tables.run(*world, start, world->round == world->first_round ? 200000 : 100000); });
+         aph::print_fuel_log();
+     }
+ };
+diff --git a/bots/variants/willow-comms-cached-endpoints-work/src/pathing.cpp b/bots/variants/willow-upstream-c71be8c-work/src/pathing.cpp
+index 364d6d7..3e97ea0 100644
+--- a/bots/variants/willow-comms-cached-endpoints-work/src/pathing.cpp
++++ b/bots/variants/willow-upstream-c71be8c-work/src/pathing.cpp
+@@ -39,7 +39,7 @@ const bitboard& Pathing::foot() const {
+ }
+ 
+ void Pathing::begin_turn() {
+-    guard_ = nullptr; // a turn abandoned as stale left its guard set
++    guard_ = nullptr, guard_fn_ = nullptr; // a turn abandoned as stale left its guard set
+     blocked_fresh_ = false;
+     pos_fresh_ = false;
+     if (bumped_round_ != world_.round) {
+@@ -394,7 +394,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
+     std::array<int, 8> aim_of{};
+     for (auto d : directions) {
+         const vec2 p = me + d;
+-        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard_ && test(*guard_, p))) continue;
++        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard() && test(*guard(), p))) continue;
+         const int steps = field.at(p);
+         if (steps >= here) continue;
+         const int towards = aim ? aim_distance(p, *aim) : 0;
+@@ -443,7 +443,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
+     } else if (avoid) {
+         or_into(walls, *avoid, walls);
+     }
+-    if (guard_) or_into(walls, *guard_, walls);
++    if (guard()) or_into(walls, *guard(), walls);
+     set_tile(walls, me, false);
+     const int cap = std::min<int>(max_steps, unreachable);
+     auto& kept = kept_route_;
+@@ -525,7 +525,7 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
+ 
+ [[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
+     if (refused) *refused = true;
+-    if (guard_ && test(*guard_, tile)) return false;
++    if (guard() && test(*guard(), tile)) return false;
+     try {
+         if (cambc::self().move_absolute(tile)) {
+             invalidate();
+@@ -569,7 +569,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
+         const vec2 a = me + d;
+         if (!in_bounds(a) || !test(allies, a)) continue;
+         // route() blocks these again after freeing a; inside danger, a is in our own region.
+-        if ((guard_ && test(*guard_, a)) || (avoid && test(*avoid, a) && !test(*avoid, me))) continue;
++        if ((guard() && test(*guard(), a)) || (avoid && test(*avoid, a) && !test(*avoid, me))) continue;
+         if (test(goals, a)) {
+             opened = true;
+             continue;
+@@ -590,7 +590,7 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
+         int best_dist = 0;
+         for (auto e : directions) {
+             const vec2 p = me + e;
+-            if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard_ && test(*guard_, p))) continue;
++            if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard() && test(*guard(), p))) continue;
+             if (const int d2 = dist(p, a); d2 > best_dist) best = p, best_dist = d2;
+         }
+         return best && try_move(*best);
+@@ -664,7 +664,7 @@ bool Pathing::step_closer(vec2 target, const bitboard* avoid, std::optional<vec2
+     int best_dist = dist(me, target);
+     for (auto d : directions) {
+         const vec2 p = me + d;
+-        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard_ && test(*guard_, p))) continue;
++        if (!in_bounds(p) || test(walls, p) || (avoid && test(*avoid, p)) || (guard() && test(*guard(), p))) continue;
+         if (const int d2 = dist(p, target); d2 < best_dist
+             || (best && d2 == best_dist && aim && aim_distance(p, *aim) < aim_distance(*best, *aim)))
+             best = p, best_dist = d2;
+@@ -699,9 +699,9 @@ const bitboard& dash_landings_from(const StaticMap& map, vec2 from, const bitboa
+ const bitboard& Pathing::dash_landings() {
+     static bitboard off{cambc::uninitialized};
+     const bitboard* also = nullptr;
+-    if (bumped_any_ && guard_) or_into(bumped_, *guard_, off), also = &off;
++    if (bumped_any_ && guard()) or_into(bumped_, *guard(), off), also = &off;
+     else if (bumped_any_) also = &bumped_;
+-    else if (guard_) also = guard_;
++    else if (guard()) also = guard();
+     return dash_landings_from(map(), my_pos(), also);
+ }
+ 
+diff --git a/bots/variants/willow-comms-cached-endpoints-work/src/pathing.h b/bots/variants/willow-upstream-c71be8c-work/src/pathing.h
+index bf4a315..cc6a6bf 100644
+--- a/bots/variants/willow-comms-cached-endpoints-work/src/pathing.h
++++ b/bots/variants/willow-upstream-c71be8c-work/src/pathing.h
+@@ -15,6 +15,7 @@ namespace aph {
+ inline constexpr int max_detour = 16;
+ 
+ class World;
++class Safety;
+ struct StaticMap;
+ 
+ // Tiles a dash from `from` can land on: <= 2 king steps not through walls or camps, onto a free
+@@ -88,8 +89,27 @@ public:
+     // unless a hidden unit was the reason.
+     bool try_move(vec2 tile, bool* refused = nullptr);
+     // Tiles no step or dash may end on until cleared: routes go around them.
+-    void set_guard(const bitboard* guard) { guard_ = guard; }
+-    const bitboard* guard() const { return guard_; }
++    void set_guard(const bitboard* guard) { guard_ = guard, guard_fn_ = nullptr; }
++    // A guard worked out on first need, from inputs read now: a turn that never steps skips it.
++    using GuardFn = const bitboard* (*)(const World&, Safety&, vec2 here, int radius);
++    void defer_guard(GuardFn fn, Safety& safety, vec2 here, int radius) {
++        guard_ = nullptr, guard_fn_ = fn, guard_safety_ = &safety, guard_here_ = here, guard_radius_ = radius;
++    }
++    const bitboard* guard() const {
++        if (guard_fn_) {
++            const auto fn = guard_fn_;
++            guard_fn_ = nullptr;
++            guard_ = fn(world_, *guard_safety_, guard_here_, guard_radius_);
++        }
++        return guard_;
++    }
++    // The guard as set, deferred or not, to put back without working it out.
++    struct GuardState {
++        const bitboard* guard;
++        GuardFn fn;
++    };
++    GuardState held_guard() const { return {guard_, guard_fn_}; }
++    void restore_guard(const GuardState& s) { guard_ = s.guard, guard_fn_ = s.fn; }
+ 
+     // Unseen units can still block these.
+     const bitboard& dash_landings(); // <= 2 king steps not through walls or camps, onto a free tile, off the guard
+@@ -175,7 +195,11 @@ private:
+     bool blocked_fresh_ = false;
+     bitboard bumped_;
+     bool bumped_any_ = false;
+-    const bitboard* guard_ = nullptr;
++    mutable const bitboard* guard_ = nullptr;
++    mutable GuardFn guard_fn_ = nullptr;
++    Safety* guard_safety_ = nullptr;
++    vec2 guard_here_{-1, -1};
++    int guard_radius_ = 1;
+     int bumped_round_ = -1;
+     vec2 pos_;
+     std::uint32_t pos_round_ = 0;
+diff --git a/bots/variants/willow-comms-cached-endpoints-work/src/plan.cpp b/bots/variants/willow-upstream-c71be8c-work/src/plan.cpp
+index cfad0e5..57fae88 100644
+--- a/bots/variants/willow-comms-cached-endpoints-work/src/plan.cpp
++++ b/bots/variants/willow-upstream-c71be8c-work/src/plan.cpp
+@@ -21,6 +21,17 @@ constexpr float cast_cost = 40; // a slot's next 8 rounds, as cast_at_enemies pr
+ constexpr int max_foes = 8;
+ constexpr bool debug_search = true; // SRCH and SRCH-REFUSED lines, inside debug_block
+ 
++// Search's attack_viewers by window row, for the two ranges asked most (ability_range, our attack
++// range); here so that warm_tile can fill them.
++using ViewerRows = std::array<std::uint16_t, 9>;
++std::array<std::array<ViewerRows, 100 * 100>, 2> viewer_rows_cache;
++std::array<std::array<std::uint8_t, 100 * 100>, 2> viewer_rows_known;
++
++void fill_viewer_rows(const World& world, vec2 p, int r, ViewerRows& out) {
++    const auto w = attack_viewers(world, p, r);
++    for (int y = 0; y < 9; ++y) out[y] = static_cast<std::uint16_t>(w.shr(9 * y).lo & 0x1FF);
++}
++
+ // ---- The basic attack from where we stand, for strike_enemy ----
+ 
+ struct Foe {
+@@ -473,23 +484,17 @@ struct Search {
+     }
+     // attack_viewers by window row (bit x + 4), kept for the game for the two ranges asked most:
+     // it depends on terrain alone.
+-    using Rows = std::array<std::uint16_t, 9>;
++    using Rows = ViewerRows;
+     const Rows& viewer_rows(vec2 p, int r) const {
+-        static std::array<std::array<Rows, 100 * 100>, 2> rows;
+-        static std::array<std::array<std::uint8_t, 100 * 100>, 2> known;
+         static Rows scratch;
+-        const auto fill = [&](Rows& out) {
+-            const auto w = attack_viewers(world, p, r);
+-            for (int y = 0; y < 9; ++y) out[y] = static_cast<std::uint16_t>(w.shr(9 * y).lo & 0x1FF);
+-        };
+         const int slot = r == ability_range ? 0 : r == range ? 1 : -1;
+         const auto i = static_cast<std::size_t>(p.x + p.y * world.map().width);
+-        if (slot < 0 || i >= known[0].size()) {
+-            fill(scratch);
++        if (slot < 0 || i >= viewer_rows_known[0].size()) {
++            fill_viewer_rows(world, p, r, scratch);
+             return scratch;
+         }
+-        if (!known[slot][i]) fill(rows[slot][i]), known[slot][i] = 1;
+-        return rows[slot][i];
++        if (!viewer_rows_known[slot][i]) fill_viewer_rows(world, p, r, viewer_rows_cache[slot][i]), viewer_rows_known[slot][i] = 1;
++        return viewer_rows_cache[slot][i];
+     }
+ 
+     // The camp groups a landing on cell c touches, by cell.
+@@ -812,7 +817,8 @@ void Search::read_geometry() {
+     Grid blocked = 0, walls = 0;
+     read_into(pathing.blocked(), blocked);
+     // Where we stand is never an end to drop: after the goal, it is the only one.
+-    if (const bitboard* guard = pathing.guard()) read_into(*guard, guarded), guarded &= ~gbit(cell(here));
++    // An anchored search only ends on its own tile, which is never guarded.
++    if (const bitboard* guard = moves ? pathing.guard() : nullptr) read_into(*guard, guarded), guarded &= ~gbit(cell(here));
+     // Dash paths are blocked by walls, camps, visible enemies (probe-dash-enemy) and the enemy spawn.
+     static bitboard foes_seen{cambc::uninitialized};
+     camps_into(t);
+@@ -1648,6 +1654,15 @@ void Search::grow(const Node& s) {
+ 
+ } // namespace
+ 
++void warm_tile(const World& world, vec2 p) {
++    warm_reach_tile(world, p);
++    const auto i = static_cast<std::size_t>(p.x + p.y * world.map().width);
++    if (i >= viewer_rows_known[0].size()) return;
++    const int ranges[2] = {ability_range, world.me().facts().attack_range()};
++    for (int s = 0; s < 2; ++s)
++        if (!viewer_rows_known[s][i]) fill_viewer_rows(world, p, ranges[s], viewer_rows_cache[s][i]), viewer_rows_known[s][i] = 1;
++}
++
+ bool strike_possible(const World& world) {
+     const auto& self = world.me();
+     if (!self.alive || !enemy_seen(world)) return false;
+@@ -1917,7 +1932,7 @@ bool strike_possible(const World& world) {
+     int done = 0;
+     bool failed = false;
+     // Its walk may end on a guarded tile it passes on the way to a landing.
+-    const bitboard* guard = pathing.guard();
++    const auto guard = pathing.held_guard();
+     if (world.me().type != cambc::champion_type::willow) pathing.set_guard(nullptr);
+     while (done < seq.n) {
+         // Out of fuel mid-plan, the rest would play in the next round on last round's positions.
+@@ -2015,7 +2030,7 @@ bool strike_possible(const World& world) {
+         dropped[tiles[alt].c] = true;
+         seq = concrete(tiles[alt]);
+     }
+-    pathing.set_guard(guard);
++    pathing.restore_guard(guard);
+     world.throw_if_stale();
+     if constexpr (debug_search) {
+         debug_block({
+diff --git a/bots/variants/willow-comms-cached-endpoints-work/src/plan.h b/bots/variants/willow-upstream-c71be8c-work/src/plan.h
+index c34aba7..cb44ed7 100644
+--- a/bots/variants/willow-comms-cached-endpoints-work/src/plan.h
++++ b/bots/variants/willow-upstream-c71be8c-work/src/plan.h
+@@ -47,4 +47,8 @@ bool strike_enemy(const World& world);
+ // without moving.
+ Planned strike_after(const World& world, Pathing& pathing, Safety& safety);
+ 
++// Fills the terrain-only tables a fight around p reads (Reach's and the search's), each exactly as
++// a miss would; p is not a wall.
++void warm_tile(const World& world, vec2 p);
++
+ } // namespace aph
+diff --git a/bots/variants/willow-comms-cached-endpoints-work/src/safety.cpp b/bots/variants/willow-upstream-c71be8c-work/src/safety.cpp
+index 206d522..a9ad530 100644
+--- a/bots/variants/willow-comms-cached-endpoints-work/src/safety.cpp
++++ b/bots/variants/willow-upstream-c71be8c-work/src/safety.cpp
+@@ -1309,6 +1309,11 @@ std::array<std::uint8_t, 100 * 100> statics_around;
+ 
+ } // namespace
+ 
++void warm_reach_tile(const World& world, vec2 p) {
++    (void)static_window(world, p);
++    (void)sight(world, p, true);
++}
++
+ void warm_reach(const World& world, std::uint64_t fuel_floor) {
+     if (!world.me().alive || !fuel_ok(fuel_floor + 8000)) return;
+     const vec2 here = my_position();
+diff --git a/bots/variants/willow-comms-cached-endpoints-work/src/safety.h b/bots/variants/willow-upstream-c71be8c-work/src/safety.h
+index 12922b5..45104ca 100644
+--- a/bots/variants/willow-comms-cached-endpoints-work/src/safety.h
++++ b/bots/variants/willow-upstream-c71be8c-work/src/safety.h
+@@ -174,6 +174,8 @@ Reach::Window attack_viewers(const World& world, vec2 target, int range, bool st
+ // enemies may step to, so fights find it ready. Sight masks are not warmed: in bench games only 1
+ // in 20 of those warmed was ever read.
+ void warm_reach(const World& world, std::uint64_t fuel_floor);
++// The static window and far sight mask at p (not a wall), as a miss would fill them.
++void warm_reach_tile(const World& world, vec2 p);
+ 
+ // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
+ const Strike& strike(const ChampionBelief& c, int turn_round);
