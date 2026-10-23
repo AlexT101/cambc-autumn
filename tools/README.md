@@ -102,8 +102,8 @@ py tools/ab.py main variants/hecate-cap100000-at10000000 --fuel 10000000  # CAND
   `compare` keys games by map stem and side.
 - **Baselines for the wide set** (main bbf6f05, test drafts, against hecate):
   `replays/fuel/wide-base-100M.json` and `wide-base-real.json` in the primary checkout.
-- **Profile:** [FUEL-PROFILE-2026-10-22.md](../research/hyperion/FUEL-PROFILE-2026-10-22.md) shows where the fuel
-  goes, phase by phase.
+- **Profile:** [FUEL-PROFILE.md](../research/hyperion/FUEL-PROFILE.md) shows where the fuel goes and which danger
+  models overlap.
 - hyperion prints `SHORTCUT round champion what` wherever fuel made it choose worse (`note_shortcut` in util.h), and `OOF round phase` for each turn that ran out. Both are inside `debug_block`.
 - The bench's 16 games swing by about ±20 out-of-fuel turns and include no shared-gem map, where a third of them happen. Judge out-of-fuel turns on a full A/B with `oof.py`.
 - Set `debug_fuel` in util.h for per-phase costs (`FuelMeter`, ~170 fuel per meter).

@@ -86,7 +86,7 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   (40.5% ladder, 44.9% gen) and claim seniority all lost.
 - A crystal shortcut over open ground (for corridors' lanes) was dropped: ladder opponents used 9 crystals in 9
   corridors games. Camps reachable only by crystal (ambush, big-world, fracture: 7-21 gems) are not farmed.
-- Farming stage 2 (FARMING.md; crews from arrivals, one lexicographic pick, the risky/shared/help tiers deleted): 45.1%
+- Farming stage 2 (on CHANGES 40; crews from arrivals, one lexicographic pick, the risky/shared/help tiers deleted): 45.1%
   (gen 42.6), 46.2% without its heal term. Melee champions stopped working big monster groups and took small ones
   (melee camp damage −19%, capture gems −6.7%); the ladder went the other way (tributed +15%).
 - Waking sleeping groups onto enemies (`wake_camps`): fired in 17 of 582 games, too rare to measure; its place is the
@@ -97,10 +97,8 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 Hecate vs hecate with only the draft changed, each pick on maps of its pick count ([hyperion/DRAFT.md](hyperion/DRAFT.md)).
 These predate Khaos's Prism-specific play (CHANGES 82), whose draft starts with Prism.
 
-- Heart of Ruin was the core: replacing it in HoR/Stellar/Cassi lost 12-48%. Marcella and Ryth were the best additions;
-  Prism, Tavi and Willow lost in every slot of a trio.
-- Trios: HoR/Marcella/Cassi and HoR/Marcella/Vesper level with each other, both ~61% against the field; Ren/Stellar/Cassi
-  lost 69.7-72.5% to them, and HoR/Stellar/Ren (a common ladder trio) 64-73% to the top three.
+- Heart of Ruin was the core (replacing it lost 12-48%); Marcella and Ryth were the best additions; Prism, Tavi and
+  Willow lost in every slot of a trio. HoR/Stellar/Ren (a common ladder trio) lost 64-73% to the top three trios.
 - 4th: Ryth 53-60% over Vesper or Cassi; Vendetta, Willow, Varg, Stellar and Ren lost as 4th. 5th: Stellar 57.9% and
   Willow 52.8% over Cassi, level with each other; Varg 47.7%, Ren and Vendetta lost.
 
@@ -159,14 +157,12 @@ another harmless group was kept (CHANGES 91).
   sight: 49.6%, out-of-fuel turns level. Remembered wards were stale 90% of the time in a traced game against hecate
   (3439 wrong, 394 right; wards in sight 909/909 right). Known limit, accepted: an enemy's fresh ward placed in its
   own turn (sight counts at once) is not modelled, so `Reach` is bolder than reality beside our bush clusters.
-- Not fixed: retreat_step walks back into an Elk's reach when the way home passes it (recall_outruns ignores camps);
-  idle turns under a Golem (dense-camps). Untried: count a Heart of Ruin landing as a cast only when it hits something.
+- Untried: count a Heart of Ruin landing as a cast only when it hits something.
 
 ## Fuel
 
-Where fuel goes now: [OOF-ANATOMY-2026-10-22.md](hyperion/OOF-ANATOMY-2026-10-22.md) (59% of out-of-fuel turns run out
-in the strike search, 18% in farm; 44% are replays that run out again) and
-[FUEL-PROFILE-2026-10-22.md](hyperion/FUEL-PROFILE-2026-10-22.md).
+Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel turns ran out in the strike search,
+18% in farm; 44% are replays that run out again).
 
 - Fuel-only changes (byte-identical at 100M) still reroute real-budget games (savings 47.5%, a control burning 2k a turn
   48.4%): judge them by fuel and out-of-fuel turns, not win rate. Out-of-fuel totals swing by hundreds on three or four
@@ -179,8 +175,8 @@ in the strike search, 18% in farm; 44% are replays that run out again) and
   went 483 -> 1109, almost all on fight maps, 44% of cuts inside the farm loop.
 - The stale-plan drop (CHANGES 59) costs turns in long fights: the resumed search used to finish and spend the attack
   and cast, so its replay was cheap; now every replay is a full turn that runs out again.
-- Main vs hecate-v8 (2026-10-21): 65.7% at the real budget, 62.0% with 100M for both. Lifting the limit helps v8 more,
-  so main's extra out-of-fuel turns did not show as lost games; ab.py's `--fuel` sets both sides.
+- Extra out-of-fuel turns need not show as lost games: main beat hecate 65.7% at the real budget but 62.0% with 100M
+  for both (2026-10-21), as lifting the limit helped hecate more. ab.py's `--fuel` sets both sides.
 - Codegen: the ladder builds only src/ with its own flags, so flags can't ship. Locally -flto −1.6% (with the wasm EH
   options at link), inline-threshold=1000 −0.8%, -Os +6.9%. Hot loops are fully inlined with no spills; the cost is
   wasm's stack-machine instruction count (40% local.get/set). wasi-sdk-33's llvm-objdump.exe works on the module.
