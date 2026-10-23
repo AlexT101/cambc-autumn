@@ -373,3 +373,4 @@ ladder 52.5, gen 53.1, gen-s1 52.9), 4-pick maps 60.0% of 330 (54.6-65.1), the r
 57.2% and 57.6%. Out-of-fuel turns 2858 vs 2533 (Heart of Ruin's turns cost more).
 
 - `draft_order()`: with 4 picks, the fourth pick is Heart of Ruin, swapped with the Ryth/Vendetta role.
+- With 101 merged, against e2ad48c (101 alone), own drafts: 52.4% of 1104 (49.5-55.4; ladder 48.8, gen 52.1, gen-s1 53.3).
