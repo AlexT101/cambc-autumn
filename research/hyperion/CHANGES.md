@@ -390,3 +390,5 @@ fresh suite (seed 8431) 54.5% of 512 (50.2-58.8); pooled ~55.7% of 1616.
 - `add_completion` gives a completed emblem its extra stats (Power's sixth shard, Bruiser's other two), used by
   `value()`, `buy_shards` and `affordable_prefix`.
 - Prism's mean ~180 unspent gold at r1000 is a tail (median 20): Prisms holding 200-365 gems that rarely go home.
+- With 101-103 merged, against `bots/baselines/v37` on own drafts: ~65% of 1616 (ladder 66.2, gen 65.0, gen-s1 65.0,
+  gen-s8431 65.2), out-of-fuel turns 4011 vs 5858. Before: v38 54.8%, 92-99 57.2%, 101 59.1%, 102 alone 60.1%.
