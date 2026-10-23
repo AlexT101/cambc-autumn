@@ -1275,6 +1275,14 @@ bool buy_shards(const World& world) {
     return gold < start;
 }
 
+// Gold paid to us per base gold of a capture: the Treasure and Vesper Vale bonuses add.
+float gold_paid(const World& world) {
+    float rate = has_family(my_items(), treasure) ? 1.2f : 1.0f;
+    if (world.me().facts().passive == Passive::bonus_gold)
+        rate += static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f;
+    return rate;
+}
+
 // The next emblem (best_emblem), the rounds it saves us over our share of the gems still to farm,
 // and the gems a gold is worth (its part of that saving). Kept while our share and stats hold: the
 // upkeep counters under them move every turn, and every farm value would be rebuilt.
@@ -1881,7 +1889,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable, shared = -1, shared_steps = unreachable;
     bool best_spell = false;
     float best_value = 0, risky_value = 0, shared_value = 0;
-    const float per_gold = prices(world).per_gold * (gold_farmer ? params::gold_farmer_weight : 1.0f);
+    // Per base gold of a group: we are paid it with our bonuses.
+    const float paid = gold_paid(world);
+    const float per_gold = prices(world).per_gold * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);
     // An ally in sight clearing its claimed damaging group gets help only if finishing it alone
     // would take it below the recall line: one champion per camp otherwise.
     const auto struggling = [&](int g) __attribute__((always_inline)) {
@@ -2142,7 +2152,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         // The trip home is health-dependent, so it stays out of the kept facts.
         float bank = known.walked_bank, cycle_bank = known.walked_cycle;
         if (to_altar) {
-            const float back = (wins ? winning_trip : trip_home)->rounds(walk, capture_rounds(), known.gold_in);
+            const float back = (wins ? winning_trip : trip_home)->rounds(walk, capture_rounds(), static_cast<std::uint32_t>(static_cast<float>(known.gold_in) * paid));
             const bool banks = back < static_cast<float>(unreachable);
             bank = banks ? back + static_cast<float>(known.chained_tribute) : 0.0f;
             cycle_bank = banks ? back + static_cast<float>(known.tribute) : 0.0f;
@@ -3248,7 +3258,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
     const int walk = pathing.to_any_altar().at(here);
     if (walk == unreachable) return false;
     const int sharers = 1 + allies_on(world, G.tiles());
-    if (!(home_trip(world, pathing, channel, wins).rounds(walk, payout - world.round, G.gold / sharers) < static_cast<float>(walk)))
+    if (!(home_trip(world, pathing, channel, wins).rounds(walk, payout - world.round, static_cast<std::uint32_t>(static_cast<float>(G.gold / sharers) * gold_paid(world))) < static_cast<float>(walk)))
         return false;
     // The ride banks the share: a payout earlier than we guessed (hold_start) finds us off the hold,
     // where recall_to_bank keeps it only for a bag already banking.
