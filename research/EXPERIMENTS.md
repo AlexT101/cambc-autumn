@@ -167,6 +167,14 @@ another harmless group was kept (CHANGES 91).
   raises every late kill against danger, not only against the competing hit); a killing blow worth
   `max(health, damage) + life_value + bag`, so a sure kill never loses to the same blow elsewhere (51c4fa7) 50.3%.
   Out-of-fuel turns level. Dropped; 51c4fa7 still counts a non-lethal hit before a kill on the same enemy.
+- Chased retreats (REPLAY-ANALYSIS A2: 81% of deaths on retreat turns) are lost fights, not a worse retreat
+  (2026-10-23, 624 ladder games, both teams): low and pressed (<35% health, enemy within 4, off spawn) we died within
+  20 rounds in 39% of episodes, the opponents in 46%; lone healthy contacts 10.6% vs 15.6%. Walking home did best of
+  the movement classes for both teams; moving toward allies did worse. Long retreats dying is mostly selection.
+  Don't retune where or when we retreat on A2's evidence.
+- `retreat_step` taking a sideways step over a free homeward one only when it leaves every reach (`fu/retreat`
+  e617c90; sideways steps with damage > 0 were followed by death 688 times in 6,277 chased turns, 376 expected at
+  the direct-step rate, an association): 50.3%, out-of-fuel turns level. Dropped.
 
 ## Fuel
 
