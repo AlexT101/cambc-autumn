@@ -237,3 +237,16 @@ the ladder she kept it and died at r956.
 - `any_risk` takes a winning bag's tribute at any risk only when its channel is `tribute_window` (6) turns or fewer;
   a longer one goes through `tribute_safe` like any bag.
 - `tribute_ok` never starts or keeps a channel that cannot finish by round 2000.
+
+## 93: dashers no longer freeze at hole lines (2026-10-23)
+
+From the v38 replay analysis (REPLAY-ANALYSIS B2; REPLAY-FOLLOW-UPS R1-3): on the ladder, Heart of Ruin and Vesper
+stood or ping-ponged at one-tile hole lines for up to 900 rounds (34.8k turns in 86 games; every 00great_wall and
+01islands game). Against c6bd503: 50.2% of 1104 (ladder 53.8, gen 50.8, gen-s1 49.0), out-of-fuel turns 5022 vs
+4931. In traced local games on 00great-wall and 01islands, no dasher stalls 30+ turns at a hole line (before: 297-479).
+
+- A dash that hits where it lands (Heart of Ruin) paths on `landing_dash_walls`: no hole crossing within 2 of a camp
+  group that can hit back, matching `dash_across`, which refuses any landing that would wake one. Before, its fields
+  counted crossings the move code never takes. It detours around crossings beside such groups even while they are dead.
+- `search_approach` aims at tiles in range of live members only (all members if none is known alive). In range of a
+  dead member, a Vesper's approach read 0 steps, `dash_across` saw no gain and the walk could not cross.
