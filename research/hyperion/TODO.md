@@ -32,7 +32,8 @@ exhausted; gate removals so far were level at 100M but 4-5x the out-of-fuel turn
 
 ## Bugs, ranked
 
-Verified in code 2026-10-22; 2-5 and 12-20 found by the 2026-10-23 audit. Logic fixes: A/B each, keep if level.
+Verified in code 2026-10-22; 2-4 and 11-14 found by the 2026-10-23 audit (its exact fixes are CHANGES 107). Logic
+fixes: A/B each, keep if level.
 
 1. **Mid-turn state after our own actions.** Safety and World assume beliefs fixed for the turn; our actions break it:
    - a killed enemy becomes an unseen threat after `observe()` (only a full update reads liveness; `see_again` runs
@@ -42,57 +43,35 @@ Verified in code 2026-10-22; 2-5 and 12-20 found by the 2026-10-23 audit. Logic 
    - kills leave walls: `live_camps()` keeps killed members until a full update, and `blocked_` survives attacks;
    - fighters keep turn-start health, shields and cooldowns (`made_` survives `refresh`/`invalidate`);
    - an enemy revealed by a refused step onto its tile: `revealed()` skips our own tile (CHANGES 89).
-2. A carrier on a cleared group's tile holds instead of banking: `holding_capture` exits only on `winning_bag`, and
-   `decide` takes `holding` before `carry_bag`, the only place `closing()` is weighed. It sits up to 6 rounds even
-   when the bag must go now, or when the payout (`held_since` + 6) falls after round 2000 and never pays. Exit when
-   `closing()`, past the round limit, or (maybe) while `memory.banking`.
-3. An unseen enemy's recall or tribute is taken as completed at `channel_end_round` (world.cpp `update_champion`):
-   `possible` only ORs the spawn, as its comment says, but `pos`, `pos_round` and health are replaced (a tribute's
-   gems zeroed) though recalls are mostly started and cancelled (stuns and locks cancel tributes). `note_sighting`
-   then drops a teammate's sighting from that round, and `age() <= 1` users (pack zone, `paying_soon`,
-   `recall_outruns`) read the spawn as a fresh fix. Keep the seen position and health; zero gems only if
-   `update_scores` saw the enemy score rise.
+2. A carrier on a cleared group's tile holds instead of banking: `holding_capture` exits only on `winning_bag` (and,
+   since 107, a payout past the last round), and `decide` takes `holding` before `carry_bag`, the only place
+   `closing()` is weighed. It sits up to 6 rounds even when the bag must go now. Weigh the capture's gems against
+   `closing()` or a bank under way (`memory.banking`).
+3. After an unseen recall's assumed end (107 keeps the sighting), health still resets to full: a guess either way.
 4. Unseen threats price range by walking distance: `build_threats` fields `possible` around walls, `Threat::at` feeds
    that into a Strike indexed by Chebyshev distance. A ground cast hits through walls, so an unseen Prism, Stellar or
    Ryth across a wall line is missing from `lethal`, `threatened`, `fight_key` and `enemy_area` (`each_threat` stays a
    bound). `threats_at` also bisects by Chebyshev before the build and reads the field after, so its answer depends on
    whether something built Safety first.
-5. A melee carrier's own fifth hit on a lock skips the tribute check: `altar_here` skips locked altars, so no caller
-   ran `tribute_ok`; `bank_gems`'s `break_lock` does not return for melee, `step_safely` does not move, and
-   `submit_here` skips `tribute_ok` on the turn's start tile (round-limit check included). Same in the pack-zone
-   branch. Judge a just-unlocked altar in `submit_here`.
-6. Dashers' altar distances: `centre_to_altar` takes `drafted_altar_steps` (walking) unconditionally; guard it as
+5. Dashers' altar distances: `centre_to_altar` takes `drafted_altar_steps` (walking) unconditionally; guard it as
    `draft_spawn_graph` guards spawn steps (bot.cpp).
-7. Enemy stun status in Safety's threats and fights (the planner reads it only for `stunnable`). Conservative: costs
+6. Enemy stun status in Safety's threats and fights (the planner reads it only for `stunnable`). Conservative: costs
    tributes and fights, not deaths.
-8. `capture_taken` counts allies bound elsewhere (tributing, recalling, claimed another group).
-9. The strike search never opens tiles of units it kills (`free_`/`pass_` fixed in `read_geometry`): a kill can open
+7. `capture_taken` counts allies bound elsewhere (tributing, recalling, claimed another group).
+8. The strike search never opens tiles of units it kills (`free_`/`pass_` fixed in `read_geometry`): a kill can open
    a walk or dash path (a blocker in a corridor; Vendetta's refreshed dash through a cleared camp).
-10. A fully shield-absorbed spell ignores Durability in the planner: `min(raw, shield)` should be
-    `min(raw * taken, shield)` (plan.cpp `x.spell`, `x.land`).
-11. Varg's fallback attacks (`camp_attack_targets`, champion splash) wake neighbouring sleeping groups, unpriced
+9. A fully shield-absorbed spell ignores Durability in the planner: `min(raw, shield)` should be
+   `min(raw * taken, shield)` (plan.cpp `x.spell`, `x.land`).
+10. Varg's fallback attacks (`camp_attack_targets`, champion splash) wake neighbouring sleeping groups, unpriced
     (test drafts only).
-12. Our winning bag blocks interception: `game_ender` returns null and `continue_tribute` never cancels while
+11. Our winning bag blocks interception: `game_ender` returns null and `continue_tribute` never cancels while
     `winning_bag`, with no comparison of the two channels' ends. Outside a channel `stun_worth` still prices the stun;
     the loss is mid-tribute and the `stop_game_ender` pursuit. Rare (both teams near 1000) but game-deciding.
-13. Heart of Ruin's landing ignores Ren's retaliation: `land_at` sums it over visible foes only (the landing hits
-    unseen ones), and `dash_away`, `dash_to_attack`, `travel_dash`, `dash_across` and `dash_clears` never check it, unlike
-    `enemy_cast`'s `suicidal` and `camp_cast`'s `skip_rens`. A low-health HoR can die to its own escape dash.
-14. `fighting_allies` counts allies that cannot act (stunned, mid-teleport) as fighting at once (`arrives_at` 0).
-15. A visible unacted enemy is fixed at `now()` with its turn order from ranks, not its `acted` flag; when stale unseen
-    priorities rank it before us, `turns_between` never counts its remaining turn and `possible` misses a step (can
-    empty, untracking it). Fix at `{round, -1}` when `!acted`; `hold_start` and the respawn `before_us` share it.
-16. `awake_over` returns true on `G.threat()` (every member's reach, dead ones included) once `asleep == 0`: falls
-    through to the per-member check instead (`finishing_camp`, `wants_shop`).
-17. Reach's dash `pass` mask drops every believed-live camp; a camp on a bush tile next to the dasher is unseen to it,
+12. Reach's dash `pass` mask drops every believed-live camp; a camp on a bush tile next to the dasher is unseen to it,
     and the rules let a dash cross unseen camps.
-18. `hold_start` can date a hold a round early when the group was not watched last round (a contest that ended this
+13. `hold_start` can date a hold a round early when the group was not watched last round (a contest that ended this
     round before our turn). The comment's own rule wants the later round.
-19. Turn-order bids (test drafts only: they run for `role() < 0` champions): `offer_kills` needs `ours.at(d) > 0` to
-    cancel a recall, though a stun alone does; `offer_escape` ignores our shield (`lethal()` adds it);
-    `can_act_before` trusts unacted enemies' `next_priority` when it can still change.
-20. `play_turn` calls `set_turn_order` outside `act`'s try: a throw there skips the claim and bag posts and the memory
-    update, so next turn reads `memory.damage` as 0.
+14. `can_act_before` trusts unacted enemies' `next_priority` when it can still change (test drafts only).
 
 ## Candidates
 

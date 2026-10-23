@@ -441,3 +441,25 @@ Developed on top of 105 (`strat/teleport2` cafa84c) and merged without it, as a 
   land. Tracking stops spreading its `possible` until it lands, narrowing it to its tile and the landing when known.
 - Locally rare (visible enemy teleports per team-game: 0.47 ladder, 0.09 gen). With 105 and a crystal-buying rule,
   against 105 alone (8dbc020): 50.5% of 1104 (47.6-53.5), teleport class suite 50.6% of 512.
+
+## 107: exact fixes from the 2026-10-23 code audit (2026-10-23)
+
+TODO bugs whose fix uses information already read or a rule the bot already applies elsewhere; one A/B for the batch.
+
+- `submit_here` judges a tribute at an altar believed locked: a melee carrier's own fifth hit on the lock no longer
+  starts an unjudged tribute (or one past round 2000).
+- No holding or contesting a capture whose payout falls after the last round (`pays_too_late`).
+- An unseen channel's assumed end no longer replaces the last sighting (`pos`, `pos_round`), which had made
+  `note_sighting` drop a teammate's sighting; a tribute's bag is emptied only when the enemy score rose
+  (`update_scores`). Health still resets to full after an unseen recall.
+- A visible enemy's fix is dated by its own `acted` flag (`Moment::end` once it has acted), as are `hold_start` and the
+  respawn round, rather than by ranks that stale priorities can misorder.
+- Heart of Ruin's landings (search and `self_abilities` dashes) keep off a seen or tracked Ren whose retaliation kills
+  us (`unseen_suicidal`, `landing_suicidal`).
+- Fights delay a visible ally with a stun still to serve (`stun_pending`, duration > 0) by a turn, and a teleporting
+  one until it lands.
+- `awake_over` checks live striking members only (`G.threat()` holds dead ones too).
+- Turn order (role < 0 champions): a stun alone bids to cancel a recall; `offer_escape`/`may_escape` count our shield.
+- A `set_turn_order` error no longer skips the claim and bag posts and the memory update.
+- Against 90d285e: 49.7% of 1104 (46.8-52.7; ladder 42.5 of 80, gen 50.8, gen-s1 49.8), out-of-fuel turns 4973 vs
+  4855. Kept as level.
