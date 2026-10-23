@@ -158,6 +158,10 @@ another harmless group was kept (CHANGES 91).
   (3439 wrong, 394 right; wards in sight 909/909 right). Known limit, accepted: an enemy's fresh ward placed in its
   own turn (sight counts at once) is not modelled, so `Reach` is bolder than reality beside our bush clusters.
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
+- `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
+  2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next
+  turn (3d8b89e) 50.1%; out-of-fuel turns level. It fired ~10 times in two local games, mostly mid-channel where
+  `continue_tribute` keeps the channel anyway. Dropped. Lock cancels (115 on the ladder) untried.
 
 ## Fuel
 
