@@ -652,13 +652,16 @@ bool retaining_gems(const World& world, Pathing& pathing) {
 }
 
 // A tribute started or kept now is the bag's last chance to score, or wins the game while fleeing
-// gives the enemy time to win first: take it at any risk.
+// gives the enemy time to win first: take it at any risk. Not a long winning channel: standing
+// that long beside an enemy hands it the bag, so it waits for a safe window like any other.
 bool any_risk(const World& world, int channel_turns) {
-    return winning_bag(world) || rounds_left(world) <= channel_turns + endgame_slack;
+    return (winning_bag(world) && channel_turns <= params::tribute_window)
+           || rounds_left(world) <= channel_turns + endgame_slack;
 }
 
+// A channel still running at the round limit scores nothing.
 bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int turns) {
-    return any_risk(world, turns) || tribute_safe(safety, memory, turns);
+    return turns <= rounds_left(world) && (any_risk(world, turns) || tribute_safe(safety, memory, turns));
 }
 
 bool place_ward(const World& world, Memory& memory, bool grow = true);
