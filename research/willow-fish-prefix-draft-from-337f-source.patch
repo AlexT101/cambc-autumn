@@ -1,0 +1,48 @@
+diff --git a/bots/hyperion/src/draft.cpp b/bots/variants/willow-fish-prefix-draft-work/src/draft.cpp
+index 16770e4..5972e64 100644
+--- a/bots/hyperion/src/draft.cpp
++++ b/bots/variants/willow-fish-prefix-draft-work/src/draft.cpp
+@@ -248,7 +248,7 @@ std::span<const cambc::champion_draft> draft_order() {
+     }
+     const auto picks = cambc::draft::team_size();
+     if (picks == 4 || picks == 5) {
+-        static const auto chosen = [] {
++        static auto chosen = [] {
+             const auto roles = cambc::draft::team_size() == 5 ? willow_five_pick_roles()
+                                                             : teacher_draft_roles(native_draft_counts());
+             std::array<cambc::champion_draft, 5> order;
+@@ -257,6 +257,34 @@ std::span<const cambc::champion_draft> draft_order() {
+             if (cambc::draft::team_size() == 4) std::swap(order[3], order[4]);
+             return order;
+         }();
++        if (picks == 5) {
++            static bool decided = false, fourth_committed = false;
++            if (!fourth_committed) {
++                try {
++                    const auto ours = cambc::draft::current_draft(cambc::team::ally);
++                    if (ours.size() >= 4) {
++                        // The actual fourth pick also covers a normal-order fallback after a failed substitution.
++                        if (ours[3] == cambc::champion_draft::willow || ours[3] == cambc::champion_draft::ryth ||
++                            ours[3] == cambc::champion_draft::vendetta)
++                            chosen[3] = ours[3];
++                        decided = fourth_committed = true;
++                    } else if (ours.size() == 3 && !decided) {
++                        decided = true;
++                        if (ours[0] == chosen[0] && ours[1] == chosen[1] && ours[2] == chosen[2]) {
++                            const auto theirs = cambc::draft::current_draft(cambc::team::enemy);
++                            if (theirs.size() == 3 && theirs[0] == cambc::champion_draft::vesper_vale &&
++                                theirs[1] == cambc::champion_draft::vendetta &&
++                                theirs[2] == cambc::champion_draft::heart_of_ruin) {
++                                const auto roles = teacher_draft_roles(native_draft_counts());
++                                chosen[3] = native_pick(roles[3]);
++                            }
++                        }
++                    }
++                } catch (const std::exception&) {
++                    // Keep the chosen order when current draft information is unavailable.
++                }
++            }
++        }
+         return chosen;
+     }
+     return params::draft_preference;

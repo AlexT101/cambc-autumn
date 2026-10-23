@@ -1,0 +1,163 @@
+diff --git a/bots/hyperion/src/bot.cpp b/bots/variants/willow-fbda803-forecast-value-work/src/bot.cpp
+index 8d02d7f..d5bcb69 100644
+--- a/bots/hyperion/src/bot.cpp
++++ b/bots/variants/willow-fbda803-forecast-value-work/src/bot.cpp
+@@ -4833,6 +4833,94 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
+     return true;
+ }
+ 
++struct FormationWorker {
++    const ChampionBelief* ally;
++    vec2 pos;
++    float health, top;
++};
++
++vec2 forecast_formation_step(const World& world, vec2 here, vec2 parent, float amount,
++                            const std::array<FormationWorker, 8>& workers, int count) {
++    const auto& map = world.map();
++    // Preserve any possible stationary basic/cast, without taking an action to test it.
++    for (const auto& e : world.enemies)
++        if (e.alive && e.visible && dist(here, e.pos) <= ability_range) return parent;
++    for (int y = -3; y <= 3; ++y)
++        for (int x = -3; x <= 3; ++x) {
++            const vec2 p = here + vec2{x, y};
++            if (!in_bounds(p)) continue;
++            const int g = map.group_at(p);
++            if (g < 0) continue;
++            const auto& c = world.camps[g];
++            if (c.state_round == world.round && c.asleep_read_epoch == world.camp_observation_epoch
++                && (c.state == CampState::cleared || c.state == CampState::respawning)) continue;
++            return parent;
++        }
++
++    int finalist = -1;
++    float gain = 0, fraction = 0, parent_upper = 0;
++    for (int a = 0; a < count; ++a) {
++        const auto& w = workers[a];
++        const int g = comms::claim_of(world, w.ally->index);
++        if (g < 0 || g >= static_cast<int>(world.camps.size())) continue;
++        const auto& G = map.groups[g];
++        const auto& c = world.camps[g];
++        if (G.members.size() > 16 || c.state != CampState::alive || c.state_round != world.round
++            || c.last_damaged_round != world.round) continue;
++        int work_range = w.ally->facts().attack_range();
++        for (const auto& ability : w.ally->facts().abilities)
++            if (ability.hits_enemies()) work_range = std::max(work_range, ability.reach());
++        bool working = false;
++        float damage = 0;
++        for (std::size_t m = 0; m < G.members.size(); ++m) {
++            const auto& member = G.members[m];
++            if (c.health_round[m] != world.round || !(c.health[m] > 0) || !test(world.visible, member.pos)) continue;
++            working |= dist(w.pos, member.pos) <= work_range;
++            const int distance = dist(w.pos, member.pos);
++            if (!(member.strength > 0) || c.maybe_asleep(m) || distance > member.reach) continue;
++            bool nearest = true;
++            const auto competes = [&](const ChampionBelief& other) {
++                return other.handle != w.ally->handle && other.alive && other.visible
++                       && dist(other.is_self ? here : other.pos, member.pos) <= distance;
++            };
++            for (const auto& other : world.allies) nearest &= !competes(other);
++            for (const auto& other : world.enemies) nearest &= !competes(other);
++            if (nearest) damage += member.strength;
++        }
++        if (!working || !(damage > 0) || w.health <= damage) continue;
++        // Both owned mitigation passives assumed; shield-capable recipients were excluded.
++        const float injury = 0.63f * damage;
++        const float projected = std::min(amount, w.top - w.health + injury);
++        const float projected_fraction = (w.health - injury) / w.top;
++        if (!worth_healing(amount, projected, projected_fraction)) continue;
++        if (dist(parent, w.pos) <= 4) parent_upper = std::max(parent_upper, projected);
++        if (finalist < 0 || projected > gain || (projected == gain && projected_fraction < fraction)
++            || (projected == gain && projected_fraction == fraction
++                && static_cast<std::uint32_t>(w.ally->handle) < static_cast<std::uint32_t>(workers[finalist].ally->handle)))
++            finalist = a, gain = projected, fraction = projected_fraction;
++    }
++    if (finalist < 0 || gain <= parent_upper) return parent;
++    const vec2 recipient = workers[finalist].pos;
++    const auto viewers = attack_viewers(world, recipient, 4);
++    if (support_view(viewers, recipient, here) || support_view(viewers, recipient, parent)) return parent;
++    vec2 best = parent;
++    int best_home = unreachable;
++    for (int k = 1; k < 9; ++k) {
++        const auto& tile = willow_stations->tiles[k];
++        if (!tile.legal || !tile.risk.safe() || !test(map.standable, tile.p)) continue;
++        const int g = map.group_at(tile.p);
++        if (g >= 0 && world.camps[g].state == CampState::cleared) continue;
++        if (!support_view(viewers, recipient, tile.p)) continue;
++        const int home = dist(tile.p, map.ally_spawn_centre);
++        if (best == parent || home < best_home) best = tile.p, best_home = home;
++    }
++    debug_block({ if (best != parent) std::printf("WFF %d %u parent %d,%d step %d,%d ally %u gain %.3f upper %.3f\n",
++        world.round, my_handle(), parent.x, parent.y, best.x, best.y,
++        static_cast<std::uint32_t>(workers[finalist].ally->handle), gain, parent_upper); });
++    world.throw_if_stale();
++    return best;
++}
++
+ // A single current-plus-neighbours pass owns both formation and local recovery.
+ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool protected_work,
+                    bool& mate_eligible) {
+@@ -4895,6 +4983,8 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     };
+     std::array<HealTarget, 8> targets;
+     int target_count = 0;
++    std::array<FormationWorker, 8> workers;
++    int worker_count = 0;
+     float amount = 0;
+     const bool ready = willow ? support_ready(world, world.me(), amount) : support_ready(world, *mate, amount);
+     if (willow && ready) {
+@@ -4902,8 +4992,15 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+             if (a.is_self || !a.alive || !a.visible || dist(here, a.pos) > 5 || test(world.map().ally_spawn, a.pos)) continue;
+             const auto* live = visible_record(a.handle);
+             if (!live) continue;
+-            const float hp = live->health, top = live->max_health;
++            const auto record = *live;
++            const float hp = record.health, top = record.max_health;
+             if (kept_recall(a.handle, a.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time))) continue;
++            const auto state = cambc::champion_state::from_bits_retain(record.state);
++            const vec2 pos{record.x, record.y};
++            if (!leave && hp > 0 && top > 0 && dist(here, pos) <= 5 && !test(world.map().ally_spawn, pos)
++                && a.facts().slot_of(AbilityKind::shield) < 0
++                && !state.contains(cambc::champion_state::submitting_gems) && !state.contains(cambc::champion_state::teleporting))
++                workers[worker_count++] = {&a, pos, hp, top};
+             const float gain = std::min(amount, top - hp);
+             if (!worth_healing(amount, gain, hp / top)) continue;
+             targets[target_count++] = {&a, attack_viewers(world, a.pos, 4), gain, hp / top};
+@@ -5002,6 +5099,10 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+             found = true, best = p, best_gain = gain, best_gap = gap, best_home = home, best_risk = risk;
+     }
+     if (!found) return abandon_recovery();
++    if (willow && ready && !leave && !protected_work && !formation_expired && !active_clear
++        && best != here && best_gain == 0 && target_count == 0 && worker_count > 0) {
++        best = forecast_formation_step(world, here, best, amount, workers, worker_count);
++    }
+     const auto commit_support = [&] {
+         support_owned = true;
+         if (prism) {
+diff --git a/bots/hyperion/src/world.cpp b/bots/variants/willow-fbda803-forecast-value-work/src/world.cpp
+index 872bf89..9ca4510 100644
+--- a/bots/hyperion/src/world.cpp
++++ b/bots/variants/willow-fbda803-forecast-value-work/src/world.cpp
+@@ -1692,7 +1692,7 @@ struct World::CampViews {
+     }
+ 
+     const auto [code, timer] = engine::group_state(G.handle);
+-    if (certify_sleep && (code == 1 || code == 2)) c.asleep_read_epoch = camp_observation_epoch;
++    if (certify_sleep && (code == 1 || code == 2 || code == 3)) c.asleep_read_epoch = camp_observation_epoch;
+     const auto previous = c.state;
+     const int previous_round = c.state_round;
+     const int previous_respawn = c.respawn_round;
+diff --git a/bots/hyperion/src/world.h b/bots/variants/willow-fbda803-forecast-value-work/src/world.h
+index 5ab87b6..0a6719f 100644
+--- a/bots/hyperion/src/world.h
++++ b/bots/variants/willow-fbda803-forecast-value-work/src/world.h
+@@ -363,7 +363,8 @@ struct CampBelief {
+     // Bit i: striking member i read asleep while the group is not. Only damage wakes it, and it
+     // wakes every asleep member, so one seen to wake clears them all. Members past 64 count awake.
+     std::uint64_t asleep = 0;
+-    // Successful asleep reads for Willow's local escape; observe() expires this certificate.
++    // Willow's successful asleep member reads; the epoch also certifies recognized group state.
++    // observe() expires both certificates; respawning groups have no asleep member bits.
+     std::uint64_t asleep_read = 0;
+     std::uint32_t asleep_read_epoch = 0;
+     int last_damaged_round = -1; // a health drop we saw

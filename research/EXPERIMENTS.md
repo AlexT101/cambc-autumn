@@ -1108,3 +1108,116 @@ it also identifies the static spawn-tile output veto. Neither has yet been measu
 cause of nonactivation. A separate source-only value variant may combine unacted workers
 and freshly certified empty-group exemption while preserving all safety and current-output
 protections. These are proposed conditional positioning improvements, not promised heals.
+
+### Forecast funnel witness and value-only follow-up
+
+The unchanged latest forecast647a was copied into Debug diagnostic92578884, with counters
+at existing computations, then played one Elk Arena pair against integrated337f. All34
+helper trace rows parse:22 stop at the static camp-spawn veto;12 have no surviving current
+workable claim, with all12 rejected before working/damage/worth evaluation. No alternative
+station is selected. This supports investigating those gates but does not establish that
+the22 vetoed neighborhoods were actually empty or that unacted workers would qualify.
+Each replay has one malformed/interleaved outer-funnel row; outer-funnel denominators
+explicitly use only complete rows. Neither stdout reached the1MiB cap.
+
+This Debug pair is1–1, with120/124 native rollovers, no native Bot Error or turn-order
+markers. Willow's printed OOF phase is decide in20/25 instances; this is Debug evidence,
+not a Release phase measurement. Summary SHA
+`2750336924d8533d6d3dfce690495417976927a31152c5ed3058839bb2273fd6` and setup-after SHA
+`2d27825d910d912540e276e03afb0b3c7159b01546ef174bd03b2fe0bcc3c4cd` are under
+`replays/willow-forecast-funnel-vs-integrated-parent/`. Counter locals can affect Debug
+code generation/fuel; only output is wholly inside debug_block. No payload parity claim.
+
+The separate reviewed value variant is source0bac63b7. It admits not-yet-acted visible
+workers for conditional positioning value, and exempts freshly certified cleared or
+respawning groups from the static output veto. Live harmless camps still veto movement.
+No future healing or allied tanking enters a safety budget. The successful-state epoch
+was extended to recognized respawning code3: state_round alone could be fresh after
+unknown code0. The prior sleeping-escape consumer still rejects nonalive respawning
+groups, so that admission is unchanged. Actual source review SHA
+`d2cfd22bf61879fdb4d9125ca1c1e7106a8afe9076d4077580b3e52262cb5a48`.
+See `willow-fbda803-forecast-value-source-checkpoint.md` for both exact deltas and manifest.
+The variant is approved for separate runtime, not canonical integration or submission.
+
+The uninstrumented value variant's subsequent Elk Arena Debug pair is1–1, with no runner,
+native Bot Error or turn-order markers. There are no changed-move WFF markers; maximum
+stdout725303 bytes is below the capture cap. Native rollovers125/141 are Debug-only.
+This two-game nonactivation does not qualify or reject the wider policy. Artifacts are in
+`replays/willow-forecast-value-vs-integrated-parent/batch-run-02-debug-elk-arena/`.
+Further forecast qualification is deferred while investigating the user's Fish regression.
+
+### Current Fish losses and requested4c4eacc comparator
+
+CLI-retrieved finished group342a1765-2345-4f3a-890e-79e83f6802a8 is1–4: Hooks wins;
+Gemfight, Shortcut, Expanse and Big World lose. All five put Pantheon on physical A.
+The five-pick losses are Expanse658–1004/r820 and Big World536–1012/r964. Actual Fish
+composition is Vesper/Vendetta/HoR/Varg/Cassi&Issac, six bodies. The earlier saved4–1
+Fish group had Cassi fourth and Ryth fifth; current Fish puts Varg fourth and Cassi fifth.
+Map mix also differs. The CLI exposes no executed submission ID, so these public replays
+are not attributed to local337f or another exact source merely from the draft.
+
+Our team has zero deaths in both current five-pick losses. Expanse captures777 gems;
+658submitted+119held accounts for them, still short of Fish1004. Big World captures994;
+536submitted+458held accounts for them. Banking alone would remain six short at that finish.
+Big World Willow earns no gold, makes825 walks/87 basics and seven heals2259, repeatedly
+capturing a14-gem/zero-gold harmless group. Vesper earns212gold/spends0 and deals5648 camp
+damage, versus Fish Vesper41177. Fish's Vendetta and Varg earn2015/1515gold. The supported
+lead is allocation and growth, not a missed emergency heal or a blanket forced-bank fix.
+Willow's344–350 actor view has full HP, no local ally/camp and successful departure steps;
+the repeated recall/cancel events are consistent with the normal end-turn stub.
+
+Corrected extraction, raw intake and native audit are preserved in
+`replays/Khaos-v-current-fish-history/group-342a1765/` and
+`provenance/fish-regression-history/`. Final group summary Markdown SHA
+`3038d6fa4a08070fc1b38339918842193a282afcd27fba8219f3f51307366f13`, JSON SHA
+`6c786a2cf2a20223e65d4e5a812f4254c28d2a7172ac0d043372dc5606bb9587`.
+Pantheon has18 native rollovers and no native Bot Error statuses; public opponent-side
+status rows are absent, so Fish native errors are unavailable, not zero. An invalid first
+extraction and failed binary turn-order-audit attempt remain labeled separately.
+
+The user's suggested comparator is Alex4c4eaccefe61f63c5c7adc2ab06105e0ad36b8ec.
+Frozen `bots/baselines/hyperion-upstream-4c4eacc` is its root Hyperion source,28 files,
+aggregate7f773ba81b8acc1b3d8912ca48ef98be007b4820ca83f5b7b89ff15b75c3f36f.
+It is not the unrelated v40 baseline added by that commit. Every source file matches Git.
+Its ordinary farm/gold/shop formulas match current337f, apart from capture-signature
+wiring; this is not full behavioral equivalence. Its fifth role is Ryth/Vendetta by existing
+camp density instead of Willow. The saved public results do not prove an executed4c4
+submission or the reported historical win rate. Controls will compare the exact old bot,
+current gameplay with that old draft, and unchanged current Willow against the same frozen
+policy with Fish's roster; this emulator is explicitly not Fish's private gameplay.
+
+Drafts reveal completed simultaneous picks only. Current Willow pick4 sees three opponent
+picks; even a delayed fifth-slot choice cannot see Fish's final Cassi. A source-only
+counterdraft experiment can respond to the already revealed Vesper/Vendetta/HoR prefix
+at our existing fourth slot, preserving fifth-slot HoR and the nonmatching order. It must
+not claim to detect an unknown full Fish roster or freeze its observation on pick1.
+Detailed evidence/timing is in `willow-current-fish-economic-diagnosis.md` and
+`willow-counterdraft-observation-timing.md`. No new deployment or UR queue was made.
+
+### Frozen Fish-roster controls and initial paired experiment
+
+The roster emulator is frozen at10e5eeaa, parent fbda803 source15dcd64. Only its native
+five-pick draft changes, to Vesper/Vendetta/HoR/Varg/Cassi&Issac; three/four-pick and test
+draft behavior are untouched. It reproduces the observed composition, not Fish's private
+gameplay. Local Expanse and Big World decode to the exact public replay map hashes
+51ebf62356056f62 and c890c7d4607bc45c respectively.
+
+Current old-draft control b8108db1 changes only the cached role expression in draft.cpp:
+teacher Ryth/Vendetta fourth, HoR fifth. The separate conditional2797a671 observes the
+exact already revealed enemy Vesper/Vendetta/HoR prefix at three completed own picks,
+then latches the teacher fourth choice. Actual Willow/Ryth/Vendetta fourth is reconciled
+before selecting fifth, retaining HoR. Missing, late or nonmatching information keeps
+the ordinary Willow order. Both full source diffs and aggregates pass independent review
+in `willow-fish-draft-controls-source-review.md`, SHA
+`c8698a50f4dffacf91ef07756869da707d3bddeb8f6095c1689d4295fc4ade10`.
+Neither child changes canonical337f or has been submitted.
+
+The authorized initial comparison is twelve Release/default100k games: exact4c4 source
+7f773ba8, unchanged current337f, and current old-draft controlb8108, each against the same
+emulator on Expanse/BigWorld both physical sides. Conditional2797 is not part of this
+panel. One nice19 worker, build/runtime threads1; no additional live UR. Pre-game manifest
+`provenance/fish-roster-emulator-preflight/setup-before-games.json` SHA
+`5177a5aaf8b6e2a3c5a0e497dc9c93f540cb8fee06b4a5b79bd332ce0130703f` binds all four
+sources, actual Release raw/injected WASMs, CLI/engine and map identities. This small
+mechanism comparison is not broad qualification or identification of the live submitted
+source. Full outcome and actual roster/native-status audits will follow completion.

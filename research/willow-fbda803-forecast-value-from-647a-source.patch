@@ -1,0 +1,59 @@
+diff --git a/bots/variants/willow-fbda803-forecast-work/src/bot.cpp b/bots/variants/willow-fbda803-forecast-value-work/src/bot.cpp
+index 400c987..d5bcb69 100644
+--- a/bots/variants/willow-fbda803-forecast-work/src/bot.cpp
++++ b/bots/variants/willow-fbda803-forecast-value-work/src/bot.cpp
+@@ -4846,8 +4846,16 @@ vec2 forecast_formation_step(const World& world, vec2 here, vec2 parent, float a
+     for (const auto& e : world.enemies)
+         if (e.alive && e.visible && dist(here, e.pos) <= ability_range) return parent;
+     for (int y = -3; y <= 3; ++y)
+-        for (int x = -3; x <= 3; ++x)
+-            if (const vec2 p = here + vec2{x, y}; in_bounds(p) && map.group_at(p) >= 0) return parent;
++        for (int x = -3; x <= 3; ++x) {
++            const vec2 p = here + vec2{x, y};
++            if (!in_bounds(p)) continue;
++            const int g = map.group_at(p);
++            if (g < 0) continue;
++            const auto& c = world.camps[g];
++            if (c.state_round == world.round && c.asleep_read_epoch == world.camp_observation_epoch
++                && (c.state == CampState::cleared || c.state == CampState::respawning)) continue;
++            return parent;
++        }
+ 
+     int finalist = -1;
+     float gain = 0, fraction = 0, parent_upper = 0;
+@@ -4990,7 +4998,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+             const auto state = cambc::champion_state::from_bits_retain(record.state);
+             const vec2 pos{record.x, record.y};
+             if (!leave && hp > 0 && top > 0 && dist(here, pos) <= 5 && !test(world.map().ally_spawn, pos)
+-                && a.facts().slot_of(AbilityKind::shield) < 0 && state.contains(cambc::champion_state::completed_turn)
++                && a.facts().slot_of(AbilityKind::shield) < 0
+                 && !state.contains(cambc::champion_state::submitting_gems) && !state.contains(cambc::champion_state::teleporting))
+                 workers[worker_count++] = {&a, pos, hp, top};
+             const float gain = std::min(amount, top - hp);
+diff --git a/bots/variants/willow-fbda803-forecast-work/src/world.cpp b/bots/variants/willow-fbda803-forecast-value-work/src/world.cpp
+index 872bf89..9ca4510 100644
+--- a/bots/variants/willow-fbda803-forecast-work/src/world.cpp
++++ b/bots/variants/willow-fbda803-forecast-value-work/src/world.cpp
+@@ -1692,7 +1692,7 @@ struct World::CampViews {
+     }
+ 
+     const auto [code, timer] = engine::group_state(G.handle);
+-    if (certify_sleep && (code == 1 || code == 2)) c.asleep_read_epoch = camp_observation_epoch;
++    if (certify_sleep && (code == 1 || code == 2 || code == 3)) c.asleep_read_epoch = camp_observation_epoch;
+     const auto previous = c.state;
+     const int previous_round = c.state_round;
+     const int previous_respawn = c.respawn_round;
+diff --git a/bots/variants/willow-fbda803-forecast-work/src/world.h b/bots/variants/willow-fbda803-forecast-value-work/src/world.h
+index 5ab87b6..0a6719f 100644
+--- a/bots/variants/willow-fbda803-forecast-work/src/world.h
++++ b/bots/variants/willow-fbda803-forecast-value-work/src/world.h
+@@ -363,7 +363,8 @@ struct CampBelief {
+     // Bit i: striking member i read asleep while the group is not. Only damage wakes it, and it
+     // wakes every asleep member, so one seen to wake clears them all. Members past 64 count awake.
+     std::uint64_t asleep = 0;
+-    // Successful asleep reads for Willow's local escape; observe() expires this certificate.
++    // Willow's successful asleep member reads; the epoch also certifies recognized group state.
++    // observe() expires both certificates; respawning groups have no asleep member bits.
+     std::uint64_t asleep_read = 0;
+     std::uint32_t asleep_read_epoch = 0;
+     int last_damaged_round = -1; // a health drop we saw

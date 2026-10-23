@@ -1,0 +1,14 @@
+diff --git a/bots/hyperion/src/draft.cpp b/bots/variants/willow-fish-old-draft-control-work/src/draft.cpp
+index 16770e4..a795c7d 100644
+--- a/bots/hyperion/src/draft.cpp
++++ b/bots/variants/willow-fish-old-draft-control-work/src/draft.cpp
+@@ -249,8 +249,7 @@ std::span<const cambc::champion_draft> draft_order() {
+     const auto picks = cambc::draft::team_size();
+     if (picks == 4 || picks == 5) {
+         static const auto chosen = [] {
+-            const auto roles = cambc::draft::team_size() == 5 ? willow_five_pick_roles()
+-                                                            : teacher_draft_roles(native_draft_counts());
++            const auto roles = teacher_draft_roles(native_draft_counts());
+             std::array<cambc::champion_draft, 5> order;
+             for (std::size_t i = 0; i < order.size(); ++i) order[i] = native_pick(roles[i]);
+             // 4 picks keep Heart of Ruin over the Ryth/Vendetta slot (v38 ladder: 43% on 4-pick maps without it).
