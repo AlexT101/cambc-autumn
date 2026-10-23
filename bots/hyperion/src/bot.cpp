@@ -1449,9 +1449,10 @@ bool holding_capture(const World& world, Pathing& pathing) {
     const auto& c = world.camps[g];
     if (pays_too_late(c)) return false;
     // Waiting for the payout must still leave the walk and the whole bag's tribute before the limit.
+    // A bag too late to bank even now gains nothing by leaving: the hold still pays gold (a tiebreak).
     if (my_gems() > 0 && c.held_since >= 0) {
         const int walk = pathing.to_any_altar().at(here);
-        if (walk != unreachable
+        if (walk != unreachable && walk + tribute_turns(my_gems()) + endgame_slack <= rounds_left(world)
             && std::max(0, c.payout_round() - world.round) + walk + tribute_turns(my_gems() + capture_share(world, g))
                        + endgame_slack > rounds_left(world))
             return false;
