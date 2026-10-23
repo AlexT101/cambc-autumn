@@ -321,3 +321,16 @@ real budget (big-world, ambush, yellow-brick-road, starvation, reverse-spiral) 3
   `open`) or none is open (for `opened`).
 - Where the fuel goes on turns over 100k (own cost a turn): fight sims 24.6k (~6.9 at 3.6k), step_guard 11k,
   update_camps 8.3k, Reach and threat builds 7.4k, blow 7.1k, Search::read 7k, camp_damage 5.9k, grow 5.1k.
+
+## 100: a crew's hit cap credits the claimer only for work the camp shows (2026-10-23)
+
+From the v38 replay analysis (REPLAY-ANALYSIS B3: farm targets flipping, 37k loop turns in 451 ladder games). The
+cause is neither reading in REPLAY-FOLLOW-UPS: in both cases (2612381c-5 r457-463, 33916129-4 r401-406) nobody was in
+sight, so no visibility changed. Against 138ed97: 50.0% of 1104 (ladder 50.0, gen 50.0, gen-s1 50.0), out-of-fuel
+turns 5075 vs 4976; the first version (no claimer credit at all, d79cf52) 49.3%.
+
+- `pick_up`'s claimed branch caps the hits we would take joining a crew. Our share credited the claimer with work
+  during our walk from the current round; with the camp not really worked, that credit was re-made every turn, so each
+  step closer raised our share past `spare_health` and the step back lowered it (00expanse group 9, r715-722: hits 177
+  -> 190 -> 177 against a spare of 189). Unless the camp's health is seen falling (`last_damaged_round >= round - 1`),
+  our share is now `strength / (strength + others)`, as if the claimer did nothing before we arrive.
