@@ -1,0 +1,165 @@
+BW-TURN r=41 actor=0 phase=start branch=- belief_pos=65,7 belief_hp=700.000 live=1 farm=8 claim=8 crew=1 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=41 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=41 actor=0 ally=2 alive=1 visible=1 pos=64,9 pos_source=1 pos_round=41 stats_round=41 local_cached_claim=6
+BW-ALLY r=41 actor=0 ally=3 alive=1 visible=0 pos=74,11 pos_source=1 pos_round=39 stats_round=39 local_cached_claim=4
+BW-ALLY r=41 actor=0 ally=4 alive=1 visible=1 pos=60,0 pos_source=1 pos_round=41 stats_round=41 local_cached_claim=22
+BW-FARM r=41 actor=0 phase=enter move=not_evaluated prev=8 selected=-1 requested=-1 result=-1 claim=8 crew=1 scan_iteration=-1 scan_limit=-1 shared=-1 help=-1 risky=-1
+BW-FARM r=41 actor=0 phase=select move=ranked prev=8 selected=12 requested=-1 result=-1 claim=12 crew=0 scan_iteration=6 scan_limit=24 shared=-1 help=-1 risky=8
+BW-FARM r=41 actor=0 phase=move move=route_result prev=8 selected=12 requested=-1 result=1 claim=12 crew=0 scan_iteration=6 scan_limit=24 shared=-1 help=-1 risky=8
+BW-TURN r=41 actor=0 phase=end branch=F belief_pos=65,7 belief_hp=700.000 live=1 farm=12 claim=12 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=41 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=41 actor=0 ally=2 alive=1 visible=1 pos=64,9 pos_source=1 pos_round=41 stats_round=41 local_cached_claim=6
+BW-ALLY r=41 actor=0 ally=3 alive=1 visible=0 pos=74,11 pos_source=1 pos_round=39 stats_round=39 local_cached_claim=4
+BW-ALLY r=41 actor=0 ally=4 alive=1 visible=1 pos=60,0 pos_source=1 pos_round=41 stats_round=41 local_cached_claim=22
+BW-CLAIM-LOCAL r=41 actor=0 old_local=8 assigned_local=12
+BW-TURN r=41 actor=3 phase=start branch=- belief_pos=72,11 belief_hp=700.000 live=1 farm=4 claim=4 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,8
+BW-ALLY r=41 actor=3 ally=0 alive=1 visible=0 pos=67,5 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=8
+BW-ALLY r=41 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=41 actor=3 ally=2 alive=1 visible=0 pos=67,6 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=6
+BW-ALLY r=41 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-FARM r=41 actor=3 phase=enter move=not_evaluated prev=4 selected=-1 requested=-1 result=-1 claim=4 crew=0 scan_iteration=-1 scan_limit=-1 shared=-1 help=-1 risky=-1
+BW-FARM r=41 actor=3 phase=select move=ranked prev=4 selected=4 requested=-1 result=-1 claim=4 crew=0 scan_iteration=24 scan_limit=24 shared=-1 help=-1 risky=9
+BW-FARM r=41 actor=3 phase=move move=route_result prev=4 selected=4 requested=-1 result=1 claim=4 crew=0 scan_iteration=24 scan_limit=24 shared=-1 help=-1 risky=9
+BW-TURN r=41 actor=3 phase=end branch=F belief_pos=72,11 belief_hp=700.000 live=1 farm=4 claim=4 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,8
+BW-ALLY r=41 actor=3 ally=0 alive=1 visible=0 pos=67,5 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=8
+BW-ALLY r=41 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=41 actor=3 ally=2 alive=1 visible=0 pos=67,6 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=6
+BW-ALLY r=41 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-CLAIM-LOCAL r=41 actor=3 old_local=4 assigned_local=4
+BW-TURN r=42 actor=0 phase=start branch=- belief_pos=64,8 belief_hp=700.000 live=1 farm=12 claim=12 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=42 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=42 actor=0 ally=2 alive=1 visible=1 pos=63,10 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=6
+BW-ALLY r=42 actor=0 ally=3 alive=1 visible=0 pos=74,11 pos_source=1 pos_round=39 stats_round=39 local_cached_claim=4
+BW-ALLY r=42 actor=0 ally=4 alive=1 visible=1 pos=59,0 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=22
+BW-FARM r=42 actor=0 phase=enter move=not_evaluated prev=12 selected=-1 requested=-1 result=-1 claim=12 crew=0 scan_iteration=-1 scan_limit=-1 shared=-1 help=-1 risky=-1
+BW-FARM r=42 actor=0 phase=select move=ranked prev=12 selected=12 requested=-1 result=-1 claim=12 crew=0 scan_iteration=2 scan_limit=24 shared=-1 help=-1 risky=-1
+BW-FARM r=42 actor=0 phase=move move=route_result prev=12 selected=12 requested=-1 result=1 claim=12 crew=0 scan_iteration=2 scan_limit=24 shared=-1 help=-1 risky=-1
+BW-TURN r=42 actor=0 phase=end branch=F belief_pos=64,8 belief_hp=700.000 live=1 farm=12 claim=12 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=42 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=42 actor=0 ally=2 alive=1 visible=1 pos=63,10 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=6
+BW-ALLY r=42 actor=0 ally=3 alive=1 visible=0 pos=74,11 pos_source=1 pos_round=39 stats_round=39 local_cached_claim=4
+BW-ALLY r=42 actor=0 ally=4 alive=1 visible=1 pos=59,0 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=22
+BW-CLAIM-LOCAL r=42 actor=0 old_local=12 assigned_local=12
+BW-TURN r=42 actor=3 phase=start branch=- belief_pos=71,10 belief_hp=700.000 live=1 farm=4 claim=4 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,8
+BW-ALLY r=42 actor=3 ally=0 alive=1 visible=0 pos=67,5 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=12
+BW-ALLY r=42 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=42 actor=3 ally=2 alive=1 visible=0 pos=67,6 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=6
+BW-ALLY r=42 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-FARM r=42 actor=3 phase=enter move=not_evaluated prev=4 selected=-1 requested=-1 result=-1 claim=4 crew=0 scan_iteration=-1 scan_limit=-1 shared=-1 help=-1 risky=-1
+BW-FARM r=42 actor=3 phase=select move=ranked prev=4 selected=4 requested=-1 result=-1 claim=4 crew=0 scan_iteration=24 scan_limit=24 shared=-1 help=-1 risky=8
+BW-FARM r=42 actor=3 phase=move move=route_result prev=4 selected=4 requested=-1 result=1 claim=4 crew=0 scan_iteration=24 scan_limit=24 shared=-1 help=-1 risky=8
+BW-TURN r=42 actor=3 phase=end branch=F belief_pos=71,10 belief_hp=700.000 live=1 farm=4 claim=4 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,8
+BW-ALLY r=42 actor=3 ally=0 alive=1 visible=0 pos=67,5 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=12
+BW-ALLY r=42 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=42 actor=3 ally=2 alive=1 visible=0 pos=67,6 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=6
+BW-ALLY r=42 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-CLAIM-LOCAL r=42 actor=3 old_local=4 assigned_local=4
+BW-TURN r=43 actor=0 phase=start branch=- belief_pos=63,9 belief_hp=700.000 live=1 farm=12 claim=12 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=43 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=43 actor=0 ally=2 alive=1 visible=1 pos=62,10 pos_source=1 pos_round=43 stats_round=43 local_cached_claim=6
+BW-ALLY r=43 actor=0 ally=3 alive=1 visible=0 pos=74,11 pos_source=1 pos_round=39 stats_round=39 local_cached_claim=4
+BW-ALLY r=43 actor=0 ally=4 alive=1 visible=0 pos=59,0 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=22
+BW-FARM r=43 actor=0 phase=enter move=not_evaluated prev=12 selected=-1 requested=-1 result=-1 claim=12 crew=0 scan_iteration=-1 scan_limit=-1 shared=-1 help=-1 risky=-1
+BW-FARM r=43 actor=0 phase=select move=ranked prev=12 selected=12 requested=-1 result=-1 claim=12 crew=0 scan_iteration=2 scan_limit=24 shared=-1 help=-1 risky=-1
+BW-FARM r=43 actor=0 phase=move move=route_result prev=12 selected=12 requested=-1 result=1 claim=12 crew=0 scan_iteration=2 scan_limit=24 shared=-1 help=-1 risky=-1
+BW-TURN r=43 actor=0 phase=end branch=F belief_pos=63,9 belief_hp=700.000 live=1 farm=12 claim=12 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=43 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=43 actor=0 ally=2 alive=1 visible=1 pos=62,10 pos_source=1 pos_round=43 stats_round=43 local_cached_claim=6
+BW-ALLY r=43 actor=0 ally=3 alive=1 visible=0 pos=74,11 pos_source=1 pos_round=39 stats_round=39 local_cached_claim=4
+BW-ALLY r=43 actor=0 ally=4 alive=1 visible=0 pos=59,0 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=22
+BW-CLAIM-LOCAL r=43 actor=0 old_local=12 assigned_local=12
+BW-TURN r=43 actor=3 phase=start branch=- belief_pos=70,9 belief_hp=700.000 live=1 farm=4 claim=4 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,8
+BW-ALLY r=43 actor=3 ally=0 alive=1 visible=0 pos=67,5 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=12
+BW-ALLY r=43 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=43 actor=3 ally=2 alive=1 visible=0 pos=67,6 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=6
+BW-ALLY r=43 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-FARM r=43 actor=3 phase=enter move=not_evaluated prev=4 selected=-1 requested=-1 result=-1 claim=4 crew=0 scan_iteration=-1 scan_limit=-1 shared=-1 help=-1 risky=-1
+BW-FARM r=43 actor=3 phase=select move=ranked prev=4 selected=4 requested=-1 result=-1 claim=4 crew=0 scan_iteration=24 scan_limit=24 shared=-1 help=-1 risky=8
+BW-FARM r=43 actor=3 phase=move move=route_result prev=4 selected=4 requested=-1 result=1 claim=4 crew=0 scan_iteration=24 scan_limit=24 shared=-1 help=-1 risky=8
+BW-TURN r=43 actor=3 phase=end branch=F belief_pos=70,9 belief_hp=700.000 live=1 farm=4 claim=4 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,8
+BW-ALLY r=43 actor=3 ally=0 alive=1 visible=0 pos=67,5 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=12
+BW-ALLY r=43 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=43 actor=3 ally=2 alive=1 visible=0 pos=67,6 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=6
+BW-ALLY r=43 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-CLAIM-LOCAL r=43 actor=3 old_local=4 assigned_local=4
+BW-TURN r=44 actor=0 phase=start branch=- belief_pos=62,9 belief_hp=700.000 live=1 farm=12 claim=12 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=44 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=44 actor=0 ally=2 alive=1 visible=1 pos=62,10 pos_source=1 pos_round=44 stats_round=44 local_cached_claim=6
+BW-ALLY r=44 actor=0 ally=3 alive=1 visible=0 pos=74,11 pos_source=1 pos_round=39 stats_round=39 local_cached_claim=4
+BW-ALLY r=44 actor=0 ally=4 alive=1 visible=0 pos=59,0 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=22
+BW-FARM r=44 actor=0 phase=enter move=not_evaluated prev=12 selected=-1 requested=-1 result=-1 claim=12 crew=0 scan_iteration=-1 scan_limit=-1 shared=-1 help=-1 risky=-1
+BW-FARM r=44 actor=0 phase=select move=ranked prev=12 selected=12 requested=-1 result=-1 claim=12 crew=0 scan_iteration=2 scan_limit=24 shared=-1 help=-1 risky=-1
+BW-FARM r=44 actor=0 phase=move move=route_result prev=12 selected=12 requested=-1 result=1 claim=12 crew=0 scan_iteration=2 scan_limit=24 shared=-1 help=-1 risky=-1
+BW-TURN r=44 actor=0 phase=end branch=F belief_pos=62,9 belief_hp=700.000 live=1 farm=12 claim=12 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=44 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=44 actor=0 ally=2 alive=1 visible=1 pos=62,10 pos_source=1 pos_round=44 stats_round=44 local_cached_claim=6
+BW-ALLY r=44 actor=0 ally=3 alive=1 visible=0 pos=74,11 pos_source=1 pos_round=39 stats_round=39 local_cached_claim=4
+BW-ALLY r=44 actor=0 ally=4 alive=1 visible=0 pos=59,0 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=22
+BW-CLAIM-LOCAL r=44 actor=0 old_local=12 assigned_local=12
+BW-TURN r=44 actor=3 phase=start branch=- belief_pos=69,8 belief_hp=700.000 live=1 farm=4 claim=4 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,8
+BW-ALLY r=44 actor=3 ally=0 alive=1 visible=0 pos=67,5 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=12
+BW-ALLY r=44 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=44 actor=3 ally=2 alive=1 visible=0 pos=67,6 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=6
+BW-ALLY r=44 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-FARM r=44 actor=3 phase=enter move=not_evaluated prev=4 selected=-1 requested=-1 result=-1 claim=4 crew=0 scan_iteration=-1 scan_limit=-1 shared=-1 help=-1 risky=-1
+BW-FARM r=44 actor=3 phase=select move=ranked prev=4 selected=4 requested=-1 result=-1 claim=4 crew=0 scan_iteration=24 scan_limit=24 shared=-1 help=-1 risky=8
+BW-FARM r=44 actor=3 phase=move move=route_result prev=4 selected=4 requested=-1 result=1 claim=4 crew=0 scan_iteration=24 scan_limit=24 shared=-1 help=-1 risky=8
+BW-TURN r=44 actor=3 phase=end branch=F belief_pos=69,8 belief_hp=700.000 live=1 farm=4 claim=4 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,8
+BW-ALLY r=44 actor=3 ally=0 alive=1 visible=0 pos=67,5 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=12
+BW-ALLY r=44 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=44 actor=3 ally=2 alive=1 visible=0 pos=67,6 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=6
+BW-ALLY r=44 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-CLAIM-LOCAL r=44 actor=3 old_local=4 assigned_local=4
+BW-TURN r=45 actor=0 phase=start branch=- belief_pos=61,9 belief_hp=620.000 live=1 farm=12 claim=12 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=45 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=45 actor=0 ally=2 alive=1 visible=1 pos=62,10 pos_source=1 pos_round=45 stats_round=45 local_cached_claim=6
+BW-ALLY r=45 actor=0 ally=3 alive=1 visible=0 pos=74,11 pos_source=1 pos_round=39 stats_round=39 local_cached_claim=4
+BW-ALLY r=45 actor=0 ally=4 alive=1 visible=0 pos=59,0 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=22
+BW-FARM r=45 actor=0 phase=enter move=not_evaluated prev=12 selected=-1 requested=-1 result=-1 claim=12 crew=0 scan_iteration=-1 scan_limit=-1 shared=-1 help=-1 risky=-1
+BW-FARM r=45 actor=0 phase=select move=ranked prev=12 selected=12 requested=-1 result=-1 claim=12 crew=0 scan_iteration=2 scan_limit=24 shared=-1 help=-1 risky=-1
+BW-FARM r=45 actor=0 phase=move move=route_result prev=12 selected=12 requested=-1 result=1 claim=12 crew=0 scan_iteration=2 scan_limit=24 shared=-1 help=-1 risky=-1
+BW-TURN r=45 actor=0 phase=end branch=F belief_pos=61,9 belief_hp=620.000 live=1 farm=12 claim=12 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=45 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=45 actor=0 ally=2 alive=1 visible=1 pos=62,10 pos_source=1 pos_round=45 stats_round=45 local_cached_claim=6
+BW-ALLY r=45 actor=0 ally=3 alive=1 visible=0 pos=74,11 pos_source=1 pos_round=39 stats_round=39 local_cached_claim=4
+BW-ALLY r=45 actor=0 ally=4 alive=1 visible=0 pos=59,0 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=22
+BW-CLAIM-LOCAL r=45 actor=0 old_local=12 assigned_local=12
+BW-TURN r=45 actor=3 phase=start branch=- belief_pos=68,7 belief_hp=700.000 live=1 farm=4 claim=4 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,8
+BW-ALLY r=45 actor=3 ally=0 alive=1 visible=0 pos=67,5 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=12
+BW-ALLY r=45 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=45 actor=3 ally=2 alive=1 visible=0 pos=67,6 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=6
+BW-ALLY r=45 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-FARM r=45 actor=3 phase=enter move=not_evaluated prev=4 selected=-1 requested=-1 result=-1 claim=4 crew=0 scan_iteration=-1 scan_limit=-1 shared=-1 help=-1 risky=-1
+BW-FARM r=45 actor=3 phase=select move=ranked prev=4 selected=4 requested=-1 result=-1 claim=4 crew=0 scan_iteration=24 scan_limit=24 shared=-1 help=-1 risky=8
+BW-FARM r=45 actor=3 phase=move move=route_result prev=4 selected=4 requested=-1 result=1 claim=4 crew=0 scan_iteration=24 scan_limit=24 shared=-1 help=-1 risky=8
+BW-TURN r=45 actor=3 phase=end branch=F belief_pos=68,7 belief_hp=700.000 live=1 farm=4 claim=4 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,8
+BW-ALLY r=45 actor=3 ally=0 alive=1 visible=0 pos=67,5 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=12
+BW-ALLY r=45 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=45 actor=3 ally=2 alive=1 visible=0 pos=67,6 pos_source=1 pos_round=38 stats_round=38 local_cached_claim=6
+BW-ALLY r=45 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-CLAIM-LOCAL r=45 actor=3 old_local=4 assigned_local=4
+BW-TURN r=46 actor=3 phase=start branch=- belief_pos=67,6 belief_hp=700.000 live=1 farm=4 claim=4 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,8
+BW-ALLY r=46 actor=3 ally=0 alive=1 visible=1 pos=60,9 pos_source=1 pos_round=46 stats_round=46 local_cached_claim=12
+BW-ALLY r=46 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=46 actor=3 ally=2 alive=1 visible=1 pos=62,10 pos_source=1 pos_round=46 stats_round=46 local_cached_claim=6
+BW-ALLY r=46 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-TURN r=46 actor=3 phase=end branch=h belief_pos=67,6 belief_hp=700.000 live=1 farm=4 claim=-1 crew=0 bank=0 siege=0 support=1,0,0,0 rec=0,-1,-1 form=-1,0,12
+BW-ALLY r=46 actor=3 ally=0 alive=1 visible=1 pos=60,9 pos_source=1 pos_round=46 stats_round=46 local_cached_claim=12
+BW-ALLY r=46 actor=3 ally=1 alive=1 visible=0 pos=79,11 pos_source=1 pos_round=9 stats_round=9 local_cached_claim=18
+BW-ALLY r=46 actor=3 ally=2 alive=1 visible=1 pos=62,10 pos_source=1 pos_round=46 stats_round=46 local_cached_claim=6
+BW-ALLY r=46 actor=3 ally=4 alive=1 visible=0 pos=78,11 pos_source=1 pos_round=27 stats_round=27 local_cached_claim=22
+BW-CLAIM-LOCAL r=46 actor=3 old_local=4 assigned_local=-1
+BW-TURN r=46 actor=0 phase=start branch=- belief_pos=60,9 belief_hp=600.000 live=1 farm=12 claim=12 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=46 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=46 actor=0 ally=2 alive=1 visible=1 pos=62,10 pos_source=1 pos_round=46 stats_round=46 local_cached_claim=6
+BW-ALLY r=46 actor=0 ally=3 alive=1 visible=1 pos=66,6 pos_source=1 pos_round=46 stats_round=46 local_cached_claim=-1
+BW-ALLY r=46 actor=0 ally=4 alive=1 visible=0 pos=59,0 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=22
+BW-FARM r=46 actor=0 phase=enter move=not_evaluated prev=12 selected=-1 requested=-1 result=-1 claim=12 crew=0 scan_iteration=-1 scan_limit=-1 shared=-1 help=-1 risky=-1
+BW-FARM r=46 actor=0 phase=select move=ranked prev=12 selected=12 requested=-1 result=-1 claim=12 crew=0 scan_iteration=2 scan_limit=24 shared=-1 help=-1 risky=-1
+BW-FARM r=46 actor=0 phase=move move=route_result prev=12 selected=12 requested=-1 result=1 claim=12 crew=0 scan_iteration=2 scan_limit=24 shared=-1 help=-1 risky=-1
+BW-TURN r=46 actor=0 phase=end branch=F belief_pos=60,9 belief_hp=600.000 live=1 farm=12 claim=12 crew=0 bank=0 siege=0 support=0,0,0,0 rec=0,-1,-1 form=-1,4,-1
+BW-ALLY r=46 actor=0 ally=1 alive=1 visible=0 pos=76,10 pos_source=1 pos_round=10 stats_round=10 local_cached_claim=18
+BW-ALLY r=46 actor=0 ally=2 alive=1 visible=1 pos=62,10 pos_source=1 pos_round=46 stats_round=46 local_cached_claim=6
+BW-ALLY r=46 actor=0 ally=3 alive=1 visible=1 pos=66,6 pos_source=1 pos_round=46 stats_round=46 local_cached_claim=-1
+BW-ALLY r=46 actor=0 ally=4 alive=1 visible=0 pos=59,0 pos_source=1 pos_round=42 stats_round=42 local_cached_claim=22
+BW-CLAIM-LOCAL r=46 actor=0 old_local=12 assigned_local=12

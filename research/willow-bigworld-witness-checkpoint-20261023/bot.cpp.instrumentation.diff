@@ -1,0 +1,184 @@
+--- a/source-original/bot.cpp
++++ b/willow337f-trace/bot.cpp
+@@ -14,6 +14,7 @@
+ #include <span>
+ #include <vector>
+ #include "abilities.h"
++#include "bigworld_witness.h"
+ #include "comms.h"
+ #include "crew_work.h"
+ #include "params.h"
+@@ -1722,7 +1723,11 @@
+ // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
+ [[gnu::flatten]] bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+-    if (pick_up(world, pathing, memory)) return true;
++    bigworld_witness_farm_row(world, memory, "enter", "not_evaluated", memory.farm_group, -1, -1, -1, -1, -1, -1);
++    if (pick_up(world, pathing, memory)) {
++        bigworld_witness_farm_row(world, memory, "early", "pick_up", memory.farm_group, memory.farm_group, -1, -1, -1, -1, -1);
++        return true;
++    }
+     const auto& map = world.map();
+     const auto& groups = map.groups;
+     const int range = world.me().facts().attack_range();
+@@ -1875,7 +1880,10 @@
+         reset_and_attack_camp(world, hit);
+         return true;
+     };
+-    if (!banks_bag && attack_in_range()) return true;
++    if (!banks_bag && attack_in_range()) {
++        bigworld_witness_farm_row(world, memory, "early", "passing_attack", memory.farm_group, -1, -1, -1, -1, -1, -1);
++        return true;
++    }
+     if (world.is_stale()) return true;
+ 
+     // Holders keep a capture going, and more only split the reward.
+@@ -1884,7 +1892,10 @@
+     };
+ 
+     const vec2 here = my_position();
+-    if (holding_capture(world, pathing)) return true;
++    if (holding_capture(world, pathing)) {
++        bigworld_witness_farm_row(world, memory, "early", "holding_capture", memory.farm_group, memory.farm_group, -1, -1, -1, -1, -1);
++        return true;
++    }
+     // Carrying, whatever made us retreat stays out of bounds: we route around it or wait outside
+     // it rather than step in to be sent back out. Empty-handed, a step in risks nothing (the zone
+     // starts beyond any strike's reach) and keeps us at hand for when the pack moves on.
+@@ -1900,16 +1911,25 @@
+             return dash_across(world, pathing, field) || pathing.descend(field, zone, groups[target].centre)
+                    || pathing.step_towards(field, zone, groups[target].centre);
+         };
+-        if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
++        if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) {
++            bigworld_witness_farm_row(world, memory, "move", "walk_on_prepared_approach", previous, g, -1, -1, -1, -1, -1);
++            return walk(*field, g);
++        }
+         // Too short of fuel to search the way to a new choice: last turn's, whose way is known.
+         if (previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous))) {
+             note_shortcut("farm-kept-target");
++            bigworld_witness_farm_row(world, memory, "move", "walk_on_kept_previous", previous, previous,
++                                      -1, -1, -1, -1, -1, g);
+             memory.farm_group = memory.claim = previous;
+             memory.crew = false;
+             return walk(*pathing.approach(previous, walk_range(world, previous)), previous);
+         }
+-        if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone, groups[g].centre);
++        if (const auto* centre = pathing.from_centre(g)) {
++            bigworld_witness_farm_row(world, memory, "move", "walk_on_centre_field", previous, g, -1, -1, -1, -1, -1);
++            return pathing.descend(*centre, zone, groups[g].centre);
++        }
+         note_shortcut("crow-flies-farm");
++        bigworld_witness_farm_row(world, memory, "move", "walk_on_step_closer", previous, g, -1, -1, -1, -1, -1);
+         return pathing.step_closer(groups[g].centre, zone, groups[g].centre);
+     };
+     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.
+@@ -2365,8 +2385,14 @@
+         }
+     }
+     if (k < evaluated) note_shortcut("farm-partial-evaluation");
+-    if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+-    if (banks_bag && attack_in_range()) return true;
++    if (banks_bag && (best < 0 || best_value <= from_altar_value)) {
++        bigworld_witness_farm_row(world, memory, "early", "bank_return", previous, best, k, evaluated, shared, help_group, risky);
++        return false;
++    }
++    if (banks_bag && attack_in_range()) {
++        bigworld_witness_farm_row(world, memory, "early", "bank_passing_attack", previous, -1, k, evaluated, shared, help_group, risky);
++        return true;
++    }
+     if (world.is_stale()) return true;
+     if (best < 0) best = risky, best_steps = risky_steps, best_value = risky_value;
+     memory.claim = best;
+@@ -2377,15 +2403,24 @@
+     if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false;
+     if (best < 0) {
+         // Cut short before weighing even last turn's choice: walk on towards it.
+-        if (k == 0 && memory.farm_group >= 0) memory.claim = memory.farm_group, walk_on(memory.farm_group);
++        if (k == 0 && memory.farm_group >= 0) {
++            bigworld_witness_farm_row(world, memory, "select", "walk_on_incumbent", previous, memory.farm_group, k, evaluated, shared, help_group, risky);
++            memory.claim = memory.farm_group;
++            walk_on(memory.farm_group);
++        } else {
++            bigworld_witness_farm_row(world, memory, "select", "no_candidate", previous, -1, k, evaluated, shared, help_group, risky);
++        }
+         return true;
+     }
+     memory.farm_group = best;
++    bigworld_witness_farm_row(world, memory, "select", "ranked", previous, best, k, evaluated, shared, help_group, risky);
+     // Our fields price a dash over a hole line; live routes walk round it.
+     const bool dasher = world.me().facts().has_dash();
+     if (dasher && test(map.near_crossable, here))
+-        if (const auto* field = pathing.prepare_approach(best, walk_range(world, best), end_reserve); field && dash_across(world, pathing, *field))
++        if (const auto* field = pathing.prepare_approach(best, walk_range(world, best), end_reserve); field && dash_across(world, pathing, *field)) {
++            bigworld_witness_farm_row(world, memory, "move", "dash_across", previous, best, k, evaluated, shared, help_group, risky);
+             return true;
++        }
+     const int cap = best_steps + max_detour;
+     const bool search = fuel_ok(search_cost_estimate(cap) + end_reserve);
+     // In a scratch board, valid until the next call.
+@@ -2399,6 +2434,7 @@
+         return outside;
+     };
+     if (world.camps[best].state == CampState::cleared) {
++        bigworld_witness_farm_row(world, memory, "move", "cleared_group_route", previous, best, k, evaluated, shared, help_group, risky);
+         if (!zone) dash_towards(world, pathing, groups[best].tiles(), cap);
+         if (search) {
+             if (!pathing.step_towards(off_zone(groups[best].tiles()), zone, cap, groups[best].centre) && dasher) walk_on(best);
+@@ -2409,12 +2445,18 @@
+         return true;
+     }
+     if (spell && dist(here, groups[best].centre) <= vision_radius + ability_range
+-        && spell_clear(world, pathing, best, zone, cap))
++        && spell_clear(world, pathing, best, zone, cap)) {
++        bigworld_witness_farm_row(world, memory, "move", "spell_clear", previous, best, k, evaluated, shared, help_group, risky);
+         return true;
+-    if (cast_at_camp_on_approach(world, best)) return true;
++    }
++    if (cast_at_camp_on_approach(world, best)) {
++        bigworld_witness_farm_row(world, memory, "move", "cast_on_approach", previous, best, k, evaluated, shared, help_group, risky);
++        return true;
++    }
+     const auto* tiles = farm_attack_tiles(world, pathing, best, range, [&] { return end_reserve + walk_reserve(best); });
+     if (!tiles) {
+         note_shortcut("farm-no-attack-tiles");
++        bigworld_witness_farm_row(world, memory, "move", "no_attack_tiles_walk_on", previous, best, k, evaluated, shared, help_group, risky);
+         walk_on(best);
+         return true;
+     }
+@@ -2426,6 +2468,7 @@
+     }
+     const auto& goals = refused ? *refused : *tiles;
+     if (test(goals, here)) { // attacked from here; stay
++        bigworld_witness_farm_row(world, memory, "move", "in_range_stay", previous, best, k, evaluated, shared, help_group, risky);
+         cast_at_camp(world, best);
+         reset_and_attack_camp(world, best);
+         if (melee) step_onto_cleared(world, pathing, best);
+@@ -2442,6 +2485,8 @@
+                            || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre)
+                      : (note_shortcut("farm-no-route"), walk_on(best));
+     if (!walked && dasher) walk_on(best);
++    bigworld_witness_farm_row(world, memory, "move", "route_result", previous, best,
++                              k, evaluated, shared, help_group, risky, -1, walked ? 1 : 0);
+     if (walked) {
+         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
+         see_revealed(world, pathing, safety);
+@@ -5321,6 +5366,8 @@
+     comms::support_intent(world.round, false);
+     siege_group() = -1;
+     const int camp_hits_before = camp_hits();
++    bigworld_witness_turn_row(world, memory, "start", decision, support_owned, support_requested,
++                              support_offered, support_retreat);
+     if (world.me().alive) note_upkeep(world, safety, memory.damage);
+     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
+     // A failed act still posts the claim, the bag and the health that next turn's damage reads.
+@@ -5348,6 +5395,9 @@
+     if (world.me().alive && world.me().type == cambc::champion_type::willow
+         && ((!support_owned && camp_hits() != camp_hits_before) || my_cooldown(0) >= ability_cooldown))
+         memory.formation_start = -1, memory.formation_turns = 0;
++    bigworld_witness_turn_row(world, memory, "end", decision, support_owned, support_requested,
++                              support_offered, support_retreat);
++    bigworld_witness_claim_row(world, comms::detail::posts.mine, memory.claim);
+     comms::claim(memory.claim);
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     memory.live_claim = live_claim;

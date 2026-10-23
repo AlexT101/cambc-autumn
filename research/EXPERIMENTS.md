@@ -1385,9 +1385,60 @@ replay payloads, winners and drafts are identical. Total play fuel falls3,305,95
 3,292,319,906 (−0.41%);83,785 paired turns are cheaper and50 dearer. Excluding round1 gives
 83,763 turns and−0.4169%. The higher first-turn initialization cost is retained in the
 all-play comparison. These are fuel-equivalence tests, not strength qualification.
+An attributed stdout scan finds zero candidate caught action errors in either arm; the fixed
+emulator has the same six code97 markers in each. The scan records bundle, physical side,
+bot identity, round and original marker text in `stdout-marker-scan-v1.{json,md}`.
 
 The reviewed one-file comms change is retained in canonical, nowa67dc0a3; frozen337f remains
 intact for the BigWorld decision trace. Checkpoint, source review, source/build pins and exact
 commands are under `research/cached-endpoints-bench32-checkpoint-v2-20261023/` and
 `willow-comms-cached-endpoints-source-review.md`. Runtime evidence is under
 `replays/fish-comms-cached-fuelbench32-20261023/`. No numbered version or submission was made.
+
+### Current development source against the submitted v33
+
+Native-draft Release/default100k, all40 published maps on both sides, one worker: a67 versus
+frozen released a00fff finishes40–40/80. Both source aggregates and all four raw/injected WASM
+hashes match their frozen records before/after the run. Actual replay rosters partition the
+results into3-pick7–5,4-pick10–6 and5-pick23–29 for a67. This does not isolate the Willow pick:
+both five-pick policies include Willow, and the code differs beyond support. The aggregate
+is level and the five-pick result supplies no basis for immediate release or a fitted selector.
+
+Runner failures, native Bot Errors and turn-order markers are zero. Native play rollovers are
+622/523 (a67/v33). One candidate caught code5 occurs on Starfish A at round822; the reference
+has none, and neither has code97. The code5 cause remains unresolved, not silently excluded.
+The candidate's increased rollover count is for different games/decisions; it does not
+contradict the byte-identical fuel-only saving measured against its immediate337f parent.
+
+Artifacts: `replays/willow-comms-cached-vs-khaos-v33-a00fff-80published-20261023/batch-run-01-release-published40/`.
+Attribution summary SHA `19108cab018de43f2b47c218dbff9b3351e5b7c91e061c73e9e889497f0aae87`;
+postflight pins SHA `04adfb96518b69d1fd2ebde6339580e95b3fb9acccabe72e3032e81765c29f11`.
+No release follows from this level panel alone.
+
+### BigWorld decision witness and sustainable crew experiment
+
+The frozen337f BigWorld A loss against emulator10e5 reproduces exactly in Release. The
+instrumented recorder retains the full action/state sequence but differs in two fuel readings:
+Willow at round4 by+40 and Heart of Ruin at470 by+896. The subsequent branch trace matches all
+205 actor/round wrapper segments for rounds35–75, all four rollover points and all native
+actions/state through that window. Its first action/state differences occur at279/280, after
+recorder stdout ends during267. This supports bounded decision observations, not a claim of
+strict fuel identity or full-game traced equivalence.
+
+Prism selects group12 at41 while Willow retains4; their remembered positions are stale and
+invisible. Willow sees the pair again at46 and provides the previously verified heal to
+Marcella. Willow selects help6 at47 and Prism explicitly changes12→6 at50. Prism then takes
+early passing attacks on the same assigned group while losing health, before retreating60.
+Thus the earlier hypothesis of passing attacks silently redirecting him from12 is rejected.
+
+Source review identifies a narrower inconsistency: struggling-ally help can override the
+helper's own grouped health rejection, and Boolean allied occupancy can promote otherwise
+unaffordable work. The existing forecast values were not logged, so this does not prove that
+every group6 commitment fails the model. An isolated sustainable-crew candidate from current
+a67 now aligns those admission paths and re-evaluates damaged ranged crew work. It preserves
+harmless attacks, melee passing, actual healing, spell kiting and risky fallback. Source review
+and default-budget paired tests precede any canonical change.
+
+Compact trace evidence, complete instrumentation diff/header, source/build pins and fidelity
+limits: `willow-bigworld-witness-checkpoint-20261023/PROVENANCE.md`. The validated diagnosis and
+bounded implementation contract are in `willow-bigworld-validated-crew-diagnosis.md`.

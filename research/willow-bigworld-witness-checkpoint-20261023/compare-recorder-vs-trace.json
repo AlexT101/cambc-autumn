@@ -1,0 +1,129 @@
+{
+ "inputs": [
+  37230,
+  40813
+ ],
+ "firstInputDiff": {
+  "index": 11606,
+  "round": 279,
+  "step": 64938,
+  "actor": 4,
+  "kind": "Move",
+  "rerunKind": "Move",
+  "original": "s64938 r279 Move@10 actor1:4 (76,9)->(75,8) slot-1 pr0 x0,0",
+  "rerun": "s64938 r279 Move@10 actor1:4 (76,9)->(75,10) slot-1 pr0 x0,0",
+  "originalRec": [
+   64938,
+   279,
+   11606,
+   4,
+   10,
+   1,
+   4,
+   76,
+   9,
+   75,
+   8,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ],
+  "rerunRec": [
+   64938,
+   279,
+   11606,
+   4,
+   10,
+   1,
+   4,
+   76,
+   9,
+   75,
+   10,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ },
+ "roundsMatched": 280,
+ "rounds": [
+  906,
+  980
+ ],
+ "firstRoundDiff": {
+  "round": 280,
+  "step": 65064,
+  "rerunStep": 65064
+ },
+ "result": [
+  {
+   "outcome": 2,
+   "round": 905,
+   "gems": [
+    588,
+    1006
+   ]
+  },
+  {
+   "outcome": 2,
+   "round": 979,
+   "gems": [
+    723,
+    1001
+   ]
+  }
+ ],
+ "resultMatch": false,
+ "exact": false,
+ "exactIgnoringRollovers": false,
+ "firstInputDiffIgnoringRollovers": {
+  "index": 11606,
+  "round": 279,
+  "step": 64938,
+  "actor": 4,
+  "kind": "Move",
+  "rerunKind": "Move",
+  "original": "s64938 r279 Move@10 actor1:4 (76,9)->(75,8) slot-1 pr0 x0,0",
+  "rerun": "s64938 r279 Move@10 actor1:4 (76,9)->(75,10) slot-1 pr0 x0,0",
+  "originalRec": [
+   64938,
+   279,
+   11606,
+   4,
+   10,
+   1,
+   4,
+   76,
+   9,
+   75,
+   8,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ],
+  "rerunRec": [
+   64938,
+   279,
+   11606,
+   4,
+   10,
+   1,
+   4,
+   76,
+   9,
+   75,
+   10,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ }
+}

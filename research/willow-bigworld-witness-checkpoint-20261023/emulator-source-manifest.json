@@ -1,0 +1,148 @@
+{
+  "source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/hyperion-fish-roster-emulator-fbda803/src",
+  "source_aggregate_sha256": "10e5eeaabd57580f2ccd59240f36341209c2337fa9f190c8ea310b79943c90ac",
+  "file_count": 28,
+  "files": [
+    {
+      "file": "src/abilities.cpp",
+      "sha256": "c6559729a996e1f5803990d0f0eb2094c89fb7752dd3fbf57118595f56369467",
+      "bytes": 31189
+    },
+    {
+      "file": "src/abilities.h",
+      "sha256": "6f8cffe741219475b17f9b27f1b75715fd94b0df0682380b54b2827676404cc9",
+      "bytes": 1720
+    },
+    {
+      "file": "src/bot.cpp",
+      "sha256": "786d62151622aec4f654d4403f8a26d686e0a72821154deea66a1e1a70d7b06a",
+      "bytes": 229518
+    },
+    {
+      "file": "src/bot.h",
+      "sha256": "595448fe3de5b4ad43ad2463829acb234f88b36c0a05d3e70031917b46aabb2a",
+      "bytes": 1746
+    },
+    {
+      "file": "src/champions.h",
+      "sha256": "2ef629ef356748dedff8180d848e98ffb489851f597a43c17e4a3a269c737103",
+      "bytes": 7348
+    },
+    {
+      "file": "src/combat_priority.h",
+      "sha256": "252817d10e02d4c781ce4b3f65dda49f47c06646f07fa843c29f2ef08dda452d",
+      "bytes": 4679
+    },
+    {
+      "file": "src/comms.cpp",
+      "sha256": "69424421a643dedb89b1026e71bfc63792163aac1394e67cf683f4135045c081",
+      "bytes": 9051
+    },
+    {
+      "file": "src/comms.h",
+      "sha256": "7ff7983febffcb15ed8688ede07a30d6dd0093fe13476932853c0e36034e72fb",
+      "bytes": 1788
+    },
+    {
+      "file": "src/crew_work.h",
+      "sha256": "a1cd30a2d4cc4261e5712d51150afc0c57cfd41a41e8ff1e1bab6c71df85ca75",
+      "bytes": 844
+    },
+    {
+      "file": "src/draft.cpp",
+      "sha256": "4f69a438903fae3f29dd867c86ae0ba3bf67a13b109ce6a0428bf97c8fa3c470",
+      "bytes": 14141
+    },
+    {
+      "file": "src/draft.h",
+      "sha256": "2b02e4650c9fa33cc31dec70e1197214cefe924880769394eeabf5f729a6f97b",
+      "bytes": 2160
+    },
+    {
+      "file": "src/draft_selection.h",
+      "sha256": "b8e156af1884abc4985d17fed11b0f2323f624e27a62e0c9a9852b7c2f6fa74c",
+      "bytes": 1250
+    },
+    {
+      "file": "src/idle_priority.h",
+      "sha256": "08446b354e64091d0cfd8145e9f40ec195279d14ddffa7e1e9e77f49d141db74",
+      "bytes": 424
+    },
+    {
+      "file": "src/main.cpp",
+      "sha256": "3b4d3839133bcf1a4291ca3a2f2a6e820ad4e38cc9479e4e9d6bc70b1e1db9c7",
+      "bytes": 5377
+    },
+    {
+      "file": "src/params.h",
+      "sha256": "3234d52aea6001674030d35e2f05c646da72f23dc6d6a929ae5e66844b08390f",
+      "bytes": 5046
+    },
+    {
+      "file": "src/pathing.cpp",
+      "sha256": "7e435332a4ddf5d4e73616774b759ae620ea0b31b3d07370695a9b021ee93e34",
+      "bytes": 30764
+    },
+    {
+      "file": "src/pathing.h",
+      "sha256": "92b53299407c13d05ab0f56508268ebaee82abecaecf4eed7dbf8779f024c5c8",
+      "bytes": 10469
+    },
+    {
+      "file": "src/plan.cpp",
+      "sha256": "7e67363c6a07f4f1fff8dbe00b2e713b4d2037eb9c80f9b8ce798f62ab0b4186",
+      "bytes": 94274
+    },
+    {
+      "file": "src/plan.h",
+      "sha256": "6cbf2ab5a50189c91d54652a43770842279159f3c2ecc5b699a20a9a2bcd2ac8",
+      "bytes": 2036
+    },
+    {
+      "file": "src/safety.cpp",
+      "sha256": "82d48d60ed0ab4cfc399ac70984dba48eb1da15732eb8bf900e725e982445421",
+      "bytes": 103154
+    },
+    {
+      "file": "src/safety.h",
+      "sha256": "f4b6890ed1edcce2866d9cceb754ae72afd148326eddf633f6600e6d5f5f5a8e",
+      "bytes": 22084
+    },
+    {
+      "file": "src/self_abilities.cpp",
+      "sha256": "22e4307d093c7f309557303ad0be570dad6ea5e7c43209c6da9d2482c9aceb89",
+      "bytes": 22852
+    },
+    {
+      "file": "src/self_abilities.h",
+      "sha256": "d7d3fe1f950a4147fc520679cfc32fe600a13c11220c2bc56ec3c0872f9fc089",
+      "bytes": 3528
+    },
+    {
+      "file": "src/turn_order.cpp",
+      "sha256": "a9c5c9b7d483ddb1309875e9d4c70744951fab1b99fc47db4e192841b37c0aa5",
+      "bytes": 16046
+    },
+    {
+      "file": "src/turn_order.h",
+      "sha256": "8688629c75774c1f78793e8fbb72e676e60d8b6dc5672ebfc39dca8b1bd4c03e",
+      "bytes": 328
+    },
+    {
+      "file": "src/util.h",
+      "sha256": "c8a164c5fa55f0bce4e51eee417a0d65eb39ffbf922b4ab70bedc914905b67a8",
+      "bytes": 25379
+    },
+    {
+      "file": "src/world.cpp",
+      "sha256": "c23a40c8d07659a2767677dca4e8837ea4477ec056f8ce84d128e47cd930e363",
+      "bytes": 87923
+    },
+    {
+      "file": "src/world.h",
+      "sha256": "a07c50f5395c5f0f6bc8e4a79a528b25fe8855c58d1207a3a09426dae54892ae",
+      "bytes": 30899
+    }
+  ],
+  "note": "source-only snapshot; workspace copy excludes .cambc and compile_commands"
+}

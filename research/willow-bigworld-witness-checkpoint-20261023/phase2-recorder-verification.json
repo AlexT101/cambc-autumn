@@ -1,0 +1,268 @@
+{
+  "schema": "bigworld-recorder-verification/v1",
+  "result": "completed; exactly one successful recorder game",
+  "command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc run-batch /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/phase2-recorder/one-game-manifest-absolute-v2.txt --jobs 1 --color never",
+  "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/phase2-recorder/big-world-A-recorder.repl26a",
+  "compared_to_original": {
+    "inputs": [
+      37230,
+      37230
+    ],
+    "firstInputDiff": null,
+    "roundsMatched": 906,
+    "rounds": [
+      906,
+      906
+    ],
+    "firstRoundDiff": null,
+    "result": [
+      {
+        "outcome": 2,
+        "round": 905,
+        "gems": [
+          588,
+          1006
+        ]
+      },
+      {
+        "outcome": 2,
+        "round": 905,
+        "gems": [
+          588,
+          1006
+        ]
+      }
+    ],
+    "resultMatch": true,
+    "exact": true,
+    "exactIgnoringRollovers": true,
+    "firstInputDiffIgnoringRollovers": null
+  },
+  "compared_to_release_rerun": {
+    "inputs": [
+      37230,
+      37230
+    ],
+    "firstInputDiff": null,
+    "roundsMatched": 906,
+    "rounds": [
+      906,
+      906
+    ],
+    "firstRoundDiff": null,
+    "result": [
+      {
+        "outcome": 2,
+        "round": 905,
+        "gems": [
+          588,
+          1006
+        ]
+      },
+      {
+        "outcome": 2,
+        "round": 905,
+        "gems": [
+          588,
+          1006
+        ]
+      }
+    ],
+    "resultMatch": true,
+    "exact": true,
+    "exactIgnoringRollovers": true,
+    "firstInputDiffIgnoringRollovers": null
+  },
+  "fuel_against_original": {
+    "lengths": [
+      4538,
+      4538
+    ],
+    "draftTurns": 5,
+    "diffs": 2,
+    "firstTurnDiffs": 0,
+    "maxAbs": 896,
+    "firstTurnOnly": false,
+    "firstDiff": {
+      "index": 32,
+      "ladder": 92123,
+      "rerun": 92163,
+      "delta": 40,
+      "what": "turn",
+      "round": 4,
+      "id": 3,
+      "rollover": false,
+      "first": false
+    },
+    "list": [
+      {
+        "index": 32,
+        "ladder": 92123,
+        "rerun": 92163,
+        "delta": 40,
+        "what": "turn",
+        "round": 4,
+        "id": 3,
+        "rollover": false,
+        "first": false
+      },
+      {
+        "index": 2358,
+        "ladder": 52998,
+        "rerun": 53894,
+        "delta": 896,
+        "what": "turn",
+        "round": 470,
+        "id": 4,
+        "rollover": false,
+        "first": false
+      }
+    ]
+  },
+  "fuel_against_release_rerun": {
+    "lengths": [
+      4538,
+      4538
+    ],
+    "draftTurns": 5,
+    "diffs": 2,
+    "firstTurnDiffs": 0,
+    "maxAbs": 896,
+    "firstTurnOnly": false,
+    "firstDiff": {
+      "index": 32,
+      "ladder": 92123,
+      "rerun": 92163,
+      "delta": 40,
+      "what": "turn",
+      "round": 4,
+      "id": 3,
+      "rollover": false,
+      "first": false
+    },
+    "list": [
+      {
+        "index": 32,
+        "ladder": 92123,
+        "rerun": 92163,
+        "delta": 40,
+        "what": "turn",
+        "round": 4,
+        "id": 3,
+        "rollover": false,
+        "first": false
+      },
+      {
+        "index": 2358,
+        "ladder": 52998,
+        "rerun": 53894,
+        "delta": 896,
+        "what": "turn",
+        "round": 470,
+        "id": 4,
+        "rollover": false,
+        "first": false
+      }
+    ]
+  },
+  "earliest_fuel_mismatch_round": 4,
+  "trusted_prefix_under_strict_fuel_faithfulness_through_round": 3,
+  "native_rollovers_through75": [
+    {
+      "round": 1,
+      "actor": 3
+    },
+    {
+      "round": 3,
+      "actor": 0
+    },
+    {
+      "round": 3,
+      "actor": 3
+    },
+    {
+      "round": 9,
+      "actor": 1
+    }
+  ],
+  "recorder_rollover_log": [
+    {
+      "actor": 3,
+      "round_begun": 2,
+      "index": 832,
+      "segment": 0,
+      "x": false
+    },
+    {
+      "actor": 0,
+      "round_begun": 4,
+      "index": 293,
+      "segment": 2,
+      "x": false
+    },
+    {
+      "actor": 3,
+      "round_begun": 4,
+      "index": 399,
+      "segment": 1,
+      "x": true
+    },
+    {
+      "actor": 1,
+      "round_begun": 10,
+      "index": 261,
+      "segment": 8,
+      "x": false
+    }
+  ],
+  "engine": "v1_0_3",
+  "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+  "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+  "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+  "source_manifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/phase2-recorder/recorder-source-manifest.json",
+  "wrapper_pins": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/phase2-recorder/wrapper-pins.json",
+  "notes": [
+    "inputs, round hashes, result and native rollover inputs match exactly through full game",
+    "fuel differs only at round4 actor3 (+40) and round470 actor4 (+896); first mismatch limits strict source/fuel trust to round3",
+    "no tracer build or run performed pending root review"
+  ],
+  "recorder_stdout_coverage": {
+    "embedded_stdout_bytes": 1059752,
+    "nul_bytes": 11176,
+    "last_complete_y_records": 1336,
+    "last_complete_actor_round": 267,
+    "actors": {
+      "0": {
+        "complete_yield_records": 266,
+        "last_round": 267,
+        "missing_rounds_35_75": []
+      },
+      "1": {
+        "complete_yield_records": 266,
+        "last_round": 267,
+        "missing_rounds_35_75": []
+      },
+      "2": {
+        "complete_yield_records": 267,
+        "last_round": 267,
+        "missing_rounds_35_75": []
+      },
+      "3": {
+        "complete_yield_records": 265,
+        "last_round": 267,
+        "missing_rounds_35_75": []
+      },
+      "4": {
+        "complete_yield_records": 267,
+        "last_round": 267,
+        "missing_rounds_35_75": []
+      }
+    },
+    "last_record_is_truncated": true,
+    "window_35_75_complete_for_actors_0_to_4": true
+  },
+  "at_x_interpretation": "@x 3 1 399 follows @r at round 4 after the round-3 actor-3 rollover. Per harness docs, recorder stopped at wrapper entry; unwrapped bot would have made host call 399 at zero fuel in old turn and stopped at next own fuel check. It is a fidelity warning, not itself an input/state mismatch.",
+  "trace_labeling": "If tracer is authorized, characterize result as action-equivalent branch/own-belief evidence with strict fuel prefix only through round3; report @x and any call-hash mismatches.",
+  "trace_source_manifest_v3": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/trace-source-manifest-v3.json",
+  "trace_source_manifest_v3_aggregate": "5844967cb47e1ed0b8ef13b727a395396f190df31e2b117b702fa89404a3ba0e"
+}

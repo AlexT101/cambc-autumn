@@ -1,0 +1,54 @@
+{
+  "schema": "bigworld-phase3-pre-run-pins/v1",
+  "candidate_source_aggregate_sha256": "337f42a54beb5890109e56b755237d8ea0d07abb240d095778f01e2098ab7b39",
+  "trace_source_manifest_recipe_aggregate_sha256": "e27b52f8c6f8c1efd3541cd727cabae267dc57d314565f00669f0834d195a6e7",
+  "trace_bot_standard_src_star_aggregate_sha256": "12a6ae812694f6ab14248b56c72878bd00b7a71ea0945a8a800b139fbdaf09b2",
+  "standard_aggregate_recipe": "from the trace bot directory: shasum -a 256 src/* | shasum -a 256",
+  "emulator_release_raw_pin": "22fc50dfd1ab33d1e442e8882b1fe89572d61cb96980a7b629f774a5c255169b",
+  "emulator_release_injected_pin": "f7873b5a06649bc0dfd9ae3bd9575fb629834b9b47e7823a09f517d0f5833175",
+  "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+  "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+  "settings": "one game, --jobs 1, nice -n 19, CMAKE_BUILD_PARALLEL_LEVEL=1, default turn fuel",
+  "evidence": {
+    "emulator_debug_raw": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/fixed-emulator/.cambc/build/bot.wasm",
+      "sha256": "22fc50dfd1ab33d1e442e8882b1fe89572d61cb96980a7b629f774a5c255169b",
+      "bytes": 1598785
+    },
+    "emulator_debug_injected": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/fixed-emulator/.cambc/build/bot-injected.wasm",
+      "sha256": "f7873b5a06649bc0dfd9ae3bd9575fb629834b9b47e7823a09f517d0f5833175",
+      "bytes": 840533
+    },
+    "trace_data": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/willow337f-trace/src/rec_data.cpp",
+      "sha256": "dae17d2f03ffd1b35036aa53eb3895ef4db620453859689609157a0d3078a626",
+      "bytes": 834541
+    },
+    "trace_wrappers": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/willow337f-trace/src/zz_harness.cpp",
+      "sha256": "086870e3c89819f8fb5e1a5449d0c7ad760d2bc17678a752045e2d08c906ec5c",
+      "bytes": 50190
+    },
+    "trace_wrapper_table": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/willow337f-trace/src/zz_harness.json",
+      "sha256": "f129c90ec1ea26b66096845492acf72581d2af8474989193d1e7133868ed9dfc",
+      "bytes": 11599
+    },
+    "trace_source_manifest_v4": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/trace-source-manifest-v4.json",
+      "sha256": "a2672364eaf559f37479280bf98f711ed4bb623c25a18ec3b2369a51f27772b6",
+      "bytes": 10816
+    },
+    "trace_source_v4_patch": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/instrumentation-bot-v4.patch",
+      "sha256": "d518dfeca107628e8618e1e3e3f0b0a3c897823d5ebde301652fa42cc94e79d2",
+      "bytes": 321
+    },
+    "recorder_bundle": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/phase2-recorder/big-world-A-recorder.repl26a",
+      "sha256": "226f2adc2237ac16ec1672b020dcd5dcd1e65778578935e106afa72be2ca5f63",
+      "bytes": 367932
+    }
+  }
+}

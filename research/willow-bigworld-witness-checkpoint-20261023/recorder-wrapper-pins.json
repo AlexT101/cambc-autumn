@@ -1,0 +1,53 @@
+{
+  "schema": "bigworld-recorder-build-pins/v1",
+  "candidate_source_aggregate": "337f42a54beb5890109e56b755237d8ea0d07abb240d095778f01e2098ab7b39",
+  "emulator_source_aggregate": "10e5eeaabd57580f2ccd59240f36341209c2337fa9f190c8ea310b79943c90ac",
+  "candidate_release_raw": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/willow337f-release/.cambc/build-release/bot.wasm",
+    "sha256": "b57410fc7c05630bd0a38a2cfe412d0fce85689d53bcecac87c9c09dd05c95c0",
+    "bytes": 1654973
+  },
+  "candidate_release_injected": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/willow337f-release/.cambc/build-release/bot-injected.wasm",
+    "sha256": "136179f9c29491af62e5420505869c85e1b053a1817a744ecbba9bb720474086",
+    "bytes": 896721
+  },
+  "candidate_recorder_raw": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/willow337f-rec/.cambc/build/bot.wasm",
+    "sha256": "70fddf14becd09503fb74dd7e7c71bf9b3e579662bad5f69fa7a609918a198b8",
+    "bytes": 1666280
+  },
+  "candidate_recorder_injected": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/willow337f-rec/.cambc/build/bot-injected.wasm",
+    "sha256": "969dae1b324fdf50e9809ec547f4dcb1e8d70e812157ca15fd3685afbb2e275e",
+    "bytes": 908028
+  },
+  "emulator_debug_build_raw": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/fixed-emulator/.cambc/build/bot.wasm",
+    "sha256": "22fc50dfd1ab33d1e442e8882b1fe89572d61cb96980a7b629f774a5c255169b",
+    "bytes": 1598785
+  },
+  "emulator_debug_build_injected": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/fixed-emulator/.cambc/build/bot-injected.wasm",
+    "sha256": "f7873b5a06649bc0dfd9ae3bd9575fb629834b9b47e7823a09f517d0f5833175",
+    "bytes": 840533
+  },
+  "wrapper_table": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/willow337f-rec/src/zz_harness.json",
+    "sha256": "c441c0bd1abc86931c362cd882fcd48771c2fcf975ebfbd49c385eee3a5ba944",
+    "bytes": 7177
+  },
+  "wrapper_source": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/willow337f-rec/src/zz_harness.cpp",
+    "sha256": "638d373e3cbab59bcf2c1d80ce1f10412a6e584f6c1f7012195df78e93307498",
+    "bytes": 36565
+  },
+  "cost_table": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/bigworld-branch-witness-20261023/workspace/bots/willow337f-rec/costs.json",
+    "sha256": "045022f3363943d185704caa5c889a4f556775590e9f1dbc0bfde130a276bed3",
+    "bytes": 3219
+  },
+  "calibration_costs_sha256": "045022f3363943d185704caa5c889a4f556775590e9f1dbc0bfde130a276bed3",
+  "measured_costs_sha256": "045022f3363943d185704caa5c889a4f556775590e9f1dbc0bfde130a276bed3",
+  "wrapper_count": 98
+}

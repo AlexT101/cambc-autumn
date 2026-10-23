@@ -1,0 +1,368 @@
+{
+  "schema": "bigworld-trace-source-manifest/v4",
+  "base_aggregate_sha256": "337f42a54beb5890109e56b755237d8ea0d07abb240d095778f01e2098ab7b39",
+  "trace_source_aggregate_sha256": "e27b52f8c6f8c1efd3541cd727cabae267dc57d314565f00669f0834d195a6e7",
+  "aggregate_method": "SHA-256 of the concatenated per-file SHA-256 hex strings in filename sort order",
+  "file_count": 35,
+  "files": [
+    {
+      "file": "abilities.cpp",
+      "sha256": "c6559729a996e1f5803990d0f0eb2094c89fb7752dd3fbf57118595f56369467",
+      "bytes": 31189,
+      "status": "unchanged"
+    },
+    {
+      "file": "abilities.h",
+      "sha256": "6f8cffe741219475b17f9b27f1b75715fd94b0df0682380b54b2827676404cc9",
+      "bytes": 1720,
+      "status": "unchanged"
+    },
+    {
+      "file": "bigworld_witness.h",
+      "sha256": "cc5adf1d61ba630eed9aad4801d8f13f548db75e95a3d164e84b21ca815c63fd",
+      "bytes": 3448,
+      "status": "modified-or-generated"
+    },
+    {
+      "file": "bot.cpp",
+      "sha256": "ea1b59c3654236f911b9b6c1e14a72b471e86a646b567f49feaf0127598272f2",
+      "bytes": 277492,
+      "status": "modified-or-generated"
+    },
+    {
+      "file": "bot.h",
+      "sha256": "79686dd97aea7627b34c45a8d67d958a7c2f54d46a75b33b809aec433f333f31",
+      "bytes": 2173,
+      "status": "unchanged"
+    },
+    {
+      "file": "champions.h",
+      "sha256": "2ef629ef356748dedff8180d848e98ffb489851f597a43c17e4a3a269c737103",
+      "bytes": 7348,
+      "status": "unchanged"
+    },
+    {
+      "file": "combat_priority.h",
+      "sha256": "252817d10e02d4c781ce4b3f65dda49f47c06646f07fa843c29f2ef08dda452d",
+      "bytes": 4679,
+      "status": "unchanged"
+    },
+    {
+      "file": "comms.cpp",
+      "sha256": "4dd44d8213cb2d038f395190510ede5dec8d7c073554a8501801000bfbb7c30d",
+      "bytes": 11096,
+      "status": "unchanged"
+    },
+    {
+      "file": "comms.h",
+      "sha256": "c3c16283e1087f880797ce219bb1ebb3beefdb051561e2556a47acdc33b0ac4c",
+      "bytes": 2010,
+      "status": "unchanged"
+    },
+    {
+      "file": "crew_work.h",
+      "sha256": "a1cd30a2d4cc4261e5712d51150afc0c57cfd41a41e8ff1e1bab6c71df85ca75",
+      "bytes": 844,
+      "status": "unchanged"
+    },
+    {
+      "file": "draft.cpp",
+      "sha256": "2efb8a0cf7c10789c253e738f8659724672987dbc4fce4c2c60fc94c0d0dd9d2",
+      "bytes": 13796,
+      "status": "unchanged"
+    },
+    {
+      "file": "draft.h",
+      "sha256": "2b02e4650c9fa33cc31dec70e1197214cefe924880769394eeabf5f729a6f97b",
+      "bytes": 2160,
+      "status": "unchanged"
+    },
+    {
+      "file": "draft_selection.h",
+      "sha256": "439af4a9d1ff45539f3c1010a3ab812e489e94ae57b6d2897dfaad496aaf9dab",
+      "bytes": 1453,
+      "status": "unchanged"
+    },
+    {
+      "file": "harness_trace.h",
+      "sha256": "66c9484f4d896db0fea5dec6fa6b7ac1a89804b95286bf6467a3fcb3d333cbda",
+      "bytes": 9125,
+      "status": "unchanged"
+    },
+    {
+      "file": "harness_trace_data.h",
+      "sha256": "3754c74468b383b95c4c9502acedc69acc20fc5d513cfb2cfa9b72c88f767907",
+      "bytes": 809,
+      "status": "unchanged"
+    },
+    {
+      "file": "idle_priority.h",
+      "sha256": "08446b354e64091d0cfd8145e9f40ec195279d14ddffa7e1e9e77f49d141db74",
+      "bytes": 424,
+      "status": "unchanged"
+    },
+    {
+      "file": "main.cpp",
+      "sha256": "3b4d3839133bcf1a4291ca3a2f2a6e820ad4e38cc9479e4e9d6bc70b1e1db9c7",
+      "bytes": 5377,
+      "status": "unchanged"
+    },
+    {
+      "file": "params.h",
+      "sha256": "3234d52aea6001674030d35e2f05c646da72f23dc6d6a929ae5e66844b08390f",
+      "bytes": 5046,
+      "status": "unchanged"
+    },
+    {
+      "file": "pathing.cpp",
+      "sha256": "7e435332a4ddf5d4e73616774b759ae620ea0b31b3d07370695a9b021ee93e34",
+      "bytes": 30764,
+      "status": "unchanged"
+    },
+    {
+      "file": "pathing.h",
+      "sha256": "92b53299407c13d05ab0f56508268ebaee82abecaecf4eed7dbf8779f024c5c8",
+      "bytes": 10469,
+      "status": "unchanged"
+    },
+    {
+      "file": "plan.cpp",
+      "sha256": "c77f218d28e56603f7226128ba80cb4840c93849c2d15baaa8e6847bcd3ede12",
+      "bytes": 94149,
+      "status": "unchanged"
+    },
+    {
+      "file": "plan.h",
+      "sha256": "6cbf2ab5a50189c91d54652a43770842279159f3c2ecc5b699a20a9a2bcd2ac8",
+      "bytes": 2036,
+      "status": "unchanged"
+    },
+    {
+      "file": "rec_data.cpp",
+      "sha256": "dae17d2f03ffd1b35036aa53eb3895ef4db620453859689609157a0d3078a626",
+      "bytes": 834541,
+      "status": "modified-or-generated"
+    },
+    {
+      "file": "safety.cpp",
+      "sha256": "cfe93d7af44cb40dd0297a2bf87ade13b24d87a378a6c77ca2b53783101bbf48",
+      "bytes": 104796,
+      "status": "unchanged"
+    },
+    {
+      "file": "safety.h",
+      "sha256": "716f85d8dd383f75a182b8543fc76a12a5652d70ab16b283981066c755a743d1",
+      "bytes": 22356,
+      "status": "unchanged"
+    },
+    {
+      "file": "self_abilities.cpp",
+      "sha256": "22e4307d093c7f309557303ad0be570dad6ea5e7c43209c6da9d2482c9aceb89",
+      "bytes": 22852,
+      "status": "unchanged"
+    },
+    {
+      "file": "self_abilities.h",
+      "sha256": "d7d3fe1f950a4147fc520679cfc32fe600a13c11220c2bc56ec3c0872f9fc089",
+      "bytes": 3528,
+      "status": "unchanged"
+    },
+    {
+      "file": "support_mailbox.h",
+      "sha256": "f70193e17987e7cf83976648ae3d7742299662373dad20aeac62051446fa76b0",
+      "bytes": 2655,
+      "status": "unchanged"
+    },
+    {
+      "file": "turn_order.cpp",
+      "sha256": "a9c5c9b7d483ddb1309875e9d4c70744951fab1b99fc47db4e192841b37c0aa5",
+      "bytes": 16046,
+      "status": "unchanged"
+    },
+    {
+      "file": "turn_order.h",
+      "sha256": "8688629c75774c1f78793e8fbb72e676e60d8b6dc5672ebfc39dca8b1bd4c03e",
+      "bytes": 328,
+      "status": "unchanged"
+    },
+    {
+      "file": "util.h",
+      "sha256": "c8a164c5fa55f0bce4e51eee417a0d65eb39ffbf922b4ab70bedc914905b67a8",
+      "bytes": 25379,
+      "status": "unchanged"
+    },
+    {
+      "file": "world.cpp",
+      "sha256": "7afdfd0f033d520fd7a13523ceb1e7c7e9973b56bc69f294525945347a9c2c92",
+      "bytes": 91380,
+      "status": "unchanged"
+    },
+    {
+      "file": "world.h",
+      "sha256": "d86da83ab1f85fa4bffed527304be6a9f952db3994e444c27ebe87dc36a99902",
+      "bytes": 31872,
+      "status": "unchanged"
+    },
+    {
+      "file": "zz_harness.cpp",
+      "sha256": "086870e3c89819f8fb5e1a5449d0c7ad760d2bc17678a752045e2d08c906ec5c",
+      "bytes": 50190,
+      "status": "modified-or-generated"
+    },
+    {
+      "file": "zz_harness.json",
+      "sha256": "f129c90ec1ea26b66096845492acf72581d2af8474989193d1e7133868ed9dfc",
+      "bytes": 11599,
+      "status": "modified-or-generated"
+    }
+  ],
+  "trust_context": {
+    "candidate_and_release_gameplay_inputs_state_result": "exact_full_game",
+    "candidate_a_fuel": "first mismatch round4 actor3 (+40); second round470 actor4 (+896)",
+    "strict_fuel_trust_through_round": 3,
+    "recorder_stdout_complete_through_round": 267,
+    "actor_record_coverage_rounds35_75": {
+      "0": "complete",
+      "1": "complete",
+      "2": "complete",
+      "3": "complete",
+      "4": "complete"
+    },
+    "future_trace_claim": "action-equivalent source branch/own-belief witness only; do not claim strict source-and-fuel equivalence beyond round3; surface @x and any call-hash mismatch"
+  },
+  "trace_data_coverage": {
+    "schema": "bigworld-trace-data-preparation/v1",
+    "game": "big-world-337f",
+    "all_available_stdout_records": true,
+    "trace_data_counts": {
+      "fuel_reads": 51521,
+      "out_of_fuel_points": 4,
+      "segments": 1336,
+      "instances": 6
+    },
+    "target_actor_coverage": {
+      "0": {
+        "segments": 266,
+        "first_round": 1,
+        "last_round": 267,
+        "missing_rounds_35_75": [],
+        "missing_segment_indices": [],
+        "segments_per_round_35_75": {
+          "35": 1,
+          "36": 1,
+          "37": 1,
+          "38": 1,
+          "39": 1,
+          "40": 1,
+          "41": 1,
+          "42": 1,
+          "43": 1,
+          "44": 1,
+          "45": 1,
+          "46": 1,
+          "47": 1,
+          "48": 1,
+          "49": 1,
+          "50": 1,
+          "51": 1,
+          "52": 1,
+          "53": 1,
+          "54": 1,
+          "55": 1,
+          "56": 1,
+          "57": 1,
+          "58": 1,
+          "59": 1,
+          "60": 1,
+          "61": 1,
+          "62": 1,
+          "63": 1,
+          "64": 1,
+          "65": 1,
+          "66": 1,
+          "67": 1,
+          "68": 1,
+          "69": 1,
+          "70": 1,
+          "71": 1,
+          "72": 1,
+          "73": 1,
+          "74": 1,
+          "75": 1
+        }
+      },
+      "3": {
+        "segments": 265,
+        "first_round": 2,
+        "last_round": 267,
+        "missing_rounds_35_75": [],
+        "missing_segment_indices": [],
+        "segments_per_round_35_75": {
+          "35": 1,
+          "36": 1,
+          "37": 1,
+          "38": 1,
+          "39": 1,
+          "40": 1,
+          "41": 1,
+          "42": 1,
+          "43": 1,
+          "44": 1,
+          "45": 1,
+          "46": 1,
+          "47": 1,
+          "48": 1,
+          "49": 1,
+          "50": 1,
+          "51": 1,
+          "52": 1,
+          "53": 1,
+          "54": 1,
+          "55": 1,
+          "56": 1,
+          "57": 1,
+          "58": 1,
+          "59": 1,
+          "60": 1,
+          "61": 1,
+          "62": 1,
+          "63": 1,
+          "64": 1,
+          "65": 1,
+          "66": 1,
+          "67": 1,
+          "68": 1,
+          "69": 1,
+          "70": 1,
+          "71": 1,
+          "72": 1,
+          "73": 1,
+          "74": 1,
+          "75": 1
+        }
+      }
+    },
+    "artifacts": {
+      "workspace/bots/willow337f-trace/src/rec_data.cpp": {
+        "sha256": "dae17d2f03ffd1b35036aa53eb3895ef4db620453859689609157a0d3078a626",
+        "bytes": 834541
+      },
+      "workspace/bots/willow337f-trace/src/zz_harness.cpp": {
+        "sha256": "086870e3c89819f8fb5e1a5449d0c7ad760d2bc17678a752045e2d08c906ec5c",
+        "bytes": 50190
+      },
+      "workspace/bots/willow337f-trace/src/zz_harness.json": {
+        "sha256": "f129c90ec1ea26b66096845492acf72581d2af8474989193d1e7133868ed9dfc",
+        "bytes": 11599
+      }
+    }
+  },
+  "final_truth_corrections": [
+    "BW-ALLY labels locally read shared-claim belief as local_cached_claim.",
+    "bank_passing_attack reports selected=-1 because the actual attacked group is not logged.",
+    "route_result walked is the original local flag, emitted before and excluding later unassigned dasher walk_on fallback; it is not overall move success.",
+    "The strict trusted prefix ends strictly before the first differing input/state round.",
+    "The fixed emulator was rehashed after its debug-workspace build and exactly matched the pinned Release raw/injected hashes."
+  ],
+  "build_status": "source/data/wrapper preparation only; trace binary not built"
+}
