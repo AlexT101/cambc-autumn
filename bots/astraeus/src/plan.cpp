@@ -967,25 +967,15 @@ void Search::read_mates() {
     const int r = f.abilities[heal].range();
     tables.heal_at.fill(0);
     for (const auto& a : world.allies) {
-        if (a.is_self || !a.alive || !a.visible || n_mates == max_mates || dist(here, a.pos) > grid_r + r
-            || test(world.map().ally_spawn, a.pos))
-            continue;
-        float hp = 0, top = 0;
+        if (n_mates == max_mates || dist(here, a.pos) > grid_r + r) continue;
+        std::optional<HealTarget> t;
         try {
-            const auto* live = visible_record(a.handle);
-            if (!live) continue;
-            hp = live->health, top = live->max_health;
-            // Allies start a recall at every turn end and cancel it unless wanted: one kept will
-            // reach spawn and heal there.
-            if (kept_recall(a.handle, a.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time)))
-                continue;
+            t = heal_target(world, a, amount);
         } catch (const cambc::error&) {
             continue;
         }
-        const float gain = std::min(amount, top - hp);
-        if (!worth_healing(amount, gain, hp / top)) continue;
-        const float value = gain;
-        if (value <= 0) continue;
+        if (!t) continue;
+        const float value = t->gain;
         const auto k = static_cast<std::int8_t>(n_mates);
         mates[n_mates++] = &a;
         each_bit(viewers(a.pos, r), [&](int c) {
@@ -1933,7 +1923,7 @@ bool strike_possible(const World& world) {
     bool failed = false;
     // Its walk may end on a guarded tile it passes on the way to a landing.
     const auto guard = pathing.held_guard();
-    if (world.me().type != cambc::champion_type::willow) pathing.set_guard(nullptr);
+    pathing.set_guard(nullptr);
     while (done < seq.n) {
         // Out of fuel mid-plan, the rest would play in the next round on last round's positions.
         if (done > 0 && world.is_stale()) break;

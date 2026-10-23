@@ -1014,7 +1014,7 @@ void World::update() {
         }
     }
     FuelMeter meter{"update"};
-    ++camp_observation_epoch;
+    observed_ = false;
     read_vision();
     const auto tributing = tributing_enemies(); // before update_champions ends their channels
     guard("priorities", [&] { read_priorities(updated_round_ != round); });
@@ -1041,7 +1041,7 @@ void World::update() {
 
 [[gnu::flatten]] void World::observe() {
     FuelMeter meter{"observe"};
-    ++camp_observation_epoch;
+    observed_ = true;
     read_vision();
     update_champions(false);
     sight_pos_ = clear_pos_ = my_position();
@@ -1293,7 +1293,6 @@ void World::note_capture(int group, int respawn_round) {
     c.respawn_round = respawn_round;
     c.awake = Awake::asleep;
     c.asleep = 0;
-    c.asleep_read = 0;
     c.holder.reset();
     c.held_since = -1;
     note_stirring(group);
@@ -1549,7 +1548,6 @@ void restore(CampBelief& c, const CampGroup& G, int since) {
     for (std::size_t i = 0; i < G.members.size(); ++i) c.health[i] = G.members[i].max_health;
     c.awake = Awake::asleep;
     c.asleep = 0;
-    c.asleep_read = 0;
     ++c.version;
 }
 } // namespace
@@ -1615,11 +1613,6 @@ struct World::CampViews {
 [[gnu::flatten]] void World::update_camp(std::size_t g, bool in_view, CampViews& views) {
     const auto& G = map().groups[g];
     auto& c = camps[g];
-    const bool certify_sleep = me().type == cambc::champion_type::willow;
-    if (certify_sleep) {
-        c.asleep_read = 0;
-        c.asleep_read_epoch = 0;
-    }
 
     if (!in_view) {
         if (c.state == CampState::cleared && c.holder && round >= c.payout_round()) {
@@ -1637,7 +1630,6 @@ struct World::CampViews {
     }
 
     const auto [code, timer] = engine::group_state(G.handle);
-    if (certify_sleep && (code == 1 || code == 2)) c.asleep_read_epoch = camp_observation_epoch;
     const auto previous = c.state;
     const int previous_round = c.state_round;
     const int previous_respawn = c.respawn_round;
@@ -1710,7 +1702,6 @@ struct World::CampViews {
                     continue;
                 }
                 const auto read = engine::camp_awake(m.handle);
-                if (certify_sleep && read == Awake::asleep) c.asleep_read |= bit;
                 striker_awake |= read == Awake::awake;
                 striker_asleep |= read == Awake::asleep;
                 striker_unread |= !read;

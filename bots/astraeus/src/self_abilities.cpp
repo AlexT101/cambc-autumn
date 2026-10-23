@@ -420,6 +420,35 @@ bool worth_healing(float amount, float gain, float fraction) {
     return gain > 0 && (gain >= heal_min_share * amount || fraction < heal_low_health);
 }
 
+bool heal_ready(const World& world, const ChampionBelief& healer, float& amount) {
+    if (!healer.alive || !healer.visible || !healer.can_act(world.round)) return false;
+    const auto* live = visible_record(healer.handle);
+    if (!live) return false;
+    const auto state = cambc::champion_state::from_bits_retain(live->state);
+    if (!state.contains(cambc::champion_state::can_cast) || state.contains(cambc::champion_state::recalling)
+        || state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::teleporting))
+        return false;
+    const float focus = live->focus;
+    const int slot = healer.facts().slot_of(AbilityKind::heal);
+    if (slot < 0) return false;
+    std::int32_t cooldown = 0;
+    ok(cambc::detail::sdk_champion_cooldown(static_cast<std::uint32_t>(healer.handle), slot, &cooldown));
+    if (cooldown > 0) return false;
+    amount = healer.facts().abilities[slot].multiplier * focus;
+    return true;
+}
+
+std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount) {
+    if (a.is_self || !a.alive || !a.visible || test(world.map().ally_spawn, a.pos)) return std::nullopt;
+    const auto* live = visible_record(a.handle);
+    if (!live) return std::nullopt;
+    const HealTarget t{&a, {live->x, live->y}, std::min(amount, live->max_health - live->health), live->health / live->max_health};
+    if (kept_recall(a.handle, a.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time))
+        || !worth_healing(amount, t.gain, t.fraction))
+        return std::nullopt;
+    return t;
+}
+
 bool heal_ally(const World& world) {
     const int slot = world.me().facts().slot_of(AbilityKind::heal);
     if (slot < 0) return false;

@@ -48,6 +48,17 @@ bool dash_clears(const World& world, Pathing& pathing, vec2 dead);
 bool heal_ally(const World& world);
 // A heal restoring `gain` of `amount` to an ally at `fraction` of its health is worth the cooldown.
 bool worth_healing(float amount, float gain, float fraction);
+// A visible healer, us or an ally, could heal now, restoring `amount`: an ally's cooldowns are not
+// in its belief, so this reads them live.
+bool heal_ready(const World& world, const ChampionBelief& healer, float& amount);
+struct HealTarget {
+    const ChampionBelief* ally;
+    vec2 pos;
+    float gain, fraction; // what the heal restores, and the ally's health fraction before it
+};
+// A visible ally off its spawn that a heal of `amount` is worth casting on. One keeping a recall
+// going will reach spawn and heal there.
+std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount);
 // Varg: before damage from an awake camp, a camp we are hitting or an enemy in reach. `farmed`:
 // the group farm chose, which we hit from attack range; another group's camp in attack range is
 // hit only if our attack is spent.

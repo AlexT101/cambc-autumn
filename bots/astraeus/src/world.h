@@ -349,9 +349,6 @@ struct CampBelief {
     // Bit i: striking member i read asleep while the group is not. Only damage wakes it, and it
     // wakes every asleep member, so one seen to wake clears them all. Members past 64 count awake.
     std::uint64_t asleep = 0;
-    // Successful asleep reads for Willow's local escape; observe() expires this certificate.
-    std::uint64_t asleep_read = 0;
-    std::uint32_t asleep_read_epoch = 0;
     int last_damaged_round = -1; // a health drop we saw
     bool member_asleep(std::size_t i) const { return awake == Awake::asleep || (i < 64 && (asleep >> i & 1)); }
     bool maybe_asleep(std::size_t i) const { return awake != Awake::awake || (i < 64 && (asleep >> i & 1)); }
@@ -387,6 +384,13 @@ public:
     // Start of each play turn. The first call also builds the static map.
     void update();
     void observe();
+    // Only update() reads camps: until an observe(), their beliefs show the vision we have.
+    bool camps_current() const { return !observed_; }
+    // A camp tile of group g was in view at update().
+    bool group_in_view(int g) const {
+        const auto w = static_cast<std::size_t>(g >> 6);
+        return w < group_visible_.size() && (group_visible_[w] >> (g & 63) & 1);
+    }
     // An enemy in sight from p, within r of it, that this turn's reads did not see: our own move
     // revealed it. False at the tile vision was last read from.
     bool revealed(vec2 p, int r) const;
@@ -445,7 +449,6 @@ public:
     }
     int round = 0;
     int first_round = 0; // this instance's first play round
-    std::uint32_t camp_observation_epoch = 0;
 
     std::vector<ChampionBelief> allies; // in handle order, self included
     std::vector<ChampionBelief> enemies;
@@ -532,6 +535,7 @@ private:
     vec2 sight_pos_{-1, -1};         // where update() or observe() last looked from
     mutable vec2 clear_pos_{-1, -1}; // where revealed() last found nothing new
     std::vector<std::uint64_t> group_visible_; // update_camps() scratch, bit g
+    bool observed_ = false; // observe() ran since update()
     // Bit g: unseen, update_camps() could still change it (a hold paying out, a return, an
     // awake group's wakefulness going unknown).
     std::vector<std::uint64_t> camps_pending_;

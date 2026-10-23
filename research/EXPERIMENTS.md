@@ -247,6 +247,13 @@ another harmless group was kept (CHANGES 91).
   2026-10-23). Safety used to read it live, and after our move hid a believed-visible ally (vision is personal) the read
   threw and lost the rest of the turn. Against main, ladder + gen only: 50.0% of 592 (ladder 48.8 of 80, gen 50.2),
   out-of-fuel turns 2339 vs 2481. Level; a correctness fix, kept on the branch.
+- Astraeus Willow cleanup, behaviour-preserving part (2026-10-23): heal targeting shared (`heal_ready`, `heal_target`),
+  a recall flag in place of decision letters, Willow's sleep certificate replaced by camp beliefs plus
+  `World::camps_current`, the plan's Willow guard exception dropped, the turn-end support re-read only after a ward.
+  `bench.py` wide set, own drafts (astraeus drafts Willow on 5-pick maps) against the frozen
+  `bots/baselines/astraeus-8d240cc`: 52/52 replays identical, fuel -0.1%. Swapping Willow's post-move `see_again` for
+  `see_revealed` is not behaviour-preserving (its camp, ally and Safety reads follow the full re-observe): left for the
+  A/B'd steps.
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
 - `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
   2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next
