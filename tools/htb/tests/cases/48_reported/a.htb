@@ -1,0 +1,51 @@
+#include <array>
+#include <bitset>
+#include <stdexcept>
+
+// From a teammate's report: a call inside a template argument.
+constexpr int n() { return 3; }
+constexpr int W() { return 4; }
+
+struct S {
+    std::array<int, n()> cells{};
+};
+std::bitset<W() * W()> seen{};
+struct T {
+    std::array<int, n()> make() const { return {1, 2, 3}; }
+};
+struct U {
+    static std::array<int, n()> c = {};
+};
+std::array<int, n() + Later::extra()> after{};
+
+// A constructor function-try-block with a member initializer list.
+int boom(int v) {
+    if (v < 0) throw std::runtime_error("negative");
+    return v;
+}
+struct A {
+    int v;
+    A(int x) try : v(boom(x)) {
+    } catch (...) {
+        throw;
+    }
+};
+struct B {
+    int v;
+    B(int x);
+};
+B::B(int x) try : v(boom(x)) {
+} catch (...) {
+    throw;
+}
+
+// Deduction guides, with and without a template.
+template <class T>
+struct Wrap {
+    T value;
+    template <class U>
+    Wrap(U) : value(0) {}
+};
+Wrap(const char*) -> Wrap<int>;
+template <class T>
+Wrap(T*) -> Wrap<long>;

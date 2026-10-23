@@ -1,0 +1,9 @@
+namespace aph {
+struct Reach {
+    struct Window {
+        int bits = 0;
+        static Window bit(int i) { return Window{1 << i}; }
+    };
+    Window around(int i) const { return Window::bit(i); }
+};
+}

@@ -1,0 +1,7 @@
+#include <cstdint>
+
+// Distilled from porting the team's hyperion and hecate bots (C++ headers and sources turned into .htb).
+namespace aph {
+enum class Kind : std::uint8_t { attack, dash };
+enum class Targeting : std::uint8_t { self, enemy };
+}

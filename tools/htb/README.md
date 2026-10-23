@@ -13,7 +13,8 @@ If clangd is missing: `brew install llvm` (macOS), `winget install LLVM.LLVM` (W
 (Linux). Then **Developer: Reload Window** in VS Code.
 
 In `.htb` files you then get squiggles while you type, completion and hover across files, and go to definition /
-references that land in your `.htb` files. Saving a file regenerates its bot. Types of `auto` variables show on hover;
+references that land in your `.htb` files. Saving, adding, deleting or renaming a bot's `.htb` files or headers
+regenerates it, including changes made outside VS Code (a git pull). Types of `auto` variables show on hover;
 to show them inline, set `"[htb]": { "editor.inlayHints.enabled": "on" }`.
 
 ## Writing a bot
@@ -32,8 +33,10 @@ since it's what cambc builds.
 - `src/headers/<name>.h`: what `<name>.htb` declares (classes with method declarations, enums, constants,
   globals, prototypes, templates); `src/<name>.inl`: its function bodies; `src/unity.cpp`: every header, then every
   body, as one translation unit, so calls inline across files.
-- Functions marked `inline`, `constexpr` or `consteval` are kept whole in their header (methods: their body stays
-  in the class) instead of in `src/<name>.inl`, and can still call each other in any order.
+- Functions marked `inline`, `constexpr` or `consteval` are kept whole in a header instead of in `src/<name>.inl`
+  (methods: their body stays in the class), and can still call each other in any order. `constexpr` and
+  `consteval` ones are in `src/headers/<name>.h`, in order, so constants can use them; `inline` functions and
+  templates are in `src/headers/<name>.inline.h`, after every class, since their bodies may reach any class.
 - Never edit `src/`: hgen rewrites it, and refuses to touch a `src/` holding files it didn't write.
 - Anything can be used before it's defined, across files and folders, including a class's nested types above
   their definition (in the editor those still get underlined, because clangd reads the class as written).

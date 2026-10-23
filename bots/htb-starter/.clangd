@@ -12,7 +12,7 @@ CompileFlags:
 Diagnostics:
   UnusedIncludes: None
   MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined]
+  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
   PathMatch: 'draft\.htb'
@@ -22,7 +22,7 @@ CompileFlags:
 Diagnostics:
   UnusedIncludes: None
   MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined]
+  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
   PathMatch: 'main\.htb'
@@ -32,7 +32,7 @@ CompileFlags:
 Diagnostics:
   UnusedIncludes: None
   MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined]
+  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 ---
 If:
   PathMatch: 'random\.htb'
@@ -42,5 +42,5 @@ CompileFlags:
 Diagnostics:
   UnusedIncludes: None
   MissingIncludes: None
-  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined]
+  Suppress: [param_default_argument_redefinition, in_class_initializer_non_const, in_class_initializer_literal_type, incomplete_base_class, field_incomplete_or_sizeless, typecheck_decl_incomplete_type, incomplete_member_access, incomplete_nested_name_spec, sizeof_alignof_incomplete_or_sizeless_type, call_incomplete_argument, call_function_incomplete_return, func_def_incomplete_result, init_incomplete_type, invalid_incomplete_type_use, auto_fn_used_before_defined, undefined_internal_type]
 # <<< tools/htb/hgen.py

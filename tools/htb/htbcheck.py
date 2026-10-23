@@ -127,6 +127,8 @@ def check(bot_dir):
 
 
 def main(argv=None):
+    for stream in (sys.stdout, sys.stderr):   # a Windows console's code page can't show every file name
+        stream.reconfigure(errors="replace")
     names = sys.argv[1:] if argv is None else argv
     if any(n in ("-h", "--help") for n in names):
         print(__doc__)

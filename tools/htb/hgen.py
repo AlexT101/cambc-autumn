@@ -5,13 +5,16 @@ Put your .htb files straight in the bot folder (bots/<bot>/*.htb, and any
 subfolders) and write them like Java (an .htb file is C++): classes with their methods inside, no
 headers, no forward declarations, in any order. Every file can use what any
 other file defines. Functions marked `inline`, `constexpr` or `consteval` are
-kept whole in their header (methods: in their class) instead of
-src/<name>.inl, and can still call each other in any order.
+kept whole in a header (methods: in their class) instead of src/<name>.inl,
+and can still call each other in any order.
 
 hgen generates src/, which is what cambc compiles and submits:
   src/headers/<name>.h   what <name>.htb declares: its classes (with method
                          declarations), enums, constants, globals, function
                          prototypes and templates
+  src/headers/<name>.inline.h
+                         its inline functions and templates, defined after
+                         every class (their bodies may reach any class)
   src/<name>.inl         the bodies of <name>.htb's functions and methods
   src/unity.cpp          every header, then every body, as one translation
                          unit, so the compiler can inline calls across files
@@ -78,13 +81,14 @@ OLD_CLANGD_MARKERS = (("# >>> tools/hgen.py", "# <<< tools/hgen.py"),)
 # Errors clangd would show only because it reads your file as written, which the build doesn't:
 # a default argument the context already gave, static members hgen makes inline, and classes
 # (or functions with a deduced return type) your file uses before they're defined, which hgen
-# orders. Building reports any real ones, at your file and line.
+# orders, and templates called with a lambda (the editor sees their declarations; their definitions
+# come after every class). Building reports any real ones, at your file and line.
 SUPPRESS = ("param_default_argument_redefinition", "in_class_initializer_non_const",
             "in_class_initializer_literal_type", "incomplete_base_class", "field_incomplete_or_sizeless",
             "typecheck_decl_incomplete_type", "incomplete_member_access", "incomplete_nested_name_spec",
             "sizeof_alignof_incomplete_or_sizeless_type", "call_incomplete_argument",
             "call_function_incomplete_return", "func_def_incomplete_result", "init_incomplete_type",
-            "invalid_incomplete_type_use", "auto_fn_used_before_defined")
+            "invalid_incomplete_type_use", "auto_fn_used_before_defined", "undefined_internal_type")
 
 KEYWORDS = frozenset("""
     alignas alignof and and_eq asm auto bitand bitor bool break case catch char
@@ -323,6 +327,13 @@ class Decl:
         self.calls = frozenset()    # its by-value names as written, qualified (`Config::compute`)
         self.constant = False   # a constexpr/consteval function: using it in a constant needs its callees too
         self.member_of = None   # for a member defined outside its class (kept whole), the class
+        # A definition whose body may reach any class (through what it calls), so it goes after every class,
+        # in the file's .inline.h; its declaration (if it needs one) stays in order with the rest.
+        self.late = False
+        self.names_only = False     # a using-declaration: another name for something declared elsewhere
+        self.plain = None   # its declaration without default arguments, for its own file's editor context
+        self.declared = False   # a definition with a separate declaration: what uses it only needs that
+        self.body_refs = frozenset()    # names its body uses, for the start-up order of globals
         self.cond = ()          # the `#if` chains around it (see wrap)
         self.edits = ()
         self.refs = self.strong = frozenset()
@@ -350,6 +361,7 @@ class Split:
         self.edits, self.bodies, self.posts = [], [], []
         self.weak, self.removed, self.nested = set(), set(), set()
         self.exprs = set()      # initializer and default-argument tokens
+        self.members = set()    # names the class declares (methods, fields): inside it, they mean those
         self.move = True        # move method bodies out (not for class templates, which keep them)
 
 
@@ -405,6 +417,12 @@ class Parser:
     def idents(self, a, b):
         return self.idents_at(range(a, b + 1))
 
+    def qualifiers(self, ks):
+        """Names used as `X::member`: X must be complete there, not just declared."""
+        toks = self.toks
+        return frozenset(toks[k].text for k in ks if toks[k].kind == "id" and toks[k].text not in KEYWORDS
+                         and self.tx(k + 1) == "::" and self.tx(k - 1) not in (".", "->", "::"))
+
     def by_value(self, ks):
         """Names used at ks other than through a pointer or reference."""
         return self.idents_at(k for k in ks if self.tx(k + 1) not in POINTER)
@@ -415,7 +433,7 @@ class Parser:
         d.text = self.slice(a, b) if text is None else text
         d.ahead = ahead
         d.refs = self.idents(a, b) if refs is None else refs
-        d.strong = d.refs if strong is None else strong
+        d.strong = (d.refs if strong is None else strong) | (self.qualifiers(range(a, b + 1)) if kind != "class" else frozenset())
         self.f.decls.append(d)
         return d
 
@@ -477,7 +495,8 @@ class Parser:
             e = self.skip_to(i, end)
             self.decl("misc", i, e, ns, private, [])
             return e + 1
-        if t.kind == "id" and self.tx(i + 1) == "(" and (t.text in self.macros or _MACRO_NAME.fullmatch(t.text)):
+        if (t.kind == "id" and self.tx(i + 1) == "(" and (t.text in self.macros or _MACRO_NAME.fullmatch(t.text))
+                and self.tx(self.close(i + 1) + 1) != "->"):   # `W(const char*) -> W<int>;` is a deduction guide
             k = self.close(i + 1) + 1   # a macro call such as an X-macro line
             if self.tx(k) == "{":
                 k = self.close(k) + 1
@@ -585,6 +604,13 @@ class Parser:
         j, e = h, end - 1
         while j < end:
             x = self.tx(j)
+            if (x == "<" and paren is None and eq is None and toks[j - 1].kind == "id"
+                    and toks[j - 1].text not in KEYWORDS):
+                # template arguments, which may call functions (`std::array<int, n()> cells`)
+                k = self.skip_angles(j, end)
+                if k < end and all(self.tx(m) != ";" for m in range(j, k)):
+                    j = k
+                    continue
             if x == "(":
                 if paren is None and eq is None and not typedef:
                     ni = self.declarator_name(h, j)
@@ -632,6 +658,17 @@ class Parser:
         head = self.class_head(h, end)
         if head is not None:
             return self.class_def(start, head, end, ns, private, template, spec)
+        k = self.skip_attrs(h)
+        if self.tx(k) in ("class", "struct", "union", "enum"):
+            e = self.skip_to(k, end)
+            rest = [self.tx(j) for j in range(k + 1, e)]
+            colon = rest.index(":") if ":" in rest else len(rest)    # `enum class E : std::uint8_t;`
+            if rest and all(self.toks[k + 1 + j].kind == "id" or x == "::" for j, x in enumerate(rest[:colon])) \
+                    and not set(rest) & {"(", "{", "=", "*", "&", "&&", ","}:
+                # `class World;`: a declaration of a class defined elsewhere, written by hand; harmless as it is
+                self.decl("fwddecl", start, e, ns, private, [], refs=frozenset(), strong=frozenset(),
+                          ahead=self.slice(start, e))
+                return e + 1
         typedef = self.tx(h) == "typedef"
         d = self.scan(h, end, typedef)
         e, paren = d["e"], d["paren"]
@@ -741,8 +778,10 @@ class Parser:
         toks = self.toks
         paren, cparen, name_i, body = d["paren"], d["cparen"], d["name_i"], d["body"]
         e = self.close(body)
-        if self.tx(body - 1) == "try":      # a function-try-block: the body is `try {...} catch (...) {...}`
-            body -= 1
+        # a function-try-block: the body is `try [: inits] {...} catch (...) {...}`
+        try_at = next((k for k in range(cparen + 1, body) if self.tx(k) == "try"), None)
+        if try_at is not None:
+            body = try_at
             while self.tx(e + 1) == "catch" and self.tx(e + 2) == "(":
                 e = self.close(self.close(e + 2) + 1)
         if toks[name_i].text == "operator":
@@ -755,15 +794,33 @@ class Parser:
         segs, _, pnames = self.signature(paren, cparen)
         ahead = self.src[toks[start].start:toks[body].start].rstrip() + ";"
         if template or spec:
-            d = self.decl("template", start, e, ns, private, [] if qualified else [name])
-            if not (spec or qualified or any(self.tx(k) == "=" for k in range(start, h))):
-                d.ahead = ahead
+            deduced = "auto" in specs and "->" not in after
+            constant = bool(specs & {"constexpr", "consteval"})
+            if qualified and not spec:  # a member template defined outside its class, which declares it
+                d = self.decl("template", start, e, ns, private, [])
+                d.late = not constant
+                return e
+            if spec or deduced or constant or any(self.tx(k) == "=" for k in range(start, h)):
+                d = self.decl("template", start, e, ns, private, [] if qualified else [name])
+                if not (spec or qualified or any(self.tx(k) == "=" for k in range(start, h))):
+                    d.ahead = ahead
+                return e
+            # Declared where its signature allows (defaults stay there), defined after every class: its body
+            # may reach any class through what it calls.
+            p = self.decl("template", start, body - 1, ns, private, [name], text=ahead, ahead=ahead,
+                          strong=frozenset())
+            if any(eq is not None for _, _, eq in segs):
+                p.plain = self.without_defaults(start, paren, cparen, body, segs) + ";"
+            d = self.decl("template", start, e, ns, private, [name],
+                          text=self.definition(start, h, paren, cparen, body, e, segs))
+            d.late, d.body_refs = True, self.idents(body, e)
             return e
         if qualified:       # a member defined outside its class, already
             k = name_i - (2 if self.tx(name_i - 1) == "::" else 3)
             if specs & {"inline", "constexpr", "consteval"}:     # kept whole in the header, after its class
                 d = self.decl("inline", start, e, ns, private, [])
                 d.constant, d.member_of = bool(specs & {"constexpr", "consteval"}), self.tx(k)
+                d.late = not d.constant
                 return e
             ctor = self.tx(k) == name and self.tx(name_i - 1) == "::"
             self.f.bodies.append(Body(self.f, ns, self.line(start), self.src[toks[start].start:toks[body].start].rstrip(),
@@ -776,22 +833,68 @@ class Parser:
         if specs & {"constexpr", "consteval", "inline"} or deduced:
             # Kept whole in the header: you asked for it (inline), or it's needed in full wherever it's
             # used (constexpr), or before (deduced return type).
-            d = self.decl("inline", start, e, ns, private, [name], ahead=None if deduced else ahead)
-            d.decl_only, d.constant = ahead, bool(specs & {"constexpr", "consteval"})
-            if not deduced:     # declared ahead, so these can call each other in any order
-                d.fwd = self.without_defaults(start, paren, cparen, body, segs) + ";"
+            constant = bool(specs & {"constexpr", "consteval"})
+            if deduced:     # can't usefully be declared ahead of its definition
+                d = self.decl("inline", start, e, ns, private, [name], ahead=None)
+                d.decl_only, d.constant = ahead, constant
+                return e
+            # Declared like any function (after the types its signature uses), so these can call each other
+            # in any order; defined whole once what its body needs is there. Defaults stay on the declaration.
+            self.proto_decl(start, body, segs, pnames, ns, private, name, ahead, paren, cparen)
+            d = self.decl("inline", start, e, ns, private, [name], text=self.definition(start, h, paren, cparen, body, e, segs))
+            d.constant, d.late, d.body_refs, d.declared = constant, not constant, self.idents(body, e), True
             return e
         if name != "main":
-            sig = [k for k in range(start, body) if k not in pnames]
-            defaulted = [k for a, b, eq in segs if eq is not None for k in range(a, b + 1) if k not in pnames]
-            p = self.decl("proto", start, body - 1, ns, private, [name],
-                          text=ahead, refs=self.idents_at(sig), strong=self.idents_at(defaulted), ahead=ahead)
-            p.sig = tuple(" ".join(self.tx(k) for k in range(a, (eq if eq is not None else b + 1)) if k not in pnames)
-                          for a, b, eq in segs)
+            self.proto_decl(start, body, segs, pnames, ns, private, name, ahead, paren, cparen)
         self.f.bodies.append(Body(self.f, ns, self.line(start), self.without_defaults(start, paren, cparen, body, segs),
                                   self.line(body), self.slice(body, e), owner=name, refs=self.idents(body, e),
                                   cond=self.cond_now()))
         return e
+
+    def definition(self, start, h, paren, cparen, body, e, segs):
+        """The function at start..e as defined after its declaration: without the default arguments (and
+        default template arguments) the declaration already has, its body at its own line."""
+        heads, k = [], start
+        while self.tx(k) == "template" and self.tx(k + 1) == "<":
+            close = self.skip_angles(k + 1, body) - 1
+            parts, a, depth = [], k + 2, 0
+            for j in range(k + 2, close + 1):
+                x = self.tx(j)
+                if x in OPEN:
+                    continue
+                if x == "<":
+                    depth += 1
+                elif x in (">", ">>") and j < close:
+                    depth -= len(x)
+                if (x == "," and depth == 0) or j == close:
+                    stop = j - 1
+                    eq = next((m for m in range(a, stop + 1) if self.tx(m) == "=" and self.depth_at(a, m) == 0), None)
+                    parts.append(self.src[self.toks[a].start:self.toks[(eq - 1) if eq is not None else stop].end].strip()
+                                 if stop >= a else "")
+                    a = j + 1
+            heads.append("template <" + ", ".join(p for p in parts if p) + ">")
+            k = close + 1
+        rest = self.without_defaults(k, paren, cparen, body, segs)
+        return " ".join(heads + [rest]) + f'\n#line {self.line(body)} "{self.f.display}"\n' + self.slice(body, e)
+
+    def depth_at(self, a, m):
+        """Angle depth at m, counting from a."""
+        depth = 0
+        for j in range(a, m):
+            x = self.tx(j)
+            depth += 1 if x == "<" else -len(x) if x in (">", ">>") else 0
+        return depth
+
+    def proto_decl(self, start, body, segs, pnames, ns, private, name, ahead, paren=None, cparen=None):
+        """The declaration of the function defined at start..body: what other files see of it."""
+        sig = [k for k in range(start, body) if k not in pnames]
+        defaulted = [k for a, b, eq in segs if eq is not None for k in range(a, b + 1) if k not in pnames]
+        p = self.decl("proto", start, body - 1, ns, private, [name],
+                      text=ahead, refs=self.idents_at(sig), strong=self.idents_at(defaulted), ahead=ahead)
+        if paren is not None and any(eq is not None for _, _, eq in segs):
+            p.plain = self.without_defaults(start, paren, cparen, body, segs) + ";"
+        p.sig = tuple(" ".join(self.tx(k) for k in range(a, (eq if eq is not None else b + 1)) if k not in pnames)
+                      for a, b, eq in segs)
 
     def prototype(self, start, h, d, ns, private, template):
         """A function declaration the file wrote itself."""
@@ -804,11 +907,13 @@ class Parser:
         specs = {t.text for t in self.toks[h:name_i]}
         text = self.slice(start, d["e"])
         deleted = d["eq"] is not None and self.tx(d["eq"] + 1) in ("delete", "default")   # a definition: can't repeat
-        guide = template and name_i == h and self.tx(d["cparen"] + 1) == "->"    # `Box(T) -> Box<T>;`: can't repeat
-        self.decl("template" if template else "proto", start, d["e"], ns, private or "static" in specs,
-                  [] if self.qualified_name(name_i) else [name], text=text,
-                  refs=self.idents_at(k for k in range(start, d["e"] + 1) if k not in pnames),
-                  strong=self.idents_at(defaulted), ahead=None if deleted or guide else text)
+        guide = name_i == h and self.tx(d["cparen"] + 1) == "->"    # `Box(T) -> Box<T>;`: can't repeat
+        p = self.decl("template" if template else "proto", start, d["e"], ns, private or "static" in specs,
+                      [] if self.qualified_name(name_i) else [name], text=text,
+                      refs=self.idents_at(k for k in range(start, d["e"] + 1) if k not in pnames),
+                      strong=self.idents_at(defaulted), ahead=None if deleted or guide else text)
+        if defaulted and not (deleted or guide):
+            p.plain = self.without_defaults(start, d["paren"], d["cparen"], d["e"], segs) + ";"
 
     def declarators(self, h, e, init_paren=None):
         """For `T a = 1, *b;` at h..e-1: the names declared, the first name's index,
@@ -910,8 +1015,8 @@ class Parser:
                     names.append(last)
                 elif self.toks[k].kind == "id" and self.tx(k) not in KEYWORDS:
                     last = self.tx(k)
-            # a using-declaration (`using geo::dot;`) needs what it names declared
-            self.decl("alias", start, e, ns, private, names, ahead=self.slice(start, e))
+            # a using-declaration (`using geo::dot;`) needs what it names declared; it defines nothing new
+            self.decl("alias", start, e, ns, private, names, ahead=self.slice(start, e)).names_only = True
         return e + 1
 
     def typedef_name(self, h, e):
@@ -1013,7 +1118,12 @@ class Parser:
                 self.split_members(brace, c, [name or ""], ns, out, "private" if head["keyword"] == "class" else "public")
                 text = self.apply(start, e, out.edits)
                 strong = self.strong_refs((k for k in range(start, e + 1) if k not in out.weak), out.exprs)
-            d = self.decl("class", start, e, ns, private, names, text=text + (";" if semi else ""), strong=strong)
+            refs = None
+            if strong is not None:
+                own = out.members | out.nested
+                strong = (strong | self.qualifiers(range(start, e + 1))) - own
+                refs = self.idents(start, e) - own
+            d = self.decl("class", start, e, ns, private, names, text=text + (";" if semi else ""), refs=refs, strong=strong)
             if head["enum"] and name and (head["scoped"] or head["fixed"]):
                 d.fwd = f"{head['keyword']} {name}" + (f" : {head['fixed']};" if head["fixed"] else ";")
             elif (template and not spec and names and not head["qualified"] and head["spec_args"] is None
@@ -1028,8 +1138,10 @@ class Parser:
         out = Split()
         self.split_members(brace, c, [name], ns, out, "private" if head["keyword"] == "class" else "public")
         keep = [k for k in range(start, e + 1) if k not in out.removed]
+        own = out.members | out.nested     # inside the class, its own members and types
         d = self.decl("class", start, e, ns, private, names, text=self.apply(start, e, out.edits) + (";" if semi else ""),
-                      refs=self.idents_at(keep), strong=self.strong_refs((k for k in keep if k not in out.weak), out.exprs))
+                      refs=self.idents_at(keep) - own,
+                      strong=(self.strong_refs((k for k in keep if k not in out.weak), out.exprs) | self.qualifiers(keep)) - own)
         d.fwd = f"{head['keyword']} {name};"
         d.span, d.edits = (start, e), out.edits
         for text, a, b, key, cond in out.posts:
@@ -1149,6 +1261,7 @@ class Parser:
         if d["body"] is not None and d["paren"] is not None:
             return self.method(start, d, quals, ns, out)
         if d["paren"] is not None:      # a method declaration, maybe `= default`
+            out.members.add(self.tx(d["name_i"]))
             _, defaults, _ = self.signature(d["paren"], d["cparen"])
             out.weak.update(k for k in range(start, e + 1) if k not in defaults)
             out.exprs.update(defaults)
@@ -1162,6 +1275,7 @@ class Parser:
         """Static data members need `inline` (or a definition outside the class) to just work."""
         toks = self.toks
         names, first, top, inits = self.declarators(start, e)
+        out.members.update(names)
         out.exprs.update(k for a, b in inits for k in range(a, b + 1))
         static = next((k for k in top if self.tx(k) == "static"), None)
         specs = {self.tx(k) for k in top}
@@ -1187,18 +1301,20 @@ class Parser:
     def method(self, start, d, quals, ns, out):
         toks = self.toks
         paren, cparen, name_i, body, colon = d["paren"], d["cparen"], d["name_i"], d["body"], d["colon"]
+        out.members.add(self.tx(name_i))
         e = self.close(body)
         name_start = name_i - 1 if self.tx(name_i - 1) == "~" else name_i
         specs = {t.text for t in toks[start:name_start]}
         head_end = colon if colon is not None else body
         after = [self.tx(k) for k in range(cparen + 1, head_end)]
-        if self.tx(body - 1) == "try":
-            while self.tx(e + 1) == "catch":
+        try_block = "try" in after or self.tx(body - 1) == "try"   # `A() try : v(f()) {} catch (...) {}` too
+        if try_block:
+            while self.tx(e + 1) == "catch" and self.tx(e + 2) == "(":
                 e = self.close(self.close(e + 2) + 1)
         if not out.move:
             return e + 1
         if (specs & {"constexpr", "consteval", "inline"} or ("auto" in specs and "->" not in after)
-                or "requires" in after or self.tx(body - 1) == "try" or self.tx(name_start - 1) == "::"):
+                or "requires" in after or try_block or self.tx(name_start - 1) == "::"):
             return e + 1    # stays in the class: you asked for it (inline), or it's needed in full where it's used
         segs, defaults, _ = self.signature(paren, cparen)
         out.weak.update(k for k in range(start, head_end) if k not in defaults)
@@ -1262,6 +1378,7 @@ class SrcFile:
         self.display = display_path(path, bot)
         stem = Path(self.rel).with_suffix("")
         self.header = bot.src / "headers" / stem.with_suffix(".h")
+        self.late_header = bot.src / "headers" / stem.with_suffix(".inline.h")
         self.inl = bot.src / stem.with_suffix(".inl")
         self.text = read(path)
         self.toks, self.comments = tokenize(self.text)
@@ -1411,6 +1528,8 @@ class Bot:
                 f.header = f.header.with_name(f.header.stem + ".htb.h")
             if str(f.inl).lower() in copied:
                 f.inl = f.inl.with_name(f.inl.stem + ".htb.inl")
+            if str(f.late_header).lower() in copied:
+                f.late_header = f.late_header.with_name(f.late_header.name.replace(".inline.h", ".htb.inline.h"))
         user_ns = {n for f in self.files for n in f.namespaces if n}
         # Static members someone defined outside their class keep their plain declaration.
         defined = {key for f in self.files for key in f.static_defs}
@@ -1424,7 +1543,8 @@ class Bot:
                 d.refs, d.strong = unqualify(d.refs, user_ns), unqualify(d.strong, user_ns)
                 # Its own name inside it (constructors, `Node* next`, `int x = 5;` beside an `extern int x;`)
                 # means itself or another declaration of it, never something to put first.
-                if d.kind in ("class", "var", "proto", "inline"):
+                # (a using-declaration's one name is what it brings in, though)
+                if d.kind in ("class", "var", "proto", "inline") or (d.kind == "alias" and not d.names_only):
                     d.refs, d.strong = d.refs - set(d.names), d.strong - set(d.names)
 
     def init_reads(self, d, resolve):
@@ -1436,6 +1556,9 @@ class Bot:
                 for b in f.bodies:
                     for key in b.owner:
                         self.body_refs[key] |= b.refs
+                for x in f.decls:
+                    for key in x.names:
+                        self.body_refs[key] |= x.body_refs
         seen, todo, out = set(), list(d.strong | d.calls), set()
         while todo:
             r = todo.pop()
@@ -1509,6 +1632,10 @@ class Bot:
                 deps[d].update(x for x in d.f.decls if x is not d and d.refs & x.refs)
             if d.kind == "var":
                 deps[d].update(self.init_reads(d, resolve))
+        # Late definitions come after every class anyway; what's in order only needs their declarations.
+        for d in decls:
+            if not d.late:
+                deps[d] = {x for x in deps[d] if not x.late}
         # Whatever needs a class comes after its constexpr members defined outside it: evaluating one needs it.
         member_defs = defaultdict(list)
         for d in decls:
@@ -1538,12 +1665,17 @@ class Bot:
         group_of = {f: g for g in groups for f in g}
 
         out, emission = {}, []
+        late_headers = []
         for g in groups:
             owner = g[0]
-            items = topo_sort([d for f in g for d in f.decls], deps)
+            ordered = topo_sort([d for f in g for d in f.decls], deps)
+            items, late = [d for d in ordered if not d.late], [d for d in ordered if d.late]
             emission += items
             used = {g2[0] for f in g for n in needs[f] for g2 in [group_of[n]] if g2 is not g}
             out[owner.header] = header_text(owner, g, items, sorted(used, key=lambda f: f.index), resolve)
+            if late:
+                out[owner.late_header] = late_text(g, late)
+                late_headers.append(owner.late_header)
             for f in g[1:]:
                 out[f.header] = (f"{BANNER_PREFIX} from {f.rel}. {EDIT_HINT.format(src=f.rel)}\n"
                                  f"// {f.rel} and {owner.rel} need each other's declarations, so all of "
@@ -1560,6 +1692,7 @@ class Bot:
                   if kind == "include" and val[0] == "<"]
         lines += list(dict.fromkeys(system)) + [""] if system else []
         lines += [f'#include "{rel_include(f.header, unity)}"' for g in groups for f in g]
+        lines += [f'#include "{rel_include(h, unity)}"' for h in late_headers]   # after every class
         lines.append("")
         lines += [f'#include "{rel_include(f.inl, unity)}"' for f in self.files]
         out[unity] = "\n".join(lines) + "\n"
@@ -1588,14 +1721,26 @@ class Bot:
         emit(lines, [(d.ns, d.fwd) for d in sorted(emission, key=lambda d: d.order) if d.fwd])
         lines.append("")
         # X's own declarations come later, in X itself; so must whatever needs them.
-        blocked, blocks = {d for d in X.decls if d.ahead is None}, []
+        blocked, blocks = {d for d in X.decls if d.ahead is None and not d.declared}, []
+        # X repeats its own functions' default arguments where it defines them: declared ahead with them too,
+        # clang reports a redefinition, and its recovery can make later calls ambiguous. So X's own come
+        # without defaults, unless X calls one before its definition (Java order needs them there).
+        first_call = {}
+        for k, t in enumerate(X.toks):
+            if t.kind == "id" and X.toks[k + 1].text == "(":
+                first_call.setdefault(t.text, k)
         for d in emission:
+            if d.late:
+                continue
             if d in blocked or any(x in blocked for x in deps[d]):
                 blocked.add(d)
                 if d.f is not X and d.decl_only:    # e.g. `extern const int SCALE;`: usable, if not in full
                     blocks.append((d.ns, wrap(d.cond, f'#line {d.line} "{d.f.display}"\n{d.decl_only}\n')))
                 continue
             text = d.ahead if d.f is X else d.text
+            if d.f is X and d.plain and first_call.get(d.names[0] if d.names else "", len(X.toks)) >= d.start:
+                # (a template can't gain default arguments after it's declared: X's own is left to X)
+                text = d.plain if d.kind != "template" else ""
             if text:
                 doc = d.f.doc(d.f.toks[d.start].start)
                 # The #line lets the HTB extension send go to definition from here to the .htb line.
@@ -1604,14 +1749,37 @@ class Bot:
         return "\n".join(lines).rstrip() + "\n"
 
     def clashes(self, by_name, notes):
-        """Two files' private things can't share a name, as everything is compiled together."""
+        def named(d):   # its namespaces, anonymous ones left out: those are one namespace in the bot
+            return tuple(p for _, nm in d.ns for p in nm.split("::") if p)
+
+        def related(a, b):  # one can only hide or clash with the other in the same or an enclosing namespace
+            x, y = named(a), named(b)
+            return x[:len(y)] == y or y[:len(x)] == x
+
+        """A file's private things (static, anonymous namespace) are seen by every file, as everything is
+        compiled together: the same name in another file clashes, or one hides the other."""
         for name, ds in sorted(by_name.items()):
+            same, other = {}, {}    # per pair of files: one note, the stronger
             for i, a in enumerate(ds):
                 for b in ds[i + 1:]:
-                    if (a.f is not b.f and (a.private or b.private) and a.kind == b.kind
-                            and a.kind in ("proto", "var") and a.sig == b.sig):
-                        notes[f"{a.f.display}:{a.line} and {b.f.display}:{b.line} both define `{name}`; "
-                              f"the whole bot is compiled together, so rename one"] = None
+                    if (a.f is b.f or not (a.private or b.private) or "fwddecl" in (a.kind, b.kind)
+                            or a.names_only or b.names_only
+                            or (a.kind == b.kind == "alias" and a.text.split() == b.text.split())
+                            or not related(a, b)):
+                        continue    # (the same alias twice, `using vec2 = cambc::vec2;`, is allowed)
+                    pair = frozenset((a.f, b.f))
+                    if a.kind == b.kind and a.kind in ("proto", "var") and a.sig == b.sig:
+                        same.setdefault(pair, f"{a.f.display}:{a.line} and {b.f.display}:{b.line} both define "
+                                              f"`{name}`; the whole bot is compiled together, so rename one")
+                    else:
+                        p, o = (a, b) if a.private else (b, a)
+                        other.setdefault(pair, f"{p.f.display}:{p.line}: the file-private `{name}` is seen by every "
+                                               f"file (the bot is compiled as one), so it can hide or clash with "
+                                               f"{o.f.display}:{o.line}'s; rename one")
+            for pair, note in list(other.items()):
+                notes[same.pop(pair, note)] = None
+            for note in same.values():
+                notes[note] = None
 
 
 def file_groups(files, needs):
@@ -1653,31 +1821,99 @@ def file_groups(files, needs):
     return ordered
 
 
+def strongly_connected(items, edges):
+    """Tarjan's strongly connected components (iteratively: a long chain would overflow Python's stack)."""
+    index, low, on, stack, comps, counter = {}, {}, set(), [], [], [0]
+    for root in items:
+        if root in index:
+            continue
+        work = [(root, iter(edges[root]))]
+        index[root] = low[root] = counter[0]
+        counter[0] += 1
+        stack.append(root)
+        on.add(root)
+        while work:
+            v, it = work[-1]
+            for w in it:
+                if w not in index:
+                    index[w] = low[w] = counter[0]
+                    counter[0] += 1
+                    stack.append(w)
+                    on.add(w)
+                    work.append((w, iter(edges[w])))
+                    break
+                if w in on:
+                    low[v] = min(low[v], index[w])
+            else:
+                work.pop()
+                if work:
+                    low[work[-1][0]] = min(low[work[-1][0]], low[v])
+                if low[v] == index[v]:
+                    comp = []
+                    while True:
+                        w = stack.pop()
+                        on.discard(w)
+                        comp.append(w)
+                        if w is v:
+                            break
+                    comps.append(comp)
+    return comps
+
+
 def topo_sort(items, deps):
-    """Order items so each comes after what it needs, else in source order."""
+    """Order items so each comes after what it needs, else in source order. Only a real cycle (things
+    needing each other) is broken, and only among its own members: everything else keeps its order."""
     items = sorted(items, key=lambda d: d.order)
     pos = {d: n for n, d in enumerate(items)}
+    inner = {d: [x for x in deps[d] if x in pos and x is not d] for d in items}
+    comps = strongly_connected(items, inner)
+    comp_of = {d: i for i, c in enumerate(comps) for d in c}
+    needs = {i: {comp_of[x] for d in c for x in inner[d]} - {i} for i, c in enumerate(comps)}
     users = defaultdict(list)
-    count = {}
-    for d in items:
-        ds = [x for x in deps[d] if x in pos]
-        count[d] = len(ds)
-        for x in ds:
-            users[x].append(d)
-    ready = [pos[d] for d in items if not count[d]]
+    for i, ns in needs.items():
+        for n in ns:
+            users[n].append(i)
+    left = {i: len(ns) for i, ns in needs.items()}
+    first = {i: min(pos[d] for d in c) for i, c in enumerate(comps)}
+    ready = [(first[i], i) for i in left if not left[i]]
     heapq.heapify(ready)
+    out = []
+    while ready:
+        _, i = heapq.heappop(ready)
+        out += order_cycle(comps[i], inner, pos)
+        for u in users[i]:
+            left[u] -= 1
+            if not left[u]:
+                heapq.heappush(ready, (first[u], u))
+    return out
+
+
+def order_cycle(comp, inner, pos):
+    """A cycle's members: what can go first does, by source order; when nothing can, the earliest goes."""
+    if len(comp) == 1:
+        return comp
+    members = set(comp)
+    left = {d: sum(1 for x in inner[d] if x in members) for d in comp}
+    users = defaultdict(list)
+    for d in comp:
+        for x in inner[d]:
+            if x in members:
+                users[x].append(d)
     done, out = set(), []
-    while len(out) < len(items):
-        if not ready:   # a cycle: fall back to source order
-            heapq.heappush(ready, min(pos[d] for d in items if d not in done))
-        d = items[heapq.heappop(ready)]
+    ready = [pos[d] for d in comp if not left[d]]
+    heapq.heapify(ready)
+    by_pos = {pos[d]: d for d in comp}
+    while len(out) < len(comp):
+        if not ready:
+            heapq.heappush(ready, min(pos[d] for d in comp if d not in done))
+        d = by_pos[heapq.heappop(ready)]
         if d in done:
             continue
         done.add(d)
         out.append(d)
         for u in users[d]:
-            count[u] -= 1
-            if count[u] == 0 and u not in done:
+            left[u] -= 1
+            if left[u] == 0 and u not in done:
                 heapq.heappush(ready, pos[u])
     return out
 
@@ -1711,6 +1947,20 @@ def header_text(owner, group, items, used, resolve):
     for d in items:
         if not d.text:
             continue    # a macro from the file's opening directives, already above
+        doc = d.f.doc(d.f.toks[d.start].start)
+        blocks.append((d.ns, wrap(d.cond, (doc + "\n" if doc else "") + f'#line {d.line} "{d.f.display}"\n{d.text}\n')))
+    emit(lines, blocks)
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def late_text(group, items):
+    """Inline functions and templates, defined once every class is complete (their declarations come earlier)."""
+    names = " and ".join(f.rel for f in group)
+    lines = [f"{BANNER_PREFIX} from {names}. {EDIT_HINT.format(src=names)}",
+             "// Inline functions and templates, defined after every class: src/unity.cpp includes this after",
+             "// every header (the declarations are in them).", "#pragma once", ""]
+    blocks = []
+    for d in items:
         doc = d.f.doc(d.f.toks[d.start].start)
         blocks.append((d.ns, wrap(d.cond, (doc + "\n" if doc else "") + f'#line {d.line} "{d.f.display}"\n{d.text}\n')))
     emit(lines, blocks)
@@ -1864,6 +2114,8 @@ def watch(names, done):
 
 
 def main(argv=None):
+    for stream in (sys.stdout, sys.stderr):   # a Windows console's code page can't show every file name
+        stream.reconfigure(errors="replace")
     parser = argparse.ArgumentParser(
         prog="tools/htb/hgen.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("bots", nargs="*", help="bot names under bots/, or paths to bots "

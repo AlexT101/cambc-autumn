@@ -1,0 +1,15 @@
+#include <cstdio>
+int main() {
+    seen.set(15);
+    int caught = 0;
+    try {
+        A bad(-1);
+    } catch (...) {
+        caught = 1;
+    }
+    double d = 1.5;
+    Wrap w(&d);
+    std::printf("%zu %zu %d %zu %zu %zu\n", S{}.cells.size(), seen.count() + seen.size(), T{}.make()[2], U::c.size(),
+                after.size(), sizeof(Wrap("x").value));
+    std::printf("%d %d %d %zu\n", A(5).v, B(6).v, caught, sizeof(w.value));
+}
