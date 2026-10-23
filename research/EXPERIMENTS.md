@@ -908,3 +908,62 @@ The29-file release clone and canonical Hyperion exactly match tested a00fff. Rel
 candidate byte-for-byte and the completed fresh batch's artifact pins. All29 archived source
 members match the clone. Current branch merges b7bfcb7 with source-exact reconciliation;
 CHANGES entries109/110 distinguish Willow work from upstream107 and reverted108.
+
+### Native four-pick Willow:136–194/330, diagnose rather than deploy
+
+Frozen157f5 versus exact a00fff changes only P/V/M/HoR to P/V/M/W on four-pick maps.
+Published16 is8–8, gen1023's150 is70–80, gen1024's164 is58–106: **136–194/330**.
+Native rollovers are36/47,475/312,436/422 (947/781 combined). Every panel has zero runner,
+native bot, caught action and turn-order errors. Actual replay rosters validate all660
+physical-team rows against result order, with the intended candidate/reference lineups.
+Panel summary SHA `01dd35ea68ffe5ba8e33aca7053d621ca81b883d2f7b21aa7f2fc3ff957571b3`
+is in `replays/willow-four-pick-157f5-vs-a00fff/panel-summary.json`. No fresh confirmation
+or numbered release is warranted for this universal HoR replacement. Five-pick Willow
+alongside HoR remains in v33. Preserve this source as the diagnosed experimental arm.
+
+Hooks2–0 and Rows0–2 nominate contrasting mechanisms, not a named-map selector. In both
+Rows games there is no champion combat or death. Candidate team collection roughly matches
+the reference, but Prism's578/566 bags complete conversion after the opponent wins. Prism
+already began its long tribute before its own public-score-plus-bag first met1000; this is
+not refusal to bank an already-winning bag. A15-turn post-capture standing interval in
+RowsA deserves an own-view check, but even removing those15 turns would not by itself erase
+the25-turn scheduled-finish gap. Do not replace the completion estimate with total capture
+rate that assumes this carrier keeps farming while it travels/channels.
+
+All four diagnostic games' first two Willow heals go to Marcella. HooksB's r32 heal360 is
+followed by Willow's stationary basic and Marcella's continuing work/clear37/capture43.
+This supports current multi-recipient service; it does not establish a missing permanent
+Marcella pairing. Source review leaves any dynamic workmate or draft selector as a future
+hypothesis. Luna is exporting only RowsA Prism1155–1161 and HooksB Willow30–37, then running
+the already-approved Monolith56f17 Debug/Release paired diagnostic, four games total.
+
+### Narrow follow-up: own views and Monolith non-activation
+
+The two actor-own exports are complete. Rows Prism0/A1155–1161 confirms940/1000HP,
+578gems, no visible Willow or enemy, and no rejected move; its repeated fresh recall is
+the ordinary end-turn fallback, not evidence of an intended completed recall. The move
+to20,4 succeeds1159. The proposed retained-bag deadline omission is **not present**:
+farm's `too_late` separately reads the altar distance even while retaining gems. A bounded
+branch witness remains necessary to distinguish remembered work, partial evaluation and
+other no-work branches. No gameplay fix follows from this view alone. Hooks Willow7/B32
+knows Marcella480/1200HP and heals360 while preserving her55basic; reset is cooling down.
+This validates useful existing service, but not a counterfactual prevented death or recall.
+Final own-view review SHA is
+`c86ae40aabaa32b124749a9313c6dbb10fcd22438aa3e03ec6059a32267728f8`.
+
+Monolith56f17 versus a00fff completed one physical-order pair each in Debug and Release,
+default100k fuel. Both pairs are1–1 at1112rounds per game, with zero native rollovers,
+runner errors, native bot errors, caught action errors and turn-order issues. All five
+Debug nominations reject admission; none selects crew work. Extracted events show no
+Monolith-group0/1 activity in any of the four games. This is **non-activation**, not
+qualification or evidence of improved boss control. Debug outcomes do not establish
+Release branch parity. Detailed artifact:
+`replays/willow-local-monolith-crew-vs-a00fff/diagnostic-summary.json`, SHA
+`48cd59bd1fe62ef721f473aea4174ad36880e2e150a0fafbb7b7c3a3abe343de`.
+
+Source review identifies a conditional startup barrier: two necessary contributors that
+retain different explicit farm claims cannot certify or publish the boss claim. Unclaimed
+workers, a solo-capable anchor, an existing boss claim or a damaged boss can still admit.
+The full-clear current-health reserve and fixed-station member coverage can independently
+reject work. A bounded diagnostic will identify the actual rejection before any policy
+change; removing the claim filter alone is not an established remedy.
