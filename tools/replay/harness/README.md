@@ -271,7 +271,7 @@ L.games(filter={"map": "00swirl"}, traced=True, distinct=True)
 | API | returns |
 |---|---|
 | `manifest()`, `keys()`, `traced_keys()` | manifest rows by key; all keys; keys with an ok trace |
-| `load_game(key, world)`, `games(filter, traced, world, distinct)` | `Game`. `filter` is a callable or a dict of manifest fields; `distinct` keeps one key per replay content (330), preferring a traced copy. |
+| `load_game(key, world)`, `games(filter, traced, world, distinct)` | `Game`. `filter` is a callable or a dict of manifest fields; `distinct` keeps one key per replay content (624 of the 830), preferring a traced copy; a few rematches have different replay bytes and are not merged. |
 | `Game` fields | `key`, `row`, `map_name`, `our_side`, `our_team`, `opponent`, `rounds_played`, `result`, `ours`, `theirs`, `champions` |
 | validation | `validation` (the per-game file, or its row of the summary while `batch.py` redoes it), `trace_validation`, `traced`, `trace_stale`, `ladder_trusted_through`, `rec_ladder_trusted_through`, `trusted(r)`, `replay_sha` |
 | extract | `has_extract`, `meta`, `map` (with `bush_set`, `wall_set`), `on_spawn(p)`, `events`, `events_in_round(r)`, `events_where(kinds, rounds, actor, about)`, `state(r, c)` (end of round r), `positions(r)`, `positions_at(r, t)` (at the start of turn t, after its timers), `turn_order(r)`, `turn_index(r, c)`, `check_turn_order()` |
@@ -303,7 +303,7 @@ L.games(filter={"map": "00swirl"}, traced=True, distinct=True)
 - **Out-of-fuel turns.** A turn that runs out of fuel resumes the next round. It prints `TT r=<old> ok=0` in the new round, after the stale turn's actions (168 in trusted rounds), and the new round's TT starts from the position after those actions. `Turn.ran_out` and the `@o` lines mark these turns; use `Turn.actual` rather than their TT end fields.
 - **First-turn residuals.** The recorder's first turns use a little more fuel than the ladder's: for example +164 on the draft's first turn and +3 / +9 on two champions' first turns in f974cb55-1. They are most likely chunked-fuel effects on the 2x and 10x first-turn budgets; the cause is unconfirmed. They change no exact game.
 - **The 121 "other" fuel turns.** These are recorder fuel differences in exact games that are neither first turns nor `@x`-resumed (agent A, 39 games), for example -15 on several champions in one round. They are unexplained.
-- **Rematches.** 60 manifest keys are byte-identical to another key's replay (deterministic rematches). Use `games(distinct=True)` for rates.
+- **Rematches.** Many manifest keys are byte-identical to another key's replay (deterministic rematches): 830 keys, 624 distinct. Use `games(distinct=True)` for rates.
 - **Blocked steps.** A ladder replay does not record which action a `Movement blocked` step attempted. The puppet tries every feasible action, ward first; with that order all 390 release runs are exact.
 - **Engine facts** (probed by agents A and B on engine 1.0.3; none contradicts cambc-rules.yaml):
   - `bc_round_number` clears the engine's last error, so a hook that queries the round between a failing call and `bc_get_last_error` changes the bot's path. The recorder and tracer query the round only after a call that returned 0.
