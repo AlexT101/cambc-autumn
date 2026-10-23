@@ -1078,3 +1078,33 @@ see `willow-fbda803-experiment-rebase-source-checkpoint.md`. Neither is canonica
 numbered release. New development and testing proceeds from this latest base. The forecast
 arm needs a rejection diagnosis before any policy relaxation; the staging arm needs an
 actual own-view activation witness and normal-budget comparison.
+
+### Latest integration published80:41–39, normal-budget audits complete
+
+Integrated337f42a5 versus frozen fbda803 source15dcd64 completed all80 published games
+at Release/default100k, one worker. Wins41–39, runner errors0. Native play rollovers are
+559/344; native Bot Error statuses and other draft/play status errors are0/0. The caught
+action audit finds candidate0 and reference16, all reference code97 visibility failures.
+Turn-order markers/issues are0 across80 validated games. These measures remain separate.
+
+Actual physical rosters were independently mapped to bot indices for every replay. Three-
+and four-pick teams share P/V/HoR and P/V/M/HoR respectively; five-pick candidate uses
+P/V/M/W/HoR in all52 games, while reference uses Ryth in28 and Vendetta in24 in that slot.
+Map-size strata are8–4/12,9–7/16 and24–28/52 respectively. This small comparison neither
+establishes overall improvement nor isolates Willow's effect. The extra candidate fuel
+rollovers remain material; no numbered release follows this panel alone.
+
+Artifacts: `replays/willow-fbda803-integrated-vs-fbda803/`, setup-after SHA
+`84880c52b624be4bd8c72f62623e5d0e5cfc160cc24026981beb8441d1551fa9`;
+batch `batch-run-01-release-published40/summary.md` SHA
+`16325e4798d6612eb4e6db8559c527d6512d6e340850c1e0563fdba8f32987ba`.
+Source/build/map/replay/audit pins are recorded together. Both Release builds succeeded.
+The canonical integration is saved in merge commit d4cf962; server44 remains unchanged.
+
+Next Willow diagnostic uses the unchanged latest forecast647a on one Elk Arena pair,
+with Debug-only counters at existing computations. Source review suggests an interaction
+between current heal-worth thresholds, idle priorities and the completed-turn requirement;
+it also identifies the static spawn-tile output veto. Neither has yet been measured as the
+cause of nonactivation. A separate source-only value variant may combine unacted workers
+and freshly certified empty-group exemption while preserving all safety and current-output
+protections. These are proposed conditional positioning improvements, not promised heals.
