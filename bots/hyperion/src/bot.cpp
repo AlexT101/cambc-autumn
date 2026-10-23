@@ -1442,11 +1442,21 @@ bool pays_too_late(const CampBelief& c) {
 
 // On a cleared group's tile that no lower-id ally also holds, with no enemy on any of its tiles:
 // stepping off loses the capture's progress, and it pays within six rounds.
-bool holding_capture(const World& world) {
+bool holding_capture(const World& world, Pathing& pathing) {
     const vec2 here = my_position();
     const int g = world.map().group_at(here);
     if (g < 0 || world.camps[g].state != CampState::cleared || winning_bag(world)) return false;
-    if (pays_too_late(world.camps[g])) return false;
+    const auto& c = world.camps[g];
+    if (pays_too_late(c)) return false;
+    // Waiting for the payout must still leave the walk and the whole bag's tribute before the limit.
+    // A bag too late to bank even now gains nothing by leaving: the hold still pays gold (a tiebreak).
+    if (my_gems() > 0 && c.held_since >= 0) {
+        const int walk = pathing.to_any_altar().at(here);
+        if (walk != unreachable && walk + tribute_turns(my_gems()) + endgame_slack <= rounds_left(world)
+            && std::max(0, c.payout_round() - world.round) + walk + tribute_turns(my_gems() + capture_share(world, g))
+                       + endgame_slack > rounds_left(world))
+            return false;
+    }
     const auto& tiles = world.map().groups[g].tiles();
     // Prism stays while a lower-id holder leaves; the last holder never yields to a remote ally.
     if (const auto* prism = prism_capture_holder(world, world.map().groups[g]); prism && prism->is_self) return true;
@@ -1494,7 +1504,7 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
     const vec2 here = my_position();
     if (c.state != CampState::cleared || c.state_round != world.round || c.holder != team::ally
         || G.has_monolith || G.gold <= 0 || holders(G) != 1 || test(G.tiles(), here)
-        || holding_capture(world) || enemy_seen(world))
+        || holding_capture(world, pathing) || enemy_seen(world))
         return false;
     for (const auto& m : G.members)
         if (!test(world.visible, m.pos)) return false;
@@ -1734,7 +1744,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const int g = alternative.group;
         const auto refuse = [&](const char* reason) { partial_trace(reason, g, -1); return -1; };
         if (decision != 'F' || memory.banking || memory.siege || siege_group() >= 0) return refuse("nonordinary");
-        if (holding_capture(world)) return refuse("holding-capture");
+        if (holding_capture(world, pathing)) return refuse("holding-capture");
         const auto& G = groups[g];
         const auto& c = world.camps[g];
         if (G.has_monolith || G.members[alternative.member].strength <= 0 || c.state != CampState::alive)
@@ -1840,7 +1850,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     };
 
     const vec2 here = my_position();
-    if (holding_capture(world)) return true;
+    if (holding_capture(world, pathing)) return true;
     // Carrying, whatever made us retreat stays out of bounds: we route around it or wait outside
     // it rather than step in to be sent back out. Empty-handed, a step in risks nothing (the zone
     // starts beyond any strike's reach) and keeps us at hand for when the pack moves on.
@@ -2745,8 +2755,8 @@ bool pack_covers(const World& world, vec2 p, int r) {
 }
 
 // A capture about to pay is worth finishing while they are still a walk away.
-bool paying_soon(const World& world) {
-    if (!holding_capture(world)) return false;
+bool paying_soon(const World& world, Pathing& pathing) {
+    if (!holding_capture(world, pathing)) return false;
     const vec2 here = world.me().pos;
     int nearest = unreachable;
     for (const auto& e : world.enemies)
@@ -2755,7 +2765,7 @@ bool paying_soon(const World& world) {
     return nearest > 3 && c.held_since >= 0 && c.payout_round() <= world.round + 2;
 }
 
-bool outmatched(const World& world) { return in_pack_zone(world, world.me().pos) && !paying_soon(world); }
+bool outmatched(const World& world, Pathing& pathing) { return in_pack_zone(world, world.me().pos) && !paying_soon(world, pathing); }
 
 // Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
 int camp_exit_rounds(const World& world, Safety& safety, vec2 here) {
@@ -2784,18 +2794,18 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
 }
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
-bool want_home(const World& world, Safety& safety, bool sieging) {
+bool want_home(const World& world, Pathing& pathing, Safety& safety, bool sieging) {
     world.throw_if_stale();
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
     const float health = my_health();
-    const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world);
-    if (low || outmatched(world) || camp_trapped(world, safety, here, health, sieging)) return true;
+    const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world, pathing);
+    if (low || outmatched(world, pathing) || camp_trapped(world, safety, here, health, sieging)) return true;
     // Out of sight and not lethal, nobody can win a fight here or pursue us.
     const bool lethal = safety.lethal(here);
     if (!lethal && !enemy_seen(world)) return false;
     // Healthy on our own ground, they have no reason to come for us.
-    const bool pursued = !paying_soon(world) && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health());
+    const bool pursued = !paying_soon(world, pathing) && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health());
     const bool linked = partner(world) != nullptr;
     const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal);
     return t.lost || ((lethal || linked) && t.self_falls);
@@ -4019,7 +4029,7 @@ bool siege_heal_trip(const Memory& memory, Safety& safety) {
 
 // Our tribute channel goes on unless it is unsafe and fleeing or fighting back pays. True if the
 // turn ends with it; `home` gets want_home's answer if asked.
-bool continue_tribute(const World& world, Safety& safety, Memory& memory, std::optional<bool>& home) {
+bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
     auto& me = cambc::self();
     decision = 'T';
     // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits.
@@ -4033,7 +4043,7 @@ bool continue_tribute(const World& world, Safety& safety, Memory& memory, std::o
     }
     if (tribute_ok(world, safety, memory, my_channel_time())) return true;
     // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
-    if (memory.damage <= 0 && !*(home = want_home(world, safety, memory.siege)) && !attack_target(world)
+    if (memory.damage <= 0 && !*(home = want_home(world, pathing, safety, memory.siege)) && !attack_target(world)
         && (winning_bag(world) || !prey(world, safety)))
         return true;
     decision = 't';
@@ -4059,11 +4069,11 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         }
         return false;
     }
-    home = want_home(world, safety, memory.siege);
+    home = want_home(world, pathing, safety, memory.siege);
     if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
         return true;
     decision = 'k';
-    if (holding_capture(world)) {
+    if (holding_capture(world, pathing)) {
         if (capture_recall(world, pathing, safety, memory)) {
             decision = 'Q';
             return true;
@@ -4247,7 +4257,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (state.contains(cambc::champion_state::teleporting)) return;
     // Read again only after shopping changes our stats.
     std::optional<bool> home;
-    if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, safety, memory, home)) return;
+    if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, pathing, safety, memory, home)) return;
     if (state.contains(cambc::champion_state::recalling) && continue_recall(world, pathing, safety, memory, home)) return;
     // A ward shares the recall's channel, so this is its first chance; its sight counts this turn
     // (probe-ward-sight). Growing clusters here would starve the search: the turn end grows them.
@@ -4268,7 +4278,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool strikes = strike_possible(world);
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     const bool mend = on_spawn && my_health() < my_max_health();
-    const bool leave = !mend && (home ? *home : want_home(world, safety, memory.siege));
+    const bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory.siege));
     // On the turns the search plans, it weighs heals and shields against its other casts.
     if (!strikes || mend || leave) {
         heal_ally(world);
@@ -4290,7 +4300,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     pathing.set_guard(step_guard(world, safety));
     if (yield_capture(world, pathing, safety, memory)) return;
     if (take_capture_handoff(world, pathing, safety, memory)) return;
-    const bool holding = holding_capture(world) || contesting(world);
+    const bool holding = holding_capture(world, pathing) || contesting(world);
     bool attacked = false;
     if (strikes) {
         Intent intent;
