@@ -183,6 +183,13 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
 - Host imports (cambc 3.0.4): the runner links a few undeclared imports (`champion_movement_mask`,
   `bc_Bitboard_DrawManhattan`, `champion_respawn_timer` unprobed); none saves fuel. `fuel_pause`/`fuel_resume` link
   only in debug builds. Imports charge for their work.
+- `debug_block` is not free (engine 1.0.3, cambc 3.0.5, 2026-10-22). 100 empty blocks cost 1418 fuel against 619 for
+  the plain loop: about +8 a block, because the SDK refunds 2 (`fuel_adjust(2)`) but the guard costs 10. With the
+  refund raised to 10 the blocks are neutral in isolation, yet v38's debug build still differs from release on almost
+  every turn (draft −9, champion turns +40 to +170), because codegen (inlining) differs. With the stock SDK, v38's
+  debug build differed from release in fuel on 2644 of 2652 turns of one ladder game; that game happened to stay
+  identical. No constant refund makes a debug build fuel-exact, so the replay harness traces with fuel
+  virtualised from a release-code recorder ([tools/replay/harness](../tools/replay/harness/README.md)).
 - Measured costs: a simple host call is 3 + its arguments; a field search is chunks × (16 + layers) + ~30 over the
   whole map whatever it touches (100x100: 2.9k for one layer); a WASM loop often costs more than the host calls it
   replaces. Touching a farm group costs ~150-270 even when `best_value` rejects it (~90% of groups); a non-plain act()

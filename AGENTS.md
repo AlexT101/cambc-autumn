@@ -31,7 +31,7 @@ Comment only counterintuitive behaviour or reasoning, concisely.
 Each turn has 100k fuel (the first 200k); running out loses the rest of the turn.
 - **No new fuel gates** (code that chooses worse when fuel is short): make work cheap or bounded instead ([FUEL-GATES.md](research/hyperion/FUEL-GATES.md)).
 - **Fuel-only changes** must leave `tools/fuel/bench.py`'s replays byte-identical.
-- **Tracing:** wrap output in `debug_block({ ... });` and build without `--release`: it is free and the game stays byte-identical (plain printf changes the game). Output is in the replay zip as `team-a.stdout` / `team-b.stdout`.
+- **Tracing:** wrap output in `debug_block({ ... });` and build without `--release` (plain printf changes the game). Output is in the replay zip as `team-a.stdout` / `team-b.stdout`. It is not free: a block costs ~8 fuel beyond the SDK's refund and debug codegen differs, so fuel-gated decisions can change ([EXPERIMENTS.md](research/EXPERIMENTS.md#fuel)). For a fuel-exact trace of a real game, use the replay harness ([tools/replay/harness](tools/replay/harness/README.md)).
 - **Costs:** ~1 fuel per WASM instruction and per memset/memcpy byte; an allocation ~130 plus ~290 to free; a thrown and caught `cambc::error` ~3.9k; `std::cout` ~11k of static initialisation (use printf).
 - **Host calls** cost a flat price whatever work they do, so moving a loop into bitboard, field or shadow-cast calls is usually the biggest saving; per-tile tests still beat building a board for a few tiles. Prices are in tools/README.md.
 

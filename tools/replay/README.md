@@ -4,10 +4,11 @@ Decodes `.repl26a` replays (ladder downloads and local `cambc run` / `run_batche
 
 ```
 node tools/replay/extract.mjs replays/ladder replays/batch-20261013-185810-654911
-node tools/replay/extract.mjs <dirs or .repl26a files...> [--threads N] [--force] [--reindex]
+node tools/replay/extract.mjs <dirs or .repl26a files...> [--threads N] [--force] [--reindex] [--out DIR]
 node tools/replay/extract.mjs --update-engine
 ```
 
+- `--out DIR` writes the cache (and its `index.json`, `enums.json`, `maps/`) under DIR instead of `replays/.analysis/`.
 - Inputs are searched recursively. Each distinct replay (by sha256) is decoded once, in parallel worker threads, into `replays/.analysis/<first 16 hex of sha256>/`. Cached games are skipped unless `--force`, the extractor version changes, their engine's copy changes or their validation failed.
 - Identical replays do occur: the bots and engine are deterministic, so a rematch on the same map can be byte-identical. All copies are listed in `meta.sources`; `index.json` has one row per source file. A shared game's `meta.teams` names come from whichever batch extracted it first, so take a batch's team names from its `index.json` rows (`teams`), not from `meta.json`.
 - `index.json` is updated in place, re-reading only the games given on the command line. `--reindex` (with or without inputs) rebuilds it from every `meta.json`, which takes minutes on a large cache; use it after deleting analysis folders by hand.
@@ -78,7 +79,7 @@ Every event has `s`, `r`, `t`, `k` (kind). `a` is the acting champion. Damage li
 | `attack` | `a, f, to`, target `tgt` (champion) / `camp` / `lock: 1` (altar), `hits` (lock hits remaining after), `dmg`, `cdmg` (camps), `refl` + `reflBy` (damage reflected to the attacker by Ren), `heal`, `shield`, `stun` (ids newly stunned) |
 | `cast` | as `attack` plus `slot`, `ab` (ability type name), `moved` (new position after a dash); `f` is the caster's tile, `to` the target tile |
 | `camp_attack` | `camp, g, tgt, dmg`; `xdmg` other champions hit; `refl` `[[camp, amount]]` Ren's reflection |
-| `death` | `v` victim, `at`, `gems` (bag at death), `hp` (before the step), `by` killer id or `camp`, `gold` and `gemsTo` (killer's gain), `assists`, `cause` (step kind), `linked` (set on the Cassi/Issac body that died because its partner did; its value is the partner) |
+| `death` | `v` victim, `at`, `gems` (bag at death), `hp` (before the step), `by` killer id, or `camp` (the camp's id) for a camp kill, `gold` and `gemsTo` (killer's gain), `assists`, `cause` (step kind), `linked` (set on the Cassi/Issac body that died because its partner did; its value is the partner) |
 | `respawn` | `a, at` |
 | `shop`, `sell`, `consumable` | `a, gold` (change), `items` / `cons` (`{name: delta}`; emblem combines show as -5 shards +1 emblem), `to` (consumable target) |
 | `ward` | `a, to` |

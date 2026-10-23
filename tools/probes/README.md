@@ -44,6 +44,8 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 - Errors: a duplicate own pick is error 14; a second pick in one draft turn, or a draft-memory write in play, is error 18; reading an unseen unit's details is error 97; `remaining_channel_time()` while not channelling is error 115; `shadow_cast` from an opaque tile is error 5.
 - `is_ready()` reports an attack reset as castable while the attack is unspent, when the cast would fail.
 - `bitboard::shadow_cast` with walls and the other bush clusters opaque reproduces engine vision exactly.
-- `fuel_adjust` (debug builds only; `probe-fueladjust`): a negative delta charges, but never takes a turn past one `--fuel` budget; a positive one refunds up to the budget; a call costs 2. With work plus charges every turn at `--fuel 100000000`, instances trap near round 1000 and restart; none do at 100k-30M.
+- `fuel_adjust` (debug builds only; `probe-fueladjust`, `probe-fueladjust-b`): a call costs 2.
+  - A negative delta charges, but only within the current 100k chunk: a 2x first turn drained in its first chunk reads 100000.
+  - A positive delta refunds. `fuel_remaining()` never reads above the budget (on a first turn, 200000 in the first chunk and 100000 in the second), but the excess is real hidden fuel, usable until the turn ends or a drain. With work plus charges every turn at `--fuel 100000000`, instances trap near round 1000 and restart; none do at 100k-30M.
 - Costs: `map::camp_groups()` ~28k fuel; a 13-row stat table from `champion_designs` ~2.75k.
 - Unreleased content in the engine data: a control ward and a TP scroll (`tp_scroll_time`, retired in the SDK). Neither can be bought.

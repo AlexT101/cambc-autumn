@@ -11,7 +11,7 @@ import {
 } from './engine.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const OUT_ROOT = path.join(ROOT, 'replays', '.analysis');
+let OUT_ROOT = isMainThread ? path.join(ROOT, 'replays', '.analysis') : workerData.out;
 export const EXTRACTOR_VERSION = 1;
 const NONE = 0xFFFFFFFF;
 const K = Object.fromEntries(STEP_KINDS.map((n, i) => [n, i]));
@@ -710,7 +710,8 @@ async function main() {
     else if (a === '--force') opts.force = true;
     else if (a === '--update-engine') opts.update = true;
     else if (a === '--reindex') opts.reindex = true;
-    else if (a === '-h' || a === '--help') { console.log('usage: node tools/replay/extract.mjs <dirs or .repl26a files...> [--threads N] [--force] [--reindex] [--update-engine]'); return 0; }
+    else if (a === '--out') OUT_ROOT = path.resolve(args[++i]);
+    else if (a === '-h' || a === '--help') { console.log('usage: node tools/replay/extract.mjs <dirs or .repl26a files...> [--threads N] [--force] [--reindex] [--out DIR] [--update-engine]'); return 0; }
     else opts.inputs.push(a);
   }
   if (opts.update) await updateEngine();
@@ -736,7 +737,7 @@ async function main() {
   let next = 0, done = 0;
   const nThreads = Math.min(opts.threads, todo.length);
   await Promise.all(Array.from({ length: nThreads }, () => new Promise(resolve => {
-    const w = new Worker(fileURLToPath(import.meta.url), { workerData: { modules } });
+    const w = new Worker(fileURLToPath(import.meta.url), { workerData: { modules, out: OUT_ROOT } });
     const feed = () => { if (next < todo.length) w.postMessage(todo[next++]); else { w.terminate(); resolve(); } };
     w.on('message', m => {
       results.push(m);
