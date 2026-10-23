@@ -437,6 +437,11 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         if (approach && harms) harmful.push_back(g.members[i].pos);
     }
     if (members.empty()) return {};
+    // A spell clear has no basic attack to finish an attacker under the usual floor: it would stand
+    // idle beside it for good. Every damage spell's raw exceeds the floor, so only finishing casts pass.
+    float floor_value = min_camp_value;
+    if (attackers_only)
+        for (const auto& m : members) floor_value = std::min(floor_value, m.health);
     const bool sole_finish = all_visible && members.size() == 1;
     float finish_factor = 1.0f;
     if (sole_finish) {
@@ -469,7 +474,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         const bool finishes = sole_finish && !a.lands() && raw * finish_factor >= members[0].health;
         // A stun that deals nothing and keeps the walk costs only its cooldown.
         const float floor = finishes ? 0.0f
-                            : any_value || (g.has_monolith && a.stuns && raw <= 0 && !a.excludes_walking) ? 1.0f : min_camp_value;
+                            : any_value || (g.has_monolith && a.stuns && raw <= 0 && !a.excludes_walking) ? 1.0f : floor_value;
         if (a.target == Targeting::unit) {
             for (const auto& m : members) {
                 if ((approach && !m.harmful) || dist(here, m.pos) > a.range()) continue;
@@ -485,7 +490,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
             for (int other : world.map().groups_near(here, a.reach()))
                 if (other != group && world.camps[other].state == CampState::alive) draw_alive_members(world, other, skip);
             skip_rens(raw, a.reach(), 1, skip);
-            best.offer(best_ground(s, finishes ? 0.0f : any_value ? 1.0f : min_camp_value, targets, here, a.range(), skip,
+            best.offer(best_ground(s, finishes ? 0.0f : any_value ? 1.0f : floor_value, targets, here, a.range(), skip,
                                    approach && !harmless_approach ? &harmful : nullptr));
         } else if (a.lands()) {
             // A dash off a cleared group gives up its capture.
@@ -529,7 +534,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
                 }
                 return true;
             };
-            best.offer(best_landing(s, any_value ? 1.0f : min_camp_value, targets, lands_,
+            best.offer(best_landing(s, any_value ? 1.0f : floor_value, targets, lands_,
                                     here, a.radius, keep));
         }
     }
