@@ -4830,6 +4830,10 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     if (prism) {
         support_requested = true;
         decision = 'r';
+        // Waiting in place spends no walk, and the tile is out of every reach: a basic attack is free.
+        // Casts keep their cooldowns for the search. Only camps whose whole group cannot strike back.
+        if (best == here && !attack_enemy(world) && my_can_attack())
+            attack_camp(world, [&](int g) { return world.map().groups[g].strength <= 0; });
         return true;
     }
     memory.claim = -1;
