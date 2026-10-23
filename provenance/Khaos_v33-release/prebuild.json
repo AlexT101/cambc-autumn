@@ -1,0 +1,22 @@
+{
+  "schema": "khaos-v33-release-prebuild/v1",
+  "captured_at_local": "2026-10-23T15:55:42.992773-04:00",
+  "status": "prepared source-only clone; build/package not yet run",
+  "bot": "bots/Khaos_v33",
+  "source_aggregate_sha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+  "source_manifest": "provenance/Khaos_v33-release/source-manifest.json",
+  "source_manifest_sha256": "636343c7ac7ed5cbbcb797ca82646f10d98ac2e30b06e2a3a545403d2aebea75",
+  "copy_origin_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+  "raw_build_reuse_candidate": "bots/variants/willow-audit107-ready-heal-work",
+  "runtime": {
+    "cli_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "cli_version": "cambc 3.0.5",
+    "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_path": "tools/replay/engine/v1_0_3.wasm",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+  },
+  "source_only": {
+    "direct_src_file_count": 29,
+    "unexpected_files_before_build": []
+  }
+}

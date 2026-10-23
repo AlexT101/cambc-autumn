@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "status": "submitted",
+  "releaseName": "Khaos_v33",
+  "preparedAt": "2026-10-23",
+  "source": {
+    "directory": "bots/Khaos_v33/src",
+    "copiedFrom": "bots/variants/willow-audit107-ready-heal-work/src",
+    "aggregateRecipe": "(cd <botdir> && shasum -a 256 src/* | shasum -a 256)",
+    "aggregateSha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+    "fileCount": 29,
+    "sourceManifest": "provenance/Khaos_v33-release/source-manifest.json",
+    "sourceManifestSha256": "636343c7ac7ed5cbbcb797ca82646f10d98ac2e30b06e2a3a545403d2aebea75",
+    "sourceOnlyClone": true,
+    "postBuildGeneratedRootFiles": [
+      "compile_commands.json"
+    ]
+  },
+  "qualificationSummary": {
+    "qualificationComparator": "Frozen Hyperion upstream b7bfcb7",
+    "qualificationGames": 1104,
+    "qualificationWinsByBotIndex": [
+      569,
+      535
+    ],
+    "qualificationPanels": [
+      {
+        "label": "published40",
+        "batch": "replays/willow-audit107-ready-heal-vs-b7bfcb7/batch-run-01-release-published40",
+        "games": 80,
+        "wins_by_bot_index": [
+          40,
+          40
+        ],
+        "runner_errors": 0,
+        "results_sha256": "c4459a1be8554c55056d943db6a83f2cc4d85241c0cfa8507291dc1476323f7f",
+        "native_status_audit_sha256": "f7641a9830817e51b94d98f149dfa972f55be1194c722883e34adea674941db1",
+        "native_play_rollovers_by_bot_index": [
+          531,
+          302
+        ],
+        "native_bot_errors_by_bot_index": [
+          0,
+          0
+        ],
+        "caught_action_audit_sha256": "6caee015aaee5315db96d90215f8e6355e681a311db872c8af229662a6549a7f",
+        "caught_action_error_code_counts": {
+          "candidate": {},
+          "reference": {
+            "97": 10
+          }
+        },
+        "turn_order_audit_sha256": "25e2e9152fae99eed2b5de260f2a7cb622bef98fc6436a1c4ba1f930f3e31eea",
+        "turn_order_markers_by_bot_index": [
+          0,
+          0
+        ]
+      },
+      {
+        "label": "gen1023",
+        "batch": "replays/willow-audit107-ready-heal-vs-b7bfcb7/batch-run-02-release-gen1023",
+        "games": 512,
+        "wins_by_bot_index": [
+          265,
+          247
+        ],
+        "runner_errors": 0,
+        "results_sha256": "2d484f69c891edd8799afff172ff9e3dbc413ace3684cce689f12c8417007543",
+        "native_status_audit_sha256": "5a6f0bb122119f59e6512c20852ccc13dc800356af72de96ef6eeea2251faccf",
+        "native_play_rollovers_by_bot_index": [
+          2522,
+          1638
+        ],
+        "native_bot_errors_by_bot_index": [
+          0,
+          0
+        ],
+        "caught_action_audit_sha256": "85d32f31293a68e9d683d8464847bce3bbed470b78f278885dcabeda8ecbc340",
+        "caught_action_error_code_counts": {
+          "candidate": {
+            "5": 2
+          },
+          "reference": {
+            "97": 44
+          }
+        },
+        "turn_order_audit_sha256": "431c772f1ae02fa2e4270080d407e54d90b8e668342e6fb265b40f0a858ac2d7",
+        "turn_order_markers_by_bot_index": [
+          0,
+          0
+        ]
+      },
+      {
+        "label": "gen1024",
+        "batch": "replays/willow-audit107-ready-heal-vs-b7bfcb7/batch-run-03-release-gen1024",
+        "games": 512,
+        "wins_by_bot_index": [
+          264,
+          248
+        ],
+        "runner_errors": 0,
+        "results_sha256": "b0d77ae7ec8a0924715adea0b0c975b4e54624a2124dfcf26cb156df140187ab",
+        "native_status_audit_sha256": "66dfea1be5928ba3e14cfb0e95dcaefdead12f067ee2219cedcd7bdb774cd25d",
+        "native_play_rollovers_by_bot_index": [
+          2230,
+          1466
+        ],
+        "native_bot_errors_by_bot_index": [
+          0,
+          0
+        ],
+        "caught_action_audit_sha256": "b8e6c8943a20e0c86fc3132cb161be231f600245162eb44c5b8eb56653479735",
+        "caught_action_error_code_counts": {
+          "candidate": {},
+          "reference": {
+            "97": 32,
+            "5": 3
+          }
+        },
+        "turn_order_audit_sha256": "f2e0837167e026f1b8d33bd58611e55a2171f2b92004756672f7377fd2401177",
+        "turn_order_markers_by_bot_index": [
+          0,
+          0
+        ]
+      }
+    ],
+    "separateFreshConfirmationComparator": "Deployed Khaos_v32 source bots/variants/willow-upstream-presence-work, aggregate db5b37d5e5c609c2c616d3a39c0f1eb7f5adebf401dcd1be8848e0eede237ab8",
+    "freshConfirmationGames": 512,
+    "freshConfirmationWinsByBotIndex": [
+      251,
+      261
+    ],
+    "freshConfirmationPanel": {
+      "label": "heldout-seed2026102341",
+      "batch": "replays/willow-audit107-vs-db5b-heldout-2026102341/batch-run-01-release-seed2026102341",
+      "games": 512,
+      "wins_by_bot_index": [
+        251,
+        261
+      ],
+      "runner_errors": 0,
+      "results_sha256": "45dec6c0f08024723f093d88c92a5a3861ebdfdd6467f3bddaf37bb05d36d76d",
+      "native_status_audit_sha256": "8d1ec74f0f05c09209a7749400bab952f6a0b56208b4905d4dac2e7a3d16ec16",
+      "native_play_rollovers_by_bot_index": [
+        2403,
+        2286
+      ],
+      "native_bot_errors_by_bot_index": [
+        0,
+        0
+      ],
+      "caught_action_audit_sha256": "51048b04cec9c466bbfbdde288aa43e0c05b8e4371b1131fb913fab0d444960f",
+      "caught_action_error_code_counts": {
+        "candidate": {},
+        "reference": {}
+      },
+      "turn_order_audit_sha256": "77f80ee929a34797efdb6c4a6a15d7167066a1f1ef320166b4374d9a9fe5bdb0",
+      "turn_order_markers_by_bot_index": [
+        0,
+        0
+      ]
+    },
+    "publishedActualNativeDraftAudit": {
+      "path": "replays/willow-audit107-ready-heal-vs-b7bfcb7/batch-run-01-release-published40/actual-draft-strata-v3.json",
+      "sha256": "b5eb07c91e0ceb32ed2c7667977f4a621a01c06139504ba09b3ac59372aca1b7",
+      "interpretation": "Actual decoded native rosters joined through physical team order and results order; distinct from map-index strata. Candidate 5-pick P/V/Marcella/Willow/HoR; reference P/V/Marcella/Ryth or Vendetta/HoR. 3-pick and 4-pick rosters are recorded in the linked report.",
+      "correctionNote": "Earlier reports incorrectly treated bot index as physical team index; see actual-draft-strata-correction-note.md."
+    },
+    "knownLimitations": [
+      "Two candidate code-5 invalid_argument markers in gen1023 remain unexplained; they are not native Bot Error status. Debug probes did not reproduce the markers and diverged from Release behavior, so they do not resolve the Release cases.",
+      "No claim of statistically established win-rate superiority. Fresh confirmation comparator differs from the 1,104-game qualification comparator."
+    ],
+    "interpretation": "Prepared candidate for root review; root decides submission."
+  },
+  "runtime": {
+    "cliPath": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "cliVersion": "cambc 3.0.5",
+    "cliSha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engineVersion": "v1_0_3",
+    "enginePath": "tools/replay/engine/v1_0_3.wasm",
+    "engineSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "engineBytes": 638472
+  },
+  "build": {
+    "mode": "Release",
+    "command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc build bots/Khaos_v33 --release",
+    "buildJobs": 1,
+    "cmakeCache": "bots/Khaos_v33/.cambc/build-release/CMakeCache.txt",
+    "cmakeCacheSha256": "fe6c24e136f7245dc6e68f92cbf582e4afad4dfdaddfa93307b624375903cd96",
+    "compileCommands": "bots/Khaos_v33/.cambc/build-release/compile_commands.json",
+    "compileCommandsSha256": "19afdf12be010810f80feba07247b1e346256f9e237b9bca647eb60c57551a43",
+    "generatedCompileCommandsAtBotRoot": "bots/Khaos_v33/compile_commands.json",
+    "generatedCompileCommandsAtBotRootSha256": "1fecae792b226b472edf500ca12e0c05f1ef53792c3d39387d77d1b01f7d1f9d",
+    "artifacts": {
+      "bot.wasm": {
+        "path": "bots/Khaos_v33/.cambc/build-release/bot.wasm",
+        "bytes": 1652228,
+        "sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+        "candidateArtifactSha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+        "byteIdenticalToQualifiedCandidate": true
+      },
+      "bot-injected.wasm": {
+        "path": "bots/Khaos_v33/.cambc/build-release/bot-injected.wasm",
+        "bytes": 893976,
+        "sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+        "candidateArtifactSha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+        "byteIdenticalToQualifiedCandidate": true
+      }
+    }
+  },
+  "bundle": {
+    "command": "nice -n 19 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc bundle --output provenance/Khaos_v33-release/Khaos_v33.zip bots/Khaos_v33",
+    "path": "provenance/Khaos_v33-release/Khaos_v33.zip",
+    "bytes": 225939,
+    "sha256": "787423a8a652e3e75cb1724d4bad529ef4f2a998600f3b924248ebf7e4093bf2",
+    "memberCount": 29,
+    "membersExactlySourceFiles": true,
+    "contentsVerifiedAgainstSource": true,
+    "memberAudit": "provenance/Khaos_v33-release/bundle-members.json",
+    "memberAuditSha256": "5dd3f60aae42c7892ce9b86b859a9b3a374a7ed0b600db8b9dd7bf331e11d18e",
+    "remoteUpload": "CLI reported server version 44 and 225939 upload bytes, matching the prepared local bundle size; remote payload was not retrieved, so no remote byte-identity claim."
+  },
+  "submission": {
+    "status": "submitted",
+    "uploaded": true,
+    "authorizedByRoot": true,
+    "note": "Khaos_v33 - Willow ready healing and retreat repairs",
+    "teamId": "547efb5b-57e5-4355-8501-3b331f506d62",
+    "teamIdVerification": "Same-session authenticated Pantheon target previously confirmed; immediate pre-submit refresh received 503/429, so no fresh target verification claim.",
+    "submittedAtLocal": "2026-10-23T15:59:25-0400",
+    "serverVersion": 44,
+    "cliReportedUploadBytes": 225939,
+    "preparedBundleBytes": 225939,
+    "preparedBundleSha256": "787423a8a652e3e75cb1724d4bad529ef4f2a998600f3b924248ebf7e4093bf2",
+    "remotePayloadRetrieved": false,
+    "remotePayloadSha256": null,
+    "responseFile": "provenance/Khaos_v33-release/submit-response.txt",
+    "responseFileSha256": "86dac718004151395933bf56b7927759d21b77b803712ccf85a2436a123b890b",
+    "responseText": "Uploading /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/Khaos_v33 (225939 bytes)...\nSubmitted bot version 44. View submissions at https://2026a.battlecode.co.uk/game/submissions\n",
+    "priorReleaseJson": "provenance/Khaos_v33-release/release.pre-submission.json",
+    "priorReleaseJsonSha256": "794bf848f700af58084487d9fd377b0f2129eed65cd4e7658ee7423773c1e2ce",
+    "receiptLimitation": "CLI reported server version and upload byte count. The server payload was not retrieved; no remote payload hash or byte-identity claim is made."
+  }
+}

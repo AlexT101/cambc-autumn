@@ -872,3 +872,39 @@ Root and Astra also approve Monolith56f17fe for later bounded runtime. Separate 
 SHA `0dcf42eeb01a9083b8d4edfed7a81012a2321018a403d0bc1d008e91960b1f1b`; no source
 blocker remains, but activation, fuel and actual outcomes remain unmeasured. Four-pick Willow
 is the next main experiment.
+
+The published80 actual-roster audit initially mislabeled candidate drafts on physicalB by
+using a bot index as a physical-team index. Root caught the impossible half-Willow result
+against the fixed source selector. Preserve the superseded report and correction note;
+authoritative `actual-draft-strata-v3.json` SHA
+`b5eb07c91e0ceb32ed2c7667977f4a621a01c06139504ba09b3ac59372aca1b7` validates both
+physical mappings against result order for all80 replays. Actual candidate lineups are
+3pP/V/HoR in12 games,4pP/V/M/HoR in16, and5pP/V/M/W/HoR in all52. Published wins by
+size are6–6,5–11,29–23; the total40–40 never changed. Native rollovers by size are26/32,
+42/44,463/226. Thus all1104 five-pick cells total225–201/426, combining actual published
+draft size with generated map-index size; this is not an actor-level service measurement.
+
+The native four-pick comparison is authorized after v33 package preparation: exact157f5
+versus a00fff, published16 then generated150+164 four-pick cells,330 games total, both sides,
+Release/default100k, one worker. Verify actual candidateP/V/M/W and referenceP/V/M/HoR
+through physical-team mapping. No map selector, item/micro change or Monolith policy is
+included. The API's503/429 responses to read-only team-history refreshes do not interrupt
+local work; submission will be a separate single attempt once the package check completes.
+
+### Khaos_v33 / server44 submitted
+
+Root submitted the unchanged qualified a00fff source once at2026-10-23T15:59:25-0400, note
+`Khaos_v33 - Willow ready healing and retreat repairs`. The CLI confirmed server44 and225939
+uploaded bytes. Local ZIP SHA is `787423a8a652e3e75cb1724d4bad529ef4f2a998600f3b924248ebf7e4093bf2`;
+receipt SHA `86dac718004151395933bf56b7927759d21b77b803712ccf85a2436a123b890b` is in
+`provenance/Khaos_v33-release/submit-response.txt`. Remote payload was not downloaded, so
+matching byte count is not a remote hash claim. This is the same authenticated session and
+Pantheon deployment target confirmed forv32; fresh read-only history verification returned
+503/429, so no fresh team-identity verification is asserted.
+
+The29-file release clone and canonical Hyperion exactly match tested a00fff. Release rawWASM
+`f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7` and injectedWASM
+`4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792` match the qualified
+candidate byte-for-byte and the completed fresh batch's artifact pins. All29 archived source
+members match the clone. Current branch merges b7bfcb7 with source-exact reconciliation;
+CHANGES entries109/110 distinguish Willow work from upstream107 and reverted108.

@@ -528,5 +528,5 @@ by observation and a fresh heal check. Existing all-ally current-range healing r
 - Direct fresh seed2026102341 against deployed v32:251–261/512, rollovers2403/2286, no caught action, runner,
   native bot or turn-order errors. This supports a near-level logical repair, not established superiority.
 
-Exact source aggregate `a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e` is being prepared as
-Khaos_v33. The four-pick Willow replacement and local Monolith crew remain separate, unqualified experiments.
+Exact source aggregate `a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e` was submitted as
+Khaos_v33 / server44. The four-pick Willow replacement and local Monolith crew remain separate experiments.
