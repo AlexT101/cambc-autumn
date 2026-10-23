@@ -230,6 +230,7 @@ enum class Channel : std::uint8_t { none, recall, tribute, teleport };
 
 // A point in the turn order: after the turn in `slot` of `round` (-1: the round's start).
 struct Moment {
+    static constexpr int end = 64; // a slot after every turn of the round
     int round = 0;
     int slot = -1;
     auto operator<=>(const Moment&) const = default;
