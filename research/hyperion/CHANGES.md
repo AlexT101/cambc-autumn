@@ -250,3 +250,15 @@ stood or ping-ponged at one-tile hole lines for up to 900 rounds (34.8k turns in
   counted crossings the move code never takes. It detours around crossings beside such groups even while they are dead.
 - `search_approach` aims at tiles in range of live members only (all members if none is known alive). In range of a
   dead member, a Vesper's approach read 0 steps, `dash_across` saw no gain and the walk could not cross.
+
+## 94: recalls kept only when they can land; capture rides bank their share (2026-10-23)
+
+From the v38 replay analysis (REPLAY-ANALYSIS B4a, B4b; REPLAY-FOLLOW-UPS R1-5, R1-8, R2-6, R2-7). Both together
+against f07babf: 51.4% of 1104 (ladder 51.2, gen 50.4, gen-s1 52.3), out-of-fuel turns 4985 vs 5069.
+
+- A champion that wants home keeps a shop or bank recall only if `recall_outruns` holds, the home keep's own test.
+  Before, a refused home keep fell through to the shop/bank keep, alternating a retreat step with a standing turn on a
+  recall the pursuer cancelled (ladder: 61 deaths, 1,477 gems in 57 games).
+- `capture_recall` sets `memory.banking` when it keeps a ride to bank the share. `hold_start` guesses the later payout
+  when a hold changed hands, so the ride can land a round late, off the hold; `recall_to_bank` then cancelled it with
+  one turn left and the bot restarted it (ladder: 1,962 wasted channel turns in 276 games).
