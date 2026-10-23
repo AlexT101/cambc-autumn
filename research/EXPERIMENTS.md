@@ -361,8 +361,10 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
   `strike_after` doesn't pay: it searched 31 times in a gen-chambers game (420k fuel, ~0.01%), once with the state
   unchanged since the first search (the only exact reuse), 0-3 times on ambush, hooks and hourglass; it holds 16% of
   OOF stops only because it runs last on heavy turns. Open: one `sdk_camp` read per member in `read_camps`
-  (needs a probe that it reports dead where `has_camp` is false); farm's `is_stale()` return lets act() go on with
-  heal, shield, ward and recall on a stale turn (~5-7k; throwing is a behaviour change).
+  (needs a probe that it reports dead where `has_camp` is false); farm's three `is_stale()` returns let act() go
+  on with heal, shield, ward and recall on a stale turn; throwing there instead (`fuel/stale-farm-throws` c4be796,
+  identical at 100M) was 50.4% of 240 (ladder and two fresh ladder-mutation suites) with out-of-fuel turns 2129 vs
+  2134 in the same games, though the 8-map real-budget bench read 242 -> 187. Not merged.
 
 Tried and no gain (not merged):
 
