@@ -392,3 +392,17 @@ fresh suite (seed 8431) 54.5% of 512 (50.2-58.8); pooled ~55.7% of 1616.
 - Prism's mean ~180 unspent gold at r1000 is a tail (median 20): Prisms holding 200-365 gems that rarely go home.
 - With 101-103 merged, against `bots/baselines/v37` on own drafts: ~65% of 1616 (ladder 66.2, gen 65.0, gen-s1 65.0,
   gen-s8431 65.2), out-of-fuel turns 4011 vs 5858. Before: v38 54.8%, 92-99 57.2%, 101 59.1%, 102 alone 60.1%.
+
+## 104: farm values gold as paid to us, with our bonuses (2026-10-23)
+
+A consistency fix for 101: `farm` priced a group's base gold, though our share is paid with our bonuses (rules:
+"Gold bonuses add together and apply to each capture share and to kill gold"), so Treasure's +20% and Vesper Vale's
++33% were left out. Against d7917a8: 51.3% of 1104 (48.3-54.2; ladder 56.2, gen 51.0, gen-s1 50.8), out-of-fuel turns
+4956 vs 4763. Against `bots/baselines/v37` on own drafts: 67.3% (64.5-70.0), where 103 scored ~65%.
+
+- `gold_paid()`: 1.2 with a Treasure emblem, plus Vesper Vale's bonus. `pick_up` multiplies `per_gold` by it, and the
+  gold that completes an emblem on the way home (`trip_home`, `capture_recall`) counts it.
+- Weighting gold more lost before (3x 46.9%, front-loaded 45.6-47.2%) because the value model already prices gold by
+  what the next emblem saves (`per_gold = share x saved / cost`), and gems are the score; we capture more base gold
+  than top teams in every round bucket (r400-800: 1808 vs 1744). Treasure's price also adding its +20% return on our
+  share's gold (03366f6): 50.7%, out-of-fuel turns +24%; dropped.
