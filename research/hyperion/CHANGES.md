@@ -409,3 +409,17 @@ A consistency fix for 101: `farm` priced a group's base gold, though our share i
 
 Cumulative check (2026-10-23): 92-104 (07d4261) against v38 (c6bd503), test drafts (so without 102's draft): 61.1% of
 1104 (58.1-63.9; ladder 63.8, gen 62.7, gen-s1 59.0), out-of-fuel turns 5128 vs 4506 (+14%).
+
+## 105: teleport crystals for travel (2026-10-23)
+
+From the v38 ladder games: top teams teleport ~4 times a game (12 of 18 teams, median 35 steps saved), and on the maps
+where they do we win ~19 points less against teams that teleport than against teams that don't; we only hopped to
+altars no walk reaches (EXPERIMENTS "Teleport crystals for travel"). Measured on its map class: the 9 ladder maps where
+opponents' teleports save 300+ steps a game (road_of_riches, starvation, shortcut, pilgrimage, concentrated_wealth,
+fracture, gold_rush, reverse_spiral, great_wall; about a fifth of the ladder pool), as 256 `mapgen mutate` variants
+(seed 2310) keeping 75%+ of each map's crystal value. Against 07d4261 there: 55.7% of 512 (51.3-59.9), 8 of 9 source
+maps positive, 10.8 uses a game. Standard suites: 51.1% of 1104 (48.1-54.0; ladder 50.0, gen 50.6, gen-s1 51.8), 1.9
+uses a game, out-of-fuel turns 4949 vs 4747 (+4%).
+
+- Always carry a crystal. While farming, banking or walking home to shop, use it where a landing beats the walk by 6+
+  steps, with no enemy in sight of either end and no awake camp at the landing.
