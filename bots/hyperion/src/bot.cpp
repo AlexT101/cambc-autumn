@@ -502,13 +502,24 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     // open = tributes off live camps, but for those the static walk reaches and this one does not
     copy_into(a.opened, a.open);
     drop(a.open, live);
-    copy_into(pathing.foot(), area);
+    // The static walk is a flood as costly as ours (~28k on 100x100, uncached until the warm-up):
+    // read it only when a tribute tile is off our walk or none is open.
+    copy_into(a.open, area);
     drop(area, ours);
-    drop(a.open, area);
+    const bool off_walk = !board_empty(area);
+    if (off_walk) {
+        copy_into(pathing.foot(), area);
+        drop(area, ours);
+        drop(a.open, area);
+    }
     a.any_open = !a.open.is_empty();
     if (a.any_open) {
         copy_into(a.open, a.opened);
         return a;
+    }
+    if (!off_walk) {
+        copy_into(pathing.foot(), area);
+        drop(area, ours);
     }
     a.opened &= area;
     // The live camps beside our walk.
