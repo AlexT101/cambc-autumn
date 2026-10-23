@@ -1,0 +1,28 @@
+{
+  "schema": "release-metadata-correction/v1",
+  "target": "provenance/Khaos_v30-release/release.json",
+  "correction": "Caught act error code key corrected from 2 to 5; counts unchanged.",
+  "original_sha256": "fe915b1f1e9ce93af74f053f7bb9f49f11e0cee89e7e8e8c9711e1e1c7d38597",
+  "preserved_original": "provenance/Khaos_v30-release/release.pre-caught-error-code-correction.json",
+  "preserved_original_sha256": "fe915b1f1e9ce93af74f053f7bb9f49f11e0cee89e7e8e8c9711e1e1c7d38597",
+  "corrected_sha256": "b5a382541e562539959fa2722620601b4531f86fa80c310e11f1f1cde75c4912",
+  "old_value": {
+    "2": 1,
+    "98": 1
+  },
+  "new_value": {
+    "98": 1,
+    "5": 1
+  },
+  "evidence": [
+    {
+      "path": "replays/willow-prism-coordinated/batch-run-03-release-gen-s1-1024/caught-act-errors-both.json",
+      "sha256": "768118d6bf67d123cf5ba392d42e69f26c33c6f1f29f88400b45cc084af82934"
+    },
+    {
+      "path": "replays/willow-prism-coordinated/batch-run-04-release-heldout-2026102308/caught-act-errors-both.json",
+      "sha256": "8ef231b8acf2f9ec3f95ee261b4535cb20f4c3191009de1f2273316478a7e01a"
+    }
+  ],
+  "note": "No source, build, bundle, submission receipt, or qualification result was changed."
+}

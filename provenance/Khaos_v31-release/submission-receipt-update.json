@@ -1,0 +1,15 @@
+{
+  "schema": "release-submission-receipt-update/v1",
+  "target": "provenance/Khaos_v31-release/release.json",
+  "previousSha256": "2d10f9759a26148352379e7ed174bc8cbfdcd6774ba795460f7f0fb8f28a0dad",
+  "preservedPrevious": "provenance/Khaos_v31-release/release.pre-submission-receipt.json",
+  "preservedPreviousSha256": "2d10f9759a26148352379e7ed174bc8cbfdcd6774ba795460f7f0fb8f28a0dad",
+  "updatedSha256": "95821bb41619b7d2a235fbeec6d40f94627782c062bb1038a75bf132e09b4c6c",
+  "receiptPath": "provenance/Khaos_v31-release/submit-response.txt",
+  "receiptSha256": "51040620fdc72764b2d7f5f11f87a5845eda7d19beab21ca6ff921e33d4fc7e6",
+  "serverVersion": 41,
+  "serverBytes": 222187,
+  "localBundleSha256": "696249dfa82302b0f011e17449f7962dfa534628265b7d324902dffbb8b201cc",
+  "remotePayloadRetrieved": false,
+  "teamVerification": "No fresh team check was recorded for this upload; prior same-auth-session check is referenced, not represented as fresh."
+}

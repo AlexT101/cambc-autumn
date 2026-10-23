@@ -25,12 +25,13 @@ inline DraftCampCounts count_draft_camps(std::span<const std::uint32_t> words) {
 
 enum class DraftRole { prism, vesper_vale, marcella, willow, ryth, vendetta, heart_of_ruin };
 
-inline std::array<DraftRole, 5> willow_prism_draft_roles(int picks) {
+inline std::array<DraftRole, 5> willow_prism_draft_roles(int picks, DraftCampCounts counts) {
     if (picks == 3)
         return {DraftRole::prism, DraftRole::vesper_vale, DraftRole::heart_of_ruin,
                 DraftRole::willow, DraftRole::marcella};
+    const bool vendetta = picks == 5 && 3ull * counts.members > 10ull * counts.groups;
     return {DraftRole::prism, DraftRole::vesper_vale, DraftRole::marcella,
-            DraftRole::willow, DraftRole::heart_of_ruin};
+            DraftRole::willow, vendetta ? DraftRole::vendetta : DraftRole::heart_of_ruin};
 }
 
 } // namespace aph

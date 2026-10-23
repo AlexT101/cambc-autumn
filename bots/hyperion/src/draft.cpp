@@ -249,7 +249,7 @@ std::span<const cambc::champion_draft> draft_order() {
     const auto picks = cambc::draft::team_size();
     if (picks == 3 || picks == 4 || picks == 5) {
         static const auto chosen = [picks] {
-            const auto roles = willow_prism_draft_roles(picks);
+            const auto roles = willow_prism_draft_roles(picks, picks == 5 ? native_draft_counts() : DraftCampCounts{});
             std::array<cambc::champion_draft, 5> order;
             for (std::size_t i = 0; i < order.size(); ++i) order[i] = native_pick(roles[i]);
             return order;

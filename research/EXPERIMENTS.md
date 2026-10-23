@@ -915,6 +915,347 @@ forecast is a testable approximation, not evidence for excluding any named map.
   proxy per slot, which is not an exact per-champion invocation count. Published-map events remain unattributed
   by slot in this report. Full four-suite5p counts4494 vs2440; source/function causality is not established.
   Report: `research/willow-five-pick-fuel-diagnosis.md`; reusable offline helper and pinned JSON retained.
+- Source-only Willow station scratch child `33d608469b59419b7cc0a1275da543936844b467f64206ebd426c59da21141a2`
+  reuses one normally constructed threat-output array across the existing nine station calls when the
+  neighborhood enemy broad phase is positive. Independent actual-source review passed: complete returned
+  prefixes, lifetimes, fallback local storage, SDK/accumulation order and strict guards are preserved.
+  A Release/100M diagnostic panel of eight maps/both sides against frozen f711 produced **16/16 identical
+  replay payloads, winners and drafts** versus parent130. Total play fuel4184007689→4183581223 (−426466,
+  −0.01019%); Willow924670554→924544872 (−125682, −0.01359%). This tiny saving does not warrant integrating
+  the child; no default100k qualification or release claim. Pins/raw results in
+  `replays/fuel/willow-station-scratch-100M/`. Next investigate one Willow-heavy five-pick game before designing
+  further caching, rather than presuming this scratch initialization caused the observed rollovers.
+- After server40 submission, queued two live exploration groups through CLI only: Fish
+  `7c79bf17-8938-4dab-adfc-75776d6a0351` and :3 `99f66b35-e905-49b5-9d09-aba06fc1e4fe`. Maps in order:
+  Swirl, Boss Battle, Shortcut, Monolith, Expanse; Pantheon sidesA/B/A/B/A against Fish andB/A/B/A/B against:3.
+  Receipts are in v30 provenance. Neither opponent nor own submission identity is exposed/pinned by this
+  endpoint; queue-after40 is not source verification. These ten games are exploratory loss evidence, separate
+  from frozen local benchmarks. No outcome or source attribution is inferred before results arrive.
+
+- The post-dash child `fbb219…` completed the native-draft published40/both-sides diagnostic against frozen
+  v30/130: **43–37/80**, candidate A24/B19, zero runner/native/draft errors and zero caught-act lines on both
+  sides. Native play rollovers621 vs572. Results SHA
+  `8ea9ec260323baad813d8a851679a40bd2725ab7ba66009270b41d0b5f801634`, with setup/pins/audits under
+  `replays/willow-prism-post-dash-v30/`. Release/default100k, one worker. This is a small selection panel,
+  not broad qualification or proof that the old live Vesper would survive its counterfactual.
+- Dense fifth-pick child `2dd408…` completed the same80-game setup against130: **43–37**, A21/B22,
+  native play rollovers582 vs609, zero runner/native/draft/caught-act errors. Actual replay roster metadata
+  verifies the strict density switch on12 five-pick maps: Vendetta13–11/24. Sparse five-pick HoR maps15–13/28;
+  unchanged three-pick6–6/12 and four-pick9–7/16. The latter controls cannot establish a draft gain; all bins
+  reconcile to the total. Results SHA `1744d672f0b050e197bf5480f988437cdd174e9225c67e178e0c66d289d584fe`;
+  roster audit SHA `481a2d2718477485f7094ce57376a3c494b8c0f09933955bba8bd555ddf27f09`, under
+  `replays/willow-prism-dense-vendetta-v30/batch-run-01-release-published40/`. No integration/release yet.
+- The ten live v30 exploration games completed **3–7**: Fish2–3 (Swirl/Boss wins), :3 1–4 (Swirl win).
+  Intake/pins are in `replays/Khaos_v30-live-UR/` and `research/khaos-v30-live-ur-intake.md`. These are live
+  opponents with unexposed submission IDs, not frozen benchmark results. Four-pick Fish has five bodies
+  through Cassi/Issac; five-pick Fish has six. All selected maps include Willow; Expanse is five-pick.
+- Fish Shortcut `b7f1c586-dd5b-418b-ae25-7dee92ef0d06` was reproduced with exact130 Release against its
+  opponent replay puppet: all26,486 inputs,1,123 round hashes and the353–1176 final result match. Raw/injected
+  WASM match the qualified release. Compare SHA `ba8ba51d77fd89ff75d8713c1d8a731656b62cd1561a63365efe62416c8059d7`;
+  before/after pins and audits are retained in that match's `puppet-repro/`. Native public and reproduction
+  audits show zero rollovers/bot errors; local caught-act audit is also zero. The extractor's conflicting
+  `faults:[1,0]` field is unresolved and is not treated as an established action fault. Exact behavior is
+  reproduced by130; the server's uploaded source/version remains unexposed.
+- Own-view review of that loss finds no missed eligible heal in Willow's first death sequence: no Prism or
+  Marcella in view, full-health Vesper only, and no self-heal. Holes block the apparent direct south escape.
+  The opening's four nonproductive support turns precede a valid240HP Marcella heal. A proposed adjacent
+  basic-attack alternative was withdrawn: Elk reach is4, so the required x16 tile is exposed. No opening
+  formation change is justified by that witness. Reviewing r256–262 before the chase next, using own-view
+  observations rather than hidden enemy state. Note: `research/khaos-v30-fish-shortcut-review.md`.
+
+- Fish Shortcut r256–262 resolves the camp-admission question: Willow sees the Elks asleep through259,
+  does not attack them, then sees Vendetta and the newly awakened Elks at260 and reverses immediately.
+  Enemy teleport/wake events explain the pressure after entry, but were not prior Willow policy inputs.
+  No known-awake admission or missed-heal repair is justified by this episode. Existing farm code already
+  considers allied claims; a general escort/coordination improvement needs evidence of productive support,
+  rather than blindly following stale standing claims.
+- Fresh :3 Monolith `03804be4-132e-412d-82f1-29ff3466bb5f` loses532–1002. Decoded actual A roster is
+  P0/V1/M2/W3/HoR4; B HoR5/P6/Vendetta7/V8/M9. Willow survives, heals4042HP, captures85 gems and submits81.
+  Native audit shows A0/B69 rollovers and zero Bot errors; A stdout is empty but B stdout is absent, so a
+  two-sided caught-act clearance is unavailable. Public source identity is unverified. Extract
+  `replays/.analysis/40b5263ca37f9876/`; event summary SHA
+  `f5f2f4f06d27bf2e322370e85687d4482114df0303dd881f848460d0acc7932b`, combined view pins SHA
+  `5f8e9e35f74b59d7a5d28675f308599b80023f2e16f99444772abba7f706d2cf` under the match's `analysis/`.
+  These corrected sidecars point to00monolith; the original map-filename/null-hash pins remain preserved.
+- Monolith actor views892–900 reveal a support hypothesis: after walking south, Willow reverses toward a
+  far visible Prism at897, although his126HP deficit is below the ordinary216HP heal threshold. Four turns
+  of movement do not reach heal range or produce a heal/basic. This is consistent with130's ready/zero-gain
+  formation accepting any distance-reducing station toward a visible mate; visibility can extend through
+  wards. Review a local, productive formation rule before expanding long-range rendezvous behavior.
+  Do not infer that every moved turn was wasted without the ordinary farm alternative or source reproduction.
+
+- Cat Monolith now has an exact130 Release/default100k puppet reproduction:37,646 input records and1,018
+  round-start hashes match, including final532–1002. Compare SHA
+  `77c31658e7978df54fdb0bdf2ba747808b306de2d5d27cbcea8d96302d8f2731`; source/WASM and adapter provenance
+  are in the match's `puppet-repro/pins-after-run.json`. Candidate A has zero native/caught faults or
+  rollovers; puppet B reproduces69 native rollovers and has zero local caught faults. The latter does not
+  replace the missing original opponent stdout. Exact-source Willow897–900 view SHA
+  `d3a2749b710ee60d5a1a1705d9d8e0b45e0857bc808165f1703f8ff9c9e26552`. Her far mate is visible through
+  **her own ward** at16,25, not teammate-shared vision. Original server payload remains unexposed.
+- The Fish economy review identifies a deficit preceding deaths: through300, captures give183 vs185 gems
+  but210 vs1370 base gold (223 vs1625 paid). Our Vesper gets first gold at278; Fish Vesper has803 earned
+  and165 Strength by300, versus53/60. Exact130 views39–48 show our solo Vesper taking40 camp damage per
+  turn while working on two wolves, leaving49 with320HP and the first wolf still85HP; no visible enemy or
+  ally explains the withdrawal. Gold pricing already includes Vesper's bonus; repeating Cassi's weight is
+  not an established repair. Source hypotheses to measure are stale cached Upkeep-dependent prices and
+  prospective camp recovery omitted from ranked farm cycles. No economy patch is yet justified by a
+  branch/value trace. Full accounting and limits: `research/khaos-v30-fish-shortcut-economy-review.md`.
+- Pure130 local-formation child **`bb836c1eb21831ffb837c8becfd5e06b3cd57c8d64565e0fbffb8b17bee509f5`**
+  changes only `local_support`. Ready Willow with zero current heal gain can choose an otherwise legal
+  safe station only within actual heal range/visibility, or via a strictly descending already-ready
+  compatible economic route that also closes the mate gap. In-range waiting, real heals, cooldown policy,
+  protected work and escape remain. Separate lazy route/progress state avoids changing older formation
+  clock resets. No new field build or fuel gate. Source contract/checkpoint saved; runtime qualification
+  is pending. This is a gameplay hypothesis, not a cost-only or loss-prevention claim.
+
+- **Correction to per-champion fuel attribution:** the station-scratch report's Willow totals used a fixed
+  draft-slot stride over chronological team fuel records, despite changing priorities. On monolith-heavy
+  seed102407601 physicalB, that produces exactly the previously quoted83,325,221. Aligning the8,050 play
+  fuel entries to8,050 native team-B actor turn-end records (after8 constants and5 draft turns) instead gives
+  Willow actor8 **94,894,141**. Withdraw the prior924,670,554→924,544,872 Willow panel totals and0.01359%
+  actor-specific saving until corrected across the panel. Team totals4184007689→4183581223,16/16 replay
+  identity and the decision not to integrate scratch33 remain supported. This concerns chronological fuel
+  attribution, not the separate native rollover event counts. Original reports are retained for correction.
+- Source-only station profiler `031b86b5e22d1b0308d5e9e9501993a3b2ab13e5bf0f9acdff6e71cb7346abe4`
+  has passed the one-match100M gameplay identity check:55,356 inputs,1,612 round hashes and embedded replay
+  payload SHA `3ce208a971acd6e83c136a00f1f00cb92ae9f68b523426268e3deaccd81c6f85` match the saved baseline.
+  Its3,259 WSP rows occupy539,480 stdout bytes, below the cap. Correctly aligned Willow fuel rises
+  94,894,141→133,348,296 from diagnostic overhead; team fuel362,329,748→400,816,423. Probe/counter/logging
+  overhead is not production work, and nested sampled intervals are not additive exact function costs.
+  Detailed interval analysis is pending; this is not a default100k qualification or a release candidate.
+- Independent actual-source review approved local-formation `bb836c…` for the bounded80-game panel.
+  A separate source-only bundle `d22e3d0a60f785604d542f8bfd66acb7ae6a5db4cd02d9432f149f6a17606657`
+  combines only that child, reviewed post-dash `fbb219…`, and reviewed dense draft `2dd408…`; five source
+  files differ from130. Component identity/source checkpoint retained, combined review/runtime pending.
+
+- Local-formation `bb836…` completed the published80 panel **41–39**, native play rollovers679 vs727,
+  zero runner/native/caught-act errors. Its Fish Shortcut puppet control matches all26,486 inputs and
+  1,123 round hashes. Cat Monolith first diverges at Willow3/r274 (End turn versus Recall), after275
+  matched round-start hashes. The changed puppet outcome is not a competitive win: the recorded opponent
+  becomes open-loop after divergence, and the original r897 witness is no longer a matched-state comparison.
+  Artifacts: `replays/willow-prism-local-formation-v30/`.
+- Combined follow-up `d22e3d…` completed the same published80 panel **34–46**, A16/B18 wins, native play
+  rollovers596 vs654 and zero runner/native/caught-act errors. Results SHA
+  `d9c351cd583fe89fae53676786ee42047bc0f37c206977c88aa8e53a23f67bda`; pins/audits in
+  `replays/willow-prism-followup-bundle-v30/`. Generated panels are paused for interaction diagnosis;
+  no changes to released130. Paired roster strata localize the shortfall: switched five-pick maps5–19,
+  all other maps29–27. This localizes an interaction, not its causal branch, and does not by itself
+  establish a global draft regression or Willow failure.
+- Economic trace `8debb…` reproduced Fish Shortcut actions and every round hash when End/rollover are
+  normalized, but added logging changes Vesper1/r31 End turn to a native rollover. It is not fuel-exact.
+  Withdraw its selected-camp cycle/value attribution: one record can be overwritten by a risky candidate
+  before a different final best group is reported. Repair is pending; original artifacts remain under the
+  match's `economy-trace/`. Comparable PRICE rows show cached Vesper gold quotes above freshly calculated
+  quotes at31/39, so these observations do not support stale underpricing as the cause of low gold income.
+- Offline native-chronology correction now covers all16 parent and16 scratch-child100M archives. The
+  corrected Willow play-fuel totals are **1,018,849,269→1,018,208,447** (−640,822, −0.062897%). All32 fuel
+  length, inner replay/map hash and actor-sum/team-sum checks pass. Original reports remain unchanged;
+  correction sidecars are `replays/fuel/willow-station-scratch-100M/actor-fuel-correction-v2.json` and
+  `comparison-v2-corrected.json`. The unchanged whole-team saving remains only0.01019%, so scratch33 is
+  still excluded. `tools/fuel/attribute_actor_fuel.mjs` now uses actual native actor order rather than
+  fixed draft slots. No matches were rerun for this metadata correction.
+- Quadrants A/035 localizes the bundle/dense first action divergence to candidate Willow3/r244 after245
+  matched round hashes. Bundle moves23,2→24,3, dense23,2→23,3; both close the visible Prism gap and neither
+  can heal yet. At246 bundle25,4 can heal both Prism220/700 and Marcella342/1200; dense24,4 can reach only
+  Prism. Bundle heals Marcella, consistent with equal360HP gain then lower health fraction. Its own view
+  does not establish a higher immediate threat to Prism, and subsequent M damage/P recall does not prove
+  the choice wrong. No heal-ranking repair is justified. Both matches have only first-turn Willow
+  rollovers on each side. Correct paired246–249 views use actor3/A in both archives; the initially exported
+  dense8/B file is preserved as opponent/reference and excluded from the paired interpretation.
+- Reviewed pair `898393116e429f7f6eb1121f2b8f1cf0eed712bcd71dff80c51479ba09417d5b` combines only
+  bb836 local formation and2dd408 dense draft. Exactly3 files differ from130, exact donor comparisons
+  pass; bounded published80 queued. No post-dash or economic changes entered it.
+- Economic trace v3 `b7a6baf…` fails native fidelity: r31 End→rollover, r32 substantive attack→rollover,
+  only33 round hashes match and65 candidate rollovers. Later39/49/64/67/72 rows are not matched-policy
+  evidence. Its pre-logger31 record reports G2 clear42/damage1120/cycle48, bank_now46 and best5.07345
+  versus from-altar1.91549, but is not a strict fuel-exact control. The next tracing approach will reuse
+  the repository recorder/tracer harness rather than another ordinary printf replay.
+- Pure130 station member-index v2 `12f3a622d3907f31f32dd34e80e9436df75f84c59f2282c32fe6846b3b2840a9`
+  passed actual source review for bounded100M identity/cost testing only. Static per-tile member refs
+  retain groups_near calls, original order/arithmetic and fresh dynamic reads. Lazy8×8 descriptor pages
+  avoid eager full-map allocation; geometric pool growth repairs the superseded c582 child’s repeated
+  exact-size reserve. No measured savings or default-fuel qualification yet.
+- Pair898 published80 finished **37–43**, native play rollovers561 vs676 and zero runner/native/caught
+  errors. Strata wins3p6/12,4p7/16,unchanged5p14/28,switched5p10/24. The switched shortfall exists without
+  post-dash, but its difference from bundle5/24 does not by itself prove a bad post-dash branch. No pair
+  integration; analysis saved in `research/willow-followup-interaction-review.md`.
+- Member-index12f3 completed **16/16 exact payload matches** at explicit100M against saved130 runs.
+  Team play fuel4,184,007,689→4,156,811,002 (−0.65%); native-chronology Willow
+  1,018,849,269→991,551,568 (−2.68%). Heavy MonolithB saves8.42% Willow fuel; the initial sparse Swirl
+  cases save only0.42%/0.13%, showing that the first four-game6.2% estimate overstates the broader saving.
+  Native100M audits have zero rollovers/errors; caught actions candidate0, v29 reference1 code97 on
+  huge-sharedB/r1077. Original4 cases were reused;10 remaining cases completed, and two map-not-found
+  setup rows were repaired with only the missing shared-gemsA/B cases. No completed games repeated.
+  Combined result SHA `5625e3d51cb2b76b55f28572fb39f02444b0879bcc65fc9cd2077423f5c22ace`; full pins/audits
+  in `replays/fuel/willow-station-member-index-v2-100M/`. Pure-index native1104 qualification againstv30
+  is now authorized; these100M diagnostics are not native-fuel outcomes.
+
+- Member-index12f3 native qualification against frozen130: published80 **44–36**, native rollovers495
+  versus576, then seed1023/512 **251–261**, rollovers2,103 versus2,117. Both batches have zero runner,
+  native bot and caught-action errors; source and map pins match their pre-run setup. Combined295–297
+  is near even and is not evidence of a win-rate gain. The separate seed1024/512 stage is running.
+- The repaired repository harness now reproduces Fish Shortcut source130 at default fuel exactly:
+  release and calibrated recorder match all26,486 inputs,1,123 round hashes and the final353–1176 result.
+  Its adapted diagnostic tracer also matches the complete replay and all4,491 recorder call segments,
+  with no missing, extra, duplicate or different segments. Evidence is in
+  `replays/willow-fish-shortcut-econ-harness-v3/runs/fish-shortcut-source130-A/` (`record-validation.json`,
+  `trace-validation.json`). This validates these diagnostic rows on this replay; it does not turn trace
+  stdout overhead into a production fuel measurement. Fresh-price recomputation is intentionally omitted.
+  Vesper31 and39 both rank the incumbentG2 highest, so this witness does not support a best/old-incumbent
+  mismatch. Prism64/67/72 selects rankedG2 with71/70/70 planned walking steps and zero estimated damage;
+  at67 the walk returns no-step. The higher-valued riskyG4 has27–28 steps but1,980 estimated damage.
+  Route failure and safe-versus-risky selection need source diagnosis before changing economy policy.
+- Source-only Willow bank-heal child `fab7c7b13e8271a933a6b7d250f4e3627f5112fc1a6d85c9d98f78b1982b7e7f`
+  differs from130 only inbot.cpp. It proposes one strictly safe adjacent step for an actual worthy heal
+  during ordinary nonurgent banking, using the same selected bank field with finite nonincreasing
+  distance. Immediate tribute and existing pack/hop/lock/dash priorities remain; forced escape, winning,
+  closing, held/contested capture and an already available current-tile heal exclude it. Equal-distance
+  movement intentionally can spend one bank-progress turn for healing. Cat89 is a motivating tradeoff,
+  not a proved optimal action. Actual Astra source review and native mechanism/outcome tests are pending;
+  no release or canonical source change has been made.
+
+- Member-index12f3 completed native1104: **544–560 (49.28%)** against130. Seed1024 contributed249–263,
+  native rollovers1,915 versus1,919 and no runner/native bot errors. Both sides have two caught-action
+  errors on this seed (codes5 and98): candidate5 on Classic/r854, reference5 on Monolith/r608, code98 on
+  Hourglass/r496 for both. Total native rollovers across1104 are4,513 versus4,612 (−2.15%). Seed1024
+  pick-count results are86–90/176 at3,80–84/164 at4,83–89/172 at5. Sources/maps remain pinned. This is
+  a near-even cost candidate, not a measured win-rate improvement; fresh confirmation is deferred until
+  the separate bank-heal panel decides whether to qualify a coherent combination.
+- Astra actual-source review approved bank-heal fab7c7 for bounded runtime, with no actionable blocker.
+  `research/willow-bank-heal-review.md` records current-heal/LOS semantics, strict safety, field lifetime,
+  stale/hidden-block refresh and caller priorities. Its costs include delayed banking, consumed cast and
+  reduced HoR missing-health damage after a heal. Cat mechanism and published80 tests are authorized;
+  healing volume alone will not count as success.
+
+- Bank-heal fab7c7 Cat Monolith mechanism check reaches the motivating state with an exact baseline
+  prefix. First action divergence is Willow3/r89:130 moves32,41→33,42; child moves32,41→32,42 and heals
+  visible HoR4 at28,46. Own views confirm HoR510/1000 before the cast and870/1000 next turn, with Willow
+  heal cooldown7. No candidate native rollover/bot error or caught action error. The post-divergence
+  puppet result1001–252 is descriptive only, not a competitive win or causal estimate. Pins/audits/views
+  are in `replays/willow-bank-heal-step-cat-monolith/`; the separate frozen130 published80 comparison is
+  running. The original baseline r90 state is not a matched-state counterfactual after the r89 change;
+  the field-nonincreasing rejection remains source-checked rather than separately runtime-isolated.
+
+- Bank-heal fab7c7 published80 completed **39–41**, native rollovers629 versus638, zero runner/native
+  bot/caught-action errors. Source and parent pins remain unchanged. This near-even small panel supports
+  further evaluation of the bounded actual-heal tradeoff, not a win-rate gain claim. Results/audits are
+  in `replays/willow-prism-bank-heal-step-v30/batch-run-01-release-published40/`.
+- A new source-only combination is authorized: pure-index12f3 + bank-heal fab7c7 + dense fifth-slot
+  Vendetta2dd408, against130. It retains Willow, tests restoring dense-pack clearing beside her, and uses
+  the static station index to reduce support cost. The earlier bb836 formation and post-dash arms are
+  explicitly excluded; P67 route diagnostics and economy-price changes are also excluded. Each component
+  has separate source review and a measured panel, but the combination has no measured outcome yet.
+  Actual combined-source review, native1104 and an untouched confirmation suite remain required before
+  any numbered release. Canonical hyperion and server40 remain130.
+
+- Combined bank/economy source `a2794129e115abb70faaa5a7e3c66b9728898b0e52c5542fa7885091eaec0bb6`
+  passed actual Astra source review. Exact donor-removal and full-patch reconstructions confirm the five
+  changed files contain only index12f3, bank-heal fab7c7 and dense fifth-slot2dd408. Its published80
+  panel is **40–40**, native rollovers500 versus545, zero runner/native bot errors. Candidate has one
+  caught code5 (Boss Battle match054, physicalB, r589), reference zero. Archive SHA
+  `dca5c3fd0801c93145c190de9b96bb855d34695dd443477f4d54b7e3459ad4c8`. The error's high-level cause is
+  not established by its code; it must not be silently equated with the earlier off-map field witness.
+  Results SHA `25e57a1cbff0d3017aa861fa60fee2b5f7d501392628584848ff86f6e938620b`. Generated1023/1024
+  stages are authorized after the bounded P67 diagnostic. Fresh confirmation seed2026102314 is declared
+  before these results but not yet generated or authorized to run.
+- P67 route diagnostic source `d4a1ebf46479a6064386826334723f3f302fcc40a23639e338b29df3165a22a8` and
+  helper `trace_prism_route_one.py` SHA `5f3d8ba18bfbb983d8ef9edbc23d7c232042ba2d1e218b938a3d5b61040e6244`
+  passed source/tool review for one calibrated trace. Review repaired staged-source hash comparison
+  against generated wrappers, exact generated-artifact pin checking, repeated stale farm rows and
+  unread-neighbour labels. Diagnostic only; no gameplay edit. Full recorder/replay/call-stream equality
+  remains required before interpreting any route-cause row.
+
+- P67 route trace required a diagnostic-only const-method repair before compilation; the failed build
+  and original source are retained. Corrected source `b9b731801b5b022d24ddd0c40be96f9251e00c26f7555a7a031c06cd9007f001`
+  then matches all26,486 inputs,1,123 hashes and4,491 recorder call segments. Exact evidence:
+  `replays/willow-prism-route-diagnosis-v1-constfix/trace-validation.json`. There is one FARM row and two
+  ROUTE rows. P67 has movement, funded search, zone present, no guard, and spell mode but is too far for
+  `spell_clear`. Both ordinary attack and group-adjacent routes have cap86, layers0, unreachable origin,
+  zero first steps and exhausted search; neither `make_way` nor a native move succeeds. This excludes
+  a finite-cap/fuel/hidden-blocked-move explanation and identifies no usable route roots. Whether raw
+  geometry, zone removal or occupancy removes them still needs the four-count follow-up, now reviewed
+  and queued after bundle1024. No risky-camp promotion or gameplay route change is authorized yet.
+- Combined a279 seed1023/512 is **254–258**, native rollovers2,101 versus2,138, no runner/native/caught
+  errors. Pick splits are78–82 at3,79–71 at4,97–105 at5. Two initial CLI setup attempts failed argument
+  validation before any build/game; actual setup-v3 and all prior logs are preserved. Completed games
+  were not repeated. The512 seed1024 stage is running on its separately pinned existing map manifest.
+- A separate source-only next Willow arm is authorized from frozen a279: choose an actual safe heal
+  among an already committed ordinary live-camp farm route's equal-best first steps when Prism cannot
+  serve as the support partner. Preserve higher-priority attacks/protected work and current support
+  ownership; no detour, new route search/field, per-camp board or fuel gate. When reset is ready, reject
+  candidate tiles with any static camp spawn in basic range3 using at most49 direct map-grid reads,
+  conservatively preserving potential post-walk camp attacks without kill prediction. This is a new
+  untested source hypothesis, excluded from a279 and all running tests. Astra theory is recorded in
+  `research/willow-actual-heal-admission-theory.md`; actual implementation review remains required.
+
+- Combined a279 completed native1104 at **555–549 (50.27%)** against frozen130. Seed1024 contributed
+  261–251, native rollovers1,757 versus1,802, zero runner/native bot errors and caught errors2 versus1
+  (candidate code5 Classic/r854 and code98 Hourglass/r496; reference code98 Hourglass/r496). Total
+  rollovers are4,358 versus4,485 (−2.83%), caught errors3 versus1. This is near-even outcome evidence
+  with lower measured rollover cost, not proof of a win-rate improvement. The previously declared fresh
+  seed2026102314 is now authorized for256 unused generated maps/both sides512 games after source and
+  unused-seed checks. No numbered release or canonical update is authorized before that confirmation.
+- P67 four-stage root-removal diagnostic is exact across the full saved replay and all4,491 recorder
+  call segments. Raw attack goals28 and adjacent goals10 both become0 immediately after `off_zone`;
+  unblocked and final roots remain0. Replay SHA
+  `c05c31800144d24ce252d89e46c8ba5e6e331484ad5c5f332389c5f115a18f57`, validation in
+  `replays/willow-prism-route-diagnosis-v1-root-removal/trace-validation.json`. This localizes the empty
+  route input to zone filtering rather than search cap, occupancy or hidden movement failure. It does
+  not prove the zone itself is inappropriate. A source-based feasibility repair is under review;
+  no safety mask removal or unconditional promotion of the risky alternative is authorized.
+- Next Willow child `bcb9c7b6935e7ed4bed39eb9abd7e540842cdb1acf3fe303a2ec5ca1ee2b639b` is source-complete
+  and awaiting actual Astra review. Only bot.cpp/pathing.cpp/pathing.h differ from frozen a279. Its
+  separate synchronous first-step chooser preserves the original pathing method and ranks safe actual
+  heals among the selected route's equal-best steps. Source and donor reconstruction checks passed;
+  no builds or game evidence yet. It remains excluded from a279's fresh confirmation.
+
+- Astra's actual review approved exact bcb9 for bounded runtime, with no actionable source blocker
+  (`research/willow-farm-heal-choice-review.md`). A separate published80 comparison against its exact
+  a279 parent is authorized after heldout completion; no broad suite or release is authorized for this
+  child. Mechanism evidence must distinguish an admitted choice, actual movement and actual healing.
+- Cheap stdout context for a279's code5 cases shows preceding turns resumed into the error round:
+  Boss Battle B/r589 follows r588 completion at589; Classic A/r854 follows r853 completion at854. The
+  generic invalid-metadata/alignment/overlap/argument message does not identify the failing import or
+  establish that either is the older resumed-dead-actor field query. Their cause remains unresolved.
+
+- Frozen a279 untouched seed2026102314 confirmation completed **253–259/512**, giving exactly
+  **808–808/1,616** across broad and fresh panels. Heldout native play rollovers1,662 versus1,764;
+  combined6,020 versus6,249 (−3.66%). Runner/native bot/draft errors remain zero. Heldout caught markers
+  are candidate2 (Classic code5/r683, Random code98/r919) versus reference0; combined candidate5
+  (three code5, two code98) versus reference1 (code98). Fresh pick splits:3p77–79,4p84–84,5p92–96.
+  Map index SHA `9105735b0d731fbda2a1351ed684ba148ee292fea04211145c8d0952553ee962`; results SHA
+  `75d929649ec2ead75c4835ec4d976f559ce33c8c0832f5180ddfd1b222ebb64a`. Root approved promotion as
+  an incremental logical/cost release under the repository's near-even keep rule, not a win-rate gain.
+  Source-only Khaos_v31 packaging is queued; server submission and canonical update are not yet done.
+- Cached Cat Monolith early-capital review finds comparable early base captures but different recipients:
+  through100 base gold530 versus490, paid530 versus579; through200 base1,150 versus1,210, paid1,169
+  versus1,458. Vesper gets one payout79 versus six totaling818 through200. Two nominated later own-view
+  windows are Vesper/Prism53–56 (gem-bearing capture allocation) and Vesper82–85 (cleared group then
+  off-tile healing recall, payout106). These do not establish an erroneous handoff/recall; Willow is
+  distant and cannot supply an immediate heal. See `research/khaos-v30-cat-monolith-early-capital-review.md`.
+
+- Release manifest assembly independently summed all four native audits and corrected the earlier prose
+  aggregate6,025/6,304 to6,020/6,249. Per-batch audit values were unchanged; the earlier prose understated
+  the candidate's cost relative to the reference. Root rechecked the four saved audit files and corrected
+  the percentage above. This is a metadata/arithmetic correction, not a rerun or changed qualification.
+- New Willow bcb9 isolated published80 against a279 completed40–40, rollovers516 versus529, zero runner,
+  native or caught action errors. Boss Battle Willow15 moved and healed Vendetta360, but actual own-view
+  review excludes this as a chooser witness: visible live Prism's recall timer4 is not a kept recall, so
+  the new helper's viable-Prism gate rejects it. Preserve the descriptive view without causal attribution.
+  Further qualification waits for a genuine admission-frequency/mechanism check; no policy rollback is
+  justified by this small even panel alone.
+
+- **Released exact a279 as Khaos_v31 / server41.** Root CLI submission succeeded with222187bytes,
+  receipt `provenance/Khaos_v31-release/submit-response.txt`. Canonical Hyperion now matches a279. Raw
+  WASM `926b82ad01addb4d7e297bc610bef6ee696f286ea3764f354b16f3c02bcced32` and injected
+  `1c57fb1878b4c6eb03cf475bc116c521097b575a8134621a4e00a46866d2be91` match the frozen candidate.
+  CLI bundle SHA `696249dfa82302b0f011e17449f7962dfa534628265b7d324902dffbb8b201cc`; local members
+  match all30 source files. The remote uploaded ZIP was not retrieved. Fresh public team/history lookup
+  returned429; the upload used the existing authenticated CLI session previously verified for Pantheon.
+  Prepared-manifest review corrected a copied old reference code97 count and preserved correction
+  records. The gen1023 redundant batch field and gen1024 redundant bots field are stale; actual commands,
+  outputs, source hashes and results consistently identify a279 against frozen130. No games were rerun.
+  The separate bcb9 ordinary-farm chooser is not included in this release.
 
 Small diagnostic samples select follow-up analysis and broader tests; they do not establish a release threshold
 on their own. Release status and actual server version belong in the numbered release provenance.

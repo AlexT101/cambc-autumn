@@ -1,0 +1,216 @@
+{
+  "schema": "release-prebuild-pins/v1",
+  "release": "Khaos_v31",
+  "recordedAtUtc": "2026-10-23T14:53:29.182233+00:00",
+  "source": {
+    "directory": "bots/Khaos_v31/src",
+    "copiedFrom": "bots/variants/willow-prism-bank-economy-bundle-work/src",
+    "aggregateRecipe": "(cd <botdir> && shasum -a 256 src/* | shasum -a 256)",
+    "aggregateSha256": "a2794129e115abb70faaa5a7e3c66b9728898b0e52c5542fa7885091eaec0bb6",
+    "fileCount": 30,
+    "files": [
+      {
+        "path": "bots/Khaos_v31/src/abilities.cpp",
+        "sha256": "2d7f476bb5146a73043547637c2ea562393a74fad724c4285a216d5886b79931",
+        "bytes": 30505
+      },
+      {
+        "path": "bots/Khaos_v31/src/abilities.h",
+        "sha256": "91cd79631223f7fc193849323353f55d5da2ac313f10c0eb24dd17875b2650df",
+        "bytes": 1474
+      },
+      {
+        "path": "bots/Khaos_v31/src/bot.cpp",
+        "sha256": "9e2e23fdfb2fbc8bf8f23e598144e445e2ff9bc6e17bf7f84ae4bcd350f08694",
+        "bytes": 267616
+      },
+      {
+        "path": "bots/Khaos_v31/src/bot.h",
+        "sha256": "79686dd97aea7627b34c45a8d67d958a7c2f54d46a75b33b809aec433f333f31",
+        "bytes": 2173
+      },
+      {
+        "path": "bots/Khaos_v31/src/champions.h",
+        "sha256": "2ef629ef356748dedff8180d848e98ffb489851f597a43c17e4a3a269c737103",
+        "bytes": 7348
+      },
+      {
+        "path": "bots/Khaos_v31/src/combat_priority.h",
+        "sha256": "252817d10e02d4c781ce4b3f65dda49f47c06646f07fa843c29f2ef08dda452d",
+        "bytes": 4679
+      },
+      {
+        "path": "bots/Khaos_v31/src/comms.cpp",
+        "sha256": "4dd44d8213cb2d038f395190510ede5dec8d7c073554a8501801000bfbb7c30d",
+        "bytes": 11096
+      },
+      {
+        "path": "bots/Khaos_v31/src/comms.h",
+        "sha256": "c3c16283e1087f880797ce219bb1ebb3beefdb051561e2556a47acdc33b0ac4c",
+        "bytes": 2010
+      },
+      {
+        "path": "bots/Khaos_v31/src/crew_work.h",
+        "sha256": "a1cd30a2d4cc4261e5712d51150afc0c57cfd41a41e8ff1e1bab6c71df85ca75",
+        "bytes": 844
+      },
+      {
+        "path": "bots/Khaos_v31/src/draft.cpp",
+        "sha256": "216f27819ea0386726fd771952488ffd557543bb9c6e8cc8586a2e50a825cac8",
+        "bytes": 13546
+      },
+      {
+        "path": "bots/Khaos_v31/src/draft.h",
+        "sha256": "2b02e4650c9fa33cc31dec70e1197214cefe924880769394eeabf5f729a6f97b",
+        "bytes": 2160
+      },
+      {
+        "path": "bots/Khaos_v31/src/draft_selection.h",
+        "sha256": "e42b6b7ef787ffb0d1a9e8cb33b5900b735ff251bb6162bd9a9f7887211f6154",
+        "bytes": 1353
+      },
+      {
+        "path": "bots/Khaos_v31/src/gold_value.h",
+        "sha256": "031698fe54597e22f25dc24319a579bcd826ba67d05f7a9dc2a9d314fd3d9d02",
+        "bytes": 1426
+      },
+      {
+        "path": "bots/Khaos_v31/src/idle_priority.h",
+        "sha256": "08446b354e64091d0cfd8145e9f40ec195279d14ddffa7e1e9e77f49d141db74",
+        "bytes": 424
+      },
+      {
+        "path": "bots/Khaos_v31/src/main.cpp",
+        "sha256": "266da320e863f159b1fa9c03ede8c2fd2d86599b058f49e99d61274f6cd68f36",
+        "bytes": 5274
+      },
+      {
+        "path": "bots/Khaos_v31/src/params.h",
+        "sha256": "13ad36b26ae6788d334bce09696826ed19ae4b66858f1dd6652b604b109d16ae",
+        "bytes": 4794
+      },
+      {
+        "path": "bots/Khaos_v31/src/pathing.cpp",
+        "sha256": "165a48d18e06e9e4d6c58d7ca6c0b593ac9649c53942532228acd95b6d6f4dac",
+        "bytes": 30023
+      },
+      {
+        "path": "bots/Khaos_v31/src/pathing.h",
+        "sha256": "92b53299407c13d05ab0f56508268ebaee82abecaecf4eed7dbf8779f024c5c8",
+        "bytes": 10469
+      },
+      {
+        "path": "bots/Khaos_v31/src/plan.cpp",
+        "sha256": "2c3155190f18fc6a4ad39fc556742c9c25d3d062840d1dd676a9caadd81618b1",
+        "bytes": 92073
+      },
+      {
+        "path": "bots/Khaos_v31/src/plan.h",
+        "sha256": "6cbf2ab5a50189c91d54652a43770842279159f3c2ecc5b699a20a9a2bcd2ac8",
+        "bytes": 2036
+      },
+      {
+        "path": "bots/Khaos_v31/src/safety.cpp",
+        "sha256": "90f7c86a5e0e5561f14f724d55fa339136fc3998aebe0fc12ec6141f01d3c7cc",
+        "bytes": 101516
+      },
+      {
+        "path": "bots/Khaos_v31/src/safety.h",
+        "sha256": "42dfeb1fc9256290e950cf0d659507d0df3e86eedaec005800c1f2bc2c177abb",
+        "bytes": 22150
+      },
+      {
+        "path": "bots/Khaos_v31/src/self_abilities.cpp",
+        "sha256": "2750d7d4c01ca2fa0e744a562ceef6ef7801874414f90182f45230b90cb47f73",
+        "bytes": 21205
+      },
+      {
+        "path": "bots/Khaos_v31/src/self_abilities.h",
+        "sha256": "f795c6d406a177a1d0701a0a7afa6b37fe8dc71e63d35bbed5777db76a1de1d7",
+        "bytes": 3256
+      },
+      {
+        "path": "bots/Khaos_v31/src/support_mailbox.h",
+        "sha256": "f70193e17987e7cf83976648ae3d7742299662373dad20aeac62051446fa76b0",
+        "bytes": 2655
+      },
+      {
+        "path": "bots/Khaos_v31/src/turn_order.cpp",
+        "sha256": "9b4b402b295669b9f98ca807edb271a76b4070fcee391982de86c3d5a0673e83",
+        "bytes": 15328
+      },
+      {
+        "path": "bots/Khaos_v31/src/turn_order.h",
+        "sha256": "8688629c75774c1f78793e8fbb72e676e60d8b6dc5672ebfc39dca8b1bd4c03e",
+        "bytes": 328
+      },
+      {
+        "path": "bots/Khaos_v31/src/util.h",
+        "sha256": "c8a164c5fa55f0bce4e51eee417a0d65eb39ffbf922b4ab70bedc914905b67a8",
+        "bytes": 25379
+      },
+      {
+        "path": "bots/Khaos_v31/src/world.cpp",
+        "sha256": "4c5ed2234703967b390d218df61be8e6aa03bbda7dcfdb0ce10490aa066587df",
+        "bytes": 87839
+      },
+      {
+        "path": "bots/Khaos_v31/src/world.h",
+        "sha256": "a22d239246f3d419090ef5eee32fdd7463b2814794b7ead21ea8dfd5c77ee1d8",
+        "bytes": 30821
+      }
+    ],
+    "noCambcCopied": true,
+    "matchesQualifiedCandidate": true
+  },
+  "runtime": {
+    "cliPath": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "cliVersion": "cambc 3.0.5",
+    "cliSha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "enginePath": "tools/replay/engine/v1_0_3.wasm",
+    "engineSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+  },
+  "qualifiedCandidateBuild": {
+    "rawWasmPath": "bots/variants/willow-prism-bank-economy-bundle-work/.cambc/build-release/bot.wasm",
+    "rawWasmSha256": "926b82ad01addb4d7e297bc610bef6ee696f286ea3764f354b16f3c02bcced32",
+    "injectedWasmPath": "bots/variants/willow-prism-bank-economy-bundle-work/.cambc/build-release/bot-injected.wasm",
+    "injectedWasmSha256": "1c57fb1878b4c6eb03cf475bc116c521097b575a8134621a4e00a46866d2be91"
+  },
+  "qualification": {
+    "games": 1616,
+    "winsByStableBotIndex": [
+      808,
+      808
+    ],
+    "nativePlayRolloverByBot": [
+      6020,
+      6249
+    ],
+    "nativePlayBotErrorByBot": [
+      0,
+      0
+    ],
+    "caughtActErrorsByBot": {
+      "candidate": {
+        "5": 3,
+        "98": 2
+      },
+      "reference": {
+        "97": 88,
+        "98": 1
+      }
+    },
+    "sourceQualification": "a2794129e115abb70faaa5a7e3c66b9728898b0e52c5542fa7885091eaec0bb6",
+    "batchPaths": [
+      "replays/willow-prism-bank-economy-bundle-v30/batch-run-01-release-published40",
+      "replays/willow-prism-bank-economy-bundle-v30/batch-run-02-release-gen1023",
+      "replays/willow-prism-bank-economy-bundle-v30/batch-run-03-release-gen-s1-1024",
+      "replays/willow-prism-bank-economy-bundle-v30/batch-run-04-release-seed-2026102314"
+    ],
+    "rolloverReconciliation": "Correction after build: totals independently recomputed from four cited native-status-compact.json files; see qualification-rollover-reconciliation.json. Original prebuild pin copy preserved."
+  },
+  "buildPlan": {
+    "command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc build bots/Khaos_v31 --release --output provenance/Khaos_v31-release/Khaos_v31-release.wasm",
+    "mode": "Release"
+  }
+}

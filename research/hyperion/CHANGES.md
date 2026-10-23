@@ -272,4 +272,26 @@ Source aggregate `130a17af668a432a8a5582ec0736b1ef13c22e05245bc5742e472f3d02a620
   Provenance records the original fresh-suite source-hash recipe correction after run launch, unchanged
   sources, all audits and the submission receipt in `provenance/Khaos_v30-release/release.json`.
 
-The dense-camp draft, post-dash retreat and cost children remain separate experiments.
+## 94: Willow bank-route healing, station index and dense fifth pick (2026-10-23)
+
+Submitted as local Khaos_v31 / server version41. Against frozen Khaos_v30, native drafts and Release/default
+fuel:555–549 over1,104 published/generated games, then253–259 on unused seed2026102314. Combined808–808
+/1,616 is even, not a win-rate gain. Native play rollovers6,020 versus6,249 decrease3.66%; runner/native
+bot/draft errors are zero. Caught API errors remain5 versus1 (candidate three code5 and two code98;
+reference one code98). Source aggregate `a2794129e115abb70faaa5a7e3c66b9728898b0e52c5542fa7885091eaec0bb6`.
+
+- During ordinary nonurgent banking, Willow can take a strictly safe adjacent step that enables a real
+  worthwhile heal, using finite nonincreasing distance in the selected bank field. Immediate tribute,
+  forced escape, winning bags, protected captures and current-range healing retain priority. The step
+  may delay bank progress by one turn and spends the cast; no future healing is credited as current HP.
+- A lazy static camp-member index reduces repeated work across Willow's nine safety stations. Current
+  camp health/state and enemy threats are still read fresh in the original accumulation order. The
+  isolated cost change preserved all16 high-budget replay payloads; default-fuel outcomes can differ.
+- Five-pick drafts retain Prism/Vesper/Marcella/Willow and choose Vendetta instead of Heart of Ruin when
+  three times camp members exceeds ten times groups. Three/four picks are unchanged. The complete
+  bundle's dense five-pick subset was28–28 on the broad panel; no isolated draft advantage is claimed.
+- Numbered source and raw/injected Release WASM match the qualified candidate. The CLI source bundle
+  contains30 entries and uploaded222187bytes. Provenance records caught errors, corrected arithmetic
+  and copied metadata, and two stale redundant setup fields alongside the actual commands/source pins.
+
+The new ordinary-farm heal chooser, post-dash retreat and route diagnostics remain separate experiments.

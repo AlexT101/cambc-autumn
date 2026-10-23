@@ -1,0 +1,675 @@
+{
+  "schemaVersion": 1,
+  "status": "prepared_not_submitted",
+  "releaseName": "Khaos_v31",
+  "preparedAt": "2026-10-23",
+  "source": {
+    "directory": "bots/Khaos_v31/src",
+    "copiedFrom": "bots/variants/willow-prism-bank-economy-bundle-work/src",
+    "aggregateRecipe": "(cd <botdir> && shasum -a 256 src/* | shasum -a 256)",
+    "aggregateSha256": "a2794129e115abb70faaa5a7e3c66b9728898b0e52c5542fa7885091eaec0bb6",
+    "fileCount": 30,
+    "files": [
+      {
+        "path": "bots/Khaos_v31/src/abilities.cpp",
+        "sha256": "2d7f476bb5146a73043547637c2ea562393a74fad724c4285a216d5886b79931",
+        "bytes": 30505
+      },
+      {
+        "path": "bots/Khaos_v31/src/abilities.h",
+        "sha256": "91cd79631223f7fc193849323353f55d5da2ac313f10c0eb24dd17875b2650df",
+        "bytes": 1474
+      },
+      {
+        "path": "bots/Khaos_v31/src/bot.cpp",
+        "sha256": "9e2e23fdfb2fbc8bf8f23e598144e445e2ff9bc6e17bf7f84ae4bcd350f08694",
+        "bytes": 267616
+      },
+      {
+        "path": "bots/Khaos_v31/src/bot.h",
+        "sha256": "79686dd97aea7627b34c45a8d67d958a7c2f54d46a75b33b809aec433f333f31",
+        "bytes": 2173
+      },
+      {
+        "path": "bots/Khaos_v31/src/champions.h",
+        "sha256": "2ef629ef356748dedff8180d848e98ffb489851f597a43c17e4a3a269c737103",
+        "bytes": 7348
+      },
+      {
+        "path": "bots/Khaos_v31/src/combat_priority.h",
+        "sha256": "252817d10e02d4c781ce4b3f65dda49f47c06646f07fa843c29f2ef08dda452d",
+        "bytes": 4679
+      },
+      {
+        "path": "bots/Khaos_v31/src/comms.cpp",
+        "sha256": "4dd44d8213cb2d038f395190510ede5dec8d7c073554a8501801000bfbb7c30d",
+        "bytes": 11096
+      },
+      {
+        "path": "bots/Khaos_v31/src/comms.h",
+        "sha256": "c3c16283e1087f880797ce219bb1ebb3beefdb051561e2556a47acdc33b0ac4c",
+        "bytes": 2010
+      },
+      {
+        "path": "bots/Khaos_v31/src/crew_work.h",
+        "sha256": "a1cd30a2d4cc4261e5712d51150afc0c57cfd41a41e8ff1e1bab6c71df85ca75",
+        "bytes": 844
+      },
+      {
+        "path": "bots/Khaos_v31/src/draft.cpp",
+        "sha256": "216f27819ea0386726fd771952488ffd557543bb9c6e8cc8586a2e50a825cac8",
+        "bytes": 13546
+      },
+      {
+        "path": "bots/Khaos_v31/src/draft.h",
+        "sha256": "2b02e4650c9fa33cc31dec70e1197214cefe924880769394eeabf5f729a6f97b",
+        "bytes": 2160
+      },
+      {
+        "path": "bots/Khaos_v31/src/draft_selection.h",
+        "sha256": "e42b6b7ef787ffb0d1a9e8cb33b5900b735ff251bb6162bd9a9f7887211f6154",
+        "bytes": 1353
+      },
+      {
+        "path": "bots/Khaos_v31/src/gold_value.h",
+        "sha256": "031698fe54597e22f25dc24319a579bcd826ba67d05f7a9dc2a9d314fd3d9d02",
+        "bytes": 1426
+      },
+      {
+        "path": "bots/Khaos_v31/src/idle_priority.h",
+        "sha256": "08446b354e64091d0cfd8145e9f40ec195279d14ddffa7e1e9e77f49d141db74",
+        "bytes": 424
+      },
+      {
+        "path": "bots/Khaos_v31/src/main.cpp",
+        "sha256": "266da320e863f159b1fa9c03ede8c2fd2d86599b058f49e99d61274f6cd68f36",
+        "bytes": 5274
+      },
+      {
+        "path": "bots/Khaos_v31/src/params.h",
+        "sha256": "13ad36b26ae6788d334bce09696826ed19ae4b66858f1dd6652b604b109d16ae",
+        "bytes": 4794
+      },
+      {
+        "path": "bots/Khaos_v31/src/pathing.cpp",
+        "sha256": "165a48d18e06e9e4d6c58d7ca6c0b593ac9649c53942532228acd95b6d6f4dac",
+        "bytes": 30023
+      },
+      {
+        "path": "bots/Khaos_v31/src/pathing.h",
+        "sha256": "92b53299407c13d05ab0f56508268ebaee82abecaecf4eed7dbf8779f024c5c8",
+        "bytes": 10469
+      },
+      {
+        "path": "bots/Khaos_v31/src/plan.cpp",
+        "sha256": "2c3155190f18fc6a4ad39fc556742c9c25d3d062840d1dd676a9caadd81618b1",
+        "bytes": 92073
+      },
+      {
+        "path": "bots/Khaos_v31/src/plan.h",
+        "sha256": "6cbf2ab5a50189c91d54652a43770842279159f3c2ecc5b699a20a9a2bcd2ac8",
+        "bytes": 2036
+      },
+      {
+        "path": "bots/Khaos_v31/src/safety.cpp",
+        "sha256": "90f7c86a5e0e5561f14f724d55fa339136fc3998aebe0fc12ec6141f01d3c7cc",
+        "bytes": 101516
+      },
+      {
+        "path": "bots/Khaos_v31/src/safety.h",
+        "sha256": "42dfeb1fc9256290e950cf0d659507d0df3e86eedaec005800c1f2bc2c177abb",
+        "bytes": 22150
+      },
+      {
+        "path": "bots/Khaos_v31/src/self_abilities.cpp",
+        "sha256": "2750d7d4c01ca2fa0e744a562ceef6ef7801874414f90182f45230b90cb47f73",
+        "bytes": 21205
+      },
+      {
+        "path": "bots/Khaos_v31/src/self_abilities.h",
+        "sha256": "f795c6d406a177a1d0701a0a7afa6b37fe8dc71e63d35bbed5777db76a1de1d7",
+        "bytes": 3256
+      },
+      {
+        "path": "bots/Khaos_v31/src/support_mailbox.h",
+        "sha256": "f70193e17987e7cf83976648ae3d7742299662373dad20aeac62051446fa76b0",
+        "bytes": 2655
+      },
+      {
+        "path": "bots/Khaos_v31/src/turn_order.cpp",
+        "sha256": "9b4b402b295669b9f98ca807edb271a76b4070fcee391982de86c3d5a0673e83",
+        "bytes": 15328
+      },
+      {
+        "path": "bots/Khaos_v31/src/turn_order.h",
+        "sha256": "8688629c75774c1f78793e8fbb72e676e60d8b6dc5672ebfc39dca8b1bd4c03e",
+        "bytes": 328
+      },
+      {
+        "path": "bots/Khaos_v31/src/util.h",
+        "sha256": "c8a164c5fa55f0bce4e51eee417a0d65eb39ffbf922b4ab70bedc914905b67a8",
+        "bytes": 25379
+      },
+      {
+        "path": "bots/Khaos_v31/src/world.cpp",
+        "sha256": "4c5ed2234703967b390d218df61be8e6aa03bbda7dcfdb0ce10490aa066587df",
+        "bytes": 87839
+      },
+      {
+        "path": "bots/Khaos_v31/src/world.h",
+        "sha256": "a22d239246f3d419090ef5eee32fdd7463b2814794b7ead21ea8dfd5c77ee1d8",
+        "bytes": 30821
+      }
+    ],
+    "noCambcCopied": true,
+    "exactCandidateAggregateMatch": true,
+    "sourceAggregatePostBuildSha256": "a2794129e115abb70faaa5a7e3c66b9728898b0e52c5542fa7885091eaec0bb6",
+    "sourceUnchangedDuringBuild": true
+  },
+  "qualification": [
+    {
+      "label": "published80",
+      "batchPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-01-release-published40",
+      "setupPath": "replays/willow-prism-bank-economy-bundle-v30/setup-before-batch-01-release-published40.json",
+      "setupSha256": "bcd809069a360a71d05d73ac9c681b6b8d8cec72c10fbb679aa79bc8d410670b",
+      "candidate": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/variants/willow-prism-bank-economy-bundle-work",
+        "botIndex": 0,
+        "sourceAggregateSha256": "a2794129e115abb70faaa5a7e3c66b9728898b0e52c5542fa7885091eaec0bb6"
+      },
+      "reference": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/Khaos_v30",
+        "botIndex": 1,
+        "sourceAggregateSha256": "130a17af668a432a8a5582ec0736b1ef13c22e05245bc5742e472f3d02a620a5"
+      },
+      "resultsPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-01-release-published40/results.json",
+      "resultsSha256": "25e57a1cbff0d3017aa861fa60fee2b5f7d501392628584848ff86f6e938620b",
+      "games": 80,
+      "winsByStableBotIndex": [
+        40,
+        40
+      ],
+      "ties": 0,
+      "runnerErrors": 0,
+      "mode": "Release",
+      "fuel": "default/no override (100000)",
+      "nativeDraft": true,
+      "testDraftEnabled": false,
+      "threads": 1,
+      "buildParallelism": 1,
+      "nice": 19,
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+        "invocations": {
+          "build": [
+            "build",
+            "<bot>",
+            "--release"
+          ],
+          "run_batch": [
+            "run-batch",
+            "<manifest>",
+            "--jobs",
+            "1",
+            "--color",
+            "never",
+            "--release"
+          ]
+        }
+      },
+      "engine": {
+        "version": "v1_0_3",
+        "path": "tools/replay/engine/v1_0_3.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      "mapCount": null,
+      "mapManifestSha256": "d91015b45d05872848f3e7e09149c474b5af78dbfe4c7471a524fac70822784a",
+      "mapIndexPath": null,
+      "mapIndexSha256": null,
+      "nativeAuditPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-01-release-published40/native-status-compact.json",
+      "nativeAuditSha256": "163219cdf06da0dc3f3ebac4bebf95eec7013586f09f768d06b12ba5fcc24677",
+      "nativePlayStatus": [
+        {
+          "botIndex": 0,
+          "bot": "willow-prism-bank-economy-bundle-work",
+          "rollover": 500,
+          "botError": 0
+        },
+        {
+          "botIndex": 1,
+          "bot": "Khaos_v30",
+          "rollover": 545,
+          "botError": 0
+        }
+      ],
+      "caughtActAuditPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-01-release-published40/caught-act-errors.json",
+      "caughtActAuditSha256": "5ca2097f651ca413f25d5a0a17c5b600eebffb40a66f53bddd58062a2382e098",
+      "caughtActErrors": [
+        {
+          "botIndex": 0,
+          "bot": null,
+          "errorCodeCounts": {
+            "5": 1
+          },
+          "matchesWithErrors": 1,
+          "errorLines": 1
+        },
+        {
+          "botIndex": 1,
+          "bot": null,
+          "errorCodeCounts": {},
+          "matchesWithErrors": 0,
+          "errorLines": 0
+        }
+      ],
+      "pinsPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-01-release-published40/pins-after.json",
+      "pinsSha256": "1380926d4619262b1c17a0ee19c8d3c2de8e16f663a31479fb4e079fb3d473f0",
+      "sourceHashesRecheckedAfterRun": true,
+      "setupAnomalies": []
+    },
+    {
+      "label": "generated-seed1023",
+      "batchPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-02-release-gen1023",
+      "setupPath": "replays/willow-prism-bank-economy-bundle-v30/setup-before-batch-02-release-gen1023-v3.json",
+      "setupSha256": "7dab38b9ac402bfb37a208bb06523b318d928f96d0a0db594553be8efcd37074",
+      "candidate": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/variants/willow-prism-bank-economy-bundle-work",
+        "botIndex": 0,
+        "sourceAggregateSha256": "a2794129e115abb70faaa5a7e3c66b9728898b0e52c5542fa7885091eaec0bb6"
+      },
+      "reference": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/Khaos_v30",
+        "botIndex": 1,
+        "sourceAggregateSha256": "130a17af668a432a8a5582ec0736b1ef13c22e05245bc5742e472f3d02a620a5"
+      },
+      "resultsPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-02-release-gen1023/results.json",
+      "resultsSha256": "621d28bb938f90b2ccaeb4e70c659a844edcd8a504e318122d4fb67e20d160e4",
+      "games": 512,
+      "winsByStableBotIndex": [
+        254,
+        258
+      ],
+      "ties": 0,
+      "runnerErrors": 0,
+      "mode": "Release",
+      "fuel": "default/no override (100000)",
+      "nativeDraft": true,
+      "testDraftEnabled": false,
+      "threads": 1,
+      "buildParallelism": 1,
+      "nice": 19,
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+        "invocations": {
+          "build": [
+            "build",
+            "<bot>",
+            "--release"
+          ],
+          "run_batch": [
+            "run-batch",
+            "<manifest>",
+            "--jobs",
+            "1",
+            "--color",
+            "never",
+            "--release"
+          ]
+        }
+      },
+      "engine": {
+        "version": "1.0.3",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "catalog_sha256": "5e0f0e706f4cd178b98ba1b9238ef0a4858e12020d2a4b2eb8cba49aac4afae7"
+      },
+      "mapCount": 256,
+      "mapManifestSha256": "059c99a08e3397a5ddd01171349a38e02e9f93b85e7930c18cc99fdb4f899bbf",
+      "mapIndexPath": null,
+      "mapIndexSha256": null,
+      "nativeAuditPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-02-release-gen1023/native-status-compact.json",
+      "nativeAuditSha256": "d20c1b50dd314eee8fa4fa4035ba661958d425f1ea889a7c280e549dc3bdca2d",
+      "nativePlayStatus": [
+        {
+          "botIndex": 0,
+          "bot": "willow-prism-bank-economy-bundle-work",
+          "rollover": 2101,
+          "botError": 0
+        },
+        {
+          "botIndex": 1,
+          "bot": "Khaos_v30",
+          "rollover": 2138,
+          "botError": 0
+        }
+      ],
+      "caughtActAuditPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-02-release-gen1023/caught-act-errors.json",
+      "caughtActAuditSha256": "3b8b7807ab1fc0b1b06b2b97049ae3abaa3a2e89ff6313a43c9b1a7dff23f970",
+      "caughtActErrors": [
+        {
+          "botIndex": 0,
+          "bot": null,
+          "errorCodeCounts": {},
+          "matchesWithErrors": 0,
+          "errorLines": 0
+        },
+        {
+          "botIndex": 1,
+          "bot": null,
+          "errorCodeCounts": {},
+          "matchesWithErrors": 0,
+          "errorLines": 0
+        }
+      ],
+      "pinsPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-02-release-gen1023/pins-after.json",
+      "pinsSha256": "0731e404b8fe0b722af3d9ce3e255ad3efeb61ea6159d0897115068e80ac01a7",
+      "sourceHashesRecheckedAfterRun": true,
+      "setupAnomalies": [
+        {
+          "field": "batch",
+          "value": "replays/willow-prism-station-member-index-v30/batch-run-02-release-gen1023",
+          "actualResultsOutput": "replays/willow-prism-bank-economy-bundle-v30/batch-run-02-release-gen1023",
+          "evidence": "setup output/command, results.json bot paths, source aggregates, and postrun pins identify the actual a279-vs-Khaos_v30 run"
+        }
+      ]
+    },
+    {
+      "label": "generated-seed1024",
+      "batchPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-03-release-gen-s1-1024",
+      "setupPath": "replays/willow-prism-bank-economy-bundle-v30/setup-before-batch-03-release-gen-s1-1024.json",
+      "setupSha256": "f975d60c229424a2389b6b36853974932d6ae13890a78bbaebb62f5722cb7aed",
+      "candidate": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/variants/willow-prism-bank-economy-bundle-work",
+        "botIndex": 0,
+        "sourceAggregateSha256": "a2794129e115abb70faaa5a7e3c66b9728898b0e52c5542fa7885091eaec0bb6"
+      },
+      "reference": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/Khaos_v30",
+        "botIndex": 1,
+        "sourceAggregateSha256": "130a17af668a432a8a5582ec0736b1ef13c22e05245bc5742e472f3d02a620a5"
+      },
+      "resultsPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-03-release-gen-s1-1024/results.json",
+      "resultsSha256": "0a680bdff12b49d6c681403ec691857502559dc8461355be5e18f4315b10a272",
+      "games": 512,
+      "winsByStableBotIndex": [
+        261,
+        251
+      ],
+      "ties": 0,
+      "runnerErrors": 0,
+      "mode": "Release",
+      "fuel": "default/no override (100000)",
+      "nativeDraft": true,
+      "testDraftEnabled": false,
+      "threads": 1,
+      "buildParallelism": 1,
+      "nice": 19,
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+        "invocations": {
+          "build": [
+            "build",
+            "<bot>",
+            "--release"
+          ],
+          "run_batch": [
+            "run-batch",
+            "<manifest>",
+            "--jobs",
+            "1",
+            "--color",
+            "never",
+            "--release"
+          ]
+        }
+      },
+      "engine": {
+        "version": "v1_0_3",
+        "path": "tools/replay/engine/v1_0_3.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      "mapCount": 256,
+      "mapManifestSha256": "81cdfbf093d444eda0b7705e5c296d9e454333700b86f3a768df35492663d899",
+      "mapIndexPath": "maps/gen-s1/index.json",
+      "mapIndexSha256": "fcd775d0cd1ca47322070933cc003a947bdc4954860a358c77b2de8b1af8f7ac",
+      "nativeAuditPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-03-release-gen-s1-1024/native-status-compact.json",
+      "nativeAuditSha256": "6d771b3f679213e041ba0a1f86f27238864d760cd7b3698680edec65528d4e04",
+      "nativePlayStatus": [
+        {
+          "botIndex": 0,
+          "bot": "willow-prism-bank-economy-bundle-work",
+          "rollover": 1757,
+          "botError": 0
+        },
+        {
+          "botIndex": 1,
+          "bot": "Khaos_v30",
+          "rollover": 1802,
+          "botError": 0
+        }
+      ],
+      "caughtActAuditPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-03-release-gen-s1-1024/caught-act-errors.json",
+      "caughtActAuditSha256": "4c75f4b24eaec580009fed8c42a244c47f358046f82a9f7c0b22f4bdad24e7b7",
+      "caughtActErrors": [
+        {
+          "botIndex": 0,
+          "bot": null,
+          "errorCodeCounts": {
+            "5": 1,
+            "98": 1
+          },
+          "matchesWithErrors": 2,
+          "errorLines": 2
+        },
+        {
+          "botIndex": 1,
+          "bot": null,
+          "errorCodeCounts": {
+            "98": 1
+          },
+          "matchesWithErrors": 1,
+          "errorLines": 1
+        }
+      ],
+      "pinsPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-03-release-gen-s1-1024/pins-after.json",
+      "pinsSha256": "588bfafcd7d9a2db5ff6adb068cb4221ad8f663cc96f0a6a635417785b6ba26a",
+      "sourceHashesRecheckedAfterRun": true,
+      "setupAnomalies": [
+        {
+          "field": "bots",
+          "value": [
+            "bots/variants/willow-prism-station-member-index-work-v2",
+            "bots/Khaos_v30"
+          ],
+          "actualResultsBots": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/variants/willow-prism-bank-economy-bundle-work; /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/Khaos_v30",
+          "evidence": "setup candidate/reference fields and source aggregate map, results.json bot paths, and postrun pins identify the actual a279-vs-Khaos_v30 run"
+        }
+      ]
+    },
+    {
+      "label": "fresh-heldout-seed-2026102314",
+      "batchPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-04-release-seed-2026102314",
+      "setupPath": "replays/willow-prism-bank-economy-bundle-v30/setup-before-batch-04-heldout-2026102314.json",
+      "setupSha256": "4c3eedd1fd50405b69d7b39e6d8e84828ddb4b53d87e09317b6bc33d84ec36b7",
+      "candidate": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/variants/willow-prism-bank-economy-bundle-work",
+        "botIndex": 0,
+        "sourceAggregateSha256": "a2794129e115abb70faaa5a7e3c66b9728898b0e52c5542fa7885091eaec0bb6"
+      },
+      "reference": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-prism-development/bots/Khaos_v30",
+        "botIndex": 1,
+        "sourceAggregateSha256": "130a17af668a432a8a5582ec0736b1ef13c22e05245bc5742e472f3d02a620a5"
+      },
+      "resultsPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-04-release-seed-2026102314/results.json",
+      "resultsSha256": "75d929649ec2ead75c4835ec4d976f559ce33c8c0832f5180ddfd1b222ebb64a",
+      "games": 512,
+      "winsByStableBotIndex": [
+        253,
+        259
+      ],
+      "ties": 0,
+      "runnerErrors": 0,
+      "mode": "Release",
+      "fuel": "default/no override (100000)",
+      "nativeDraft": true,
+      "testDraftEnabled": false,
+      "threads": 1,
+      "buildParallelism": 1,
+      "nice": 19,
+      "cli": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "version": "cambc 3.0.5",
+        "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+        "invocations": {
+          "build": [
+            "build",
+            "<bot>",
+            "--release"
+          ],
+          "run_batch": [
+            "run-batch",
+            "<manifest>",
+            "--jobs",
+            "1",
+            "--color",
+            "never",
+            "--release"
+          ]
+        }
+      },
+      "engine": {
+        "version": "v1_0_3",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "catalog_sha256": "5e0f0e706f4cd178b98ba1b9238ef0a4858e12020d2a4b2eb8cba49aac4afae7"
+      },
+      "mapCount": 256,
+      "mapManifestSha256": "269779a8ab721960fda5a62d2138b8ff1b453138c4fd5e2bb60fa118c9208bd4",
+      "mapIndexPath": "maps/gen-willow-prism-heldout-2026102314/index.json",
+      "mapIndexSha256": "9105735b0d731fbda2a1351ed684ba148ee292fea04211145c8d0952553ee962",
+      "nativeAuditPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-04-release-seed-2026102314/native-status-compact.json",
+      "nativeAuditSha256": "02fd3446873887d5e23e35d19fc5d10473a755bbccb81f57a6fb8186c73d29a0",
+      "nativePlayStatus": [
+        {
+          "botIndex": 0,
+          "bot": "willow-prism-bank-economy-bundle-work",
+          "rollover": 1662,
+          "botError": 0
+        },
+        {
+          "botIndex": 1,
+          "bot": "Khaos_v30",
+          "rollover": 1764,
+          "botError": 0
+        }
+      ],
+      "caughtActAuditPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-04-release-seed-2026102314/caught-act-errors.json",
+      "caughtActAuditSha256": "82f5ae9e80937e1aab53015a0eb179c0e7a54109741014c63986a08c8f3ab008",
+      "caughtActErrors": [
+        {
+          "botIndex": 0,
+          "bot": null,
+          "errorCodeCounts": {
+            "5": 1,
+            "98": 1
+          },
+          "matchesWithErrors": 2,
+          "errorLines": 2
+        },
+        {
+          "botIndex": 1,
+          "bot": null,
+          "errorCodeCounts": {},
+          "matchesWithErrors": 0,
+          "errorLines": 0
+        }
+      ],
+      "pinsPath": "replays/willow-prism-bank-economy-bundle-v30/batch-run-04-release-seed-2026102314/pins-after.json",
+      "pinsSha256": "f5cd7282c433627ad8a1634c98776328d8a381cb92f38cde551602c8fbe4c577",
+      "sourceHashesRecheckedAfterRun": true,
+      "setupAnomalies": []
+    }
+  ],
+  "qualificationSummary": {
+    "games": 1616,
+    "winsByStableBotIndex": [
+      808,
+      808
+    ],
+    "ties": 0,
+    "runnerErrors": 0,
+    "nativePlayRolloverByBot": [
+      6020,
+      6249
+    ],
+    "nativePlayBotErrorsByBot": [
+      0,
+      0
+    ],
+    "caughtActErrorCountsByBot": {
+      "Khaos_v31": {
+        "5": 3,
+        "98": 2
+      },
+      "Khaos_v30": {
+        "98": 1
+      }
+    },
+    "notes": [
+      "Bot index 0 is the a279 candidate; bot index 1 is the frozen Khaos_v30 reference.",
+      "Counts are reconstructed from these four a279-vs-Khaos_v30 result/native/caught audits, not copied from Khaos_v30 release metadata.",
+      "Heldout seed 2026102314 was generated before results were inspected.",
+      "Caught act errors are separate from native play status.",
+      "The gen1023 setup has a stale redundant batch field (its output/command and result/pins point to the actual bank-economy-bundle-v30 batch); the gen-s1 setup has a stale redundant bots array (candidate/reference fields, source pins and result paths are correct). Both are explicitly recorded per stage."
+    ]
+  },
+  "build": {
+    "status": "success",
+    "command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc build bots/Khaos_v31 --release --output provenance/Khaos_v31-release/Khaos_v31-release.wasm",
+    "mode": "Release",
+    "cliPath": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "cliVersion": "cambc 3.0.5",
+    "cliSha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "enginePath": "tools/replay/engine/v1_0_3.wasm",
+    "engineSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "rawWasmPath": "bots/Khaos_v31/.cambc/build-release/bot.wasm",
+    "rawWasmSha256": "926b82ad01addb4d7e297bc610bef6ee696f286ea3764f354b16f3c02bcced32",
+    "injectedWasmPath": "bots/Khaos_v31/.cambc/build-release/bot-injected.wasm",
+    "injectedWasmSha256": "1c57fb1878b4c6eb03cf475bc116c521097b575a8134621a4e00a46866d2be91",
+    "stableOutputPath": "provenance/Khaos_v31-release/Khaos_v31-release.wasm",
+    "stableOutputSha256": "1c57fb1878b4c6eb03cf475bc116c521097b575a8134621a4e00a46866d2be91",
+    "qualifiedCandidateRawWasmSha256": "926b82ad01addb4d7e297bc610bef6ee696f286ea3764f354b16f3c02bcced32",
+    "qualifiedCandidateInjectedWasmSha256": "1c57fb1878b4c6eb03cf475bc116c521097b575a8134621a4e00a46866d2be91",
+    "rawWasmByteIdentityWithQualifiedCandidate": true,
+    "injectedWasmByteIdentityWithQualifiedCandidate": true
+  },
+  "bundle": {
+    "status": "success",
+    "command": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc bundle bots/Khaos_v31 --output provenance/Khaos_v31-release/Khaos_v31-cli-3.0.5.bundle.zip",
+    "path": "provenance/Khaos_v31-release/Khaos_v31-cli-3.0.5.bundle.zip",
+    "sha256": "696249dfa82302b0f011e17449f7962dfa534628265b7d324902dffbb8b201cc",
+    "bytes": 222187,
+    "entryCount": 30,
+    "srcOnly": true,
+    "entriesByteIdenticalToSource": true,
+    "mismatches": [],
+    "cliVersion": "cambc 3.0.5",
+    "cliSha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "submissionPreparation": {
+    "status": "awaiting_root_submission",
+    "submissionAuthorized": true,
+    "authorization": "Root approved Khaos_v31 submission; no upload has occurred yet."
+  },
+  "limitations": [
+    "No fresh authenticated-team lookup recorded for this package.",
+    "The bundle is locally validated; no remote upload has occurred."
+  ]
+}

@@ -5,6 +5,7 @@
 #include <deque>
 #include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 #include "champions.h"
 #include "combat_priority.h"
@@ -138,6 +139,13 @@ struct StaticMap {
     int altar_at(vec2 p) const { return in_bounds(p) ? static_cast<int>(altar_lookup_[tile_index(p)]) - 1 : -1; }
     // Groups with a camp tile within `radius`, seen or not; a scratch vector, valid until the next call.
     const std::vector<int>& groups_near(vec2 p, int radius) const;
+    struct StationCampMember {
+        std::size_t group, member;
+        int depth;
+    };
+    // Static Willow station contributors at p, in groups_near/group-member order. Consume the span
+    // before asking for another tile; later cache misses may grow its backing pool.
+    std::span<const StationCampMember> willow_station_members_near(vec2 p) const;
 
     // Walking steps over static terrain (camps and units ignored).
     const Field& from_ally_spawn() const { return ally_field_ ? *ally_field_ : make_ally_field(); }
@@ -175,6 +183,15 @@ struct StaticMap {
     bitboard drafted_attack_tiles(int group, int member, int range) const;
 
 private:
+    struct StationCampMemberRange {
+        std::size_t offset = 0, count = 0;
+        bool ready = false;
+    };
+    struct StationCampMemberPage {
+        std::array<StationCampMemberRange, 8 * 8> ranges{};
+    };
+    mutable std::vector<std::unique_ptr<StationCampMemberPage>> willow_station_member_pages_;
+    mutable std::vector<StationCampMember> willow_station_member_pool_;
     const DraftPlan* plan_ = nullptr; // matching this map
     mutable std::vector<int> attack_bit_; // per drafted group: its members' first bit in plan_->data
     int drafted_steps(int group, int which) const;

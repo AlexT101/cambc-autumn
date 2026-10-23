@@ -1,0 +1,50 @@
+{
+  "schema": "qualification-rollover-reconciliation/v1",
+  "prebuildPinsPath": "provenance/Khaos_v31-release/prebuild-pins.json",
+  "prebuildPinsPreviousSha256": "21508f8c8c1ca1333f65b72c5f38ecc74bf56d12bc7ce2bcab2b513640e834b8",
+  "preservedPrevious": "provenance/Khaos_v31-release/prebuild-pins.reported-rollovers.json",
+  "preservedPreviousSha256": "21508f8c8c1ca1333f65b72c5f38ecc74bf56d12bc7ce2bcab2b513640e834b8",
+  "originalReportedRollovers": [
+    6025,
+    6304
+  ],
+  "recomputedFromAudits": [
+    6020,
+    6249
+  ],
+  "evidence": [
+    {
+      "path": "replays/willow-prism-bank-economy-bundle-v30/batch-run-01-release-published40/native-status-compact.json",
+      "sha256": "163219cdf06da0dc3f3ebac4bebf95eec7013586f09f768d06b12ba5fcc24677",
+      "rollovers": [
+        500,
+        545
+      ]
+    },
+    {
+      "path": "replays/willow-prism-bank-economy-bundle-v30/batch-run-02-release-gen1023/native-status-compact.json",
+      "sha256": "d20c1b50dd314eee8fa4fa4035ba661958d425f1ea889a7c280e549dc3bdca2d",
+      "rollovers": [
+        2101,
+        2138
+      ]
+    },
+    {
+      "path": "replays/willow-prism-bank-economy-bundle-v30/batch-run-03-release-gen-s1-1024/native-status-compact.json",
+      "sha256": "6d771b3f679213e041ba0a1f86f27238864d760cd7b3698680edec65528d4e04",
+      "rollovers": [
+        1757,
+        1802
+      ]
+    },
+    {
+      "path": "replays/willow-prism-bank-economy-bundle-v30/batch-run-04-release-seed-2026102314/native-status-compact.json",
+      "sha256": "02fd3446873887d5e23e35d19fc5d10473a755bbccb81f57a6fb8186c73d29a0",
+      "rollovers": [
+        1662,
+        1764
+      ]
+    }
+  ],
+  "note": "No source, match, result, or native audit artifact changed."
+}

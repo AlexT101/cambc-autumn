@@ -1,0 +1,28 @@
+{
+  "schema": "prebuild-pins-correction/v1",
+  "target": "provenance/Khaos_v31-release/prebuild-pins.json",
+  "originalSha256": "db0b91c9fe69ead06a1234f9fb904f27ca87077ee8cbdacaf47b82036e7fef6c",
+  "preservedOriginal": "provenance/Khaos_v31-release/prebuild-pins.pre-caught-reference-correction.json",
+  "preservedOriginalSha256": "db0b91c9fe69ead06a1234f9fb904f27ca87077ee8cbdacaf47b82036e7fef6c",
+  "correctedSha256": "c5f6815b8cb3572b33d4213804255c6bbb5e1b1793f435f463e53c54d470577f",
+  "oldCaughtActErrorsByBot": {
+    "candidate": {
+      "5": 3,
+      "98": 2
+    },
+    "reference": {
+      "97": 88,
+      "98": 1
+    }
+  },
+  "newCaughtActErrorsByBot": {
+    "candidate": {
+      "5": 3,
+      "98": 2
+    },
+    "reference": {
+      "98": 1
+    }
+  },
+  "evidence": "provenance/Khaos_v31-release/manifest-field-correction.json; four actual a279-vs-Khaos_v30 caught-act-errors.json audits"
+}
