@@ -4490,10 +4490,12 @@ bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const
     world.throw_if_stale();
     if (best == here) return false;
     // Equal-distance banking may spend one progress turn for a heal available after this step.
-    const bool moved = pathing.try_move(best);
-    see_again(world, pathing, safety);
-    world.throw_if_stale();
-    if (!moved) return false;
+    if (!pathing.try_move(best)) {
+        see_again(world, pathing, safety); // a hidden unit refused it, unseen by see_revealed
+        world.throw_if_stale();
+        return false;
+    }
+    see_revealed(world, pathing, safety);
     heal_ally(world);
     return true;
 }
@@ -4541,14 +4543,14 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
         std::printf("WIH %d %u from %d,%d to %d,%d basic %.1f\n", world.round,
             static_cast<std::uint32_t>(world.me().handle), here.x, here.y, best.x, best.y, basic);
     });
-    const bool moved = pathing.try_move(best);
-    if (moved) support_owned = true;
-    see_again(world, pathing, safety);
-    world.throw_if_stale();
-    if (!moved) {
+    if (!pathing.try_move(best)) {
+        see_again(world, pathing, safety); // a hidden unit refused it, unseen by see_revealed
+        world.throw_if_stale();
         support_retreat = !support_exposure(world, safety, my_position()).safe();
         return false;
     }
+    support_owned = true;
+    see_revealed(world, pathing, safety);
     const bool healed = heal_ally(world);
     debug_block({ std::printf("WIH-DONE %d %u moved 1 healed %d\n", world.round,
         static_cast<std::uint32_t>(world.me().handle), healed); });
@@ -4738,7 +4740,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
             return false;
         }
         commit_support();
-        see_again(world, pathing, safety);
+        see_revealed(world, pathing, safety);
         if (!support_exposure(world, safety, my_position()).safe()) {
             support_owned = true;
             memory.claim = -1;
