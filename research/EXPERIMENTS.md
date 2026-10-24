@@ -1743,3 +1743,16 @@ failures. Gemfight has four picks and no Willow; the other maps have five picks.
 stationary tier is not instrumented, so outcomes do not establish activation. Extractor v2
 reports one remaining derived-earnedGold soft note on Boss A; outcomes and native round
 states do not depend on that derived total. No canonical promotion or release claim.
+
+### Focus policy port to current upstream
+
+Isolated `ae18438d` ports the exact five-line one-BruiserFocus policy from `1657a09c` onto
+canonical `4db4eecb`. Its full best_emblem function matches the older arm; begun partials,
+Treasure and first completed protection still precede one fresh Bruiser Strength-to-Focus
+exchange. The actual Focus value and price are returned. Full 29-file source snapshots,
+manifests and exact patch are under `provenance/willow-one-bruiser-focus-c71-20261023-v1/`.
+No Health/protection-first policy, demand gate or invented healing-to-DPS utility is bundled.
+Runtime is pending and canonical remains unchanged. Check qualifying purchases before
+a broad comparison; native five-pick results must be reported alongside the whole panel.
+See `willow-demand-informed-focus-next-step.md`: current heal demand alone does not measure
+extra Focus benefit, and a higher heal cap also changes the existing cast threshold.
