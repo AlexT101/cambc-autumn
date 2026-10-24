@@ -1,0 +1,230 @@
+{
+  "schema": "native-turn-status-audit/v1",
+  "batch": "provenance/mite-history-refresh-20261024-v3/qualification/audit",
+  "batch_results_sha256": "cfff5a422af18364afdefc9770b0f5f201d71f636aa3407e6801c8e33fa307a3",
+  "release": null,
+  "games": 1,
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "snapshot_mode": "v1_0_3_compact_timeline",
+  "compact_timeline_pin": {
+    "version": "v1_0_3",
+    "wasmSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "officialDecoderSha256": "960affde6198366d2347bd21f43efec5bc06acc6cb0c53e5f7f96dbf87f027e6",
+    "visualizerBundleSha256": "b80358b2189444187c38880ee7218d84b4a013a1b379b93470659c4c6b2c4a24",
+    "snapshotSize": 40152
+  },
+  "source_pins": null,
+  "bots": [
+    {
+      "bot": "Mite-Ladder-A",
+      "bot_index": 0,
+      "games": 1,
+      "play": {
+        "rollover": 343,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    },
+    {
+      "bot": "Mite-Ladder-B",
+      "bot_index": 1,
+      "games": 1,
+      "play": {
+        "rollover": 51,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    }
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "replay": "provenance/mite-history-refresh-20261024-v3/qualification/big-world-B-loss-67f9d74a.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "2339d497b20811479e313fb03708ba8b89f90eb14789bd235b5f1f17197c500a",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01big-world.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "Mite-Ladder-A",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "Mite-Ladder-B",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 394,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "Mite-Ladder-A",
+            "bot_index": 0,
+            "play": {
+              "rollover": 343,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 71,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 63,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 66,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 67,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 76,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "Mite-Ladder-B",
+            "bot_index": 1,
+            "play": {
+              "rollover": 51,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 8,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 11,
+                  "bot_error": 0
+                }
+              },
+              "7": {
+                "actor_kind": 1,
+                "actor_index": 7,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 15,
+                  "bot_error": 0
+                }
+              },
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 6,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 11,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "notes": "Counts are native replay step kinds 26 (Turn rollover/fuel) and 27 (Bot error), classified by step.phase: 10 play, 12 draft, all remaining phases under other. For play statuses, physical team comes from the actor champion record in the same snapshot, not header.team; champion buckets use native actor kind/index. Snapshot mode is the pinned v1_0_3 compact timeline reader; the auditor does not extract events or metrics. Source pins are copied from results.json or adjacent economic-capture-summary.json when available. The input is a saved historical ladder replay; local Release/debug mode is not encoded in the replay. The audit tool emits a boolean release flag based on the synthetic one-replay batch results, so this compact receipt corrects that field to null (unknown); no replay decode was rerun.",
+  "historical_runtime_mode": "unknown"
+}

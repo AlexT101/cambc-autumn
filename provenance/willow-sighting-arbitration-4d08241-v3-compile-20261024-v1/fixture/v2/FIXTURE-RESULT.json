@@ -1,0 +1,86 @@
+{
+  "schema": "willow-sighting-arbitration-production-protocol-fixture/v2",
+  "status": "pass",
+  "scenario_count": 13,
+  "source_scope": {
+    "path": "bots/variants/willow-sighting-arbitration-4d08241-work/src/comms.cpp",
+    "sha256": "c048d09fd718e21b3d46258533d157ee4a196d40a20e037444ae2bfac9a1b77a",
+    "normalized_src_relative_aggregate_sha256": "a439a6c2d1d1d2ef1004f3a463b243d1f48d2daa65eada801d83f55c5c17a2df",
+    "extracted_production_slice_sha256": "300a0ead794aac760eee55f0122f7975cabe803cb757b3f637e80d69d12168c0",
+    "extraction": "Exact source from namespace aph::comms through immediately before void bag(int gems), unchanged; source-bound functions are compiled and run against thin host mocks."
+  },
+  "fixture_code": {
+    "runner_path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v2/production_protocol_fixture.py",
+    "runner_sha256": "2f635399cf7b776e6b25bb64f981109c36346b9bd0cdd4f7c4f905a68ecfa117",
+    "generated_cpp_path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v2/production_protocol_fixture.cpp",
+    "generated_cpp_sha256": "48ee527d06f2ca930bb636d6dfa40c74b40201d78e2d13a4f710980f26c5e66f",
+    "generated_cpp_bytes": 30038,
+    "compiler": "Apple clang 17, clang++ -std=c++20 -O0 -Wall -Wextra -Werror=return-type",
+    "host_binary_sha256": "1a62adbe420dac55b9ce77278779d51cdc0ad073722ff03712bf05b1fbd5ab19",
+    "host_binary_excluded_from_compact_manifest": true,
+    "historical_runner_pin_note": "The archived v2 runner was reconstructed from v1 plus the v2 changes after its original working copy was superseded; it reproduces the archived v2 generated C++ byte-for-byte and passes the 13 v2 scenarios."
+  },
+  "scenarios": [
+    {
+      "name": "round-765-positive-replacement",
+      "result": "pass",
+      "details": "Fixture Vesper uses actual basic attack range 3 plus ready dash bonus 2 plus three pursuit steps; contact is Chebyshev distance 6. Replacement sets the marker without advancing ordinary generation and preserves newly fresh unrelated bag/camp/claim fields."
+    },
+    {
+      "name": "second-replacement-marker",
+      "result": "pass",
+      "details": "After first replacement, fixture moves the sender away and exposes a different current, otherwise eligible contact; second same-round send leaves bits unchanged, so the marker\u2014not identical-payload equality\u2014blocks another replacement."
+    },
+    {
+      "name": "moved-without-refresh",
+      "result": "pass"
+    },
+    {
+      "name": "unmoved-cached-candidate",
+      "result": "pass"
+    },
+    {
+      "name": "normal-publication-freshness-and-wrap",
+      "result": "pass",
+      "details": "Exact production writer helper and expect/receive recognize same contact across alternating parity, generation wraps after four. Additional normal-write scenario exercises send() publishing unchanged visible contact on consecutive turns."
+    },
+    {
+      "name": "missed-turn-expect-receive-alias",
+      "result": "pass"
+    },
+    {
+      "name": "nonconsecutive-send-marker-0",
+      "result": "pass",
+      "details": "After a missed-turn gap, send() does not mutate stale current-parity contact/generation; next healthy consecutive turn publishes and advances generation."
+    },
+    {
+      "name": "nonconsecutive-send-marker-1",
+      "result": "pass",
+      "details": "Same no-refresh assertion with replacement marker already set."
+    },
+    {
+      "name": "protected-and-ineligible",
+      "result": "pass",
+      "cases": [
+        "tribute channel",
+        "teleport channel",
+        "winning-gem threshold",
+        "nonlocal candidate",
+        "stale candidate stats"
+      ]
+    }
+  ],
+  "limitations": [
+    "Thin mocks model World, shared memory, visible records, and actor observations; no WASI/native SDK integration or real engine scheduling.",
+    "The fixture exercises production functions but not caller-side dispatch.",
+    "No match-strength or fuel claim."
+  ],
+  "compiler_warnings": [
+    "Two harmless unused mock constants: capture_time and cambc::error_code::ok."
+  ],
+  "supersedes_v1": {
+    "receipt_sha256": "f64bec0e9515713189e472d5956b49fd3c473e2bb4f722d7745e146df65006f8",
+    "generated_cpp_sha256": "0cb6823e567dcfcfad99c4ff21d0da906ca256c3a06016b1ac26d5e670f0d15e",
+    "v1_archive": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v1"
+  }
+}

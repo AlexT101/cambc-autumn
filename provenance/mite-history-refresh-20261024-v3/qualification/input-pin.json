@@ -1,0 +1,17 @@
+{
+  "schema": "mite-history-replay-input/v1",
+  "source_zip": {
+    "path": "provenance/mite-history-refresh-20261024-v3/big-world-B-loss-67f9d74a.zip",
+    "bytes": 27848,
+    "sha256": "1ae89813d8134d1f3ddc416457e325d01205f9d8bdaabf56edf916a77043736e"
+  },
+  "inner_replay": {
+    "path": "provenance/mite-history-refresh-20261024-v3/qualification/big-world-B-loss-67f9d74a.repl26a",
+    "bytes": 169695,
+    "sha256": "2339d497b20811479e313fb03708ba8b89f90eb14789bd235b5f1f17197c500a"
+  },
+  "archive_members": [
+    "replay.repl26a"
+  ],
+  "note": "Expanded only the saved replay payload; no actor-window extraction."
+}

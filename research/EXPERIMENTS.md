@@ -2829,3 +2829,35 @@ open-goal signature under fixed walls, not the selected exit; a home field must
 be keyed by exact exit, since two groups can yield more than two endpoints.
 See `willow-phased-boss-route-cache-design-20261024-v1.md`. No optimization or
 measured saving is claimed at this checkpoint.
+
+The communications fixture is now independently reviewed through revision 3.
+It uses the real Vesper geometry, explicitly seeds an unchanged aliased record
+with zero freshness before a missed-reader send, and challenges the replacement
+marker with a changed same-enemy native payload. Thirteen scenarios pass. Each
+of two test-only guard removals fails its intended assertion; production source
+is unchanged. Earlier inadequate fixture revisions and their reviews remain
+preserved. This closes the three targeted host-test gaps, not native scheduling
+or strength validation.
+
+The newly decoded Mite Big World B loss ends 1,009–614 at round 906. It has no
+champion combat damage, no damage to either Monolith, and no boss capture.
+Captured gems are 1,049 versus 692; endpoint bags are 40 versus 78. The 357-gem
+capture deficit plus 38 extra unbanked gems explains the 395-point loss. The
+winning side repeatedly converts ordinary groups that Mite scarcely uses,
+including pure gems, and completes 20 teleports versus none for Mite. That is
+an observed routing/economic difference, not an isolated teleport effect or
+proof of source identity. Mite has 51 native play rollovers, its opponent 343,
+and neither has native bot errors. This replay does not repeat the earlier
+two-visit boss mechanism.
+
+A separate audit of the existing exact latest-parent Big World B control finds
+a different failure. Its actual score is 1,110–474 at round 780; earlier root
+shorthand mixed the opponent score with the candidate game. The bundle hash is
+`15a703f86fd6cbf7ca9b14fddc9136f2100bc5afce87520905b274c82cbe670c`,
+while its inner payload remains the recorded `0022ca3c...`. Captures are only
+828 versus 756, but enemy kills transfer 21 gems from HoR and 261 from Prism;
+both stolen bags are banked. The final 636-point gap equals the 72-gem capture
+gap plus twice the 282 transferred gems. Prism cancels a Home recall with one
+turn left at 738 before dying at 744. One bounded actor-known view, Prism5
+rounds 735–744, is nominated to establish the information available at that
+cancellation before changing recall or banking policy.

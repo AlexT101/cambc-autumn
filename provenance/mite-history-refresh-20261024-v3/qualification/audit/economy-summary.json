@@ -1,0 +1,466 @@
+{
+  "schema": "mite-replay-compact-economy/v1",
+  "input_archive": "provenance/mite-history-refresh-20261024-v3/big-world-B-loss-67f9d74a.zip",
+  "archive_sha256": "1ae89813d8134d1f3ddc416457e325d01205f9d8bdaabf56edf916a77043736e",
+  "input_replay": "provenance/mite-history-refresh-20261024-v3/qualification/big-world-B-loss-67f9d74a.repl26a",
+  "replay_sha256": "2339d497b20811479e313fb03708ba8b89f90eb14789bd235b5f1f17197c500a",
+  "map": "maps/01big-world.map26a",
+  "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "native_audit": "provenance/mite-history-refresh-20261024-v3/qualification/audit/native-status.json",
+  "native_audit_sha256": "ce61bde85d19e8ff754c69b7ebe8182fece8afeaed7f00773740ce73cd7df5e6",
+  "status": {
+    "winner": "A",
+    "rounds": 906,
+    "team_gems": [
+      1009,
+      614
+    ],
+    "winner_side": "A",
+    "soft_faults_by_side": [
+      1,
+      0
+    ],
+    "team_B_native_play_rollovers": 51,
+    "team_B_native_play_errors": 0,
+    "team_A_native_play_rollovers": 343,
+    "team_A_native_play_errors": 0,
+    "draft_rollovers_or_errors": 0,
+    "source_mode": "historical saved ladder replay; local Release/debug mode not known"
+  },
+  "events": {
+    "counts": {
+      "group_clear": 84,
+      "capture_hold": 84,
+      "capture": 82,
+      "tribute_start": 36,
+      "tribute_end": 36
+    },
+    "team_B_captures": 36,
+    "team_A_captures": 46,
+    "team_B_capture_share_gems": 692,
+    "team_B_capture_share_gold": 5749,
+    "team_B_completed_tributes": 22,
+    "team_B_tribute_gems": 614,
+    "team_B_tribute_gold": 328
+  },
+  "team_B_champions": [
+    {
+      "id": 5,
+      "name": "Vesper Vale",
+      "deaths": 0,
+      "gems_collected": 57,
+      "gems_submitted": 57,
+      "capture_share_records": 7,
+      "capture_gems_share": 57,
+      "capture_gold_share": 731,
+      "tribute_starts": 3,
+      "tribute_completions": 3,
+      "tribute_gems_from_completed": 57,
+      "tribute_gold_from_completed": 0,
+      "earned_gold": 731,
+      "spent_gold": 590,
+      "unspent_gold": 141,
+      "monster_damage": 21515.20001220703,
+      "items": [
+        {
+          "id": 0,
+          "name": "Monster Shard of Strength",
+          "count": 5
+        },
+        {
+          "id": 1,
+          "name": "Monster Emblem of Strength",
+          "count": 1
+        },
+        {
+          "id": 6,
+          "name": "Power Shard of Strength",
+          "count": 5
+        },
+        {
+          "id": 7,
+          "name": "Power Emblem of Strength",
+          "count": 1
+        },
+        {
+          "id": 16,
+          "name": "Durability Shard of Health",
+          "count": 5
+        },
+        {
+          "id": 17,
+          "name": "Durability Emblem of Health",
+          "count": 1
+        },
+        {
+          "id": 28,
+          "name": "Jungle Shard of Health",
+          "count": 4
+        }
+      ],
+      "consumables": [
+        {
+          "id": 0,
+          "name": "Teleport crystal",
+          "count": 1
+        },
+        {
+          "id": 2,
+          "name": "Altar lock",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Vendetta",
+      "deaths": 0,
+      "gems_collected": 280,
+      "gems_submitted": 202,
+      "capture_share_records": 10,
+      "capture_gems_share": 280,
+      "capture_gold_share": 2036,
+      "tribute_starts": 6,
+      "tribute_completions": 6,
+      "tribute_gems_from_completed": 202,
+      "tribute_gold_from_completed": 0,
+      "earned_gold": 2036,
+      "spent_gold": 2030,
+      "unspent_gold": 6,
+      "monster_damage": 35544.2000579834,
+      "items": [
+        {
+          "id": 0,
+          "name": "Monster Shard of Strength",
+          "count": 5
+        },
+        {
+          "id": 1,
+          "name": "Monster Emblem of Strength",
+          "count": 1
+        },
+        {
+          "id": 12,
+          "name": "Durability Shard of Strength",
+          "count": 5
+        },
+        {
+          "id": 13,
+          "name": "Durability Emblem of Strength",
+          "count": 1
+        },
+        {
+          "id": 18,
+          "name": "Treasure Shard of Strength",
+          "count": 5
+        },
+        {
+          "id": 19,
+          "name": "Treasure Emblem of Strength",
+          "count": 1
+        },
+        {
+          "id": 24,
+          "name": "Jungle Shard of Strength",
+          "count": 5
+        },
+        {
+          "id": 25,
+          "name": "Jungle Emblem of Strength",
+          "count": 1
+        },
+        {
+          "id": 36,
+          "name": "Bruiser Shard of Strength",
+          "count": 25
+        },
+        {
+          "id": 37,
+          "name": "Bruiser Emblem of Strength",
+          "count": 5
+        },
+        {
+          "id": 40,
+          "name": "Bruiser Shard of Health",
+          "count": 22
+        },
+        {
+          "id": 41,
+          "name": "Bruiser Emblem of Health",
+          "count": 4
+        }
+      ],
+      "consumables": [
+        {
+          "id": 0,
+          "name": "Teleport crystal",
+          "count": 1
+        },
+        {
+          "id": 2,
+          "name": "Altar lock",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Ryth",
+      "deaths": 1,
+      "gems_collected": 139,
+      "gems_submitted": 139,
+      "capture_share_records": 6,
+      "capture_gems_share": 139,
+      "capture_gold_share": 1042,
+      "tribute_starts": 5,
+      "tribute_completions": 5,
+      "tribute_gems_from_completed": 139,
+      "tribute_gold_from_completed": 0,
+      "earned_gold": 1042,
+      "spent_gold": 1040,
+      "unspent_gold": 2,
+      "monster_damage": 25052.60009765625,
+      "items": [
+        {
+          "id": 0,
+          "name": "Monster Shard of Strength",
+          "count": 5
+        },
+        {
+          "id": 1,
+          "name": "Monster Emblem of Strength",
+          "count": 1
+        },
+        {
+          "id": 16,
+          "name": "Durability Shard of Health",
+          "count": 5
+        },
+        {
+          "id": 17,
+          "name": "Durability Emblem of Health",
+          "count": 1
+        },
+        {
+          "id": 22,
+          "name": "Treasure Shard of Health",
+          "count": 5
+        },
+        {
+          "id": 23,
+          "name": "Treasure Emblem of Health",
+          "count": 1
+        },
+        {
+          "id": 24,
+          "name": "Jungle Shard of Strength",
+          "count": 5
+        },
+        {
+          "id": 25,
+          "name": "Jungle Emblem of Strength",
+          "count": 1
+        },
+        {
+          "id": 36,
+          "name": "Bruiser Shard of Strength",
+          "count": 5
+        },
+        {
+          "id": 37,
+          "name": "Bruiser Emblem of Strength",
+          "count": 1
+        },
+        {
+          "id": 40,
+          "name": "Bruiser Shard of Health",
+          "count": 9
+        },
+        {
+          "id": 41,
+          "name": "Bruiser Emblem of Health",
+          "count": 1
+        }
+      ],
+      "consumables": [
+        {
+          "id": 0,
+          "name": "Teleport crystal",
+          "count": 1
+        },
+        {
+          "id": 2,
+          "name": "Altar lock",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Tavi",
+      "deaths": 0,
+      "gems_collected": 76,
+      "gems_submitted": 76,
+      "capture_share_records": 9,
+      "capture_gems_share": 76,
+      "capture_gold_share": 800,
+      "tribute_starts": 2,
+      "tribute_completions": 2,
+      "tribute_gems_from_completed": 76,
+      "tribute_gold_from_completed": 0,
+      "earned_gold": 800,
+      "spent_gold": 800,
+      "unspent_gold": 0,
+      "monster_damage": 22799.10009765625,
+      "items": [
+        {
+          "id": 0,
+          "name": "Monster Shard of Strength",
+          "count": 5
+        },
+        {
+          "id": 1,
+          "name": "Monster Emblem of Strength",
+          "count": 1
+        },
+        {
+          "id": 16,
+          "name": "Durability Shard of Health",
+          "count": 5
+        },
+        {
+          "id": 17,
+          "name": "Durability Emblem of Health",
+          "count": 1
+        },
+        {
+          "id": 36,
+          "name": "Bruiser Shard of Strength",
+          "count": 15
+        },
+        {
+          "id": 37,
+          "name": "Bruiser Emblem of Strength",
+          "count": 3
+        },
+        {
+          "id": 40,
+          "name": "Bruiser Shard of Health",
+          "count": 1
+        }
+      ],
+      "consumables": [
+        {
+          "id": 0,
+          "name": "Teleport crystal",
+          "count": 1
+        },
+        {
+          "id": 2,
+          "name": "Altar lock",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Marcella",
+      "deaths": 0,
+      "gems_collected": 140,
+      "gems_submitted": 140,
+      "capture_share_records": 8,
+      "capture_gems_share": 140,
+      "capture_gold_share": 1140,
+      "tribute_starts": 6,
+      "tribute_completions": 6,
+      "tribute_gems_from_completed": 140,
+      "tribute_gold_from_completed": 328,
+      "earned_gold": 1468,
+      "spent_gold": 1370,
+      "unspent_gold": 98,
+      "monster_damage": 21876.899658203125,
+      "items": [
+        {
+          "id": 2,
+          "name": "Monster Shard of Focus",
+          "count": 5
+        },
+        {
+          "id": 3,
+          "name": "Monster Emblem of Focus",
+          "count": 1
+        },
+        {
+          "id": 8,
+          "name": "Power Shard of Focus",
+          "count": 20
+        },
+        {
+          "id": 9,
+          "name": "Power Emblem of Focus",
+          "count": 4
+        },
+        {
+          "id": 16,
+          "name": "Durability Shard of Health",
+          "count": 5
+        },
+        {
+          "id": 17,
+          "name": "Durability Emblem of Health",
+          "count": 1
+        },
+        {
+          "id": 20,
+          "name": "Treasure Shard of Focus",
+          "count": 5
+        },
+        {
+          "id": 21,
+          "name": "Treasure Emblem of Focus",
+          "count": 1
+        },
+        {
+          "id": 26,
+          "name": "Jungle Shard of Focus",
+          "count": 5
+        },
+        {
+          "id": 27,
+          "name": "Jungle Emblem of Focus",
+          "count": 1
+        },
+        {
+          "id": 40,
+          "name": "Bruiser Shard of Health",
+          "count": 5
+        },
+        {
+          "id": 41,
+          "name": "Bruiser Emblem of Health",
+          "count": 1
+        }
+      ],
+      "consumables": [
+        {
+          "id": 0,
+          "name": "Teleport crystal",
+          "count": 1
+        },
+        {
+          "id": 2,
+          "name": "Altar lock",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

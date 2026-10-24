@@ -1,0 +1,21 @@
+{
+  "bots": [
+    "Mite-Ladder-A",
+    "Mite-Ladder-B"
+  ],
+  "scheduled": 1,
+  "completed": 1,
+  "errors": 0,
+  "release": null,
+  "matches": [
+    {
+      "index": 0,
+      "order": [
+        0,
+        1
+      ],
+      "map": "maps/01big-world.map26a",
+      "replay": "provenance/mite-history-refresh-20261024-v3/qualification/big-world-B-loss-67f9d74a.repl26a"
+    }
+  ]
+}

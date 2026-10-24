@@ -1,0 +1,39 @@
+--- a/src/phased_boss.inc
++++ b/src/phased_boss.inc
+@@ -27,6 +27,7 @@
+     bool walls_ready = false;
+     std::unique_ptr<Field> home, altar;
+     std::uint64_t altar_key = 0;
++    bool altar_active = false;
+     BossPlan forecast;
+     BossPlan quote;
+     int cold_round = -1, quote_cursor = 0, rejected = -1;
+@@ -279,7 +280,10 @@
+         if (r.cold_round == world.round) return false;
+         r.cold_round = world.round;
+         r.group = p.group, r.exit = p.exit;
+-        r.home.reset(), r.altar.reset();
++        r.home.reset();
++        // Physical altar storage is reusable across route switches, but it is
++        // not logically active until this route reaches the altar stage below.
++        r.altar_active = false;
+         // Public static geometry only: these fields never refresh remote camp state.
+         if (!boss_transit_tile(world, p.exit)) return false;
+         r.home = std::make_unique<Field>(make_field(r.walls, single(p.exit)));
+@@ -304,6 +308,7 @@
+         r.altar_key = key;
+         r.altar = std::make_unique<Field>(make_field(r.walls, goals));
+     }
++    r.altar_active = true;
+     p.bank = r.altar->at(p.exit);
+     world.throw_if_stale();
+     return p.bank != unreachable && p.bank <= 256;
+@@ -838,7 +843,7 @@
+     if (j.phase != boss_return || !j.healed || j.group < 0 || world.round >= j.expires
+         || !boss_enemy_safe(world, safety, my_position())) return false;
+     auto& r = boss_routes();
+-    if (r.group != j.group || !r.home || !r.altar) return false;
++    if (r.group != j.group || !r.home || !r.altar_active) return false;
+     if (dist(my_position(), world.map().groups[j.group].members[j.member].pos) <= 2) return false;
+     const int local = dist(my_position(), j.station);
+     const bool corridor = local <= j.corridor && my_position() == j.station + j.ray * local;

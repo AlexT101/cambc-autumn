@@ -1,0 +1,163 @@
+{
+  "schema": "willow-sighting-arbitration-v3-compile-preservation-manifest/v1",
+  "scope": "Source/build and compact fixture receipts only; no games. Raw wasm stays in runtime workspace and is pinned in build-result.json. Generated fixture C++ and executable are retained locally but excluded from the compact manifest.",
+  "files": [
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/preflight.json",
+      "bytes": 1367,
+      "sha256": "a6578ee4b9799e4ac58c07ef497d8457f9f4a4e21962fb218d797b22ee88420c"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/build-result.json",
+      "bytes": 1963,
+      "sha256": "8a9716a3ab7db3d7bd723fcdf5c4016695e6ecc0e49500c7c251030c25c0e340"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/build.stdout.log",
+      "bytes": 4395,
+      "sha256": "931f0f8a81569f8516272fcaa0066428e1394f2d22d526505af37b7bcd4bba86"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/build.stderr.log",
+      "bytes": 180,
+      "sha256": "ec996f44c37aa3a11b8893a81d8de92ffd2349d6721210c22873430f0517e322"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/build.duty.json",
+      "bytes": 7058,
+      "sha256": "9b32631d8b4fc979ebcc25f7c3ef4c78fca848a2246d440863383d993db15691"
+    },
+    {
+      "path": "research/willow-sighting-arbitration-4d08241-source-v3.patch",
+      "bytes": 11633,
+      "sha256": "59632c96d7e62f2605ab8b42eebc1e0248990f2de80cb418802bef5ed87dbf37"
+    },
+    {
+      "path": "research/willow-sighting-arbitration-4d08241-source-checkpoint-20261024-v1.md",
+      "bytes": 7779,
+      "sha256": "e95bc3f593d2c7c1824291335c5287b35c5525d57290c9982e6ea0508483d379"
+    },
+    {
+      "path": "research/willow-sighting-arbitration-4d08241-source-review-20261024-v3.md",
+      "bytes": 5647,
+      "sha256": "0228596d588a6e725b1764011929a9f8623bfe8276337812fc8e01edbf138a21"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/production_protocol_fixture.py",
+      "bytes": 15019,
+      "sha256": "0eaf7bab47f8c74e403246bb11ea2b46ea26904dda0460d9bd2ba3166b01985f"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v1/production_protocol_fixture.py",
+      "bytes": 12851,
+      "sha256": "ab620976a5e6ac61c0e73bfee10cb038073aa30898a42926bc2ff1d39a4fd51a"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v1/production_protocol_fixture.cpp",
+      "bytes": 28075,
+      "sha256": "0cb6823e567dcfcfad99c4ff21d0da906ca256c3a06016b1ac26d5e670f0d15e"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v1/FIXTURE-RESULT.json",
+      "bytes": 3826,
+      "sha256": "f64bec0e9515713189e472d5956b49fd3c473e2bb4f722d7745e146df65006f8"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v1/FIXTURE-RESULT.md",
+      "bytes": 1192,
+      "sha256": "a9f64650d4f792fe4ca27c0160493549a015ac801730d3af5dac55d4e884da00"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/FIXTURE-RESULT.md",
+      "bytes": 1844,
+      "sha256": "c78f0f779d5a1e6dd6219961736e1d667bd4e61db2d326601ba3058bb3e756f6"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/production_protocol_fixture.py",
+      "bytes": 15019,
+      "sha256": "d0d126c1008b821c25e93429199d94bc791b610097cffafa5efecfae60c7d8cd"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/production_protocol_fixture.cpp",
+      "bytes": 30200,
+      "sha256": "f28e3a296b2fa79d866c56f5d91a8b3982b9ed29f93262921d2b05a1584223fe"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/guard_sensitivity.py",
+      "bytes": 2407,
+      "sha256": "25dc3a2a0f37bcec3dd1b6ac6e0dba5102b45023ad5ab1a10e07ea4d80c4f6b3"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/sensitivity/RESULT.json",
+      "bytes": 1667,
+      "sha256": "b0b3b0d9b2a697348397d5dc5ad5cf4f37669bc2be09d101018888b60c19e23c"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/sensitivity/same-round-replacement-marker.run.log",
+      "bytes": 71,
+      "sha256": "a51b64514db35fb61a8ee2b746175d0a4d70c1f737ec9ed6abce5680bac07b9f"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/sensitivity/nonconsecutive-publication-guard.run.log",
+      "bytes": 91,
+      "sha256": "8f3ae1e36ec478c8cdcebc6c54785945303fec103cac0bf1aa27384a22043a47"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v2/production_protocol_fixture.py",
+      "bytes": 14857,
+      "sha256": "2f635399cf7b776e6b25bb64f981109c36346b9bd0cdd4f7c4f905a68ecfa117"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v2/production_protocol_fixture.cpp",
+      "bytes": 30038,
+      "sha256": "48ee527d06f2ca930bb636d6dfa40c74b40201d78e2d13a4f710980f26c5e66f"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v2/FIXTURE-RESULT.json",
+      "bytes": 4429,
+      "sha256": "ca557aaf743a03549a61619d118784e250dedcb4b7950d4e4ec459646b7c5369"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/FIXTURE-RESULT.json",
+      "bytes": 4994,
+      "sha256": "38aac572c2ca1ea90a42ea5255d1201eb4535a8b6ba0239bac2c27b9bdba5fbb"
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/production_protocol_fixture.cpp",
+      "bytes": 28075,
+      "sha256": "0cb6823e567dcfcfad99c4ff21d0da906ca256c3a06016b1ac26d5e670f0d15e"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/production_protocol_fixture",
+      "bytes": 221976,
+      "sha256": "d575a545312f2b5ee57b883f75328a07447f58acef0c73f5eb60b9ce7a3cbca3"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/sensitivity/nonconsecutive-publication-guard.mutant.cpp",
+      "bytes": 30187,
+      "sha256": "6041edbabaa26963b880ab59096acc52da199a9836c7371f360191954148c522"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/sensitivity/same-round-replacement-marker.mutant.cpp",
+      "bytes": 30181,
+      "sha256": "16850b43152521bf12747aa2e1dd2501b1b341cbd441aa72fd3d6bf93ca54a30"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v2/production_protocol_fixture",
+      "bytes": 222168,
+      "sha256": "1a62adbe420dac55b9ce77278779d51cdc0ad073722ff03712bf05b1fbd5ab19"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/production_protocol_fixture",
+      "bytes": 222168,
+      "sha256": "582def2197bdf87ac8c2099032ff1d8bb8217a5d99bd11843cf24631e0ce4104"
+    }
+  ],
+  "prior_manifest_sha256_before_link_correction": "6d16dae06bf3273fe0201d38441d419d5c2b5347eab9dc9ba725a425117ca85c",
+  "prior_manifest_sha256_before_fixture-v2": "9296030822fcb58c863d2c59e49e0f663f006f1d48612cd550a44e7cd4ad5c47",
+  "prior_manifest_sha256_before_fixture-v3": "8a3fd464cd4aed89cf85850af9ff45f923f0b4be48c8aa5b288293df9807b66c",
+  "prior_manifest_sha256_before_v2-runner-archive": "d1d6ec975a765064979e6fdc5a7c39ac9be01f529b8597c02172c697eab8a76a",
+  "prior_manifest_sha256_before_fixture_v3_result": "81f60e01d949b4c9df1377c281768f1c65d5684546194566ec08426c11460d3d"
+}

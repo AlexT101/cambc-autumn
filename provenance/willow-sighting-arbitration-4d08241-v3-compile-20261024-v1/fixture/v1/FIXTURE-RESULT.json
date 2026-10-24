@@ -1,0 +1,88 @@
+{
+  "schema": "willow-sighting-arbitration-production-protocol-fixture/v1",
+  "result": "pass",
+  "scope": "Host C++ fixture extracts and compiles the exact production comms.cpp slice from namespace aph::comms through immediately before void bag(int gems), with explicit thin mocks for World, shared memory, visible records, support mailbox, and champion observations. It exercises production functions, not a reimplemented policy.",
+  "source": {
+    "path": "bots/variants/willow-sighting-arbitration-4d08241-work/src/comms.cpp",
+    "sha256": "c048d09fd718e21b3d46258533d157ee4a196d40a20e037444ae2bfac9a1b77a",
+    "normalized_src_relative_aggregate_sha256": "a439a6c2d1d1d2ef1004f3a463b243d1f48d2daa65eada801d83f55c5c17a2df",
+    "aggregate_recipe": "cd bots/variants/willow-sighting-arbitration-4d08241-work && shasum -a 256 src/* | shasum -a 256"
+  },
+  "extracted_production_slice_sha256": "300a0ead794aac760eee55f0122f7975cabe803cb757b3f637e80d69d12168c0",
+  "fixture_runner": {
+    "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/production_protocol_fixture.py",
+    "sha256": "ab620976a5e6ac61c0e73bfee10cb038073aa30898a42926bc2ff1d39a4fd51a"
+  },
+  "generated_cpp": {
+    "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/production_protocol_fixture.cpp",
+    "sha256": "0cb6823e567dcfcfad99c4ff21d0da906ca256c3a06016b1ac26d5e670f0d15e"
+  },
+  "compiler": {
+    "command": "clang++ -std=c++20 -O0 -Wall -Wextra -Werror=return-type <generated.cpp> -o <fixture-binary>",
+    "version": "Apple clang version 17.0.0 (clang-1700.0.13.5)"
+  },
+  "scenarios": [
+    {
+      "name": "logical-round-765-replacement",
+      "result": "pass",
+      "checks": [
+        "duplicate incumbent HoR payload at round 765 is replaced by currently visible locally actionable Vesper",
+        "one replacement marker set without advancing normal generation",
+        "fresh bag/camp/claim masks preserved",
+        "second send cannot replace again"
+      ]
+    },
+    {
+      "name": "moved-without-refresh",
+      "result": "pass",
+      "checks": [
+        "replacement refused",
+        "no observe call"
+      ]
+    },
+    {
+      "name": "not-moved-cached-candidate",
+      "result": "pass",
+      "checks": [
+        "replacement accepted from current source snapshot",
+        "no observe call"
+      ]
+    },
+    {
+      "name": "normal-publication-freshness-wrap",
+      "result": "pass",
+      "checks": [
+        "exact production put_sighting_payload plus expect/receive recognizes unchanged contact across alternating parity",
+        "two-bit generation wraps after four normal publications"
+      ]
+    },
+    {
+      "name": "missed-turn-dating-and-alias",
+      "result": "pass",
+      "checks": [
+        "earliest parity-compatible round after missed turns",
+        "unchanged aliased record does not become fresh"
+      ]
+    },
+    {
+      "name": "protected-or-ineligible-candidate",
+      "result": "pass",
+      "checks": [
+        "tribute channel",
+        "teleport channel",
+        "enemy at winning-gem threshold",
+        "nonlocal Vesper",
+        "stale Vesper stats"
+      ]
+    }
+  ],
+  "limitations": [
+    "Host mocks do not execute the WASI/native SDK or actual engine turn scheduling.",
+    "Source extraction compiles exact production functions but caller-side dispatch and native shared-memory behavior are outside this fixture.",
+    "The fixture validates protocol mechanics under explicit observations; it does not measure match strength or runtime cost."
+  ],
+  "warnings": [
+    "Host compilation emitted only two unused mock-constant warnings (capture_time and cambc::error_code::ok)."
+  ],
+  "binary_sha256_excluded_from_compact_manifest": "d575a545312f2b5ee57b883f75328a07447f58acef0c73f5eb60b9ce7a3cbca3"
+}

@@ -1,0 +1,600 @@
+{
+  "schema": "ordinary-throughput-parent-v33/v1",
+  "input_replay": "provenance/willow-phased-solo-boss-4d08241-v1/outputs/latest-parent-B-vs-v33-big-world.repl26a",
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "map_hash": "c890c7d4607bc45c",
+  "result": {
+    "rounds": 780,
+    "winner_side": "A (frozen v33)",
+    "team_gems": [
+      1110,
+      474
+    ]
+  },
+  "physical_sides": {
+    "0": "A (frozen v33)",
+    "1": "B (exact latest parent)"
+  },
+  "groups": [
+    {
+      "group": 0,
+      "side": "A (frozen v33)",
+      "captures": 5,
+      "shared_gems": 35,
+      "shared_gold": 208,
+      "camp_tiles": [
+        [
+          28,
+          22
+        ],
+        [
+          27,
+          21
+        ],
+        [
+          27,
+          22
+        ]
+      ],
+      "mirror_group": 1,
+      "map_side": 0
+    },
+    {
+      "group": 2,
+      "side": "A (frozen v33)",
+      "captures": 7,
+      "shared_gems": 147,
+      "shared_gold": 0,
+      "camp_tiles": [
+        [
+          53,
+          28
+        ],
+        [
+          52,
+          27
+        ],
+        [
+          52,
+          28
+        ]
+      ],
+      "mirror_group": 3,
+      "map_side": 0
+    },
+    {
+      "group": 5,
+      "side": "A (frozen v33)",
+      "captures": 3,
+      "shared_gems": 45,
+      "shared_gold": 406,
+      "camp_tiles": [
+        [
+          36,
+          57
+        ],
+        [
+          35,
+          57
+        ],
+        [
+          35,
+          56
+        ],
+        [
+          34,
+          56
+        ]
+      ],
+      "mirror_group": 4,
+      "map_side": 1
+    },
+    {
+      "group": 6,
+      "side": "A (frozen v33)",
+      "captures": 8,
+      "shared_gems": 328,
+      "shared_gold": 2650,
+      "camp_tiles": [
+        [
+          61,
+          10
+        ],
+        [
+          60,
+          11
+        ],
+        [
+          61,
+          11
+        ],
+        [
+          60,
+          10
+        ],
+        [
+          59,
+          10
+        ],
+        [
+          59,
+          11
+        ]
+      ],
+      "mirror_group": 7,
+      "map_side": 0
+    },
+    {
+      "group": 8,
+      "side": "A (frozen v33)",
+      "captures": 4,
+      "shared_gems": 148,
+      "shared_gold": 1163,
+      "camp_tiles": [
+        [
+          17,
+          36
+        ],
+        [
+          18,
+          36
+        ],
+        [
+          17,
+          35
+        ],
+        [
+          18,
+          35
+        ],
+        [
+          18,
+          37
+        ],
+        [
+          17,
+          37
+        ]
+      ],
+      "mirror_group": 9,
+      "map_side": 1
+    },
+    {
+      "group": 10,
+      "side": "A (frozen v33)",
+      "captures": 3,
+      "shared_gems": 0,
+      "shared_gold": 128,
+      "camp_tiles": [
+        [
+          40,
+          34
+        ],
+        [
+          40,
+          33
+        ]
+      ],
+      "mirror_group": 11,
+      "map_side": 0
+    },
+    {
+      "group": 18,
+      "side": "A (frozen v33)",
+      "captures": 4,
+      "shared_gems": 16,
+      "shared_gold": 240,
+      "camp_tiles": [
+        [
+          73,
+          24
+        ],
+        [
+          74,
+          24
+        ]
+      ],
+      "mirror_group": 19,
+      "map_side": 0
+    },
+    {
+      "group": 20,
+      "side": "A (frozen v33)",
+      "captures": 1,
+      "shared_gems": 4,
+      "shared_gold": 72,
+      "camp_tiles": [
+        [
+          7,
+          1
+        ],
+        [
+          6,
+          1
+        ]
+      ],
+      "mirror_group": 21,
+      "map_side": 0
+    },
+    {
+      "group": 22,
+      "side": "A (frozen v33)",
+      "captures": 7,
+      "shared_gems": 105,
+      "shared_gold": 1073,
+      "camp_tiles": [
+        [
+          88,
+          3
+        ],
+        [
+          89,
+          3
+        ],
+        [
+          87,
+          3
+        ]
+      ],
+      "mirror_group": 23,
+      "map_side": 0
+    },
+    {
+      "group": 1,
+      "side": "B (exact latest parent)",
+      "captures": 5,
+      "shared_gems": 35,
+      "shared_gold": 200,
+      "camp_tiles": [
+        [
+          71,
+          77
+        ],
+        [
+          72,
+          78
+        ],
+        [
+          72,
+          77
+        ]
+      ],
+      "mirror_group": 0,
+      "map_side": 1
+    },
+    {
+      "group": 3,
+      "side": "B (exact latest parent)",
+      "captures": 9,
+      "shared_gems": 189,
+      "shared_gold": 0,
+      "camp_tiles": [
+        [
+          46,
+          71
+        ],
+        [
+          47,
+          72
+        ],
+        [
+          47,
+          71
+        ]
+      ],
+      "mirror_group": 2,
+      "map_side": 1
+    },
+    {
+      "group": 4,
+      "side": "B (exact latest parent)",
+      "captures": 3,
+      "shared_gems": 45,
+      "shared_gold": 300,
+      "camp_tiles": [
+        [
+          63,
+          42
+        ],
+        [
+          64,
+          42
+        ],
+        [
+          64,
+          43
+        ],
+        [
+          65,
+          43
+        ]
+      ],
+      "mirror_group": 5,
+      "map_side": 0
+    },
+    {
+      "group": 5,
+      "side": "B (exact latest parent)",
+      "captures": 1,
+      "shared_gems": 15,
+      "shared_gold": 100,
+      "camp_tiles": [
+        [
+          36,
+          57
+        ],
+        [
+          35,
+          57
+        ],
+        [
+          35,
+          56
+        ],
+        [
+          34,
+          56
+        ]
+      ],
+      "mirror_group": 4,
+      "map_side": 1
+    },
+    {
+      "group": 7,
+      "side": "B (exact latest parent)",
+      "captures": 6,
+      "shared_gems": 246,
+      "shared_gold": 1768,
+      "camp_tiles": [
+        [
+          38,
+          89
+        ],
+        [
+          39,
+          88
+        ],
+        [
+          38,
+          88
+        ],
+        [
+          39,
+          89
+        ],
+        [
+          40,
+          89
+        ],
+        [
+          40,
+          88
+        ]
+      ],
+      "mirror_group": 6,
+      "map_side": 1
+    },
+    {
+      "group": 9,
+      "side": "B (exact latest parent)",
+      "captures": 2,
+      "shared_gems": 74,
+      "shared_gold": 380,
+      "camp_tiles": [
+        [
+          82,
+          63
+        ],
+        [
+          81,
+          63
+        ],
+        [
+          82,
+          64
+        ],
+        [
+          81,
+          64
+        ],
+        [
+          81,
+          62
+        ],
+        [
+          82,
+          62
+        ]
+      ],
+      "mirror_group": 8,
+      "map_side": 0
+    },
+    {
+      "group": 11,
+      "side": "B (exact latest parent)",
+      "captures": 3,
+      "shared_gems": 0,
+      "shared_gold": 120,
+      "camp_tiles": [
+        [
+          59,
+          65
+        ],
+        [
+          59,
+          66
+        ]
+      ],
+      "mirror_group": 10,
+      "map_side": 1
+    },
+    {
+      "group": 13,
+      "side": "B (exact latest parent)",
+      "captures": 3,
+      "shared_gems": 42,
+      "shared_gold": 0,
+      "camp_tiles": [
+        [
+          85,
+          84
+        ],
+        [
+          86,
+          84
+        ]
+      ],
+      "mirror_group": 12,
+      "map_side": 1
+    },
+    {
+      "group": 19,
+      "side": "B (exact latest parent)",
+      "captures": 5,
+      "shared_gems": 20,
+      "shared_gold": 403,
+      "camp_tiles": [
+        [
+          26,
+          75
+        ],
+        [
+          25,
+          75
+        ]
+      ],
+      "mirror_group": 18,
+      "map_side": 1
+    },
+    {
+      "group": 23,
+      "side": "B (exact latest parent)",
+      "captures": 6,
+      "shared_gems": 90,
+      "shared_gold": 875,
+      "camp_tiles": [
+        [
+          11,
+          96
+        ],
+        [
+          10,
+          96
+        ],
+        [
+          12,
+          96
+        ]
+      ],
+      "mirror_group": 22,
+      "map_side": 1
+    }
+  ],
+  "actors": [
+    {
+      "side": "A (frozen v33)",
+      "actor": 0,
+      "champion": "Prism",
+      "moves": 457,
+      "path_chebyshev_tiles": 457,
+      "path_manhattan_tiles": 764,
+      "recall_starts": 727,
+      "recall_cancels": 720,
+      "recall_completions": 7,
+      "teleport_starts": 0,
+      "teleport_completions": 0,
+      "tribute_starts": 1,
+      "tribute_completions": 1,
+      "tribute_start_gems": 131,
+      "tribute_end_gems": 131,
+      "tribute_gold": 0,
+      "capture_share_records": 7,
+      "capture_shared_gems": 131,
+      "capture_shared_gold": 980,
+      "end_bag_gems": 0,
+      "collected_gems": 131,
+      "submitted_gems": 131
+    },
+    {
+      "side": "A (frozen v33)",
+      "actor": 1,
+      "champion": "Vesper Vale",
+      "moves": 435,
+      "path_chebyshev_tiles": 435,
+      "path_manhattan_tiles": 723,
+      "recall_starts": 675,
+      "recall_cancels": 666,
+      "recall_completions": 8,
+      "teleport_starts": 0,
+      "teleport_completions": 0,
+      "tribute_starts": 10,
+      "tribute_completions": 10,
+      "tribute_start_gems": 592,
+      "tribute_end_gems": 592,
+      "tribute_gold": 0,
+      "capture_share_records": 11,
+      "capture_shared_gems": 331,
+      "capture_shared_gold": 3034,
+      "end_bag_gems": 0,
+      "collected_gems": 592,
+      "submitted_gems": 592
+    },
+    {
+      "side": "B (exact latest parent)",
+      "actor": 5,
+      "champion": "Prism",
+      "moves": 440,
+      "path_chebyshev_tiles": 440,
+      "path_manhattan_tiles": 735,
+      "recall_starts": 702,
+      "recall_cancels": 694,
+      "recall_completions": 8,
+      "teleport_starts": 0,
+      "teleport_completions": 0,
+      "tribute_starts": 0,
+      "tribute_completions": 0,
+      "tribute_start_gems": 0,
+      "tribute_end_gems": 0,
+      "tribute_gold": 0,
+      "capture_share_records": 11,
+      "capture_shared_gems": 261,
+      "capture_shared_gold": 1690,
+      "end_bag_gems": 0,
+      "collected_gems": 261,
+      "submitted_gems": 0
+    },
+    {
+      "side": "B (exact latest parent)",
+      "actor": 6,
+      "champion": "Vesper Vale",
+      "moves": 435,
+      "path_chebyshev_tiles": 435,
+      "path_manhattan_tiles": 801,
+      "recall_starts": 727,
+      "recall_cancels": 718,
+      "recall_completions": 8,
+      "teleport_starts": 0,
+      "teleport_completions": 0,
+      "tribute_starts": 3,
+      "tribute_completions": 3,
+      "tribute_start_gems": 31,
+      "tribute_end_gems": 31,
+      "tribute_gold": 0,
+      "capture_share_records": 5,
+      "capture_shared_gems": 31,
+      "capture_shared_gold": 542,
+      "end_bag_gems": 0,
+      "collected_gems": 31,
+      "submitted_gems": 31
+    }
+  ],
+  "input_bundle_sha256": "15a703f86fd6cbf7ca9b14fddc9136f2100bc5afce87520905b274c82cbe670c",
+  "inner_replay_payload_sha256": "0022ca3c4d26d95df367ba021ef4d2b435f2eaccb9e3c76708ba5821619f14dc"
+}

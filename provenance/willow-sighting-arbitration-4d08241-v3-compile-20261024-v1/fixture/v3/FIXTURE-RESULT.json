@@ -1,0 +1,81 @@
+{
+  "schema": "willow-sighting-arbitration-production-protocol-fixture/v3",
+  "status": "pass",
+  "scenario_count": 13,
+  "source_scope": {
+    "path": "bots/variants/willow-sighting-arbitration-4d08241-work/src/comms.cpp",
+    "sha256": "c048d09fd718e21b3d46258533d157ee4a196d40a20e037444ae2bfac9a1b77a",
+    "normalized_src_relative_aggregate_sha256": "a439a6c2d1d1d2ef1004f3a463b243d1f48d2daa65eada801d83f55c5c17a2df",
+    "extracted_production_slice_sha256": "300a0ead794aac760eee55f0122f7975cabe803cb757b3f637e80d69d12168c0",
+    "extraction": "Exact source from namespace aph::comms through immediately before void bag(int gems), unchanged. Production functions compile and execute against thin host mocks."
+  },
+  "fixture_code": {
+    "runner_path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/production_protocol_fixture.py",
+    "runner_sha256": "d0d126c1008b821c25e93429199d94bc791b610097cffafa5efecfae60c7d8cd",
+    "generated_cpp_path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/production_protocol_fixture.cpp",
+    "generated_cpp_sha256": "f28e3a296b2fa79d866c56f5d91a8b3982b9ed29f93262921d2b05a1584223fe",
+    "generated_cpp_bytes": 30200,
+    "compiler": "Apple clang 17; clang++ -std=c++20 -O0 -Wall -Wextra -Werror=return-type",
+    "binary_path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/production_protocol_fixture",
+    "binary_sha256": "582def2197bdf87ac8c2099032ff1d8bb8217a5d99bd11843cf24631e0ce4104"
+  },
+  "coverage": [
+    "Round-765 positive duplicate incumbent to live locally actionable Vesper; uses basic3+dash2+pursuit3, contact Chebyshev6.",
+    "Same-round second replacement is tested with changed same-enemy native Vesper position and health; marker must prevent write.",
+    "Moved-without-refresh refusal and unmoved cached-candidate admission.",
+    "Normal freshness via exact writer helper plus expect/receive over healthy alternating turns; two-bit generation wrap.",
+    "Production send() normal publication path on consecutive turns.",
+    "Missed-turn earliest-fit dating and alias rejection.",
+    "Nonconsecutive sender with exact aliased nonempty last/current bits and fresh==0, separately marker0 and marker1; stale contact/generation unchanged, followed by healthy next-turn normal generation advance.",
+    "Tribute, teleport, winning-gem threshold, nonlocal candidate, and stale-stat exclusions.",
+    "Unrelated bag/camp/claim fields are preserved; one replacement does not advance ordinary generation."
+  ],
+  "guard_sensitivity": {
+    "path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v3/sensitivity/RESULT.json",
+    "sha256": "b0b3b0d9b2a697348397d5dc5ad5cf4f37669bc2be09d101018888b60c19e23c",
+    "tests": [
+      {
+        "guard": "same-round-replacement-marker",
+        "mutation": {
+          "replace_once": "|| sight_replaced.get(bits)",
+          "with": "|| false"
+        },
+        "targeted_scenario": "witness",
+        "expected_failing_assertion": "same-round marker blocks changed same-enemy confirmation payload",
+        "mutant_cpp_sha256": "16850b43152521bf12747aa2e1dd2501b1b341cbd441aa72fd3d6bf93ca54a30",
+        "mutant_binary_sha256": "edd5a518b4a117e75f846d597dc8e4e6801b2a975918f4776e79472c72112ad6",
+        "run_log_sha256": "a51b64514db35fb61a8ee2b746175d0a4d70c1f737ec9ed6abce5680bac07b9f",
+        "exit_code": 2,
+        "assertion_failed_as_expected": true
+      },
+      {
+        "guard": "nonconsecutive-publication-guard",
+        "mutation": {
+          "replace_once": "|| !state.consecutive",
+          "with": "|| false"
+        },
+        "targeted_scenario": "gap-marker0",
+        "expected_failing_assertion": "nonconsecutive send does not refresh current-parity sighting or increment generation",
+        "mutant_cpp_sha256": "6041edbabaa26963b880ab59096acc52da199a9836c7371f360191954148c522",
+        "mutant_binary_sha256": "51a58f4c6523080c2ee7897039615e9f49297cbab73e47e398abbf72595c56a8",
+        "run_log_sha256": "8f3ae1e36ec478c8cdcebc6c54785945303fec103cac0bf1aa27384a22043a47",
+        "exit_code": 2,
+        "assertion_failed_as_expected": true
+      }
+    ]
+  },
+  "limitations": [
+    "Explicit host mocks are not WASI/native SDK or real engine scheduling.",
+    "Caller-side dispatch is outside the extracted function slice.",
+    "No match-strength or fuel claim."
+  ],
+  "warnings": [
+    "Two harmless unused mock constants: capture_time and cambc::error_code::ok."
+  ],
+  "supersedes": {
+    "v1_receipt_sha256": "f64bec0e9515713189e472d5956b49fd3c473e2bb4f722d7745e146df65006f8",
+    "v1_generated_cpp_sha256": "0cb6823e567dcfcfad99c4ff21d0da906ca256c3a06016b1ac26d5e670f0d15e",
+    "v2_receipt_path": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/fixture/v2/FIXTURE-RESULT.json",
+    "v2_generated_cpp_sha256": "48ee527d06f2ca930bb636d6dfa40c74b40201d78e2d13a4f710980f26c5e66f"
+  }
+}

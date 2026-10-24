@@ -1,0 +1,32 @@
+{
+  "schema": "willow-sighting-arbitration-v3-compile-result/v1",
+  "status": "success",
+  "mode": "Release",
+  "source_aggregate_sha256": "a439a6c2d1d1d2ef1004f3a463b243d1f48d2daa65eada801d83f55c5c17a2df",
+  "runtime_copy_aggregate_sha256": "a439a6c2d1d1d2ef1004f3a463b243d1f48d2daa65eada801d83f55c5c17a2df",
+  "expected_source_aggregate_sha256": "a439a6c2d1d1d2ef1004f3a463b243d1f48d2daa65eada801d83f55c5c17a2df",
+  "patch_sha256": "59632c96d7e62f2605ab8b42eebc1e0248990f2de80cb418802bef5ed87dbf37",
+  "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+  "cli_version": "cambc 3.0.5",
+  "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+  "sdk_header_sha256_before": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+  "sdk_header_sha256_after": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+  "sdk_header_mtime_ns_before": 1792774035481976768,
+  "sdk_header_mtime_ns_after": 1792774035481976768,
+  "shared_sdk_unchanged": true,
+  "raw_wasm": {
+    "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-sighting-arbitration-4d08241-work/.cambc/build-release/bot.wasm",
+    "bytes": 1671527,
+    "sha256": "6731c6e6f2ec251f1adad685fa124c8c06132ef032f4711253ac70b0def8713d"
+  },
+  "injected_wasm": {
+    "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-sighting-arbitration-4d08241-work/.cambc/build-release/bot-injected.wasm",
+    "bytes": 913275,
+    "sha256": "fe63887cc241d765870e0caf1baf9544add02cf7f56a8bdf0609e806581970dd"
+  },
+  "duty_receipt": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/build.duty.json",
+  "build_log": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/build.stdout.log",
+  "stderr_log": "provenance/willow-sighting-arbitration-4d08241-v3-compile-20261024-v1/build.stderr.log",
+  "exit_code": 0,
+  "games_run": 0
+}

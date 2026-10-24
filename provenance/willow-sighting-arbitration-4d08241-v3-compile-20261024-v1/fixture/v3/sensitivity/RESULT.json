@@ -1,0 +1,35 @@
+{
+  "schema": "sighting-protocol-fixture-guard-sensitivity/v1",
+  "original_generated_cpp_sha256": "f28e3a296b2fa79d866c56f5d91a8b3982b9ed29f93262921d2b05a1584223fe",
+  "tests": [
+    {
+      "guard": "same-round-replacement-marker",
+      "mutation": {
+        "replace_once": "|| sight_replaced.get(bits)",
+        "with": "|| false"
+      },
+      "targeted_scenario": "witness",
+      "expected_failing_assertion": "same-round marker blocks changed same-enemy confirmation payload",
+      "mutant_cpp_sha256": "16850b43152521bf12747aa2e1dd2501b1b341cbd441aa72fd3d6bf93ca54a30",
+      "mutant_binary_sha256": "edd5a518b4a117e75f846d597dc8e4e6801b2a975918f4776e79472c72112ad6",
+      "run_log_sha256": "a51b64514db35fb61a8ee2b746175d0a4d70c1f737ec9ed6abce5680bac07b9f",
+      "exit_code": 2,
+      "assertion_failed_as_expected": true
+    },
+    {
+      "guard": "nonconsecutive-publication-guard",
+      "mutation": {
+        "replace_once": "|| !state.consecutive",
+        "with": "|| false"
+      },
+      "targeted_scenario": "gap-marker0",
+      "expected_failing_assertion": "nonconsecutive send does not refresh current-parity sighting or increment generation",
+      "mutant_cpp_sha256": "6041edbabaa26963b880ab59096acc52da199a9836c7371f360191954148c522",
+      "mutant_binary_sha256": "51a58f4c6523080c2ee7897039615e9f49297cbab73e47e398abbf72595c56a8",
+      "run_log_sha256": "8f3ae1e36ec478c8cdcebc6c54785945303fec103cac0bf1aa27384a22043a47",
+      "exit_code": 2,
+      "assertion_failed_as_expected": true
+    }
+  ],
+  "note": "Both mutations apply only to generated host-fixture C++; production source and production fixture runner are unchanged."
+}

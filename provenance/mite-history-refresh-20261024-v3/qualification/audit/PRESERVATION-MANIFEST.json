@@ -1,0 +1,137 @@
+{
+  "schema": "mite-big-world-replay-qualification-preservation/v1",
+  "scope": "Compact source pins and status/economy receipts for one saved historical Big World B replay; no replay or extracted round/event streams staged. The historical replay does not encode local Release/debug mode.",
+  "files": [
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/audit/MITE-RESULT.md",
+      "bytes": 2167,
+      "sha256": "5e0835e878e15ff082f5edab733b38b4510e48df045706752d29798f4d48146a"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/audit/economy-summary.json",
+      "bytes": 10989,
+      "sha256": "f3c4c6d2cb6ea4356d84c976575f160bcded755c0ff807df321449003dbb7c38"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/audit/native-status.json",
+      "bytes": 6851,
+      "sha256": "ce61bde85d19e8ff754c69b7ebe8182fece8afeaed7f00773740ce73cd7df5e6"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/audit/results.json",
+      "bytes": 378,
+      "sha256": "cfff5a422af18364afdefc9770b0f5f201d71f636aa3407e6801c8e33fa307a3"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/audit/native-status-duty.json",
+      "bytes": 1632,
+      "sha256": "0369d26017c6b71bd05e70b445216ff81f6497533b0c06c27dd2fe41ba3f63d5"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/input-pin.json",
+      "bytes": 624,
+      "sha256": "1e5d3bb44340d5026975e392773b8be72a331dd94a0076344764ad99d8d75b69"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/extracted/index.json",
+      "bytes": 305,
+      "sha256": "7a91d5fe2e43178ace4409087c043d36cdd9de090d82fad134a8297e539e8d09"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/extracted/enums.json",
+      "bytes": 2248,
+      "sha256": "121ad1348a6b42b89372dd758b870f95f7d5c1c08a3f3ca921015350ed4fc5b8"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/extracted/2339d497b2081147/meta.json",
+      "bytes": 6590,
+      "sha256": "f800adbdf4b99d139e00075ca516178b33eb6d332241ba02d541ac881237ddf8"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/../../../tools/replay/extract.mjs",
+      "bytes": 43988,
+      "sha256": "2f1704991077bed0bac08dc3319ecd54ab88e42e2a23516d81974ead37fc180f"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/../../../tools/replay/audit_native_status.mjs",
+      "bytes": 9406,
+      "sha256": "17b3f0e95b2a848fae057909c82fa71c05049dcb8271c50b7952de8f649fcf1d"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/../../../tools/replay/timeline_v103.mjs",
+      "bytes": 4614,
+      "sha256": "5201df0d69c85f43dce382de7b661e1ccdd4e644a640fb18983a9fa708b3b772"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/../../../tools/replay/engine/version.json",
+      "bytes": 1871,
+      "sha256": "5e0f0e706f4cd178b98ba1b9238ef0a4858e12020d2a4b2eb8cba49aac4afae7"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/../../../tools/replay/engine/v1_0_3.wasm",
+      "bytes": 638472,
+      "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/../../../maps/01big-world.map26a",
+      "bytes": 20381,
+      "sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5"
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/big-world-B-loss-67f9d74a.repl26a",
+      "bytes": 169695,
+      "sha256": "2339d497b20811479e313fb03708ba8b89f90eb14789bd235b5f1f17197c500a",
+      "reason": "Raw replay/stream/tool output retained locally; excluded from compact commit set."
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/big-world-B-loss-67f9d74a.zip",
+      "bytes": 27848,
+      "sha256": "1ae89813d8134d1f3ddc416457e325d01205f9d8bdaabf56edf916a77043736e",
+      "reason": "Raw replay/stream/tool output retained locally; excluded from compact commit set."
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/extracted/2339d497b2081147/events.jsonl.gz",
+      "bytes": 249470,
+      "sha256": "71a4288dc398d5e9f96069fc17e28ada64c95e5f785a0bb6164c5326ffa27b56",
+      "reason": "Raw replay/stream/tool output retained locally; excluded from compact commit set."
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/extracted/2339d497b2081147/rounds.json.gz",
+      "bytes": 55965,
+      "sha256": "c27730fe3c8f7647ddc45e401da9cbecf3394d0cc28b51d63e4da6fec3330bdc",
+      "reason": "Raw replay/stream/tool output retained locally; excluded from compact commit set."
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/audit/native-status.generated.json",
+      "bytes": 6526,
+      "sha256": "4d4c77b40a01fc4f96ea28c8f0e54a255896369d2572d056a9dab3d050f0ddea",
+      "reason": "Raw replay/stream/tool output retained locally; excluded from compact commit set."
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/extract.stdout.log",
+      "bytes": 234,
+      "sha256": "e108953cdd10942393eca262e0d7de6b750685c76d953ca37db4979e83f0a819",
+      "reason": "Raw replay/stream/tool output retained locally; excluded from compact commit set."
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/extract.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "Raw replay/stream/tool output retained locally; excluded from compact commit set."
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/audit/native-status.stdout.log",
+      "bytes": 197,
+      "sha256": "a0f290a88d461edf4c75392d5990a091642ceca45c15df66be0362ca2d06cc25",
+      "reason": "Raw replay/stream/tool output retained locally; excluded from compact commit set."
+    },
+    {
+      "path": "provenance/mite-history-refresh-20261024-v3/qualification/audit/native-status.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "Raw replay/stream/tool output retained locally; excluded from compact commit set."
+    }
+  ]
+}
