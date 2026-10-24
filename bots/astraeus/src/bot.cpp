@@ -4292,6 +4292,17 @@ vec2 step_to_kill(const World& world, Pathing& pathing, Safety& safety, int rang
     return {-1, -1};
 }
 
+// After our hits: an enemy we killed stays a live threat around its tile in World (dash landings,
+// retreat steps) and, once refresh() has read it alive, in Safety: read vision again.
+void see_kills(World& world, Pathing& pathing, Safety& safety) {
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && !is_alive(e.handle)) {
+            see_again(world, pathing, safety);
+            return;
+        }
+    safety.refresh();
+}
+
 void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& me = cambc::self();
@@ -4320,7 +4331,7 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (!my_can_attack()) reset_and_attack_enemy(world, true);
     cast_at_enemies(world, escape_step_value);
     if (!me.is_alive()) return;
-    if (!my_can_attack() || !my_can_cast()) safety.refresh();
+    if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
     // A tribute survives damage; a recall does not.
     if (can_tribute_safely(world, pathing, safety, memory)) {
         bank_gems(world, pathing, safety, memory, false);
@@ -4328,7 +4339,7 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     }
     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
     dash_away(world, pathing, pathing.to_ally_spawn(), dead);
-    reset_and_attack_enemy(world);
+    if (reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
     if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
     if (melee && attack_enemy(world)) reset_and_attack_enemy(world, true);
     reset_and_attack_enemy(world);

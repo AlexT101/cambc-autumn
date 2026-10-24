@@ -641,3 +641,14 @@ seen by any teammate near enough. In a trace, 208k of 607k damage from unseen at
 seen that round or the one before, 931 of those 1,418 hits from bushes.
 
 - Against d3cc38f: 49.7% of 1104 (46.8-52.7; ladder 50.0, gen 50.6, gen-s1 48.8), out-of-fuel turns 2573 vs 2564.
+
+## 125: a kill read as a death before the escape (astraeus, 2026-10-24)
+
+After `retreat`'s hits, an enemy we killed stayed alive in World, so `dash_away`'s threats (all but a sure kill's
+`dead` tile), `landing_suicidal` and `retreat_step`'s gap still counted it around its tile; a kill by the reset after
+the escape dash came after `refresh()` had read it alive, so Safety counted it too. `see_kills` re-reads vision
+(`see_again`) when a visible enemy is no longer alive, else refreshes as before; it runs after the hits and after
+that reset.
+
+- Against acbcbcb: 49.9% of 1104 (47.0-52.9; ladder 50.0, gen 50.0, gen-s1 49.8), out-of-fuel turns
+  2298 vs 2296.
