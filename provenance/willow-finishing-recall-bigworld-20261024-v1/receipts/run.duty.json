@@ -1,0 +1,86 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T09:42:27.504604+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "argv": [
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "run-batch",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-finishing-recall-bigworld-20261024-v1/run-one.manifest",
+    "--jobs",
+    "1",
+    "--release",
+    "--fuel-quantum",
+    "100000",
+    "--log-limit",
+    "1073741824",
+    "--color",
+    "never"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-finishing-recall-bigworld-20261024-v1/logs/run.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-finishing-recall-bigworld-20261024-v1/logs/run.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.017686833,
+      "run_end_monotonic": 0.122708416
+    },
+    {
+      "run_start_monotonic": 1.027998916,
+      "run_end_monotonic": 1.131968875
+    },
+    {
+      "run_start_monotonic": 2.037183,
+      "run_end_monotonic": 2.139210041
+    },
+    {
+      "run_start_monotonic": 3.044374625,
+      "run_end_monotonic": 3.144767333
+    },
+    {
+      "run_start_monotonic": 4.049960208,
+      "run_end_monotonic": 4.154926
+    },
+    {
+      "run_start_monotonic": 5.06028425,
+      "run_end_monotonic": 5.164355583
+    },
+    {
+      "run_start_monotonic": 6.069514875,
+      "run_end_monotonic": 6.173564875
+    },
+    {
+      "run_start_monotonic": 7.078735666,
+      "run_end_monotonic": 7.182681958
+    },
+    {
+      "run_start_monotonic": 8.086958708,
+      "run_end_monotonic": 8.191626041
+    },
+    {
+      "run_start_monotonic": 9.096812916,
+      "run_end_monotonic": 9.201325541
+    },
+    {
+      "run_start_monotonic": 10.1064885,
+      "run_end_monotonic": 10.211400333
+    },
+    {
+      "run_start_monotonic": 11.116619208,
+      "run_end_monotonic": 11.220203833
+    },
+    {
+      "run_start_monotonic": 12.123155916,
+      "run_end_monotonic": 12.228168541
+    }
+  ],
+  "pid": 25328,
+  "process_group_id": 25328,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T09:42:39.716486+00:00"
+}

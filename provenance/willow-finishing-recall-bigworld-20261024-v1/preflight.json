@@ -1,0 +1,37 @@
+{
+  "schema": "finishing-recall-bigworld-run-preflight/v1",
+  "candidate_source_aggregate_sha256": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+  "candidate_bot_cpp_sha256": "12b287870f0e516829ccd0ce47765391e273729af1529fdc3df2f719da060d46",
+  "parent_source_aggregate_sha256": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+  "opponent": "frozen v33 deployed source",
+  "opponent_source_aggregate_sha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+  "team_a": "frozen v33",
+  "team_b": "finishing-recall candidate",
+  "map": "maps/01big-world.map26a",
+  "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+  "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+  "cambc_version": "3.0.5",
+  "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+  "sdk": {
+    "cambc_h_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "cambc_h_mtime_ns": 1792774035481976768,
+    "imports_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "imports_mtime_ns": 1792774035482489096
+  },
+  "candidate_release_binaries": {
+    "raw_sha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+    "injected_sha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525"
+  },
+  "v33_release_binaries": {
+    "raw_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+    "injected_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+  },
+  "existing_exact_parent_control": {
+    "bundle": "provenance/willow-phased-solo-boss-4d08241-v1/outputs/latest-parent-B-vs-v33-big-world.repl26a",
+    "bundle_sha256": "15a703f86fd6cbf7ca9b14fddc9136f2100bc5afce87520905b274c82cbe670c",
+    "inner_replay_sha256": "0022ca3c4d26d95df367ba021ef4d2b435f2eaccb9e3c76708ba5821619f14dc",
+    "same_map_and_sides": true
+  },
+  "manifest_sha256": "aab293b467928ab1905432676468ecdddbd8f96d9a4e918170af357f9754d591",
+  "mode": "Release100k, fully reactive one normal-draft native game; no opponent puppet; no control rerun"
+}

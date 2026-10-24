@@ -1,0 +1,9 @@
+{
+  "schema": "bounded-duty-run-failed-before-child/v1",
+  "cwd_requested": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "argv": ["cambc", "build", "bots/willow-finishing-recall-4d08241-work", "--release"],
+  "process_started": false,
+  "failure": "FileNotFoundError: requested workspace omitted willow-upstream-development/provenance/ prefix; no compiler or game process launched",
+  "stdout": "logs/build.stdout.log",
+  "stderr": "logs/build.stderr.log"
+}

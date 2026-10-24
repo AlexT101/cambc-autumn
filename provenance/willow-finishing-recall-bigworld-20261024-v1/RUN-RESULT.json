@@ -1,0 +1,162 @@
+{
+  "schema": "finishing-recall-bigworld-result/v1",
+  "source": {
+    "candidate_aggregate_sha256": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "candidate_bot_cpp_sha256": "12b287870f0e516829ccd0ce47765391e273729af1529fdc3df2f719da060d46",
+    "parent_aggregate_sha256": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+    "opponent_v33_aggregate_sha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "build": {
+    "release": true,
+    "candidate_raw_wasm_sha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+    "candidate_injected_wasm_sha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525",
+    "v33_raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+    "v33_injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+  },
+  "runtime": {
+    "cambc_version": "3.0.5",
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "map": "maps/01big-world.map26a",
+    "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+    "sdk_cambc_h_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "sdk_imports_h_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "sdk_bytes_and_mtimes_unchanged": true
+  },
+  "game": {
+    "mode": "one fully reactive native normal-draft Release 100k game; candidate B vs frozen v33 A",
+    "draft_both": [
+      "Prism",
+      "Vesper Vale",
+      "Marcella",
+      "Willow",
+      "Heart of Ruin"
+    ],
+    "winner": "A / frozen v33",
+    "score_A_B": [
+      1014,
+      588
+    ],
+    "round": 877,
+    "validation_ok": true,
+    "candidate_teamB_native_rollovers": 3,
+    "candidate_teamB_native_errors": 0,
+    "v33_teamA_native_rollovers": 4,
+    "v33_teamA_native_errors": 0,
+    "status_decode": "per-champion round status code 6=fuel rollover, code 7=bot error; meta.faults bytes are not used",
+    "raw_bundle_sha256": "bcddd6777bd59929e8033bef869b8e73b8d9819de89d3c4b99fe5b8a9afa5f8f",
+    "raw_bundle_bytes": 54300,
+    "inner_replay": {
+      "candidate_sha256": "369f73638437e6ed4313cdb19d18798c85a3da425863f602842b0d1ad558b8f0",
+      "candidate_bytes": 165029,
+      "parent_sha256": "0022ca3c4d26d95df367ba021ef4d2b435f2eaccb9e3c76708ba5821619f14dc",
+      "parent_bytes": 148798,
+      "equal": false
+    }
+  },
+  "candidate_teamB_economy": {
+    "ordinary_gems_collected": 925,
+    "submitted_score_gems": 588,
+    "ending_carried_bags": 316,
+    "gems_stolen_by_teamA": 21,
+    "event_evidence": {
+      "round": 709,
+      "victim_actor": 9,
+      "killer_actor": 4,
+      "cause": "Cast ability",
+      "gems": 21,
+      "gemsTo": 21
+    },
+    "note": "The 21-gem gap is directly recorded as a transfer from candidate HoR actor 9 to v33 HoR actor 4 at its r709 death. The 287 Prism bag is intentional/possibly Focus-scaled and is not alone evidence of a mistake."
+  },
+  "candidate_prism_actor5": {
+    "alive_end": true,
+    "deaths": 0,
+    "end_position": [
+      14,
+      96
+    ],
+    "end_hp": 2530,
+    "collected": 287,
+    "submitted": 0,
+    "end_carried": 287,
+    "champion_damage_done": 0,
+    "champion_damage_taken": 0,
+    "native_rollovers": 0,
+    "native_bot_errors": 0,
+    "recall_events": {
+      "start": 827,
+      "cancel": 817,
+      "end": 10,
+      "cancel_manual": 683,
+      "cancel_damage": 134
+    },
+    "witness": "At r738 the exact parent emits Cancel channel; candidate emits End turn while at (35,56). Candidate completes recall at r739 to (21,88), then moves and starts another recall at r740. This confirms the intended code path is reached, but Prism never submits gems and the game is still lost."
+  },
+  "comparison": {
+    "exact_parent_bundle": "provenance/willow-phased-solo-boss-4d08241-v1/outputs/latest-parent-B-vs-v33-big-world.repl26a",
+    "parent_bundle_sha256": "15a703f86fd6cbf7ca9b14fddc9136f2100bc5afce87520905b274c82cbe670c",
+    "parent_inner_replay_sha256": "0022ca3c4d26d95df367ba021ef4d2b435f2eaccb9e3c76708ba5821619f14dc",
+    "candidate_parent_comparison": {
+      "inputs": [
+        28990,
+        32792
+      ],
+      "rounds_matched_before_round_structure_diff": 739,
+      "first_input_diff": {
+        "round": 738,
+        "step": 163689,
+        "input_index": 27683,
+        "actor": 5,
+        "parent_kind": "Cancel channel",
+        "candidate_kind": "End turn",
+        "parent_channel_start_end": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "candidate_position_from_to": [
+          35,
+          56,
+          35,
+          56
+        ]
+      },
+      "first_round_diff": {
+        "round": 739,
+        "parent_step": 163710,
+        "candidate_step": 163708,
+        "interpretation": "Round-start hashes match through r738, but first input difference occurs within r738; action streams are not fully matched for that round."
+      },
+      "scores_parent_A_B": [
+        1110,
+        474
+      ],
+      "scores_candidate_A_B": [
+        1014,
+        588
+      ],
+      "result_equal": false,
+      "round_start_hashes_matched": {
+        "count": 739,
+        "rounds_inclusive": [
+          0,
+          738
+        ]
+      }
+    }
+  },
+  "interpretation": "Diagnostic only. The branch changed Prism behavior at the targeted r738 seam, but this single game did not improve the result; do not infer strength or a general reduction in losses. Prism carried 287 at end intentionally/possibly for Focus scaling, and the loss cannot be attributed solely to that inventory.",
+  "team_score_gap_decomposition": {
+    "A_score": 1014,
+    "B_score": 588,
+    "score_gap": 426,
+    "A_ordinary_captured": 1030,
+    "B_ordinary_captured": 925,
+    "ordinary_capture_gap": 105,
+    "stolen_gem_swing": 42,
+    "end_bag_gap": 279,
+    "identity": "105 + 42 + 279 = 426; ordinary captures exclude the 21 gems stolen by A."
+  }
+}

@@ -2922,3 +2922,23 @@ native integration or ally-accounting correctness. Independent source and
 fixture reviews find no remaining blocker. One ordinary-100k reactive Big
 World candidate-B versus frozen-v33-A game is authorized against the existing
 parent control, using the one-job duty-capped batch runner.
+
+That native test reaches the intended decision without earlier action drift:
+the first differing input is index27,683, Prism5 at round738/step163689,
+parent Cancel channel versus candidate End turn. The 739 round-start hashes
+for rounds0–738 match; the next state differs at739 when the candidate recall
+completes. Candidate raw/injected WASM are `9aab0533...`/`e7f63a94...`; the
+source and SDK pins remain unchanged. Candidate B still loses, 588–1,014 at877,
+with the same three play rollovers and zero native errors (v33 A four/zero).
+Prism has no rollover or error, survives with287 gems, and has no champion
+damage dealt or received. The former261-gem death does not occur.
+
+This validates the targeted behavior without establishing a general win-rate
+gain. The remaining426-point gap is105 ordinary-capture difference
+(A1030/B925),42 from the existing21-gem HoR transfer, and279 from ending bags
+(B316/A37). Prism retaining287 is not itself proof of a missed winning bank:
+even all B bags plus score total904. Existing events also show retained Prism
+clearing camps that Vesper subsequently captures. Broader source-fix checks
+are three serial games: parent/candidate A versus frozen v33 B on Big World,
+then candidate A versus v33 B on Pilgrimage using the already-saved parent
+control. No additional private trace or live unranked is queued.

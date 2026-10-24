@@ -1,0 +1,129 @@
+{
+ "inputs": [
+  28990,
+  32792
+ ],
+ "firstInputDiff": {
+  "index": 27683,
+  "round": 738,
+  "step": 163689,
+  "actor": 5,
+  "kind": "Cancel channel",
+  "rerunKind": "End turn",
+  "original": "s163689 r738 Cancel channel@10 actor1:5 (0,0)->(0,0) slot-1 pr0 x0,0",
+  "rerun": "s163689 r738 End turn@10 actor1:5 (35,56)->(35,56) slot-1 pr0 x0,0",
+  "originalRec": [
+   163689,
+   738,
+   27683,
+   16,
+   10,
+   1,
+   5,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ],
+  "rerunRec": [
+   163689,
+   738,
+   27683,
+   8,
+   10,
+   1,
+   5,
+   35,
+   56,
+   35,
+   56,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ },
+ "roundsMatched": 739,
+ "rounds": [
+  781,
+  878
+ ],
+ "firstRoundDiff": {
+  "round": 739,
+  "step": 163710,
+  "rerunStep": 163708
+ },
+ "result": [
+  {
+   "outcome": 1,
+   "round": 780,
+   "gems": [
+    1110,
+    474
+   ]
+  },
+  {
+   "outcome": 1,
+   "round": 877,
+   "gems": [
+    1014,
+    588
+   ]
+  }
+ ],
+ "resultMatch": false,
+ "exact": false,
+ "exactIgnoringRollovers": false,
+ "firstInputDiffIgnoringRollovers": {
+  "index": 27683,
+  "round": 738,
+  "step": 163689,
+  "actor": 5,
+  "kind": "Cancel channel",
+  "rerunKind": "End turn",
+  "original": "s163689 r738 Cancel channel@10 actor1:5 (0,0)->(0,0) slot-1 pr0 x0,0",
+  "rerun": "s163689 r738 End turn@10 actor1:5 (35,56)->(35,56) slot-1 pr0 x0,0",
+  "originalRec": [
+   163689,
+   738,
+   27683,
+   16,
+   10,
+   1,
+   5,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ],
+  "rerunRec": [
+   163689,
+   738,
+   27683,
+   8,
+   10,
+   1,
+   5,
+   35,
+   56,
+   35,
+   56,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ }
+}

@@ -1,0 +1,205 @@
+{
+  "schema": "compact-preservation-manifest/v1",
+  "package": "finishing-recall-bigworld-20261024-v1",
+  "files": [
+    {
+      "path": "RUN-RESULT.md",
+      "sha256": "90f5e1bcffd1f3c3dbdf6383cdba04462b4c2fedfb62fc6dd7d89ca3a1fff53d",
+      "bytes": 2740
+    },
+    {
+      "path": "RUN-RESULT.json",
+      "sha256": "cfcbdf782b27d959cde1008d241eaefd953ca53cecf7407b8147ad8929d7bc17",
+      "bytes": 5777
+    },
+    {
+      "path": "preflight.json",
+      "sha256": "7a2772524bcd85079fb0cb03c94a3ee55fb388e58b85f997336ea81aaff40c68",
+      "bytes": 2184
+    },
+    {
+      "path": "run-one.manifest",
+      "sha256": "aab293b467928ab1905432676468ecdddbd8f96d9a4e918170af357f9754d591",
+      "bytes": 929
+    },
+    {
+      "path": "native-audit.json",
+      "sha256": "ca3f99dd0eb9d5c30b3d6e83964f86370deaff8f2726790e84bdd6b41ded3fdd",
+      "bytes": 14506
+    },
+    {
+      "path": "audit_native.py",
+      "sha256": "0c4b02bac2fd6c6d4d45f8464cf82e552b279a0a0b11fde758b3ce15985a4f70",
+      "bytes": 2974
+    },
+    {
+      "path": "logs/build-attempt1.wrapper-error.txt",
+      "sha256": "cad98a00921c2ef7f92723be41f909e8c15cf8b0fd4988d5003a09d7d379882a",
+      "bytes": 317
+    },
+    {
+      "path": "logs/build.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "logs/build.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "logs/build2.stdout.log",
+      "sha256": "25403f95339383ece3acdf282b870db2cec2c1ec07e11417cde4c554f7751d12",
+      "bytes": 4338
+    },
+    {
+      "path": "logs/build2.stderr.log",
+      "sha256": "ec996f44c37aa3a11b8893a81d8de92ffd2349d6721210c22873430f0517e322",
+      "bytes": 180
+    },
+    {
+      "path": "logs/run.stdout.log",
+      "sha256": "e663d75797c61fa9499e678e5d7f9aa440687013563f174c1ef89bfb0e1db5b9",
+      "bytes": 1056
+    },
+    {
+      "path": "logs/run.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "logs/extract.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "logs/compare.stdout.log",
+      "sha256": "f3e8f4b3caf1e934b24f4eaa2455e778926e66d9f51f653a586a21af3c8b3c2c",
+      "bytes": 1596
+    },
+    {
+      "path": "logs/compare.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "receipts/build-attempt1.duty.json",
+      "sha256": "bcedaeb244ba0c4fbae5502313fae78acc0d9662f48248bf299f41caa2b3f441",
+      "bytes": 528
+    },
+    {
+      "path": "receipts/build.duty.json",
+      "sha256": "40ee8159f7c414f6dd16592cc734fa44ba22cfa65aba6785c21cf2db0fd71636",
+      "bytes": 1048
+    },
+    {
+      "path": "receipts/build2.duty.json",
+      "sha256": "730944f9118406f940e68b7766d9ab96735b84f8db44f279ca895917a48aa94b",
+      "bytes": 2378
+    },
+    {
+      "path": "receipts/run.duty.json",
+      "sha256": "b01c70407368d4e849a4b41ff057ba3cb4500257de2868af7bf5afc5e0559f4c",
+      "bytes": 2611
+    },
+    {
+      "path": "receipts/extract.duty.json",
+      "sha256": "dee8eab9f88175ac06bdee3dfae0e1f305507114e7b6887cb3670c1bc8e9d456",
+      "bytes": 4207
+    },
+    {
+      "path": "receipts/compare.duty.json",
+      "sha256": "333a8ce58cc8f6fda163ea65e55369d81e30df9264616d924d0021e874204d6f",
+      "bytes": 7931
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "logs/extract.stdout.log",
+      "sha256": "4c497158fa26c3ef5240b4320598d4d52390ef20f37c8a6dbf06c7385911a748",
+      "bytes": 250,
+      "reason": "raw CLI output with trailing whitespace, retained byte-exact locally"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/outputs/finishing-recall-B-vs-v33-big-world.repl26a",
+      "sha256": "bcddd6777bd59929e8033bef869b8e73b8d9819de89d3c4b99fe5b8a9afa5f8f",
+      "bytes": 54300,
+      "reason": "raw native replay bundle, retained locally; omitted from compact package"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/outputs/finishing-recall-B-vs-v33-big-world.statistics.json",
+      "sha256": "61b63c00df310d59b9a998a198f4efcc248409d6567d8e5285271ffbd5f70151",
+      "bytes": 54799,
+      "reason": "opaque cambc statistics output, retained locally; omitted from compact package"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/extracted/bcddd6777bd59929/events.jsonl.gz",
+      "sha256": "5060212ce5ade09f4449bac69b8033fe32405e32be9203d2c0726ad3bdba0e98",
+      "bytes": 248714,
+      "reason": "expanded extraction artifact retained locally; compact status audit is included"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/extracted/bcddd6777bd59929/meta.json",
+      "sha256": "07d8ad77a0e8489b64aa64b3d1946953f317cd6664e1c5fdf6a1b09e08b8aebd",
+      "bytes": 6656,
+      "reason": "expanded extraction artifact retained locally; compact status audit is included"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/extracted/bcddd6777bd59929/rounds.json.gz",
+      "sha256": "a393f9c8b2774228310a558af5e2034efd3d63708429445415c51befa5548c26",
+      "bytes": 54862,
+      "reason": "expanded extraction artifact retained locally; compact status audit is included"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/extracted/enums.json",
+      "sha256": "121ad1348a6b42b89372dd758b870f95f7d5c1c08a3f3ca921015350ed4fc5b8",
+      "bytes": 2248,
+      "reason": "expanded extraction artifact retained locally; compact status audit is included"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/extracted/index.json",
+      "sha256": "e843d9140805e7e66fa5bfbbaa95eb69626b2398d7b3427727851fa084b98495",
+      "bytes": 331,
+      "reason": "expanded extraction artifact retained locally; compact status audit is included"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/extracted/maps/c890c7d4607bc45c.json",
+      "sha256": "9f21864a9e2e03469fb7d03b496960402ffbdfa6d09fd8f2da11e124472af4e8",
+      "bytes": 22027,
+      "reason": "expanded extraction artifact retained locally; compact status audit is included"
+    }
+  ],
+  "pins": {
+    "candidate_source_aggregate_sha256": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "candidate_bot_cpp_sha256": "12b287870f0e516829ccd0ce47765391e273729af1529fdc3df2f719da060d46",
+    "parent_source_aggregate_sha256": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+    "v33_source_aggregate_sha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+    "candidate_raw_wasm_sha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+    "candidate_injected_wasm_sha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525",
+    "v33_raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+    "v33_injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+    "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "candidate_inner_replay_sha256": "369f73638437e6ed4313cdb19d18798c85a3da425863f602842b0d1ad558b8f0",
+    "parent_inner_replay_sha256": "0022ca3c4d26d95df367ba021ef4d2b435f2eaccb9e3c76708ba5821619f14dc",
+    "sdk_cambc_h_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "sdk_imports_h_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502"
+  },
+  "limitations": [
+    "One candidate game only; no strength inference.",
+    "Raw bundle, statistics output, and expanded extraction are preserved locally but excluded from the compact package.",
+    "Initial wrapper path error before successful build is retained as an unsuccessful attempt; it launched no build process."
+  ],
+  "team_score_gap_decomposition": {
+    "A_score": 1014,
+    "B_score": 588,
+    "score_gap": 426,
+    "A_ordinary_captured": 1030,
+    "B_ordinary_captured": 925,
+    "ordinary_capture_gap": 105,
+    "stolen_gem_swing": 42,
+    "end_bag_gap": 279,
+    "identity": "105 + 42 + 279 = 426; ordinary captures exclude the 21 gems stolen by A."
+  }
+}
