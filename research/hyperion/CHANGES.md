@@ -810,3 +810,29 @@ its own it wins ([EXPERIMENTS](../EXPERIMENTS.md#vendetta-2026-10-24-astraeus-on
 - Against 065f2631 on the 3-pick maps (own drafts; other pick counts play identically): fresh suites seeds 5171 and
   6203, 54.5% of 312 (48.9-59.9); ladder, gen and gen-s1, 54.1% of 364 (49.0-59.2); 54.3% of 676, out-of-fuel turns
   level (1070 vs 1072).
+
+## 139: stall guards for unseen maps: crystal-only altars, unreachable altars, a camp over our spawn (astraeus, 2026-10-24)
+
+A pre-tournament audit traced astraeus through edge-case maps for stalls. Repro maps and their generator are in
+[repro-maps/](repro-maps/) (outside `maps/`, so no A/B suite reads them).
+
+- **Crystal-only altars** (`crystalaltar`: every altar behind a 2-wide hole moat): unpatched, every champion stood
+  still from about round 150, holding 18-57 gems, 0-0 at round 2000. `recall_to_bank` priced the trip home on foot,
+  and from spawn walking reaches no altar either, so nobody went home to buy a crystal; those with 0 gold
+  (gem-only farming) could not buy one anyway. Now `recall_to_bank` also keeps the recall when walking reaches no
+  altar, a hop is wanted and we can buy a crystal; a bag that only a crystal could bank counts as unbankable while
+  we hold none and cannot buy one, so we farm the gold first (only on maps with hops); and the crystal is bought
+  before shards, on spawn and while dead. Patched: a 1000-gem win at round 1506.
+- **Altars no one can reach**: `altar_access` counted every tribute tile off our walk as a crystal's. It now keeps
+  one only if `StaticMap::hops` has a hop to its altar, so a bag no altar can bank is held back (farm and shop as if
+  empty-handed) rather than carried to the 45-gem limit and stood on.
+- **A camp whose reach covers our spawn**: a champion hurt on spawn took the heal branch (`mend`) every turn while
+  the awake camp hit it, and never left. `mend` now skips when a camp can hit our tile (only on maps where a camp
+  member's reach covers our spawn, read once). Not reproduced: our all-melee 3-pick team cannot wake a camp it
+  cannot reach, so the pin needs an enemy or a ranged ally to wake it.
+
+- Against 72de514: 49.2% of 1104 (46.2-52.1; ladder 47.5 of 80, gen 50.6, gen-s1 48.0), 0 failed, out-of-fuel turns
+  3312 vs 3120. 100M bench (wide set): identical replays 52/52, fuel +0.16% (~70 a turn), so the ladder and suite
+  differences come from fuel only.
+- Repro maps, patched against itself: crystalaltar ends in a 1000-gem win at round 1506 (unpatched 0-0 at 2000);
+  spawnpin, spawnpin-golem and deadaltar play normally either way.
