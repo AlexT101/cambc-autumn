@@ -2062,3 +2062,31 @@ has independent Willow income1238 and143 gems collected/banked. These summaries 
 blanket more-healing, earlier-banking, or permanent-follow prescriptions; they do not yet
 certify actor-known alternatives. Twenty-nine bounded actor turns are queued for local
 visibility/readiness review after the current benchmark worker is released.
+
+The first Gold Rush window is amended to Vesper1/A rounds10–24, making the first
+three-window pass33 turns. The summary shows our Vesper clearing groups at13 and17,
+our HoR receiving one reward at19 and enemy Vesper the other at23. Combat starts18.
+This nominates capture ownership and the clear-to-combat transition; it does not prove
+that staying or contesting was locally safe. The later154–164 request is preserved.
+
+### Astraeus upstream freeze and pending Focus audit
+
+Fetched upstream e72724a without merging into canonical4db during its child's audit.
+The new Astraeus tree is identical to315910d; its29-file source aggregate is
+`57f6908fcac310582d5b02606d8742c76c10a57f3a871c6a09792af115289369`.
+Frozen source and untouched build control are `bots/baselines/astraeus-e72724a` and
+`bots/variants/willow-astraeus-e727-work`; complete before/after receipts are in
+`provenance/astraeus-e72724a-freeze-20261024-v1/`. They are not yet built here.
+
+Upstream's v44 baseline matches all29 released Khaos_v33 source files. Its reported
+1104-game Astraeus result versus that source is52.8%, with a49.9–55.7% interval and
+3133/5334 candidate/reference OOF turns. This verifies baseline source identity, not
+their build/run manifest or today's live submission. See `astraeus-integration-review-
+20261024-v1.md` and its separate identity receipt. Astraeus consolidates Willow danger
+and movement scheduling; shopping, camp-escape ordering, farm pathing and mixed-Monolith
+admission remain distinct unresolved mechanisms.
+
+The local9b Focus-plus-optional-make-way compound completed all1104 scheduled games
+against frozenv33 at518–586, versus its4db parent's524–580 on the same panel. This is
+not an overall improvement. Full native/error audits and post-run pin verification
+are still pending; no source is promoted or release submitted from this result.

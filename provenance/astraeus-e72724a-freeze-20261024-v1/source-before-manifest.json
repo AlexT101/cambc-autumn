@@ -1,0 +1,154 @@
+{
+  "schema": "astraeus-source-freeze-manifest/v1",
+  "label": "source-before",
+  "file_count": 29,
+  "source_aggregate_recipe": "(cd <botdir> && shasum -a 256 src/* | shasum -a 256)",
+  "source_aggregate_sha256": "57f6908fcac310582d5b02606d8742c76c10a57f3a871c6a09792af115289369",
+  "files": [
+    {
+      "path": "src/abilities.cpp",
+      "bytes": 31189,
+      "sha256": "c6559729a996e1f5803990d0f0eb2094c89fb7752dd3fbf57118595f56369467"
+    },
+    {
+      "path": "src/abilities.h",
+      "bytes": 1720,
+      "sha256": "6f8cffe741219475b17f9b27f1b75715fd94b0df0682380b54b2827676404cc9"
+    },
+    {
+      "path": "src/bot.cpp",
+      "bytes": 258751,
+      "sha256": "1b698859877726f2217c4947c1ffddba09a0ea7b5079526e046606dc51d04a50"
+    },
+    {
+      "path": "src/bot.h",
+      "bytes": 2173,
+      "sha256": "79686dd97aea7627b34c45a8d67d958a7c2f54d46a75b33b809aec433f333f31"
+    },
+    {
+      "path": "src/champions.h",
+      "bytes": 7348,
+      "sha256": "2ef629ef356748dedff8180d848e98ffb489851f597a43c17e4a3a269c737103"
+    },
+    {
+      "path": "src/combat_priority.h",
+      "bytes": 4679,
+      "sha256": "252817d10e02d4c781ce4b3f65dda49f47c06646f07fa843c29f2ef08dda452d"
+    },
+    {
+      "path": "src/comms.cpp",
+      "bytes": 11193,
+      "sha256": "96c83b09b168f5697851093f363598f54a82d2d984e3080d1100e1c1aa93cfd8"
+    },
+    {
+      "path": "src/comms.h",
+      "bytes": 2010,
+      "sha256": "c3c16283e1087f880797ce219bb1ebb3beefdb051561e2556a47acdc33b0ac4c"
+    },
+    {
+      "path": "src/crew_work.h",
+      "bytes": 844,
+      "sha256": "a1cd30a2d4cc4261e5712d51150afc0c57cfd41a41e8ff1e1bab6c71df85ca75"
+    },
+    {
+      "path": "src/draft.cpp",
+      "bytes": 13795,
+      "sha256": "f8da1ce6e9f0ad8d8093f907bf744393f098f8bbcbee08272df56e5bbe31fe22"
+    },
+    {
+      "path": "src/draft.h",
+      "bytes": 2160,
+      "sha256": "2b02e4650c9fa33cc31dec70e1197214cefe924880769394eeabf5f729a6f97b"
+    },
+    {
+      "path": "src/draft_selection.h",
+      "bytes": 1453,
+      "sha256": "439af4a9d1ff45539f3c1010a3ab812e489e94ae57b6d2897dfaad496aaf9dab"
+    },
+    {
+      "path": "src/idle_priority.h",
+      "bytes": 424,
+      "sha256": "08446b354e64091d0cfd8145e9f40ec195279d14ddffa7e1e9e77f49d141db74"
+    },
+    {
+      "path": "src/main.cpp",
+      "bytes": 9267,
+      "sha256": "a70134ba981e30de18a4c716c2812a1be36daf7844bb82002c36c283518fa14e"
+    },
+    {
+      "path": "src/params.h",
+      "bytes": 5182,
+      "sha256": "cae05ef905e7564822190fac5563833c81cce906ec46e03e4c5687427bb7475e"
+    },
+    {
+      "path": "src/pathing.cpp",
+      "bytes": 30801,
+      "sha256": "a3dd7e76421c88df98af01df330f6338a5d7b3003b2344d8c411b14842f77191"
+    },
+    {
+      "path": "src/pathing.h",
+      "bytes": 11528,
+      "sha256": "cb4879b75c55cc44fd666760e0dfa2739aaa6210245e37a0f4072cfc2f0399e8"
+    },
+    {
+      "path": "src/plan.cpp",
+      "bytes": 94516,
+      "sha256": "eea3e719cc6e546af6e75d3743892b9e98d6781caaf652d0363f7047d56871d9"
+    },
+    {
+      "path": "src/plan.h",
+      "bytes": 2215,
+      "sha256": "b699944d1e5d9b1ea3886448183b18a876261b49f0ff8bee590aacbb8fb5ef5a"
+    },
+    {
+      "path": "src/safety.cpp",
+      "bytes": 104049,
+      "sha256": "07f6c2ca8e2f165fcb5e02c0998f818fc4a3ebb2ad33180f7fbda43d3df9c123"
+    },
+    {
+      "path": "src/safety.h",
+      "bytes": 22759,
+      "sha256": "9b9ed50b99319b6cc4929ae020a4ad8f50b95723844282202442383bf703d1c6"
+    },
+    {
+      "path": "src/self_abilities.cpp",
+      "bytes": 24461,
+      "sha256": "3320e6e90603835150e19b04e4d7a79389c2c72bbd6543b9864c5acff909cb9f"
+    },
+    {
+      "path": "src/self_abilities.h",
+      "bytes": 4154,
+      "sha256": "c527a483e171dc17f160151f2bdb6150321bea23ea5a8dec57bbd54afa243cf1"
+    },
+    {
+      "path": "src/support_mailbox.h",
+      "bytes": 2655,
+      "sha256": "f70193e17987e7cf83976648ae3d7742299662373dad20aeac62051446fa76b0"
+    },
+    {
+      "path": "src/turn_order.cpp",
+      "bytes": 16046,
+      "sha256": "a9c5c9b7d483ddb1309875e9d4c70744951fab1b99fc47db4e192841b37c0aa5"
+    },
+    {
+      "path": "src/turn_order.h",
+      "bytes": 328,
+      "sha256": "8688629c75774c1f78793e8fbb72e676e60d8b6dc5672ebfc39dca8b1bd4c03e"
+    },
+    {
+      "path": "src/util.h",
+      "bytes": 26061,
+      "sha256": "0e4cda586d2ce048e78b386da1cc18ea2bedc9ef45aedbdccab43dbe592626ff"
+    },
+    {
+      "path": "src/world.cpp",
+      "bytes": 88124,
+      "sha256": "d94b115745e732d694afe3cf203868283bee0405aa3a40a91d4049a8a2f5433d"
+    },
+    {
+      "path": "src/world.h",
+      "bytes": 31648,
+      "sha256": "ba42fa300af8b1dbb1a15feda6afad02e11d947ecd7e6c8cbbec14c86e17c542"
+    }
+  ]
+}
