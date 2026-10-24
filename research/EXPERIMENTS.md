@@ -2804,3 +2804,28 @@ adaptation or regression. Only Big World B loss
 later decoding. It reverses Mite's side and changes the opponent relative to the
 earlier boss-loss witness, so it will be a mechanism comparison. No Willow-first
 ladder-manipulation batch is included.
+
+The first latest-parent/sighting-v3 native pair is complete. On Pilgrimage A
+against frozen v33, both win 1,030–210 at round 1,358 with matching native drafts.
+Both own teams have zero play rollovers and zero native errors; v33 B has six
+play rollovers and zero errors in each. Draft/other phase failures are zero.
+The inner replay hashes differ, and the first semantic difference is still
+being classified. This cell does not demonstrate a match-strength gain. No
+additional game is inferred from the passing host assertions or shared result.
+
+The first decoded divergence is Prism0 at round 1,183. Both cancel the recall
+stub; the candidate moves from (13,39) to (12,38) and restarts recall, whereas
+the parent restarts in place and takes that same step a round later. Subsequent
+paths differ, but both start the same 141-gem tribute at 1,311 and complete it
+at 1,326. Final Prism economy/combat totals match. Public decoded records do not
+expose the private message/guard chain; a source-pinned paired trace would be
+needed to distinguish the intended information effect from computation-cost
+effects. No claim of replay equivalence, zero effect or realized benefit follows.
+
+The boss cost design separates physical static-field reuse from logical route
+admission. A cache hit must preserve the existing `cold_round` switch check and
+failed-preparation pointer semantics. The altar field depends on the current
+open-goal signature under fixed walls, not the selected exit; a home field must
+be keyed by exact exit, since two groups can yield more than two endpoints.
+See `willow-phased-boss-route-cache-design-20261024-v1.md`. No optimization or
+measured saving is claimed at this checkpoint.

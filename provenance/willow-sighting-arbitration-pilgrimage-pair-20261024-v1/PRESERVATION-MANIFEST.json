@@ -1,0 +1,170 @@
+{
+  "schema": "willow-sighting-arbitration-pilgrimage-pair-preservation/v1",
+  "scope": "Compact source/tool/runtime/semantic audit receipts. Raw replay archives and full extracted round/event streams remain local and are pinned under excluded_raw_artifacts.",
+  "files": [
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/preflight.json",
+      "bytes": 2181,
+      "sha256": "10946420ac06e66d998b166abb53326a90b9fe8be53a5e57e298473ac70c99cc"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/PAIR-RESULT.json",
+      "bytes": 15221,
+      "sha256": "fed3fcbd0499ce50cabf0506f3e47970b2a9972449916a71c1256fbfb73f01e5"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/PAIR-RESULT.md",
+      "bytes": 2167,
+      "sha256": "7cd251202f942aeb62c90661ec29c7b20a70d8a73863044a46ab49468b54d90d"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/sighting.manifest",
+      "bytes": 724,
+      "sha256": "f59507d9fae870ea1ea92af24fdcd6f11b779a033553d9ccb78caf230171a9d4"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/parent.manifest",
+      "bytes": 698,
+      "sha256": "bd9fdee33726f8b027c974f475e3d7acc966949da563c42afe00815b36c944e9"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/sighting-run.stdout.log",
+      "bytes": 1119,
+      "sha256": "3af6dfba4d8c8debf3f07bb7d8268a621869099a7b42810e5fe45e2272576985"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/sighting-run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/sighting-run.duty.json",
+      "bytes": 5177,
+      "sha256": "f11e4241ce4e60469c10e0f9b0d75ae7cb073e796552feec2f5f9f353d8504b4"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/parent-run.stdout.log",
+      "bytes": 995,
+      "sha256": "f31bf50248a0f975ecf8571c9e047627915f089e833c301ee59ca3bb7f1e3ed8"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/parent-run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/parent-run.duty.json",
+      "bytes": 4324,
+      "sha256": "f2a4b21dc7d74ac64901670a092beba1347ca5c7219fd52072b50f16367b497d"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/extract.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/extract.duty.json",
+      "bytes": 6321,
+      "sha256": "14c5abf51a6f7fd22fe2a9f1e8fe79433d9e7c4498ff125715626cbdafea056a"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit-sighting-release.stdout.log",
+      "bytes": 223,
+      "sha256": "5be21db5f363b902af7b899510388f9f51806a38006187dd57a99729119c99b4"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit-sighting-release.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit-sighting-release.duty.json",
+      "bytes": 3011,
+      "sha256": "98e4580d7599281e3eb9999ad4b9e80d87687df9adea5b4f487f0c059bdb75eb"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit-parent-release.stdout.log",
+      "bytes": 221,
+      "sha256": "04be2aff0f1aa8a57152ec51438f893a1923ede55ecd2bff22bf625f120f0471"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit-parent-release.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit-parent-release.duty.json",
+      "bytes": 3004,
+      "sha256": "999e6dde778afa3f49818cfe3d484efc3826153a5e3b58a0a91d6975abd5a2d9"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit/sighting/results.json",
+      "bytes": 984,
+      "sha256": "b1595f57ed97bfd523ede795fb669dc155b50ff1e979ee0107c492e9e45490ba"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit/sighting/native-status-release.json",
+      "bytes": 4507,
+      "sha256": "4db178f40f41bb3af3793672d577ada98cbe377e9e6006b729aa5f36f32c0242"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit/sighting/act-errors.json",
+      "bytes": 819,
+      "sha256": "65b30aa74997e4ac4ce4891227c0e9171a12e8be2790a8a7f30016acae5f145e"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit/parent/results.json",
+      "bytes": 958,
+      "sha256": "8b9ebd69b4e4c8417306aaa0f50ef2b5428c12c804e6231b2791488913e239d0"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit/parent/native-status-release.json",
+      "bytes": 4431,
+      "sha256": "e1aa707d5ce9e8f47e54934424509cf03b49a1df187b6362ddee4784cd5282d5"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit/parent/act-errors.json",
+      "bytes": 769,
+      "sha256": "55a381b310fcd6e5844a89f95e76f0c9a69cf39f8f4e1dfc843f0ae255980248"
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/outputs/parent-A-vs-v33-pilgrimage.repl26a",
+      "bytes": 79876,
+      "sha256": "85dd81ebcacf6b1265c79bc8afd0605d8fa68401ff7d8a8e68b49cb4fa81d1da"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/outputs/sighting-A-vs-v33-pilgrimage.repl26a",
+      "bytes": 79904,
+      "sha256": "047361a2b4f1f1a2aaf2a4e125dd193b4084d288e8c0c97a571d455c216671bc"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/extracted/047361a2b4f1f1a2/events.jsonl.gz",
+      "bytes": 369743,
+      "sha256": "8494d7259b2afd53d39118411ca25dabd291ce1e4e1b4a39eb760b7f485d1cab"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/extracted/047361a2b4f1f1a2/rounds.json.gz",
+      "bytes": 78346,
+      "sha256": "0b9bedaa9fa4621e97d6743cf3b7c4200613e0d99d1f0ad0000385a535db6d13"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/extracted/85dd81ebcacf6b12/events.jsonl.gz",
+      "bytes": 369761,
+      "sha256": "ff44da9d24a84b8f5429c8317e71ad7cd01ba819781a5603a6dac92f6e9c0a31"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/extracted/85dd81ebcacf6b12/rounds.json.gz",
+      "bytes": 78348,
+      "sha256": "dad04a4a063f4b582ef388023de41e411beec8e866893c590f5f62065eda2102"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/extract.stdout.log",
+      "bytes": 252,
+      "sha256": "a690005a481fafcb6bc0bbd028c0f3ffc711233ce15acc3fdbf58266af61d0a9",
+      "note": "Raw extractor stdout preserved byte-exact; trailing whitespace is intentional evidence."
+    }
+  ],
+  "prior_manifest_sha256_before_exact-raw-log-exclusion": "ced1285228fd19f4721411f05f59c9ee4dfe8e7f0600c4328c40cdc193a86af9"
+}

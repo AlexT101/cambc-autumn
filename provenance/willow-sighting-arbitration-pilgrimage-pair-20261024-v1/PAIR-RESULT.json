@@ -1,0 +1,566 @@
+{
+  "schema": "willow-sighting-arbitration-pilgrimage-paired-cell/v1",
+  "status": "complete",
+  "interpretation": "Two same-cell single-game diagnostics. Both sides/drafts/outcomes match; decoded replay payloads differ and the public semantic event trace has an action-path difference. No direct priority write/shared-memory evidence is exposed, so do not claim protocol activation or causal benefit.",
+  "source_pins": {
+    "candidate_aggregate": "a439a6c2d1d1d2ef1004f3a463b243d1f48d2daa65eada801d83f55c5c17a2df",
+    "candidate_patch_sha256": "59632c96d7e62f2605ab8b42eebc1e0248990f2de80cb418802bef5ed87dbf37",
+    "parent_aggregate": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+    "v33_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "tool_pins": {
+    "cambc": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+      "version": "cambc 3.0.5",
+      "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+    },
+    "engine": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/engine/v1_0_3.wasm",
+      "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+    },
+    "map": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/maps/00pilgrimage.map26a",
+      "sha256": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673"
+    },
+    "sdk": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/cambc.h",
+      "sha256_before": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "mtime_ns_before": 1792774035481976768,
+      "sha256_after": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "mtime_ns_after": 1792774035481976768,
+      "unchanged": true
+    }
+  },
+  "runtime_builds": {
+    "candidate": {
+      "raw_wasm_sha256": "6731c6e6f2ec251f1adad685fa124c8c06132ef032f4711253ac70b0def8713d",
+      "raw_wasm_bytes": 1671527,
+      "injected_wasm_sha256": "fe63887cc241d765870e0caf1baf9544add02cf7f56a8bdf0609e806581970dd",
+      "injected_wasm_bytes": 913275
+    },
+    "parent": {
+      "raw_wasm_sha256": "7238a4f52b3cbe5faf3a417326f8dcca47c78aaf93be6df04e8def59007828e4",
+      "raw_wasm_bytes": 1668398,
+      "injected_wasm_sha256": "da3ddeadd1f5835ea9a434af92a782cc0f433f90eb6c340dc2d85979ca1096a5",
+      "injected_wasm_bytes": 910146
+    },
+    "v33": {
+      "raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "raw_wasm_bytes": 1652228,
+      "injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+      "injected_wasm_bytes": 893976
+    }
+  },
+  "games": {
+    "candidate": {
+      "winner_side": "A",
+      "round": 1358,
+      "steps": 271026,
+      "gems_A_B": [
+        1030,
+        210
+      ],
+      "draft_A_B": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "champion_stats_A": [
+        {
+          "collectedGems": 141,
+          "submittedGems": 141,
+          "earnedGold": 1480,
+          "id": 0,
+          "name": "Prism"
+        },
+        {
+          "collectedGems": 162,
+          "submittedGems": 162,
+          "earnedGold": 2395,
+          "id": 1,
+          "name": "Vesper Vale"
+        },
+        {
+          "collectedGems": 315,
+          "submittedGems": 315,
+          "earnedGold": 3252,
+          "id": 2,
+          "name": "Marcella"
+        },
+        {
+          "collectedGems": 44,
+          "submittedGems": 44,
+          "earnedGold": 696,
+          "id": 3,
+          "name": "Willow"
+        },
+        {
+          "collectedGems": 368,
+          "submittedGems": 368,
+          "earnedGold": 3456,
+          "id": 4,
+          "name": "Heart of Ruin"
+        }
+      ],
+      "counts": {
+        "attack": 2264,
+        "blocked": 253,
+        "camp_attack": 1551,
+        "camp_death": 511,
+        "capture": 142,
+        "capture_hold": 142,
+        "cast": 1013,
+        "death": 7,
+        "group_clear": 143,
+        "group_respawn": 139,
+        "group_sleep": 35,
+        "group_wake": 166,
+        "lock_destroyed": 4,
+        "lock_place": 8,
+        "move": 9698,
+        "recall_cancel": 12344,
+        "recall_end": 45,
+        "recall_start": 12397,
+        "respawn": 7,
+        "shop": 130,
+        "tribute_end": 42,
+        "tribute_start": 42,
+        "ward": 271
+      }
+    },
+    "parent": {
+      "winner_side": "A",
+      "round": 1358,
+      "steps": 271025,
+      "gems_A_B": [
+        1030,
+        210
+      ],
+      "draft_A_B": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "champion_stats_A": [
+        {
+          "collectedGems": 141,
+          "submittedGems": 141,
+          "earnedGold": 1480,
+          "id": 0,
+          "name": "Prism"
+        },
+        {
+          "collectedGems": 162,
+          "submittedGems": 162,
+          "earnedGold": 2395,
+          "id": 1,
+          "name": "Vesper Vale"
+        },
+        {
+          "collectedGems": 315,
+          "submittedGems": 315,
+          "earnedGold": 3252,
+          "id": 2,
+          "name": "Marcella"
+        },
+        {
+          "collectedGems": 44,
+          "submittedGems": 44,
+          "earnedGold": 696,
+          "id": 3,
+          "name": "Willow"
+        },
+        {
+          "collectedGems": 368,
+          "submittedGems": 368,
+          "earnedGold": 3456,
+          "id": 4,
+          "name": "Heart of Ruin"
+        }
+      ],
+      "counts": {
+        "attack": 2264,
+        "blocked": 253,
+        "camp_attack": 1551,
+        "camp_death": 511,
+        "capture": 142,
+        "capture_hold": 142,
+        "cast": 1013,
+        "death": 7,
+        "group_clear": 143,
+        "group_respawn": 139,
+        "group_sleep": 35,
+        "group_wake": 166,
+        "lock_destroyed": 4,
+        "lock_place": 8,
+        "move": 9697,
+        "recall_cancel": 12344,
+        "recall_end": 45,
+        "recall_start": 12397,
+        "respawn": 7,
+        "shop": 130,
+        "tribute_end": 42,
+        "tribute_start": 42,
+        "ward": 271
+      }
+    }
+  },
+  "native_status": {
+    "candidate": {
+      "release": true,
+      "by_bot": [
+        {
+          "bot": "willow-sighting-arbitration-4d08241-work",
+          "bot_index": 0,
+          "games": 1,
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "v33",
+          "bot_index": 1,
+          "games": 1,
+          "play": {
+            "rollover": 6,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "physical_sides": [
+        {
+          "physical_side": "A",
+          "bot": "willow-sighting-arbitration-4d08241-work",
+          "bot_index": 0,
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "champions": {}
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1,
+          "play": {
+            "rollover": 6,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "champions": {
+            "5": {
+              "actor_kind": 1,
+              "actor_index": 5,
+              "champion_team": 1,
+              "play": {
+                "rollover": 2,
+                "bot_error": 0
+              }
+            },
+            "8": {
+              "actor_kind": 1,
+              "actor_index": 8,
+              "champion_team": 1,
+              "play": {
+                "rollover": 3,
+                "bot_error": 0
+              }
+            },
+            "9": {
+              "actor_kind": 1,
+              "actor_index": 9,
+              "champion_team": 1,
+              "play": {
+                "rollover": 1,
+                "bot_error": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "parent": {
+      "release": true,
+      "by_bot": [
+        {
+          "bot": "astraeus-4d08241",
+          "bot_index": 0,
+          "games": 1,
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "v33",
+          "bot_index": 1,
+          "games": 1,
+          "play": {
+            "rollover": 6,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "physical_sides": [
+        {
+          "physical_side": "A",
+          "bot": "astraeus-4d08241",
+          "bot_index": 0,
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "champions": {}
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1,
+          "play": {
+            "rollover": 6,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "champions": {
+            "5": {
+              "actor_kind": 1,
+              "actor_index": 5,
+              "champion_team": 1,
+              "play": {
+                "rollover": 2,
+                "bot_error": 0
+              }
+            },
+            "8": {
+              "actor_kind": 1,
+              "actor_index": 8,
+              "champion_team": 1,
+              "play": {
+                "rollover": 3,
+                "bot_error": 0
+              }
+            },
+            "9": {
+              "actor_kind": 1,
+              "actor_index": 9,
+              "champion_team": 1,
+              "play": {
+                "rollover": 1,
+                "bot_error": 0
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "caught_act_errors": {
+    "candidate": {
+      "willow-sighting-arbitration-4d08241-work": {
+        "bot_index": 0,
+        "matches_with_errors": 0,
+        "error_lines": 0,
+        "match_round_instances": 0,
+        "physical_side_lines": {
+          "A": 0,
+          "B": 0
+        },
+        "error_code_counts": {}
+      },
+      "v33": {
+        "bot_index": 1,
+        "matches_with_errors": 0,
+        "error_lines": 0,
+        "match_round_instances": 0,
+        "physical_side_lines": {
+          "A": 0,
+          "B": 0
+        },
+        "error_code_counts": {}
+      }
+    },
+    "parent": {
+      "astraeus-4d08241": {
+        "bot_index": 0,
+        "matches_with_errors": 0,
+        "error_lines": 0,
+        "match_round_instances": 0,
+        "physical_side_lines": {
+          "A": 0,
+          "B": 0
+        },
+        "error_code_counts": {}
+      },
+      "v33": {
+        "bot_index": 1,
+        "matches_with_errors": 0,
+        "error_lines": 0,
+        "match_round_instances": 0,
+        "physical_side_lines": {
+          "A": 0,
+          "B": 0
+        },
+        "error_code_counts": {}
+      }
+    }
+  },
+  "replay_pins": {
+    "candidate": {
+      "zip_sha256": "047361a2b4f1f1a2aaf2a4e125dd193b4084d288e8c0c97a571d455c216671bc",
+      "zip_bytes": 79904,
+      "inner_replay_sha256": "ec93b629442b03f09e8915abbd373909553756365e3af55cc1f93cea5a680cd9",
+      "inner_replay_bytes": 237889
+    },
+    "parent": {
+      "zip_sha256": "85dd81ebcacf6b1265c79bc8afd0605d8fa68401ff7d8a8e68b49cb4fa81d1da",
+      "zip_bytes": 79876,
+      "inner_replay_sha256": "2af22092f2e52b04c914238954937cf38d106687384be158fddf0f7fb06b4d5d",
+      "inner_replay_bytes": 237879
+    }
+  },
+  "decoded_semantic": {
+    "candidate_events_jsonl_sha256": "7c705d4b77d38d94445062f18e7d8ce29d311b2ba99f7b2bbeafcc8a9ef43682",
+    "parent_events_jsonl_sha256": "8fb8f58da700b35f367a34719f216fbed1f1d0e10b6ec6fe83f63bf0c9c00d6b",
+    "event_count_candidate": 41354,
+    "event_count_parent": 41353,
+    "rounds_json_gz_sha256": {
+      "candidate": "0b9bedaa9fa4621e97d6743cf3b7c4200613e0d99d1f0ad0000385a535db6d13",
+      "parent": "dad04a4a063f4b582ef388023de41e411beec8e866893c590f5f62065eda2102"
+    },
+    "first_event_divergence": {
+      "same_position_index": 36110,
+      "candidate_event": {
+        "s": 236380,
+        "r": 1183,
+        "t": 8,
+        "k": "move",
+        "a": 0,
+        "f": [
+          13,
+          39
+        ],
+        "to": [
+          12,
+          38
+        ]
+      },
+      "parent_event": {
+        "s": 236380,
+        "r": 1183,
+        "t": 8,
+        "k": "recall_start",
+        "a": 0,
+        "gems": 141,
+        "at": [
+          13,
+          39
+        ]
+      },
+      "shared_prefix_event": {
+        "round": 1183,
+        "event": "Both Prism arms cancel the same four-tick recall stub before diverging."
+      }
+    }
+  },
+  "activation_observability": {
+    "priority_writes_exposed": false,
+    "shared_memory_writes_exposed": false,
+    "note": "At round 1183 both Prism arms cancel the same four-tick recall stub; parent restarts recall in place while candidate moves one tile before restarting it. Their subsequent path differs, but both carry the same 141 gems into a tribute at round 1311 and finish it at round 1326. Replay snapshots do not expose the shared-memory word or native priority setter, so this does not establish protocol activation or explain the behavior difference."
+  },
+  "run_settings": {
+    "normal_native_draft": true,
+    "release": true,
+    "fuel_quantum": 100000,
+    "jobs": 1,
+    "threads": 1,
+    "nice": 19,
+    "duty_fraction_approx": 0.1,
+    "candidate_then_parent_sequential": true,
+    "failed_matches": 0
+  }
+}

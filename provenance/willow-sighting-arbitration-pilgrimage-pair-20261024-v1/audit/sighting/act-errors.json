@@ -1,0 +1,32 @@
+{
+  "batch": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/audit/sighting",
+  "results_sha256": "b1595f57ed97bfd523ede795fb669dc155b50ff1e979ee0107c492e9e45490ba",
+  "candidate": "willow-sighting-arbitration-4d08241-work",
+  "reference": "v33",
+  "completed": 1,
+  "bots": {
+    "willow-sighting-arbitration-4d08241-work": {
+      "bot_index": 0,
+      "matches_with_errors": 0,
+      "error_lines": 0,
+      "match_round_instances": 0,
+      "physical_side_lines": {
+        "A": 0,
+        "B": 0
+      },
+      "error_code_counts": {}
+    },
+    "v33": {
+      "bot_index": 1,
+      "matches_with_errors": 0,
+      "error_lines": 0,
+      "match_round_instances": 0,
+      "physical_side_lines": {
+        "A": 0,
+        "B": 0
+      },
+      "error_code_counts": {}
+    }
+  },
+  "rows": []
+}
