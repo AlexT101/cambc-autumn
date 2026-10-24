@@ -318,6 +318,10 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
   3.8k a call was meter overhead). Skipping `update_camp`'s board test before a member's health read is not exact:
   the engine reports a dead member on a seen tile as not in vision, which the test reads as dead; the exact version
   saves <= ~27 per visible member. What remains is per-call engine charges or already cached.
+- The search's unseen-threat pricing (`plan.cpp`, `threats_at` per priced tile 2-3 steps out) skipped when no credible
+  unseen enemy can reach the grid, one `any_within` per enemy a search (2026-10-23, main c71be8c, wide bench, own
+  drafts, 100M): identical replays, fuel -0.003% (dearer in 15,092 turns, cheaper in 716). Dropped; `flee_camps`'
+  nine `damage_bound`s (one remembered `any_within` per unseen enemy a tile) would save less.
 - Gate removals: every one so far was level at 100M but multiplied out-of-fuel turns, since a "skip when short" gate
   adds work exactly when fuel is short. Held branches: `fuel/no-gates-1` (23319 vs 6776), `-1b` (4.2x), `-1c` (5.1x;
   the culprit is pick_up's farm-loop gate, the ward gate a distant second); the turn-order gate (bb414db, +13%); step
