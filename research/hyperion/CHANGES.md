@@ -508,3 +508,18 @@ step skip it: holding, a ranged champion that attacked, the guard after the sear
   175 -> 159.
 - 109 + 110 against main a5749c4: 49.4% of 1104 (ladder 45.0 of 80, gen 49.6, gen-s1 49.8), out-of-fuel turns 3822 vs
   5058 (-24%).
+
+## 111: an ally's stun read with its stats (2026-10-23)
+
+An ally's stun is read with its stats when first seen in a round and kept on the belief. Safety read it live, and once
+our move hid a believed-visible ally (vision is personal) the read threw and lost the rest of the turn.
+
+- Against main, ladder + gen: 50.0% of 592 (ladder 48.8 of 80, gen 50.2), out-of-fuel turns 2339 vs 2481.
+
+## 112: a retreat step out of every reach (2026-10-23)
+
+When no step that keeps or shortens the walk home leaves every reach (`damage_bound` 0, camps included), `retreat_step`
+also takes one that lengthens it and does. A step that only lowers the exposure stays excluded: a pursuer takes it
+back (`fu/retreat`).
+
+- Against main c71be8c: 49.7% of 1104 (46.8-52.7; ladder 48.8, gen 49.4, gen-s1 50.2), out-of-fuel turns 3813 vs 3956.

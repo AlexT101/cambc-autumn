@@ -246,7 +246,7 @@ another harmless group was kept (CHANGES 91).
 - An ally's stun read with its stats when first seen in a round, kept on the belief (branch `astraeus`, 34ea5de,
   2026-10-23). Safety used to read it live, and after our move hid a believed-visible ally (vision is personal) the read
   threw and lost the rest of the turn. Against main, ladder + gen only: 50.0% of 592 (ladder 48.8 of 80, gen 50.2),
-  out-of-fuel turns 2339 vs 2481. Level; a correctness fix, kept on the branch.
+  out-of-fuel turns 2339 vs 2481. Level; a correctness fix, kept (CHANGES 111).
 - Astraeus Willow cleanup, behaviour-preserving part (2026-10-23): heal targeting shared (`heal_ready`, `heal_target`),
   a recall flag in place of decision letters, Willow's sleep certificate replaced by camp beliefs plus
   `World::camps_current`, the plan's Willow guard exception dropped, the turn-end support re-read only after a ward.
@@ -293,6 +293,16 @@ another harmless group was kept (CHANGES 91).
   same bot ran 83 out-of-fuel turns on gen-shared-gems: the rise was a fuel trajectory.
 - Astraeus with `retreat-sideways` merged (cfd1a3a; `retreat_step` ported into its bot.cpp): five-pick A/B against
   960cdfe, 51.7% (CI 46.9-56.4), out-of-fuel turns 1839 vs 1781.
+- Astraeus (315910d) on all suites, both sides, each bot on its own draft (2026-10-23; 1104 games each; 5-pick maps
+  422 of them, the only ones `willow_draft` changes):
+  - Willow draft vs hyperion (main c71be8c): 50.1% (CI 47.1-53.0; 5-pick 49.8, 3/4-pick 50.3), out-of-fuel turns
+    3288 vs 2503.
+  - Hyperion's draft (`willow_draft = false`) vs hyperion: 49.9% (47.0-52.9; 5-pick 49.8, 3/4-pick 50.0), 2712 vs 2632.
+  - Willow draft vs v44: 52.8% (49.9-55.7; ladder 65.0 of 80; 5-pick 53.6), 3133 vs 5334.
+  - Hyperion's draft vs v44: 52.4% (49.5-55.4; ladder 58.8 of 80; 5-pick 53.6), 2744 vs 4971.
+  Willow in the Ryth/Vendetta slot is level with hyperion's pick but costs ~30% more out-of-fuel turns; the reshaped
+  Willow layer beats v44's slightly and uses far less fuel. (Equal 5-pick totals in both pairs are coincidence: the
+  drafts differ and only ~10 of those 422 games matched.)
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
 - `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
   2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next
@@ -314,8 +324,8 @@ another harmless group was kept (CHANGES 91).
 - `retreat_step` taking a step that lengthens the walk home when it leaves every reach (`damage_bound` 0) and no
   step that keeps or shortens it does; one still in reach stays excluded (branch `retreat-sideways`, bbef5e4,
   2026-10-23). In a Willow trace 519 retreat turns ended in reach with no such homeward step. Against main: 49.7% of
-  1104 (CI 46.8-52.7; ladder 48.8, gen 49.4, gen-s1 50.2), out-of-fuel turns 3813 vs 3956. Level; kept on the
-  branch and merged into `astraeus`, not into main.
+  1104 (CI 46.8-52.7; ladder 48.8, gen 49.4, gen-s1 50.2), out-of-fuel turns 3813 vs 3956. Level; kept (CHANGES
+  112).
 - Tracking unseen enemies past 10 rounds (REPLAY-ANALYSIS A4; `fu/tracking`, 2026-10-23). The untracked killers were
   last seen a median 31 rounds before the kill (quartiles 19-88; 28 of 148 within 15). By 10 rounds an unseen
   enemy's possible tiles (median ~300 for Marcella, ~650 for Vesper) are past what `credible_weight` counts, so the
