@@ -1,0 +1,58 @@
+{
+  "schema": "willow-phased-boss-approach-4d08241-compile-preservation-manifest/v1",
+  "scope": "Compile-only source/build evidence; no game replay or gameplay edits.",
+  "files": [
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/BUILD-RESULT.md",
+      "sha256": "cf0422f0665b9d668937e5e4f76850a397582ae496351fa5fa9706bc3510085d",
+      "bytes": 687
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/preflight.json",
+      "sha256": "fc6048ba7b70b18ed21ce1900a2550bbe7074ef8a65c949830109effd16a36e3",
+      "bytes": 2002
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/build-result.json",
+      "sha256": "7b5b7e87b1d54e3365b44ed93985036bddefb921a826a1cda96a64c73189934f",
+      "bytes": 2137
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/build-release.stdout.log",
+      "sha256": "9ab7c730c5cb129c6f61f0f5aacc9c0c0d5f08a741b9b540d782e873c67fbbd9",
+      "bytes": 4394
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/build-release.stderr.log",
+      "sha256": "ec996f44c37aa3a11b8893a81d8de92ffd2349d6721210c22873430f0517e322",
+      "bytes": 180
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/build-release.duty.json",
+      "sha256": "4d280a9c2a3e282d223d302eb140b86f4bd2080dc95e6ef08ff7ea284bc82ec9",
+      "bytes": 10953
+    },
+    {
+      "path": "research/willow-phased-boss-approach-4d08241-source-v2.patch",
+      "sha256": "071f27b8f821c94182bbc04e6825cf8ade6f71ee9c129eb6cb5a1191f5704c88",
+      "bytes": 40409
+    },
+    {
+      "path": "research/willow-phased-boss-approach-4d08241-source-checkpoint-20261024-v1.md",
+      "sha256": "b2ace8c66ba413b3afba74391f8086f3b99cb3a41bdb77b1dd38e9749a569cf5",
+      "bytes": 4480
+    }
+  ],
+  "binary_pins": {
+    "raw_wasm": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-phased-boss-approach-4d08241-work/.cambc/build-release/bot.wasm",
+      "bytes": 1727207,
+      "sha256": "91580bb9467200997531d6b2504128213d4b6353668a4d3f94723e8806cffaf4"
+    },
+    "injected_wasm": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-phased-boss-approach-4d08241-work/.cambc/build-release/bot-injected.wasm",
+      "bytes": 968955,
+      "sha256": "f4e7029a34def285a6847cdd362df4043b015300679d218c0aef1cb299861465"
+    }
+  }
+}

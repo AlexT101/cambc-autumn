@@ -2723,3 +2723,64 @@ regression. The Mite refresh failed with HTTP 429 and one delayed HTTP 503, so
 the prior saved replay sample remains its evidence. No new replay extraction
 or simulation was performed for this refresh. Raw responses and command details
 are in `../provenance/astraeus-regression-history-refresh-20261024-v2/`.
+
+The trusted trace resolves the Willow goal more specifically: she selected
+group 12 as help for Marcella's claimed camp, with shared value 1.753 versus
+the best independent group's 0.214 at round 769. No support formation or retreat
+branch owns that step. Her older communicated Vesper fix remains dated 762;
+Marcella directly observes newer Vesper positions at 765 and 766, but current
+HoR sightings occupy the shared slot. At 765 the HoR enemy/position/health
+payload repeats the one Marcella received at 764. The source preserves any
+fresh current-round sighting, preventing publication of the local contact.
+
+This supports a separate duplicate-sighting arbitration experiment. It does
+not prove which unseen-threat cutoff admitted Willow's step, nor that a newer
+fix guarantees survival or objective control. The first design allows one
+fresh, locally relevant replacement while protecting important information,
+using existing moved-observation permission and a bounded publication protocol.
+See `willow-pilgrimage-trusted-trace-sighting-design-20261024-v1.md` for exact
+trace/source references, available information and protocol tradeoffs.
+
+The separate macro boss approach v2 is source-ready at aggregate
+`fbbdabd00d4726d36feb4c6bb87475d2e4fc9a1b118bcf59a4a577da9c3a275f`.
+It adds one cached remote economic quote, funded movement-only probing and
+fresh local inactive-neighbor checks, without a provisional work certificate
+or below-35-percent exception. An immutable Release compile runs while the
+independent source review proceeds. No game or benefit is claimed yet; source
+and cost bounds are in the dated approach checkpoint.
+
+Approach v2 then compiled and passed the bounded independent source review, but
+the one normal-100k Big World B game exposed a severe fuel regression. Frozen
+v33 wins at 975, with final A/B gems 1,005/677. Candidate B has 175 native play
+rollovers, 172 on Marcella; the earlier parent and boss-only candidate each had
+three B-side rollovers. Both sides have zero native bot errors; v33 has four
+play rollovers. Neither boss group is approached, attacked, cleared or captured.
+Marcella's nearest group-17 tile remains 13 steps away. The inner payload differs
+from both earlier games despite sharing the boss-only candidate's end round.
+This arm is held for cost diagnosis and optimization, with no admission or
+safety weakening and no release. See
+`../provenance/willow-phased-boss-approach-4d08241-v1/RUN-RESULT.md`.
+
+The separate sighting-arbitration implementation is frozen at v3 aggregate
+`a439a6c2d1d1d2ef1004f3a463b243d1f48d2daa65eada801d83f55c5c17a2df`.
+Source review caught a missed-reader generation-alias case; v3 preserves any
+nonempty current-parity report for a nonconsecutive reader, rather than allowing
+extra normal publications. It also checks current ally vision and confirms the
+selected enemy's live native record before packing a replacement. The wire size
+and unrelated fields stay unchanged. Final review, compile, protocol fixture
+and native behavior checks remain separate from source completion.
+
+The trusted claim follow-up does not justify expanding this patch: Marcella's
+766 retreat was not represented by the emitted claim slot, whose owner is not
+printed, but she genuinely resumed group-12 farming at 767. Willow's 766 help
+field was unset, and help resumed only at 768–769. That transient transport
+limitation does not establish stale commitment as the cause of the fatal step.
+
+Independent sighting-v3 review is now complete with no remaining source blocker;
+the missed-reader and post-move visibility corrections are included in the
+verified pin. A Release build and small production-bound protocol fixture are
+next. Boss cost review identifies repeated replacement of the one cached
+whole-map exit field as a plausible expensive path when alternate quotes fail;
+this is a source-supported hypothesis, not yet a measured profile attribution.
+The proposed optimization preserves live prices and eligibility while reusing
+immutable static-wall/exit fields. No further boss game has run.

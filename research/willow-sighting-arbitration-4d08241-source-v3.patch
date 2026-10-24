@@ -1,0 +1,225 @@
+diff --git a/bots/baselines/astraeus-4d08241/src/comms.cpp b/bots/variants/willow-sighting-arbitration-4d08241-work/src/comms.cpp
+index dde56d5..883d7fc 100644
+--- a/bots/baselines/astraeus-4d08241/src/comms.cpp
++++ b/bots/variants/willow-sighting-arbitration-4d08241-work/src/comms.cpp
+@@ -1,6 +1,7 @@
+ #include "comms.h"
+ #include <algorithm>
+ #include "support_mailbox.h"
++#include "params.h"
+ #include "world.h"
+ 
+ namespace aph::comms {
+@@ -19,10 +20,11 @@ namespace {
+ //   [40, 48)  its respawn round mod 256
+ //   [48, 56)  claimed group + 1, 0 = none
+ //   [56, 59)  claiming ally's index
+-//   [59, 62)  sighting write count
++//   [59, 61)  normal sighting generation
++//   [61, 62)  this round's single replacement used
+ //   [31, 32)  support payload; even rounds Prism requests, odd rounds Willow offers
+ //   [62, 64)  support writer round modulo four
+-// The write count makes a sighting rewritten unchanged, with the same parity, still read as new.
++// Generation distinguishes unchanged normal publications; the marker bounds same-round replacement.
+ // A claim or a bag is a standing state, rewritten only when it changes or as a reminder.
+ struct BitField {
+     int shift, width;
+@@ -37,10 +39,10 @@ constexpr BitField sight_x{0, 7}, sight_y{7, 7}, sight_index{14, 3}, sight_healt
+ constexpr BitField bag_fours{21, 7}, bag_body{28, 3};
+ constexpr BitField camp_group{32, 8}, camp_respawn{40, 8};
+ constexpr BitField claim_group{48, 8}, claim_body{56, 3};
+-constexpr BitField sight_count{59, 3};
++constexpr BitField sight_generation{59, 2}, sight_replaced{61, 1};
+ constexpr int max_group = (1 << 8) - 1; // camp_group and claim_group hold the group + 1
+-constexpr std::uint64_t sighting_bits = sight_x.mask() | sight_y.mask() | sight_index.mask() | sight_health.mask() | sight_parity.mask()
+-                                        | sight_count.mask();
++constexpr std::uint64_t sight_payload = sight_x.mask() | sight_y.mask() | sight_index.mask() | sight_health.mask();
++constexpr std::uint64_t sighting_bits = sight_payload | sight_parity.mask() | sight_generation.mask() | sight_replaced.mask();
+ constexpr std::uint64_t bag_bits = bag_fours.mask() | bag_body.mask();
+ constexpr std::uint64_t camp_bits = camp_group.mask() | camp_respawn.mask();
+ constexpr std::uint64_t claim_bits = claim_group.mask() | claim_body.mask();
+@@ -49,15 +51,31 @@ static_assert((sighting_bits & bag_bits) == 0 && ((sighting_bits | bag_bits) & c
+               && ((sighting_bits | bag_bits | camp_bits) & claim_bits) == 0);
+ static_assert(((sighting_bits | bag_bits | camp_bits | claim_bits) & support_bits) == 0);
+ 
+-// The write count makes a sighting rewritten unchanged still read as new.
+-void put_sighting(std::uint64_t& bits, const ChampionBelief& e, int round) {
+-    sight_x.set(bits, e.pos.x + 1);
+-    sight_y.set(bits, e.pos.y);
+-    sight_index.set(bits, e.index);
+-    const float fraction = e.max_health > 0 ? e.health / e.max_health : 1.0f;
+-    sight_health.set(bits, fraction >= 1.0f ? 7 : std::clamp(static_cast<int>(fraction * 7.0f), 0, 6));
++int health_code(float health, float max_health) {
++    const float fraction = max_health > 0 ? health / max_health : 1.0f;
++    return fraction >= 1.0f ? 7 : std::clamp(static_cast<int>(fraction * 7.0f), 0, 6);
++}
++
++std::uint64_t payload(int enemy, vec2 pos, float health, float max_health) {
++    std::uint64_t bits = 0;
++    sight_x.set(bits, pos.x + 1);
++    sight_y.set(bits, pos.y);
++    sight_index.set(bits, enemy);
++    sight_health.set(bits, health_code(health, max_health));
++    return bits;
++}
++
++std::uint64_t payload(const ChampionBelief& e) { return payload(e.index, e.pos, e.health, e.max_health); }
++
++void put_sighting_payload(std::uint64_t& bits, std::uint64_t contact, int round, bool replacement) {
++    bits = (bits & ~sight_payload) | contact;
+     sight_parity.set(bits, round & 1);
+-    sight_count.set(bits, sight_count.get(bits) + 1);
++    if (!replacement) sight_generation.set(bits, sight_generation.get(bits) + 1);
++    sight_replaced.set(bits, replacement);
++}
++
++void put_sighting(std::uint64_t& bits, const ChampionBelief& e, int round) {
++    put_sighting_payload(bits, payload(e), round, false);
+ }
+ 
+ struct State {
+@@ -68,6 +86,9 @@ struct State {
+     std::uint64_t fresh = 0; // records written since then
+     int posted_bag = -1;
+     int posted = -1;
++    std::uint64_t received_payload = 0;
++    int received_round = -1, sight_round = -1;
++    bool duplicate = false, consecutive = false;
+ };
+ State state;
+ 
+@@ -128,6 +149,54 @@ int dated(int parity) {
+     return (after & 1) == parity ? after : after + 1;
+ }
+ 
++// A publication priority only: known strike geometry, without pathfinding or a fight forecast.
++int strike_reach(const ChampionBelief& e, int round) {
++    const auto& f = e.facts();
++    const int basic = f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0);
++    int reach = basic;
++    for (int slot = 0; slot < 2; ++slot) {
++        const auto& ability = f.abilities[slot];
++        if (!e.ability_ready(slot, round) && !e.cooldowns_uncertain()) continue;
++        if (ability.hits_enemies()) reach = std::max(reach, ability.reach());
++        if (ability.kind == AbilityKind::dash) reach = std::max(reach, basic + ability.range());
++    }
++    return reach;
++}
++
++bool local_contact(const World& world, const ChampionBelief& e, vec2 pos) {
++    const int reach = strike_reach(e, world.round) + params::pursuit_steps;
++    if (dist(pos, my_position()) <= reach) return true;
++    for (const auto& ally : world.allies)
++        if (!ally.is_self && ally.alive && ally.visible && ally.pos_source == Source::seen
++            && ally.pos_round == world.round && ally.stats_round == world.round && dist(pos, ally.pos) <= reach
++            && test(world.visible, ally.pos)) return true;
++    return false;
++}
++
++bool current_contact(const World& world, const ChampionBelief& e) {
++    return e.alive && e.visible && e.pos_source == Source::seen && e.pos_round == world.round
++           && e.stats_round == world.round && in_bounds(e.pos);
++}
++
++int replacement_candidate(const World& world, std::uint64_t bits) {
++    if (state.sight_round != world.round || sight_replaced.get(bits) || !world.me().alive || !in_bounds(my_position())) return -1;
++    const int incumbent = sight_index.get(bits), n = static_cast<int>(world.enemies.size());
++    const vec2 pos{sight_x.get(bits) - 1, sight_y.get(bits)};
++    if (incumbent >= n || !in_bounds(pos)) return -1;
++    const auto& old = world.enemies[incumbent];
++    // Direct confirmation improves this enemy's report without displacing its identity.
++    if (current_contact(world, old) && payload(old) != (bits & sight_payload)) return incumbent;
++    if (!state.duplicate || !old.alive || old.channel == Channel::tribute || old.channel == Channel::teleport
++        || old.gems + world.score.enemy >= static_cast<int>(cambc::constants::winning_gems)
++        || local_contact(world, old, pos)) return -1;
++    for (int k = 1; k < n; ++k) {
++        const int i = (incumbent + k) % n;
++        const auto& candidate = world.enemies[i];
++        if (current_contact(world, candidate) && local_contact(world, candidate, candidate.pos)) return i;
++    }
++    return -1;
++}
++
+ } // namespace
+ 
+ [[gnu::flatten]] void expect(World& world) {
+@@ -143,6 +212,12 @@ int dated(int parity) {
+     const int round = state.now_round = world.round;
+     receive_support(world, bits);
+     state.fresh = changes(bits);
++    state.consecutive = state.last_round == round - 1;
++    state.sight_round = (state.fresh & sighting_bits) && sight_x.get(bits) != 0 ? dated(sight_parity.get(bits)) : -1;
++    state.duplicate = state.sight_round == round && state.received_round == round - 1
++                      && state.received_payload == (bits & sight_payload);
++    state.received_payload = bits & sight_payload;
++    state.received_round = round;
+     if ((state.fresh & sighting_bits) && sight_x.get(bits) != 0) {
+         const vec2 pos{sight_x.get(bits) - 1, sight_y.get(bits)};
+         const int code = sight_health.get(bits);
+@@ -167,13 +242,39 @@ void send(World& world, bool moved, bool refresh) {
+     if (state.now_round != world.round) return;
+     auto bits = state.now;
+     const int round = world.round;
+-    const bool sighted = (state.fresh & sighting_bits) && sight_parity.get(bits) == (round & 1) && sight_x.get(bits) != 0;
++    // A missed reader cannot mint another normal generation from an aliased current-parity record.
++    const bool sighted = sight_x.get(bits) != 0 && sight_parity.get(bits) == (round & 1)
++                         && ((state.fresh & sighting_bits) || !state.consecutive);
+     // A capture someone posted since our last turn stays up for the rest of the team.
+     const bool camp_free = !(state.fresh & camp_bits);
+     bool dirty = false;
+ 
+     // Before anything is marked posted: an observe that runs out of fuel resumes a round late,
+     // when these bits would overwrite what teammates wrote since.
++    int replacement = sighted ? replacement_candidate(world, bits) : -1;
++    std::uint64_t replacement_payload = 0;
++    if (replacement >= 0 && moved) {
++        if (!refresh) replacement = -1;
++        else {
++            world.observe();
++            if (world.is_stale()) return;
++            replacement = replacement_candidate(world, bits);
++        }
++    }
++    if (replacement >= 0) {
++        const auto& candidate = world.enemies[replacement];
++        // Our attacks can change a contact even when an unmoved sender needed no observe().
++        const auto* live = visible_record(candidate.handle);
++        if (!live || !(live->health > 0) || !in_bounds({live->x, live->y})) replacement = -1;
++        else {
++            const vec2 pos{live->x, live->y};
++            replacement_payload = payload(candidate.index, pos, live->health, live->max_health);
++            if (candidate.index == sight_index.get(bits)) {
++                if (replacement_payload == (bits & sight_payload)) replacement = -1;
++            } else if (!local_contact(world, candidate, pos)) replacement = -1;
++        }
++        if (world.is_stale()) return;
++    }
+     if (!sighted) {
+         if (refresh) world.observe();
+         else if (moved) note_shortcut("comms-stale-vision");
+@@ -223,7 +324,11 @@ void send(World& world, bool moved, bool refresh) {
+         dirty = true;
+     }
+ 
+-    if (!sighted) {
++    if (replacement >= 0) {
++        put_sighting_payload(bits, replacement_payload, round, true);
++        dirty = true;
++        debug_block({ std::printf("CSIGHT %d replaced %d duplicate %d\n", round, replacement, static_cast<int>(state.duplicate)); });
++    } else if (!sighted) {
+         const int n = static_cast<int>(world.enemies.size());
+         const int start = sight_x.get(bits) != 0 ? sight_index.get(bits) + 1 : 0;
+         for (int k = 0; k < n; ++k) {
+diff --git a/bots/baselines/astraeus-4d08241/src/comms.h b/bots/variants/willow-sighting-arbitration-4d08241-work/src/comms.h
+index 9ed4b99..b697ca9 100644
+--- a/bots/baselines/astraeus-4d08241/src/comms.h
++++ b/bots/variants/willow-sighting-arbitration-4d08241-work/src/comms.h
+@@ -22,7 +22,7 @@ inline Posts posts;
+ void expect(World& world);
+ // What teammates posted since our previous turn, merged into the world.
+ void receive(World& world);
+-// With `refresh`, re-read vision first, but only if there is a slot to fill.
++// With `refresh`, re-read vision before a normal publication or a qualified replacement.
+ void send(World& world, bool moved, bool refresh);
+ // The gems we carry, posted when it changes.
+ void bag(int gems);

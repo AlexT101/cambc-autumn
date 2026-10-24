@@ -1,0 +1,678 @@
+diff --git a/bots/variants/willow-phased-solo-boss-4d08241-work/src/bot.cpp b/bots/variants/willow-phased-boss-approach-4d08241-work/src/bot.cpp
+index d2de6bf..e4352ac 100644
+--- a/bots/variants/willow-phased-solo-boss-4d08241-work/src/bot.cpp
++++ b/bots/variants/willow-phased-boss-approach-4d08241-work/src/bot.cpp
+@@ -1739,7 +1739,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+ // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
+ [[gnu::flatten]] bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+-    const bool reserved_boss = memory.boss.phase == boss_work;
++    const bool reserved_boss = memory.boss.phase == boss_work || memory.boss_approach.group >= 0;
+     if (!boss_restricted && !reserved_boss && pick_up(world, pathing, memory)) return true;
+     const auto& map = world.map();
+     const auto& groups = map.groups;
+@@ -1772,7 +1772,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     // group that hits back and that we will not finish is only woken by it: hit one only while an
+     // ally clears it or, melee, once every striker is awake anyway.
+     const auto passing = [&](int g) __attribute__((always_inline)) {
+-        if (g == memory.boss.group) return false;
++        if (g == memory.boss.group || g == memory.boss_approach.group) return false;
+         if (!affordable(g)) return false;
+         if (g == memory.farm_group) return true;
+         if (taken(g)) return false;
+@@ -1914,7 +1914,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     const int previous = memory.farm_group;
+     const auto walk_on = [&](int g) __attribute__((always_inline)) {
+         if (g < 0) return false;
+-        if (g == memory.boss.group) return false;
++        if (g == memory.boss.group || g == memory.boss_approach.group) return false;
+         // Descending it walks around walls and live camps; a live route only helps past allies.
+         const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
+             return dash_across(world, pathing, field) || pathing.descend(field, zone, groups[target].centre)
+@@ -1922,7 +1922,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         };
+         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
+         // Too short of fuel to search the way to a new choice: last turn's, whose way is known.
+-        if (previous >= 0 && previous != g && previous != memory.boss.group && pathing.approach_ready(previous, walk_range(world, previous))) {
++        if (previous >= 0 && previous != g && previous != memory.boss.group && previous != memory.boss_approach.group && pathing.approach_ready(previous, walk_range(world, previous))) {
+             note_shortcut("farm-kept-target");
+             memory.farm_group = memory.claim = previous;
+             memory.crew = false;
+@@ -1933,7 +1933,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         return pathing.step_closer(groups[g].centre, zone, groups[g].centre);
+     };
+     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.
+-    const auto walk_reserve = [&](int g) __attribute__((always_inline)) { return g < 0 || g == memory.boss.group ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(world, g)); };
++    const auto walk_reserve = [&](int g) __attribute__((always_inline)) { return g < 0 || g == memory.boss.group || g == memory.boss_approach.group ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(world, g)); };
+     // Warmed-up centre fields give the steps a field from here would, without its cost. Walls are
+     // static, so the steps are kept while we stand still, as when attacking a camp.
+     static std::vector<int> centre_steps; // by group, -1 until read
+@@ -2388,13 +2388,18 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     if (world.me().type == cambc::champion_type::marcella && !banks_bag && !struck) {
+         BossPlan phased;
+         const bool phased_ready = boss_travel_candidate(world, pathing, safety, memory, phased)
+-                                  || boss_candidate(world, pathing, safety, memory, phased);
++                                  || boss_candidate(world, pathing, safety, memory, phased)
++                                  || boss_approach_candidate(world, pathing, safety, memory, std::max(best_value, shared_value), phased);
+         const float phased_value = phased_ready ? boss_value(world, memory, phased) : 0;
+         if (phased_ready && phased_value > best_value && phased_value > shared_value && help_group < 0) {
+             if (boss_action(world, pathing, safety, memory, phased)) return true;
+             if (boss_restricted) return false;
+         }
+     }
++    if (memory.boss_approach.group >= 0) {
++        if (boss_approach_escape(world, pathing, safety, memory)) return true;
++        forget_boss_approach(memory);
++    }
+     if (boss_restricted) return false;
+     if (memory.boss.phase == boss_work || memory.boss.phase == boss_return) close_boss(memory);
+     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+@@ -4986,6 +4991,19 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+         if (attacked) reset_and_attack_enemy(world);
+         return;
+     }
++    if (memory.boss_approach.leaving || leave) {
++        if (boss_approach_escape(world, pathing, safety, memory)) return;
++        forget_boss_approach(memory);
++    }
++    if (memory.boss.escaping || (!certified_boss && memory.boss.phase == boss_work
++                               && boss_other_hazard(world, memory.boss.group, my_position()))) {
++        close_boss(memory);
++        memory.boss.escaping = true;
++        if (boss_exit_action(world, pathing, safety, memory, false)) return;
++        memory.boss.escaping = false;
++        retreat(world, pathing, safety, memory);
++        return;
++    }
+     if (leave) {
+         if (memory.boss.phase == boss_exit && boss_exit_action(world, pathing, safety, memory)) return;
+         close_boss(memory);
+@@ -5023,7 +5041,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+         if (enemy_within(world, my_position(), world.me().facts().attack_range())) intent.walks = false;
+         // The goal most likely walks to an altar when carrying, else to the farm choice.
+         intent.to_altar = bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing);
+-        intent.group = memory.farm_group == memory.boss.group ? -1 : memory.farm_group;
++        intent.group = (memory.farm_group == memory.boss.group || memory.farm_group == memory.boss_approach.group) ? -1 : memory.farm_group;
+         struck = true;
+         const auto planned = plan_strikes(world, pathing, safety, intent);
+         attacked = planned.attacked;
+@@ -5091,7 +5109,7 @@ void start_recall(const World& world) {
+ // after it then pays for that work rather than the walk.
+ void prepare_walk(const World& world, Pathing& pathing, const Memory& memory, std::uint64_t fuel_floor) {
+     const int g = memory.farm_group;
+-    if (!world.me().alive || channelling() || g < 0 || g >= static_cast<int>(world.camps.size()) || g == memory.boss.group) return;
++    if (!world.me().alive || channelling() || g < 0 || g >= static_cast<int>(world.camps.size()) || g == memory.boss.group || g == memory.boss_approach.group) return;
+     pathing.prepare_approach(g, walk_range(world, g), fuel_floor);
+ }
+ 
+diff --git a/bots/variants/willow-phased-solo-boss-4d08241-work/src/bot.h b/bots/variants/willow-phased-boss-approach-4d08241-work/src/bot.h
+index 7dde01d..798f518 100644
+--- a/bots/variants/willow-phased-solo-boss-4d08241-work/src/bot.h
++++ b/bots/variants/willow-phased-boss-approach-4d08241-work/src/bot.h
+@@ -11,10 +11,15 @@ struct Memory {
+         int group = -1, member = -1, phase = 0;
+         int seen = -1, expires = -1;
+         float health = 0;
+-        bool healed = false;
++        bool healed = false, escaping = false;
+         vec2 station{-1, -1}, exit{-1, -1}, ray{};
+         int corridor = 0;
+     } boss;
++    struct BossApproach {
++        int group = -1, corridor = 0;
++        vec2 station{-1, -1}, exit{-1, -1}, ray{};
++        bool leaving = false;
++    } boss_approach;
+     int round = -1;    // of our previous turn
+     float health = 0;  // at its end
+     float damage = 0;  // taken since, as of this turn's start
+diff --git a/bots/variants/willow-phased-solo-boss-4d08241-work/src/phased_boss.inc b/bots/variants/willow-phased-boss-approach-4d08241-work/src/phased_boss.inc
+index dac52a2..ad0f8f3 100644
+--- a/bots/variants/willow-phased-solo-boss-4d08241-work/src/phased_boss.inc
++++ b/bots/variants/willow-phased-boss-approach-4d08241-work/src/phased_boss.inc
+@@ -15,9 +15,9 @@ struct BossPlan {
+     std::array<Member, 16> members;
+     int group = -1, count = 0, boss = -1, target = -1, steps = 0;
+     vec2 station{-1, -1}, exit{-1, -1}, ray{}, next{-1, -1}, capture{-1, -1};
+-    int corridor = 0, cleanup = 0, cleanup_walk = 0, bank = 0, returns = 0;
++    int corridor = 0, entry_hits = 0, cleanup = 0, cleanup_walk = 0, bank = 0, returns = 0;
+     float rounds = 0, remaining = 0, hit = 0, reserve = 0;
+-    bool cleared = false, captured = false, trip = false, withdraw = false, remote = false;
++    bool cleared = false, captured = false, trip = false, withdraw = false, remote = false, provisional = false;
+ };
+ 
+ struct BossRoutes {
+@@ -27,6 +27,8 @@ struct BossRoutes {
+     std::unique_ptr<Field> home, altar;
+     std::uint64_t altar_key = 0;
+     BossPlan forecast;
++    BossPlan quote;
++    int cold_round = -1, quote_cursor = 0, rejected = -1;
+ };
+ BossRoutes& boss_routes() { static BossRoutes r; return r; }
+ 
+@@ -130,8 +132,7 @@ bool boss_enemy_safe(const World& world, Safety& safety, vec2 p) {
+     return !enemy_seen(world) && !safety.credible_enemy_may_hit_within(p, 0);
+ }
+ 
+-// Unknown other camps are charged as alive; this arm declines overlapping hazards.
+-bool boss_other_hazard(const World& world, int own, vec2 p) {
++bool boss_other_static_hazard(const World& world, int own, vec2 p) {
+     for (const int g : world.map().groups_near(p, world.map().max_camp_reach)) {
+         if (g == own) continue;
+         for (const auto& m : world.map().groups[g].members)
+@@ -140,9 +141,84 @@ bool boss_other_hazard(const World& world, int own, vec2 p) {
+     return false;
+ }
+ 
+-bool boss_local_tile(const World& world, Pathing& pathing, const BossPlan& p, vec2 at, std::uint32_t dead) {
++// Neighbor inactivity is authority for this observation only, never a World belief.
++struct BossNeighbors {
++    struct Member { int group, member, state; };
++    struct Group { int group, state; };
++    std::array<Member, 32> members;
++    std::array<Group, 32> groups;
++    int round = -1, hits = -1, count = 0, group_count = 0;
++    std::uint32_t observations = 0;
++    vec2 pos{-1, -1};
++};
++
++int boss_neighbor_state(const World& world, int g, int member) {
++    static BossNeighbors cache;
++    if (cache.round != world.round || cache.observations != world.observations || cache.hits != camp_hits()
++        || cache.pos != my_position()) {
++        cache.round = world.round, cache.observations = world.observations, cache.hits = camp_hits();
++        cache.pos = my_position(), cache.count = cache.group_count = 0;
++    }
++    for (int i = 0; i < cache.count; ++i)
++        if (cache.members[i].group == g && cache.members[i].member == member) return cache.members[i].state;
++    if (cache.count == static_cast<int>(cache.members.size())) return 0;
++    const auto& G = world.map().groups[g];
++    int lifecycle = 0;
++    bool cached = false;
++    for (int i = 0; i < cache.group_count; ++i)
++        if (cache.groups[i].group == g) lifecycle = cache.groups[i].state, cached = true;
++    if (!cached) {
++        bool visible = false;
++        for (const auto& m : G.members) visible |= test(world.visible, m.pos);
++        if (visible) {
++            std::uint32_t state = 0;
++            const auto code = cambc::detail::sdk_camp_group_state(G.handle, &state);
++            if (code != static_cast<int>(cambc::error_code::api_not_in_vision)) ok(code), lifecycle = static_cast<int>(state);
++        }
++        cache.groups[cache.group_count++] = {g, lifecycle};
++    }
++    int result = 0;
++    if (lifecycle == 2 || lifecycle == 3) result = 1;
++    else if (lifecycle == 1) {
++        std::uint32_t state = 3;
++        const auto code = cambc::detail::sdk_camp_state(G.members[member].handle, &state);
++        if (code != static_cast<int>(cambc::error_code::api_not_in_vision)
++            && code != static_cast<int>(cambc::error_code::api_not_found)) {
++            ok(code);
++            if (state == 0 || state == 2) result = 1; // member 2 is asleep, group 2 is cleared
++            else if (state == 1) result = 2;
++        }
++    }
++    cache.members[cache.count++] = {g, member, result};
++    world.throw_if_stale();
++    return result;
++}
++
++bool boss_other_hazard(const World& world, int own, vec2 p) {
++    for (const int g : world.map().groups_near(p, world.map().max_camp_reach)) {
++        if (g == own) continue;
++        const auto& G = world.map().groups[g];
++        for (int i = 0; i < static_cast<int>(G.members.size()); ++i) {
++            const auto& m = G.members[i];
++            if (m.strength > 0 && dist(p, m.pos) <= m.reach && boss_neighbor_state(world, g, i) != 1) return true;
++        }
++    }
++    return false;
++}
++
++bool boss_geometry_tile(const World& world, const BossPlan& p, vec2 at, std::uint32_t dead) {
++    if (!in_bounds(at) || !test(world.map().open_for_us, at)) return false;
++    const int g = world.map().group_at(at);
++    if (g < 0) return true;
++    if (g == p.group)
++        for (int i = 0; i < p.count; ++i)
++            if (p.members[i].pos == at && (dead >> i & 1)) return true;
++    return false;
++}
++
++bool boss_clear_tile(const World& world, Pathing& pathing, const BossPlan& p, vec2 at, std::uint32_t dead) {
+     if (!in_bounds(at) || !test(world.visible, at) || !test(world.map().open_for_us, at)
+-        || (pathing.guard() && test(*pathing.guard(), at)) || boss_other_hazard(world, p.group, at)) return false;
++        || (pathing.guard() && test(*pathing.guard(), at))) return false;
+     const int g = world.map().group_at(at);
+     bool opened = false;
+     if (g >= 0) {
+@@ -158,6 +234,17 @@ bool boss_local_tile(const World& world, Pathing& pathing, const BossPlan& p, ve
+     return true;
+ }
+ 
++bool boss_local_tile(const World& world, Pathing& pathing, const BossPlan& p, vec2 at, std::uint32_t dead) {
++    return boss_clear_tile(world, pathing, p, at, dead) && !boss_other_hazard(world, p.group, at);
++}
++
++int boss_corridor_hits(const BossPlan& p, int first, int last) {
++    int hits = 0;
++    const auto& b = p.members[p.boss];
++    for (int k = first; k < last; ++k) hits += dist(p.station + p.ray * k, b.pos) <= b.reach;
++    return hits;
++}
++
+ bool boss_exit_ray(const World& world, Pathing& pathing, Safety& safety, BossPlan& p) {
+     const auto& b = p.members[p.boss];
+     int best = world.map().max_camp_reach + 2;
+@@ -165,8 +252,9 @@ bool boss_exit_ray(const World& world, Pathing& pathing, Safety& safety, BossPla
+         vec2 at = p.station;
+         for (int k = 1; k <= world.map().max_camp_reach + 1; ++k) {
+             at += ray;
+-            if (!boss_local_tile(world, pathing, p, at, 0) || !boss_enemy_safe(world, safety, at)) break;
+-            if (dist(at, b.pos) > b.reach) {
++            if (p.provisional ? !boss_geometry_tile(world, p, at, 0)
++                              : !boss_local_tile(world, pathing, p, at, 0) || !boss_enemy_safe(world, safety, at)) break;
++            if (dist(at, b.pos) > b.reach && !boss_other_static_hazard(world, p.group, at)) {
+                 if (k < best) best = k, p.exit = at, p.ray = ray, p.corridor = k;
+                 break;
+             }
+@@ -174,7 +262,8 @@ bool boss_exit_ray(const World& world, Pathing& pathing, Safety& safety, BossPla
+         if (best == std::max(1, b.reach + 1 - dist(p.station, b.pos))) break;
+     }
+     // A stationary action pays the next phase, then each exposed walk endpoint.
+-    p.reserve = p.hit * static_cast<float>(best);
++    p.entry_hits = boss_corridor_hits(p, 1, p.corridor);
++    p.reserve = p.hit * static_cast<float>(boss_corridor_hits(p, 0, p.corridor));
+     return best <= world.map().max_camp_reach + 1;
+ }
+ 
+@@ -182,6 +271,8 @@ bool prepare_boss_routes(const World& world, const Memory& memory, BossPlan& p)
+     auto& r = boss_routes();
+     const auto& map = world.map();
+     if (r.group != p.group || r.exit != p.exit || !r.home) {
++        if (r.cold_round == world.round) return false;
++        r.cold_round = world.round;
+         r.group = p.group, r.exit = p.exit;
+         r.home.reset(), r.altar.reset();
+         or_into(map.blocked_for_us, map.camp_tiles, r.walls);
+@@ -223,7 +314,7 @@ bool boss_segment(const World& world, Pathing& pathing, const BossPlan& p, vec2&
+     for (int k = 0; dist(at, target) > reach && k < 16; ++k) {
+         const vec2 delta{(target.x > at.x) - (target.x < at.x), (target.y > at.y) - (target.y < at.y)};
+         const vec2 next = at + delta;
+-        if (!boss_local_tile(world, pathing, p, next, dead)) return false;
++        if (p.provisional ? !boss_geometry_tile(world, p, next, dead) : !boss_local_tile(world, pathing, p, next, dead)) return false;
+         if (first && first->x < 0) *first = next;
+         at = next;
+         ++steps;
+@@ -294,27 +385,25 @@ void boss_age_cooldowns(std::array<int, 2>& cd, int turns) {
+     for (auto& n : cd) n = std::max(0, n - turns);
+ }
+ 
+-bool boss_price_work(const World& world, Pathing& pathing, const Memory& memory, BossPlan& p) {
++bool boss_price_cycle(const World& world, const Memory& memory, BossPlan& p, float health,
++                      std::array<int, 2> cd, bool moved, bool attack, bool cast, int before = 0) {
+     const auto& G = world.map().groups[p.group];
+-    if (!boss_cleanup(world, pathing, p) || !prepare_boss_routes(world, memory, p)) return false;
+     const float hp = p.members[p.boss].health;
+     if (hp <= 0) {
+-        p.rounds = static_cast<float>(p.cleanup + capture_rounds() + p.bank + tribute_turns(my_gems() + G.gems));
++        p.rounds = static_cast<float>(before + p.cleanup + capture_rounds() + p.bank + tribute_turns(my_gems() + G.gems));
+         return true;
+     }
+-    std::array<int, 2> cd{my_cooldown(0), my_cooldown(1)};
+-    auto first = boss_sortie(world, hp, my_health(), p.hit, p.reserve, cd,
+-                            p.station != world.me().pos, my_can_attack(), my_can_cast());
++    auto first = boss_sortie(world, hp, health, p.hit, p.reserve, cd, moved, attack, cast);
+     p.remaining = first.left;
+     p.withdraw = first.turns == 0;
+-    p.rounds = static_cast<float>(first.turns);
++    p.rounds = static_cast<float>(before + first.turns);
+     if (first.left > 0) {
+         if (memory.boss.healed || first.turns == 0 && memory.boss.group != p.group) return false;
+         p.trip = true;
+         const int travel = p.corridor + recall_turns(world) + 1 + p.returns;
+         if (travel >= G.respawn + static_cast<int>(cambc::constants::capture_time)) return false;
+         boss_age_cooldowns(first.cd, travel);
+-        const float entry = p.hit * static_cast<float>(std::max(0, p.corridor - 1));
++        const float entry = p.hit * static_cast<float>(p.entry_hits);
+         const auto second = boss_sortie(world, first.left, my_max_health() - entry, p.hit, p.reserve,
+                                        first.cd, true, true, true);
+         if (second.left > 0 || !(second.health > 1)) return false;
+@@ -324,6 +413,12 @@ bool boss_price_work(const World& world, Pathing& pathing, const Memory& memory,
+     return p.rounds + endgame_slack <= static_cast<float>(bag_rounds_left(world));
+ }
+ 
++bool boss_price_work(const World& world, Pathing& pathing, const Memory& memory, BossPlan& p) {
++    if (!boss_cleanup(world, pathing, p) || !prepare_boss_routes(world, memory, p)) return false;
++    return boss_price_cycle(world, memory, p, my_health(), {my_cooldown(0), my_cooldown(1)},
++                            p.station != world.me().pos, my_can_attack(), my_can_cast());
++}
++
+ bool certify_boss(const World& world, Pathing& pathing, Safety& safety, Memory& memory, BossPlan& p, bool stay = false) {
+     if (world.me().type != cambc::champion_type::marcella || world.map().monolith_only || stunned_turn
+         || p.captured || p.boss < 0 || capture_taken(world, p.group, my_position())
+@@ -418,6 +513,142 @@ float boss_value(const World& world, const Memory& memory, const BossPlan& p) {
+     return rate(world, weight * worth, p.rounds);
+ }
+ 
++void boss_quote_trace(const World& world, const Memory& memory, int g, const char* reason,
++                      const BossPlan& p, float ordinary) {
++    debug_block({ std::printf("PSBQ %d g %d reason %s dist %d rounds %.1f value %.5f ordinary %.5f hp %.1f items %u\n",
++                             world.round, g, reason, g < 0 ? -1 : dist(my_position(), world.map().groups[g].centre),
++                             static_cast<double>(p.rounds), g < 0 || p.rounds <= 0 ? 0.0 : static_cast<double>(boss_value(world, memory, p)),
++                             static_cast<double>(ordinary), static_cast<double>(my_health()), boss_item_bits()); });
++}
++
++int boss_static_member(const CampGroup& G) {
++    if (!G.has_monolith || G.members.empty() || G.members.size() > 16) return -1;
++    int boss = -1;
++    for (int i = 0; i < static_cast<int>(G.members.size()); ++i)
++        if (G.members[i].strength > 0) {
++            if (boss >= 0) return -1;
++            boss = i;
++        }
++    return boss;
++}
++
++bool boss_approach_eligible(const World& world, int g) {
++    const auto& G = world.map().groups[g];
++    if (boss_static_member(G) < 0 || world.camps[g].state == CampState::cleared
++        || world.camps[g].state == CampState::respawning) return false;
++    for (const auto& a : world.allies)
++        if (!a.is_self && comms::claim_of(world, a.index) == g) return false;
++    return true;
++}
++
++bool boss_quote_geometry(const World& world, Pathing& pathing, Safety& safety, int g, BossPlan& out) {
++    BossPlan source;
++    source.group = g, source.provisional = true;
++    const auto& G = world.map().groups[g];
++    source.boss = boss_static_member(G);
++    if (source.boss < 0) return false;
++    source.count = static_cast<int>(G.members.size());
++    for (int i = 0; i < source.count; ++i) {
++        const auto& m = G.members[i];
++        source.members[i] = {m.pos, m.max_health, m.strength, m.reach, attack_viewers(world, m.pos, 1)};
++    }
++    source.hit = source.members[source.boss].hit * camp_hit_factor();
++    int best = unreachable;
++    for (const auto d : directions) {
++        BossPlan candidate = source;
++        candidate.station = source.members[source.boss].pos + d;
++        if (!boss_geometry_tile(world, candidate, candidate.station, 0)
++            || !boss_reached(candidate.members[candidate.boss], candidate.station)
++            || !boss_exit_ray(world, pathing, safety, candidate) || !boss_cleanup(world, pathing, candidate)) continue;
++        const int cost = dist(my_position(), candidate.exit) + candidate.corridor + candidate.cleanup;
++        if (cost < best) best = cost, out = candidate;
++    }
++    return best != unreachable;
++}
++
++bool boss_price_approach(const World& world, Pathing& pathing, const Memory& memory, BossPlan& p) {
++    if (!boss_approach_eligible(world, p.group) || !prepare_boss_routes(world, memory, p)) return false;
++    const int offset = dist(my_position(), p.station);
++    const bool corridor = offset <= p.corridor && my_position() == p.station + p.ray * offset;
++    const int walk = corridor ? 0 : boss_routes().home->at(my_position());
++    if (walk == unreachable || walk > 256) return false;
++    const int entry = corridor ? offset : p.corridor;
++    const int moves = walk + entry;
++    p.hit = world.map().groups[p.group].members[p.boss].strength * camp_hit_factor();
++    p.reserve = p.hit * static_cast<float>(boss_corridor_hits(p, 0, p.corridor));
++    p.entry_hits = boss_corridor_hits(p, 1, p.corridor);
++    const float health = my_health() - p.hit * static_cast<float>(boss_corridor_hits(p, 1, entry));
++    std::array<int, 2> cd{my_cooldown(0), my_cooldown(1)};
++    boss_age_cooldowns(cd, std::max(0, moves - 1));
++    if (!boss_cleanup(world, pathing, p)) return false;
++    return boss_price_cycle(world, memory, p, health, cd, moves > 0 || my_position() != world.me().pos,
++                            moves > 1 || my_can_attack(), moves > 1 || my_can_cast(), std::max(0, moves - 1));
++}
++
++bool boss_approach_candidate(const World& world, Pathing& pathing, Safety& safety, Memory& memory,
++                             float ordinary, BossPlan& p) {
++    if (world.me().type != cambc::champion_type::marcella || world.map().monolith_only || memory.boss.group >= 0
++        || !boss_enemy_safe(world, safety, my_position())) return false;
++    const int n = static_cast<int>(world.map().groups.size());
++    int nearest = -1;
++    float upper = 0;
++    const int active = memory.boss_approach.group;
++    // Static ranking does not read any remote native camp state.
++    for (int g = 0; g < n; ++g) {
++        if (!boss_approach_eligible(world, g)) continue;
++        if (active >= 0 && g != active) continue;
++        if (active < 0 && g == boss_routes().rejected && n > 1) continue;
++        const auto& G = world.map().groups[g];
++        const auto& b = G.members[boss_static_member(G)];
++        const float action_bound = std::max(1.0f, 2 * my_strength() + 2 * my_record().focus);
++        const float cheap = static_cast<float>(std::max(0, dist(my_position(), b.pos) - b.reach - 1) + capture_rounds())
++                            + b.max_health / action_bound;
++        const float value = static_cast<float>(G.gems) / std::max(1.0f, cheap);
++        if (nearest < 0 || value > upper) nearest = g, upper = value;
++    }
++    if (nearest < 0) { boss_routes().rejected = -1; return false; }
++    auto& r = boss_routes();
++    const bool cached = r.quote.group >= 0 && boss_approach_eligible(world, r.quote.group);
++    if (cached && (active < 0 || active == r.quote.group)) {
++        p = r.quote;
++        if (boss_price_approach(world, pathing, memory, p) && (active >= 0 || boss_value(world, memory, p) > ordinary)) {
++            boss_quote_trace(world, memory, p.group, "warm", p, ordinary);
++            return true;
++        }
++    }
++    if (active >= 0) nearest = active;
++    else if (cached) {
++        int alternative = -1;
++        float best = 0;
++        for (int k = 0; k < n; ++k) {
++            const int g = (r.quote_cursor + k) % n;
++            if (g == r.quote.group || !boss_approach_eligible(world, g)) continue;
++            const auto& G = world.map().groups[g];
++            const int distance = dist(my_position(), G.members[boss_static_member(G)].pos);
++            const float value = static_cast<float>(G.gems) / static_cast<float>(std::max(1, distance));
++            if (alternative < 0 || value > best) alternative = g, best = value;
++        }
++        if (alternative >= 0) nearest = alternative;
++    }
++    const auto& G = world.map().groups[nearest];
++    const int b = boss_static_member(G);
++    const float hit = G.members[b].strength * camp_hit_factor();
++    // Even an entry/exit-free, ready-cast upper bound cannot fund this full-HP job.
++    auto first = boss_sortie(world, G.members[b].max_health, my_health(), hit, 0, {0, 0}, false, true, true);
++    auto second = boss_sortie(world, first.left, my_max_health(), hit, 0, {0, 0}, false, true, true);
++    if (second.left > 0) { r.rejected = nearest; p = {}; p.group = nearest; boss_quote_trace(world, memory, nearest, "capacity", p, ordinary); return false; }
++    if (r.quote.group != nearest || r.group != nearest || !r.home) {
++        if (!boss_quote_geometry(world, pathing, safety, nearest, p)) { r.rejected = nearest; p = {}; p.group = nearest; boss_quote_trace(world, memory, nearest, "geometry", p, ordinary); return false; }
++        if (!prepare_boss_routes(world, memory, p)) { r.rejected = nearest; r.quote_cursor = (nearest + 1) % n; boss_quote_trace(world, memory, nearest, "route", p, ordinary); return false; }
++        r.quote = p;
++        r.rejected = -1;
++    } else p = r.quote;
++    r.quote_cursor = (nearest + 1) % n;
++    const bool priced = boss_price_approach(world, pathing, memory, p);
++    boss_quote_trace(world, memory, nearest, priced ? "priced" : "cycle", p, ordinary);
++    return priced;
++}
++
+ bool boss_action(World&, Pathing&, Safety&, Memory&, BossPlan&);
+ bool boss_travel_candidate(const World&, Pathing&, Safety&, Memory&, BossPlan&);
+ 
+@@ -435,21 +666,117 @@ bool boss_step_field(const World& world, Pathing& pathing, Safety& safety, const
+     return false;
+ }
+ 
+-bool boss_exit_action(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++float boss_escape_cost(const World& world, int own, vec2 station, vec2 ray, int first, int end) {
++    float raw = 0;
++    for (int k = first; k < end; ++k) {
++        const vec2 at = station + ray * k;
++        for (const int g : world.map().groups_near(at, world.map().max_camp_reach)) {
++            const auto& G = world.map().groups[g];
++            for (int i = 0; i < static_cast<int>(G.members.size()); ++i) {
++                const auto& m = G.members[i];
++                if (m.strength > 0 && dist(at, m.pos) <= m.reach
++                    && (g == own || boss_neighbor_state(world, g, i) != 1)) raw += m.strength;
++            }
++        }
++    }
++    return raw * camp_hit_factor();
++}
++
++bool boss_probe_tile(const World& world, Pathing& pathing, const BossPlan& p, vec2 at) {
++    return boss_geometry_tile(world, p, at, 0) && (at == my_position() || !test(pathing.blocked(), at))
++           && (!pathing.guard() || !test(*pathing.guard(), at));
++}
++
++void forget_boss_approach(Memory& memory) {
++    const int g = memory.boss_approach.group;
++    if (g >= 0 && memory.claim == g) memory.claim = -1;
++    if (g >= 0 && memory.farm_group == g) memory.farm_group = -1;
++    memory.boss_approach = {};
++}
++
++bool boss_approach_escape(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    auto& a = memory.boss_approach;
++    if (a.group < 0 || !boss_enemy_safe(world, safety, my_position())) return false;
++    const int offset = dist(my_position(), a.station);
++    if (offset > a.corridor || my_position() != a.station + a.ray * offset) return false;
++    if (offset == a.corridor) { forget_boss_approach(memory); return false; }
++    a.leaving = true;
++    const auto& quote = boss_routes().quote;
++    const vec2 next = my_position() + a.ray;
++    if (!my_can_move()) return boss_owned = true;
++    if (quote.group != a.group || !boss_probe_tile(world, pathing, quote, next)
++        || !boss_enemy_safe(world, safety, next)
++        || !(my_health() > boss_escape_cost(world, a.group, a.station, a.ray, offset + 1, a.corridor) + 1)) return false;
++    const bool moved = pathing.try_move(next);
++    see_again(world, pathing, safety);
++    if (!moved) return false;
++    boss_owned = true;
++    memory.claim = -1;
++    if (my_position() == a.exit) forget_boss_approach(memory);
++    return true;
++}
++
++bool boss_approach_action(World& world, Pathing& pathing, Safety& safety, Memory& memory, BossPlan& p) {
++    boss_quote_trace(world, memory, p.group, "selected", p, 0);
++    auto& a = memory.boss_approach;
++    a.group = p.group, a.station = p.station, a.exit = p.exit, a.ray = p.ray, a.corridor = p.corridor;
++    memory.farm_group = memory.claim = p.group;
++    memory.crew = false;
++    const vec2 here = my_position();
++    const int offset = dist(here, p.station);
++    const bool corridor = offset <= p.corridor && here == p.station + p.ray * offset;
++    if (!corridor) {
++        if (boss_step_field(world, pathing, safety, *boss_routes().home)) {
++            see_again(world, pathing, safety);
++            return boss_owned = true;
++        }
++        forget_boss_approach(memory);
++        see_again(world, pathing, safety);
++        return false;
++    }
++    if (offset > 0) {
++        const vec2 next = here - p.ray;
++        // Unknown neighbors can be approached, but their raw range is never entered blindly.
++        if (!my_can_move() || !boss_probe_tile(world, pathing, p, next) || !boss_enemy_safe(world, safety, next)
++            || boss_other_hazard(world, p.group, next)
++            || !(my_health() > boss_escape_cost(world, p.group, p.station, p.ray, offset - 1, p.corridor) + 1)) {
++            a.leaving = true;
++            return boss_approach_escape(world, pathing, safety, memory);
++        }
++        const bool moved = pathing.try_move(next);
++        see_again(world, pathing, safety);
++        boss_owned = true;
++        if (!moved) { a.leaving = true; return true; }
++        if (my_position() != p.station) return true;
++    }
++    BossPlan fresh;
++    if (read_boss(world, p.group, fresh) && !fresh.captured && certify_boss(world, pathing, safety, memory, fresh, true)) {
++        boss_quote_trace(world, memory, p.group, "admitted", fresh, 0);
++        return boss_action(world, pathing, safety, memory, fresh);
++    }
++    boss_quote_trace(world, memory, p.group, "local-rejected", p, 0);
++    // This is still an approach: a failed probe creates no work ledger or low-health waiver.
++    a.leaving = true;
++    if (my_can_move() && boss_approach_escape(world, pathing, safety, memory)) return true;
++    return boss_owned = true;
++}
++
++bool boss_exit_action(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool paid = true) {
+     auto& j = memory.boss;
+     if (j.group < 0 || j.exit.x < 0 || !boss_enemy_safe(world, safety, my_position())) return false;
+     const vec2 here = my_position();
+     if (here == j.exit) {
+-        j.phase = boss_heal;
++        if (paid) j.phase = boss_heal;
++        j.escaping = false;
+         boss_owned = true;
+         return true;
+     }
+-    const int left = dist(here, j.exit);
++    const int left = dist(here, j.exit), offset = dist(here, j.station);
+     const vec2 next = here + j.ray;
+     const auto& kept = boss_routes().forecast;
+-    if (left > j.corridor || dist(next, j.exit) != left - 1
+-        || !(my_health() > kept.hit * static_cast<float>(std::max(0, left - 1)) + 1)
+-        || !boss_local_tile(world, pathing, kept, next, 0) || !boss_enemy_safe(world, safety, next) || !my_can_move()) return false;
++    if (left > j.corridor || here != j.station + j.ray * offset || dist(next, j.exit) != left - 1
++        || !(my_health() > boss_escape_cost(world, j.group, j.station, j.ray, offset + 1, j.corridor) + 1)
++        || !boss_clear_tile(world, pathing, kept, next, 0) || !boss_enemy_safe(world, safety, next) || !my_can_move()) return false;
+     if (!pathing.try_move(next)) {
+         see_again(world, pathing, safety);
+         return false;
+@@ -457,7 +784,10 @@ bool boss_exit_action(World& world, Pathing& pathing, Safety& safety, Memory& me
+     see_again(world, pathing, safety);
+     boss_owned = true;
+     memory.claim = -1;
+-    if (my_position() == j.exit) j.phase = boss_heal;
++    if (my_position() == j.exit) {
++        if (paid) j.phase = boss_heal;
++        j.escaping = false;
++    }
+     return true;
+ }
+ 
+@@ -484,6 +814,7 @@ bool boss_refresh_target(const World& world, BossPlan& p, int member) {
+ }
+ 
+ void remember_boss(const World& world, Memory& memory, const BossPlan& p) {
++    forget_boss_approach(memory);
+     auto& j = memory.boss;
+     if (j.group != p.group) j = {};
+     j.group = p.group, j.member = p.boss;
+@@ -523,8 +854,9 @@ bool boss_travel_candidate(const World& world, Pathing& pathing, Safety& safety,
+     std::array<int, 2> cd{my_cooldown(0), my_cooldown(1)};
+     boss_age_cooldowns(cd, std::max(0, walk + entry_steps - 1));
+     const auto remaining = boss_sortie(world, j.health,
+-                                      my_health() - hit * static_cast<float>(std::max(0, entry_steps - 1)),
+-                                      hit, hit * static_cast<float>(j.corridor), cd, true, true, true);
++                                      my_health() - hit * static_cast<float>(boss_corridor_hits(p, 1, entry_steps)),
++                                      hit, hit * static_cast<float>(boss_corridor_hits(p, 0, j.corridor)), cd, true,
++                                      walk + entry_steps > 1 || my_can_attack(), walk + entry_steps > 1 || my_can_cast());
+     if (remaining.left > 0) return false;
+     int cleanup = p.cleanup_walk;
+     const float basic = my_strength() * (has_family(my_items(), monster) ? 1.1f : 1.0f);
+@@ -552,11 +884,13 @@ bool boss_return_action(World& world, Pathing& pathing, Safety& safety, Memory&
+     // The current/one-step local arm takes over only at a real working station.
+     const vec2 next = here - j.ray;
+     const float hit = fresh.members[fresh.boss].hit * camp_hit_factor();
+-    const float entry = hit * static_cast<float>(std::max(0, local - 1));
++    fresh.station = j.station, fresh.ray = j.ray, fresh.corridor = j.corridor;
++    const float entry = hit * static_cast<float>(boss_corridor_hits(fresh, 1, local));
+     std::array<int, 2> cd{my_cooldown(0), my_cooldown(1)};
+     boss_age_cooldowns(cd, std::max(0, local - 1));
+     const auto finish = boss_sortie(world, fresh.members[fresh.boss].health, my_health() - entry, hit,
+-                                    hit * static_cast<float>(j.corridor), cd, true, true, true);
++                                    hit * static_cast<float>(boss_corridor_hits(fresh, 0, j.corridor)), cd, true,
++                                    local > 1 || my_can_attack(), local > 1 || my_can_cast());
+     if (finish.left > 0 || !boss_local_tile(world, pathing, fresh, next, 0)
+         || !boss_enemy_safe(world, safety, next) || !pathing.try_move(next)) return false;
+     j.health = fresh.members[fresh.boss].health, j.seen = world.round;
+@@ -567,6 +901,7 @@ bool boss_return_action(World& world, Pathing& pathing, Safety& safety, Memory&
+ 
+ bool boss_action(World& world, Pathing& pathing, Safety& safety, Memory& memory, BossPlan& p) {
+     world.throw_if_stale();
++    if (p.provisional) return boss_approach_action(world, pathing, safety, memory, p);
+     debug_block({ std::printf("PSB %d %d phase %d remote %d trip %d exit %d rounds %.1f hp %.1f reserve %.1f station %d %d safe %d %d\n",
+                              world.round, p.group, memory.boss.phase, static_cast<int>(p.remote), static_cast<int>(p.trip),
+                              static_cast<int>(p.withdraw), static_cast<double>(p.rounds), static_cast<double>(p.members[p.boss].health),

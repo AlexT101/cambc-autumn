@@ -1,0 +1,2 @@
+injected 2 checks into 2 functions
+stripped stale debug sections (.debug_loc, .debug_abbrev, .debug_info, .debug_str, .debug_line, .debug_ranges); pass --keep-debug to retain them

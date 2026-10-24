@@ -1,0 +1,88 @@
+{
+  "schema": "willow-phased-boss-approach-4d08241-run-preservation-manifest/v1",
+  "scope": "One approved normal-draft Release match plus native-status and replay-derived contact audit; no additional games.",
+  "result": "v33 A wins at round 975; zero observed Marcella boss-group activation.",
+  "files": [
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/RUN-RESULT.md",
+      "sha256": "9b632787bc1f8edb409a63971e15e60ef8a54022744e6e712e1b6dc20c9f11aa",
+      "bytes": 2884
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/audit/results.json",
+      "sha256": "a2c0465dc864dd7ce71098588c200de00c21a92dabb9c560732848a58890b71f",
+      "bytes": 927
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/audit/status.json",
+      "sha256": "9a25397c5571c0edce3843b6b7778186ed4674429e72b99c6094d85ece6f30a7",
+      "bytes": 5489
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/run-one.manifest",
+      "sha256": "2a5be3eaa11451a0afc9e4b0a850844bf18bf27567f0714fdbf19d0af610c623",
+      "bytes": 911
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/run-one-v2.stdout.log",
+      "sha256": "d803dadf8e6ddb41b13238bcb683d4c1fb8e7ecee10129f3610bebed49d46976",
+      "bytes": 1050
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/run-one-v2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/run-one-v2.duty.json",
+      "sha256": "8c13e971a58b262e334e56652c587ccc72db3b375c9ccc8a166aad4031aef031",
+      "bytes": 4063
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/extract-one-recovery.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/extract-one-recovery.duty.json",
+      "sha256": "cb30f8937eca0a59059fa539597523729d86f45f62fc37db936212ea83c510bb",
+      "bytes": 7433
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/build-result.json",
+      "sha256": "7b5b7e87b1d54e3365b44ed93985036bddefb921a826a1cda96a64c73189934f",
+      "bytes": 2137
+    },
+    {
+      "path": "provenance/willow-phased-boss-approach-4d08241-v1/preflight.json",
+      "sha256": "fc6048ba7b70b18ed21ce1900a2550bbe7074ef8a65c949830109effd16a36e3",
+      "bytes": 2002
+    }
+  ],
+  "replay_payload_comparisons": {
+    "approach_v2_inner_sha256": "bf0bc377a2c7d9b383772f53a798e4dbaa58cc121e2da2b484581e1e1c0ad1e6",
+    "previous_boss_only_inner_sha256": "4b95b54f8caa71cef433cb897070c56349122a9566c80d6157a14b0253f85180",
+    "exact_parent_inner_sha256": "0022ca3c4d26d95df367ba021ef4d2b435f2eaccb9e3c76708ba5821619f14dc",
+    "all_byte_distinct": true
+  },
+  "source_and_tool_pins": {
+    "candidate_source_aggregate_sha256": "fbbdabd00d4726d36feb4c6bb87475d2e4fc9a1b118bcf59a4a577da9c3a275f",
+    "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "excluded_raw_artifacts": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-phased-boss-approach-4d08241-v1/outputs/approach-v2-B-vs-v33-big-world.repl26a",
+      "bytes": 59917,
+      "sha256": "3b6afe7cca7abbce3cd9d8215e52ece76bc2fb13de3cb902595f420dc2e30be3",
+      "reason": "raw replay/log retained locally but excluded from compact manifest"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-phased-boss-approach-4d08241-v1/extract-one-recovery.stdout.log",
+      "bytes": 239,
+      "sha256": "2c3a29f411af883416b7cd6802cbf0d9c47eb0bd0e1f152cf7c23640148c85a2",
+      "reason": "raw replay/log retained locally but excluded from compact manifest"
+    }
+  ]
+}

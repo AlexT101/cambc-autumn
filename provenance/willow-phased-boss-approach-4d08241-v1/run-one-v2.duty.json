@@ -1,0 +1,140 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T08:16:23.908217+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "argv": [
+    "env",
+    "PATH=/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5:/Users/yufan/Library/Caches/cambc/wasi-sdk-33/bin:/opt/homebrew/bin:/usr/bin:/bin",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "run-batch",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-phased-boss-approach-4d08241-v1/run-one.manifest",
+    "--jobs",
+    "1",
+    "--release",
+    "--color",
+    "never"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-phased-boss-approach-4d08241-v1/run-one-v2.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-phased-boss-approach-4d08241-v1/run-one-v2.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.077078583,
+      "run_end_monotonic": 0.22263375
+    },
+    {
+      "run_start_monotonic": 1.220041458,
+      "run_end_monotonic": 1.327595125
+    },
+    {
+      "run_start_monotonic": 2.319806958,
+      "run_end_monotonic": 2.512129
+    },
+    {
+      "run_start_monotonic": 3.443492,
+      "run_end_monotonic": 3.617794916
+    },
+    {
+      "run_start_monotonic": 4.613577583,
+      "run_end_monotonic": 4.802209583
+    },
+    {
+      "run_start_monotonic": 5.769588875,
+      "run_end_monotonic": 5.886928125
+    },
+    {
+      "run_start_monotonic": 6.792131416,
+      "run_end_monotonic": 6.975671125
+    },
+    {
+      "run_start_monotonic": 7.945494083,
+      "run_end_monotonic": 8.062384583
+    },
+    {
+      "run_start_monotonic": 9.046188875,
+      "run_end_monotonic": 9.218269375
+    },
+    {
+      "run_start_monotonic": 10.216179916,
+      "run_end_monotonic": 10.411713958
+    },
+    {
+      "run_start_monotonic": 11.3396825,
+      "run_end_monotonic": 11.532548833
+    },
+    {
+      "run_start_monotonic": 12.446991375,
+      "run_end_monotonic": 12.644652625
+    },
+    {
+      "run_start_monotonic": 13.6253625,
+      "run_end_monotonic": 13.777362125
+    },
+    {
+      "run_start_monotonic": 14.773909916,
+      "run_end_monotonic": 14.969521416
+    },
+    {
+      "run_start_monotonic": 15.966680708,
+      "run_end_monotonic": 16.165373958
+    },
+    {
+      "run_start_monotonic": 17.163762666,
+      "run_end_monotonic": 17.360240083
+    },
+    {
+      "run_start_monotonic": 18.356358333,
+      "run_end_monotonic": 18.469167916
+    },
+    {
+      "run_start_monotonic": 19.37137675,
+      "run_end_monotonic": 19.527130416
+    },
+    {
+      "run_start_monotonic": 20.459678083,
+      "run_end_monotonic": 20.607824083
+    },
+    {
+      "run_start_monotonic": 21.605998875,
+      "run_end_monotonic": 21.781291625
+    },
+    {
+      "run_start_monotonic": 22.781335833,
+      "run_end_monotonic": 22.977925041
+    },
+    {
+      "run_start_monotonic": 23.938245375,
+      "run_end_monotonic": 24.137511791
+    },
+    {
+      "run_start_monotonic": 25.059231708,
+      "run_end_monotonic": 25.241896541
+    },
+    {
+      "run_start_monotonic": 26.494424291,
+      "run_end_monotonic": 26.59777725
+    },
+    {
+      "run_start_monotonic": 27.528536041,
+      "run_end_monotonic": 27.702869666
+    },
+    {
+      "run_start_monotonic": 28.688974583,
+      "run_end_monotonic": 28.88149125
+    },
+    {
+      "run_start_monotonic": 29.85469475,
+      "run_end_monotonic": 29.956331958
+    }
+  ],
+  "pid": 395,
+  "process_group_id": 395,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T08:16:53.791772+00:00"
+}

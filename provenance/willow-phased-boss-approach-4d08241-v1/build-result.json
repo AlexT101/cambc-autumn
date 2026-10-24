@@ -1,0 +1,37 @@
+{
+  "schema": "willow-phased-boss-approach-4d08241-release-build-result/v1",
+  "status": "success",
+  "command": "cambc build bots/willow-phased-boss-approach-4d08241-work --release",
+  "mode": "Release",
+  "source_aggregate_sha256": "fbbdabd00d4726d36feb4c6bb87475d2e4fc9a1b118bcf59a4a577da9c3a275f",
+  "runtime_copy_aggregate_sha256": "fbbdabd00d4726d36feb4c6bb87475d2e4fc9a1b118bcf59a4a577da9c3a275f",
+  "expected_source_aggregate_sha256": "fbbdabd00d4726d36feb4c6bb87475d2e4fc9a1b118bcf59a4a577da9c3a275f",
+  "patch_sha256": "071f27b8f821c94182bbc04e6825cf8ade6f71ee9c129eb6cb5a1191f5704c88",
+  "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+  "cli_version": "cambc 3.0.5",
+  "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+  "sdk_header_sha256_before": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+  "sdk_header_sha256_after": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+  "sdk_header_mtime_ns_before": 1792774035481976768,
+  "sdk_header_mtime_ns_after": 1792774035481976768,
+  "shared_sdk_unchanged": true,
+  "output_binaries": {
+    "raw_wasm": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-phased-boss-approach-4d08241-work/.cambc/build-release/bot.wasm",
+      "bytes": 1727207,
+      "sha256": "91580bb9467200997531d6b2504128213d4b6353668a4d3f94723e8806cffaf4"
+    },
+    "injected_wasm": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-phased-boss-approach-4d08241-work/.cambc/build-release/bot-injected.wasm",
+      "bytes": 968955,
+      "sha256": "f4e7029a34def285a6847cdd362df4043b015300679d218c0aef1cb299861465"
+    }
+  },
+  "duty_receipt_path": "provenance/willow-phased-boss-approach-4d08241-v1/build-release.duty.json",
+  "build_log_path": "provenance/willow-phased-boss-approach-4d08241-v1/build-release.stdout.log",
+  "stderr_log_path": "provenance/willow-phased-boss-approach-4d08241-v1/build-release.stderr.log",
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "games_run": 0
+}
