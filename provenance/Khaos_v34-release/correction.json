@@ -1,0 +1,24 @@
+{
+  "schema": "khaos-v34-preparation-correction/v1",
+  "updated": "2026-10-24",
+  "changes": [
+    "Corrected successful build duty receipt to build2.duty.json; its receipt records pid, exit_code 0 and 10% duty intervals.",
+    "Retained build.duty.json as a failed initial setup attempt only; it has no pid/exit_code and empty intervals.",
+    "Replaced stale target identity provenance with root\u2019s current-session history crosscheck plus archived Khaos_v33 team UUID consistency; current history output was not persisted."
+  ],
+  "verification": {
+    "sourceAggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "sourceCloneAggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "sourceUnchanged": true,
+    "rawWasmSha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+    "injectedWasmSha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525",
+    "sdkCambcHeaderSha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "sdkCambcHeaderMtimeNs": 1792774035481976768,
+    "sdkImportsSha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "sdkImportsMtimeNs": 1792774035482489096,
+    "matchesPriorPreflight": true,
+    "newBuildPerformed": false
+  },
+  "newBuildPerformed": false,
+  "sourceAndSdkUnchanged": true
+}

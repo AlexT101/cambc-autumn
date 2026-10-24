@@ -1,0 +1,97 @@
+{
+  "schema": "compact-preservation-manifest/v1",
+  "purpose": "Submitted Khaos_v34 release receipt and compact evidence; raw bundle is locally preserved but excluded from compact staging.",
+  "files": [
+    {
+      "path": "provenance/Khaos_v34-release/README.md",
+      "bytes": 1166,
+      "sha256": "9dbdc910cc68b0c3f98d2ed72bde7300cad55ffb6eb0f1c54b0045b1aae08502"
+    },
+    {
+      "path": "provenance/Khaos_v34-release/preparation.json",
+      "bytes": 6748,
+      "sha256": "4836828766af0f0e3011180587ad33db9a66232c5a75a8bc5a848b1a9b5376a5"
+    },
+    {
+      "path": "provenance/Khaos_v34-release/source-manifest.json",
+      "bytes": 4924,
+      "sha256": "4328e18eeddb3570d9c21c70f7ce97c572bff2da5fa14a77b011c93c6cee5478"
+    },
+    {
+      "path": "provenance/Khaos_v34-release/bundle-members.json",
+      "bytes": 5735,
+      "sha256": "6845491d781c899ef86b1c25516f58bd9dcb5e13d5aa41eef17e12150a5c5309"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/receipts/build2.duty.json",
+      "bytes": 2378,
+      "sha256": "730944f9118406f940e68b7766d9ab96735b84f8db44f279ca895917a48aa94b"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/receipts/build.duty.json",
+      "bytes": 1048,
+      "sha256": "40ee8159f7c414f6dd16592cc734fa44ba22cfa65aba6785c21cf2db0fd71636"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/preflight.json",
+      "bytes": 2184,
+      "sha256": "7a2772524bcd85079fb0cb03c94a3ee55fb388e58b85f997336ea81aaff40c68"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/logs/build2.stdout.log",
+      "bytes": 4338,
+      "sha256": "25403f95339383ece3acdf282b870db2cec2c1ec07e11417cde4c554f7751d12"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/logs/build2.stderr.log",
+      "bytes": 180,
+      "sha256": "ec996f44c37aa3a11b8893a81d8de92ffd2349d6721210c22873430f0517e322"
+    },
+    {
+      "path": "provenance/Khaos_v34-release/correction.json",
+      "bytes": 1373,
+      "sha256": "6d59e1c49b1222b8ed4f8a66d4b1d3a7bce14ca0b5e30c6240bce10b3787509a"
+    },
+    {
+      "path": "provenance/Khaos_v34-release/release.json",
+      "bytes": 5851,
+      "sha256": "3ccbc6f285cf01fdb3ef83b1999617b2067d7fc26c0807bdd1a722c949e0bf80"
+    },
+    {
+      "path": "provenance/Khaos_v34-release/submit-response.txt",
+      "bytes": 222,
+      "sha256": "bd00dbd11b5075e4007ada4c9ed564ff89137b1b356f3c4b42ff0686daa4e361"
+    }
+  ],
+  "source_clone": {
+    "directory": "bots/Khaos_v34/src",
+    "aggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "matches_reviewed_child_byte_for_byte": true,
+    "source_file_count": 29,
+    "has_cambc_cache": false
+  },
+  "reused_runtime_artifacts": [
+    {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work/.cambc/build-release/bot.wasm",
+      "bytes": 1669221,
+      "sha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b"
+    },
+    {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work/.cambc/build-release/bot-injected.wasm",
+      "bytes": 910969,
+      "sha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525"
+    }
+  ],
+  "source_review": "research/willow-finishing-recall-4d08241-source-review-20261024-v1.md",
+  "prior_build_preflight": "provenance/willow-finishing-recall-bigworld-20261024-v1/preflight.json",
+  "prior_build_duty_receipt": "provenance/willow-finishing-recall-bigworld-20261024-v1/receipts/build2.duty.json",
+  "failed_prior_build_attempt": "provenance/willow-finishing-recall-bigworld-20261024-v1/receipts/build.duty.json (failed initial setup attempt; preserved separately)",
+  "excluded_artifacts": [
+    {
+      "path": "provenance/Khaos_v34-release/Khaos_v34.zip",
+      "bytes": 228459,
+      "sha256": "9d93d1c848abeda782de833e3ca373bf1d578325ad09fbfb0956d98ebcd9e20d",
+      "note": "Prepared local bundle; preserved byte-exact, excluded from compact staging."
+    }
+  ]
+}

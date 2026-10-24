@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "status": "submitted",
+  "releaseName": "Khaos_v34",
+  "preparedAt": "2026-10-24",
+  "source": {
+    "directory": "bots/Khaos_v34/src",
+    "copiedFrom": "bots/variants/willow-finishing-recall-4d08241-work/src",
+    "aggregateRecipe": "(cd <botdir> && shasum -a 256 src/* | shasum -a 256)",
+    "sourceAggregateSha256": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "sourceAggregateBeforeCloneSha256": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "sourceFileCount": 29,
+    "sourceManifest": "provenance/Khaos_v34-release/source-manifest.json",
+    "sourceManifestSha256": "4328e18eeddb3570d9c21c70f7ce97c572bff2da5fa14a77b011c93c6cee5478",
+    "review": "research/willow-finishing-recall-4d08241-source-review-20261024-v1.md",
+    "reviewedChildAggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "parentAggregate": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+    "delta": "Only src/bot.cpp differs from latest-base parent; unchanged reviewed child; no gameplay source modification during release preparation."
+  },
+  "preparationArtifact": {
+    "path": "provenance/Khaos_v34-release/preparation.json",
+    "sha256": "4836828766af0f0e3011180587ad33db9a66232c5a75a8bc5a848b1a9b5376a5",
+    "preservedUnchanged": true
+  },
+  "build": {
+    "performedForRelease": false,
+    "reusedExistingRelease100kArtifacts": true,
+    "rawWasm": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work/.cambc/build-release/bot.wasm",
+      "bytes": 1669221,
+      "sha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+      "expectedSha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+      "matchesExpected": true
+    },
+    "injectedWasm": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work/.cambc/build-release/bot-injected.wasm",
+      "bytes": 910969,
+      "sha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525",
+      "expectedSha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525",
+      "matchesExpected": true
+    },
+    "successfulBuildDutyReceipt": "provenance/willow-finishing-recall-bigworld-20261024-v1/receipts/build2.duty.json",
+    "successfulBuildDutyReceiptSha256": "730944f9118406f940e68b7766d9ab96735b84f8db44f279ca895917a48aa94b",
+    "failedBuildAttempt": {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/receipts/build.duty.json",
+      "sha256": "40ee8159f7c414f6dd16592cc734fa44ba22cfa65aba6785c21cf2db0fd71636",
+      "classification": "failed setup attempt; empty duty intervals, missing pid and exit_code; preserved, not build-success evidence"
+    },
+    "sdk": {
+      "cambc_hSha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "cambc_hMtimeNsBeforeAndAfter": 1792774035481976768,
+      "importsSha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "importsMtimeNsBeforeAndAfter": 1792774035482489096,
+      "matchesPriorBuildPreflight": true
+    }
+  },
+  "runtime": {
+    "cliPath": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "cliVersion": "cambc 3.0.5",
+    "cliSha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "enginePath": "tools/replay/engine/v1_0_3.wasm",
+    "engineSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "sdk": {
+      "cambc_hSha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "cambc_hMtimeNsBeforeAndAfter": 1792774035481976768,
+      "importsSha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "importsMtimeNsBeforeAndAfter": 1792774035482489096,
+      "matchesPriorBuildPreflight": true
+    }
+  },
+  "bundle": {
+    "command": "nice -n 19 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc bundle --output provenance/Khaos_v34-release/Khaos_v34.zip bots/Khaos_v34",
+    "path": "provenance/Khaos_v34-release/Khaos_v34.zip",
+    "bytes": 228459,
+    "sha256": "9d93d1c848abeda782de833e3ca373bf1d578325ad09fbfb0956d98ebcd9e20d",
+    "memberCount": 29,
+    "membersExactlySourceFiles": true,
+    "contentsVerifiedAgainstSource": true,
+    "memberAudit": "provenance/Khaos_v34-release/bundle-members.json",
+    "memberAuditSha256": "6845491d781c899ef86b1c25516f58bd9dcb5e13d5aa41eef17e12150a5c5309"
+  },
+  "submission": {
+    "status": "submitted",
+    "uploaded": true,
+    "authorizedAndPerformedBy": "root",
+    "cliExitCode": 0,
+    "teamId": "547efb5b-57e5-4355-8501-3b331f506d62",
+    "teamNameAtSubmission": "willow best girl",
+    "serverVersion": 48,
+    "cliReportedUploadBytes": 228459,
+    "preparedBundleBytes": 228459,
+    "preparedBundleSha256": "9d93d1c848abeda782de833e3ca373bf1d578325ad09fbfb0956d98ebcd9e20d",
+    "responseFile": "provenance/Khaos_v34-release/submit-response.txt",
+    "responseBytes": 222,
+    "responseSha256": "bd00dbd11b5075e4007ada4c9ed564ff89137b1b356f3c4b42ff0686daa4e361",
+    "confirmedAtUtc": "2026-10-24T10:17:24Z",
+    "approximateSubmissionTimeUtc": "2026-10-24T10:17:20Z",
+    "timestampSource": "root confirmation; raw CLI stdout contains no timestamp",
+    "remotePayloadRetrieved": false,
+    "remotePayloadSha256": null,
+    "remoteByteIdentityClaim": false,
+    "submissionOrSourceId": null,
+    "note": "Khaos_v34 - Preserve safe finishing recall near camp payout"
+  },
+  "reviewLimit": "This records the successful upload receipt; no remote payload hash is available, so it does not claim the remote source bytes were retrieved or independently compared."
+}

@@ -2983,3 +2983,13 @@ for diagnosis. The recall-only `781fe364...` child is selected for Khaos_v34
 preparation; its source review finds no remaining blocker. Upstream was fetched
 again and remains4d08241. No new submission or live unranked has occurred at
 this checkpoint. Willow-first ladder-manipulation batches remain excluded.
+
+Khaos_v34 was subsequently cloned from that exact 29-file recall-only source
+and submitted once through the CLI as server 48 on 2026-10-24 at approximately
+10:17 UTC. The bundle is 228,459 bytes, SHA256 `9d93d1c8...`; all ZIP members
+match the source clone. Its source remains `781fe364...`, and the proven
+Release raw/injected binaries are `9aab0533...`/`e7f63a94...`; no identical
+rebuild was needed. The authenticated team UUID matches prior v33, now named
+willow best girl. The CLI confirms version 48 and upload size; remote source
+bytes were not retrieved. Canonical bot directories remain untouched, and
+the communications experiment is not included in this release.

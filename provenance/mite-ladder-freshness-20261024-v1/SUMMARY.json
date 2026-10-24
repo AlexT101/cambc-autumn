@@ -1,0 +1,83 @@
+{
+  "schema": "mite-ladder-freshness-summary/v1",
+  "sourceMetadata": "raw/latest-metadata.json",
+  "sourceBytes": 20005,
+  "sourceSha256": "18af8d26efafc7739009253407564b13e08eaa4b341196c2312a405df257811b",
+  "sourcePathBeforeCopy": "/tmp/mite-latest-metadata-20261024-1018-retry.json",
+  "sourceFilesystemMtimeUtc": "2026-10-24T10:16:17.892224Z",
+  "interpretation": "Filesystem mtime approximates when the local metadata file was saved; not an exact server query timestamp.",
+  "rowsReturned": 30,
+  "statusCounts": {
+    "queued": 5,
+    "finished": 25
+  },
+  "finishedWinsLosses": {
+    "wins": 21,
+    "losses": 4
+  },
+  "finishedCreatedAtRangeUtc": [
+    "2026-10-24T10:09:43.085Z",
+    "2026-10-24T10:11:10.316Z"
+  ],
+  "finishedAtRangeUtc": [
+    "2026-10-24T10:09:47.529Z",
+    "2026-10-24T10:14:21.987Z"
+  ],
+  "draftProfiles": [
+    {
+      "draftPicks": [
+        1,
+        2,
+        0,
+        10,
+        6
+      ],
+      "charactersAsReturned": [
+        "1",
+        "2",
+        "0",
+        "10",
+        "6"
+      ],
+      "finishedMatches": 17
+    },
+    {
+      "draftPicks": [
+        11,
+        1,
+        6,
+        2
+      ],
+      "charactersAsReturned": [
+        "11",
+        "1",
+        "6",
+        "2"
+      ],
+      "finishedMatches": 5
+    },
+    {
+      "draftPicks": [
+        6,
+        2,
+        10
+      ],
+      "charactersAsReturned": [
+        "6",
+        "2",
+        "10"
+      ],
+      "finishedMatches": 3
+    }
+  ],
+  "matchMetadataTeamIdentity": {
+    "name": "Mite",
+    "teamId": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e",
+    "source": "These metadata rows only."
+  },
+  "submissionIdentityInferred": false,
+  "sourceOrSubmissionVersion": null,
+  "remotePayloadRetrieved": false,
+  "replaysDownloaded": 0,
+  "nextBoundedStep": "If root authorizes, select at most one of the four finished losses by explicit matchId and inspect its saved replay; no replay was downloaded for this freshness check."
+}

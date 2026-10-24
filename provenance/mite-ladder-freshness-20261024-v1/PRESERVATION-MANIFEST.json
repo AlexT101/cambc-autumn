@@ -1,0 +1,30 @@
+{
+  "schema": "compact-preservation-manifest/v1",
+  "purpose": "Compact snapshot of latest Mite match metadata; no replay download or submission identity attribution.",
+  "files": [
+    {
+      "path": "provenance/mite-ladder-freshness-20261024-v1/README.md",
+      "bytes": 811,
+      "sha256": "3b609ea4d85b717dbdf6a79b7e190deefd11efb4512f1afc9f94edfbdc8fa8c5"
+    },
+    {
+      "path": "provenance/mite-ladder-freshness-20261024-v1/SUMMARY.json",
+      "bytes": 1954,
+      "sha256": "a1bc65b3e5043c9ceb0b5df274a6dc70ac2aaeaca53366a527e3cbe5d6c96825"
+    }
+  ],
+  "excluded_artifacts": [
+    {
+      "path": "provenance/mite-ladder-freshness-20261024-v1/raw/latest-metadata.json",
+      "bytes": 20005,
+      "sha256": "18af8d26efafc7739009253407564b13e08eaa4b341196c2312a405df257811b",
+      "note": "Exact 20KB CLI match-history metadata response; retained locally for provenance, not expanded into separate match/replay artifacts."
+    }
+  ],
+  "sourceMetadata": {
+    "originalPath": "/tmp/mite-latest-metadata-20261024-1018-retry.json",
+    "sha256": "18af8d26efafc7739009253407564b13e08eaa4b341196c2312a405df257811b",
+    "bytes": 20005,
+    "sourceFilesystemMtimeUtc": "2026-10-24T10:16:17.892224Z"
+  }
+}
