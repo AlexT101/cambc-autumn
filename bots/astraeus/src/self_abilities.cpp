@@ -425,9 +425,16 @@ bool heal_ready(const World& world, const ChampionBelief& healer, float& amount)
     const auto* live = visible_record(healer.handle);
     if (!live) return false;
     const auto state = cambc::champion_state::from_bits_retain(live->state);
-    if (!state.contains(cambc::champion_state::can_cast) || state.contains(cambc::champion_state::recalling)
-        || state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::teleporting))
+    if (state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::teleporting)) return false;
+    if (healer.is_self) {
+        if (!state.contains(cambc::champion_state::can_cast) || state.contains(cambc::champion_state::recalling)) return false;
+    } else if (healer.stun_pending
+               || (state.contains(cambc::champion_state::recalling)
+                   && kept_recall(healer.handle, healer.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time)))) {
+        // An ally's turn allowances are not ours to read between its turns. A recall started at a
+        // turn end is cancelled next turn unless wanted: only one kept through a turn stops the heal.
         return false;
+    }
     const float focus = live->focus;
     const int slot = healer.facts().slot_of(AbilityKind::heal);
     if (slot < 0) return false;

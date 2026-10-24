@@ -7,7 +7,6 @@ class World;
 class Pathing;
 
 struct Memory {
-    enum class Recovery { idle, withdrawing, recovering };
     int round = -1;    // of our previous turn
     float health = 0;  // at its end
     float damage = 0;  // taken since, as of this turn's start
@@ -21,13 +20,11 @@ struct Memory {
     int wait_altar = -1, wait_since = -1;   // the altar we wait at for a safe tribute, since when
     int avoid_altar = -1, avoid_until = -1; // one we gave up waiting at, skipped until that round
     bool wants_crystal = false; // a crystal hop to an altar would have beaten walking to bank
-    int recovery_start = -1, recovery_turns = 0, support_seen = -1;
-    Recovery recovery = Recovery::idle;
+    int recovery_start = -1, recovery_turns = 0;
     int recovery_group = -1, recovery_closed_group = -1;
     bool recovery_reentry = false;
     float recovery_health = 0, recovery_closed_health = -1;
-    vec2 support_observed{-1, -1};
-    int formation_start = -1, formation_turns = 0, formation_group = -1;
+    int formation_start = -1, formation_turns = 0;
     vec2 ward{-1, -1};    // our latest ward
     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
 };
