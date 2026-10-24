@@ -1,6 +1,6 @@
 # Marcella Treasure income: replay correction
 
-2026-10-23. Read-only existing exact-a67 replay evidence. This corrects the earlier assumption that Treasure excludes Marcella's tribute-generated gold. No engine, new extraction, probe, script or gameplay edit. Root has requested a dedicated probe after the active runtime worker finishes; YAML is unchanged pending that verification.
+2026-10-23. Initial read-only exact-a67 replay evidence, followed by the dedicated engine confirmation below. This corrects the earlier assumption that Treasure excludes Marcella's tribute-generated gold. Astra performed the replay research; Luna implemented and ran the probe; root updated the rule reference after verification.
 
 ## Independent native snapshot witnesses
 
@@ -18,7 +18,13 @@ Whole-game accounting independently agrees:
 - BigWorld: native earned3095, submitted313, zero kills. Capture events pay2350 gold:130 before Treasure and2220 after. Fifteen gems are tributed before Treasure,298 after. `2350 +15×2 +298×2.4 =3095.2`, consistent with native floor3095. Without the tribute bonus the total would2976. The recorded-schedule Treasure increment is370 capture gold plus119.2 tribute gold,489.2 total; this is not a no-Treasure gameplay counterfactual.
 - Boss: native earned5774, submitted751. Captures pay3372; five explicit kill rewards pay120 each; all tributes occur after Treasure. `3372 +600 +751×2.4 =5774.4`, consistent with native floor5774. Marcella's tribute contribution is1802.4, not1502. Removing it as an allegedly ineligible source would understate Treasure's return.
 
-The SDK calls Treasure's passive20% more gold gained and gives Marcella's base tribute rate2. `cambc-rules.yaml` lists capture/kill bonus application but does not explicitly exclude tribute-generated gold. Existing `probe-capture` scenario6 tests Treasure on Vesper/Vendetta, not Marcella; scenario8 includes an idle Marcella. No direct existing probe confirmation was found in those cases. The pending probe should distinguish balance from lifetime earned, hold all other income/spending fixed, and compare the same tribute quantity before/after Treasure.
+The SDK calls Treasure's passive20% more gold gained and gives Marcella's base tribute rate2. The previous `cambc-rules.yaml` listed capture/kill bonus application without mentioning tribute-generated gold. Existing `probe-capture` scenario6 tests Treasure on Vesper/Vendetta, not Marcella; scenario8 includes an idle Marcella. No direct existing probe confirmation was found in those cases.
+
+## Dedicated engine confirmation
+
+The successful v2 scenario uses Marcella on00collision with Cambc3.0.5 and a50M diagnostic fuel budget. Before Treasure, the4-gem tribute at76–77 raises both displayed balance and earned gold100→108. Treasure Strength completes235. The15-gem tribute at301–303 raises earned352→388 and balance202→238, exactly36 gold. Neither tribute interval includes another capture, kill or purchase. These different bag sizes establish the per-gem rate; this is not a same-quantity paired performance test.
+
+Full pins, source, native snapshots, logs and replay remain under `replays/willow-marcella-treasure-tribute-probe-20261023-v2/`; the reproducible source copy is `tools/probes/probe-marcella-treasure/`. V1 is preserved as an invalid attempt: its scenario lacked the Marcella draft case and drafted other champions. Onlyv2 supports the result. The successful run has no native errors; its one derived earnedGold warning344 versus388 omits the entire44 gold from both tributes. The validator currently accumulates capture/kill income but no tribute income, so this warning is not evidence against the native snapshots. Historical extraction outputs are preserved. The YAML now explicitly includes tribute-generated gold in the bonus rule.
 
 ## Consequence for allocation and future item tests
 

@@ -2,7 +2,7 @@
 
 2026-10-23. Read-only research against canonical a67, `cambc-rules.yaml`, SDK item definitions and the existing probe index; no new games, extraction, probes or gameplay edits. The shop has a real missing support objective. This does not establish that every Willow should buy Focus or Health first.
 
-**Correction:** v1 incorrectly excluded Marcella's tribute-generated gold from Treasure's bonus. Exact existing replay balance/earned deltas contradict that assumption in two a67 games. See `willow-marcella-treasure-income-correction.md`; a dedicated probe is pending with the runtime owner. The original v1 is preserved as `willow-support-items-and-treasure-review-v1-superseded.md`, SHA256 `3268e10708d63d98c1a0e35ecde08233ad4dddc295ea906d2a7f8d8bc22280b4`. This strengthens Treasure's rationale for Marcella and does not change the two isolated Willow item arms.
+**Correction:** v1 incorrectly excluded Marcella's tribute-generated gold from Treasure's bonus. Two exact-a67 replay witnesses and a dedicated engine probe confirm the bonus applies. The probe pays8 gold for4 gems without Treasure and36 gold for15 gems with Treasure, with no other income during either tribute. See `willow-marcella-treasure-income-correction.md` and `tools/probes/probe-marcella-treasure/`. The original v1 is preserved as `willow-support-items-and-treasure-review-v1-superseded.md`, SHA256 `3268e10708d63d98c1a0e35ecde08233ad4dddc295ea906d2a7f8d8bc22280b4`. This strengthens Treasure's rationale for Marcella and does not change the two isolated Willow item arms.
 
 ## What current shopping optimizes
 

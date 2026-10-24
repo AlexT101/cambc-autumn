@@ -1553,9 +1553,14 @@ removal from non-Vesper roles is justified. Our initial claim that Marcella's tr
 was excluded is contradicted by two exact-a67 replays: BigWorld A rounds327→328 have a41-gem
 tribute and98 additional displayed gold, with completed Treasure and no capture/kill/shop in
 that round (82×1.2=98.4 before floor). Full Boss A accounting also matches2.4 gold per tributed
-gem. This is strong replay evidence that Treasure boosts tribute-generated gold; a minimal
-engine probe is queued before changing the rule reference. The earlier user statement was
-corrected immediately when this evidence appeared.
+gem. A dedicated engine probe then confirms the rate: without Treasure,4 gems pay8 gold;
+after Treasure,15 gems pay36 gold, with no other income during either tribute. The rule
+reference and probe index are corrected. The earlier user statement was corrected immediately
+when the replay evidence appeared. Successful source/evidence is preserved in
+`tools/probes/probe-marcella-treasure/` and the full v2 replay/provenance folder. The invalid
+first attempt lacked the Marcella draft case and is preserved separately. The successful
+probe's one derived earnedGold warning omits all44 tribute gold; the existing validator
+currently sums capture/kill income but no tribute income. Native snapshot deltas are decisive.
 Historical CHANGES101 found broad/fresh Treasure-first gains; generic forced Health and
 additional speculative Treasure-return pricing did not improve their historical baselines.
 

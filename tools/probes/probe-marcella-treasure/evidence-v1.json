@@ -1,0 +1,217 @@
+{
+  "schema": "marcella-treasure-tribute-probe-evidence/v1",
+  "valid_attempt": "v2/attempt-01",
+  "invalid_attempt_preserved": "v1/attempt-01",
+  "roster": [
+    "Marcella",
+    "Ryth",
+    "Varg"
+  ],
+  "probe_side": "Team A",
+  "control_side": "probe-capture-b passive, Team B",
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "map": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00collision.map26a",
+    "file_sha256": "6e3c67956080f8da5a0042e68ea481189cd6f61061a742a8be0354a9ea5c5620",
+    "native_map_hash": "33097fd1c6eaf3db",
+    "dimensions": [
+      41,
+      41
+    ]
+  },
+  "source": {
+    "cpp_h_files": 10,
+    "sha256": "c89703a43e769d8381dd8f490fd5f4e140062678d34b7b113bba199b671399a2",
+    "manifest": "source-manifest.json"
+  },
+  "runtime": {
+    "cambc": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "command": "nice -n 19 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc run <probe-marcella> <probe-passive> --map 00collision --rounds 2000 --fuel 50000000 --log-limit 8388608 --statistics stats.json --json -o attempt-01"
+  },
+  "artifacts": {
+    "raw_wasm": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-marcella-treasure-tribute-probe-20261023-v2/workspace/bots/probe-marcella/.cambc/build/bot.wasm",
+      "sha256": "926cdce26e313e6f5410a506135ef758756c1ecc18ecca31c8028e75f1384708"
+    },
+    "injected_wasm": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-marcella-treasure-tribute-probe-20261023-v2/workspace/bots/probe-marcella/.cambc/build/bot-injected.wasm",
+      "sha256": "926cdce26e313e6f5410a506135ef758756c1ecc18ecca31c8028e75f1384708"
+    },
+    "replay": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-marcella-treasure-tribute-probe-20261023-v2/attempt-01/probe-marcella-vs-probe-passive-1792799852113.repl26a",
+      "sha256": "5eb8555a91bb80bd3b54c07ce576910018ba0a55bf90924c4af8bc488cdb88fb"
+    },
+    "stdout": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-marcella-treasure-tribute-probe-20261023-v2/payload/team-a.stdout",
+      "sha256": "4220dca5adf3c79aeba080472d76d48a6a5386fb985a228ed3dbdd56af6ecf39",
+      "bytes": 848366
+    },
+    "stats": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-marcella-treasure-tribute-probe-20261023-v2/stats.json",
+      "sha256": "a42230951c1496783024f6cc6b29a1688dbbf6651d5751427537c6fdd67e2233"
+    },
+    "extractor_engine_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/engine/v1_0_3.wasm",
+    "extractor_engine_file_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+  },
+  "native_result": {
+    "rounds": 2000,
+    "winner": 0,
+    "gems": [
+      19,
+      0
+    ],
+    "deaths": 1,
+    "earnedGold": 388,
+    "endingGold": 238,
+    "bought": [
+      18,
+      5,
+      19,
+      1
+    ],
+    "validation": {
+      "ok": true,
+      "hard": [],
+      "soft": [
+        "champion 0 earnedGold: derived 344, engine 388"
+      ]
+    }
+  },
+  "snapshot_rows": {
+    "76": {
+      "round": 76,
+      "gold": 100,
+      "earned": 100,
+      "gems": 4,
+      "channel": 2,
+      "channel_turns": 0,
+      "items": []
+    },
+    "77": {
+      "round": 77,
+      "gold": 108,
+      "earned": 108,
+      "gems": 0,
+      "channel": 0,
+      "channel_turns": 0,
+      "items": []
+    },
+    "299": {
+      "round": 299,
+      "gold": 202,
+      "earned": 352,
+      "gems": 15,
+      "channel": 0,
+      "channel_turns": 0,
+      "items": [
+        19,
+        1
+      ]
+    },
+    "301": {
+      "round": 301,
+      "gold": 202,
+      "earned": 352,
+      "gems": 15,
+      "channel": 2,
+      "channel_turns": 1,
+      "items": [
+        19,
+        1
+      ]
+    },
+    "302": {
+      "round": 302,
+      "gold": 202,
+      "earned": 352,
+      "gems": 15,
+      "channel": 2,
+      "channel_turns": 0,
+      "items": [
+        19,
+        1
+      ]
+    },
+    "303": {
+      "round": 303,
+      "gold": 238,
+      "earned": 388,
+      "gems": 0,
+      "channel": 0,
+      "channel_turns": 0,
+      "items": [
+        19,
+        1
+      ]
+    }
+  },
+  "tribute_event_intervals": [
+    {
+      "start": {
+        "s": 8412,
+        "r": 76,
+        "t": 1,
+        "k": "tribute_start",
+        "a": 0,
+        "altar": [
+          27,
+          20
+        ],
+        "gems": 4,
+        "dur": 1,
+        "at": [
+          26,
+          19
+        ]
+      },
+      "end": {
+        "s": 8515,
+        "r": 77,
+        "t": 0,
+        "k": "tribute_end",
+        "a": 0,
+        "gems": 4,
+        "total": 4
+      },
+      "actor_income_or_spend_events_inside": []
+    },
+    {
+      "start": {
+        "s": 33428,
+        "r": 301,
+        "t": 0,
+        "k": "tribute_start",
+        "a": 0,
+        "altar": [
+          27,
+          20
+        ],
+        "gems": 15,
+        "dur": 2,
+        "at": [
+          26,
+          19
+        ]
+      },
+      "end": {
+        "s": 33651,
+        "r": 303,
+        "t": 0,
+        "k": "tribute_end",
+        "a": 0,
+        "gems": 15,
+        "total": 19
+      },
+      "actor_income_or_spend_events_inside": []
+    }
+  ],
+  "interpretation": "Pre-Treasure 4-gem tribute increased native lifetime earned gold and balance by 8 (4\u00d72). Post-Treasure 15-gem tribute increased both by 36 (15\u00d72\u00d71.2). No logged income/spending event from Marcella occurred inside either tribute interval. Direct engine round snapshots provide the comparison. Extractor soft earnedGold is 344 vs native 388 (difference 44), exactly the sum of both tribute awards (8+36), because current extract.mjs earnedGold validation accounts for capture/kill rewards but omits tribute gold entirely; this note is an extractor accounting gap, not evidence against the snapshot deltas."
+}

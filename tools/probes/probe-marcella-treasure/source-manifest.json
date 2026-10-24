@@ -1,0 +1,54 @@
+{
+  "schema": "probe-marcella-treasure-source/v1",
+  "source_tested_in": "replays/willow-marcella-treasure-tribute-probe-20261023-v2/source-manifest.json",
+  "files": [
+    {
+      "path": "probe-marcella/cambc.toml",
+      "sha256": "a0e36b45e114dedb61b421a5f45d85127fe88a8474cffec6500bc9ec0b480a50"
+    },
+    {
+      "path": "probe-marcella/src/bot.cpp",
+      "sha256": "f8df7736af8ad9e4640ead436b10d558cf9f688e0ae264a9549ad7eb4eb56d17"
+    },
+    {
+      "path": "probe-marcella/src/bot.h",
+      "sha256": "36fc7c9e421b577b6e94b7b7689e1c02153b7d7f869edada7fd3e3a59555db17"
+    },
+    {
+      "path": "probe-marcella/src/draft.cpp",
+      "sha256": "d43cab0473d4c02fe419f192e3303d674a1603b533892a2814e0c3491faa50b4"
+    },
+    {
+      "path": "probe-marcella/src/draft.h",
+      "sha256": "15ddeaeb4ab39f6e3e80647fad56de9c0da7fc728d4c24ca83475060703a7bfd"
+    },
+    {
+      "path": "probe-marcella/src/main.cpp",
+      "sha256": "70d80df8a10e8e6e59bce974c7a0002dad60a2a224a4348262ce93e0c37a1f36"
+    },
+    {
+      "path": "probe-marcella/src/scenario.cpp",
+      "sha256": "351c4e2a52d5bf746f37aaa79c20f7c5b3acc752122478de421eceb8b8535c7d"
+    },
+    {
+      "path": "probe-marcella/src/scenario.h",
+      "sha256": "8d7bc5a22b230b34639e74fd4293941734de68fa1a88019a1115d845f8767d36"
+    },
+    {
+      "path": "probe-marcella/src/survey.cpp",
+      "sha256": "b502f942c752846a1f2d0085c2c3759735282c3b32e48d2c06871fb37db04568"
+    },
+    {
+      "path": "probe-marcella/src/survey.h",
+      "sha256": "4f70854113db0412f28b79075f4c155c3450162f19e273a6b6839283b5a3dabe"
+    },
+    {
+      "path": "probe-passive/cambc.toml",
+      "sha256": "a0e36b45e114dedb61b421a5f45d85127fe88a8474cffec6500bc9ec0b480a50"
+    },
+    {
+      "path": "probe-passive/src/main.cpp",
+      "sha256": "36286c41ef8028e79c6fbb4dabcf1e24a129899bdbd8f647c95e9a8dbcef2634"
+    }
+  ]
+}
