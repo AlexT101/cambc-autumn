@@ -151,6 +151,21 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   turns 2693 vs 2486. On top of CHANGES 123's shop fix (`b3-shopfight` against `b3-shop`): 50.8% of 1104 (47.9-53.8;
   ladder 56.2, gen 51.2, gen-s1 49.6). Dropped; not extended to the other champions. Self-play may hide it (both
   sides share the build), so a ladder read is the remaining test.
+- Every champion's shop trip on CHANGES 123's whole-purchase price, as Prism's (`b4-shop`, 2026-10-24): `wants_shop`
+  without the non-Prism gates (next emblem affordable or begun, `home_trip().short_gold == 0`). Against acbcbcb:
+  50.1% of 1104 (47.1-53.0; ladder 47.5, gen 50.6, gen-s1 50.0), out-of-fuel turns 2259 vs 2344. Gold held did not
+  fall (mean while alive, ladder suite: Marcella 82 vs 82, Heart of Ruin 36/38, Vesper 35/39; gen 72/71, 32/33,
+  37/40): the trip's price (`affordable_prefix` gain against recall + walk back), not the gate, keeps Marcella's gold.
+  Dropped.
+- Vesper keeps a shared gold hold (`b4-vhold`, 2026-10-24): top teams' Vesper earns 42% of team gold, ours 29%.
+  `holding_capture` left a shared hold to the lowest id; it now ranks a Vesper (not tributing, teleporting or
+  landing a recall) first on a group that pays gold, so her +33% covers the whole share. Our draft picks Vesper
+  second, so it only changes Vesper against Prism when `prism_capture_holder` declines (traced: 17 turns in 3 games).
+  Against acbcbcb: 48.9% of 1104 (46.0-51.9; ladder 47.5, gen 49.0, gen-s1 49.0), out-of-fuel turns 2325 vs 2408.
+  Dropped. The id order is not why our Vesper earns less.
+- Not a bug: on a leave turn `decide` casts `shield_if_needed` before `retreat`, but skips it when `strike_possible`
+  and `reset_may_kill || landing_ready`; Heart of Ruin's dash lands, so with it ready and an enemy within 5 (every
+  step-to-kill dash) the shield already waits, and Varg has no dash (its reset kill is `reset_may_kill`).
 - From the teammate's v40 (`origin/codex/willow-prism`), ported together (`port/v40-bits` 15d87ae, 2026-10-23): a
   Prism refusing a camp attack whose wakes would hit an ally holding a capture, recalling or tributing, or kill one;
   a healthy Vesper on a cleared gold-only group with no enemy seen holding it so her +33% applies. Against eba051e:
