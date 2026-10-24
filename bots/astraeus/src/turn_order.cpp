@@ -239,7 +239,7 @@ bool may_escape(const World& world, const ChampionBelief& self, Safety& safety, 
         const int d = e.visible ? dist(self.pos, e.pos) : 0;
         if (!s.hits(d)) continue;
         hit = true;
-        damage += s.damage[static_cast<std::size_t>(d)] * (e.visible && !e.acted && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f);
+        damage += s.damage[static_cast<std::size_t>(d)] * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f);
     }
     return hit && damage >= self.health + self.shield;
 }
@@ -257,7 +257,7 @@ void offer_escape(const World& world, const ChampionBelief& self, Safety& safety
         enemy = true;
         const auto& e = world.enemies[t.enemy];
         // With two turns before ours, the blow already covers both.
-        damage += t.blow.damage * (e.visible && !e.acted && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f);
+        damage += t.blow.damage * (e.visible && !e.acted && !turn_lost(e) && turns_before_ours(world, e) < 2 ? 2.0f : 1.0f);
     }
     if (enemy && damage >= self.health + self.shield) wish.offer(protect, params::life_value + params::gem_value * static_cast<float>(my_gems()));
 }

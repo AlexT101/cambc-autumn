@@ -663,3 +663,15 @@ lock within 2 of an altar not ours); `game_ender` pursues only a tribute that la
 
 - Against d16e9e9: 49.4% of 1104 (46.4-52.3; ladder 48.8, gen 49.4, gen-s1 49.4), out-of-fuel turns 2403 vs 2364.
   Both teams near 1000 at once is rare locally: a logic fix, level.
+
+## 127: a visible enemy's stun takes its next turn in Safety (astraeus, 2026-10-24)
+
+World read the pending stun (`stun_pending`) only for allies; Safety counted a stunned enemy's next turn as if it
+acted (the planner read the stun only for `stunnable`). Now a visible enemy's pending stun takes one turn from
+`turns_before_ours` and moves `next_turn_round` to its first real turn; with none left before ours its threat strike
+is empty (as for a teleport), so per-tile damage, lethal, recall and tribute safety and the step guard ignore it. It
+still fights: fight keys, `late`, `stand` and `turns_to_kill_idle` take it in by its first turn's reach
+(`fight_reach`, `lost_in_reach`), arriving a turn late as a stunned ally does; doubled bounds no longer double it.
+Stuns we cast mid-turn are still not read (bug 1).
+
+- Against d16e9e9: 51.1% of 1104 (48.1-54.0; ladder 50.0, gen 52.1, gen-s1 50.2), out-of-fuel turns 2349 vs 2293.

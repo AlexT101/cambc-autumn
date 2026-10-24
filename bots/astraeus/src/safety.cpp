@@ -661,6 +661,12 @@ std::uint32_t fighting_allies(const World& world, vec2 p) {
         m.kit_of[slot] = from;
         make_kit(c, m.kit[slot]);
     }
+    if (turn_lost(c)) {
+        // From the turn the stun takes, as an ally's below.
+        make_fighter(c, next_turn_round(world, c) - 1, m.fighter[slot], m.kit[slot]);
+        m.fighter[slot].arrives_at = 1;
+        return;
+    }
     if (c.side == team::enemy || c.is_self || !c.alive || !c.visible) {
         make_fighter(c, c.is_self ? world.round : next_turn_round(world, c), m.fighter[slot], m.kit[slot]);
         return;
@@ -706,10 +712,12 @@ void join_allies(const World& world, Side& us, vec2 p, std::uint32_t& made) { fi
 
 } // namespace
 
+bool turn_lost(const ChampionBelief& c) { return c.side == team::enemy && c.visible && c.stun_pending; }
+
 int next_turn_round(const World& world, const ChampionBelief& c) {
     // Read for those in sight; ranks are a guess when priorities change unseen.
     if (c.teleport_pending()) return std::max(c.acted ? world.round + 1 : world.round, c.channel_end_round);
-    if (c.visible && !c.is_self) return c.acted ? world.round + 1 : world.round;
+    if (c.visible && !c.is_self) return (c.acted ? world.round + 1 : world.round) + (turn_lost(c) ? 1 : 0);
     return world.slot(c, world.round) > world.slot(world.me(), world.round) ? world.round : world.round + 1;
 }
 
@@ -808,7 +816,8 @@ int turns_before_ours(const World& world, const ChampionBelief& c) {
     const bool now = c.visible ? !c.acted : world.slot(c, world.round) > world.slot(me, world.round);
     // A teleport's channel turns are not its own.
     const int from = c.teleport_pending() ? c.channel_end_round : world.round;
-    return (now && from <= world.round ? 1 : 0) + (from <= world.round + 1 && world.slot(c, world.round + 1) < world.slot(me, world.round + 1) ? 1 : 0);
+    const int turns = (now && from <= world.round ? 1 : 0) + (from <= world.round + 1 && world.slot(c, world.round + 1) < world.slot(me, world.round + 1) ? 1 : 0);
+    return turn_lost(c) ? std::max(0, turns - 1) : turns;
 }
 
 namespace {
@@ -837,7 +846,7 @@ float most_damage(const ChampionBelief& c) {
 
 const Strike& threat_strike(const World& world, const ChampionBelief& c) {
     static const Strike none;
-    if (c.teleport_pending() && turns_before_ours(world, c) == 0) return none;
+    if ((c.teleport_pending() || turn_lost(c)) && turns_before_ours(world, c) == 0) return none;
     const int round = next_turn_round(world, c);
     auto& m = strike_memo(c, round);
     const auto& s = m.value;
@@ -1765,7 +1774,7 @@ void Safety::invalidate() {
     reached_ = 0;
     build_cost_ = 0;
     threat_count_ = 0;
-    threat_mask_ = 0;
+    threat_mask_ = lost_mask_ = 0;
     members_known_ = false;
     camp_area_known_ = false;
     enemy_area_known_ = false;
@@ -1858,7 +1867,13 @@ void Safety::build() {
         const auto& x = foe(e);
         const auto& s = x.strike;
         const int reach = s.reach;
-        if (reach < 0) continue;
+        if (reach < 0) {
+            if (turn_lost(e) && fight_reach(e) >= 0) {
+                threat_mask_ |= static_cast<std::uint16_t>(1u << e.index);
+                lost_mask_ |= static_cast<std::uint16_t>(1u << e.index);
+            }
+            continue;
+        }
         if (e.visible) {
             auto& t = next_threat(threats_, threat_count_);
             threat_mask_ |= static_cast<std::uint16_t>(1u << e.index);
@@ -1949,8 +1964,14 @@ Blow Safety::blow(const ChampionBelief& e, vec2 p) {
     return b;
 }
 
+int Safety::fight_reach(const ChampionBelief& e) {
+    const int reach = struck(e).strike.reach;
+    return reach >= 0 || !turn_lost(e) ? reach : strike(e, next_turn_round(world_, e)).reach;
+}
+
 int Safety::approach(const ChampionBelief& e, vec2 p) {
     const int reach = struck(e).strike.reach;
+    if (reach < 0 && turn_lost(e)) return 1 + (reach_of(e).at(p).hits ? 0 : std::max(1, dist(p, e.pos) - fight_reach(e)));
     const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos;
     return blow(e, p).hits ? 0 : std::max(1, dist(p, from) - reach);
 }
@@ -2020,7 +2041,7 @@ bool Safety::any_threat() {
 float Safety::damage_bound(vec2 p, bool double_unacted) {
     float total = camp_damage(p, true, true);
     each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
-        total += b.damage * (double_unacted && e.visible && !e.acted ? 2.0f : 1.0f);
+        total += b.damage * (double_unacted && e.visible && !e.acted && !turn_lost(e) ? 2.0f : 1.0f);
     });
     return total;
 }
@@ -2031,7 +2052,7 @@ Safety::Bound Safety::bound(vec2 p) {
     float safe = 1;
     each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
         out.damage += b.damage;
-        out.doubled += b.damage * (e.visible && !e.acted ? 2.0f : 1.0f);
+        out.doubled += b.damage * (e.visible && !e.acted && !turn_lost(e) ? 2.0f : 1.0f);
         out.hits |= b.hits;
         out.stuns |= b.hits && b.stuns;
         if (!b.hits || out.threat) return;
@@ -2056,7 +2077,7 @@ float Safety::damage_ceiling(vec2 p, bool double_unacted) {
             continue;
         }
         if (struck(e).strike.reach < 0) continue;
-        total += blow(e, p).damage * (double_unacted && !e.acted ? 2.0f : 1.0f);
+        total += blow(e, p).damage * (double_unacted && !e.acted && !turn_lost(e) ? 2.0f : 1.0f);
     }
     return total;
 }
@@ -2168,6 +2189,7 @@ std::uint32_t Safety::fight_key(vec2 p) {
         hit = true;
         key |= 1u << (16 + t.enemy);
     }
+    if (const auto lost = lost_in_reach(p)) hit = true, key |= lost;
     if (!hit) return no_fight;
     return key | fighting_allies(world_, p);
 }
@@ -2176,7 +2198,17 @@ std::uint32_t Safety::fight_key_with(vec2 p, std::uint32_t visible) {
     std::uint32_t key = visible;
     for (const auto& t : threats())
         if (!t.visible && t.at(p).hits) key |= 1u << (16 + t.enemy);
-    return key | fighting_allies(world_, p);
+    return key | lost_in_reach(p) | fighting_allies(world_, p);
+}
+
+std::uint32_t Safety::lost_in_reach(vec2 p) {
+    std::uint32_t out = 0;
+    for (unsigned left = lost_mask_; left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        // Its Reach is its first turn's: next_turn_round() skips the lost one.
+        if (!gone(e) && in_square(p, e.pos, fight_reach(e)) && reach_of(e).at(p).hits) out |= 1u << (16 + e.index);
+    }
+    return out;
 }
 
 const Trade* Safety::memo(std::uint32_t key, std::uint32_t late, bool falls) const {
@@ -2193,7 +2225,7 @@ std::uint32_t Safety::late(vec2 p, std::uint32_t key) {
     for (auto left = seen_enemies() & ~(key == no_fight ? 0u : key >> 16); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e) || test(spawn, e.pos)) continue;
-        const int reach = struck(e).strike.reach;
+        const int reach = fight_reach(e);
         if (reach < 0 || dist(p, e.pos) - reach > params::pursuit_steps) continue;
         if (const int walk = approach(e, p); walk > 0 && walk <= params::pursuit_steps) out |= static_cast<std::uint32_t>(walk) << 2 * e.index;
     }
@@ -2339,8 +2371,8 @@ Trade Safety::stand(vec2 p, int approach, bool falls, bool unseen, int joined) {
     for (auto left = seen_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;
-        const auto& s = struck(e).strike;
-        if (s.reach < 0 || dist(p, e.pos) - s.reach > farthest) continue;
+        const int reach = fight_reach(e);
+        if (reach < 0 || dist(p, e.pos) - reach > farthest) continue;
         const int walk = this->approach(e, p);
         if (walk == 0) hit |= 1u << e.index;
         else if (walk <= farthest && !test(spawn, e.pos)) walking |= 1u << e.index, walks[static_cast<std::size_t>(e.index)] = walk;
@@ -2376,8 +2408,8 @@ int Safety::turns_to_kill_idle(vec2 p, int horizon) {
     for (auto left = seen_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;
-        const auto& s = struck(e).strike;
-        if (s.reach < 0 || dist(p, e.pos) - s.reach >= horizon) continue;
+        const int reach = fight_reach(e);
+        if (reach < 0 || dist(p, e.pos) - reach >= horizon) continue;
         const int walk = approach(e, p);
         if (walk >= horizon) continue;
         const int k = them.count;

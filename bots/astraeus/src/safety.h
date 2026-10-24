@@ -179,9 +179,12 @@ void warm_reach_tile(const World& world, vec2 p);
 
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
 const Strike& strike(const ChampionBelief& c, int turn_round);
-// The round of the enemy's next turn: later this round if it acts after us, else next round.
+// An enemy in sight loses its next turn to a stun (rules: abilities.stun).
+bool turn_lost(const ChampionBelief& c);
+// The round of the enemy's next turn: later this round if it acts after us, else next round; one
+// later if a stun takes it.
 int next_turn_round(const World& world, const ChampionBelief& c);
-// Its turns before our next one: later this round, and next round before us.
+// Its turns before our next one: later this round, and next round before us, less one a stun takes.
 int turns_before_ours(const World& world, const ChampionBelief& c);
 // strike(), widened when it has two turns before our next: a walk then the strike, or the strike
 // and a second basic attack.
@@ -357,6 +360,11 @@ private:
     bool threatened_now(vec2 p);
     // Every credible threat at full damage, plus camps.
     float worst_damage(vec2 p);
+    // Its strike's reach; for one whose stun leaves it no turn before our next, its first turn's,
+    // as it still fights from then on.
+    int fight_reach(const ChampionBelief& e);
+    // Key bits of the lost_mask_ enemies whose fight_reach() covers p.
+    std::uint32_t lost_in_reach(vec2 p);
     // Drop everything cached, after something this turn changed the fight: a kill or a camp kill.
     // Later queries recheck the engine for champions and monsters that died; stuns are not read.
     void invalidate();
@@ -408,7 +416,8 @@ private:
     // vector reallocates at ~300 fuel a time, and each Threat allocates a bitboard.
     std::vector<Threat>& threats_;
     int threat_count_ = 0;
-    std::uint16_t threat_mask_ = 0; // bit i: enemies[i] is one of them
+    // Bit i: enemies[i] is one of them, or fights though a stun leaves it no turn before our next (lost_mask_).
+    std::uint16_t threat_mask_ = 0, lost_mask_ = 0;
     std::vector<CampHit>& members_; // likewise, the first `member_count_`; valid once `members_known_`
     int member_count_ = 0;
     bool members_known_ = false;

@@ -272,8 +272,8 @@ struct ChampionBelief {
     bool fast_recall = false; // a Home emblem, when last seen: recall takes home_recall_time turn ends
     float taken = 1;          // damage taken per point dealt: durability_taken with a Durability emblem, when last seen
     bool acted = false; // had completed its turn when last read this round
-    // An ally's stun that will take its next turn, read when first seen this round: nothing changes
-    // it during our turn, though our move may take the ally out of sight.
+    // A stun that will take its next turn, read when first seen this round: nothing but our own
+    // casts changes it during our turn (not re-read), though our move may take it out of sight.
     bool stun_pending = false;
     // Turn-order priority for priority_round, and from the round after it.
     int priority = 0, next_priority = 0, priority_round = -1;
