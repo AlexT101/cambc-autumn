@@ -1,0 +1,96 @@
+{
+ "key": "local-match-62589f4b",
+ "status": "ok",
+ "map": "00pilgrimage",
+ "our_side": "a",
+ "rounds": 1403,
+ "trace_bytes": 8574060,
+ "trace_lines": 107601,
+ "build_s": 32.3,
+ "run_s": 24.2,
+ "forced_oof": 1,
+ "rec_oof": 1,
+ "rec_x": 0,
+ "rec_x_first_round": null,
+ "level": 2,
+ "window": "763-769",
+ "segments": 7019,
+ "rec_segments": 7019,
+ "segments_equal": 7019,
+ "segments_differ": 0,
+ "mismatches": {},
+ "tail_segments": 0,
+ "first_mismatch": null,
+ "vs_rec": {
+  "exact": true,
+  "exactIgnoringRollovers": true,
+  "inputs": [
+   54155,
+   54155
+  ],
+  "roundsMatched": 1404,
+  "rounds": [
+   1404,
+   1404
+  ],
+  "resultMatch": true,
+  "result": [
+   {
+    "outcome": 2,
+    "round": 1403,
+    "gems": [
+     392,
+     1035
+    ]
+   },
+   {
+    "outcome": 2,
+    "round": 1403,
+    "gems": [
+     392,
+     1035
+    ]
+   }
+  ],
+  "firstInputDiff": null,
+  "firstRoundDiff": null
+ },
+ "vs_ladder": {
+  "exact": true,
+  "exactIgnoringRollovers": true,
+  "inputs": [
+   54155,
+   54155
+  ],
+  "roundsMatched": 1404,
+  "rounds": [
+   1404,
+   1404
+  ],
+  "resultMatch": true,
+  "result": [
+   {
+    "outcome": 2,
+    "round": 1403,
+    "gems": [
+     392,
+     1035
+    ]
+   },
+   {
+    "outcome": 2,
+    "round": 1403,
+    "gems": [
+     392,
+     1035
+    ]
+   }
+  ],
+  "firstInputDiff": null,
+  "firstRoundDiff": null
+ },
+ "exact_vs_rec": true,
+ "exact_vs_ladder": true,
+ "exact_vs_ladder_ignoring_rollovers": true,
+ "ladder_trusted_through": 1403
+}

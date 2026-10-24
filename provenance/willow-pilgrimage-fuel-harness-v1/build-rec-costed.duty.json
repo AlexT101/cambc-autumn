@@ -1,0 +1,43 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T07:52:22.198336+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws",
+  "argv": [
+    "env",
+    "PATH=/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5:/Users/yufan/Library/Caches/cambc/wasi-sdk-33/bin:/opt/homebrew/bin:/usr/bin:/bin",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "build",
+    "bots/v47-rec"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/build-rec-costed.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/build-rec-costed.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.096457666,
+      "run_end_monotonic": 0.272096875
+    },
+    {
+      "run_start_monotonic": 1.184072583,
+      "run_end_monotonic": 1.3834345
+    },
+    {
+      "run_start_monotonic": 2.368402041,
+      "run_end_monotonic": 2.502683208
+    },
+    {
+      "run_start_monotonic": 3.495021541,
+      "run_end_monotonic": 3.662823541
+    }
+  ],
+  "pid": 94941,
+  "process_group_id": 94941,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T07:52:25.768969+00:00"
+}

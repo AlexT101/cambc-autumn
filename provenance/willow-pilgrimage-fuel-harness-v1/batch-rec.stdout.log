@@ -1,0 +1,6 @@
+[03:53:00] build: 1/1 (8 s)
+[03:53:00] rec: running 1 games
+[03:54:21] rec: 1/1 games in 80 s (exit 0)
+[03:55:30] validate: 1 games in 70 s (exit 0)
+[03:55:30] summary: 1 games, 1 exact in both runs (release 1, rec 1); rec fuel differs in 1 (0 beyond first turns)
+[03:55:30] times (s): build 8, rec 80, validate 70, total 158

@@ -1,0 +1,56 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T07:52:32.842807+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo",
+  "argv": [
+    "env",
+    "PATH=/Users/yufan/Library/Caches/cambc/wasi-sdk-33/bin:/opt/homebrew/bin:/usr/bin:/bin",
+    "python3",
+    "tools/replay/harness/count_ops.py",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/v47-rec/.cambc/build/bot-injected.wasm",
+    "--split"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/count-ops-costed.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/count-ops-costed.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.092129083,
+      "run_end_monotonic": 0.291532291
+    },
+    {
+      "run_start_monotonic": 1.300318333,
+      "run_end_monotonic": 1.402016291
+    },
+    {
+      "run_start_monotonic": 2.382637666,
+      "run_end_monotonic": 2.528166125
+    },
+    {
+      "run_start_monotonic": 3.538028041,
+      "run_end_monotonic": 3.651914541
+    },
+    {
+      "run_start_monotonic": 4.65806475,
+      "run_end_monotonic": 4.853419375
+    },
+    {
+      "run_start_monotonic": 5.789212583,
+      "run_end_monotonic": 5.965601208
+    },
+    {
+      "run_start_monotonic": 6.972960291,
+      "run_end_monotonic": 7.123507541
+    }
+  ],
+  "pid": 94991,
+  "process_group_id": 94991,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T07:52:39.885509+00:00"
+}

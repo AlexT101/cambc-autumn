@@ -1,0 +1,54 @@
+diff --git a/tools/replay/harness/batch.py b/tools/replay/harness/batch.py
+index 3f8e4df..19499b3 100644
+--- a/tools/replay/harness/batch.py
++++ b/tools/replay/harness/batch.py
+@@ -48,7 +48,7 @@ WASM = {"release": ".cambc/build-release/bot-injected.wasm", "debug": ".cambc/bu
+ def games():
+     out = {}
+     for g in json.loads(CFG.manifest.read_text(encoding="utf-8"))["games"]:
+-        key = f"{g['group'][:8]}-{g['position']}"
++        key = g.get("key", f"{g['group'][:8]}-{g['position']}")
+         out[key] = g
+     return out
+ 
+diff --git a/tools/replay/harness/setup_ws.py b/tools/replay/harness/setup_ws.py
+index dc1802b..b9d3226 100644
+--- a/tools/replay/harness/setup_ws.py
++++ b/tools/replay/harness/setup_ws.py
+@@ -84,7 +84,7 @@ def patch(path, old, new, marker):
+ 
+ 
+ def manifest():
+-    return [(f"{g['group'][:8]}-{g['position']}", g) for g in json.loads(CFG.manifest.read_text(encoding="utf-8"))["games"]]
++    return [(g.get("key", f"{g['group'][:8]}-{g['position']}"), g) for g in json.loads(CFG.manifest.read_text(encoding="utf-8"))["games"]]
+ 
+ 
+ def count_ops(wasm):
+diff --git a/tools/replay/harness/trace_batch.py b/tools/replay/harness/trace_batch.py
+index 2bacc25..490b5e8 100644
+--- a/tools/replay/harness/trace_batch.py
++++ b/tools/replay/harness/trace_batch.py
+@@ -88,7 +88,7 @@ def sync_slot(slot, zz):
+ 
+ def games():
+     m = json.loads(CFG.manifest.read_text(encoding="utf-8"))
+-    return {f"{g['group'][:8]}-{g['position']}": g for g in m["games"]}
++    return {g.get("key", f"{g['group'][:8]}-{g['position']}"): g for g in m["games"]}
+ 
+ 
+ def run(cmd, cwd=None, timeout=1800):
+diff --git a/tools/replay/harness/versions.py b/tools/replay/harness/versions.py
+index d420990..a8cce1a 100644
+--- a/tools/replay/harness/versions.py
++++ b/tools/replay/harness/versions.py
+@@ -15,8 +15,8 @@ VERSIONS = {
+             "manifest": "tools/replay/harness/manifest.json", "trace_bot": "tools/replay/harness/trace-bot"},
+     # Ladder submission 47 (live 2026-10-24T05:29Z). Its manifest is built from the replay folders by
+     # build_manifest.py, since the set grows as games are downloaded.
+-    "v47": {"commit": "f7d54e9e", "bot": "bots/astraeus", "dir": "replays/v47",
+-            "manifest": "replays/v47/manifest.json", "trace_bot": "tools/replay/harness/trace-bot-v47",
++    "v47": {"commit": "f7d54e9e", "bot": "bots/astraeus", "dir": "replays/willow-pilgrimage-v47",
++            "manifest": "replays/willow-pilgrimage-v47/manifest.json", "trace_bot": "tools/replay/harness/trace-bot-v47",
+             "since": "2026-10-24T05:17:00Z"},
+ }
+ 

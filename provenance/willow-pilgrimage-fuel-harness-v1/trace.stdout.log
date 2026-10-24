@@ -1,0 +1,2 @@
+local-match-62589f4b: rec EXACT ladder EXACT trusted 1403/1403 mism 0 seg 7019 oof 1/1 x 0 8.6 MB build 32.3s run 24.2s
+1/1 traced; exact vs rec 1, vs ladder 1; summary /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/trace_validation.json

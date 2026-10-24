@@ -1,0 +1,23 @@
+{
+  "schema": "isolated-v47-harness-preparation/v1",
+  "harness_commit": "2d226171555aa3b067212b91abfa5343d75b75c7",
+  "custom_key": "local-match-62589f4b",
+  "metadata_match_id": "62589f4b-d504-4bf7-b641-f3e9de95ce9c",
+  "map": "00pilgrimage",
+  "our_side": "a",
+  "result_from_saved_extract": {
+    "winner": 1,
+    "outcome": 2,
+    "rounds": 1403,
+    "gems": [
+      392,
+      1035
+    ],
+    "steps": 281909
+  },
+  "replay_sha256": "e546793a8c82d0bbc32eb725a0217e21b6518b72ec0818c944a04560f394a96d",
+  "original_bundle_sha256": "8a50ad523a0833b846a43b21a81f3f2ba46da45cc5eae195670ce0bc731460a6",
+  "extracted_team_a_fuel_sha256": "47f6ec7a98baf1426cdf1b089e03311f2fc8fbe64258894684988116ad4b13bf",
+  "source_match_metadata": "provenance/ladder-history-replays-20261024-v1/prepared-inputs-astraeus.json",
+  "custom_key_note": "The official saved intake identifies the individual match UUID but does not provide group/position. This key is explicitly local-only."
+}

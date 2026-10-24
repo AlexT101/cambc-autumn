@@ -1,0 +1,210 @@
+{
+  "schema": "willow-pilgrimage-v47-single-loss-harness-result/v1",
+  "match": {
+    "local_key": "local-match-62589f4b",
+    "match_uuid": "62589f4b-d504-4bf7-b641-f3e9de95ce9c",
+    "local_key_only": true,
+    "map": "00pilgrimage",
+    "our_side": "A",
+    "result": "loss",
+    "rounds": 1403,
+    "gems": [
+      392,
+      1035
+    ],
+    "official_group_or_position": "not present in saved intake; not inferred"
+  },
+  "tooling": {
+    "harness_commit": "2d226171555aa3b067212b91abfa5343d75b75c7",
+    "bot_source_commit": "f7d54e9e",
+    "cli": "cambc 3.0.5",
+    "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "map_sha256": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673",
+    "source_aggregate": "3a9e8c4a7163b3f7e4c2091876ff46f92b55960f3af1bb2f42eaff4feeb747d8",
+    "source_aggregate_recipe": "shasum -a 256 src/* | shasum -a 256",
+    "release_injected_wasm_sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804",
+    "release_raw_wasm_sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+    "recorder_injected_wasm_sha256": "0af3046b3ff70683e143140bb7d05b22bd0deff013cacbcba01dd4fdf1a495de",
+    "recorder_raw_wasm_sha256": "e1a49d72ca7fc5639fc3497b40a13b04cc73dbd8cf4cb290a08fe6a97a8e9f58"
+  },
+  "source_input": {
+    "bundle_sha256": "8a50ad523a0833b846a43b21a81f3f2ba46da45cc5eae195670ce0bc731460a6",
+    "replay_file_sha256": "e546793a8c82d0bbc32eb725a0217e21b6518b72ec0818c944a04560f394a96d",
+    "replay_bytes": 251714,
+    "team_a_fuel_sha256": "47f6ec7a98baf1426cdf1b089e03311f2fc8fbe64258894684988116ad4b13bf",
+    "team_a_fuel_bytes": 56237
+  },
+  "release": {
+    "exact": true,
+    "same_input_count": [
+      54155,
+      54155
+    ],
+    "rounds_matched": 1404,
+    "result_match": true,
+    "fuel_vs_original": {
+      "different_entries": 0,
+      "max_abs_delta": 0,
+      "first_turn_only": null,
+      "first_diff": null
+    }
+  },
+  "recorder": {
+    "exact": true,
+    "same_input_count": [
+      54155,
+      54155
+    ],
+    "rounds_matched": 1404,
+    "result_match": true,
+    "same_replay_as_release": true,
+    "fuel_vs_original": {
+      "different_entries": 1,
+      "max_abs_delta": 55,
+      "first_turn_only": true,
+      "first_diff": {
+        "index": 8,
+        "ladder": 683869,
+        "rerun": 683924,
+        "delta": 55,
+        "what": "draft",
+        "turn": 0,
+        "first": true
+      }
+    },
+    "stdout_bytes": 4261546,
+    "rollovers": 1,
+    "out_of_fuel_count": 0,
+    "yield_count": 7019,
+    "puppet_errors": 0
+  },
+  "trace": {
+    "window": "763-769",
+    "level": 2,
+    "status": "ok",
+    "full_trace_vs_recorder_exact": true,
+    "full_trace_vs_original_exact": true,
+    "segments_equal": 7019,
+    "segment_mismatches": 0,
+    "first_mismatch": null,
+    "actions": [
+      "Willow actor 3: r763-768 each emitted cancel_channel (site recall_keep), move_to_with_result (site farm), and recall (site recall_start).",
+      "r769: same sequence plus cast_with_result x=0,1,2,-1,-1 (site heal)."
+    ],
+    "actor_snapshot_context": "At r763-769 Willow remained alive at 700/700 HP, 85 strength, 120 focus; observation reported channel type 1 timer 4, cast-ready true, attack-ready false. Position moved from (12,52) to (18,57). The public replay snapshot does not expose can_move.",
+    "interpretation_limit": "The replayed action trace identifies observed action sites and outcomes; it does not expose every private decision value or shared-memory word."
+  },
+  "replay_payload_comparison": {
+    "semantic_comparator_exact": true,
+    "original_replay_raw_sha256": "e546793a8c82d0bbc32eb725a0217e21b6518b72ec0818c944a04560f394a96d",
+    "release_inner_replay_sha256": "9088f62485a1253e69d9fec8a18deecbc137eb23c4da01e6fd5fe09028ac228e",
+    "recorder_inner_replay_sha256": "9088f62485a1253e69d9fec8a18deecbc137eb23c4da01e6fd5fe09028ac228e",
+    "trace_inner_replay_sha256": "9088f62485a1253e69d9fec8a18deecbc137eb23c4da01e6fd5fe09028ac228e",
+    "raw_payloads_byte_identical": false,
+    "note": "Full comparator reports exact inputs, per-round hashes, and result. Raw replay byte hashes differ; report semantic exactness separately from payload-byte identity."
+  },
+  "artifacts": {
+    "original_bundle": {
+      "path": "provenance/ladder-history-replays-20261024-v1/bundles/astraeus/three-pilgrimage-new-loss-62589f4b-d504-4bf7-b641-f3e9de95ce9c.zip",
+      "bytes": 69164,
+      "sha256": "8a50ad523a0833b846a43b21a81f3f2ba46da45cc5eae195670ce0bc731460a6"
+    },
+    "original_replay": {
+      "path": "provenance/ladder-history-replays-20261024-v1/inputs/astraeus/62589f4b-d504-4bf7-b641-f3e9de95ce9c/three-pilgrimage-new-loss.repl26a",
+      "bytes": 251714,
+      "sha256": "e546793a8c82d0bbc32eb725a0217e21b6518b72ec0818c944a04560f394a96d"
+    },
+    "original_fuel": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/original-team-a.fuel",
+      "bytes": 56237,
+      "sha256": "47f6ec7a98baf1426cdf1b089e03311f2fc8fbe64258894684988116ad4b13bf"
+    },
+    "release_zip": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/release.repl26a",
+      "bytes": 75313,
+      "sha256": "f272a81bf2109990005128e6173bbe8e2454f3d0ec88961ecfae93228f467b10"
+    },
+    "recorder_zip": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/rec.repl26a",
+      "bytes": 1324981,
+      "sha256": "71152093d3405efc87d302ad1400b39144f41150a199c0b26bb997cb55217e22"
+    },
+    "trace_zip": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/trace.repl26a",
+      "bytes": 813003,
+      "sha256": "4fbcafa5119705e604d91886b3e339837a15d102271df7fe231da6fcca956f8c"
+    },
+    "release_wasm": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/v47-release/.cambc/build-release/bot-injected.wasm",
+      "bytes": 909664,
+      "sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+    },
+    "release_raw_wasm": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/v47-release/.cambc/build-release/bot.wasm",
+      "bytes": 1667916,
+      "sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6"
+    },
+    "recorder_wasm": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/v47-rec/.cambc/build/bot-injected.wasm",
+      "bytes": 920971,
+      "sha256": "0af3046b3ff70683e143140bb7d05b22bd0deff013cacbcba01dd4fdf1a495de"
+    },
+    "recorder_raw_wasm": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/v47-rec/.cambc/build/bot.wasm",
+      "bytes": 1679223,
+      "sha256": "e1a49d72ca7fc5639fc3497b40a13b04cc73dbd8cf4cb290a08fe6a97a8e9f58"
+    },
+    "map": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/maps/00pilgrimage.map26a",
+      "bytes": 10274,
+      "sha256": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673"
+    },
+    "trace_stdout_gz": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/trace.stdout.gz",
+      "bytes": 792674,
+      "sha256": "f8a0ebfeb2f032b20d8a6db7e43a253c58516fe1cf49dd51c26b7458a44e2786"
+    },
+    "validation": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/validation.json",
+      "bytes": 2445,
+      "sha256": "1c9b5f0b2eb1987fa4fbfc4383344665631c2cc106780baf0a82b98db9e6322d"
+    },
+    "trace_validation": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/trace_validation.json",
+      "bytes": 1457,
+      "sha256": "2bdc843d473d94459a6c23d9db15fda8d263d1999d92f79c5b0f53282c1a891f"
+    },
+    "recorder_stdout": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/rec.stdout",
+      "bytes": 4261546,
+      "sha256": "d2ed742b1ea35dabe64a2d5a2a42ee24161f6e9b7264c816acfd225c08c11a54"
+    },
+    "source_aggregate_manifest": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/manifest.json",
+      "bytes": 939,
+      "sha256": "4e80f4a7e55d32bd68cfb6d99f0d436109d3f1fea5785e87f3bcc9dc494ba6d1"
+    },
+    "custom_key_patch": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/local-key.patch",
+      "bytes": 2582,
+      "sha256": "adf4da4983897e7885c552e60670483ba24610682d2522b135f59e7fe5286273"
+    },
+    "release_build_log": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/setup-release-v2.stdout.log",
+      "bytes": 339,
+      "sha256": "38f0db6901644b5fe29777d709e620dce98f71012b014ec21634b5979339a5c3"
+    },
+    "recorder_batch_log": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/batch-rec.stdout.log",
+      "bytes": 326,
+      "sha256": "985ad62c6c3358cfb65587cfb3fb0c2cfe169eb07048ce107898f25e89a34f0b"
+    },
+    "trace_batch_log": {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/trace.stdout.log",
+      "bytes": 376,
+      "sha256": "9f24c60014c0dbffc426228732329c6c663e8788b7516ed8c3e7fcdbcae562f7"
+    }
+  },
+  "bounded_cpu": "All builds/runs used nice 19 process-group-isolated wrapper with 0.1s active / 0.9s stopped cadence; SDK in isolated checkout. Shared SDK and its mtimes were not altered."
+}

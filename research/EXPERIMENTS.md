@@ -2697,3 +2697,29 @@ comparison and full artifact identities remain for the final receipt. This
 establishes behavioral reproduction of this loss, not uploaded-source identity.
 A level-2 trace is now limited to Willow's rounds 763–769 and must preserve the
 trusted prefix before its private branch records are interpreted.
+
+The completed harness receipt confirms Release fuel equals all 7,028 original
+measurements. The recorder's sole difference is draft measurement 8 (+55);
+its one rollover is separate from its zero `@x` records. The trace reproduces
+that rollover and matches all 7,019 segments, full inputs, round hashes and
+result. Original versus rerun replay bytes differ, so these are semantic and
+fuel comparisons, not a raw-payload identity claim. The normalized production
+source aggregate is the existing f7 pin; the generated diagnostic source has
+its own manifest. Corrected receipts preserve the earlier path-dependent hash
+and rollover-label mistakes without rerunning any game.
+
+Willow's rounds 763–769 consistently use the ordinary `farm` movement site,
+canceling and restarting the normal recall stub. Round 769 also heals Marcella.
+This confirms the action branch; the enemy beliefs and message arbitration are
+being interpreted separately before proposing a gameplay correction. See
+`../provenance/willow-pilgrimage-fuel-harness-v1/RESULT.md` and its compact
+preservation manifest.
+
+A metadata-only CLI refresh at approximately 07:59 UTC finds 17–13 in the latest
+30 own ranked matches, including 15–11 across 26 five-pick games. All own drafts
+start with Prism; no Willow-first batch is counted. Changing schedules and
+unavailable submission IDs still prevent attributing these totals to a source
+regression. The Mite refresh failed with HTTP 429 and one delayed HTTP 503, so
+the prior saved replay sample remains its evidence. No new replay extraction
+or simulation was performed for this refresh. Raw responses and command details
+are in `../provenance/astraeus-regression-history-refresh-20261024-v2/`.

@@ -1,0 +1,203 @@
+{
+  "schema": "willow-pilgrimage-fuel-harness-preservation-manifest/v1",
+  "scope": "Compact one-match v47 harness receipts. Validation JSON is copied to the top-level receipts directory; original checkout copies are retained. Trace-instrumented source and binary pins are included; source is distinct from production f7.",
+  "files": [
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/RESULT.before-correction.md",
+      "sha256": "6ab6ae5e0c97b9069545f490220be0869aacca0a6f2925c27b502e416400de71",
+      "bytes": 3261
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/RESULT.before-correction.json",
+      "sha256": "af40e3bfd847a9f0cb026803bd188916d262ba8f1d188a5e290596467d6519ed",
+      "bytes": 9977
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/preparation.json",
+      "sha256": "283adac5da3cd7571ab47e8a41c1fec9759c8b62e562cf90e2d7bac61c3e10d7",
+      "bytes": 971
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/local-key.patch",
+      "sha256": "adf4da4983897e7885c552e60670483ba24610682d2522b135f59e7fe5286273",
+      "bytes": 2582
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/setup-release-v2.stdout.log",
+      "sha256": "38f0db6901644b5fe29777d709e620dce98f71012b014ec21634b5979339a5c3",
+      "bytes": 339
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/setup-release-v2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/setup-release-v2.duty.json",
+      "sha256": "f590fee2ac8215a6d2722851a5aa7096c405de5adf50a23d6f223e5f655530ce",
+      "bytes": 10493
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/puppet-gen.duty.json",
+      "sha256": "3e7be5935d15493311da24cc2e5c1a6916298a42d36c4b6a51d4fc309c0bacb9",
+      "bytes": 2701
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/puppet-build-v2.stdout.log",
+      "sha256": "a874f405aa50562bcac34bfca2f9051e29fbb76a527461cbba5eebec628f0bb6",
+      "bytes": 1831
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/puppet-build-v2.duty.json",
+      "sha256": "44b6dbd553c4651758432e026daae7aab38d8a58f478e0f09f6395e1c33785ef",
+      "bytes": 2758
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/release-run.duty.json",
+      "sha256": "ce6605700e9309a15fe0885a21637033766c81e00595a07ce6eeb198f6776287",
+      "bytes": 4724
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/release-compare.stdout.log",
+      "sha256": "006f9e5e8590636f19d40119c1ff8fcb73990b593c4165f140fdcf02c23fd737",
+      "bytes": 432
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/release-compare.duty.json",
+      "sha256": "a6b5475d9870bfcca62e02340911a3df334724475c8b4465584cf6dc021653f2",
+      "bytes": 18639
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/count-ops-costed.stdout.log",
+      "sha256": "045022f3363943d185704caa5c889a4f556775590e9f1dbc0bfde130a276bed3",
+      "bytes": 3219
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/count-ops-costed.duty.json",
+      "sha256": "ac38247b97283594a7b039aaabd7709e28989580f3f96403a97cff7d5c2a2c5e",
+      "bytes": 2008
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/build-rec-costed.stdout.log",
+      "sha256": "65e5bb4ba7be5281ac04268d3a7fb502db3a720d1f36ef0009eec9272e909fc4",
+      "bytes": 856
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/build-rec-costed.duty.json",
+      "sha256": "e2aa5f2def81f669409eaa1045119e4882485d237d48d6537ff1c474c90b482f",
+      "bytes": 1701
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/batch-rec.stdout.log",
+      "sha256": "985ad62c6c3358cfb65587cfb3fb0c2cfe169eb07048ce107898f25e89a34f0b",
+      "bytes": 326
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/batch-rec.stderr.log",
+      "sha256": "8aab276c35256da435640f9d56f38f27630937c05b069d10677a2c979ad66769",
+      "bytes": 21
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/batch-rec.duty.json",
+      "sha256": "1178189d543ca5c83b3f420c3f0532d9d72656c74e11aad32532cf265945d9f7",
+      "bytes": 15841
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/trace.stdout.log",
+      "sha256": "9f24c60014c0dbffc426228732329c6c663e8788b7516ed8c3e7fcdbcae562f7",
+      "bytes": 376
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/trace.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/trace.duty.json",
+      "sha256": "3de935fcb194b9e993e907b24180b0dbbf902fba7aca8dbd44eb7ae499fa0cbc",
+      "bytes": 27289
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/RESULT.md",
+      "sha256": "a386f5f77aa296cd783b14aefee27b145e346ac5b7598c360fa5efe34a988084",
+      "bytes": 4620
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/RESULT.json",
+      "sha256": "1b1e3dc31a3ef0a50ec8cb6710bfed2aa873ea1f9e0a9bfdb1d2c01875a5534a",
+      "bytes": 13433
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/receipts/validation.json",
+      "sha256": "1c9b5f0b2eb1987fa4fbfc4383344665631c2cc106780baf0a82b98db9e6322d",
+      "bytes": 2445
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/receipts/trace_validation.json",
+      "sha256": "2bdc843d473d94459a6c23d9db15fda8d263d1999d92f79c5b0f53282c1a891f",
+      "bytes": 1457
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/receipts/trace-source-manifest.sha256",
+      "sha256": "3792420c692df6711a9ef6357c851ef8bd294a24b469af739f6c682cb242beb1",
+      "bytes": 2868
+    }
+  ],
+  "excluded_large_artifacts": [
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/bundles/astraeus/three-pilgrimage-new-loss-62589f4b-d504-4bf7-b641-f3e9de95ce9c.zip",
+      "bytes": 69164,
+      "sha256": "8a50ad523a0833b846a43b21a81f3f2ba46da45cc5eae195670ce0bc731460a6"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/inputs/astraeus/62589f4b-d504-4bf7-b641-f3e9de95ce9c/three-pilgrimage-new-loss.repl26a",
+      "bytes": 251714,
+      "sha256": "e546793a8c82d0bbc32eb725a0217e21b6518b72ec0818c944a04560f394a96d"
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/release.repl26a",
+      "bytes": 75313,
+      "sha256": "f272a81bf2109990005128e6173bbe8e2454f3d0ec88961ecfae93228f467b10"
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/rec.repl26a",
+      "bytes": 1324981,
+      "sha256": "71152093d3405efc87d302ad1400b39144f41150a199c0b26bb997cb55217e22"
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/trace.repl26a",
+      "bytes": 813003,
+      "sha256": "4fbcafa5119705e604d91886b3e339837a15d102271df7fe231da6fcca956f8c"
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/trace.stdout.gz",
+      "bytes": 792674,
+      "sha256": "f8a0ebfeb2f032b20d8a6db7e43a253c58516fe1cf49dd51c26b7458a44e2786"
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/runs/batch/local-match-62589f4b/rec.stdout",
+      "bytes": 4261546,
+      "sha256": "d2ed742b1ea35dabe64a2d5a2a42ee24161f6e9b7264c816acfd225c08c11a54"
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/v47-release/.cambc/build-release/bot-injected.wasm",
+      "bytes": 909664,
+      "sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+    },
+    {
+      "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/v47-rec/.cambc/build/bot-injected.wasm",
+      "bytes": 920971,
+      "sha256": "0af3046b3ff70683e143140bb7d05b22bd0deff013cacbcba01dd4fdf1a495de"
+    }
+  ],
+  "excluded_classes": [
+    "isolated source/build checkout archive and full workspace copies",
+    "compiled bot binaries and generated recorder/trace WASM",
+    "full recorder stdout and compressed full trace output",
+    "raw replay bundles and release/recorder/trace replay archives"
+  ],
+  "primary_receipts": [
+    "provenance/willow-pilgrimage-fuel-harness-v1/RESULT.md",
+    "provenance/willow-pilgrimage-fuel-harness-v1/RESULT.json"
+  ]
+}

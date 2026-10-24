@@ -1,0 +1,7 @@
+maps: 0 copied
+patched cmake/CMakeLists.txt: RELEASE_CODE
+patched sdk/cpp/cambc.h: CAMBC_DEBUG_REFUND 10, cambc_debug_depth
+bots/v47-release: git archive f7d54e9e bots/astraeus
+built v47-release (--release)
+wrote replays/willow-pilgrimage-v47/ladder-list.json
+bots/v47-release/.cambc/build-release/bot-injected.wasm: sha1 e610fa44a2fc40a6

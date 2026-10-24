@@ -1,0 +1,163 @@
+{
+ "key": "local-match-62589f4b",
+ "map": "00pilgrimage",
+ "our_side": "a",
+ "opponent": ":3",
+ "opp_rank": null,
+ "kind": "ladder",
+ "ladder": {
+  "result": "loss",
+  "rounds": 1403,
+  "our_score": 392,
+  "opp_score": 1035
+ },
+ "puppet": {
+  "actions": 20591,
+  "turns": 6550,
+  "rollovers": 207,
+  "changed": true,
+  "problems": [],
+  "nProblems": 0
+ },
+ "stamp": {
+  "release": {
+   "bot": "e610fa44a2fc40a6",
+   "puppet": "b8f36c0a13b8c8ea"
+  },
+  "rec": {
+   "bot": "fba907db1dc5d755",
+   "puppet": "b8f36c0a13b8c8ea"
+  }
+ },
+ "release": {
+  "inputs": [
+   54155,
+   54155
+  ],
+  "firstInputDiff": null,
+  "roundsMatched": 1404,
+  "rounds": [
+   1404,
+   1404
+  ],
+  "firstRoundDiff": null,
+  "result": [
+   {
+    "outcome": 2,
+    "round": 1403,
+    "gems": [
+     392,
+     1035
+    ]
+   },
+   {
+    "outcome": 2,
+    "round": 1403,
+    "gems": [
+     392,
+     1035
+    ]
+   }
+  ],
+  "resultMatch": true,
+  "exact": true,
+  "exactIgnoringRollovers": true,
+  "firstInputDiffIgnoringRollovers": null,
+  "fuel": {
+   "lengths": [
+    7028,
+    7028
+   ],
+   "draftTurns": 5,
+   "diffs": 0,
+   "firstTurnDiffs": 0,
+   "maxAbs": 0,
+   "firstTurnOnly": null,
+   "firstDiff": null,
+   "list": []
+  }
+ },
+ "rec": {
+  "inputs": [
+   54155,
+   54155
+  ],
+  "firstInputDiff": null,
+  "roundsMatched": 1404,
+  "rounds": [
+   1404,
+   1404
+  ],
+  "firstRoundDiff": null,
+  "result": [
+   {
+    "outcome": 2,
+    "round": 1403,
+    "gems": [
+     392,
+     1035
+    ]
+   },
+   {
+    "outcome": 2,
+    "round": 1403,
+    "gems": [
+     392,
+     1035
+    ]
+   }
+  ],
+  "resultMatch": true,
+  "exact": true,
+  "exactIgnoringRollovers": true,
+  "firstInputDiffIgnoringRollovers": null,
+  "fuel": {
+   "lengths": [
+    7028,
+    7028
+   ],
+   "draftTurns": 5,
+   "diffs": 1,
+   "firstTurnDiffs": 1,
+   "maxAbs": 55,
+   "firstTurnOnly": true,
+   "firstDiff": {
+    "index": 8,
+    "ladder": 683869,
+    "rerun": 683924,
+    "delta": 55,
+    "what": "draft",
+    "turn": 0,
+    "first": true
+   },
+   "list": [
+    {
+     "index": 8,
+     "ladder": 683869,
+     "rerun": 683924,
+     "delta": 55,
+     "what": "draft",
+     "turn": 0,
+     "first": true
+    }
+   ]
+  },
+  "sameReplayAsRelease": true,
+  "stdout": {
+   "bytes": 4261546,
+   "f": 202329,
+   "r": 1,
+   "x": 0,
+   "y": 7019,
+   "other": 0,
+   "truncated": false,
+   "expectedYields": 7019,
+   "ladderRollovers": 1,
+   "yieldsOk": true
+  }
+ },
+ "puppetErrors": {
+  "count": 0,
+  "first": []
+ }
+}

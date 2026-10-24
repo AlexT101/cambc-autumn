@@ -1,0 +1,94 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T07:44:57.882888+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws",
+  "argv": [
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "build",
+    "bots/p-local-match-62589f4b",
+    "--release"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/puppet-build-v2.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/puppet-build-v2.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.094200083,
+      "run_end_monotonic": 0.25789275
+    },
+    {
+      "run_start_monotonic": 1.206706041,
+      "run_end_monotonic": 1.328556375
+    },
+    {
+      "run_start_monotonic": 2.291565083,
+      "run_end_monotonic": 2.489555166
+    },
+    {
+      "run_start_monotonic": 3.406367916,
+      "run_end_monotonic": 3.602404416
+    },
+    {
+      "run_start_monotonic": 4.565030666,
+      "run_end_monotonic": 4.70885475
+    },
+    {
+      "run_start_monotonic": 5.698386416,
+      "run_end_monotonic": 5.852277125
+    },
+    {
+      "run_start_monotonic": 6.858092041,
+      "run_end_monotonic": 6.993915583
+    },
+    {
+      "run_start_monotonic": 7.911720125,
+      "run_end_monotonic": 8.105502041
+    },
+    {
+      "run_start_monotonic": 9.06248025,
+      "run_end_monotonic": 9.262101916
+    },
+    {
+      "run_start_monotonic": 10.221444291,
+      "run_end_monotonic": 10.329977291
+    },
+    {
+      "run_start_monotonic": 11.286950416,
+      "run_end_monotonic": 11.39198
+    },
+    {
+      "run_start_monotonic": 12.39091975,
+      "run_end_monotonic": 12.588568541
+    },
+    {
+      "run_start_monotonic": 13.5310105,
+      "run_end_monotonic": 13.655648333
+    },
+    {
+      "run_start_monotonic": 14.624636125,
+      "run_end_monotonic": 14.824372375
+    },
+    {
+      "run_start_monotonic": 15.813857541,
+      "run_end_monotonic": 15.974339541
+    },
+    {
+      "run_start_monotonic": 16.927078666,
+      "run_end_monotonic": 17.125775875
+    },
+    {
+      "run_start_monotonic": 18.106919666,
+      "run_end_monotonic": 18.212205708
+    }
+  ],
+  "pid": 94203,
+  "process_group_id": 94203,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T07:45:16.010414+00:00"
+}
