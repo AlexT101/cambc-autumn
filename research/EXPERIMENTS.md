@@ -442,6 +442,11 @@ another harmless group was kept (CHANGES 91).
     and Heart of Ruin's attacks 72 -> 71. Against Sponge they are 22.5 -> 21.8 and 85 -> 92. It comes from the
     opponent mix and from Claudus Maximus. Prism tributing nothing (13% of v44's games, 43% of v47's) tracks losses,
     not a cause: locally both are at about 47%. No change made.
+- Astraeus 24507a0 (CHANGES 113-120 together) against v47 (2026-10-24): 54.3% of 1104 (CI 51.3-57.2; ladder 57.5,
+  gen 51.4, gen-s1 56.6), out-of-fuel turns 2617 vs 2464; fresh suites `--seed 1101` 49.6% of 512 and `--seed 1102`
+  50.4% of 512 (together 50.0% of 1024). Each change was kept on the committed suites, so 54.3% is selection; the fresh
+  50.0% is the estimate: level in self-play. Most of the eight are correctness fixes, and two (119, 120) target
+  ladder behaviour our bots lack.
 
 ## Fuel
 
