@@ -1,0 +1,249 @@
+diff -ruN bots/variants/willow-band-hor-routing-trace-work/src/bot.cpp bots/variants/willow-band-hor-routing-masks-work/src/bot.cpp
+--- bots/variants/willow-band-hor-routing-trace-work/src/bot.cpp	2026-10-23 21:14:17
++++ bots/variants/willow-band-hor-routing-masks-work/src/bot.cpp	2026-10-23 21:56:36
+@@ -1904,6 +1904,24 @@
+     const vec2 here = my_position();
+     band_trace(world, "farm-here %d %d", here.x, here.y);
+     debug_block({
++        if (world.map().team_a && world.me().index == 2 && world.round >= 20 && world.round <= 22) {
++            band_mask_trace(world, "farm-held-vision", world.visible);
++            for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
++                const auto& group = groups[g];
++                const bool nearby = std::any_of(group.members.begin(), group.members.end(), [&](const auto& m) { return dist(here, m.pos) <= 12; });
++                if (g != 31 && g != 62 && !nearby) continue;
++                const auto& belief = world.camps[g];
++                for (std::size_t i = 0; i < group.members.size(); ++i) {
++                    const auto& m = group.members[i];
++                    std::printf("BANDMEMBER %d source %d native-group %u member %zu native-camp %u pos %d %d type %u state %d state-round %d version %u hp %.9g hp-round %d\n",
++                                world.round, g, group.handle, i, m.handle, m.pos.x, m.pos.y, static_cast<unsigned>(m.type),
++                                static_cast<int>(belief.state), belief.state_round, belief.version,
++                                static_cast<double>(belief.health[i]), belief.health_round[i]);
++                }
++            }
++        }
++    });
++    debug_block({
+         if (world.map().team_a && world.me().index == 2 && world.round >= 17 && world.round <= 22 && world.camps.size() > 62) {
+             const auto& c = world.camps[62];
+             std::printf("BAND %d group62 state %d state-round %d awake %d asleep %llu damaged %d hp0 %.9g hp-round0 %d\n",
+@@ -2433,7 +2451,8 @@
+     const bool search = fuel_ok(search_cost_estimate(cap) + end_reserve);
+     band_trace(world, "selected-routing group %d cap %d search %d zone %d", best, cap, static_cast<int>(search), static_cast<int>(zone != nullptr));
+     // In a scratch board, valid until the next call.
+-    const auto off_zone = [&](const bitboard& goals) __attribute__((always_inline)) -> const bitboard& {
++    const auto off_zone = [&](const bitboard& goals, const char* trace_kind = nullptr) __attribute__((always_inline)) -> const bitboard& {
++        debug_block({ if (trace_kind) band_mask_trace(world, trace_kind, goals); });
+         if (!zone) return goals;
+         static bitboard outside{cambc::uninitialized};
+         outside.clear();
+@@ -2473,6 +2492,7 @@
+         refused->set(here, false);
+     }
+     const auto& goals = refused ? *refused : *tiles;
++    debug_block({ band_mask_trace(world, "farm-attack-goals", goals); });
+     if (test(goals, here)) { // attacked from here; stay
+         band_trace(world, "farm-return attack-goal group %d", best);
+         cast_at_camp(world, best);
+@@ -2488,7 +2508,7 @@
+     if (!walked)
+         walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
+                      ? traced("attack-search", best, pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre))
+-                           || traced("adjacent-search", best, pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre))
++                           || traced("adjacent-search", best, pathing.step_towards(off_zone(groups[best].adjacent(), "farm-adjacent-goals"), zone, cap, groups[best].centre))
+                      : (note_shortcut("farm-no-route"), walk_on(best));
+     if (!walked && dasher) walk_on(best);
+     if (walked) {
+diff -ruN bots/variants/willow-band-hor-routing-trace-work/src/pathing.cpp bots/variants/willow-band-hor-routing-masks-work/src/pathing.cpp
+--- bots/variants/willow-band-hor-routing-trace-work/src/pathing.cpp	2026-10-23 21:13:49
++++ bots/variants/willow-band-hor-routing-masks-work/src/pathing.cpp	2026-10-23 21:56:36
+@@ -17,6 +17,16 @@
+     });
+ }
+ 
++template <class... Args> void band_cache_trace(const World& world, const char* format, Args... args) {
++    debug_block({
++        if (world.map().team_a && world.me().index == 2 && world.round >= 20 && world.round <= 22) {
++            std::printf("BANDCACHE %d ", world.round);
++            std::printf(format, args...);
++            std::printf("\n");
++        }
++    });
++}
++
+ template <class T> T& entry(std::vector<T>& table, std::size_t count, int i) {
+     if (table.size() != count) table.resize(count);
+     return table[static_cast<std::size_t>(i)];
+@@ -26,6 +36,18 @@
+ 
+ } // namespace
+ 
++void band_mask_trace(const World& world, const char* kind, const bitboard& board) {
++    if (!world.map().team_a || world.me().index != 2 || world.round < 20 || world.round > 22) return;
++    const auto& layout = cambc::detail::layout();
++    std::printf("BANDMASK %d %s w %d h %d cw %u ch %u stride %u words", world.round, kind,
++                layout.width, layout.height, layout.chunked_width, layout.chunked_height, layout.chunk_stride);
++    // Only real chunks, cy then cx; tile bit = (y & 7) * 8 + (x & 7). No padding reads.
++    for (std::uint32_t cy = 0; cy < layout.chunked_height; ++cy)
++        for (std::uint32_t cx = 0; cx < layout.chunked_width; ++cx)
++            std::printf(" %016llx", static_cast<unsigned long long>(board.ptr()[cy * layout.chunk_stride + cx]));
++    std::printf("\n");
++}
++
+ Pathing::Pathing(const World& world) : world_{world} {}
+ 
+ const StaticMap& Pathing::map() const { return world_.map(); }
+@@ -181,10 +203,25 @@
+ }
+ 
+ [[gnu::flatten]] const Field* Pathing::prepare_approach(int group, int range, std::uint64_t fuel_floor) {
+-    if (approach_ready(group, range)) return &approach_slot(group, range)->field;
++    if (approach_ready(group, range)) {
++        debug_block({
++            if (world_.map().team_a && world_.me().index == 2 && world_.round >= 20 && world_.round <= 22 && group == 31) {
++                const auto& held = approach_fields_[static_cast<std::size_t>(range)][static_cast<std::size_t>(group)];
++                std::printf("BANDCACHE %d approach-reuse group %d range %d slot %p flips %u live-flips %u live-version %u world-version %u ready-round %d ready-at %d %d\n",
++                            world_.round, group, range, static_cast<const void*>(held.get()), held->flips, live_flips_, live_camps_version_,
++                            world_.camps_version, ready_check_.round, ready_check_.at.x, ready_check_.at.y);
++                band_mask_trace(world_, "approach-goals", held->field.goals);
++                band_mask_trace(world_, "approach-camps", held->camps);
++            }
++        });
++        return &approach_slot(group, range)->field;
++    }
+     const int steps = approach_steps(group, range);
+     // With no distance known, the search may run to width + height layers.
+-    if (!fuel_ok(fuel_floor + search_cost_estimate(steps >= 0 ? steps : map().width + map().height))) return nullptr;
++    if (!fuel_ok(fuel_floor + search_cost_estimate(steps >= 0 ? steps : map().width + map().height))) {
++        band_cache_trace(world_, "approach-admission-refused group %d range %d steps %d", group, range, steps);
++        return nullptr;
++    }
+     return search_approach(group, range, steps);
+ }
+ 
+@@ -223,6 +260,16 @@
+         and_into(goals, open, goals);
+     }
+     set_tile(walls, me, false);
++    debug_block({
++        if (group == 31) {
++            band_mask_trace(world_, "approach-built-goals", goals);
++            band_mask_trace(world_, "approach-built-walls", walls);
++            band_mask_trace(world_, "approach-built-camps", made.camps);
++            if (world_.map().team_a && world_.me().index == 2 && world_.round >= 20 && world_.round <= 22)
++                std::printf("BANDCACHE %d approach-build group %d range %d slot %p flips %u live-version %u world-version %u layers %d\n",
++                            world_.round, group, range, static_cast<const void*>(&made), made.flips, live_camps_version_, world_.camps_version, layers);
++        }
++    });
+     clear_board(origin);
+     set_tile(origin, me);
+     made.field.steps.compute_to(walls, goals, origin, visited, static_cast<std::uint16_t>(layers));
+@@ -358,14 +405,23 @@
+ void Pathing::occupied_into(bitboard& out) {
+     static bitboard t{cambc::uninitialized};
+     occupancy_into(team::ally, out);
++    debug_block({ band_mask_trace(world_, "occupied-allies", out); });
+     or_into(out, map().blocked_for_us, out);
+     occupancy_into(team::enemy, t);
++    debug_block({ band_mask_trace(world_, "occupied-enemies", t); });
+     or_into(out, t, out);
+     camps_into(t);
++    debug_block({ band_mask_trace(world_, "occupied-native-camps", t); });
+     or_into(out, t, out);
+     teleports_into(t);
++    debug_block({ band_mask_trace(world_, "occupied-teleports", t); });
+     or_into(out, t, out);
+     if (bumped_any_) or_into(out, bumped_, out);
++    debug_block({
++        band_mask_trace(world_, "occupied-static-walking", map().blocked_for_us);
++        band_mask_trace(world_, "occupied-unfreed", out);
++        if (bumped_any_) band_mask_trace(world_, "occupied-bumps", bumped_);
++    });
+ }
+ 
+ const bitboard& Pathing::blocked() {
+@@ -458,6 +514,17 @@
+     }
+     if (guard()) or_into(walls, *guard(), walls);
+     set_tile(walls, me, false);
++    debug_block({
++        band_mask_trace(world_, "route-goals", goals);
++        band_mask_trace(world_, "route-final-walls", walls);
++        if (avoid) band_mask_trace(world_, "route-avoid", *avoid);
++        if (guard_) band_mask_trace(world_, "route-materialized-guard", *guard_);
++        if (live_camps_version_ != ~0u) band_mask_trace(world_, "route-held-belief-camps", live_camps_);
++        if (world_.map().team_a && world_.me().index == 2 && world_.round >= 20 && world_.round <= 22)
++            std::printf("BANDCACHE %d route-input at %d %d through %d %d blocked-fresh %d bumped %d guard-deferred %d live-version %u world-version %u\n",
++                        world_.round, me.x, me.y, through.x, through.y, static_cast<int>(blocked_fresh_), static_cast<int>(bumped_any_),
++                        static_cast<int>(guard_fn_ != nullptr), live_camps_version_, world_.camps_version);
++    });
+     const int cap = std::min<int>(max_steps, unreachable);
+     auto& kept = kept_route_;
+     int here = kept_steps(kept, goals, walls, me, cap);
+@@ -517,26 +584,38 @@
+ // Removing a tile at or past our layer, or adding one whose neighbours all lie at or past the
+ // layer before ours (it would land at or past ours), changes no label below ours.
+ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboard& walls, vec2 me, int cap) {
+-    if (k.layer < 0) return unreachable;
++    if (k.layer < 0) { band_cache_trace(world_, "cache-reject empty"); return unreachable; }
+     const int steps = steps_at(k.field, me);
+-    if (steps == unreachable || steps > k.layer || steps > cap || !(goals == k.goals)) return unreachable;
++    if (steps == unreachable || steps > k.layer || steps > cap) {
++        band_cache_trace(world_, "cache-reject distance steps %d layer %d cap %d", steps, k.layer, cap);
++        return unreachable;
++    }
++    if (!(goals == k.goals)) { band_cache_trace(world_, "cache-reject goals"); return unreachable; }
+     static bitboard changed{cambc::uninitialized};
+     xor_into(walls, k.walls, changed);
+     constexpr std::uint32_t most = 4;
+-    if (board_empty(changed)) return steps;
++    if (board_empty(changed)) { band_cache_trace(world_, "cache-reuse unchanged steps %d", steps); return steps; }
++    debug_block({ band_mask_trace(world_, "route-cache-changed-walls", changed); });
+     std::array<vec2, most + 1> at;
+     const auto n = positions_into(changed, at.data(), most + 1);
+-    if (n > most) return unreachable;
++    if (n > most) { band_cache_trace(world_, "cache-reject wall-count-over %u", most); return unreachable; }
+     for (std::uint32_t i = 0; i < n; ++i) {
+         const vec2 t = at[i];
+         if (test(walls, t)) {
+-            if (steps_at(k.field, t) < steps) return unreachable;
++            if (steps_at(k.field, t) < steps) {
++                band_cache_trace(world_, "cache-reject added-wall %d %d", t.x, t.y);
++                return unreachable;
++            }
+             continue;
+         }
+-        if (test(goals, t)) return unreachable;
++        if (test(goals, t)) { band_cache_trace(world_, "cache-reject freed-goal %d %d", t.x, t.y); return unreachable; }
+         for (const auto d : directions)
+-            if (in_bounds(t + d) && steps_at(k.field, t + d) + 1 < steps) return unreachable;
++            if (in_bounds(t + d) && steps_at(k.field, t + d) + 1 < steps) {
++                band_cache_trace(world_, "cache-reject freed-shortcut %d %d", t.x, t.y);
++                return unreachable;
++            }
+     }
++    band_cache_trace(world_, "cache-reuse allowed-changes steps %d", steps);
+     return steps;
+ }
+ 
+diff -ruN bots/variants/willow-band-hor-routing-trace-work/src/pathing.h bots/variants/willow-band-hor-routing-masks-work/src/pathing.h
+--- bots/variants/willow-band-hor-routing-trace-work/src/pathing.h	2026-10-23 21:13:30
++++ bots/variants/willow-band-hor-routing-masks-work/src/pathing.h	2026-10-23 21:54:55
+@@ -18,6 +18,9 @@
+ class Safety;
+ struct StaticMap;
+ 
++// Diagnostic raw reads only; the caller must already be inside debug_block.
++void band_mask_trace(const World& world, const char* kind, const bitboard& board);
++
+ // Tiles a dash from `from` can land on: <= 2 king steps not through walls or camps, onto a free
+ // tile; off `also` too when given.
+ // A scratch board, valid until the next call.
+@@ -143,7 +146,7 @@
+         int layer = -1;
+     } kept_route_;
+     // Our steps in k if a search over `walls` would label every tile below them as k's did.
+-    static int kept_steps(const KeptRoute& k, const bitboard& goals, const bitboard& walls, vec2 me, int cap);
++    int kept_steps(const KeptRoute& k, const bitboard& goals, const bitboard& walls, vec2 me, int cap);
+     // Two allies head-on with no way past: the one with fewer gems (ties: lower champion) backs off.
+     // Right after a route that found no way, with the same arguments: read from its field.
+     // Leaves route_exhausted_ set only if no ally's tile, freed, opens a way at any cap.

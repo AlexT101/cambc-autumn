@@ -1,0 +1,178 @@
+diff -ruN bots/hyperion/src/bot.cpp bots/variants/willow-flee-survival-basic-work/src/bot.cpp
+--- bots/hyperion/src/bot.cpp	2026-10-23 20:27:14
++++ bots/variants/willow-flee-survival-basic-work/src/bot.cpp	2026-10-23 22:10:25
+@@ -281,6 +281,8 @@
+     return attack_camp_targets(world, camp_attack_targets(world, allowed));
+ }
+ 
++bool emergency_camp_basic(const World& world, Pathing& pathing, Safety& safety, vec2 here, float stay_bound, float step_bound);
++
+ // Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
+ // every turn, so only danger near us is worth the extra search.
+ void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
+@@ -293,8 +295,8 @@
+     if (!pathing.step_towards(field, &avoid)) pathing.step_towards(field);
+ }
+ 
+-// Out of the camps' reach first, along the cheapest neighbour: walking home past an awake camp
+-// takes a hit every step, while a recall started outside its reach goes home untouched.
++// Survive the next phase first, then leave the camps' reach cheaply: walking home past an awake
++// camp takes a hit every step, while a recall started outside its reach goes home untouched.
+ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+     if (!my_can_move()) return false;
+     const vec2 here = my_position();
+@@ -308,23 +310,49 @@
+     int walk_out = 1;
+     while (walk_out <= longest && !any_within(exits, here, walk_out)) ++walk_out;
+     // A step changes the walk out by at most one: only a step that shortens it needs telling apart.
+-    const auto cost = [&](vec2 p) {
++    const auto cost = [&](vec2 p, float& imminent) {
+         const float camp = safety.camp_damage(p);
+-        float damage = safety.damage_bound(p);
++        float damage = imminent = safety.damage_bound(p);
+         if (camp > 0 && walk_out > 1) damage += camp * static_cast<float>(p != here && any_within(exits, p, walk_out - 1) ? walk_out - 2 : walk_out - 1);
+         return damage;
+     };
+     const auto& blocked = pathing.blocked();
+     std::optional<vec2> best;
+-    float best_damage = cost(here);
++    const float health = my_health();
++    float here_imminent;
++    float best_damage = cost(here, here_imminent);
++    float best_imminent = here_imminent;
+     int best_home = home.at(here);
++    struct SurvivingStep { vec2 p; float cost; int home; };
++    Unwritten<SurvivingStep, 8> surviving;
++    int n_surviving = 0;
++    bool lethal_option = !(here_imminent < health);
+     for (auto d : directions) {
+         const vec2 p = here + d;
+         if (!in_bounds(p) || test(blocked, p)) continue;
+-        const float damage = cost(p);
++        float imminent;
++        const float damage = cost(p, imminent);
+         const int steps = home.at(p);
+-        if (damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
++        if (imminent < health) surviving.a[n_surviving++] = {p, damage, steps};
++        else lethal_option = true;
++        if (damage < best_damage || (damage == best_damage && steps < best_home))
++            best = p, best_damage = damage, best_imminent = imminent, best_home = steps;
+     }
++    world.throw_if_stale();
++    if (lethal_option) {
++        // Keep the exit preference among surviving steps; reject a lethal shortcut first.
++        std::stable_sort(surviving.a.begin(), surviving.a.begin() + n_surviving, [](const auto& a, const auto& b) {
++            return a.cost != b.cost ? a.cost < b.cost : a.home < b.home;
++        });
++        for (int i = 0; i < n_surviving; ++i) {
++            world.throw_if_stale();
++            if (pathing.try_move(surviving.a[i].p)) return true;
++        }
++        world.throw_if_stale();
++        if (here_imminent < health) return true;
++        if (n_surviving > 0) return false;
++        if (emergency_camp_basic(world, pathing, safety, here, here_imminent, best_imminent)) return true;
++    }
+     return best && pathing.try_move(*best);
+ }
+ 
+@@ -4170,6 +4198,69 @@
+     for (int i = 0; i < n; ++i)
+         if (at[i].enemy != enemy && at[i].blow.hits) return false;
+     return true;
++}
++
++// A ranged basic spends the walk: use it only when every evaluated step and staying are lethal.
++bool emergency_camp_basic(const World& world, Pathing& pathing, Safety& safety, vec2 here, float stay_bound, float step_bound) {
++    if (world.me().type != cambc::champion_type::prism) return false;
++    world.throw_if_stale();
++    const auto live = my_record();
++    world.throw_if_stale();
++    using cambc::champion_state;
++    const auto state = champion_state::from_bits_retain(live.state);
++    if (!state.contains(champion_state::alive) || !state.contains(champion_state::can_move)
++        || !state.contains(champion_state::can_attack) || state.contains(champion_state::recalling)
++        || state.contains(champion_state::submitting_gems) || state.contains(champion_state::teleporting)
++        || vec2{live.x, live.y} != here || !(live.health > 0) || !(stay_bound >= live.health) || !(step_bound >= live.health))
++        return false;
++    const float basic = live.strength * damage_scale(world.me().facts().passive, live.health, live.max_health)
++                        * (has_family(my_items(), monster) ? 1.1f : 1.0f);
++    world.throw_if_stale();
++    if (!(basic > 0)) return false;
++    const auto members = safety.awake_members();
++    int checked = 0;
++    for (std::size_t i = 0; i < members.size() && checked < 16; ++i) {
++        const auto& hit = members[i];
++        if (dist(here, hit.pos) > live.attack_range || !test(world.visible, hit.pos)) continue;
++        const auto after = safety.after_camp_kill(here, stay_bound, i);
++        if (!after || !(*after < live.health) || !(*after < step_bound)) continue;
++        const int g = world.map().group_at(hit.pos);
++        if (g < 0) continue;
++        const auto& group = world.map().groups[g];
++        const auto& belief = world.camps[g];
++        if (group.members.size() > 16 || group.has_monolith || belief.state != CampState::alive || !belief.fully_awake()) continue;
++        const auto target = std::find_if(group.members.begin(), group.members.end(), [&](const auto& m) { return m.handle == hit.handle; });
++        if (target == group.members.end() || target->strength <= 0) continue;
++        ++checked;
++        try {
++            world.throw_if_stale();
++            cambc::detail::camp_state camp{};
++            ok(cambc::detail::sdk_camp(hit.handle, &camp));
++            world.throw_if_stale();
++            if (vec2{camp.x, camp.y} != hit.pos || !(camp.health > 0) || !(camp.health <= basic) || camp.strength != target->strength) continue;
++            bool awake = true;
++            for (const auto& m : group.members) {
++                if (m.strength <= 0) continue;
++                std::uint32_t current{};
++                ok(cambc::detail::sdk_camp_state(m.handle, &current));
++                if ((current != 0 && current != 1) || (m.handle == hit.handle && current != 1)) { awake = false; break; }
++            }
++            world.throw_if_stale();
++            if (!awake) continue;
++            const CampAttackTarget choice{g, static_cast<int>(target - group.members.begin()), 0};
++            const bool attacked = attack_camp_target(world, choice);
++            world.throw_if_stale();
++            if (!attacked) continue;
++            safety.refresh();
++            pathing.invalidate();
++            world.throw_if_stale();
++            return true;
++        } catch (const cambc::error&) {
++        }
++        world.throw_if_stale();
++    }
++    world.throw_if_stale();
++    return false;
+ }
+ 
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+diff -ruN bots/hyperion/src/safety.cpp bots/variants/willow-flee-survival-basic-work/src/safety.cpp
+--- bots/hyperion/src/safety.cpp	2026-10-23 20:27:14
++++ bots/variants/willow-flee-survival-basic-work/src/safety.cpp	2026-10-23 22:06:46
+@@ -1661,6 +1661,13 @@
+     return {members_.data(), static_cast<std::size_t>(member_count_)};
+ }
+ 
++std::optional<float> Safety::after_camp_kill(vec2 p, float bound, std::size_t member) const {
++    if (!members_known_ || member >= static_cast<std::size_t>(member_count_)) return std::nullopt;
++    const auto& hit = members_[member];
++    if (hit.stunned || !(hit.strength > 0) || !in_square(p, hit.pos, hit.reach) || !(bound >= hit.strength)) return std::nullopt;
++    return bound - hit.strength;
++}
++
+ [[gnu::noinline]] void Safety::find_members() {
+     members_known_ = true;
+     int count = 0;
+diff -ruN bots/hyperion/src/safety.h bots/variants/willow-flee-survival-basic-work/src/safety.h
+--- bots/hyperion/src/safety.h	2026-10-23 20:27:14
++++ bots/variants/willow-flee-survival-basic-work/src/safety.h	2026-10-23 22:06:46
+@@ -333,6 +333,9 @@
+         bool stunned; // in sight and stunned: it skips the next camp phase
+     };
+     std::span<const CampHit> awake_members();
++    // `bound` is damage_bound(p) from this epoch; member indexes the unchanged awake_members().
++    // Remove only that member's charged next-phase hit, keeping every other threat unchanged.
++    std::optional<float> after_camp_kill(vec2 p, float bound, std::size_t member) const;
+ 
+     // After our attacks and casts: invalidate() only if a visible enemy or camp member died.
+     void refresh();

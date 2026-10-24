@@ -1993,3 +1993,36 @@ its reviewed full1104 comparison began. Raw artifact SHA256 is
 `735adcd4437ddbee2492a90971659c3e4b7b9089ebd2185e57fa3a432ef1d2fc`;
 injected SHA256 is`2edf180d24cff911c9918f23c0dc4722b856f558d4538c9e9c01e64a3c5e94dd`.
 Source, reference artifacts and all552 map pins match preflight. Results remain pending.
+
+### Source candidates from the incoming survival review
+
+Primary1a1ee8e changes only flee_camps on canonical4db. It retains the immediate damage
+bound from the existing current-plus-eight-position pass. When any evaluated option is
+lethal, it tries the saved nonlethal neighbors in existing exit-cost/home order, with
+bounded retries and stale checks. It holds only after those steps are unavailable and
+staying survives. All-nonlethal cases preserve the original selection/fallback; all-lethal
+cases retain the ordinary fallback. This avoids a new general preference for waiting at
+an exit-cost local minimum. Native guard/reveal uncertainty remains; surviving one phase
+does not prove eventual escape.
+
+Separate child3d18ab0 adds a Prism-only basic when all evaluated movement and staying
+are lethal. It certifies a currently visible, killable, already-awake damaging member
+and its bounded harmful group, subtracts only its actual charged Safety contribution,
+and requires the resulting stay bound below native HP and the selected movement bound.
+All other camp/enemy terms stay unchanged. It never treats a ranged basic as compatible
+with walking. Source review passes after stale-read corrections; neither arm is built
+or runtime-qualified. Farm806 may activate walking alone, not this narrower basic arm.
+Full29-file snapshots, patches and contracts are in
+`provenance/willow-flee-survival-20261023-v1/`; see its source review.
+
+Band diagnostic28e64f extends frozen46ab with paused raw bitboard chunks, source/native
+member mapping and actual route-cache reasons forA/actor2/r20–22. Source review confirms
+no extra gameplay observations, reordered predicates or forced lazy guard. Runtime prefix
+equivalence must be re-established;46ab's earlier qualification does not transfer. Full
+snapshots/patches are in`provenance/willow-band-hor-routing-masks-20261023-v1/`.
+
+The fresh Monolith review reconciles earlier rejected local-crew work. Claudus's Vesper
+uses solo attrition with a heal trip, then separately clears harmless members. Our actor's
+lower health/output and unknown local admission rule prevent copying that job directly.
+The prior single-station crew arm had zero admissions and first failed member coverage;
+it is not being rerun unchanged. See`claudus-monolith-allocation-review-20261024-v1.md`.

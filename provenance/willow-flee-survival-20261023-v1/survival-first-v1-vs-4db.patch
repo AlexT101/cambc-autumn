@@ -1,0 +1,64 @@
+diff -ruN bots/hyperion/src/bot.cpp bots/variants/willow-flee-survival-first-work/src/bot.cpp
+--- bots/hyperion/src/bot.cpp	2026-10-23 20:27:14
++++ bots/variants/willow-flee-survival-first-work/src/bot.cpp	2026-10-23 22:09:05
+@@ -293,8 +293,8 @@
+     if (!pathing.step_towards(field, &avoid)) pathing.step_towards(field);
+ }
+ 
+-// Out of the camps' reach first, along the cheapest neighbour: walking home past an awake camp
+-// takes a hit every step, while a recall started outside its reach goes home untouched.
++// Survive the next phase first, then leave the camps' reach cheaply: walking home past an awake
++// camp takes a hit every step, while a recall started outside its reach goes home untouched.
+ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+     if (!my_can_move()) return false;
+     const vec2 here = my_position();
+@@ -308,22 +308,45 @@
+     int walk_out = 1;
+     while (walk_out <= longest && !any_within(exits, here, walk_out)) ++walk_out;
+     // A step changes the walk out by at most one: only a step that shortens it needs telling apart.
+-    const auto cost = [&](vec2 p) {
++    const auto cost = [&](vec2 p, float& imminent) {
+         const float camp = safety.camp_damage(p);
+-        float damage = safety.damage_bound(p);
++        float damage = imminent = safety.damage_bound(p);
+         if (camp > 0 && walk_out > 1) damage += camp * static_cast<float>(p != here && any_within(exits, p, walk_out - 1) ? walk_out - 2 : walk_out - 1);
+         return damage;
+     };
+     const auto& blocked = pathing.blocked();
+     std::optional<vec2> best;
+-    float best_damage = cost(here);
++    const float health = my_health();
++    float here_imminent;
++    float best_damage = cost(here, here_imminent);
+     int best_home = home.at(here);
++    struct SurvivingStep { vec2 p; float cost; int home; };
++    Unwritten<SurvivingStep, 8> surviving;
++    int n_surviving = 0;
++    bool lethal_option = !(here_imminent < health);
+     for (auto d : directions) {
+         const vec2 p = here + d;
+         if (!in_bounds(p) || test(blocked, p)) continue;
+-        const float damage = cost(p);
++        float imminent;
++        const float damage = cost(p, imminent);
+         const int steps = home.at(p);
++        if (imminent < health) surviving.a[n_surviving++] = {p, damage, steps};
++        else lethal_option = true;
+         if (damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
++    }
++    world.throw_if_stale();
++    if (lethal_option) {
++        // Keep the exit preference among surviving steps; reject a lethal shortcut first.
++        std::stable_sort(surviving.a.begin(), surviving.a.begin() + n_surviving, [](const auto& a, const auto& b) {
++            return a.cost != b.cost ? a.cost < b.cost : a.home < b.home;
++        });
++        for (int i = 0; i < n_surviving; ++i) {
++            world.throw_if_stale();
++            if (pathing.try_move(surviving.a[i].p)) return true;
++        }
++        world.throw_if_stale();
++        if (here_imminent < health) return true;
++        if (n_surviving > 0) return false;
+     }
+     return best && pathing.try_move(*best);
+ }

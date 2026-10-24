@@ -1,0 +1,571 @@
+{
+  "schema": "source-known-own-camp-death-witnesses-v1",
+  "corpus": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1",
+  "preserved_extract_count": 77,
+  "candidate_side_death_to_camp_count": 27,
+  "candidate_side_prism_death_to_camp_count": 6,
+  "selected_prism_examples": [
+    {
+      "source_release": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd",
+      "opponent_release": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "candidate_physical_side": "B",
+      "replay": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-caves-102300400-candidate-B.repl26a",
+        "sha256": "481532d4487974341bdf6c3ccf56c71bebeb4fb0bc0cec55a1a8cec87f8ca4b3",
+        "bytes": 32656
+      },
+      "map": {
+        "name": "gen-gen-caves-102300400-candidate-B",
+        "hash": "d80e0bcfb14b3892",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1/maps/d80e0bcfb14b3892.json",
+        "sha256": "554c7d01ed5e3a9b2670cd4b1a054c9258fed85f233888d3dccf0fdbb3b82ce9",
+        "bytes": 8746
+      },
+      "actor": {
+        "id": 4,
+        "team": 1,
+        "name": "Prism",
+        "maxHp": 700
+      },
+      "death": {
+        "s": 17400,
+        "r": 114,
+        "t": -1,
+        "k": "death",
+        "v": 4,
+        "at": [
+          17,
+          18
+        ],
+        "gems": 29,
+        "hp": 4.8,
+        "camp": 38,
+        "cause": "Attack"
+      },
+      "killed_by_camp": {
+        "id": 38,
+        "type": "Wolf",
+        "x": 15,
+        "y": 16,
+        "group": 14,
+        "hp": 1350
+      },
+      "last_three_actor_actions": [
+        {
+          "s": 17182,
+          "r": 112,
+          "t": 6,
+          "k": "move",
+          "a": 4,
+          "f": [
+            17,
+            17
+          ],
+          "to": [
+            17,
+            18
+          ]
+        },
+        {
+          "s": 17183,
+          "r": 112,
+          "t": 6,
+          "k": "recall_start",
+          "a": 4,
+          "gems": 29,
+          "at": [
+            17,
+            18
+          ]
+        },
+        {
+          "s": 17251,
+          "r": 113,
+          "t": -1,
+          "k": "recall_cancel",
+          "a": 4,
+          "gems": 29,
+          "cause": "damage",
+          "left": 4
+        }
+      ],
+      "round_health_window": [
+        {
+          "round": 112,
+          "hp": 320,
+          "alive": 1,
+          "position": [
+            17,
+            18
+          ],
+          "gems": 29
+        },
+        {
+          "round": 113,
+          "hp": 4.8,
+          "alive": 1,
+          "position": [
+            17,
+            18
+          ],
+          "gems": 29
+        },
+        {
+          "round": 114,
+          "hp": 0,
+          "alive": 0,
+          "position": [
+            null,
+            null
+          ],
+          "gems": 0
+        },
+        {
+          "round": 115,
+          "hp": 0,
+          "alive": 0,
+          "position": [
+            null,
+            null
+          ],
+          "gems": 0
+        },
+        {
+          "round": 116,
+          "hp": 0,
+          "alive": 0,
+          "position": [
+            null,
+            null
+          ],
+          "gems": 0
+        }
+      ],
+      "incoming_camp_attack_events_before_death": [
+        {
+          "s": 16967,
+          "r": 111,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 38,
+          "g": 14,
+          "tgt": 4,
+          "dmg": 20
+        },
+        {
+          "s": 16970,
+          "r": 111,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 40,
+          "g": 14,
+          "tgt": 4,
+          "dmg": 20
+        },
+        {
+          "s": 17110,
+          "r": 112,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 38,
+          "g": 14,
+          "tgt": 4,
+          "dmg": 20
+        },
+        {
+          "s": 17113,
+          "r": 112,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 40,
+          "g": 14,
+          "tgt": 4,
+          "dmg": 20
+        },
+        {
+          "s": 17251,
+          "r": 113,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 38,
+          "g": 14,
+          "tgt": 4,
+          "dmg": 20
+        },
+        {
+          "s": 17254,
+          "r": 113,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 40,
+          "g": 14,
+          "tgt": 4,
+          "dmg": 20
+        },
+        {
+          "s": 17400,
+          "r": 114,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 38,
+          "g": 14,
+          "tgt": 4,
+          "dmg": 4.8
+        }
+      ],
+      "camp_group_round_rows": [],
+      "limitation": "Replay extraction provides initial per-camp HP in map JSON and per-group HP by round; it does not expose per-camp HP at death. This event establishes the native death-to-camp, not why a bot selected the preceding action."
+    },
+    {
+      "source_release": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd",
+      "opponent_release": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "candidate_physical_side": "A",
+      "replay": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-blob-102306200-candidate-A.repl26a",
+        "sha256": "7636304ebb096090841a1c6ba71cd1ef4d944251e60f6ae49da557a7ed680c28",
+        "bytes": 46052
+      },
+      "map": {
+        "name": "gen-gen-blob-102306200-candidate-A",
+        "hash": "bacb6cad2992b8f6",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1/maps/bacb6cad2992b8f6.json",
+        "sha256": "57e5882fe253debb433b59099af75ba1bf332b35c8633df9c899d2c3220aeb1e",
+        "bytes": 13549
+      },
+      "actor": {
+        "id": 0,
+        "team": 0,
+        "name": "Prism",
+        "maxHp": 700
+      },
+      "death": {
+        "s": 40801,
+        "r": 339,
+        "t": -1,
+        "k": "death",
+        "v": 0,
+        "at": [
+          40,
+          30
+        ],
+        "gems": 32,
+        "hp": 16,
+        "camp": 4,
+        "cause": "Attack"
+      },
+      "killed_by_camp": {
+        "id": 4,
+        "type": "Golem",
+        "x": 37,
+        "y": 28,
+        "group": 2,
+        "hp": 5000
+      },
+      "last_three_actor_actions": [
+        {
+          "s": 40767,
+          "r": 338,
+          "t": 4,
+          "k": "recall_cancel",
+          "a": 0,
+          "gems": 32,
+          "cause": "damage",
+          "left": 4
+        },
+        {
+          "s": 40778,
+          "r": 338,
+          "t": 5,
+          "k": "move",
+          "a": 0,
+          "f": [
+            39,
+            29
+          ],
+          "to": [
+            40,
+            30
+          ]
+        },
+        {
+          "s": 40779,
+          "r": 338,
+          "t": 5,
+          "k": "recall_start",
+          "a": 0,
+          "gems": 32,
+          "at": [
+            40,
+            30
+          ]
+        }
+      ],
+      "round_health_window": [
+        {
+          "round": 337,
+          "hp": 160,
+          "alive": 1,
+          "position": [
+            39,
+            29
+          ],
+          "gems": 32
+        },
+        {
+          "round": 338,
+          "hp": 16,
+          "alive": 1,
+          "position": [
+            40,
+            30
+          ],
+          "gems": 32
+        },
+        {
+          "round": 339,
+          "hp": 0,
+          "alive": 0,
+          "position": [
+            null,
+            null
+          ],
+          "gems": 0
+        },
+        {
+          "round": 340,
+          "hp": 0,
+          "alive": 0,
+          "position": [
+            null,
+            null
+          ],
+          "gems": 0
+        },
+        {
+          "round": 341,
+          "hp": 0,
+          "alive": 0,
+          "position": [
+            null,
+            null
+          ],
+          "gems": 0
+        }
+      ],
+      "incoming_camp_attack_events_before_death": [
+        {
+          "s": 40801,
+          "r": 339,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 4,
+          "g": 2,
+          "tgt": 0,
+          "dmg": 16
+        }
+      ],
+      "camp_group_round_rows": [
+        [
+          338,
+          2,
+          1,
+          2,
+          0,
+          -1,
+          1,
+          4841.6
+        ]
+      ],
+      "limitation": "Replay extraction provides initial per-camp HP in map JSON and per-group HP by round; it does not expose per-camp HP at death. This event establishes the native death-to-camp, not why a bot selected the preceding action."
+    },
+    {
+      "source_release": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd",
+      "opponent_release": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "candidate_physical_side": "B",
+      "replay": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306615-candidate-B.repl26a",
+        "sha256": "ccfd37b2b7e046a5e41781e567f7b68feb63cfc9f030c882fd8db72d3a365edd",
+        "bytes": 80601
+      },
+      "map": {
+        "name": "gen-gen-cells-102306615-candidate-B",
+        "hash": "7732d94dd51f60d3",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1/maps/7732d94dd51f60d3.json",
+        "sha256": "735d1e81caedd74033a6114fdb3534541df20053c9a114d005eaa20ca742192a",
+        "bytes": 52492
+      },
+      "actor": {
+        "id": 4,
+        "team": 1,
+        "name": "Prism",
+        "maxHp": 700
+      },
+      "death": {
+        "s": 316285,
+        "r": 1860,
+        "t": -1,
+        "k": "death",
+        "v": 4,
+        "at": [
+          72,
+          45
+        ],
+        "gems": 14,
+        "hp": 2.2,
+        "camp": 36,
+        "cause": "Attack"
+      },
+      "killed_by_camp": {
+        "id": 36,
+        "type": "Wolf",
+        "x": 74,
+        "y": 45,
+        "group": 18,
+        "hp": 1350
+      },
+      "last_three_actor_actions": [
+        {
+          "s": 316000,
+          "r": 1858,
+          "t": 1,
+          "k": "recall_cancel",
+          "a": 4,
+          "gems": 14,
+          "cause": "damage",
+          "left": 2
+        },
+        {
+          "s": 316169,
+          "r": 1859,
+          "t": 1,
+          "k": "attack",
+          "a": 4,
+          "f": [
+            72,
+            45
+          ],
+          "to": [
+            73,
+            42
+          ],
+          "tgt": 1,
+          "dmg": [
+            [
+              1,
+              65.3
+            ]
+          ]
+        },
+        {
+          "s": 316170,
+          "r": 1859,
+          "t": 1,
+          "k": "recall_start",
+          "a": 4,
+          "gems": 14,
+          "at": [
+            72,
+            45
+          ]
+        }
+      ],
+      "round_health_window": [
+        {
+          "round": 1858,
+          "hp": 185.8,
+          "alive": 1,
+          "position": [
+            72,
+            45
+          ],
+          "gems": 14
+        },
+        {
+          "round": 1859,
+          "hp": 2.2,
+          "alive": 1,
+          "position": [
+            72,
+            45
+          ],
+          "gems": 14
+        },
+        {
+          "round": 1860,
+          "hp": 0,
+          "alive": 0,
+          "position": [
+            null,
+            null
+          ],
+          "gems": 0
+        },
+        {
+          "round": 1861,
+          "hp": 0,
+          "alive": 0,
+          "position": [
+            null,
+            null
+          ],
+          "gems": 0
+        },
+        {
+          "round": 1862,
+          "hp": 0,
+          "alive": 0,
+          "position": [
+            null,
+            null
+          ],
+          "gems": 0
+        }
+      ],
+      "incoming_camp_attack_events_before_death": [
+        {
+          "s": 315781,
+          "r": 1857,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 36,
+          "g": 18,
+          "tgt": 4,
+          "dmg": 12.6
+        },
+        {
+          "s": 315950,
+          "r": 1858,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 36,
+          "g": 18,
+          "tgt": 4,
+          "dmg": 12.6
+        },
+        {
+          "s": 316116,
+          "r": 1859,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 36,
+          "g": 18,
+          "tgt": 4,
+          "dmg": 12.6
+        },
+        {
+          "s": 316285,
+          "r": 1860,
+          "t": -1,
+          "k": "camp_attack",
+          "camp": 36,
+          "g": 18,
+          "tgt": 4,
+          "dmg": 2.2
+        }
+      ],
+      "camp_group_round_rows": [],
+      "limitation": "Replay extraction provides initial per-camp HP in map JSON and per-group HP by round; it does not expose per-camp HP at death. This event establishes the native death-to-camp, not why a bot selected the preceding action."
+    }
+  ],
+  "false_lead_note": "A prior scan of camp_death events counts camps killed by champions. Those camp-kill events are irrelevant to own champion deaths and are not included as witnesses."
+}
