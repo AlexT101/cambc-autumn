@@ -3020,3 +3020,209 @@ without direct heal scaling. The 30 gold would not itself trigger the existing
 non-Prism shop trip. The model omits marginal allied healing service, yet the
 evidence does not establish profitable redistribution. Preserve the local
 join/next-shop question for a bounded follow-up; no allocation code is changed.
+
+## 2026-10-24: v48 ladder investigation; releases held
+
+The user reported a v48 regression and said they would reactivate v47. No
+activation or further submission was performed here. New upstream review is
+stopped; comparisons use our saved submission snapshots. The user subsequently
+relaxed the CPU restriction, allowing the local runner to use one full core
+with one job at nice 19. Browser/rendering work remains unnecessary.
+
+The successful 10:48 ranked snapshot shows 5–10 after the 10:17 v48 upload,
+versus 7–8 in the preceding 15. All 30 use normal drafts; Willow-first batches
+are excluded. Match metadata has no uploaded-source identity. The post-upload
+groups are Mite 4–1, Claudus 0–5 and prism best girl 1–4, so the comparison is
+not matched by opponent/map. Fracture B versus Claudus has a same-draft earlier
+loss, not an observed win-to-loss transition.
+
+The release qualification isolated f599→781fe (the recall change), not the
+full archived v47/f475→v48/781fe transition. That full transition also changes
+dash-aware altar distances, siege/kite capture handoffs, shield/reduction
+pricing and mid-turn enemy-death handling. This is a material coverage gap.
+The new 80-game Release comparison at 100k fuel covers all 40 published maps
+in both physical orientations: v48 wins 44, v47 wins 36; native play rollovers
+275/241, Bot errors 0/0. Source, WASM and SDK pins are unchanged. Eight and
+Starvation are v48's two 0–2 maps; Ambush is 1–1 with physical B winning both. An earlier
+root commentary misread Ambush's winner-prefixed score labels and was
+corrected. These outcomes do not disprove matchup-specific ladder regression.
+
+Two downloaded normal-draft losses have zero native errors/rollovers. On Gem
+Fields, our capture income of 555 versus 986, a 91-gem transfer to enemy Prism,
+and our 35 ending gems reconcile the 648-point score gap. Enemy Prism's first
+71-gem/90-gold capture follows a clear by all five champions. Our Prism
+earns no gold/items. Its r6–7 own view shows a live mixed camp, working Vesper,
+ready spells and no visible enemy location, motivating a bounded crew-quote
+trace. On Fracture, the 708-point gap is 637 capture-income deficit plus our 176
+ending gems minus their 105. Ordinary recall cancel/start stubs are not evidence
+of retreat failure.
+
+Two source-reviewed, built controls are held for diagnosis: v47 plus only the
+recall change (`64d9c8fd...`) and v48 with only the old altar-distance lookup
+(`c156da50...`). The matched frozen-v33 panel completed 18 games across nine
+map/side cells: v47 won 4/9 and v48 won 6/9. In particular, Starvation A changed
+from a v47 win to a v48 loss, while Starvation B changed in the other direction.
+These selected diagnostic cells show nontransitivity, not general strength.
+
+Eight isolated-control games also completed. On Eight, v47 plus recall lost
+both sides to v47; the walking-altar v48 control also lost both. On Starvation,
+v47 plus recall split 1–1 with physical B winning both, while the walking-altar
+v48 control won both sides against v47. These narrow outcomes nominate the
+recall/code-generation change on Eight and the altar-distance change on
+Starvation for first-divergence analysis. They do not yet identify a harmful
+branch or qualify a replacement release. All rows used reviewed ordered
+manifests, unchanged source/WASM/SDK pins and native normal drafts; native Bot
+errors were zero. Exact physical A/B scores are in `CONTROL-RESULTS.md`.
+
+The two v47 selfplays and v48 Gem Fields reproduction completed. Eight A with
+recall is fully identical to v47 selfplay: 59,450 accepted inputs and all 2,001
+round states, finishing 263–993. Its loss is unchanged baseline behavior. Eight
+B first forks at Willow8's r269 move, from (26,8) to (25,8) versus (25,9), after
+10,371 shared accepted inputs. Starvation first forks at Vesper1's r1 move,
+from (2,48) to (3,47) versus (3,49). Neither first fork is a recall keep/cancel.
+The Starvation zero-bag opening reaches the changed altar lookup only in a
+deadline check, so cold field cost versus an actual deadline rejection must
+be distinguished before attributing it to economic pricing.
+
+The v48 Gem Fields puppet replay matches all 15,202 accepted inputs, all 544
+round states and the 429–1077 outcome. This confirms behavioral reproduction
+of that loss, not a remote submission hash. The subsequent v47 comparison
+against the same recorded opponent also matches every input, round state and
+the outcome; this Gem Fields weakness is inherited. Both native sides have
+zero errors and rollovers. The initial attempt from the repo-root cwd failed
+before a match because of the copied CMake path; the identical manifest then
+ran successfully from its configured runtime workspace. Both logs remain
+preserved. A fixed replay puppet establishes source/prefix
+identity, not competitive strength. Native result rounds and statistics
+`roundsCompleted` use different conventions; see `IDENTITY-DIAGNOSTICS.md`.
+Evidence: `provenance/khaos-v34-ladder-intake-20261024-v1/`,
+`willow-v48-recall-regression-source-audit-20261024-v1.md`, and
+`khaos-v47-gem-fields-crew-quote-trace-spec-20261024-v1.md`. Farm-hop and sighting
+experiments remain held; no new numbered release is prepared.
+
+Prospective source preparation proceeds separately while the Starvation trace
+builds. `willow-v48-deadline-bound-work` (`46c5b558...`) changes only nine added
+lines and one replaced line in farm's deadline predicate. For a dasher with an
+unknown exact altar distance, a finite drafted walking distance may prove that
+the deadline fits. Otherwise the existing exact lookup runs. The walking bound
+is never stored in the exact distance caches used for pricing. Both dash graphs
+retain every walking edge and the same tribute goals; draft distances are
+accepted only after all fields are completed and the plan matches the map.
+Root verified all 29 files against the source manifest. Source review found no
+correctness blocker, but repeated scalar checks may cost more when the exact
+field is already warm. Competitive value and byte-identical behavior are not
+claimed for this candidate.
+
+The bounded Starvation trace now identifies the opening mechanism. Both source
+recorders and tracers match their originals through Vesper's r1 actions and the
+r2 boundary; all 15 host-call segments match for each trace. In v48, the first
+exact altar query for g13 cold-builds the field and returns 40; its deadline is
+134 against 1999 rounds remaining. The control reads drafted distance 73 and
+also passes (167). v48 then ends its farm scan at k=2/14, selecting g13 at 83
+steps with value 0.085121. The control reaches k=5, examines g0/g1/g2 with no
+deadline rejection, and selects g0 at 49 steps with value 0.222850. Both use
+route search. The extra field work reduces candidate coverage; the numerical
+deadline did not favor the distant camp. No exact fuel quantity or particular
+fuel-check invocation is claimed. This explains the first opening fork, not
+the full final-score difference. The deadline-bound candidate is queued for
+ordinary native games, separate from these fixed-script prefix diagnostics.
+
+The candidate's first four native Starvation games are mixed. It beats v47
+from A (1124–304) and B (1024–408), but loses against v33 from A (176–1084) and
+B (440–1006). All four games completed. This confirms no general strength
+claim follows from repairing the opening work: the v33 B result is worse than
+v48's earlier same-side win. The next comparison covers all 40 published maps
+in both orientations, separating candidate–v47, candidate–v33 and v48–v33
+panels, reusing exactly matching completed cells. No release is prepared from
+these four diagnostic results alone. Gem Fields' independent crew-quote
+diagnostic remains next in the runtime queue.
+
+The user confirmed that the active server submission was already v47; no
+activation or upload occurred during this investigation. The published-map
+panel has 227 new games and 13 reused panel cells (2 candidate–v47, 2
+candidate–v33, 9 v48–v33). Root reviewed all ordered physical A/B/map rows.
+Before execution, reverse-orientation output labels were corrected to match
+their physical sides; the original manifests remain preserved. These are
+three separate 80-game comparisons, not a pooled 240-game win rate.
+
+All 227 new games completed. With the 13 reused cells, the candidate wins
+45/80 against v47 and 46/80 against v33; unmodified v48 wins 49/80 against
+v33. Every new-game statistics record reports zero bot faults and diagnostic
+codes; the separate native audit also finds zero Bot errors. For the new rows,
+play rollovers are candidate268/v47239, candidate277/v33579, and v48264/v33558.
+These are different game trajectories and do not measure per-call fuel savings.
+These results do not
+qualify the deadline-bound candidate as an improvement, despite its repair of
+the documented Starvation opening cost. It remains unsubmitted. The next
+macro diagnostic uses the exact v47 Gem Fields reproduction and a bounded,
+validated Prism0 quote trace at rounds 6–7.
+
+The matched candidate/v48 comparisons against v33 change nine winners: the
+candidate gains Swirl A and both Yellow Brick Road sides, but loses both
+Reverse Spiral sides, Big World A, Fracture A, Islands A and Starvation B.
+The full panels and exact replay/statistics hashes are in
+`deadline-bound-published-comparison/RESULT-v3.json` under the intake directory.
+
+The user subsequently authorized full CPU and explicitly requested testing
+combinations. The next planned factorial starts from frozen v47: corrected
+ordinary-farm-hop v2, a terrain-connected camp escape candidate, and their
+combination. Neither single must first win a standalone threshold before the
+combination is examined. Source review and concrete replay diagnostics precede
+runtime; the active submission remains v47. An idle-sleep assertion is active
+for the ongoing work, as requested.
+
+The fourth published-map control is complete: f475 wins 45/80 against v33
+(22 on A, 23 on B), using 71 new games and nine matching reused cells. This
+puts the common-opponent results at f475 45/80, v48 49/80 and the deadline-bound
+candidate 46/80. It does not resolve the reported ladder regression: the local
+opponent and map mixture differ, and the recent ladder metadata does not pin
+the uploaded source. No active submission has changed.
+
+The f475 farm-hop arm (`63f5deb0...`) completed both 80-game panels. It wins
+39/80 against f475 (A25/B14), and 47/80 against v33 (A21/B26). Native bot errors
+and draft rollovers are zero in all 160 new games. Play rollovers are hop261 /
+f475267 and hop289 / v33572, respectively. These counts describe the resulting
+trajectories, not per-turn work savings. An intermediate helper summary used
+physical A wins as candidate wins; the final RESULT files correct this, and a
+source-role aggregation fixture now checks both orientations before subsequent
+reports. The 39/80 and 47/80 values above are candidate-source results. The
+single arm is not promoted; its combination with connected escape is still
+being tested as requested.
+
+The Gem Fields quote trace disproves the proposed camp-selection rejection.
+At both r6 and r7, Prism retains unclaimed group4, examines all18 groups and
+selects group4; partner damage makes the quote affordable. Its westward move
+can be a route around public holes rather than abandonment. A subsequent
+action-realization trace matches all225 accepted inputs through r7, nine round
+hashes through boundary8 and all45 host-call segments. At r6, the selected camp
+reaches approach casting with eight live targets and one harmful member. Seven
+evaluated ground centres fail the two-harmful-hit condition; the best rejected
+centre at (21,23) has value400. No cast is selected and the attack-tiles route
+moves. At r7 the first rejection is actual damaging-camp exposure (distance4,
+reach4), after which the same route moves. This supports a narrow approach
+qualifier experiment, not a crew-price change. The capped trace's expected
+end-of-timeline is not a production bot fault; no duplicate recorder was run.
+
+The source-reviewed qualifier (`afd057fa...`) admits one harmful member plus
+at least one other live target, retaining all previously admitted two-attacker
+centres, value floors and the r7 exposure refusal. A Prism ground spell consumes
+movement, so actual clear-time and route effects must be measured. The source
+union of hop and connected escape (`05d0f07c...`) is byte-identical in either
+construction order; both parent sources remain frozen. Connected escape uses
+actual walking connectivity instead of treating geometric distance as a proven
+exit, but its current-DPS reserve is still a heuristic, and the Fracture source
+caller has not been reproduced. Separate source reviews record these limits.
+
+The user's generalist-draft request is being evaluated with controlled role
+substitutions before choosing map thresholds. Three f475 clones change only
+one five-pick roster slot: Stellar/Vesper/Marcella/Willow/HoR (`0c166e82...`),
+Cassi&Issac/Vesper/Marcella/Willow/HoR (`3eed096b...`) and
+Prism/Vendetta/Marcella/Willow/HoR (`897529e6...`). Cassi&Issac consumes one
+selection and creates two actors. The first planned screen is Gem Fields,
+Fracture and Big World, both sides against frozen v33, reusing the six matching
+f475 baseline cells. No dynamic selector or fixed roster strength is claimed.
+Ordinary camps contribute both gold and gems: zero gold clusters does not mean
+zero Vesper income, and zero gem clusters does not mean zero Prism scaling.
+Future counterpicks must use only already-revealed enemy selections; the
+current first-call draft cache cannot provide that by itself. See the pinned
+map-economy/counterdraft design and fixed-role source checkpoint for scope.

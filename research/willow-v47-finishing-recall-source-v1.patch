@@ -1,0 +1,60 @@
+diff --git a/bots/astraeus/src/bot.cpp b/bots/variants/willow-v47-finishing-recall-work/src/bot.cpp
+index d7a0d4f..db50725 100644
+--- a/bots/astraeus/src/bot.cpp
++++ b/bots/variants/willow-v47-finishing-recall-work/src/bot.cpp
+@@ -2817,7 +2817,12 @@ bool paying_soon(const World& world, Pathing& pathing) {
+     return nearest > 3 && c.held_since >= 0 && c.payout_round() <= world.round + 2;
+ }
+ 
+-bool outmatched(const World& world, Pathing& pathing) { return in_pack_zone(world, world.me().pos) && !paying_soon(world, pathing); }
++bool outmatched(const World& world, Pathing& pathing, bool* payout_relaxed_pack) {
++    if (!in_pack_zone(world, world.me().pos)) return false;
++    const bool soon = paying_soon(world, pathing);
++    if (payout_relaxed_pack) *payout_relaxed_pack = soon;
++    return !soon;
++}
+ 
+ // Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
+ int camp_exit_rounds(const World& world, Safety& safety, vec2 here) {
+@@ -2846,13 +2851,14 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
+ }
+ 
+ // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
+-bool want_home(const World& world, Pathing& pathing, Safety& safety, bool sieging) {
++bool want_home(const World& world, Pathing& pathing, Safety& safety, bool sieging, bool* payout_relaxed_pack = nullptr) {
++    if (payout_relaxed_pack) *payout_relaxed_pack = false;
+     world.throw_if_stale();
+     const vec2 here = my_position();
+     if (test(world.map().ally_spawn, here)) return false;
+     const float health = my_health();
+     const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world, pathing);
+-    if (low || outmatched(world, pathing) || camp_trapped(world, safety, here, health, sieging)) return true;
++    if (low || outmatched(world, pathing, payout_relaxed_pack) || camp_trapped(world, safety, here, health, sieging)) return true;
+     // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
+     // bar on a capture, which pays without one.
+     if (world.me().type == cambc::champion_type::willow && !holding_capture(world, pathing) && !contesting(world)
+@@ -4148,11 +4154,23 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
+         }
+         return false;
+     }
+-    home = want_home(world, pathing, safety, memory.siege);
++    bool payout_relaxed_pack = false;
++    home = want_home(world, pathing, safety, memory.siege, &payout_relaxed_pack);
+     if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
+         return true;
+     decision = 'k';
+     if (holding_capture(world, pathing)) {
++        // Near payout must not erase an existing safe exit that lands too early to carry it.
++        if (!*home && payout_relaxed_pack) {
++            const int g = world.map().group_at(my_position());
++            if (world.round + my_channel_time() < world.camps[g].payout_round()
++                && capture_share(world, g) < gems_short(world)
++                && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory)
++                && recall_outruns(world, safety)) {
++                decision = 'K';
++                return true;
++            }
++        }
+         if (capture_recall(world, pathing, safety, memory)) {
+             decision = 'Q';
+             return true;

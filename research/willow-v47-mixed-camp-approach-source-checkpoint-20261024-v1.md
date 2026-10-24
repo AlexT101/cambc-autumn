@@ -1,0 +1,21 @@
+# v47 mixed-camp approach qualifier checkpoint
+
+2026-10-24. Source-only isolated prototype explicitly approved by root after the read-only proposal; no builds, games, test/helper/script implementation, SDK/tool changes, canonical edit, EXPERIMENTS change, release or submission. Cambridge Battlecode rules read. Continuation trace is pending, so this is not attribution of the actual Gem Fields cast refusal.
+
+Parent frozen service-base-f7, aggregate verified unchanged before/after: `f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824`.
+
+Child `bots/variants/willow-v47-mixed-camp-approach-work`, src only, no `.cambc`. Manifest `research/willow-v47-mixed-camp-approach-source-v1-manifest.sha256`, 29 entries; aggregate `afd057fa1051e21d0c09cea4ae7cb594afe5b4de7e796cf46ae43ab06ae3871e`.
+
+Patch `research/willow-v47-mixed-camp-approach-source-v1.patch`, SHA256 `9c6759f48ea49db87fb63953a5e7a6d9038ba8288447f05a4973622176cf4828`. Only abilities.cpp changes, 7 insertions/2 deletions, no whitespace diagnostics; other28 files and production default draft match f475. No v48, recall, hop, connected-escape, deadline, communications or allocator delta is included.
+
+The only policy change is best_ground's existing non-null harmful-list qualifier. Previously it required two harmful members within the3x3 cast. It now requires at least one harmful member and at least two distinct live target records within that same area. Both lists already come from camp_cast's native-visible, positive-current-HP member loop, once per group member; no new native query or inferred hidden member is used. All previously qualifying two-harmful centres still qualify. A lone harmful hit and cluster-only hits in a damaging group still fail. New qualifying centres hit one harmful member together with one or more live harmless members.
+
+Every nullptr call path is unchanged: enemy casts, ordinary camp casts and harmless-group approach casts. Mixed-group approach is already Prism-only at its entry point. The value50 floor, damage capped at actual HP, strict best-value comparison, unit-versus-ground competition, one-cast readiness, excludes-walking rules, selected-group alive/awake and non-Monolith constraints, visible-enemy hold range6, other-living-group skip mask and tracked-Ren suicide mask remain unchanged. No fallback cast is forced.
+
+Observed r6 geometry supplies a possible positive case, not a captured helper branch: Prism at(18,19), Focus80, can target ground centre(21,23) at Chebyshev4. Its area includes observed live Elk8 and clusters35/37/45/49 for up to400 current damage; it does not need credit for static-only member47. Elk itself is distance5, outside unit spell range4, and known g4 live members are outside basic range3. Current native records, skip/value gates and actual continuation still decide whether a cast is available. If the cast succeeds, its excludes-walking effect intentionally changes that turn's travel opportunity.
+
+The separate r7 gate is untouched: from(17,20), Elk8 at(21,24) is distance4 and its camp reach is4, so cast_at_camp_on_approach's current-live-camp-range refusal remains. No health/crew/healer exception, global aggro change, new threshold, macro repricing, map/round identity or new fuel gate exists.
+
+Cost adds local short-circuit position checks after a candidate has already passed existing value comparisons; the cast-centre set remains the existing range4 square (at most81 centres), and it reuses the existing live targets/harmful vectors. No new field, board, allocation, native call or Safety simulation is introduced. The added local loop is bounded by this already-enumerated group's live target records.
+
+Independent source review and native controls remain required. Later meaningful controls: one attacker plus a live cluster qualifies only with existing value/safety passes; two attackers retain prior admission; single attacker, dead/unseen cluster and mixed-group cluster-only hits do not gain admission; harmless groups and ordinary/enemy casts retain their previous path; r7 in-range refusal remains; actual native cast/cooldown/movement consequences and productive conversion are measured. A later combination with reviewed hop+escape must be an explicit separately pinned union, not an edit to this single-arm source.

@@ -1,0 +1,12 @@
+diff --git a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/draft.cpp b/bots/variants/willow-v47-stellar-five-work/src/draft.cpp
+index 7dc2e5f..8fa7924 100644
+--- a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/draft.cpp
++++ b/bots/variants/willow-v47-stellar-five-work/src/draft.cpp
+@@ -253,6 +253,7 @@ std::span<const cambc::champion_draft> draft_order() {
+                                    ? willow_five_pick_roles() : teacher_draft_roles(native_draft_counts());
+             std::array<cambc::champion_draft, 5> order;
+             for (std::size_t i = 0; i < order.size(); ++i) order[i] = native_pick(roles[i]);
++            if (params::willow_draft && cambc::draft::team_size() == 5) order[0] = cambc::champion_draft::stellar;
+             // 4 picks keep Heart of Ruin over the Ryth/Vendetta slot (v38 ladder: 43% on 4-pick maps without it).
+             if (cambc::draft::team_size() == 4) std::swap(order[3], order[4]);
+             return order;

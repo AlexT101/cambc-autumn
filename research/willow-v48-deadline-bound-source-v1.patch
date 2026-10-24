@@ -1,0 +1,21 @@
+diff --git a/bots/Khaos_v34/src/bot.cpp b/bots/variants/willow-v48-deadline-bound-work/src/bot.cpp
+index 154b342..8f7e424 100644
+--- a/bots/Khaos_v34/src/bot.cpp
++++ b/bots/variants/willow-v48-deadline-bound-work/src/bot.cpp
+@@ -2272,7 +2272,15 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+             continue;
+         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
+         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
+-            if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
++            if (known.to_altar < 0) {
++                // Walking bounds the dash graph from above; a fitting bound needs no exact field.
++                if (!draft_spawn_graph) {
++                    if (const auto walking = map.drafted_altar_steps(g); walking && *walking != unreachable
++                        && static_cast<float>(steps + wait + capture_rounds() + *walking + tribute_turns(bag + group.gems)) + clear_rounds <= static_cast<float>(left))
++                        return false;
++                }
++                known.to_altar = pathing.centre_to_altar(g);
++            }
+             const int last = known.to_altar;
+             return last != unreachable
+                    && static_cast<float>(steps + wait + capture_rounds() + last + tribute_turns(bag + group.gems)) + clear_rounds > static_cast<float>(left);
