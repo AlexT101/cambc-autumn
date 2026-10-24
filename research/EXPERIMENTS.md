@@ -289,7 +289,10 @@ another harmless group was kept (CHANGES 91).
   agree with the rule). Camps stay out: Willow farms, and its exposure counts camp members itself. Five-pick A/B
   against 0c703ea: 50.7% (CI 46.0-55.5), out-of-fuel turns 2002 vs 1859, all of the rise on gen-shared-gems
   (374 vs 144 in its two games; the rest 1628 vs 1715). `bench.py` wide: identical games +0.00% fuel (the weighting
-  costs nothing), all games +0.9% from changed play, 33/52 identical. Kept.
+  costs nothing), all games +0.9% from changed play, 33/52 identical. Kept. As the reference of the next A/B the
+  same bot ran 83 out-of-fuel turns on gen-shared-gems: the rise was a fuel trajectory.
+- Astraeus with `retreat-sideways` merged (cfd1a3a; `retreat_step` ported into its bot.cpp): five-pick A/B against
+  960cdfe, 51.7% (CI 46.9-56.4), out-of-fuel turns 1839 vs 1781.
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
 - `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
   2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next
