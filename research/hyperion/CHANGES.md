@@ -836,3 +836,11 @@ A pre-tournament audit traced astraeus through edge-case maps for stalls. Repro 
   differences come from fuel only.
 - Repro maps, patched against itself: crystalaltar ends in a 1000-gem win at round 1506 (unpatched 0-0 at 2000);
   spawnpin, spawnpin-golem and deadaltar play normally either way.
+
+## 140: Marcella's tribute gold gets our gold bonus in farm worth (astraeus, 2026-10-24)
+
+`probe-marcella-gold` found the engine applies gold bonuses to Marcella's 2 gold per tributed gem (with a Treasure
+emblem a 29-gem tribute paid 69.6, not 58; the fraction carries over; paid when the channel completes), which the
+rules YAML said only for capture shares and kill gold (fixed there). CHANGES 136's farm-worth term for it now uses our
+bonus rate (`paid`), as capture gold does: with Treasure, her tribute gold is worth 20% more. Not A/B'd: it changes
+only Marcella's farm worth once she owns Treasure, by 20% of a term that is itself small.

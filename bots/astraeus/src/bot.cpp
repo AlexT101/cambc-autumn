@@ -2155,9 +2155,9 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     static std::uint32_t context = 0;
     if (const Context now{bag, short_by, pathing.centres_ready(), banks_bag}; context == 0 || !(now == last_context))
         last_context = now, ++context;
-    // Marcella is paid gold for each gem she tributes, with no gold bonus.
+    // Marcella is paid gold for each gem she tributes, with our gold bonus (probe-marcella-gold).
     const float tribute_gold = world.me().type == cambc::champion_type::marcella
-                                   ? prices(world).per_gold * static_cast<float>(cambc::constants::passive_abilities::marcella_tribute_gold_per_gem)
+                                   ? prices(world).per_gold * paid * static_cast<float>(cambc::constants::passive_abilities::marcella_tribute_gold_per_gem)
                                    : 0.0f;
     static float last_per_gold = 0, last_tribute_gold = 0;
     static std::uint32_t gold_context = 0;

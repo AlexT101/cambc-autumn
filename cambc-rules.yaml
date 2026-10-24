@@ -99,7 +99,7 @@ altar_locks:
 
 economy:
   gold: "Gold comes only from capture shares, kill gold and Marcella's passive. Gold is fractional; gold_count shows the floor."
-  bonuses: "Gold bonuses add together and apply to each capture share and to kill gold, never to gems."
+  bonuses: "Gold bonuses add together and apply to each capture share, to kill gold and to Marcella's tribute gold, never to gems."
   shop: "Buy any number of items on your own spawn or while dead."
   shards: "30 gold each; a shard adds the champion's growth in its stat. Each emblem family has a Strength, Health and Focus shard. Five identical shards combine automatically into that emblem. Emblems cannot be bought directly."
   emblems: {monster: "+10% damage to camps", power: "stats of 6 shards, no passive", durability: "-10% damage taken, before a shield absorbs it: the shield drains by the reduced damage", treasure: "+20% gold", jungle: "-30% damage from camps", home: "recall takes 3 turn ends", bruiser: "stats of 5 shards plus one shard of each other stat, no passive"}
@@ -174,7 +174,7 @@ champions:
   marcella:
     attack: melee
     stats: {health: [1200, 100], strength: [45, 5], focus: [60, 15]}
-    passive: "Immune to stuns. Gains 2 gold per gem she tributes."
+    passive: "Immune to stuns. Gains 2 gold per gem she tributes, when the tribute completes; gold bonuses apply."
     abilities: ["attack_reset; her next basic attack this turn also stuns", {damage: 2, target: unit, exclusive: true}]
   tavi:
     attack: ranged
