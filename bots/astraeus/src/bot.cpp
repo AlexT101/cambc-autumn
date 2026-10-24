@@ -4461,6 +4461,41 @@ int heal_range(const ChampionBelief& healer) {
     return f.abilities[f.slot_of(AbilityKind::heal)].range();
 }
 
+// A unit our own ward sees stays visible to us wherever we step (wards.vision). Read per call: a
+// ward can go down mid-turn without a re-observe (submit_here); its mask is cast again only when it moves.
+bool own_ward_sees(const World& world, vec2 p) {
+    static bitboard sight{cambc::uninitialized};
+    static vec2 cast_at{-1, -1};
+    static std::array<cambc::detail::ward_info, 16> raw;
+    std::uint32_t k = 0;
+    ok(cambc::detail::sdk_wards(raw.data(), static_cast<std::uint32_t>(raw.size()), &k));
+    const auto own = static_cast<std::uint32_t>(world.map().team_a ? 0 : 1);
+    for (std::uint32_t i = 0; i < k && i < raw.size(); ++i) {
+        const auto& w = raw[i];
+        if (w.team != own || w.owner != my_handle() || w.disabled) continue;
+        if (const vec2 at{w.x, w.y}; at != cast_at) ok(cambc::detail::sdk_ward_vision(at.x, at.y, sight.ptr())), cast_at = at;
+        return test(sight, p);
+    }
+    return false;
+}
+
+// Tiles within `range` of a visible ally from which we see it, as the search's viewers(): exact
+// where attack_viewers leaves out bushes beyond a step for our own tile, which sees it now, and
+// every tile when our ward sees it.
+Reach::Window heal_viewers(const World& world, vec2 target, int range) {
+    range = std::clamp(range, 0, 4); // the window's radius
+    Reach::Window w;
+    if (own_ward_sees(world, target)) {
+        for (int y = -range; y <= range; ++y)
+            for (int x = -range; x <= range; ++x) w |= Reach::Window::bit(9 * (y + 4) + x + 4);
+        return w;
+    }
+    w = attack_viewers(world, target, range);
+    if (const vec2 here = my_position(); dist(here, target) <= range)
+        w |= Reach::Window::bit(9 * (here.y - target.y + 4) + here.x - target.x + 4);
+    return w;
+}
+
 struct HealView {
     HealTarget target;
     Reach::Window viewers; // tiles that see it within heal range
@@ -4472,7 +4507,7 @@ int heal_views(const World& world, vec2 p, float amount, std::array<HealView, 8>
     int n = 0;
     for (const auto& a : world.allies)
         if (dist(p, a.pos) <= range + 1)
-            if (const auto t = heal_target(world, a, amount)) out[n++] = {*t, attack_viewers(world, t->pos, range)};
+            if (const auto t = heal_target(world, a, amount)) out[n++] = {*t, heal_viewers(world, t->pos, range)};
     return n;
 }
 
@@ -4549,7 +4584,9 @@ bool immediate_camp_finish(const World& world, vec2 here, float basic) {
             if (c.state_round != world.round) return true;
             if (c.state != CampState::alive) continue;
             // Preserve even an individual member finish, with a ready-reset upper bound.
-            if (c.health_round[i] != world.round || !(c.health[i] > 0) || c.health[i] <= 2 * basic) return true;
+            if (c.health_round[i] != world.round) return true;
+            if (!(c.health[i] > 0)) continue; // dead: nothing left to finish
+            if (c.health[i] <= 2 * basic) return true;
         }
     }
     return false;
@@ -4680,8 +4717,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         if (memory.recovery_start < 0 && memory.recovery_closed_health >= 0 && health >= memory.recovery_closed_health) return false;
         formation_view = attack_viewers(world, mate->pos, heal_range(healer));
         const float usable = my_max_health() * (1 - params::recall_health_fraction);
-        const float out = world.map().from_ally_spawn_ready() ? world.map().from_ally_spawn().at(here)
-                                                            : static_cast<float>(dist(here, world.map().ally_spawn_centre));
+        const float out = static_cast<float>(world.map().from_ally_spawn().at(here));
         const float saved = gain / usable * (static_cast<float>(recall_turns(world)) + out);
         const int detour = support_view(formation_view, mate->pos, here) ? 0 : 1;
         const int wait = mate->acted ? 1 : 0;
@@ -4692,7 +4728,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
             return false;
         }
     } else {
-        formation_view = attack_viewers(world, mate->pos, heal_range(healer));
+        formation_view = heal_viewers(world, mate->pos, heal_range(healer));
     }
     const auto here_risk = support_exposure(world, safety, here);
     const int work = willow ? comms::claim_of(world, mate->index) : memory.farm_group;
@@ -4780,6 +4816,8 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         commit_support();
         see_revealed(world, pathing, safety);
         if (!(willow ? exposure_here(world, safety) : support_exposure(world, safety, my_position())).safe()) {
+            // The heal we stepped for costs no walk; healed_before means the cast is spent.
+            if (willow && !healed_before) heal_ally(world);
             support_owned = true;
             memory.claim = -1;
             memory.crew = false;
