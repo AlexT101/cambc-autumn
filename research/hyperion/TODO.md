@@ -44,7 +44,6 @@ keep if level.
    - fighters keep turn-start health, shields and cooldowns (`made_` survives `refresh`/`invalidate`);
    - an enemy revealed by a refused step onto its tile: `revealed()` skips our own tile (CHANGES 89); only Willow's
      steps call `see_again` on a refused move.
-   - an enemy we stun is not read as stunned (CHANGES 127 reads stuns at turn start only).
 2. The strike search never opens tiles of units it kills (`free_`/`pass_` fixed in `read_geometry`): a kill can open
    a walk or dash path (a blocker in a corridor; Vendetta's refreshed dash through a cleared camp).
 3. Varg's fallback attacks (`camp_attack_targets`, champion splash) wake neighbouring sleeping groups, unpriced

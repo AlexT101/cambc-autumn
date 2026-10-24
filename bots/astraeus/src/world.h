@@ -273,7 +273,7 @@ struct ChampionBelief {
     float taken = 1;          // damage taken per point dealt: durability_taken with a Durability emblem, when last seen
     bool acted = false; // had completed its turn when last read this round
     // A stun that will take its next turn, read when first seen this round: nothing but our own
-    // casts changes it during our turn (not re-read), though our move may take it out of sight.
+    // casts changes it during our turn (World::read_stuns), though our move may take it out of sight.
     bool stun_pending = false;
     // Turn-order priority for priority_round, and from the round after it.
     int priority = 0, next_priority = 0, priority_round = -1;
@@ -384,6 +384,9 @@ public:
     // Start of each play turn. The first call also builds the static map.
     void update();
     void observe();
+    // After our stunning cast or Marcella's stunning attack: reads stun_pending again for enemies
+    // in sight it could have reached, once a turn. True if one changed.
+    bool read_stuns();
     std::uint32_t observations = 0; // update() and observe() calls: beliefs change only with one
     // An enemy in sight from p, within r of it, that this turn's reads did not see: our own move
     // revealed it. False at the tile vision was last read from.
@@ -549,6 +552,7 @@ private:
     std::array<std::array<std::uint8_t, 16>, 4> turn_order_; // allies', enemies' indices by rank, then by next_rank
     int ranked_round_ = -1;
     int updated_round_ = -1;
+    int stuns_read_ = -1;
 };
 
 // Cassi or Issac: the other body on its side, whose death is its own; null for anyone else.

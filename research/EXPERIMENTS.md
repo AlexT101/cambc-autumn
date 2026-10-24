@@ -528,6 +528,9 @@ another harmless group was kept (CHANGES 91).
   and channel cancels needing us first; heal, escape and channel bids still non-teacher only): 49.3% of 1104
   (46.3-52.2; ladder 47.5, gen 49.8, gen-s1 49.0), out-of-fuel turns 2268 vs 2166. Fired ~7 times a game (Prism
   mostly). Dropped. herbert's secret LAST/FIRST bands add nothing over this: priorities are readable in sight.
+- A stun we cast read mid-turn (`b8-stun-cast`, 2026-10-24, against 2b34c2f; TODO bug 1): `World::read_stuns` after
+  our stunning cast, Safety rebuilt if a target's `stun_pending` changed. 50.5% of 1104 (47.6-53.5; ladder 53.8, gen
+  50.8, gen-s1 49.8), out-of-fuel turns 2438 vs 2305. Kept, level (CHANGES 128).
 
 ## Fuel
 

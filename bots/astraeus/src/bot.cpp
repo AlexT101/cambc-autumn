@@ -2740,6 +2740,14 @@ void forget_pack_zone(const World& world) { pack_zone_state(world).round = -1; }
         guard_steps(world, pathing, safety);
 }
 
+// A stun we cast takes its target's next turn, which Safety's threats and fights count: it starts again.
+void see_stuns(World& world, Safety& safety) {
+    if (!world.read_stuns()) return;
+    std::destroy_at(&safety);
+    std::construct_at(&safety, world);
+    safety.refresh(); // as after the hits that cast it: a kill is read as gone
+}
+
 // Our walk or dash brought an enemy into sight that could strike us, or that we could strike,
 // before our next turn.
 bool see_revealed(World& world, Pathing& pathing, Safety& safety) {
@@ -4356,11 +4364,16 @@ vec2 step_to_kill(const World& world, Pathing& pathing, Safety& safety, int rang
 // After our hits: an enemy we killed stays a live threat around its tile in World (dash landings,
 // retreat steps) and, once refresh() has read it alive, in Safety: read vision again.
 void see_kills(World& world, Pathing& pathing, Safety& safety) {
+    const bool stunned = world.read_stuns();
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && !is_alive(e.handle)) {
             see_again(world, pathing, safety);
             return;
         }
+    if (stunned) {
+        std::destroy_at(&safety);
+        std::construct_at(&safety, world);
+    }
     safety.refresh();
 }
 
@@ -4401,6 +4414,7 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
     dash_away(world, pathing, pathing.to_ally_spawn(), dead);
     if (reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
+    else see_stuns(world, safety); // Heart of Ruin's landing
     if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
     if (melee && attack_enemy(world)) reset_and_attack_enemy(world, true);
     reset_and_attack_enemy(world);
@@ -5130,7 +5144,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     }
     decision = holding ? 'P' : attacked ? 'A' : decision;
     if (!me.is_alive()) return;
-    if (!my_can_attack() || !my_can_cast()) safety.refresh();
+    if (!my_can_attack() || !my_can_cast()) see_stuns(world, safety), safety.refresh();
     // The guard was placed around the tile we started on: the goal steps from where the search left us.
     if (my_position() != world.me().pos && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
     if (holding) {
@@ -5269,6 +5283,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     }
     // Not StaleTurn: a stale turn abandons the rest.
     try {
+        if (!world.is_stale()) see_stuns(world, safety);
         set_turn_order(world, safety);
     } catch (const std::exception& e) {
         std::printf("r%u turn order error: %s\n", cambc::round_number(), e.what());

@@ -1047,6 +1047,33 @@ void World::update() {
     sight_pos_ = clear_pos_ = my_position();
 }
 
+bool World::read_stuns() {
+    const auto& f = me().facts();
+    // Ren's reflection may have killed us this turn.
+    if (stuns_read_ == round || !me().alive || (f.stun_reach(0) < 0 && f.stun_reach(1) < 0) || !is_alive(me().handle)) return false;
+    int reach = -1;
+    for (int s = 0; s < 2; ++s)
+        // Marcella's stun is the attack after her reset.
+        if (const int r = f.stun_reach(s); r >= 0 && my_cooldown(s) >= ability_cooldown
+                                           && (f.abilities[s].kind != AbilityKind::attack_reset || !my_can_attack()))
+            reach = std::max(reach, r);
+    if (reach < 0) return false;
+    stuns_read_ = round;
+    // A walk may follow a cast that does not exclude it.
+    const vec2 here = my_position();
+    bool changed = false;
+    for (auto& e : enemies) {
+        if (!e.alive || !e.visible || e.stun_pending || e.facts().passive == Passive::stun_immune || dist(here, e.pos) > reach + 1) continue;
+        // Not stun_pending(): one we killed has no buffs to read, and a thrown error costs ~3.9k.
+        static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
+        std::uint32_t n = 0;
+        if (cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(e.handle), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n) != 0) continue;
+        for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
+            if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun) && buffs[i].data.stun.duration > 0) e.stun_pending = changed = true;
+    }
+    return changed;
+}
+
 namespace {
 
 // An enemy shielder's or our own active shield, read only while the cast is recent enough. Shield

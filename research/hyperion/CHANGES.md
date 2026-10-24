@@ -675,3 +675,15 @@ still fights: fight keys, `late`, `stand` and `turns_to_kill_idle` take it in by
 Stuns we cast mid-turn are still not read (bug 1).
 
 - Against d16e9e9: 51.1% of 1104 (48.1-54.0; ladder 50.0, gen 52.1, gen-s1 50.2), out-of-fuel turns 2349 vs 2293.
+
+## 128: a stun we cast is read mid-turn (astraeus, 2026-10-24)
+
+CHANGES 127 read `stun_pending` at turn start only, so the rest of the turn after our own stun (Prism's, Ryth's
+ground stun, Heart of Ruin's landing, Marcella's attack after her reset) still counted the target's next turn.
+`World::read_stuns` reads it again, once a turn after the stunning slot was cast (for Marcella, once her attack is
+spent too), for visible enemies within the stun's reach + 1 of us; if one changed, Safety starts again. It runs in
+`see_kills`, after `retreat`'s escape dash, after the strike plan in `decide()`, and before `set_turn_order`. Allies
+acting later this round read it at their own turn start.
+
+- Against 2b34c2f (CHANGES 127): 50.5% of 1104 (47.6-53.5; ladder 53.8, gen 50.8, gen-s1 49.8), out-of-fuel turns
+  2438 vs 2305. It changed a belief ~30 times in a debug game.
