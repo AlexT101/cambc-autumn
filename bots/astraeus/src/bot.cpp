@@ -3478,15 +3478,29 @@ int enemy_hold_left(const World& world, const CampBelief& c) {
     return c.holder == team::enemy && c.held_since >= 0 ? c.payout_round() - world.round : capture_rounds();
 }
 
-// Allies in sight on G, or nearer its centre than `here` (ties to the lower index), already make
-// enough holders.
-bool capture_taken(const World& world, const CampGroup& G, vec2 here) {
+// An ally that will not come to group g: tributing, on a recall kept through a turn, or working
+// towards another group.
+bool bound_elsewhere(const World& world, const ChampionBelief& a, int g) {
+    if (a.channel == Channel::tribute) return true;
+    if (a.channel == Channel::recall && visible_record(a.handle)
+        && kept_recall(a.handle, a.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time)))
+        return true;
+    const int claim = comms::claim_of(world, a.index);
+    return claim >= 0 && claim != g;
+}
+
+// Allies in sight on group g's tiles, or free for it and nearer its centre than `here` (ties to
+// the lower index), already make enough holders.
+bool capture_taken(const World& world, int g, vec2 here) {
+    const auto& G = world.map().groups[g];
     if (const auto* prism = prism_capture_holder(world, G)) return !prism->is_self;
     int ahead = 0;
     for (const auto& a : world.allies)
         ahead += !a.is_self && a.alive && a.visible
-                 && (test(G.tiles(), a.pos) || dist(a.pos, G.centre) < dist(here, G.centre)
-                     || (dist(a.pos, G.centre) == dist(here, G.centre) && a.index < world.me().index));
+                 && (test(G.tiles(), a.pos)
+                     || ((dist(a.pos, G.centre) < dist(here, G.centre)
+                          || (dist(a.pos, G.centre) == dist(here, G.centre) && a.index < world.me().index))
+                         && !bound_elsewhere(world, a, g)));
     return ahead >= holders(G);
 }
 
@@ -3615,7 +3629,7 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     const vec2 here = my_position();
     if (c.state == CampState::cleared) {
         // The nearest take the capture, split to shorten the tributes; the rest farm.
-        if (capture_taken(world, G, here)) {
+        if (capture_taken(world, g, here)) {
             memory.siege = false;
             memory.staged_since = -1;
             return false;
@@ -3934,7 +3948,7 @@ bool kite(const World& world, Pathing& pathing, Memory& memory) {
             if (!board_empty(free)) pathing.step_towards_funded(free, end_reserve);
             return true;
         }
-        if (capture_taken(world, G, here) || dist(here, G.centre) > 2 * vision_radius) return false;
+        if (capture_taken(world, g, here) || dist(here, G.centre) > 2 * vision_radius) return false;
         memory.claim = g;
         memory.crew = false;
         pathing.step_towards_funded(G.tiles(), end_reserve);

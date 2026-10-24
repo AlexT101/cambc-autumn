@@ -538,3 +538,11 @@ counts the shield and Durability too.
 now reads its own `to_any_altar()` field, as farm's spawn steps already did (`draft_spawn_graph`).
 
 - Against 113: 51.6% of 1104 (48.7-54.6; ladder 55.0, gen 51.0, gen-s1 51.8), out-of-fuel turns 2569 vs 2497.
+
+## 115: captures left to allies free to take them (astraeus, 2026-10-24)
+
+`capture_taken` (siege and kite captures of a cleared big group) counted every visible ally nearer the group as a
+holder. An ally not on its tiles now counts only if it is not bound elsewhere: tributing, on a recall kept through a
+turn (`kept_recall`), or claiming another group.
+
+- Against 114: 50.1% of 1104 (47.1-53.0; ladder 51.2, gen 50.0, gen-s1 50.0), out-of-fuel turns 2896 vs 2706.
