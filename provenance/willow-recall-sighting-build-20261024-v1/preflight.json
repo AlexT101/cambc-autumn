@@ -1,0 +1,19 @@
+{
+  "schema": "recall-sighting-build-preflight/v1",
+  "source_aggregate": "29ac1251ddc63c1b3e824d9c1d6182df57890e62b3757d5e362fe15be3a91e60",
+  "source_bot_cpp": "12b287870f0e516829ccd0ce47765391e273729af1529fdc3df2f719da060d46",
+  "source_comms_cpp": "c048d09fd718e21b3d46258533d157ee4a196d40a20e037444ae2bfac9a1b77a",
+  "source_comms_h": "dd7501edf853dc00cf3d6c5535eb5dd54a62c7e177e314868a82385c41fa0249",
+  "source_patch_sha256": "83433f94747168e0b64eb7223022944a61a12db8bf9ede147e195c1fa0fe660e",
+  "runtime_copy_aggregate": "29ac1251ddc63c1b3e824d9c1d6182df57890e62b3757d5e362fe15be3a91e60",
+  "parent_source_aggregate": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+  "v33_source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+  "sdk": {
+    "cambc_h_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "cambc_h_mtime_ns": 1792774035481976768,
+    "imports_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "imports_mtime_ns": 1792774035482489096
+  },
+  "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+  "mode": "Release build only; no source edits"
+}

@@ -1,0 +1,129 @@
+{
+ "inputs": [
+  32792,
+  28990
+ ],
+ "firstInputDiff": {
+  "index": 422,
+  "round": 11,
+  "step": 2339,
+  "actor": 7,
+  "kind": "Recall",
+  "rerunKind": "Cast ability",
+  "original": "s2339 r11 Recall@10 actor1:7 (0,0)->(0,0) slot-1 pr0 x0,0",
+  "rerun": "s2339 r11 Cast ability@10 actor1:7 (0,0)->(11,96) slot1 pr0 x2,53",
+  "originalRec": [
+   2339,
+   11,
+   422,
+   11,
+   10,
+   1,
+   7,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ],
+  "rerunRec": [
+   2339,
+   11,
+   422,
+   6,
+   10,
+   1,
+   7,
+   0,
+   0,
+   11,
+   96,
+   1,
+   2,
+   0,
+   2,
+   53
+  ]
+ },
+ "roundsMatched": 12,
+ "rounds": [
+  878,
+  781
+ ],
+ "firstRoundDiff": {
+  "round": 12,
+  "step": 2347,
+  "rerunStep": 2348
+ },
+ "result": [
+  {
+   "outcome": 1,
+   "round": 877,
+   "gems": [
+    1014,
+    588
+   ]
+  },
+  {
+   "outcome": 1,
+   "round": 780,
+   "gems": [
+    1110,
+    474
+   ]
+  }
+ ],
+ "resultMatch": false,
+ "exact": false,
+ "exactIgnoringRollovers": false,
+ "firstInputDiffIgnoringRollovers": {
+  "index": 422,
+  "round": 11,
+  "step": 2339,
+  "actor": 7,
+  "kind": "Recall",
+  "rerunKind": "Cast ability",
+  "original": "s2339 r11 Recall@10 actor1:7 (0,0)->(0,0) slot-1 pr0 x0,0",
+  "rerun": "s2339 r11 Cast ability@10 actor1:7 (0,0)->(11,96) slot1 pr0 x2,53",
+  "originalRec": [
+   2339,
+   11,
+   422,
+   11,
+   10,
+   1,
+   7,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ],
+  "rerunRec": [
+   2339,
+   11,
+   422,
+   6,
+   10,
+   1,
+   7,
+   0,
+   0,
+   11,
+   96,
+   1,
+   2,
+   0,
+   2,
+   53
+  ]
+ }
+}

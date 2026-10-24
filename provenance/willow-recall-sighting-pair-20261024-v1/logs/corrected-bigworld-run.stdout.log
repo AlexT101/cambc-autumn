@@ -1,0 +1,9 @@
+Building /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33
+v33 is up to date
+Building /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-recall-sighting-4d08241-work
+willow-recall-sighting-4d08241-work is up to date
+[|] STARTING  v33 vs willow-recall-sighting-4d08241-work  01big-world
+    Replay: /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/outputs/corrected-v33-A-combined-B-big-world.repl26a
+[+] TEAM A WIN (v33)  v33 vs willow-recall-sighting-4d08241-work  01big-world  Round 0877/2000
+    Replay: /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/outputs/corrected-v33-A-combined-B-big-world.repl26a
+Finished: 1 replay bundles saved, 0 failed

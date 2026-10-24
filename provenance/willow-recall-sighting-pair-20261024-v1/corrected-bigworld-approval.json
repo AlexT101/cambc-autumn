@@ -1,0 +1,110 @@
+{
+  "schema": "review-before-execution/v1",
+  "status": "root verified; authorized for one execution",
+  "manifest_row": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-recall-sighting-4d08241-work /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/maps/01big-world.map26a /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/outputs/corrected-v33-A-combined-B-big-world.repl26a --statistics /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/outputs/corrected-v33-A-combined-B-big-world.statistics.json",
+  "physical_sides": {
+    "A": "frozen v33",
+    "B": "combined recall+sighting candidate"
+  },
+  "map": "maps/01big-world.map26a",
+  "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+  "normal_draft": true,
+  "release": true,
+  "fuel_quantum": 100000,
+  "jobs": 1,
+  "worker": {
+    "nice": 19,
+    "run_seconds": 0.1,
+    "stop_seconds": 0.9
+  },
+  "source_aggregate_sha256": {
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+    "combined_candidate": "29ac1251ddc63c1b3e824d9c1d6182df57890e62b3757d5e362fe15be3a91e60"
+  },
+  "release_binary_sha256": {
+    "v33_raw": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+    "v33_injected": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+    "combined_raw": "b4357edaa92c1ee650e17dfea1969717b507f1426727e73e60fa1586f7353b2d",
+    "combined_injected": "c558b0ad138ceda8eca89a7f43848624ac9568b4daf3550dc1e789169c44c881"
+  },
+  "runtime": {
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "sdk_cambc_h_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "sdk_imports_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502"
+  },
+  "misoriented_original_row": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-recall-sighting-4d08241-work /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/maps/01big-world.map26a /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/outputs/combined-B-v33-A-big-world.repl26a --statistics /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/outputs/combined-B-v33-A-big-world.statistics.json",
+  "misoriented_bundle_sha256": "c905bd9ef20dfe98b6a4f0222994dca6a2b87a2676b3fa68c5ef6f9ffd7cdc57",
+  "valid_pilgrimage_bundle_sha256": "49e0c92100a9908aacbcf0229ae5e316b680aac7685434d27b89062ab81323ca",
+  "note": "The original Big World row put the candidate first, making it physical A despite its filename. Preserve that bundle as an A-side control. Only this corrected v33-first row can qualify as candidate physical B.",
+  "pilgrimage_game": {
+    "path": "combined-A-v33-B-pilgrimage.repl26a",
+    "actual_team_a": "combined recall+sighting candidate",
+    "actual_team_b": "frozen v33",
+    "result": {
+      "winner": 0,
+      "outcome": 1,
+      "rounds": 1358,
+      "gems": [
+        1030,
+        210
+      ],
+      "steps": 271026
+    },
+    "draft": [
+      [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ]
+    ],
+    "side_assignment_correct": true
+  },
+  "original_misoriented_game": {
+    "path": "combined-B-v33-A-big-world.repl26a",
+    "actual_team_a": "combined recall+sighting candidate",
+    "actual_team_b": "frozen v33",
+    "result": {
+      "winner": 0,
+      "outcome": 1,
+      "rounds": 953,
+      "gems": [
+        1000,
+        757
+      ],
+      "steps": 210897
+    },
+    "draft": [
+      [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ]
+    ],
+    "saved_as": "A-side combined candidate control; not valid for requested candidate-B comparison"
+  },
+  "approval_record": {
+    "source": "root direct instruction in current task",
+    "reviewed_row_sha256": "ed3f4e878a5ee940f3ed45b55efec7fd9c3534a0975d67a347247dbec7d4f9b8",
+    "approved_copy_sha256": "ed3f4e878a5ee940f3ed45b55efec7fd9c3534a0975d67a347247dbec7d4f9b8",
+    "approved_copy_byte_identical_to_pending": true
+  }
+}

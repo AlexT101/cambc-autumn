@@ -1,0 +1,327 @@
+{
+  "schema": "recall-sighting-pair-audit/v1",
+  "source": {
+    "candidate": "bots/variants/willow-recall-sighting-4d08241-work",
+    "aggregate": "29ac1251ddc63c1b3e824d9c1d6182df57890e62b3757d5e362fe15be3a91e60",
+    "patch_sha256": "83433f94747168e0b64eb7223022944a61a12db8bf9ede147e195c1fa0fe660e",
+    "parent_aggregate": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+    "v33_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "toolchain": {
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "candidate_raw_wasm_sha256": "b4357edaa92c1ee650e17dfea1969717b507f1426727e73e60fa1586f7353b2d",
+    "candidate_injected_wasm_sha256": "c558b0ad138ceda8eca89a7f43848624ac9568b4daf3550dc1e789169c44c881",
+    "v33_raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+    "v33_injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+    "sdk_cambc_h_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "sdk_imports_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "sdk_bytes_and_mtimes_match_preflight": true
+  },
+  "runs": [
+    {
+      "name": "misordered_bigworld_candidate_A",
+      "ordered_assignment": {
+        "A": "combined candidate",
+        "B": "frozen v33"
+      },
+      "map": "01big-world.map26a",
+      "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+      "raw_bundle_sha256": "c905bd9ef20dfe98b6a4f0222994dca6a2b87a2676b3fa68c5ef6f9ffd7cdc57",
+      "score_A_B": [
+        1000,
+        757
+      ],
+      "round": 953,
+      "native_status": {
+        "A_rollovers": 3,
+        "A_errors": 0,
+        "B_rollovers": 8,
+        "B_errors": 0,
+        "rollover_actor_counts": {
+          "A": {
+            "Prism": 0,
+            "Vesper Vale": 0,
+            "Marcella": 0,
+            "Willow": 1,
+            "Heart of Ruin": 2
+          },
+          "B": {
+            "Prism": 1,
+            "Vesper Vale": 0,
+            "Marcella": 0,
+            "Willow": 3,
+            "Heart of Ruin": 4
+          }
+        }
+      },
+      "prism_candidate_A": {
+        "collected": 510,
+        "submitted": 510,
+        "end_bag": 0,
+        "deaths": 0
+      }
+    },
+    {
+      "name": "corrected_bigworld_candidate_B",
+      "ordered_assignment": {
+        "A": "frozen v33",
+        "B": "combined candidate"
+      },
+      "map": "01big-world.map26a",
+      "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+      "raw_bundle_sha256": "462c8998542c7ea32a30a4d42cdbe152c45868a806709b486e806d2cf9ccd832",
+      "score_A_B": [
+        1014,
+        588
+      ],
+      "round": 877,
+      "native_status": {
+        "A_rollovers": 4,
+        "A_errors": 0,
+        "B_rollovers": 3,
+        "B_errors": 0,
+        "rollover_actor_counts": {
+          "A": {
+            "Prism": 1,
+            "Vesper Vale": 0,
+            "Marcella": 0,
+            "Willow": 2,
+            "Heart of Ruin": 1
+          },
+          "B": {
+            "Prism": 0,
+            "Vesper Vale": 0,
+            "Marcella": 0,
+            "Willow": 1,
+            "Heart of Ruin": 2
+          }
+        }
+      },
+      "prism_candidate_B": {
+        "collected": 287,
+        "submitted": 0,
+        "end_bag": 287,
+        "deaths": 0
+      }
+    },
+    {
+      "name": "pilgrimage_candidate_A",
+      "ordered_assignment": {
+        "A": "combined candidate",
+        "B": "frozen v33"
+      },
+      "map": "00pilgrimage.map26a",
+      "map_sha256": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673",
+      "raw_bundle_sha256": "49e0c92100a9908aacbcf0229ae5e316b680aac7685434d27b89062ab81323ca",
+      "score_A_B": [
+        1030,
+        210
+      ],
+      "round": 1358,
+      "native_status": {
+        "A_rollovers": 0,
+        "A_errors": 0,
+        "B_rollovers": 6,
+        "B_errors": 0,
+        "rollover_actor_counts": {
+          "A": {
+            "Prism": 0,
+            "Vesper Vale": 0,
+            "Marcella": 0,
+            "Willow": 0,
+            "Heart of Ruin": 0
+          },
+          "B": {
+            "Prism": 2,
+            "Vesper Vale": 0,
+            "Marcella": 0,
+            "Willow": 3,
+            "Heart of Ruin": 1
+          }
+        }
+      },
+      "prism_candidate_A": {
+        "collected": 141,
+        "submitted": 141,
+        "end_bag": 0,
+        "deaths": 0
+      }
+    }
+  ],
+  "saved_control_comparisons": {
+    "misordered_bigworld_candidate_A_vs_parent_A": {
+      "inputs": [
+        35585,
+        35585
+      ],
+      "first_diff": {
+        "index": 405,
+        "round": 11,
+        "step": 2309,
+        "actor": 2,
+        "candidate_action": "Recall",
+        "reference_action": "Cast ability"
+      },
+      "rounds_matched": 12,
+      "final_score_A_B": [
+        1000,
+        757
+      ],
+      "final_round": 953,
+      "payload_exact": false
+    },
+    "misordered_bigworld_candidate_A_vs_recall_A": {
+      "inputs": [
+        35585,
+        35585
+      ],
+      "first_diff": {
+        "index": 405,
+        "round": 11,
+        "step": 2309,
+        "actor": 2,
+        "candidate_action": "Recall",
+        "reference_action": "Cast ability"
+      },
+      "rounds_matched": 12,
+      "final_score_A_B": [
+        1000,
+        757
+      ],
+      "final_round": 953,
+      "payload_exact": false
+    },
+    "corrected_bigworld_candidate_B_vs_parent_B": {
+      "inputs": [
+        32792,
+        28990
+      ],
+      "first_diff": {
+        "index": 422,
+        "round": 11,
+        "step": 2339,
+        "actor": 7,
+        "candidate_action": "Recall",
+        "reference_action": "Cast ability"
+      },
+      "rounds_matched": 12,
+      "final_score_candidate_A_B": [
+        1014,
+        588
+      ],
+      "parent_score_A_B": [
+        1110,
+        474
+      ],
+      "payload_exact": false
+    },
+    "corrected_bigworld_candidate_B_vs_recall_B": {
+      "inputs": [
+        32792,
+        32792
+      ],
+      "first_diff": {
+        "index": 422,
+        "round": 11,
+        "step": 2339,
+        "actor": 7,
+        "candidate_action": "Recall",
+        "reference_action": "Cast ability"
+      },
+      "rounds_matched": 12,
+      "final_score_A_B": [
+        1014,
+        588
+      ],
+      "round": 877,
+      "payload_exact": false
+    },
+    "pilgrimage_candidate_A_vs_parent_A": {
+      "inputs": [
+        51804,
+        51803
+      ],
+      "first_diff": {
+        "index": 45185,
+        "round": 1183,
+        "step": 236380,
+        "actor": 0,
+        "candidate_action": "Move",
+        "reference_action": "Recall"
+      },
+      "rounds_matched": 1184,
+      "final_score_A_B": [
+        1030,
+        210
+      ],
+      "round": 1358,
+      "payload_exact": false
+    },
+    "pilgrimage_candidate_A_vs_sighting_A": {
+      "inputs": [
+        51804,
+        51804
+      ],
+      "first_diff": null,
+      "rounds_matched": 1359,
+      "final_score_A_B": [
+        1030,
+        210
+      ],
+      "round": 1358,
+      "payload_exact": true
+    }
+  },
+  "r11_note": "For corrected candidate-B versus parent/recall-B, actor 7's first difference is candidate Recall versus reference Cast ability on camp 53 at step 2339. No nearby champion contact is visible in decoded public state/events. Round-snapshot turn statuses match through r11; mailbox payloads are not serialized, so remote shared sighting is unverified. Do not attribute this to an information-policy activation.",
+  "comparison_bindings": {
+    "misoriented_bigworld_candidate_A_vs_parent_A": {
+      "comparator_original_candidate": "outputs/combined-B-v33-A-big-world.repl26a",
+      "comparator_rerun_reference": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/parent-A-v33-B-big-world.repl26a",
+      "map": "01big-world.map26a",
+      "candidate_side": "A",
+      "reference_side": "A",
+      "receipt": "comparison-misoriented-A-vs-parent-A.json"
+    },
+    "misoriented_bigworld_candidate_A_vs_recall_A": {
+      "comparator_original_candidate": "outputs/combined-B-v33-A-big-world.repl26a",
+      "comparator_rerun_reference": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/finishing-recall-A-v33-B-big-world.repl26a",
+      "map": "01big-world.map26a",
+      "candidate_side": "A",
+      "reference_side": "A",
+      "receipt": "comparison-misoriented-A-vs-recall-A.json"
+    },
+    "corrected_bigworld_candidate_B_vs_parent_B": {
+      "comparator_original_candidate": "outputs/corrected-v33-A-combined-B-big-world.repl26a",
+      "comparator_rerun_reference": "provenance/willow-phased-solo-boss-4d08241-v1/outputs/latest-parent-B-vs-v33-big-world.repl26a",
+      "map": "01big-world.map26a",
+      "candidate_side": "B",
+      "reference_side": "B",
+      "receipt": "comparison-corrected-bigworld-vs-parent-B.json"
+    },
+    "corrected_bigworld_candidate_B_vs_recall_B": {
+      "comparator_original_candidate": "outputs/corrected-v33-A-combined-B-big-world.repl26a",
+      "comparator_rerun_reference": "provenance/willow-finishing-recall-bigworld-20261024-v1/outputs/finishing-recall-B-vs-v33-big-world.repl26a",
+      "map": "01big-world.map26a",
+      "candidate_side": "B",
+      "reference_side": "B",
+      "receipt": "comparison-corrected-bigworld-vs-recall-B.json"
+    },
+    "pilgrimage_candidate_A_vs_parent_A": {
+      "comparator_original_candidate": "outputs/combined-A-v33-B-pilgrimage.repl26a",
+      "comparator_rerun_reference": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/outputs/parent-A-vs-v33-pilgrimage.repl26a",
+      "map": "00pilgrimage.map26a",
+      "candidate_side": "A",
+      "reference_side": "A",
+      "receipt": "comparison-pilgrimage-vs-parent-A.json"
+    },
+    "pilgrimage_candidate_A_vs_sighting_A": {
+      "comparator_original_candidate": "outputs/combined-A-v33-B-pilgrimage.repl26a",
+      "comparator_rerun_reference": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/outputs/sighting-A-vs-v33-pilgrimage.repl26a",
+      "map": "00pilgrimage.map26a",
+      "candidate_side": "A",
+      "reference_side": "A",
+      "receipt": "comparison-pilgrimage-vs-sighting-A.json"
+    }
+  }
+}

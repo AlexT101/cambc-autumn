@@ -1,0 +1,86 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T10:01:39.506976+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "argv": [
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "run-batch",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/corrected-bigworld-approved.manifest",
+    "--jobs",
+    "1",
+    "--release",
+    "--fuel-quantum",
+    "100000",
+    "--log-limit",
+    "1073741824",
+    "--color",
+    "never"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/logs/corrected-bigworld-run.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/logs/corrected-bigworld-run.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.0236575,
+      "run_end_monotonic": 0.1309225
+    },
+    {
+      "run_start_monotonic": 1.036187333,
+      "run_end_monotonic": 1.139596166
+    },
+    {
+      "run_start_monotonic": 2.044830375,
+      "run_end_monotonic": 2.149290458
+    },
+    {
+      "run_start_monotonic": 3.054492416,
+      "run_end_monotonic": 3.158694875
+    },
+    {
+      "run_start_monotonic": 4.063919166,
+      "run_end_monotonic": 4.168448
+    },
+    {
+      "run_start_monotonic": 5.073613958,
+      "run_end_monotonic": 5.176750833
+    },
+    {
+      "run_start_monotonic": 6.0818605,
+      "run_end_monotonic": 6.186880125
+    },
+    {
+      "run_start_monotonic": 7.092031041,
+      "run_end_monotonic": 7.195063208
+    },
+    {
+      "run_start_monotonic": 8.100240083,
+      "run_end_monotonic": 8.204211833
+    },
+    {
+      "run_start_monotonic": 9.10938125,
+      "run_end_monotonic": 9.209998333
+    },
+    {
+      "run_start_monotonic": 10.115165416,
+      "run_end_monotonic": 10.219961125
+    },
+    {
+      "run_start_monotonic": 11.125106333,
+      "run_end_monotonic": 11.225916916
+    },
+    {
+      "run_start_monotonic": 12.131078375,
+      "run_end_monotonic": 12.236115333
+    }
+  ],
+  "pid": 31002,
+  "process_group_id": 31002,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T10:01:51.720918+00:00"
+}

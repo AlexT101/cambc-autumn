@@ -2961,3 +2961,25 @@ opponent6/0. Prism banks510 on Big World and141 on Pilgrimage, survives and
 ends empty in both. Source/binary/SDK pins remain unchanged. Thus these two
 additional cells show no observable gameplay drift, while the earlier
 Big World B witness changes precisely at the intended recall decision.
+
+The combined recall/sighting arm has now run on Big World both sides and
+Pilgrimage A. The first Big World row accidentally placed the candidate on A;
+its misleading B-side filename is retained and explicitly corrected in the
+receipt. A separately reviewed row supplied the missing candidate-B game.
+Scores are A1,000–757 at953, B588–1,014 at877, and Pilgrimage A1,030–210
+at1358. These match the recall-only outcomes, but do not establish identical
+behavior. On both Big World sides, Marcella first differs at round11: the
+combined arm omits a camp spell before its routine end-turn recall. There is
+no nearby enemy contact and no changed native rollover count. On Pilgrimage,
+combined exactly matches the sighting-only payload, including its late path
+change relative to the parent. Every candidate has zero native errors.
+
+The source review identifies additional pre-contact communication bookkeeping
+and existing fuel-sensitive farm selection as a plausible cause of the omitted
+spell, not a demonstrated explanation. A paired source-pinned branch trace
+would distinguish the causes, but is not required to release the independently
+validated recall correction. The sighting and combined arms remain preserved
+for diagnosis. The recall-only `781fe364...` child is selected for Khaos_v34
+preparation; its source review finds no remaining blocker. Upstream was fetched
+again and remains4d08241. No new submission or live unranked has occurred at
+this checkpoint. Willow-first ladder-manipulation batches remain excluded.

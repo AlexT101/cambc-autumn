@@ -1,0 +1,294 @@
+{
+  "schema": "compact-preservation-manifest/v1",
+  "purpose": "Side-correct combined recall+sighting game audit; no source edits or new games in this packaging step.",
+  "files": [
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/RESULT.md",
+      "bytes": 3610,
+      "sha256": "9f0a9e905ca95b3ecfdb689e2d2cbf9fe343f78600fbd9ab8cc94b0816f73843"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/RESULT.json",
+      "bytes": 10387,
+      "sha256": "1485435269f13bb25e627b7878556cc5a8741087537cfa455f51186ef6eb7600"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/compare_saved_controls.py",
+      "bytes": 1777,
+      "sha256": "3cfdd06f09843d796b86a856ccfd258cd61f80bf38130a6e3d67909823b28050"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/postbuild.json",
+      "bytes": 646,
+      "sha256": "0bf0108720d5eaaa11c0420ba44a193f4f66dda2e77ba53b628b06a0f8f9104b"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/two-games.manifest",
+      "bytes": 1803,
+      "sha256": "718dc4fc117a125a76ef23c19672483f558f6c040761a682ea495b3bc52cfa35"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/corrected-bigworld-row.pending",
+      "bytes": 920,
+      "sha256": "ed3f4e878a5ee940f3ed45b55efec7fd9c3534a0975d67a347247dbec7d4f9b8"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/corrected-bigworld-approved.manifest",
+      "bytes": 920,
+      "sha256": "ed3f4e878a5ee940f3ed45b55efec7fd9c3534a0975d67a347247dbec7d4f9b8"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/corrected-bigworld-approval.json",
+      "bytes": 5411,
+      "sha256": "27bc9cf7fef7b1f5747ffd635507dcaa8fd854b75476c546a17c14ef8083343e"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/corrected-bigworld-review.json",
+      "bytes": 5090,
+      "sha256": "e0b7b28229c78fc07689259940f75d908c75e4be9c7a796b52f231950209498c"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/comparison-misoriented-A-vs-parent-A.json",
+      "bytes": 1517,
+      "sha256": "bc436cb503f6253a130c3d69574a766d8854fe7c843803fb873c18a4f54c065f"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/comparison-misoriented-A-vs-recall-A.json",
+      "bytes": 1517,
+      "sha256": "bc436cb503f6253a130c3d69574a766d8854fe7c843803fb873c18a4f54c065f"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/comparison-corrected-bigworld-vs-parent-B.json",
+      "bytes": 1522,
+      "sha256": "952f81dc5e85b109e6f00e4d3005d3661fead06e29e4cf760918729ada957b00"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/comparison-corrected-bigworld-vs-recall-B.json",
+      "bytes": 1521,
+      "sha256": "9582c1b4af3ed00958f122369f1e322f109d02929cc1f3a3e429a62b1ececbe1"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/comparison-pilgrimage-vs-parent-A.json",
+      "bytes": 1564,
+      "sha256": "926a253e349b68b3579931263e051d7849b19a01a84e5540906261bc2a91e863"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/comparison-pilgrimage-vs-sighting-A.json",
+      "bytes": 432,
+      "sha256": "22da2bf814ee932b07982aa6ab325c4fe1bb7266bc880f44d1a9a8f6f93a4c8c"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/logs/corrected-bigworld-run.stdout.log",
+      "bytes": 1044,
+      "sha256": "aa40e3c4697ef6f1e55d82a57040c50066af3d315006d7a4b149103fe787eea8"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/logs/corrected-bigworld-run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/logs/corrected-bigworld-extract.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/receipts/corrected-bigworld-run.duty.json",
+      "bytes": 2653,
+      "sha256": "4fd0fb52dafed19ab97b1d1673234e0366a8203ebf3579e1a9e8d1043f8e27ef"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/receipts/corrected-bigworld-extract.duty.json",
+      "bytes": 4301,
+      "sha256": "47a0c25e2481cb62a745179f885e4aa40d2b6c6b7adaafc82a3eff09eaa7c747"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/receipts/comparisons.duty.json",
+      "bytes": 36836,
+      "sha256": "567fc9b42dd8c933a7ee6cffc7d474fb8d700ccf8e0a9862a052d2e22b0d50d8"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-build-20261024-v1/preflight.json",
+      "bytes": 1209,
+      "sha256": "cc721eba4c8cc3a498490b17fe0dde541ed1a8fe65579f129e186d611a478b80"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-build-20261024-v1/receipts/build.duty.json",
+      "bytes": 3844,
+      "sha256": "9fb3f116d60921ac6d01050a6305e46b5ce4b6744ebb70459bda96d3cc8be02d"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-build-20261024-v1/logs/build.stdout.log",
+      "bytes": 4324,
+      "sha256": "37a562aae5519bba3c09d3b19902a24eaf5f6ff23fc6772b03889e4894c127d3"
+    },
+    {
+      "path": "provenance/willow-recall-sighting-build-20261024-v1/logs/build.stderr.log",
+      "bytes": 180,
+      "sha256": "ec996f44c37aa3a11b8893a81d8de92ffd2349d6721210c22873430f0517e322"
+    },
+    {
+      "path": "research/willow-recall-sighting-4d08241-source-review-20261024-v1.md",
+      "bytes": 4500,
+      "sha256": "04ff4a7621bfe92f8eef6042a191efe2bf4ae1ed0d945e2b6957d7a5a091e2ef"
+    },
+    {
+      "path": "research/willow-recall-sighting-4d08241-source-v1.patch",
+      "bytes": 15209,
+      "sha256": "83433f94747168e0b64eb7223022944a61a12db8bf9ede147e195c1fa0fe660e"
+    }
+  ],
+  "replay_and_raw_exclusions": [
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/logs/corrected-bigworld-extract.stdout.log",
+      "bytes": 246,
+      "sha256": "fa6381a14684935ab11c9351abb735ee218cbc79eae512d678ead4f9dce95736",
+      "note": "Preserved byte-exact locally; raw trailing whitespace excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/outputs/combined-B-v33-A-big-world.repl26a",
+      "bytes": 60001,
+      "sha256": "c905bd9ef20dfe98b6a4f0222994dca6a2b87a2676b3fa68c5ef6f9ffd7cdc57",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/outputs/corrected-v33-A-combined-B-big-world.repl26a",
+      "bytes": 54310,
+      "sha256": "462c8998542c7ea32a30a4d42cdbe152c45868a806709b486e806d2cf9ccd832",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/outputs/combined-A-v33-B-pilgrimage.repl26a",
+      "bytes": 79889,
+      "sha256": "49e0c92100a9908aacbcf0229ae5e316b680aac7685434d27b89062ab81323ca",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/outputs/combined-B-v33-A-big-world.statistics.json",
+      "bytes": 56667,
+      "sha256": "95a0484b391d37eceac57f5a2a2b202ffce9b8cc5b736a1be6edfe6b39387bb2",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/outputs/corrected-v33-A-combined-B-big-world.statistics.json",
+      "bytes": 54799,
+      "sha256": "5d34e0649fcac35b60d54ed77201b56ed9133ceb83bbc54a70347a7d35dc1572",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/outputs/combined-A-v33-B-pilgrimage.statistics.json",
+      "bytes": 69055,
+      "sha256": "0f115e94d831fa578949a17b3bbea23b7e3527e0874cb0e9177c6fab32a503e2",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/extracted/c905bd9ef20dfe98/events.jsonl.gz",
+      "bytes": 270059,
+      "sha256": "202b3773287bcaf52f12bb6702fd6b43bcc676c8938422eec98cee7ff8d00017",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/extracted/c905bd9ef20dfe98/rounds.json.gz",
+      "bytes": 59307,
+      "sha256": "cfe5651f2fba24ebd0d265e3ebf907b7829ebcbe7305615ef639a7ce6228b0ce",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/extracted/462c8998542c7ea3/events.jsonl.gz",
+      "bytes": 248720,
+      "sha256": "5a7eecfc6e47e4ec20d4ef5dbf76855cd927eeb0b72e459e3ad50fd9e93903f5",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/extracted/462c8998542c7ea3/rounds.json.gz",
+      "bytes": 54866,
+      "sha256": "b3523ed08055fa7a391c652ecfcbffe19175a2ff6a8a27661d0b01c6651f87f0",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/extracted/49e0c92100a9908a/events.jsonl.gz",
+      "bytes": 369743,
+      "sha256": "8494d7259b2afd53d39118411ca25dabd291ce1e4e1b4a39eb760b7f485d1cab",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/extracted/49e0c92100a9908a/rounds.json.gz",
+      "bytes": 78346,
+      "sha256": "0b9bedaa9fa4621e97d6743cf3b7c4200613e0d99d1f0ad0000385a535db6d13",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/logs/extract.stdout.log",
+      "bytes": 237,
+      "sha256": "25a944153ced57a26e673b5095c5b328ef7df0da5fa2649bd1950ab3913131ce",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/logs/run.stdout.log",
+      "bytes": 1639,
+      "sha256": "b132d5efd195a3d40c82319b910d171869158b073d9595d8b570fd4b8da99032",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/comparison-misoriented-bigworld-A-vs-parent-A.json",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "note": "Preserved locally; excluded from compact staging."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/logs/comparisons.stderr.log",
+      "bytes": 648,
+      "sha256": "b16228bac08abe9c1b0cdd14f6ecd8921e330a513d07ca4769018b61cbcff346",
+      "note": "Failed initial saved-control comparison setup; preserved byte-exact."
+    },
+    {
+      "path": "provenance/willow-recall-sighting-pair-20261024-v1/logs/comparisons.stdout.log",
+      "bytes": 110,
+      "sha256": "7ab222ba8f4b2a3d04ee3ba563fa0b925af248322e045da9dccc9563a460b6d1",
+      "note": "Initial comparison setup output; preserved byte-exact."
+    }
+  ],
+  "saved_control_payload_pins": [
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/parent-A-v33-B-big-world.repl26a",
+      "bytes": 59952,
+      "sha256": "c9f3366418f1b906834e1bab149177fc30473f8b9d3596359dd01efe4107a367"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/finishing-recall-A-v33-B-big-world.repl26a",
+      "bytes": 59967,
+      "sha256": "18d05ffa024b8d6bdfa88a680a2624c308031d6b9a21c8da2515a4551b1d215a"
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/outputs/latest-parent-B-vs-v33-big-world.repl26a",
+      "bytes": 48649,
+      "sha256": "15a703f86fd6cbf7ca9b14fddc9136f2100bc5afce87520905b274c82cbe670c"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-bigworld-20261024-v1/outputs/finishing-recall-B-vs-v33-big-world.repl26a",
+      "bytes": 54300,
+      "sha256": "bcddd6777bd59929e8033bef869b8e73b8d9819de89d3c4b99fe5b8a9afa5f8f"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/outputs/parent-A-vs-v33-pilgrimage.repl26a",
+      "bytes": 79876,
+      "sha256": "85dd81ebcacf6b1265c79bc8afd0605d8fa68401ff7d8a8e68b49cb4fa81d1da"
+    },
+    {
+      "path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/outputs/sighting-A-vs-v33-pilgrimage.repl26a",
+      "bytes": 79904,
+      "sha256": "047361a2b4f1f1a2aaf2a4e125dd193b4084d288e8c0c97a571d455c216671bc"
+    }
+  ],
+  "pins": {
+    "candidate_source_aggregate": "29ac1251ddc63c1b3e824d9c1d6182df57890e62b3757d5e362fe15be3a91e60",
+    "candidate_raw_wasm": "b4357edaa92c1ee650e17dfea1969717b507f1426727e73e60fa1586f7353b2d",
+    "candidate_injected_wasm": "c558b0ad138ceda8eca89a7f43848624ac9568b4daf3550dc1e789169c44c881",
+    "v33_raw_wasm": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+    "v33_injected_wasm": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "big_world_map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+    "pilgrimage_map_sha256": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673"
+  }
+}

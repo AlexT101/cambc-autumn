@@ -1,0 +1,153 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T10:02:04.531744+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "node",
+    "tools/replay/extract.mjs",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/outputs/corrected-v33-A-combined-B-big-world.repl26a",
+    "--threads",
+    "1",
+    "--out",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/extracted"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/logs/corrected-bigworld-extract.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-recall-sighting-pair-20261024-v1/logs/corrected-bigworld-extract.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.022944833,
+      "run_end_monotonic": 0.124231916
+    },
+    {
+      "run_start_monotonic": 1.029614041,
+      "run_end_monotonic": 1.134340125
+    },
+    {
+      "run_start_monotonic": 2.03612725,
+      "run_end_monotonic": 2.140747416
+    },
+    {
+      "run_start_monotonic": 3.042132041,
+      "run_end_monotonic": 3.146354333
+    },
+    {
+      "run_start_monotonic": 4.048826,
+      "run_end_monotonic": 4.15366575
+    },
+    {
+      "run_start_monotonic": 5.057655583,
+      "run_end_monotonic": 5.160446666
+    },
+    {
+      "run_start_monotonic": 6.065606708,
+      "run_end_monotonic": 6.167773291
+    },
+    {
+      "run_start_monotonic": 7.07291475,
+      "run_end_monotonic": 7.176413208
+    },
+    {
+      "run_start_monotonic": 8.081634583,
+      "run_end_monotonic": 8.183040708
+    },
+    {
+      "run_start_monotonic": 9.087470916,
+      "run_end_monotonic": 9.192495041
+    },
+    {
+      "run_start_monotonic": 10.097637291,
+      "run_end_monotonic": 10.202654833
+    },
+    {
+      "run_start_monotonic": 11.10655175,
+      "run_end_monotonic": 11.208251208
+    },
+    {
+      "run_start_monotonic": 12.11344475,
+      "run_end_monotonic": 12.218330666
+    },
+    {
+      "run_start_monotonic": 13.119581208,
+      "run_end_monotonic": 13.224231416
+    },
+    {
+      "run_start_monotonic": 14.129473333,
+      "run_end_monotonic": 14.2327115
+    },
+    {
+      "run_start_monotonic": 15.137851333,
+      "run_end_monotonic": 15.239946125
+    },
+    {
+      "run_start_monotonic": 16.143364916,
+      "run_end_monotonic": 16.248036125
+    },
+    {
+      "run_start_monotonic": 17.15323225,
+      "run_end_monotonic": 17.258252125
+    },
+    {
+      "run_start_monotonic": 18.163454333,
+      "run_end_monotonic": 18.267774208
+    },
+    {
+      "run_start_monotonic": 19.172957125,
+      "run_end_monotonic": 19.27436625
+    },
+    {
+      "run_start_monotonic": 20.1795515,
+      "run_end_monotonic": 20.280291791
+    },
+    {
+      "run_start_monotonic": 21.184606333,
+      "run_end_monotonic": 21.286304375
+    },
+    {
+      "run_start_monotonic": 22.190867375,
+      "run_end_monotonic": 22.2958885
+    },
+    {
+      "run_start_monotonic": 23.201050541,
+      "run_end_monotonic": 23.302246916
+    },
+    {
+      "run_start_monotonic": 24.207502333,
+      "run_end_monotonic": 24.30870975
+    },
+    {
+      "run_start_monotonic": 25.213897291,
+      "run_end_monotonic": 25.318473083
+    },
+    {
+      "run_start_monotonic": 26.223605791,
+      "run_end_monotonic": 26.328628375
+    },
+    {
+      "run_start_monotonic": 27.233805625,
+      "run_end_monotonic": 27.337620708
+    },
+    {
+      "run_start_monotonic": 28.242829291,
+      "run_end_monotonic": 28.347071916
+    },
+    {
+      "run_start_monotonic": 29.252244083,
+      "run_end_monotonic": 29.353490125
+    },
+    {
+      "run_start_monotonic": 30.258684416,
+      "run_end_monotonic": 30.360460333
+    }
+  ],
+  "pid": 31240,
+  "process_group_id": 31240,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T10:02:34.871270+00:00"
+}
