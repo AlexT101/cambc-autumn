@@ -1961,3 +1961,35 @@ The separate9b compound versus frozenv33 full1104 preflight is ready, with552 ma
 explicitly reversed physical A/B orders. Run-manifest SHA256 is
 `cfafbb2c0eac4a1ae24057111980834e3991b4a099f4eda8254fde0b07fc640e`.
 It has not built or run. Incoming live-loss analysis has the single heavy worker first.
+
+### Fresh public losses and controls: October 23 evening
+
+The incoming-loss review freezes150 ranked history rows and seven replay identities,
+with five new extracts, two actor-own windows and a full native status audit of those
+seven. Latest50 are26–24 versus55–45 in the previous100, with changing maps/sides and
+unknown submitted executables. One0–5 Claudus group uniquely uses our Willow-first
+drafts; its sampled Lanes game has no recorded draft rollover/error. Opponent adaptation
+is not established. Both sides' submission IDs remain unavailable through the CLI.
+See `incoming-loss-adaptation-review-20261023-v1.md` for exact inventory and limitations.
+
+Farm's Prism806 sees a24HP awake Elk within legal basic range while holding280 gems.
+His chosen movement takes lethal126 camp damage. Killing that member and staying
+reduces the known next camp-phase bound to84<120HP; a different nearby step also has
+a nonlethal known camp bound. This motivates immediate-survival precedence over exit
+burden, followed by a separate emergency basic-kill option. It does not establish a
+whole escape, safe bank or live source branch. Retention remains economically useful:
+Prism supplies66% of team camp damage, with420 Focus from the carried280 gems.
+
+Corners' inspected Willow death is pursuit by an already-visible Vendetta, without a
+demonstrated late escape. Monolith loses despite10–0 kills and comparable camp damage;
+enemy Vesper captures the256-gem boss twice. BigWorld's win has the same zero-gold Willow
+pattern as the earlier loss, while Vesper's output is much higher. These are distinct
+decision/allocation questions, not evidence for blanket Willow or Prism-retention removal.
+Own native play rollovers total56 across the seven selected games, with no recorded own
+BotError; public opponent zero counts are unavailable/redacted, not a clean-runtime result.
+
+After the bounded replay work released the worker,9b's fresh Release build passed and
+its reviewed full1104 comparison began. Raw artifact SHA256 is
+`735adcd4437ddbee2492a90971659c3e4b7b9089ebd2185e57fa3a432ef1d2fc`;
+injected SHA256 is`2edf180d24cff911c9918f23c0dc4722b856f558d4538c9e9c01e64a3c5e94dd`.
+Source, reference artifacts and all552 map pins match preflight. Results remain pending.
