@@ -2088,5 +2088,34 @@ admission remain distinct unresolved mechanisms.
 
 The local9b Focus-plus-optional-make-way compound completed all1104 scheduled games
 against frozenv33 at518–586, versus its4db parent's524–580 on the same panel. This is
-not an overall improvement. Full native/error audits and post-run pin verification
-are still pending; no source is promoted or release submitted from this result.
+not an overall improvement. The completed full-state audit records4344 candidate play
+rollovers (A2247/B2097) versus5186 reference, with zero native BotError in all phases.
+Caught-action and turn-order audits are both clean across1104; source,552 maps,
+artifacts,CLI,engine and SDK postpins pass. Whole-match rollover totals are not a
+paired per-turn fuel comparison. No source is promoted or release submitted.
+
+### Incoming own-view decisions and new-base survival review
+
+The next ranked-only intake after02:31:39.616Z contains15 games,12–3, all our physicalA.
+All opponent ordered drafts recur in the prior175 rows. Ambush repeats a same-side,
+same-draft Claudus loss. This does not establish adaptation or source stability; see
+`incoming-loss-followup-20261024-v2.md`.
+
+The three public own-view exports completed33 normal actor turns with pinned inputs
+and explicitly unknown live source. Gold Rush Vesper trades at(17,15) while the enemy
+occupies gold group2 at(17,18). Reaching(17,16) from his r18 origin requires both dash
+and walk, sacrificing a basic; direct dash is out of range. This nominates an economic
+movement comparison, not a free capture or proven safe counterplay. Current source's
+gold contest omissions and search action constraints are mapped separately.
+
+Starvation shows Prism taking repeated adjacent Vendetta hits, then retreating, with
+Willow's ready heal and in-range position failing to coincide in the inspected window.
+It nominates support availability, not a proved missed heal. Fracture Willow heals
+Marcella then retreats under camp attrition/pursuit. At648 she cancels and restarts a
+recall without another action, losing channel progress; this is not a demonstrated
+saved death. See `incoming-loss-own-view-review-20261024-v1.md` for every inspected turn.
+
+Independent source review passes for the exact Astraeus survival-first9b1fd50 and
+emergency-basic8878fff ports. The helper subtracts the same charged camp contribution
+under the new SafetyBound accounting, while upstream111/112 and support paths remain.
+They remain unbuilt and need fresh activation; old4db outcomes cannot transfer.
