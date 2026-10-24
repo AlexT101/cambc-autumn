@@ -1590,3 +1590,32 @@ heavy-turn costs, rollover behavior and preserved actions matter. First cold ini
 allocates13200 payload bytes at100×100 after a6000 per-tile allowance plus10000 end reserve.
 This is a source-review concern about the reserve, not a proven rollover. See
 `willow-upstream-c71be8c-source-review.md`.
+
+The isolated integration completes all16 high-fuel pairs with byte-identical complete native
+replay payloads. Across83763 own turns after round1, total fuel rises from3271380744 to3898892321
+(+19.18%), while turns above100000 fall624→492 and the maximum falls231256→221411. The queue
+spends spare fuel preparing later work; these counts do not establish real-budget behavior.
+Round1's summed fuel delta is+443892 and is not a claim that each first turn fits200000.
+Native rollovers and Bot Errors are zero at100M; candidate caught errors are zero, and the
+emulator's six code97 markers match the controls. All16 extracts succeed with19 earnedGold
+soft notes. Two complete Ambush attempts were duplicated after the adapter failed while
+forming a log filename; their payload/fuel hashes match the successful reruns and they are
+counted once. Both attempts and successful runtime logs are preserved. See
+`replays/willow-upstream-c71be8c-integrated-fuelbench16-20261023-v2/RESULTS-v2.md` and
+`postflight-v2.json`. Eight separate default-budget cells are queued after the item smoke
+tests; canonical remainsa67 until those results are assessed.
+
+### Bounded stationary crew contribution prepared separately
+
+An isolated fd99 child,10310292, adds an early stationary attack option for ordinary ranged
+farming when the full-clear affordability gate rejects already-active shared work. It requires
+fresh visible camp work and a visible ally in actual basic reach, preserves nonincumbent claims,
+and charges all static camp strikers in reach without ally, kill, healing or sleep discounts.
+Current HP must retain the existing35% reserve after that phase, and current-tile modeled enemy
+hits/stuns reject the extra option. Sixteen group memos, one phase sum and at most one threat
+evaluation bound the added work. Later moving attacks, ranking and routing retain fd99 behavior.
+This is a one-phase policy hypothesis, not a full-clear or escape guarantee, and does not claim
+to recover the sleeping-camp BigWorld B39 example. Actual-source review passes with no blocker;
+see `willow-stationary-crew-source-review.md`. No runtime, canonical change or release claim.
+Snapshots and exact deltas are preserved in
+`provenance/willow-stationary-crew-20261023-v1/`.

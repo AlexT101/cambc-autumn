@@ -1,0 +1,97 @@
+diff --git a/bots/variants/willow-sustainable-crew-fallback-work/src/bot.cpp b/bots/variants/willow-stationary-crew-work/src/bot.cpp
+index 1e7a967..0f9dd05 100644
+--- a/bots/variants/willow-sustainable-crew-fallback-work/src/bot.cpp
++++ b/bots/variants/willow-stationary-crew-work/src/bot.cpp
+@@ -231,7 +231,10 @@ template <class Allowed> CampAttackTargets camp_attack_targets(const World& worl
+     for (auto p : positions_within(live_camp_tiles(), here, range)) {
+         const int g = map.group_at(p);
+         if (g < 0 || (map.groups[g].has_monolith && g != siege_group())) continue;
+-        const bool ordinary = allowed(g);
++        const bool ordinary = [&] {
++            if constexpr (requires { allowed(g, here); }) return allowed(g, here);
++            else return allowed(g);
++        }();
+         const bool resource = resources && !map.groups[g].has_monolith && map.groups[g].strength <= 0;
+         if (!ordinary && !resource) continue;
+         const auto& members = map.groups[g].members;
+@@ -1760,8 +1763,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear. A
+     // group that hits back and that we will not finish is only woken by it: hit one only while an
+     // ally clears it or, melee, once every striker is awake anyway.
+-    const auto passing = [&](int g) __attribute__((always_inline)) {
+-        if (!affordable(g)) return false;
++    const auto passing = [&](int g, bool* unaffordable = nullptr) __attribute__((always_inline)) {
++        const bool fits = affordable(g);
++        if (unaffordable) *unaffordable = !fits;
++        if (!fits) return false;
+         if (g == memory.farm_group) return true;
+         if (taken(g)) return false;
+         if (groups[g].strength > 0) return ally_engaged(world, g) || (melee && world.camps[g].fully_awake());
+@@ -1852,7 +1857,66 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     const auto attack_in_range = [&]() __attribute__((always_inline)) {
+         CampAttackTargets resources;
+         const bool ordinary = !melee && decision == 'F' && !memory.banking && !memory.siege && siege_group() < 0;
+-        const auto targets = camp_attack_targets(world, passing, ordinary ? &resources : nullptr);
++        struct WorkCheck { int group; bool eligible; };
++        std::array<WorkCheck, 16> work_checks;
++        int work_count = 0;
++        bool phase_known = false, phase_safe = false;
++        const auto stationary_work = [&](int g, vec2 here) __attribute__((always_inline)) {
++            if (!ordinary || banks_bag || (g != memory.farm_group && taken(g))) return false;
++            for (int i = 0; i < work_count; ++i)
++                if (work_checks[i].group == g) return work_checks[i].eligible;
++            if (work_count == static_cast<int>(work_checks.size())) return false;
++            auto& checked = work_checks[work_count++];
++            checked = {g, false};
++            const auto& G = groups[g];
++            const auto& c = world.camps[g];
++            if (c.state != CampState::alive || c.state_round != world.round || !c.fully_awake()
++                || c.last_damaged_round < world.round - 1) return false;
++            bool useful = false;
++            for (std::size_t i = 0; i < G.members.size(); ++i)
++                if (c.health[i] > 0 && c.health_round[i] == world.round && test(world.visible, G.members[i].pos)
++                    && dist(here, G.members[i].pos) <= range) {
++                    useful = true;
++                    break;
++                }
++            if (!useful) return false;
++            bool worker = false;
++            for (const auto& a : world.allies) {
++                if (a.is_self || !a.alive || !a.visible || a.channel != Channel::none) continue;
++                const int claim = comms::claim_of(world, a.index);
++                if (claim >= 0 && claim != g) continue;
++                for (std::size_t i = 0; i < G.members.size(); ++i)
++                    if (c.health[i] > 0 && c.health_round[i] == world.round && test(world.visible, G.members[i].pos)
++                        && dist(a.pos, G.members[i].pos) <= a.facts().attack_range()) {
++                        worker = true;
++                        break;
++                    }
++                if (worker) break;
++            }
++            if (!worker) return false;
++            if (!phase_known) {
++                // Charge every static striker at this tile, without borrowing protection or a kill.
++                float phase = 0;
++                for (const int h : map.groups_near(here, map.max_camp_reach))
++                    for (const auto& m : groups[h].members)
++                        if (m.strength > 0 && dist(here, m.pos) <= m.reach) phase += m.strength;
++                phase_safe = health - soften * phase >= params::recall_health_fraction * max_health;
++                if (phase_safe) {
++                    std::array<Safety::ThreatAt, 16> threats;
++                    const int n = safety.threats_at(here, threats);
++                    for (int i = 0; i < n; ++i)
++                        if (threats[i].blow.hits || threats[i].blow.stuns) phase_safe = false;
++                }
++                phase_known = true;
++            }
++            return checked.eligible = phase_safe;
++        };
++        const auto allowed = [&](int g, vec2 here) __attribute__((always_inline)) {
++            bool unaffordable = false;
++            return passing(g, &unaffordable) || (unaffordable && stationary_work(g, here));
++        };
++        const auto targets = camp_attack_targets(world, allowed, ordinary ? &resources : nullptr);
++        if (work_count > 0) world.throw_if_stale();
+         int hit = -1;
+         if (ordinary) {
+             const int preferred = prefer_partial(targets, resources);
