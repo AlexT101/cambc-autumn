@@ -592,3 +592,13 @@ check while an enemy is in its reach, since the nearest champion takes its hits.
   fresh suite 54.4% of 272 vs 50.0%. Our Monolith captures there went from 11 to 33.
 - Against 4d08241 on the full suites: 49.9% of 1104 (47.0-52.9; ladder 50.0, gen 50.0, gen-s1 49.8), out-of-fuel
   turns 2779 vs 2743. Against hyperion: 50.5%.
+
+## 121: Willow takes no chase (astraeus, 2026-10-24)
+
+`prey()` returns null for Willow: `want_home` sends it home whenever an enemy is likely to hit it ("Willow holds no
+fight"), so a chase walked it into that reach to leave the next turn (1,214 chases in a trace, 85% never landed a hit,
+0.9% of our kills). Willow is drafted only on 5-pick maps.
+
+- Against 5d43ecf's parent d3cc38f on the 190 five-pick maps of `maps/`, `maps/gen`, `maps/gen-s1`: 49.5% of 380
+  (44.5-54.5), out-of-fuel turns 1814 vs 1903. Bundled with idea "Vesper attacks then dashes" on the full suites,
+  5-pick maps read 50.0% of 380.

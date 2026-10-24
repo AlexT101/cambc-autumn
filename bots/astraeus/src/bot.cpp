@@ -3169,7 +3169,8 @@ int intercept_steps(const World& world, const ChampionBelief& e, vec2 here) {
 // fight we win even when they strike first; never one on or next to its spawn, where it heals.
 const ChampionBelief* prey(const World& world, Safety& safety) {
     world.throw_if_stale();
-    if (!enemy_seen(world)) return nullptr;
+    // Willow holds no fight (want_home): a chase walks it into reach only to leave next turn.
+    if (!enemy_seen(world) || world.me().type == cambc::champion_type::willow) return nullptr;
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
     std::optional<float> strength; // read once a candidate needs it
