@@ -106,6 +106,15 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   26.5% (30-59 bags +85%, from `chain_bag_limit` 60), deaths with 10+ gems 939 vs 729, net tributed -6 a game.
   Chaining unless a credible enemy is within `pursuit_steps` plus our walk to an altar (a0fbff0): 48.9%, out-of-fuel
   turns +5.5%. Dropped. If tried on the ladder, use v1's limit of 30: the 30-59 bags cause most of the extra loss.
+  On astraeus (2026-10-24, `bots/variants/b12-chain45` against c2f1350b): `may_chain` refuses only for
+  `credible_enemy_may_hit_within(here, pursuit_steps)` (any_threat's credibility, bounded by reach + 3), and
+  `chain_bag_limit` 30 -> 45 (CHANGES 119's carrier pursuit check covers bags from `brake_bag` 11). 51.4% of 1104
+  (48.5-54.4; ladder 53.8, gen 55.1, gen-s1 47.5), out-of-fuel turns 2367 vs 2446; fresh suite (seed 7511) 49.2% of
+  512 (44.9-53.5). Against hyperion 54.7% of 1104 where REF reads 53.1% (gen 56.4 vs 47.9, gen-s1 53.7 vs 57.4: the
+  same split). In its A/B games, CAND vs REF a game (ladder / gen / gen-s1): tributes 22.4/29.7/29.9 vs 25.4/32.7/33.4,
+  non-Prism mean bag 26.7/21.9/21.1 vs 24.1/19.0/18.8, alive turns carrying a bag 43/41/42% vs 38/37/38%, turns
+  walking a bag toward an altar or tributing level (16.6/16.4/16.8% vs 15.6/15.9/16.5%), gems lost on death
+  193/80/97 vs 147/76/79, gems tributed 746/807/764 vs 707/760/789. Level; not merged, the variant is kept.
 - Worst ladder maps against the top 20 (`strat/maps`, 2026-10-23; 624 games, 57% overall). Adjusted for opponent
   strength: 00interlock 21%, 00swirl 23%, 00rushbait_v2 25%, 00stampede 27%, 00corners 28%, 00great_wall 30%. In
   general, losses come from groups about equally far from both spawns: the opponents take 405 gems a game there in our
