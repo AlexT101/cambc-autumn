@@ -239,6 +239,15 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   altar (`p2/intercept-first-main` 99248f8): 50.5% of 1104 (47.6-53.5), but both teams near 1000 at once is too rare
   locally to measure; a logic call, not a measured one. Ported to astraeus as CHANGES 126 (49.4% of 1104).
 
+## Draft (2026-10-24, astraeus against top-10 team proxies)
+
+Details and the per-team table in [hyperion/DRAFT.md](hyperion/DRAFT.md#astraeus-draft-search-2026-10-24).
+
+- 3 picks: Marcella Vendetta HoR over Prism Vesper HoR, +16.5 ±6.5 on all maps, +17.3 on a fresh suite (CHANGES 134).
+- 4 picks: no single swap beat Prism Vesper Marcella HoR; Ryth for HoR -8.7 ±6.7 on all maps.
+- 5 picks: Tavi or Ryth for Prism level on all maps and on the fresh suite; every other single swap level or worse.
+- Counter picks: no matchup difference beyond noise, so no rule.
+
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 
 Hecate vs hecate with only the draft changed, each pick on maps of its pick count ([hyperion/DRAFT.md](hyperion/DRAFT.md)).

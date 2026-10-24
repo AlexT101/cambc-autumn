@@ -51,6 +51,8 @@ py tools/variants/matrix.py --focus --cols hecate@                        # each
 py tools/variants/matrix.py --resume replays/matrix-TIMESTAMP             # --report: rewrite reports only
 ```
 
+[draft_search.py](variants/draft_search.py) is a library for astraeus's per-pick-count drafts (`params::draft_three/four/five`, `draft_counters`) against proxies of the top-10 teams, with paired results cached in `replays/ds/db.jsonl` (method in [DRAFT.md](../research/hyperion/DRAFT.md)).
+
 matrix.py plays one batch per distinct pair (`--bot` rows, `--vs-bot` columns; identical entries are mirrors, reported as team A's win rate) and writes `replays/matrix-TIMESTAMP/`.
 
 ## Fuel: tools/fuel
