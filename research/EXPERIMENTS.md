@@ -520,6 +520,14 @@ another harmless group was kept (CHANGES 91).
   ladder 51.2, gen 49.0, gen-s1 49.2), out-of-fuel turns 2309 vs 2201. A debug trace (3 games) had it firing as
   meant: 34 stand verdicts with an unseen joiner, 12 flipped from won to lost. Dropped. A likely cause (not
   tested): the nearest possible tile puts a 1-2 round stale enemy 1-2 tiles closer than it probably is.
+- Double turns from turn order (`b7-bands`, 2026-10-24, against 2b34c2f). By the rules a champion gets two actions
+  with no enemy between only by acting after an enemy in round R and before it in R+1, and acting before an enemy
+  next round never hands it a double: astraeus already prices this in `offer_kills` (full value when the enemy has
+  acted, via `can_act_before`), idle low and in-contact high in the teacher scale. But the teacher six (our whole
+  draft) skip the bands since CHANGES 82, so it never ran for them. Letting every champion bid the kill band (kills
+  and channel cancels needing us first; heal, escape and channel bids still non-teacher only): 49.3% of 1104
+  (46.3-52.2; ladder 47.5, gen 49.8, gen-s1 49.0), out-of-fuel turns 2268 vs 2166. Fired ~7 times a game (Prism
+  mostly). Dropped. herbert's secret LAST/FIRST bands add nothing over this: priorities are readable in sight.
 
 ## Fuel
 

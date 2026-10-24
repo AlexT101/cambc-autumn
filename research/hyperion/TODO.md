@@ -59,9 +59,6 @@ Each needs an A/B (see [../EXPERIMENTS.md](../EXPERIMENTS.md) first). Bundle rem
 - Behaviour: one `run_home()` for `retreat()` and `carry_bag`'s retreat; drop kite's contested branch; pack-zone
   ratio `(home || hurt) ? 2.0 : none`; walk to lock an altar where a visible enemy tributes a big bag (`Altar::lock_tiles()` as goals); spell-clear pricing (`spell_clear_rounds`) tested both
   ways; probabilistic `threatened()` removed (risky: it gates recalls). Ren's specials change only on ladder evidence.
-- Two-band turn order with double turns (from HerbertTheBird's deleted herbert bot, `git show e32257b:bots/herbert/src/bands.cpp`):
-  priorities in a secret LAST band [1, M) and FIRST band [M, 2M); moving LAST -> FIRST buys two actions in a row.
-  Never tried here.
 - The enemy's two-turn chain (both slots across two turns, slots readied for turn 2): lost as w2-chain (47.1%,
   ladder 52.9, out-of-fuel turns +20%). Retry only once fuel work frees room, or narrowed to slots readied for turn 2.
 - Known bugs, unverified: retreat_step walks back into an Elk's reach when the way home passes it (`recall_outruns`
