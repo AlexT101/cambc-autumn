@@ -243,6 +243,66 @@ another harmless group was kept (CHANGES 91).
   sight: 49.6%, out-of-fuel turns level. Remembered wards were stale 90% of the time in a traced game against hecate
   (3439 wrong, 394 right; wards in sight 909/909 right). Known limit, accepted: an enemy's fresh ward placed in its
   own turn (sight counts at once) is not modelled, so `Reach` is bolder than reality beside our bush clusters.
+- An ally's stun read with its stats when first seen in a round, kept on the belief (branch `astraeus`, 34ea5de,
+  2026-10-23). Safety used to read it live, and after our move hid a believed-visible ally (vision is personal) the read
+  threw and lost the rest of the turn. Against main, ladder + gen only: 50.0% of 592 (ladder 48.8 of 80, gen 50.2),
+  out-of-fuel turns 2339 vs 2481. Level; a correctness fix, kept (CHANGES 111).
+- Astraeus Willow cleanup, behaviour-preserving part (2026-10-23): heal targeting shared (`heal_ready`, `heal_target`),
+  a recall flag in place of decision letters, Willow's sleep certificate replaced by camp beliefs plus
+  `World::camps_current`, the plan's Willow guard exception dropped, the turn-end support re-read only after a ward.
+  `bench.py` wide set, own drafts (astraeus drafts Willow on 5-pick maps) against the frozen
+  `bots/baselines/astraeus-8d240cc`: 52/52 replays identical, fuel -0.1%. Swapping Willow's post-move `see_again` for
+  `see_revealed` is not behaviour-preserving (its camp, ally and Safety reads follow the full re-observe): left for the
+  A/B'd steps.
+- Astraeus Willow step guard on hyperion's deferred guard (2026-10-23): stations memoised per World observation and
+  tile, legality read at use, the guard a `GuardFn` through `guard_steps`; `support_vision` and `willow_step_guard`
+  gone. Same bench: 52/52 identical, fuel -0.16% (p99 -1.1%). Dropping `credible_enemy_may_hit_within` cost +1.2% fuel
+  (p99 +3.7%): it spares `threats_at`'s per-tile searches for unseen enemies, and `avoid_within` is no exact substitute
+  (camps; a teleport's current tile, not its landing).
+- Astraeus Willow exposure on Safety (2026-10-23): enemy damage, doubled-unacted damage, hit and stun from one new
+  `Safety::bound(p)` pass (damage_bound's terms; unseen enemies at their full blow when any possible tile is in reach,
+  where `threats_at` priced the nearest), awake camps as `camp_damage(p, true, true)`; Willow keeps counting sleeping
+  members as exposure and its exit burden. A/B against `bots/baselines/astraeus-8d240cc` on all 211 five-pick maps
+  (ladder, gen, gen-s1; 422 games): 49.3% (CI 44.5-54.0), out-of-fuel turns 2738 vs 3482. Level; kept. A first
+  version with four Safety calls a tile (`damage_bound` twice, `may_be_hit` twice: each prices every visible enemy's
+  Reach) was 51.2% but doubled out-of-fuel turns (6744 vs 3528); without the stations' enemy pre-check, fuel +2.1%
+  (p99 +7.8%) at 100M. 3- and 4-pick maps never run this code.
+- Astraeus Willow's turn on hyperion's (2026-10-23): `willow_economy_or_escape` gone. Its economy is hyperion's path
+  with the search off while Willow holds a capture, carries a bag to bank or goes to shop (`support_work`): heal first,
+  then `hold_capture` / `carry_bag` / the shop step (`strike_after` still takes a hit in reach). Its escape is a
+  `want_home` rule: any enemy that may hit Willow, seen or not, sends it home, bar on a capture; `retreat` does the
+  rest, so Willow's 9-tile escape ordering and the sleeping-camp bailout are gone (asleep monsters never hit; only
+  Willow's exposure counted them). The post-goal call is gone: in 62 traced games it took 486 turns and never moved
+  Willow (mostly a farm step onto a capture relabelled as a hold); after the change, turns ending exposed with a step
+  left were all capture holds. `support_recall` gone (a support retreat is a plain retreat turn). A/B against the
+  frozen c16939d on the 211 five-pick maps (422 games): 50.7% (CI 46.0-55.5), out-of-fuel turns 1769 vs 2635. Kept.
+- Astraeus: the search's heal worth what it restores capped at `ability_cooldown * damage_bound` again (hyperion's
+  `read_mates`; v44 valued the full restore, so an unthreatened ally took the cast from Willow's attack reset).
+  Five-pick A/B against d308076: 51.4% (CI 46.7-56.2), out-of-fuel turns 1719 vs 1705. Kept.
+- Astraeus: `see_revealed` for `see_again` after Willow's walks (both heal steps, `local_support`); a refused step
+  still re-reads in full, as `revealed()` skips a tile we have not left. Five-pick A/B against 5917401: 50.0% (CI
+  45.3-54.7), out-of-fuel turns 1784 vs 1746 (noise: the same bot read 1705 and 1746 in two runs). `bench.py` wide:
+  49/52 replays identical, fuel -0.02%: these walks are too rare to matter for fuel. Kept as hyperion's pattern.
+- Astraeus: Willow's danger weighed as `threatened()` weighs it (a visible enemy in reach, or unseen ones whose
+  chance of a hit reaches `recall_risk`), enemies only: `Safety::bound` gains `threat` in its one pass, read by the
+  `want_home` rule and by the exposure's `enemy` (so the stations' guard and the support formation's `safe()`
+  agree with the rule). Camps stay out: Willow farms, and its exposure counts camp members itself. Five-pick A/B
+  against 0c703ea: 50.7% (CI 46.0-55.5), out-of-fuel turns 2002 vs 1859, all of the rise on gen-shared-gems
+  (374 vs 144 in its two games; the rest 1628 vs 1715). `bench.py` wide: identical games +0.00% fuel (the weighting
+  costs nothing), all games +0.9% from changed play, 33/52 identical. Kept. As the reference of the next A/B the
+  same bot ran 83 out-of-fuel turns on gen-shared-gems: the rise was a fuel trajectory.
+- Astraeus with `retreat-sideways` merged (cfd1a3a; `retreat_step` ported into its bot.cpp): five-pick A/B against
+  960cdfe, 51.7% (CI 46.9-56.4), out-of-fuel turns 1839 vs 1781.
+- Astraeus (315910d) on all suites, both sides, each bot on its own draft (2026-10-23; 1104 games each; 5-pick maps
+  422 of them, the only ones `willow_draft` changes):
+  - Willow draft vs hyperion (main c71be8c): 50.1% (CI 47.1-53.0; 5-pick 49.8, 3/4-pick 50.3), out-of-fuel turns
+    3288 vs 2503.
+  - Hyperion's draft (`willow_draft = false`) vs hyperion: 49.9% (47.0-52.9; 5-pick 49.8, 3/4-pick 50.0), 2712 vs 2632.
+  - Willow draft vs v44: 52.8% (49.9-55.7; ladder 65.0 of 80; 5-pick 53.6), 3133 vs 5334.
+  - Hyperion's draft vs v44: 52.4% (49.5-55.4; ladder 58.8 of 80; 5-pick 53.6), 2744 vs 4971.
+  Willow in the Ryth/Vendetta slot is level with hyperion's pick but costs ~30% more out-of-fuel turns; the reshaped
+  Willow layer beats v44's slightly and uses far less fuel. (Equal 5-pick totals in both pairs are coincidence: the
+  drafts differ and only ~10 of those 422 games matched.)
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
 - `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
   2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next
@@ -261,6 +321,11 @@ another harmless group was kept (CHANGES 91).
 - `retreat_step` taking a sideways step over a free homeward one only when it leaves every reach (`fu/retreat`
   e617c90; sideways steps with damage > 0 were followed by death 688 times in 6,277 chased turns, 376 expected at
   the direct-step rate, an association): 50.3%, out-of-fuel turns level. Dropped.
+- `retreat_step` taking a step that lengthens the walk home when it leaves every reach (`damage_bound` 0) and no
+  step that keeps or shortens it does; one still in reach stays excluded (branch `retreat-sideways`, bbef5e4,
+  2026-10-23). In a Willow trace 519 retreat turns ended in reach with no such homeward step. Against main: 49.7% of
+  1104 (CI 46.8-52.7; ladder 48.8, gen 49.4, gen-s1 50.2), out-of-fuel turns 3813 vs 3956. Level; kept (CHANGES
+  112).
 - Tracking unseen enemies past 10 rounds (REPLAY-ANALYSIS A4; `fu/tracking`, 2026-10-23). The untracked killers were
   last seen a median 31 rounds before the kill (quartiles 19-88; 28 of 148 within 15). By 10 rounds an unseen
   enemy's possible tiles (median ~300 for Marcella, ~650 for Vesper) are past what `credible_weight` counts, so the
@@ -302,6 +367,10 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
   3.8k a call was meter overhead). Skipping `update_camp`'s board test before a member's health read is not exact:
   the engine reports a dead member on a seen tile as not in vision, which the test reads as dead; the exact version
   saves <= ~27 per visible member. What remains is per-call engine charges or already cached.
+- The search's unseen-threat pricing (`plan.cpp`, `threats_at` per priced tile 2-3 steps out) skipped when no credible
+  unseen enemy can reach the grid, one `any_within` per enemy a search (2026-10-23, main c71be8c, wide bench, own
+  drafts, 100M): identical replays, fuel -0.003% (dearer in 15,092 turns, cheaper in 716). Dropped; `flee_camps`'
+  nine `damage_bound`s (one remembered `any_within` per unseen enemy a tile) would save less.
 - Gate removals: every one so far was level at 100M but multiplied out-of-fuel turns, since a "skip when short" gate
   adds work exactly when fuel is short. Held branches: `fuel/no-gates-1` (23319 vs 6776), `-1b` (4.2x), `-1c` (5.1x;
   the culprit is pick_up's farm-loop gate, the ward gate a distant second); the turn-order gate (bb414db, +13%); step

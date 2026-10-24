@@ -651,17 +651,6 @@ std::uint32_t fighting_allies(const World& world, vec2 p) {
     return out;
 }
 
-// A stun that will take its next turn. One at 0 turn ends left has already taken a turn and
-// expires at the next one's start.
-bool stun_pending(cambc::handle_champion_t c) {
-    static std::array<cambc::detail::buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
-    std::uint32_t n = 0;
-    ok(cambc::detail::sdk_champion_buff_data(static_cast<std::uint32_t>(c), buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
-    for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
-        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return buffs[i].data.stun.duration > 0;
-    return false;
-}
-
 [[gnu::noinline]] void make_slot(const World& world, const ChampionBelief& c, int slot) {
     auto& m = made_fighters;
     const std::array<std::uint32_t, 3> from{static_cast<std::uint32_t>(c.type), std::bit_cast<std::uint32_t>(hit_strength(c)),
@@ -681,7 +670,7 @@ bool stun_pending(cambc::handle_champion_t c) {
     auto& f = m.fighter[slot];
     make_fighter(c, next, f, m.kit[slot]);
     if (c.teleport_pending()) f.arrives_at = std::max(0, c.channel_end_round - next);
-    else if (c.facts().passive != Passive::stun_immune && stun_pending(c.handle)) f.arrives_at = 1;
+    else if (c.stun_pending) f.arrives_at = 1;
 }
 
 // `made`: bit i, Fighters::fighter[i] is this turn's.
