@@ -1083,13 +1083,14 @@ void World::update_champion(ChampionBelief& b, bool full) {
     const auto* info = engine::champion(h);
     const auto state = cambc::champion_state::from_bits_retain(info ? static_cast<std::uint32_t>(info->state) : 0u);
     const bool acted = info && !b.is_self && state.contains(cambc::champion_state::completed_turn);
-    if (full) {
+    // Mid-turn, an enemy seen this turn and now out of sight may be one we killed.
+    if (full || (enemy && !info && b.alive && b.visible)) {
         const bool alive_now = info || engine::alive(h);
         if (!alive_now) {
             if (b.alive) {
                 // Died since our last turn: in round-1 after our turn, or this round before it.
                 // Death in round D respawns in D+61, or D+60 if it died before its own turn.
-                b.respawn_earliest = round - 1 + cambc::constants::respawn_time;
+                b.respawn_earliest = (full ? round - 1 : round) + cambc::constants::respawn_time;
                 b.respawn_latest = round + cambc::constants::respawn_time + 1;
                 // Nothing reads where a dead champion could be.
                 b.tracked = false;

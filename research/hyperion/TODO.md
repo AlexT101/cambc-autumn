@@ -38,13 +38,12 @@ Verified in code 2026-10-22; 8 from the 2026-10-23 audit (its fixes are CHANGES 
 keep if level.
 
 1. **Mid-turn state after our own actions.** Safety and World assume beliefs fixed for the turn; our actions break it:
-   - a killed enemy becomes an unseen threat after `observe()` (only a full update reads liveness; `see_again` runs
-     after the strike plan): in observe(), check `engine::alive` for enemies seen this round and now out of sight;
    - camps we wake are not in Safety (`stirring_` is set only by `update_camps`): note the wake when our hit or
      cast touches an asleep group;
    - kills leave walls: `live_camps()` keeps killed members until a full update, and `blocked_` survives attacks;
    - fighters keep turn-start health, shields and cooldowns (`made_` survives `refresh`/`invalidate`);
-   - an enemy revealed by a refused step onto its tile: `revealed()` skips our own tile (CHANGES 89).
+   - an enemy revealed by a refused step onto its tile: `revealed()` skips our own tile (CHANGES 89); only Willow's
+     steps call `see_again` on a refused move.
 2. Enemy stun status in Safety's threats and fights (the planner reads it only for `stunnable`). Conservative: costs
    tributes and fights, not deaths.
 3. The strike search never opens tiles of units it kills (`free_`/`pass_` fixed in `read_geometry`): a kill can open

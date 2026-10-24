@@ -546,3 +546,11 @@ holder. An ally not on its tiles now counts only if it is not bound elsewhere: t
 turn (`kept_recall`), or claiming another group.
 
 - Against 114: 50.1% of 1104 (47.1-53.0; ladder 51.2, gen 50.0, gen-s1 50.0), out-of-fuel turns 2896 vs 2706.
+
+## 116: a mid-turn kill read as a death (astraeus, 2026-10-24)
+
+Only a full update read liveness, so an enemy we killed became, after `observe()` (`see_again`), an unseen enemy
+around its last tile. `observe()` now reads `engine::alive` for an enemy seen this turn and now out of sight, and
+marks a dead one as the full update does (respawn from this round).
+
+- Against 115: 50.0% of 1104 (47.1-52.9; ladder 50.0, gen 49.8, gen-s1 50.2), out-of-fuel turns 2783 vs 2789.
