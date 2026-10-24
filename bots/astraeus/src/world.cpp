@@ -1343,9 +1343,9 @@ void World::read_vision() {
     landing_ready_ = false;
 }
 
-bool World::revealed(vec2 p, int r) const {
+bool World::revealed(vec2 p, int r, bool bumped) const {
     // Nothing moves during our turn: a tile looked from once shows the same.
-    if (p == sight_pos_ || p == clear_pos_) return false;
+    if (!bumped && (p == sight_pos_ || p == clear_pos_)) return false;
     for (const auto& b : enemies)
         if (b.alive && b.stats_round != round && engine::in_sight(engine::id(b.handle)))
             if (const auto* info = engine::champion(engine::id(b.handle)); info && dist(p, {info->x, info->y}) <= r) return true;

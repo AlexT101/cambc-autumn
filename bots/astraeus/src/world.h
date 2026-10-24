@@ -389,8 +389,9 @@ public:
     bool read_stuns();
     std::uint32_t observations = 0; // update() and observe() calls: beliefs change only with one
     // An enemy in sight from p, within r of it, that this turn's reads did not see: our own move
-    // revealed it. False at the tile vision was last read from.
-    bool revealed(vec2 p, int r) const;
+    // revealed it. False at the tile vision was last read from, unless a move refused by a hidden
+    // unit (`bumped`) revealed its tile.
+    bool revealed(vec2 p, int r, bool bumped = false) const;
     // After our actions: note a group we cleared standing on it, so held from this round.
     void note_turn_end();
     std::uint64_t observe_cost_estimate() const { return 1000 * (allies.size() + enemies.size()); }

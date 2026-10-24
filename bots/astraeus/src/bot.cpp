@@ -2753,7 +2753,7 @@ void see_stuns(World& world, Safety& safety) {
 bool see_revealed(World& world, Pathing& pathing, Safety& safety) {
     // Off the map, Ren's reflection killed us this turn.
     const vec2 here = my_position();
-    if (here.x < 0 || !world.revealed(here, Strike::max_reach) || world.is_stale()) return false;
+    if (here.x < 0 || !world.revealed(here, Strike::max_reach, pathing.take_bump()) || world.is_stale()) return false;
     debug_block({ std::printf("REVEAL %d %u %c\n", world.round, my_handle(), decision); });
     see_again(world, pathing, safety);
     return true;

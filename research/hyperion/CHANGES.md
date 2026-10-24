@@ -687,3 +687,12 @@ acting later this round read it at their own turn start.
 
 - Against 2b34c2f (CHANGES 127): 50.5% of 1104 (47.6-53.5; ladder 53.8, gen 50.8, gen-s1 49.8), out-of-fuel turns
   2438 vs 2305. It changed a belief ~30 times in a debug game.
+
+## 129: an enemy revealed by a refused step (astraeus, 2026-10-24)
+
+A move refused by a hidden unit reveals its tile for the round, but `World::revealed` returns early at the tile vision
+was last read from, so when no other step went through, `see_revealed` never rebuilt Safety around the enemy. Pathing
+now flags a refused move (`take_bump`), and `revealed` then checks for enemies even there.
+
+- Against 2b34c2f: 49.6% of 1104 (46.7-52.6; ladder 50.0, gen 49.2, gen-s1 50.0), out-of-fuel turns 2377 vs 2428.
+  Rare: one reveal in two debug games.

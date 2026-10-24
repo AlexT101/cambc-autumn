@@ -44,7 +44,7 @@ void Pathing::begin_turn() {
     pos_fresh_ = false;
     if (bumped_round_ != world_.round) {
         if (bumped_any_) bumped_.clear();
-        bumped_any_ = false;
+        bumped_any_ = bumped_new_ = false;
         bumped_round_ = world_.round;
     }
 }
@@ -537,7 +537,7 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
         // A hidden unit was there: the tile is now revealed to us for the rest of the round.
         if (refused) *refused = false;
         set_tile(bumped_, tile);
-        bumped_any_ = true;
+        bumped_any_ = bumped_new_ = true;
         invalidate();
     } catch (const cambc::error&) {
     }

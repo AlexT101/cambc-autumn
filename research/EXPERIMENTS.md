@@ -531,6 +531,9 @@ another harmless group was kept (CHANGES 91).
 - A stun we cast read mid-turn (`b8-stun-cast`, 2026-10-24, against 2b34c2f; TODO bug 1): `World::read_stuns` after
   our stunning cast, Safety rebuilt if a target's `stun_pending` changed. 50.5% of 1104 (47.6-53.5; ladder 53.8, gen
   50.8, gen-s1 49.8), out-of-fuel turns 2438 vs 2305. Kept, level (CHANGES 128).
+- An enemy revealed by a refused step while we stay on the tile vision was read from (`b8-bump`, same REF; TODO bug
+  1): `see_revealed` checks for it after a bump. 49.6% of 1104 (46.7-52.6; ladder 50.0, gen 49.2, gen-s1 50.0),
+  out-of-fuel turns 2377 vs 2428. Kept, level (CHANGES 129).
 
 ## Fuel
 

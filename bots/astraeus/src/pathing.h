@@ -88,6 +88,8 @@ public:
     // False, spending nothing, if illegal, guarded or blocked by a hidden unit; `refused`: set
     // unless a hidden unit was the reason.
     bool try_move(vec2 tile, bool* refused = nullptr);
+    // A hidden unit refused a move since the last call: it is in sight now.
+    bool take_bump() { const bool b = bumped_new_; bumped_new_ = false; return b; }
     // Tiles no step or dash may end on until cleared: routes go around them.
     void set_guard(const bitboard* guard) { guard_ = guard, guard_fn_ = nullptr; }
     // A guard worked out on first need, from inputs read now: a turn that never steps skips it.
@@ -194,7 +196,7 @@ private:
     bitboard blocked_{cambc::uninitialized};
     bool blocked_fresh_ = false;
     bitboard bumped_;
-    bool bumped_any_ = false;
+    bool bumped_any_ = false, bumped_new_ = false;
     mutable const bitboard* guard_ = nullptr;
     mutable GuardFn guard_fn_ = nullptr;
     Safety* guard_safety_ = nullptr;
