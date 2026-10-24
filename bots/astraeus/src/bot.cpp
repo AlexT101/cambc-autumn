@@ -1318,8 +1318,9 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
         if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
     // Treasure first, in the stat the model picks and priced as the emblem it delays: +20% gold
     // from round ~200 buys 5-8 more shards a champion (ladder), more than any first passive saves.
+    // Vendetta's in Health, as 74% of ladder Vendettas: the model prices Health only by heal trips.
     if (!has_family(owned, treasure)) {
-        int stat = best.stat;
+        int stat = f.passive == Passive::reset_on_kill ? health_stat : best.stat;
         for (int s = strength_stat; s <= health_stat; ++s)
             if (owned[shard_of(treasure, s)] > 0) stat = s;
         return {treasure, stat, best.saved, (5 - owned[shard_of(treasure, stat)]) * shard_price};
@@ -2056,7 +2057,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
         const int dash_steps = dash >= 0 ? f.abilities[dash].range() : 0;
         arrival.dash_ready = dash >= 0 ? a.ready_round[dash] - arrival.anchor_round : 0;
         const int first_turn = a.acted ? 1 : 0;
-        const bool kill_resets = f.passive == Passive::reset_on_kill;
+        const bool kill_resets = a.cooldowns_uncertain();
         arrival.direct = earliest_work_delay(arrival.distance - arrival.reach, first_turn, arrival.dash_ready, dash_steps,
                                             ability_cooldown, kill_resets);
         // Allies' Home ownership is unknown: allow the fastest new recall and a ready dash on arrival.

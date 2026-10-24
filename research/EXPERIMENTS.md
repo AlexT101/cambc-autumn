@@ -151,8 +151,10 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   top Prisms open Durability-Health (68/85), ours Monster-Focus (327/592). `best_emblem` values Health only through
   fewer heal trips (`upkeep_cost`), never fights survived. Treasure in Health on Ryth, Vendetta, Marcella and Heart of
   Ruin (8e53ec9): 49.0% (gold earned -5-10%, deaths unchanged); first Bruiser in Health on those (5f91ee8): 50.2%.
-  Out-of-fuel turns level. Dropped. If retried: a fight-survival term for Health in the emblem model, judged against
-  v37 or on the ladder, not a stat fixed per champion.
+  Out-of-fuel turns level. Dropped (that suite rarely drafted Vendetta; on Vendetta alone, with our 3-pick draft, it
+  won: [Vendetta](#vendetta-2026-10-24-astraeus-on-its-3-pick-draft-marcella-vendetta-hor)). If retried: a
+  fight-survival term for Health in the emblem model, judged against v37 or on the ladder, not a stat fixed per
+  champion.
   Retried for Prism as that term (`b3-fight`, 2026-10-24): `upkeep_cost` adds deaths a turn x (respawn + walk out +
   2 x mean bag x `rounds_per_gem`) x P(now)/P(build), P = output x max health / damage taken at the mean bag's Focus
   (ladder fights: log-odds ~2 per unit log ratio of either, so at even odds deaths fall in proportion to P); deaths
@@ -247,6 +249,22 @@ Details and the per-team table in [hyperion/DRAFT.md](hyperion/DRAFT.md#astraeus
 - 4 picks: no single swap beat Prism Vesper Marcella HoR; Ryth for HoR -8.7 ±6.7 on all maps.
 - 5 picks: Tavi or Ryth for Prism level on all maps and on the fresh suite; every other single swap level or worse.
 - Counter picks: no matchup difference beyond noise, so no rule.
+
+## Vendetta (2026-10-24, astraeus on its 3-pick draft Marcella Vendetta HoR)
+
+Against astraeus 72de514 (`bots/variants/vend-ref`), own drafts, the 3-pick maps only (other pick counts play
+identically): ladder 6, `maps/gen` 84, `maps/gen-s1` 92 maps, both sides (364 games); fresh suite seed 9137, its 85
+3-pick maps (170). Pieces: **A** a camp kill gives Vendetta one more hit in `min_camp_damage` (`kill_carry`, every
+clear estimate); **B** an unseen Vendetta ally's arrival assumes a ready dash then the cooldown, not a dash every turn
+(`earliest_work_delay`); **C1** Treasure in Health on Vendetta; **C2** a Monster emblem in Strength among Vendetta's
+emblems, with camp kill tests counting its +10%; **D** with the reset cooling, a camp hit that kills goes first.
+
+- All five: 45.6% of 364 (40.6-50.7; gen 49.4, gen-s1 42.9). Vendetta bought 0.87 Monster emblems a game, earned 4%
+  less gold and banked 12 fewer gems.
+- B alone 49.5% of 364. A+B+C1+D (no Monster): 48.4% of the 364, fresh 53.5% (50.0% of 534).
+- **C1 alone: 53.8% of 364 (48.7-58.9), fresh 54.1% of 170**; 53.9% of 534. Shipped with B (level, a model
+  correction; not played together) as CHANGES 137.
+- So C2 costs ~3 points and A or D (not separated) ~5 on top of C1. Untested alone: A, C2, D.
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 
