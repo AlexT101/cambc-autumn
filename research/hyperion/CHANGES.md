@@ -748,3 +748,14 @@ locally fewer, bigger tributes but more gems lost on death, and banking time lev
 
 - Against c2f1350: 51.4% of 1104 (48.5-54.4; ladder 53.8, gen 55.1, gen-s1 47.5), out-of-fuel turns 2367 vs 2446;
   fresh suite (seed 7511) 49.2% of 512. Against hyperion 54.7% of 1104 (REF 53.1%).
+
+## 134: 3-pick maps draft Marcella, Vendetta, Heart of Ruin (astraeus, 2026-10-24)
+
+The draft is now one table per pick count (`params::draft_three/four/five`, replacing the camp-count roles of
+`draft_selection.h`) plus `draft_counters`, empty. 3 picks: Marcella, Vendetta, HoR replaces Prism, Vesper, HoR; 4 and 5
+picks are unchanged. Search and per-team results in [DRAFT.md](DRAFT.md#astraeus-draft-search-2026-10-24).
+
+- Against proxies of 8 top-10 teams on every 3-pick map: 63.7% vs 47.3% for the old draft (+16.5 ±6.5, 364 games);
+  fresh suite (seed 4242) 60.1% vs 42.9% (+17.3 ±10.4, 168).
+- Head to head against astraeus c0de6b4 on 3-pick maps: 61.5% of 532 (all maps 59.9% of 364, fresh 64.9% of 168).
+- Other pick counts play identically (the old tables reproduce c0de6b4's games).

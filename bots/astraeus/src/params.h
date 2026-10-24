@@ -17,11 +17,37 @@ inline constexpr cambc::champion_draft draft_preference[] = {
     cambc::champion_draft::vendetta,
     cambc::champion_draft::tavi,
 };
+// The draft on maps of each pick count, in pick order; draft_preference fills in after a rejected pick.
+inline constexpr cambc::champion_draft draft_three[] = {
+    cambc::champion_draft::marcella,
+    cambc::champion_draft::vendetta,
+    cambc::champion_draft::heart_of_ruin,
+};
+inline constexpr cambc::champion_draft draft_four[] = {
+    cambc::champion_draft::prism,
+    cambc::champion_draft::vesper_vale,
+    cambc::champion_draft::marcella,
+    cambc::champion_draft::heart_of_ruin,
+};
+inline constexpr cambc::champion_draft draft_five[] = {
+    cambc::champion_draft::prism,
+    cambc::champion_draft::vesper_vale,
+    cambc::champion_draft::marcella,
+    cambc::champion_draft::willow,
+    cambc::champion_draft::heart_of_ruin,
+};
+// On maps of `picks` picks, our pick in draft round `round` becomes `instead` when the enemy's
+// earlier picks (visible from the next round) include `seen`. The first matching rule wins.
+struct DraftCounter {
+    int picks, round;
+    cambc::champion_draft seen, instead;
+};
+inline constexpr DraftCounter draft_counters[] = {
+    {0, 0, cambc::champion_draft::ryth, cambc::champion_draft::ryth}, // placeholder: never matches
+};
 // Test copies only (tools/ab.py): draft a common ladder composition chosen by the map and side
-// (draft.cpp test_compositions) instead of draft_preference.
+// (draft.cpp test_compositions) instead of the tables above.
 constexpr bool test_draft = false;
-// 5-pick maps draft Willow in the Ryth/Vendetta slot (v44's draft); false keeps hyperion's.
-inline constexpr bool willow_draft = true;
 
 // Rounds out of sight after which an enemy could be anywhere.
 inline constexpr int track_horizon = 10;

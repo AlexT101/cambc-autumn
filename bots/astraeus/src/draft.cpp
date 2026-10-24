@@ -4,7 +4,6 @@
 #include <cstring>
 #include <span>
 #include <vector>
-#include "draft_selection.h"
 #include "params.h"
 #include "util.h"
 #include "world.h"
@@ -14,32 +13,6 @@ namespace aph {
 namespace {
 
 int draft_round() { return static_cast<int>(cambc::round_number()); }
-
-const DraftCampCounts& native_draft_counts() {
-    static const auto counts = [] {
-        // At most one member per tile and one group per member: 5 header + 4 member words.
-        static std::array<std::uint32_t, 9 * 100 * 100> words;
-        std::uint32_t count{};
-        ok(cambc::detail::sdk_map_camp_layout(words.data(), static_cast<std::uint32_t>(words.size()), &count));
-        if (count > words.size()) throw std::length_error("camp layout exceeds map size bound");
-        return count_draft_camps({words.data(), count});
-    }();
-    return counts;
-}
-
-cambc::champion_draft native_pick(DraftRole role) {
-    using C = cambc::champion_draft;
-    switch (role) {
-    case DraftRole::prism: return C::prism;
-    case DraftRole::vesper_vale: return C::vesper_vale;
-    case DraftRole::marcella: return C::marcella;
-    case DraftRole::ryth: return C::ryth;
-    case DraftRole::vendetta: return C::vendetta;
-    case DraftRole::heart_of_ruin: return C::heart_of_ruin;
-    case DraftRole::willow: return C::willow;
-    }
-    return C::prism;
-}
 
 constexpr auto all_champions() {
     std::array<cambc::champion_draft, static_cast<std::size_t>(cambc::champion_draft::heart_of_ruin) + 1> all{};
@@ -241,25 +214,34 @@ std::span<const C> choose() {
 }
 } // namespace test_compositions
 
-std::span<const cambc::champion_draft> draft_order() {
-    if constexpr (params::test_draft) {
-        static const auto chosen = test_compositions::choose();
-        return chosen;
-    }
-    const auto picks = cambc::draft::team_size();
-    if (picks == 4 || picks == 5) {
-        static const auto chosen = [] {
-            const auto roles = params::willow_draft && cambc::draft::team_size() == 5
-                                   ? willow_five_pick_roles() : teacher_draft_roles(native_draft_counts());
-            std::array<cambc::champion_draft, 5> order;
-            for (std::size_t i = 0; i < order.size(); ++i) order[i] = native_pick(roles[i]);
-            // 4 picks keep Heart of Ruin over the Ryth/Vendetta slot (v38 ladder: 43% on 4-pick maps without it).
-            if (cambc::draft::team_size() == 4) std::swap(order[3], order[4]);
-            return order;
-        }();
-        return chosen;
+std::span<const cambc::champion_draft> table_draft() {
+    switch (cambc::draft::team_size()) {
+    case 3: return params::draft_three;
+    case 4: return params::draft_four;
+    case 5: return params::draft_five;
     }
     return params::draft_preference;
+}
+
+// Re-read each draft round: a counter rule depends on the enemy picks seen so far.
+std::vector<cambc::champion_draft> draft_order() {
+    if constexpr (params::test_draft) {
+        static const auto chosen = test_compositions::choose();
+        return {chosen.begin(), chosen.end()};
+    }
+    const auto table = table_draft();
+    std::vector<cambc::champion_draft> order;
+    const auto picks = static_cast<int>(cambc::draft::team_size());
+    const int round = draft_round();
+    for (const auto& rule : params::draft_counters) {
+        if (rule.picks != picks || rule.round != round) continue;
+        const auto seen = cambc::draft::current_draft(team::enemy);
+        if (std::find(seen.begin(), seen.end(), rule.seen) == seen.end()) continue;
+        order.push_back(rule.instead);
+        break;
+    }
+    order.insert(order.end(), table.begin(), table.end());
+    return order;
 }
 
 void write_plan(DraftState& state) {
