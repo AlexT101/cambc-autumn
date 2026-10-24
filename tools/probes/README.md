@@ -30,6 +30,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `economy.emblems` Durability with a shield (the -10% applies before absorption) | `probe-durability-shield` |
 | `camps.wake`, `camps.sleep`, `camps.attack` | `probe-camps`, `probe-camps-b`, `probe-stunwake`, `probe-sleep-range`, `probe-sleep-timing`; ties: `probe-denial` scenario 6 |
 | `abilities.stun` on a camp: the skipped attack, a second stun after it | `probe-campstun` |
+| `abilities.stun` on a champion: what observers read before and after the lost turn, a stun on a spent buff | `probe-stunread` |
 | `capture`, `gems.tribute`, `economy.gold`, `economy.bonuses` | `probe-capture`, `probe-capture-b`, `probe-reset`, `probe-reset-b`, `probe-denial` (team B: `probe-denial-b`, which run.sh fills); contest: `probe-misc` scenario 2 |
 | `combat.modifiers`, `altar_locks`, `economy.health_purchase` | `probe-misc`, `probe-misc-b` |
 | `rounds.turn_start`, buffs, shields, Marcella, Ren, Prism, Vendetta, Varg passives | `probe-effects`, `probe-effects-b` |
@@ -44,6 +45,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 ## Facts outside the rules
 
 - A camp's stun buff (`sdk_camp_buffs`) reads timer 1 from the stun to the camp phase it skips, then timer 0 until the next camp phase: at a turn start, only timer 1 means the next attack is skipped. A stun cast on a timer-0 camp sets 1 and skips the next attack (`probe-campstun`).
+- A champion's stun buff (`buff_stun::duration`) reads 1 from the stun until the victim's lost turn ends (observers later in the stunner's round still read 1: it ticks only at the victim's turn end), then 0 until the victim's next turn start, where it expires. So `duration > 0` means the stun will take the victim's next turn, whatever the turn order; a stun cast on a 0 buff sets 1 and takes the next turn (`probe-stunread`; astraeus's `stun_pending`, CHANGES 136). Untested: a stun cast after the victim already acted that round.
 - Errors: a duplicate own pick is error 14; a second pick in one draft turn, or a draft-memory write in play, is error 18; reading an unseen unit's details is error 97; `remaining_channel_time()` while not channelling is error 115; `shadow_cast` from an opaque tile is error 5.
 - `is_ready()` reports an attack reset as castable while the attack is unspent, when the cast would fail.
 - `bitboard::shadow_cast` with walls and the other bush clusters opaque reproduces engine vision exactly.
