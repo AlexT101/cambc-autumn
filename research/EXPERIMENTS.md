@@ -455,6 +455,9 @@ another harmless group was kept (CHANGES 91).
   50.4% of 512 (together 50.0% of 1024). Each change was kept on the committed suites, so 54.3% is selection; the fresh
   50.0% is the estimate: level in self-play. Most of the eight are correctness fixes, and two (119, 120) target
   ladder behaviour our bots lack.
+- Astraeus acbcbcb (CHANGES 113-123) on the same two fresh suites (1024 games): against v47 49.1% (CI 46.1-52.2),
+  out-of-fuel turns 2290 vs 2089; against hyperion 53.0% (50.0-56.1), where v47 reads 51.3% (48.2-54.3). Level
+  against v47, +1.7 against a third bot (within noise).
 - Batch 2 fights (2026-10-24, against d3cc38f, 1104 games unless noted):
   - Enemies who walk into a fight join the verdict (CHANGES 122). In want_home, prey and step_guard: 50.2% (47.2-53.1),
     out-of-fuel turns 2813 vs 2596. Without step_guard (kept): 50.9% (48.0-53.8; gen-s1 52.0), 2573 vs 2778; fresh
