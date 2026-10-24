@@ -1,0 +1,45 @@
+{
+  "status": "planned only; neither command executed",
+  "build": {
+    "argv": [
+      "nice",
+      "-n",
+      "19",
+      "env",
+      "CMAKE_BUILD_PARALLEL_LEVEL=1",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+      "build",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-focus-safe-yield-work",
+      "--release"
+    ],
+    "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+    "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-focus-safe-yield-v33-full1104-preflight-20261024-v1/candidate-build.stdout.log",
+    "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-focus-safe-yield-v33-full1104-preflight-20261024-v1/candidate-build.stderr.log",
+    "expected": "fresh candidate Release raw and injected artifacts"
+  },
+  "run": {
+    "argv": [
+      "nice",
+      "-n",
+      "19",
+      "env",
+      "CMAKE_BUILD_PARALLEL_LEVEL=1",
+      "NO_COLOR=1",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+      "run-batch",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-focus-safe-yield-v33-full1104-preflight-20261024-v1/run-batch.manifest.txt",
+      "--jobs",
+      "1",
+      "--color",
+      "never",
+      "--fuel-quantum",
+      "100000",
+      "--release"
+    ],
+    "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-focus-safe-yield-vs-v33-a00fff-full1104-run01",
+    "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-focus-safe-yield-vs-v33-a00fff-full1104-run01/run.stdout.log",
+    "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-focus-safe-yield-vs-v33-a00fff-full1104-run01/run.stderr.log",
+    "exit_status_file": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-focus-safe-yield-vs-v33-a00fff-full1104-run01/run.exit-status.txt",
+    "note": "Every replay output path in the four-column manifest is absolute."
+  }
+}

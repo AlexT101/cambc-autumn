@@ -1,0 +1,149 @@
+{
+  "status": "prepared_not_executed",
+  "comparison": "compound Focus plus safe optional yield candidate 9b405b0da9ddb7d9f79e698265546c2e69e42ce19c0fc0ea39bb19940bfa4007 vs frozen released v33 a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+  "source_snapshots_manifest": "source-snapshot-manifest.json",
+  "maps_manifest": "map-inventory.json",
+  "run_manifest": "run-batch.manifest.txt",
+  "structured_run_manifest": "native-draft-full1104-manifest.json",
+  "counts": {
+    "published40_maps": 40,
+    "gen_maps": 256,
+    "gen_s1_maps": 256,
+    "total_maps": 552,
+    "both_physical_sides": 2,
+    "scheduled_matches": 1104,
+    "unique_source_opponent_map_physical_side_tuples": 1104,
+    "unique_outputs": 1104,
+    "candidate_argv_team_A": 552,
+    "candidate_argv_team_B": 552
+  },
+  "builds": {
+    "candidate_required": true,
+    "candidate_build": "fresh native cambc Release build after root review; no existing candidate artifacts were present at preflight",
+    "reference_build": false,
+    "reference_reason": "reuse only after verifying existing raw/injected hashes against frozen v33 pins"
+  },
+  "bots": {
+    "candidate": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-focus-safe-yield-work",
+    "candidate_aggregate_sha256": "9b405b0da9ddb7d9f79e698265546c2e69e42ce19c0fc0ea39bb19940bfa4007",
+    "reference": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+    "reference_aggregate_sha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+    "argv_order": "candidate then reference when candidate is physical A; reversed when candidate physical B",
+    "draft": "native draft; both params::test_draft=false; no patching"
+  },
+  "maps": {
+    "suites": [
+      "published40",
+      "gen",
+      "gen-s1"
+    ],
+    "generation_seeds": {
+      "gen": 1023,
+      "gen-s1": 1024
+    },
+    "selection": "all direct maps/*.map26a plus all direct maps/gen/*.map26a and maps/gen-s1/*.map26a sorted by suite and filename",
+    "matches_previous_reviewed_552_map_hashes": true
+  },
+  "runtime": {
+    "tool": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "tool_version": "cambc 3.0.5",
+    "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/engine/v1_0_3.wasm",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "mode": "Release",
+    "fuel_quantum": 100000,
+    "native_cli_default_turn_fuel": 100000,
+    "jobs": 1,
+    "worker": "nice -n 19",
+    "build_jobs": 1,
+    "environment": {
+      "CMAKE_BUILD_PARALLEL_LEVEL": "1",
+      "NO_COLOR": "1"
+    },
+    "working_directory": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-focus-safe-yield-vs-v33-a00fff-full1104-run01",
+    "output_root": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-focus-safe-yield-vs-v33-a00fff-full1104-run01"
+  },
+  "deferred_command_argv": [
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "CMAKE_BUILD_PARALLEL_LEVEL=1",
+    "NO_COLOR=1",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "run-batch",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-focus-safe-yield-v33-full1104-preflight-20261024-v1/run-batch.manifest.txt",
+    "--jobs",
+    "1",
+    "--color",
+    "never",
+    "--fuel-quantum",
+    "100000",
+    "--release"
+  ],
+  "deferred_execution_wrapper": "Prepared only. Execute only after root review. Use one nice -n 19 worker, build jobs 1, Release/default 100000, and keep every stdout/stderr separately.",
+  "artifacts": {
+    "cli": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+      "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+      "bytes": 83508752
+    },
+    "engine": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/engine/v1_0_3.wasm",
+      "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+      "bytes": 638472
+    },
+    "reference_raw": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff/.cambc/build-release/bot.wasm",
+      "sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "bytes": 1652228
+    },
+    "reference_injected": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff/.cambc/build-release/bot-injected.wasm",
+      "sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+      "bytes": 893976
+    }
+  },
+  "sdk_files": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/sdk/cpp/cambc.h",
+      "sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "bytes": 218074
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/sdk/cpp/imports.h",
+      "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "bytes": 27810
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/sdk/cpp/wasm_simd128.h",
+      "sha256": "254cb9207bb773a6b88d9a11ae8c8e2dd869675142d6f686a59a41d46af10196",
+      "bytes": 83813
+    }
+  ],
+  "source_proof": {
+    "provenance_dir": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-focus-safe-yield-20261023-v1",
+    "combined_patch_sha256": "d47d2ab16dbe855b1180dbbb6d530f3949f483bd4de09eb1b12b5073a2f7c734",
+    "parent_4db_aggregate": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd",
+    "focus_component_aggregate": "ae18438dcd2164bd81f27ade445b58ae36901b4bdf99f1fda2d2e53dbff86086",
+    "safe_yield_component_aggregate": "03aaf746068a29d94f4e6d5245f89d97ca9bae123bb518fa32ab07a0a509797c",
+    "component_removal_file_sets_verified": true
+  },
+  "git_head_at_preparation": "77b29e84407f9f4f0c3a24edf7a0eeb0d1b482a2",
+  "required_execution_prepost_checks": [
+    "re-hash candidate and reference source trees and source snapshots before and after build/run",
+    "hash candidate raw/injected artifacts immediately after fresh build and before/after run",
+    "re-hash reference raw/injected artifacts before/after run",
+    "record exact argv, cwd, environment, stdout, stderr, exit status and toolchain pins",
+    "verify exactly 1104 outputs, output-path uniqueness, tuple uniqueness, exact argv source order, suite, map hash and physical-side mapping",
+    "native audit outcomes, rounds, action errors and turn order after run without altering native draft settings"
+  ],
+  "prohibited_actions": [
+    "do not execute candidate build or matches before root review",
+    "do not reuse prior Focus-only matches or build artifacts",
+    "do not use tools/run_batched.py or cleanup/deletion helpers",
+    "do not copy .cambc or compile databases into source snapshots",
+    "do not modify EXPERIMENTS.md, canonical source, or v33 baseline",
+    "do not create any new maps or matches"
+  ]
+}

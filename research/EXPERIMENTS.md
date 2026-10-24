@@ -1932,3 +1932,32 @@ new native/model/route queries. Source-only snapshots/manifests/patch are under
 `provenance/willow-archipelago-service-trace-20261023-v1/`; it is unbuilt and unqualified as
 a witness. See `willow-archipelago-post-clear-service-review.md`. No formation policy change
 is selected from the current snapshots.
+
+### Band routing witness: qualified rounds 17–22
+
+The 46ab diagnostic now has a qualified bounded trace. Original, recorder and trace match
+through round22 on 527 inputs, 23 state hashes and six phase-aware rollovers. All66 trace
+segments match recorder counts/hashes, with no harness mismatch in that window. The
+recorder preserves full-game actions/state and all play-turn fuel; its first draft turn
+uses eight additional fuel. It is not wholly fuel-exact.
+
+Actor2 selects group31/claim31, centre(46,42), in every recorded turn. In rounds17–20
+the live attack and adjacent searches reach their depth caps without finding a route;
+these are bounded search failures, not proof of unreachability. In round20 the cached
+approach descends (11,32)63→(11,31)62. Round21's live attack route instead moves back
+to(11,32), labelled48 steps from its goals; round22's live search fails and the cached
+approach returns to(11,31). The selected group stays fixed, but that does not establish
+identical goal/obstacle boards. Visibility-dependent live occupancy versus remembered
+camp occupancy is under investigation; the nearby native camp is not proven to be the
+selected economic target.
+
+Both recorder and trace stdout hit the default1MiB cap. Recorder history ends near148;
+the trace's first later harness mismatch is148, first action mismatch149 and first
+state-hash mismatch150. Its later result is not gameplay evidence. No rerun was needed
+for the qualified window. The preserved report, validation and post-run pins are in
+`replays/willow-band-hor-routing-witness-20261023-v1/phase3-trace/`. Canonical remains4db.
+
+The separate9b compound versus frozenv33 full1104 preflight is ready, with552 maps and
+explicitly reversed physical A/B orders. Run-manifest SHA256 is
+`cfafbb2c0eac4a1ae24057111980834e3991b4a099f4eda8254fde0b07fc640e`.
+It has not built or run. Incoming live-loss analysis has the single heavy worker first.
