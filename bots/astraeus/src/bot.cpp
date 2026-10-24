@@ -331,7 +331,9 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
 
 // Inside danger a route home is only the shortest walk, ties in compass order, which can lead
 // along the enemies we flee: take the homeward step that can be hit least, then the nearest home,
-// then the farthest from them. A sideways step goes first only when it can be hit less.
+// then the farthest from them. A sideways step goes first only when it can be hit less, and one
+// that lengthens the walk only when it leaves every reach and no shorter one does: still in reach,
+// it only delays, as the pursuer takes the step back next turn.
 void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
     if (!my_can_move()) return;
     const vec2 here = my_position();
@@ -351,16 +353,24 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
     Unwritten<Option, 8> scratch;
     auto& options = scratch.a;
     int n = 0;
-    for (auto d : directions) {
-        const vec2 p = here + d;
-        if (!in_bounds(p) || test(blocked, p)) continue;
-        const int s = home.at(p);
-        if (s == unreachable || s > steps) continue;
-        int gap = unreachable;
-        for (const auto& e : world.enemies)
-            if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
-        options[n++] = {p, safety.damage_bound(p), s, gap};
-    }
+    bool clear = false;
+    const auto add = [&](bool longer) {
+        for (auto d : directions) {
+            const vec2 p = here + d;
+            if (!in_bounds(p) || test(blocked, p)) continue;
+            const int s = home.at(p);
+            if (s == unreachable || (s > steps) != longer) continue;
+            const float damage = safety.damage_bound(p);
+            if (longer && damage > 0) continue;
+            int gap = unreachable;
+            for (const auto& e : world.enemies)
+                if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
+            options[n++] = {p, damage, s, gap};
+            clear |= damage <= 0;
+        }
+    };
+    add(false);
+    if (!clear) add(true);
     std::stable_sort(options.begin(), options.begin() + n, [](const Option& a, const Option& b) {
         if (a.damage != b.damage) return a.damage < b.damage;
         if (a.steps != b.steps) return a.steps < b.steps;
