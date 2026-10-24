@@ -1,0 +1,35 @@
+{
+ "inputs": [
+  35585,
+  35585
+ ],
+ "firstInputDiff": null,
+ "roundsMatched": 954,
+ "rounds": [
+  954,
+  954
+ ],
+ "firstRoundDiff": null,
+ "result": [
+  {
+   "outcome": 1,
+   "round": 953,
+   "gems": [
+    1000,
+    757
+   ]
+  },
+  {
+   "outcome": 1,
+   "round": 953,
+   "gems": [
+    1000,
+    757
+   ]
+  }
+ ],
+ "resultMatch": true,
+ "exact": true,
+ "exactIgnoringRollovers": true,
+ "firstInputDiffIgnoringRollovers": null
+}

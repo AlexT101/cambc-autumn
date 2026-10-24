@@ -1,0 +1,798 @@
+{
+  "schema": "finishing-recall-three-cells-result/v1",
+  "source_pins": {
+    "parent_f599": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+    "parent_f599_runtimecopy": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+    "candidate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "binary_pins": {
+    "parent": {
+      "raw": "7238a4f52b3cbe5faf3a417326f8dcca47c78aaf93be6df04e8def59007828e4",
+      "injected": "da3ddeadd1f5835ea9a434af92a782cc0f433f90eb6c340dc2d85979ca1096a5"
+    },
+    "candidate": {
+      "raw": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+      "injected": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525"
+    },
+    "v33": {
+      "raw": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "injected": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+    }
+  },
+  "controls": {
+    "bigworld": {
+      "bundle_sha256": "c9f3366418f1b906834e1bab149177fc30473f8b9d3596359dd01efe4107a367",
+      "inner_replay_sha256": "0938072adefab0b56fadb91ab51d3469a37603240a367d0caafc8c936038bcb6",
+      "source": "game 1 in this batch, parent f599 A vs v33 B"
+    },
+    "pilgrimage": {
+      "bundle_path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/outputs/parent-A-vs-v33-pilgrimage.repl26a",
+      "bundle_sha256": "85dd81ebcacf6b1265c79bc8afd0605d8fa68401ff7d8a8e68b49cb4fa81d1da",
+      "inner_replay_sha256": "2af22092f2e52b04c914238954937cf38d106687384be158fddf0f7fb06b4d5d",
+      "source": "existing exact parent control; reused, not rerun"
+    }
+  },
+  "games": [
+    {
+      "name": "parent-A-v33-B-big-world",
+      "bundle_path": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/parent-A-v33-B-big-world.repl26a",
+      "bundle_sha256": "c9f3366418f1b906834e1bab149177fc30473f8b9d3596359dd01efe4107a367",
+      "bundle_bytes": 59952,
+      "inner_replay_sha256": "0938072adefab0b56fadb91ab51d3469a37603240a367d0caafc8c936038bcb6",
+      "inner_replay_bytes": 177308,
+      "rounds_json_gz_sha256": "93ca334b04c415d8af33ca08f806996893d26af382d80bd482dec1fb33624ac8",
+      "events_jsonl_gz_sha256": "de6cea5bef6e223c4044b2b5636f1b4765f1a7a7be8e43bfe7c28f1216aa49b7",
+      "meta_sha256": "1ee4df8be2f7baa8680b15a157bdf9e36a73a9888e9120bf0aef45ddee307bdf",
+      "result": {
+        "winner": 0,
+        "outcome": 1,
+        "rounds": 953,
+        "gems": [
+          1000,
+          757
+        ],
+        "steps": 210897
+      },
+      "draft": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "native_status": {
+        "teamA_rollovers": 3,
+        "teamA_errors": 0,
+        "teamB_rollovers": 8,
+        "teamB_errors": 0,
+        "decode": "round status code 6=rollover, 7=error"
+      },
+      "candidate_Prism_actor0": {
+        "collected": 510,
+        "submitted": 510,
+        "end_bag": 0,
+        "deaths": 0,
+        "champion_damage_done": 1016,
+        "champion_damage_taken": 31.5,
+        "recalls": {
+          "recall_start": 851,
+          "recall_cancel": 839,
+          "recall_end": 12
+        }
+      },
+      "champions": [
+        {
+          "id": 0,
+          "team": "A",
+          "name": "Prism",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 510,
+          "submitted": 510,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            30,
+            43
+          ],
+          "end_hp": 2550.7
+        },
+        {
+          "id": 1,
+          "team": "A",
+          "name": "Vesper Vale",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 190,
+          "submitted": 169,
+          "end_bag": 21,
+          "end_alive": true,
+          "end_position": [
+            49,
+            19
+          ],
+          "end_hp": 1400
+        },
+        {
+          "id": 2,
+          "team": "A",
+          "name": "Marcella",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 142,
+          "submitted": 142,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            61,
+            10
+          ],
+          "end_hp": 1692.8
+        },
+        {
+          "id": 3,
+          "team": "A",
+          "name": "Willow",
+          "rollovers": 1,
+          "errors": 0,
+          "deaths": 1,
+          "collected": 26,
+          "submitted": 26,
+          "end_bag": 0,
+          "end_alive": false,
+          "end_position": [
+            null,
+            null
+          ],
+          "end_hp": 0
+        },
+        {
+          "id": 4,
+          "team": "A",
+          "name": "Heart of Ruin",
+          "rollovers": 2,
+          "errors": 0,
+          "deaths": 1,
+          "collected": 153,
+          "submitted": 153,
+          "end_bag": 0,
+          "end_alive": false,
+          "end_position": [
+            null,
+            null
+          ],
+          "end_hp": 0
+        },
+        {
+          "id": 5,
+          "team": "B",
+          "name": "Prism",
+          "rollovers": 1,
+          "errors": 0,
+          "deaths": 1,
+          "collected": 138,
+          "submitted": 0,
+          "end_bag": 0,
+          "end_alive": false,
+          "end_position": [
+            null,
+            null
+          ],
+          "end_hp": 0
+        },
+        {
+          "id": 6,
+          "team": "B",
+          "name": "Vesper Vale",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 296,
+          "submitted": 296,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            65,
+            43
+          ],
+          "end_hp": 1681
+        },
+        {
+          "id": 7,
+          "team": "B",
+          "name": "Marcella",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 246,
+          "submitted": 246,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            35,
+            90
+          ],
+          "end_hp": 3800
+        },
+        {
+          "id": 8,
+          "team": "B",
+          "name": "Willow",
+          "rollovers": 3,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 40,
+          "submitted": 40,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            68,
+            83
+          ],
+          "end_hp": 700
+        },
+        {
+          "id": 9,
+          "team": "B",
+          "name": "Heart of Ruin",
+          "rollovers": 4,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 196,
+          "submitted": 175,
+          "end_bag": 21,
+          "end_alive": true,
+          "end_position": [
+            52,
+            61
+          ],
+          "end_hp": 1000
+        }
+      ]
+    },
+    {
+      "name": "finishing-recall-A-v33-B-big-world",
+      "bundle_path": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/finishing-recall-A-v33-B-big-world.repl26a",
+      "bundle_sha256": "18d05ffa024b8d6bdfa88a680a2624c308031d6b9a21c8da2515a4551b1d215a",
+      "bundle_bytes": 59967,
+      "inner_replay_sha256": "0938072adefab0b56fadb91ab51d3469a37603240a367d0caafc8c936038bcb6",
+      "inner_replay_bytes": 177308,
+      "rounds_json_gz_sha256": "93ca334b04c415d8af33ca08f806996893d26af382d80bd482dec1fb33624ac8",
+      "events_jsonl_gz_sha256": "de6cea5bef6e223c4044b2b5636f1b4765f1a7a7be8e43bfe7c28f1216aa49b7",
+      "meta_sha256": "4a1dc69914e4ee6beb2d7f6a4d891c6cfba905021c08b15ebebb22931d636a95",
+      "result": {
+        "winner": 0,
+        "outcome": 1,
+        "rounds": 953,
+        "gems": [
+          1000,
+          757
+        ],
+        "steps": 210897
+      },
+      "draft": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "native_status": {
+        "teamA_rollovers": 3,
+        "teamA_errors": 0,
+        "teamB_rollovers": 8,
+        "teamB_errors": 0,
+        "decode": "round status code 6=rollover, 7=error"
+      },
+      "candidate_Prism_actor0": {
+        "collected": 510,
+        "submitted": 510,
+        "end_bag": 0,
+        "deaths": 0,
+        "champion_damage_done": 1016,
+        "champion_damage_taken": 31.5,
+        "recalls": {
+          "recall_start": 851,
+          "recall_cancel": 839,
+          "recall_end": 12
+        }
+      },
+      "champions": [
+        {
+          "id": 0,
+          "team": "A",
+          "name": "Prism",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 510,
+          "submitted": 510,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            30,
+            43
+          ],
+          "end_hp": 2550.7
+        },
+        {
+          "id": 1,
+          "team": "A",
+          "name": "Vesper Vale",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 190,
+          "submitted": 169,
+          "end_bag": 21,
+          "end_alive": true,
+          "end_position": [
+            49,
+            19
+          ],
+          "end_hp": 1400
+        },
+        {
+          "id": 2,
+          "team": "A",
+          "name": "Marcella",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 142,
+          "submitted": 142,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            61,
+            10
+          ],
+          "end_hp": 1692.8
+        },
+        {
+          "id": 3,
+          "team": "A",
+          "name": "Willow",
+          "rollovers": 1,
+          "errors": 0,
+          "deaths": 1,
+          "collected": 26,
+          "submitted": 26,
+          "end_bag": 0,
+          "end_alive": false,
+          "end_position": [
+            null,
+            null
+          ],
+          "end_hp": 0
+        },
+        {
+          "id": 4,
+          "team": "A",
+          "name": "Heart of Ruin",
+          "rollovers": 2,
+          "errors": 0,
+          "deaths": 1,
+          "collected": 153,
+          "submitted": 153,
+          "end_bag": 0,
+          "end_alive": false,
+          "end_position": [
+            null,
+            null
+          ],
+          "end_hp": 0
+        },
+        {
+          "id": 5,
+          "team": "B",
+          "name": "Prism",
+          "rollovers": 1,
+          "errors": 0,
+          "deaths": 1,
+          "collected": 138,
+          "submitted": 0,
+          "end_bag": 0,
+          "end_alive": false,
+          "end_position": [
+            null,
+            null
+          ],
+          "end_hp": 0
+        },
+        {
+          "id": 6,
+          "team": "B",
+          "name": "Vesper Vale",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 296,
+          "submitted": 296,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            65,
+            43
+          ],
+          "end_hp": 1681
+        },
+        {
+          "id": 7,
+          "team": "B",
+          "name": "Marcella",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 246,
+          "submitted": 246,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            35,
+            90
+          ],
+          "end_hp": 3800
+        },
+        {
+          "id": 8,
+          "team": "B",
+          "name": "Willow",
+          "rollovers": 3,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 40,
+          "submitted": 40,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            68,
+            83
+          ],
+          "end_hp": 700
+        },
+        {
+          "id": 9,
+          "team": "B",
+          "name": "Heart of Ruin",
+          "rollovers": 4,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 196,
+          "submitted": 175,
+          "end_bag": 21,
+          "end_alive": true,
+          "end_position": [
+            52,
+            61
+          ],
+          "end_hp": 1000
+        }
+      ]
+    },
+    {
+      "name": "finishing-recall-A-v33-B-pilgrimage",
+      "bundle_path": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/finishing-recall-A-v33-B-pilgrimage.repl26a",
+      "bundle_sha256": "f2fc4067dc6552e762cdfad66c999ddc15d25fbdf953330f3eb6f588c10b63ba",
+      "bundle_bytes": 79864,
+      "inner_replay_sha256": "2af22092f2e52b04c914238954937cf38d106687384be158fddf0f7fb06b4d5d",
+      "inner_replay_bytes": 237879,
+      "rounds_json_gz_sha256": "dad04a4a063f4b582ef388023de41e411beec8e866893c590f5f62065eda2102",
+      "events_jsonl_gz_sha256": "ff44da9d24a84b8f5429c8317e71ad7cd01ba819781a5603a6dac92f6e9c0a31",
+      "meta_sha256": "f9d4fcc46606da3c5b7c5fc73d76cab7302edd98cc42323971c3099cfdb8d86c",
+      "result": {
+        "winner": 0,
+        "outcome": 1,
+        "rounds": 1358,
+        "gems": [
+          1030,
+          210
+        ],
+        "steps": 271025
+      },
+      "draft": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "native_status": {
+        "teamA_rollovers": 0,
+        "teamA_errors": 0,
+        "teamB_rollovers": 6,
+        "teamB_errors": 0,
+        "decode": "round status code 6=rollover, 7=error"
+      },
+      "candidate_Prism_actor0": {
+        "collected": 141,
+        "submitted": 141,
+        "end_bag": 0,
+        "deaths": 0,
+        "champion_damage_done": 1940.5,
+        "champion_damage_taken": 720.8749961853027,
+        "recalls": {
+          "recall_start": 1326,
+          "recall_cancel": 1323,
+          "recall_end": 2
+        }
+      },
+      "champions": [
+        {
+          "id": 0,
+          "team": "A",
+          "name": "Prism",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 141,
+          "submitted": 141,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            23,
+            31
+          ],
+          "end_hp": 639.4
+        },
+        {
+          "id": 1,
+          "team": "A",
+          "name": "Vesper Vale",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 1,
+          "collected": 162,
+          "submitted": 162,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            4,
+            45
+          ],
+          "end_hp": 3400
+        },
+        {
+          "id": 2,
+          "team": "A",
+          "name": "Marcella",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 315,
+          "submitted": 315,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            4,
+            57
+          ],
+          "end_hp": 6700
+        },
+        {
+          "id": 3,
+          "team": "A",
+          "name": "Willow",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 44,
+          "submitted": 44,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            5,
+            44
+          ],
+          "end_hp": 574
+        },
+        {
+          "id": 4,
+          "team": "A",
+          "name": "Heart of Ruin",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 368,
+          "submitted": 368,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            5,
+            45
+          ],
+          "end_hp": 4300
+        },
+        {
+          "id": 5,
+          "team": "B",
+          "name": "Prism",
+          "rollovers": 2,
+          "errors": 0,
+          "deaths": 1,
+          "collected": 60,
+          "submitted": 0,
+          "end_bag": 15,
+          "end_alive": true,
+          "end_position": [
+            28,
+            57
+          ],
+          "end_hp": 2020
+        },
+        {
+          "id": 6,
+          "team": "B",
+          "name": "Vesper Vale",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 1,
+          "collected": 90,
+          "submitted": 90,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            30,
+            56
+          ],
+          "end_hp": 2400
+        },
+        {
+          "id": 7,
+          "team": "B",
+          "name": "Marcella",
+          "rollovers": 0,
+          "errors": 0,
+          "deaths": 0,
+          "collected": 75,
+          "submitted": 75,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            26,
+            57
+          ],
+          "end_hp": 1867.2
+        },
+        {
+          "id": 8,
+          "team": "B",
+          "name": "Willow",
+          "rollovers": 3,
+          "errors": 0,
+          "deaths": 2,
+          "collected": 15,
+          "submitted": 15,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            30,
+            57
+          ],
+          "end_hp": 750
+        },
+        {
+          "id": 9,
+          "team": "B",
+          "name": "Heart of Ruin",
+          "rollovers": 1,
+          "errors": 0,
+          "deaths": 2,
+          "collected": 30,
+          "submitted": 30,
+          "end_bag": 0,
+          "end_alive": true,
+          "end_position": [
+            25,
+            56
+          ],
+          "end_hp": 1608
+        }
+      ]
+    }
+  ],
+  "comparisons": {
+    "bigworld": {
+      "inputs": [
+        35585,
+        35585
+      ],
+      "firstInputDiff": null,
+      "roundsMatched": 954,
+      "rounds": [
+        954,
+        954
+      ],
+      "firstRoundDiff": null,
+      "result": [
+        {
+          "outcome": 1,
+          "round": 953,
+          "gems": [
+            1000,
+            757
+          ]
+        },
+        {
+          "outcome": 1,
+          "round": 953,
+          "gems": [
+            1000,
+            757
+          ]
+        }
+      ],
+      "resultMatch": true,
+      "exact": true,
+      "exactIgnoringRollovers": true,
+      "firstInputDiffIgnoringRollovers": null
+    },
+    "pilgrimage": {
+      "inputs": [
+        51803,
+        51803
+      ],
+      "firstInputDiff": null,
+      "roundsMatched": 1359,
+      "rounds": [
+        1359,
+        1359
+      ],
+      "firstRoundDiff": null,
+      "result": [
+        {
+          "outcome": 1,
+          "round": 1358,
+          "gems": [
+            1030,
+            210
+          ]
+        },
+        {
+          "outcome": 1,
+          "round": 1358,
+          "gems": [
+            1030,
+            210
+          ]
+        }
+      ],
+      "resultMatch": true,
+      "exact": true,
+      "exactIgnoringRollovers": true,
+      "firstInputDiffIgnoringRollovers": null
+    }
+  },
+  "interpretation": "All three games had normal drafts and completed. Candidate A exactly matches parent on the corresponding Big World and Pilgrimage payload comparisons. The candidate Prism on A bagged zero in both candidate games: all collected gems were submitted (510/510 Big World; 141/141 Pilgrimage), with no death or champion damage. No strength conclusion from three fixed cells."
+}

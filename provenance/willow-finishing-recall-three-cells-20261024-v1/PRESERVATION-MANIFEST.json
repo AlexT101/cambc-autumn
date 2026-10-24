@@ -1,0 +1,262 @@
+{
+  "schema": "compact-preservation-manifest/v1",
+  "package": "willow-finishing-recall-three-cells-20261024-v1",
+  "files": [
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/RESULT.md",
+      "sha256": "99781911a186ce662e595f83feadcb86695e52f0ed8fc14734e8bdd61d2569db",
+      "bytes": 1996
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/RESULT.json",
+      "sha256": "be856b951e2f9be26812448bad36a3d5772a454bc5b2142d36910c3971f3ae11",
+      "bytes": 19942
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/preflight.json",
+      "sha256": "3b9f6c35ab48e1fafaa75e2f57163a6d4890ab760f58cd6e3ea8a3baebbc9d39",
+      "bytes": 2067
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/three-games.manifest",
+      "sha256": "6d56dc8636e6bff6010c48ce648aae7056294477c968c73ba16f75b98b6a4bfa",
+      "bytes": 2762
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/comparison-bigworld.json",
+      "sha256": "54e92ffb09764685392947e328005aef3c739143f777afa5d3a8b1ed18b78857",
+      "bytes": 427
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/comparison-pilgrimage.json",
+      "sha256": "ff897b1fc8693c964f6c30ca598acca7a3dad5fb32baf42ba62d48db83be6848",
+      "bytes": 432
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/receipts/run.duty.json",
+      "sha256": "9e51ae7548c7d44064970bd78bfe61da42680645a035ec5d0d947cb78dce6a15",
+      "bytes": 5481
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/receipts/extract.duty.json",
+      "sha256": "49a39822f7941fcc58ee018d5192007c9377c17f03d5f34379631e4d5e8d7967",
+      "bytes": 11464
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/receipts/compare.duty.json",
+      "sha256": "e39bb868091e96c4e884b2977a36a2707efb60a1157dfc6106be7696f687b348",
+      "bytes": 17682
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/postflight.json",
+      "sha256": "132dd98fb96e241dbc717f1332e584add41a739009482b2b2dc4d16995380066",
+      "bytes": 1242
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/finishing-recall-A-v33-B-big-world.repl26a",
+      "sha256": "18d05ffa024b8d6bdfa88a680a2624c308031d6b9a21c8da2515a4551b1d215a",
+      "bytes": 59967,
+      "reason": "raw replay bundle or cambc statistics artifact; retained locally, omitted from compact review package"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/finishing-recall-A-v33-B-big-world.statistics.json",
+      "sha256": "ab5a2daa6275b28f3e6ee86d05769cb1373e642d76665ecf9470fd98fa2ec19e",
+      "bytes": 56667,
+      "reason": "raw replay bundle or cambc statistics artifact; retained locally, omitted from compact review package"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/finishing-recall-A-v33-B-pilgrimage.repl26a",
+      "sha256": "f2fc4067dc6552e762cdfad66c999ddc15d25fbdf953330f3eb6f588c10b63ba",
+      "bytes": 79864,
+      "reason": "raw replay bundle or cambc statistics artifact; retained locally, omitted from compact review package"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/finishing-recall-A-v33-B-pilgrimage.statistics.json",
+      "sha256": "680c72e752e7dc3b699da996427ee4ccc2c3f5ce8100dc3764641fc38bd37a13",
+      "bytes": 69055,
+      "reason": "raw replay bundle or cambc statistics artifact; retained locally, omitted from compact review package"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/parent-A-v33-B-big-world.repl26a",
+      "sha256": "c9f3366418f1b906834e1bab149177fc30473f8b9d3596359dd01efe4107a367",
+      "bytes": 59952,
+      "reason": "raw replay bundle or cambc statistics artifact; retained locally, omitted from compact review package"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/outputs/parent-A-v33-B-big-world.statistics.json",
+      "sha256": "ab5a2daa6275b28f3e6ee86d05769cb1373e642d76665ecf9470fd98fa2ec19e",
+      "bytes": 56667,
+      "reason": "raw replay bundle or cambc statistics artifact; retained locally, omitted from compact review package"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/logs/compare.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "reason": "raw stdout/stderr log retained locally; compact duty receipt and native result included"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/logs/compare.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "reason": "raw stdout/stderr log retained locally; compact duty receipt and native result included"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/logs/extract.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "reason": "raw stdout/stderr log retained locally; compact duty receipt and native result included"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/logs/extract.stdout.log",
+      "sha256": "5024b54d7adfb6b48f246f78fcee39c20213e9d368f1d2fb74fecc180f64276c",
+      "bytes": 254,
+      "reason": "raw stdout/stderr log retained locally; compact duty receipt and native result included"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/logs/run.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "reason": "raw stdout/stderr log retained locally; compact duty receipt and native result included"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/logs/run.stdout.log",
+      "sha256": "4ebc7c8fee5b0ea8c1a46878fcea6310988802a7541b84ea68cb7a534eac3dc6",
+      "bytes": 2456,
+      "reason": "raw stdout/stderr log retained locally; compact duty receipt and native result included"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/18d05ffa024b8d6b/events.jsonl.gz",
+      "sha256": "de6cea5bef6e223c4044b2b5636f1b4765f1a7a7be8e43bfe7c28f1216aa49b7",
+      "bytes": 270045,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/18d05ffa024b8d6b/meta.json",
+      "sha256": "4a1dc69914e4ee6beb2d7f6a4d891c6cfba905021c08b15ebebb22931d636a95",
+      "bytes": 6658,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/18d05ffa024b8d6b/rounds.json.gz",
+      "sha256": "93ca334b04c415d8af33ca08f806996893d26af382d80bd482dec1fb33624ac8",
+      "bytes": 59310,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/c9f3366418f1b906/events.jsonl.gz",
+      "sha256": "de6cea5bef6e223c4044b2b5636f1b4765f1a7a7be8e43bfe7c28f1216aa49b7",
+      "bytes": 270045,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/c9f3366418f1b906/meta.json",
+      "sha256": "1ee4df8be2f7baa8680b15a157bdf9e36a73a9888e9120bf0aef45ddee307bdf",
+      "bytes": 6618,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/c9f3366418f1b906/rounds.json.gz",
+      "sha256": "93ca334b04c415d8af33ca08f806996893d26af382d80bd482dec1fb33624ac8",
+      "bytes": 59310,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/enums.json",
+      "sha256": "121ad1348a6b42b89372dd758b870f95f7d5c1c08a3f3ca921015350ed4fc5b8",
+      "bytes": 2248,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/f2fc4067dc6552e7/events.jsonl.gz",
+      "sha256": "ff44da9d24a84b8f5429c8317e71ad7cd01ba819781a5603a6dac92f6e9c0a31",
+      "bytes": 369761,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/f2fc4067dc6552e7/meta.json",
+      "sha256": "f9d4fcc46606da3c5b7c5fc73d76cab7302edd98cc42323971c3099cfdb8d86c",
+      "bytes": 6866,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/f2fc4067dc6552e7/rounds.json.gz",
+      "sha256": "dad04a4a063f4b582ef388023de41e411beec8e866893c590f5f62065eda2102",
+      "bytes": 78348,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/index.json",
+      "sha256": "8ef2f4a47671e6d5f6fc5a6d15b204fed530658b53b9422ca8229c094b902a18",
+      "bytes": 945,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/maps/8caf8eb913649931.json",
+      "sha256": "89da30717c31c0722194a8d04bd60337a4e7718ba41d11ae55f5252e9a1edead",
+      "bytes": 14824,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    },
+    {
+      "path": "provenance/willow-finishing-recall-three-cells-20261024-v1/extracted/maps/c890c7d4607bc45c.json",
+      "sha256": "9f21864a9e2e03469fb7d03b496960402ffbdfa6d09fd8f2da11e124472af4e8",
+      "bytes": 22027,
+      "reason": "expanded replay extraction retained locally; compact per-actor native result is in RESULT.json"
+    }
+  ],
+  "runtime_pins": {
+    "schema": "finishing-recall-three-cells-preflight/v1",
+    "source_aggregates": {
+      "parent_f599": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+      "parent_f599_runtimecopy": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+      "candidate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+      "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+    },
+    "release_wasm": {
+      "parent": {
+        "raw": "7238a4f52b3cbe5faf3a417326f8dcca47c78aaf93be6df04e8def59007828e4",
+        "injected": "da3ddeadd1f5835ea9a434af92a782cc0f433f90eb6c340dc2d85979ca1096a5"
+      },
+      "candidate": {
+        "raw": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+        "injected": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525"
+      },
+      "v33": {
+        "raw": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+        "injected": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+      }
+    },
+    "runtime": {
+      "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+      "sdk_cambc_h_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "sdk_imports_h_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "sdk_cambc_h_mtime_ns": 1792774035481976768,
+      "sdk_imports_h_mtime_ns": 1792774035482489096,
+      "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+    },
+    "map_sha256": {
+      "01big-world.map26a": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+      "00pilgrimage.map26a": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673"
+    },
+    "existing_parent_pilgrimage_control": {
+      "bundle_sha256": "85dd81ebcacf6b1265c79bc8afd0605d8fa68401ff7d8a8e68b49cb4fa81d1da",
+      "inner_sha256": "2af22092f2e52b04c914238954937cf38d106687384be158fddf0f7fb06b4d5d"
+    },
+    "mode": "three sequential normal-draft native games; Release, fuel quantum100000; no source/build changes; jobs1"
+  },
+  "controls": {
+    "bigworld": {
+      "bundle_sha256": "c9f3366418f1b906834e1bab149177fc30473f8b9d3596359dd01efe4107a367",
+      "inner_replay_sha256": "0938072adefab0b56fadb91ab51d3469a37603240a367d0caafc8c936038bcb6",
+      "source": "game 1 in this batch, parent f599 A vs v33 B"
+    },
+    "pilgrimage": {
+      "bundle_path": "provenance/willow-sighting-arbitration-pilgrimage-pair-20261024-v1/outputs/parent-A-vs-v33-pilgrimage.repl26a",
+      "bundle_sha256": "85dd81ebcacf6b1265c79bc8afd0605d8fa68401ff7d8a8e68b49cb4fa81d1da",
+      "inner_replay_sha256": "2af22092f2e52b04c914238954937cf38d106687384be158fddf0f7fb06b4d5d",
+      "source": "existing exact parent control; reused, not rerun"
+    }
+  },
+  "interpretation": "All candidate cells are exact replay matches to corresponding latest-parent controls; no observed gameplay delta in the cells."
+}

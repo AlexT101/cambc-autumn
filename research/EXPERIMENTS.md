@@ -2951,3 +2951,13 @@ and their cost, so component checks are not being treated as combined runtime
 proof. Two combined games are authorized next, Big World B and Pilgrimage A
 against frozen v33 with existing component/parent controls, after the current
 recall-extension receipts are complete.
+
+The three recall-extension runs are complete. On Big World A, parent and
+recall candidate both win1,000–757 at953 with identical35,585-input replays and
+954 matching round hashes; own native status is3 rollovers/0 errors, opponent
+8/0. On Pilgrimage A, the recall candidate exactly matches the saved parent's
+51,803 inputs and1,359 round hashes, winning1,030–210 at1358 with own0/0 and
+opponent6/0. Prism banks510 on Big World and141 on Pilgrimage, survives and
+ends empty in both. Source/binary/SDK pins remain unchanged. Thus these two
+additional cells show no observable gameplay drift, while the earlier
+Big World B witness changes precisely at the intended recall decision.

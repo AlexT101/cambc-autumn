@@ -1,0 +1,40 @@
+{
+  "schema": "finishing-recall-three-cells-preflight/v1",
+  "source_aggregates": {
+    "parent_f599": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+    "parent_f599_runtimecopy": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+    "candidate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "release_wasm": {
+    "parent": {
+      "raw": "7238a4f52b3cbe5faf3a417326f8dcca47c78aaf93be6df04e8def59007828e4",
+      "injected": "da3ddeadd1f5835ea9a434af92a782cc0f433f90eb6c340dc2d85979ca1096a5"
+    },
+    "candidate": {
+      "raw": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+      "injected": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525"
+    },
+    "v33": {
+      "raw": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "injected": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+    }
+  },
+  "runtime": {
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "sdk_cambc_h_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "sdk_imports_h_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "sdk_cambc_h_mtime_ns": 1792774035481976768,
+    "sdk_imports_h_mtime_ns": 1792774035482489096,
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+  },
+  "map_sha256": {
+    "01big-world.map26a": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+    "00pilgrimage.map26a": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673"
+  },
+  "existing_parent_pilgrimage_control": {
+    "bundle_sha256": "85dd81ebcacf6b1265c79bc8afd0605d8fa68401ff7d8a8e68b49cb4fa81d1da",
+    "inner_sha256": "2af22092f2e52b04c914238954937cf38d106687384be158fddf0f7fb06b4d5d"
+  },
+  "mode": "three sequential normal-draft native games; Release, fuel quantum100000; no source/build changes; jobs1"
+}

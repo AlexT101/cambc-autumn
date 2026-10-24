@@ -1,0 +1,29 @@
+{
+  "schema": "finishing-recall-three-cells-postflight/v1",
+  "source_aggregates": {
+    "parent": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+    "candidate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "release_wasm": {
+    "parent": {
+      "raw": "7238a4f52b3cbe5faf3a417326f8dcca47c78aaf93be6df04e8def59007828e4",
+      "injected": "da3ddeadd1f5835ea9a434af92a782cc0f433f90eb6c340dc2d85979ca1096a5"
+    },
+    "candidate": {
+      "raw": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+      "injected": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525"
+    },
+    "v33": {
+      "raw": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "injected": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+    }
+  },
+  "sdk": {
+    "cambc_h_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "cambc_h_mtime_ns": 1792774035481976768,
+    "imports_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "imports_mtime_ns": 1792774035482489096
+  },
+  "equal_to_preflight": true
+}
