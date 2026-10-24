@@ -143,6 +143,14 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   Ruin (8e53ec9): 49.0% (gold earned -5-10%, deaths unchanged); first Bruiser in Health on those (5f91ee8): 50.2%.
   Out-of-fuel turns level. Dropped. If retried: a fight-survival term for Health in the emblem model, judged against
   v37 or on the ladder, not a stat fixed per champion.
+  Retried for Prism as that term (`b3-fight`, 2026-10-24): `upkeep_cost` adds deaths a turn x (respawn + walk out +
+  2 x mean bag x `rounds_per_gem`) x P(now)/P(build), P = output x max health / damage taken at the mean bag's Focus
+  (ladder fights: log-odds ~2 per unit log ratio of either, so at even odds deaths fall in proportion to P); deaths
+  counted from 1 per 1000 alive turns. Prism bought Health (ladder suite r1000: 2404 vs 1570 max health, deaths 1.00
+  vs 1.26 a game) but against 5d43ecf: 50.4% of 1104 (47.4-53.3; ladder 53.8, gen 51.2, gen-s1 49.0), out-of-fuel
+  turns 2693 vs 2486. On top of CHANGES 123's shop fix (`b3-shopfight` against `b3-shop`): 50.8% of 1104 (47.9-53.8;
+  ladder 56.2, gen 51.2, gen-s1 49.6). Dropped; not extended to the other champions. Self-play may hide it (both
+  sides share the build), so a ladder read is the remaining test.
 - From the teammate's v40 (`origin/codex/willow-prism`), ported together (`port/v40-bits` 15d87ae, 2026-10-23): a
   Prism refusing a camp attack whose wakes would hit an ally holding a capture, recalling or tributing, or kill one;
   a healthy Vesper on a cleared gold-only group with no enemy seen holding it so her +33% applies. Against eba051e:
