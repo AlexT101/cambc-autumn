@@ -1572,6 +1572,20 @@ without inventing healing-as-DPS savings. Historical same-shop337f games show so
 activation, but each new arm still requires actual purchase evidence and runtime validation.
 Research: `willow-support-items-and-treasure-review.md`. Canonical remainsa67.
 
+A direct Health sibling of the first-protection arm is now source-reviewed: `3b815902`.
+Only when `2ae444fa` would select fresh Jungle Strength in its first-protection override,
+it returns the actual-valued Jungle Health choice. Begun items, Durability, Treasure timing
+rules and all other roles remain unchanged. Completion exchanges 15 Strength for 250 HP at
+the same cost and camp mitigation; the extra HP above the 35% recall reserve is 162.5.
+Neither healing capacity nor its worthwhile-heal threshold changes. This arm is needed
+because the protection smoke games selected Jungle Strength; later Health purchases do
+not test the first protective stat. Quotes may affect decisions before any purchase, so
+absence of a qualifying purchase is not evidence of an identical policy trajectory.
+See `willow-health-selection-and-first-protection-review.md`,
+`willow-first-jungle-health-comparison.md` and the actual-source review. Full source
+snapshots and exact parent/cumulative patches are preserved in
+`provenance/willow-first-jungle-health-20261023-v1/`. Runtime qualification is pending.
+
 ### Upstream c71be8c integration prepared separately
 
 Origin/main advanced froma5749c4 toc71be8c with end-of-turn terrain-table preparation and

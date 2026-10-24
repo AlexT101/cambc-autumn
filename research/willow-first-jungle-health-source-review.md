@@ -1,0 +1,9 @@
+# First Jungle Health: actual source review
+
+2026-10-23. **Source-only PASS.** Independently rehashed `bots/variants/willow-first-jungle-health-work/src` as `3b8159029a5786f6ebbf54b7b28ef5c18a5a35058ed50642a3342b9251c5da76`. Reviewed the exact patch against frozen first-protection2ae: `provenance/willow-first-jungle-health-20261023-v1/candidate-v1-vs-2ae.patch`, SHA `e43df1c1767afc5c6cdc0394d10701ceb900fabc758f5fd72d2ace3d3879bf3c`.
+
+The only semantic change is within2ae's existing fresh first-protection override: an existing Jungle Strength winner returns `value(jungle, health_stat)`. Willow-only, no completed Treasure, no begun Treasure, no completed Jungle/Durability and existing protective-family eligibility remain. All earlier partial returns remain; begun Strength finishes as Strength and begun Jungle Health finishes as Health. A Durability winner and all later choices remain unchanged. Completed protection closes the override through existing inventory checks.
+
+The standard value helper prices the actual remaining Health shards and Jungle completion using current stats plus same-shop purchases. The result feeds existing quotes/shopping consumers; no Strength savings are borrowed for this substituted item. No change to raw damage output, healing, thresholds, caches, other champions or gameplay routes. Existing Treasury proxy pricing and quote-cache limitations are not silently repaired. Different truthful quotes can change behavior before purchase; absence of a qualifying purchase does not prove an identical trajectory.
+
+No source blocker found. No builds or runtime by this reviewer. This approves compilation/testing, not a gain in survival, service or economy; the comparison should retain2ae as its direct parent and count the first Health shard, not only emblem completion.

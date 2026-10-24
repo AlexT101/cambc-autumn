@@ -1,0 +1,22 @@
+diff --git a/bots/variants/willow-comms-cached-endpoints-work/src/bot.cpp b/bots/variants/willow-first-jungle-health-work/src/bot.cpp
+index 8d02d7f..d255042 100644
+--- a/bots/variants/willow-comms-cached-endpoints-work/src/bot.cpp
++++ b/bots/variants/willow-first-jungle-health-work/src/bot.cpp
+@@ -1286,8 +1286,16 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
+     // from round ~200 buys 5-8 more shards a champion (ladder), more than any first passive saves.
+     if (!has_family(owned, treasure)) {
+         int stat = best.stat;
++        bool treasure_begun = false;
+         for (int s = strength_stat; s <= health_stat; ++s)
+-            if (owned[shard_of(treasure, s)] > 0) stat = s;
++            if (owned[shard_of(treasure, s)] > 0) stat = s, treasure_begun = true;
++        // Finish Treasure already begun; otherwise allow the upkeep winner's first protection.
++        if (self.type == cambc::champion_type::willow && !treasure_begun
++            && !has_family(owned, jungle) && !has_family(owned, durability)
++            && (best.family == jungle || best.family == durability)) {
++            if (best.family == jungle && best.stat == strength_stat) return value(jungle, health_stat);
++            return best;
++        }
+         return {treasure, stat, best.saved, (5 - owned[shard_of(treasure, stat)]) * shard_price};
+     }
+     return best;

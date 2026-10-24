@@ -1,0 +1,16 @@
+diff --git a/bots/variants/willow-first-protection-work/src/bot.cpp b/bots/variants/willow-first-jungle-health-work/src/bot.cpp
+index 62c81e3..d255042 100644
+--- a/bots/variants/willow-first-protection-work/src/bot.cpp
++++ b/bots/variants/willow-first-jungle-health-work/src/bot.cpp
+@@ -1292,8 +1292,10 @@ Emblem best_emblem(const World& world, const Build& bought = {}) {
+         // Finish Treasure already begun; otherwise allow the upkeep winner's first protection.
+         if (self.type == cambc::champion_type::willow && !treasure_begun
+             && !has_family(owned, jungle) && !has_family(owned, durability)
+-            && (best.family == jungle || best.family == durability))
++            && (best.family == jungle || best.family == durability)) {
++            if (best.family == jungle && best.stat == strength_stat) return value(jungle, health_stat);
+             return best;
++        }
+         return {treasure, stat, best.saved, (5 - owned[shard_of(treasure, stat)]) * shard_price};
+     }
+     return best;
