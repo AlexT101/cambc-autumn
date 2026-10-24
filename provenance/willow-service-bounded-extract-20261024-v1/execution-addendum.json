@@ -1,0 +1,121 @@
+{
+  "schema": "service-bounded-execution-addendum/v1",
+  "execution_plan_sha256": "b42240f416b849f8b3f0a75b34365b075d96574bc0ba46275bd45b607145c3c6",
+  "wrapper_sha256": "e9c7b85c19dc2034f6ba95e030d9ed5ac1e45ee8bd965e75edc343c7942cab63",
+  "wrapper_duty": {
+    "run_seconds": 0.1,
+    "stop_seconds": 0.9,
+    "approx_active_fraction": 0.1,
+    "nice": 19,
+    "process_group_isolated": true,
+    "note": "Approximate duty-cycle CPU reduction, not a hard CPU cap."
+  },
+  "extract": {
+    "receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/extract.receipt.json",
+    "receipt_sha256": "481d179ac54ab7d2edfbb404d2c7179984103006e7c5ace7a43bc83148b9d99b",
+    "exit_code": 0,
+    "stdout_sha256": "82957dd3d68be1f8f2493da523df893d9a9c0ca967d805ab6b7f155924446cc5",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "index_sha256": "e69afbb817e89c09e246ceeaaceb0a9e2211ebaf33c137f9386b7a8cfe506109",
+    "games": [
+      {
+        "arm": "f7-base",
+        "label": "Cells A",
+        "source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/f7-base-cells-102306611-A.repl26a",
+        "archive_sha256": "c0a8dc65ac403fc6b52f1acbb7823ad2d64eed5608c4c1f73dadc523832a00f2",
+        "embedded_replay_payload_sha256": "98bc90dd0c93f124b740198c350ce674c9bbfb282cdc9c763c58308486e5e863",
+        "output_dir": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/extract/c0a8dc65ac403fc6",
+        "meta_sha256": "92e8cfcf92305963a622326ec50a1f44b440ecdad1876e99c237b8a23a1ae965",
+        "events_sha256": "8bc0490f7ce0bc87c3ba30d362c901670f10c2aeda61feba5e3e2e168edbabdd",
+        "rounds_sha256": "c6da0e96c19c21e46fcbdd797cacdc2b7f31611f4f91e8427007f4ff53237d81",
+        "validation": {
+          "ok": true,
+          "hard": [],
+          "soft": []
+        }
+      },
+      {
+        "arm": "f7-base",
+        "label": "Archipelago 102306002 A",
+        "source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/f7-base-archipelago-102306002-A-A.repl26a",
+        "archive_sha256": "99c98cbc7a17df1679488b7415559d6d06d39a9421040d33b427da9b588a2e01",
+        "embedded_replay_payload_sha256": "cd392f9da1ef4123c2007dc6aa2c36ab7d12839de0697e4b70caaa7334c2d9c9",
+        "output_dir": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/extract/99c98cbc7a17df16",
+        "meta_sha256": "d9c2f2a3e2c2fa9346c98ed86c32c858188056240053726cd3fd89effa465a98",
+        "events_sha256": "fc47c41a7c804822637946491084923e6c6a591ac822afe38fd29befc388f7be",
+        "rounds_sha256": "d29574544947047d12910bd674d16276151b18202821d4afc514f5b15bd6fe65",
+        "validation": {
+          "ok": true,
+          "hard": [],
+          "soft": []
+        }
+      },
+      {
+        "arm": "service-candidate",
+        "label": "Cells A",
+        "source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/service-candidate-cells-102306611-A.repl26a",
+        "archive_sha256": "ea43fa1d05c1447869998d798e0215a0d82cecb7676d68db3b4aba0534c3df94",
+        "embedded_replay_payload_sha256": "5637be68c905d41beef35847349edc0c7963ecc3d277950eeadd9535fb6edf01",
+        "output_dir": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/extract/ea43fa1d05c14478",
+        "meta_sha256": "5bc4cbb2a084b94539f41cbb9e656f83c323135893e0bccbc5799a785e1d2159",
+        "events_sha256": "9415746809e9674cf7d3644a94578e38bbf719471d76adb08f28254a150f8d3e",
+        "rounds_sha256": "622f0291836d5efb1207d28b3e8194fb485ebf1aee6a0396d1e4ae554dcfc695",
+        "validation": {
+          "ok": true,
+          "hard": [],
+          "soft": []
+        }
+      },
+      {
+        "arm": "service-candidate",
+        "label": "Archipelago 102306002 A",
+        "source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/service-candidate-archipelago-102306002-A-A.repl26a",
+        "archive_sha256": "09c27145cbb80760f396981289e0129ffc8c46665916349f3bf711c306e9750e",
+        "embedded_replay_payload_sha256": "12baa37e6499db340caf0d72692402391b45cccd0985fe0ac7299773bf21c5a9",
+        "output_dir": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/extract/09c27145cbb80760",
+        "meta_sha256": "33e6d3d0623540cb05cccd161dd8abe141b605652078616c57d3fbc6c3b22f4a",
+        "events_sha256": "103353d7e488b5a1f8a677dac9d84c9f314935a2247529b020f0bfa9df35a0d3",
+        "rounds_sha256": "77c9d657e9c73a18d4df400d6daae4018f0df762668fb8f6ca9112fd30517d93",
+        "validation": {
+          "ok": true,
+          "hard": [],
+          "soft": []
+        }
+      }
+    ]
+  },
+  "native_audits": [
+    {
+      "receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/native-f7-base.receipt.json",
+      "receipt_sha256": "514baa66e9259024b5d38def97bf7788d84d6f1803ef1b2f901d8ed74d30f5a1",
+      "stdout_sha256": "8df251f1238c71dcea3050c63a93565d2548e81133ae80c2504bb0dcc805f996",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/native-f7-base.json",
+      "output_sha256": "825fb8faaecf02d2786d8f17d9a301ddc3cc025127814555358fc7ad866f3cb2",
+      "exit_code": 0
+    },
+    {
+      "receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/native-service.receipt.json",
+      "receipt_sha256": "dd339bf276204001e69c2cba4de02a42f39b4a3ac8eeb413378a4296fe97a7d6",
+      "stdout_sha256": "431efb47d3bdafaec864b50d7dc4fac62adf08544de5848a1feffe8c5994b0c2",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/native-service.json",
+      "output_sha256": "36be2a500e181977e7238f971ece5ea0ea76c2a89fd565f4d9fb93de81a5c8eb",
+      "exit_code": 0
+    }
+  ],
+  "base_native_output_path_correction": {
+    "actual_command_output_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-service-bounded-extract-20261024-v1/native-f7-base.json",
+    "original_output_sha256": "825fb8faaecf02d2786d8f17d9a301ddc3cc025127814555358fc7ad866f3cb2",
+    "byte_identical_preserved_copy": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/native-f7-base.json",
+    "copy_sha256": "825fb8faaecf02d2786d8f17d9a301ddc3cc025127814555358fc7ad866f3cb2",
+    "note": "The first bounded base native audit wrote to this accidentally short absolute path; its stdout/receipt and original output were preserved, then bytes were copied to the planned provenance-local path without replacing anything."
+  },
+  "tool_pins": {
+    "tools/replay/extract.mjs": "2f1704991077bed0bac08dc3319ecd54ab88e42e2a23516d81974ead37fc180f",
+    "tools/replay/engine.mjs": "f0f3c870c5331b13bad2f0950fed7fa09d65235a9b8f77d6867072b62c99c2c6",
+    "tools/replay/audit_native_status.mjs": "17b3f0e95b2a848fae057909c82fa71c05049dcb8271c50b7952de8f649fcf1d",
+    "tools/replay/engine/version.json": "5e0f0e706f4cd178b98ba1b9238ef0a4858e12020d2a4b2eb8cba49aac4afae7",
+    "tools/replay/engine/v1_0_3.wasm": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "schema": "service-bounded-extraction-plan/v1",
+  "scope": "exact four previously saved replays only; no rerun/build",
+  "wrapper": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/duty_run.py",
+  "wrapper_sha256": "e9c7b85c19dc2034f6ba95e030d9ed5ac1e45ee8bd965e75edc343c7942cab63",
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "workers": 1,
+  "argv": [
+    "node",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/extract.mjs",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/f7-base-cells-102306611-A.repl26a",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/f7-base-archipelago-102306002-A-A.repl26a",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/service-candidate-cells-102306611-A.repl26a",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/service-candidate-archipelago-102306002-A-A.repl26a",
+    "--threads",
+    "1",
+    "--out",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/extract"
+  ],
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/extract.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/extract.stderr.log",
+  "receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/extract.receipt.json",
+  "native_audit_argv_by_arm": {
+    "f7-base": [
+      "node",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/audit_native_status.mjs",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/native-inputs/f7-base",
+      "--compact",
+      "--out",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/native-f7-base.json"
+    ],
+    "service-candidate": [
+      "node",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/audit_native_status.mjs",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/native-inputs/service-candidate",
+      "--compact",
+      "--out",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/native-service-candidate.json"
+    ]
+  },
+  "source_inputs": [
+    {
+      "arm": "f7-base",
+      "map": "gen-cells-102306611",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/f7-base-cells-102306611-A.repl26a",
+      "zip_sha256": "c0a8dc65ac403fc6b52f1acbb7823ad2d64eed5608c4c1f73dadc523832a00f2"
+    },
+    {
+      "arm": "f7-base",
+      "map": "gen-archipelago-102306002",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/f7-base-archipelago-102306002-A-A.repl26a",
+      "zip_sha256": "99c98cbc7a17df1679488b7415559d6d06d39a9421040d33b427da9b588a2e01"
+    },
+    {
+      "arm": "service-candidate",
+      "map": "gen-cells-102306611",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/service-candidate-cells-102306611-A.repl26a",
+      "zip_sha256": "ea43fa1d05c1447869998d798e0215a0d82cecb7676d68db3b4aba0534c3df94"
+    },
+    {
+      "arm": "service-candidate",
+      "map": "gen-archipelago-102306002",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/service-candidate-archipelago-102306002-A-A.repl26a",
+      "zip_sha256": "09c27145cbb80760f396981289e0129ffc8c46665916349f3bf711c306e9750e"
+    }
+  ]
+}

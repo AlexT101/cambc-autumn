@@ -1,0 +1,264 @@
+{
+  "schema": "native-turn-status-audit/v1",
+  "batch": "provenance/willow-service-bounded-extract-20261024-v1/native-inputs/f7-base",
+  "batch_results_sha256": "977116e9f2b3354a331337fceb375743f6f64ae76e9cdd9aa93ed18004f247a8",
+  "release": false,
+  "games": 2,
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "snapshot_mode": "v1_0_3_compact_timeline",
+  "compact_timeline_pin": {
+    "version": "v1_0_3",
+    "wasmSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "officialDecoderSha256": "960affde6198366d2347bd21f43efec5bc06acc6cb0c53e5f7f96dbf87f027e6",
+    "visualizerBundleSha256": "b80358b2189444187c38880ee7218d84b4a013a1b379b93470659c4c6b2c4a24",
+    "snapshotSize": 40152
+  },
+  "source_pins": {
+    "arm": "f7-base",
+    "source_aggregate": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+    "reference_source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+    "run_manifest_sha256": "8ab81865db0fc7b58aa8fd72c614c1c3b8536d342f195f4742180c975fce9bed"
+  },
+  "bots": [
+    {
+      "bot": "service-base-f7",
+      "bot_index": 0,
+      "games": 2,
+      "play": {
+        "rollover": 1,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    },
+    {
+      "bot": "v33",
+      "bot_index": 1,
+      "games": 2,
+      "play": {
+        "rollover": 9,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    }
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "replay": "replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/f7-base-cells-102306611-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "c0a8dc65ac403fc6b52f1acbb7823ad2d64eed5608c4c1f73dadc523832a00f2",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-cells-102306611.map26a",
+      "map_format": "map26a",
+      "map_sha256": "e5d1f71bc32244cae690bd67afa84889d49cde8d262e17f211d656de574e4cc8",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "service-base-f7",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 9,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "service-base-f7",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 8,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "replay": "replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/f7-base-archipelago-102306002-A-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "99c98cbc7a17df1679488b7415559d6d06d39a9421040d33b427da9b588a2e01",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-archipelago-102306002.map26a",
+      "map_format": "map26a",
+      "map_sha256": "fd6d689422a79c930535cde619e7f33fe0b6074f172fe2184749ab35685b54c7",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "service-base-f7",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 1,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "service-base-f7",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "notes": "Counts are native replay step kinds 26 (Turn rollover/fuel) and 27 (Bot error), classified by step.phase: 10 play, 12 draft, all remaining phases under other. For play statuses, physical team comes from the actor champion record in the same snapshot, not header.team; champion buckets use native actor kind/index. Snapshot mode is the pinned v1_0_3 compact timeline reader; the auditor does not extract events or metrics. Source pins are copied from results.json or adjacent economic-capture-summary.json when available."
+}

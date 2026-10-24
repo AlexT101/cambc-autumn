@@ -1,0 +1,4112 @@
+{
+  "schema": "service-exact-four-event-witness/v3",
+  "scope": "exact four previously run Cells-A and Archipelago-102306002-A replays only; v3 labels archive and embedded native payload hashes separately and records recall counts by integer actor id",
+  "games": [
+    {
+      "arm": "f7-base",
+      "label": "Cells A",
+      "source": "replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/f7-base-cells-102306611-A.repl26a",
+      "map": {
+        "name": "f7-base-cells-102306611-A",
+        "hash": "4d7a316caff5e385",
+        "width": 55,
+        "height": 30,
+        "symmetry": "horizontal"
+      },
+      "archive_sha256": "c0a8dc65ac403fc6b52f1acbb7823ad2d64eed5608c4c1f73dadc523832a00f2",
+      "embedded_replay_payload_sha256": "98bc90dd0c93f124b740198c350ce674c9bbfb282cdc9c763c58308486e5e863",
+      "extraction_meta_sha256": "92e8cfcf92305963a622326ec50a1f44b440ecdad1876e99c237b8a23a1ae965",
+      "events_sha256": "8bc0490f7ce0bc87c3ba30d362c901670f10c2aeda61feba5e3e2e168edbabdd",
+      "rounds_sha256": "c6da0e96c19c21e46fcbdd797cacdc2b7f31611f4f91e8427007f4ff53237d81",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      },
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "result": {
+        "winner": 0,
+        "outcome": 1,
+        "rounds": 875,
+        "gems": [
+          1131,
+          727
+        ],
+        "steps": 162037
+      },
+      "draft": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "willow": [
+        {
+          "id": 3,
+          "team": "A",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 1,
+            "earnedGold": 748,
+            "spentGold": 610,
+            "collectedGems": 72,
+            "submittedGems": 54,
+            "championDamageDone": 76,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 17421.84889602661,
+            "monsterDamageTaken": 3510,
+            "healingDone": 16559.320739746094,
+            "shieldingDone": 0,
+            "itemsBought": [
+              6,
+              5,
+              7,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1,
+              36,
+              5,
+              37,
+              1
+            ],
+            "consumablesBought": [
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          "shop_events_chronological": [
+            {
+              "round": 87,
+              "turn": 6,
+              "team": "A",
+              "gold_delta": -60,
+              "items": {
+                "Treasure Shard of Strength": 2
+              }
+            },
+            {
+              "round": 234,
+              "turn": 7,
+              "team": "A",
+              "gold_delta": -60,
+              "items": {
+                "Treasure Shard of Strength": 2
+              }
+            },
+            {
+              "round": 255,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -30,
+              "items": {
+                "Treasure Shard of Strength": -4,
+                "Treasure Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 255,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -60,
+              "items": {
+                "Jungle Shard of Strength": 2
+              }
+            },
+            {
+              "round": 255,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 405,
+              "turn": 4,
+              "team": "A",
+              "gold_delta": -90,
+              "items": {
+                "Jungle Shard of Strength": -2,
+                "Jungle Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 447,
+              "turn": 6,
+              "team": "A",
+              "gold_delta": -60,
+              "items": {
+                "Power Shard of Strength": 2
+              }
+            },
+            {
+              "round": 707,
+              "turn": 4,
+              "team": "A",
+              "gold_delta": -90,
+              "items": {
+                "Power Shard of Strength": -2,
+                "Power Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 707,
+              "turn": 4,
+              "team": "A",
+              "gold_delta": -150,
+              "items": {
+                "Bruiser Emblem of Strength": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 0,
+            "earnedGold": 1044,
+            "spentGold": 1030,
+            "collectedGems": 72,
+            "submittedGems": 72,
+            "championDamageDone": 266.3999938964844,
+            "championDamageTaken": 622.0001220703125,
+            "monsterDamageDone": 20391.692626953125,
+            "monsterDamageTaken": 3686.3999786376953,
+            "healingDone": 12273.399780273438,
+            "shieldingDone": 0,
+            "itemsBought": [
+              6,
+              14,
+              7,
+              2,
+              16,
+              5,
+              17,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1,
+              36,
+              5,
+              37,
+              1
+            ],
+            "consumablesBought": [
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          "shop_events_chronological": [
+            {
+              "round": 253,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -60,
+              "items": {
+                "Treasure Shard of Strength": 2
+              }
+            },
+            {
+              "round": 253,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 352,
+              "turn": 2,
+              "team": "B",
+              "gold_delta": -90,
+              "items": {
+                "Treasure Shard of Strength": -2,
+                "Treasure Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 416,
+              "turn": 0,
+              "team": "B",
+              "gold_delta": -150,
+              "items": {
+                "Jungle Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 486,
+              "turn": 2,
+              "team": "B",
+              "gold_delta": -150,
+              "items": {
+                "Power Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 535,
+              "turn": 5,
+              "team": "B",
+              "gold_delta": -150,
+              "items": {
+                "Power Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 535,
+              "turn": 5,
+              "team": "B",
+              "gold_delta": -90,
+              "items": {
+                "Bruiser Shard of Strength": 3
+              }
+            },
+            {
+              "round": 691,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -60,
+              "items": {
+                "Bruiser Shard of Strength": -3,
+                "Bruiser Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 691,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -150,
+              "items": {
+                "Durability Emblem of Health": 1
+              }
+            },
+            {
+              "round": 691,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -120,
+              "items": {
+                "Power Shard of Strength": 4
+              }
+            }
+          ]
+        }
+      ],
+      "teamA_willow_recall_counts": {
+        "recall_start": 752,
+        "recall_cancel": 743,
+        "recall_end": 8
+      },
+      "opponent_willow_recall_counts": {
+        "recall_start": 684,
+        "recall_cancel": 674,
+        "recall_end": 10
+      },
+      "teamA_willow_heal_casts": [
+        {
+          "round": 9,
+          "turn": 4,
+          "heals": [
+            [
+              2,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 17,
+          "turn": 4,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 25,
+          "turn": 4,
+          "heals": [
+            [
+              4,
+              300
+            ]
+          ]
+        },
+        {
+          "round": 33,
+          "turn": 4,
+          "heals": [
+            [
+              2,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 58,
+          "turn": 3,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 66,
+          "turn": 1,
+          "heals": [
+            [
+              1,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 78,
+          "turn": 7,
+          "heals": [
+            [
+              0,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 113,
+          "turn": 0,
+          "heals": [
+            [
+              4,
+              312
+            ]
+          ]
+        },
+        {
+          "round": 121,
+          "turn": 0,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 130,
+          "turn": 1,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 225,
+          "turn": 8,
+          "heals": [
+            [
+              0,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 236,
+          "turn": 1,
+          "heals": [
+            [
+              2,
+              252
+            ]
+          ]
+        },
+        {
+          "round": 244,
+          "turn": 1,
+          "heals": [
+            [
+              4,
+              264
+            ]
+          ]
+        },
+        {
+          "round": 278,
+          "turn": 9,
+          "heals": [
+            [
+              2,
+              252
+            ]
+          ]
+        },
+        {
+          "round": 286,
+          "turn": 7,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 303,
+          "turn": 8,
+          "heals": [
+            [
+              4,
+              225.5
+            ]
+          ]
+        },
+        {
+          "round": 311,
+          "turn": 8,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 319,
+          "turn": 2,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 327,
+          "turn": 4,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 335,
+          "turn": 2,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 343,
+          "turn": 4,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 351,
+          "turn": 4,
+          "heals": [
+            [
+              2,
+              336
+            ]
+          ]
+        },
+        {
+          "round": 361,
+          "turn": 2,
+          "heals": [
+            [
+              2,
+              303
+            ]
+          ]
+        },
+        {
+          "round": 369,
+          "turn": 0,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 499,
+          "turn": 6,
+          "heals": [
+            [
+              0,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 507,
+          "turn": 6,
+          "heals": [
+            [
+              0,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 515,
+          "turn": 4,
+          "heals": [
+            [
+              0,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 523,
+          "turn": 6,
+          "heals": [
+            [
+              1,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 531,
+          "turn": 4,
+          "heals": [
+            [
+              1,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 539,
+          "turn": 4,
+          "heals": [
+            [
+              1,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 547,
+          "turn": 2,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 555,
+          "turn": 4,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 563,
+          "turn": 2,
+          "heals": [
+            [
+              0,
+              356.4
+            ]
+          ]
+        },
+        {
+          "round": 613,
+          "turn": 4,
+          "heals": [
+            [
+              4,
+              246
+            ]
+          ]
+        },
+        {
+          "round": 622,
+          "turn": 5,
+          "heals": [
+            [
+              4,
+              252
+            ]
+          ]
+        },
+        {
+          "round": 632,
+          "turn": 3,
+          "heals": [
+            [
+              1,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 640,
+          "turn": 3,
+          "heals": [
+            [
+              1,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 648,
+          "turn": 9,
+          "heals": [
+            [
+              1,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 656,
+          "turn": 9,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 670,
+          "turn": 9,
+          "heals": [
+            [
+              1,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 678,
+          "turn": 9,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 686,
+          "turn": 9,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 694,
+          "turn": 7,
+          "heals": [
+            [
+              0,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 702,
+          "turn": 5,
+          "heals": [
+            [
+              0,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 737,
+          "turn": 6,
+          "heals": [
+            [
+              4,
+              226.8
+            ]
+          ]
+        },
+        {
+          "round": 745,
+          "turn": 4,
+          "heals": [
+            [
+              4,
+              226.8
+            ]
+          ]
+        },
+        {
+          "round": 753,
+          "turn": 6,
+          "heals": [
+            [
+              4,
+              226.8
+            ]
+          ]
+        },
+        {
+          "round": 816,
+          "turn": 5,
+          "heals": [
+            [
+              2,
+              375
+            ]
+          ]
+        },
+        {
+          "round": 824,
+          "turn": 7,
+          "heals": [
+            [
+              0,
+              375
+            ]
+          ]
+        },
+        {
+          "round": 832,
+          "turn": 9,
+          "heals": [
+            [
+              0,
+              375
+            ]
+          ]
+        },
+        {
+          "round": 844,
+          "turn": 1,
+          "heals": [
+            [
+              2,
+              375
+            ]
+          ]
+        }
+      ],
+      "teamA_willow_healing_event_sum": 16559.299999999996,
+      "camp_conversion_counts_by_team": {
+        "0": 61,
+        "1": 55
+      },
+      "first_20_camp_conversion_events": [
+        {
+          "r": 27,
+          "t": -1,
+          "k": "capture",
+          "g": 9,
+          "team": 0,
+          "shares": [
+            [
+              0,
+              18,
+              100
+            ],
+            [
+              2,
+              18,
+              100
+            ]
+          ]
+        },
+        {
+          "r": 27,
+          "t": -1,
+          "k": "capture",
+          "g": 10,
+          "team": 1,
+          "shares": [
+            [
+              5,
+              36,
+              200
+            ]
+          ]
+        },
+        {
+          "r": 32,
+          "t": -1,
+          "k": "capture",
+          "g": 11,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 33,
+          "t": -1,
+          "k": "capture",
+          "g": 12,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              0,
+              53
+            ]
+          ]
+        },
+        {
+          "r": 34,
+          "t": -1,
+          "k": "capture",
+          "g": 14,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 41,
+          "t": -1,
+          "k": "capture",
+          "g": 20,
+          "team": 1,
+          "shares": [
+            [
+              7,
+              0,
+              60
+            ]
+          ]
+        },
+        {
+          "r": 42,
+          "t": -1,
+          "k": "capture",
+          "g": 19,
+          "team": 0,
+          "shares": [
+            [
+              1,
+              0,
+              79
+            ]
+          ]
+        },
+        {
+          "r": 44,
+          "t": -1,
+          "k": "capture",
+          "g": 13,
+          "team": 0,
+          "shares": [
+            [
+              3,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 50,
+          "t": -1,
+          "k": "capture",
+          "g": 24,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              0,
+              26
+            ]
+          ]
+        },
+        {
+          "r": 58,
+          "t": -1,
+          "k": "capture",
+          "g": 17,
+          "team": 0,
+          "shares": [
+            [
+              1,
+              0,
+              27
+            ]
+          ]
+        },
+        {
+          "r": 60,
+          "t": -1,
+          "k": "capture",
+          "g": 21,
+          "team": 0,
+          "shares": [
+            [
+              2,
+              0,
+              60
+            ]
+          ]
+        },
+        {
+          "r": 63,
+          "t": -1,
+          "k": "capture",
+          "g": 23,
+          "team": 0,
+          "shares": [
+            [
+              3,
+              0,
+              20
+            ]
+          ]
+        },
+        {
+          "r": 71,
+          "t": -1,
+          "k": "capture",
+          "g": 8,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              36,
+              200
+            ]
+          ]
+        },
+        {
+          "r": 73,
+          "t": -1,
+          "k": "capture",
+          "g": 18,
+          "team": 1,
+          "shares": [
+            [
+              5,
+              0,
+              20
+            ]
+          ]
+        },
+        {
+          "r": 76,
+          "t": -1,
+          "k": "capture",
+          "g": 22,
+          "team": 1,
+          "shares": [
+            [
+              7,
+              0,
+              60
+            ]
+          ]
+        },
+        {
+          "r": 88,
+          "t": -1,
+          "k": "capture",
+          "g": 11,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 98,
+          "t": -1,
+          "k": "capture",
+          "g": 19,
+          "team": 0,
+          "shares": [
+            [
+              0,
+              0,
+              60
+            ]
+          ]
+        },
+        {
+          "r": 102,
+          "t": -1,
+          "k": "capture",
+          "g": 12,
+          "team": 1,
+          "shares": [
+            [
+              7,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 103,
+          "t": -1,
+          "k": "capture",
+          "g": 13,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 105,
+          "t": -1,
+          "k": "capture",
+          "g": 20,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              0,
+              80
+            ]
+          ]
+        }
+      ],
+      "native_status": {
+        "play": {
+          "rollover": 9,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "service-base-f7",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 8,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "arm": "f7-base",
+      "label": "Archipelago 102306002 A",
+      "source": "replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/f7-base-archipelago-102306002-A-A.repl26a",
+      "map": {
+        "name": "f7-base-archipelago-102306002-A-A",
+        "hash": "dcb8a86d9d316438",
+        "width": 77,
+        "height": 77,
+        "symmetry": "vertical"
+      },
+      "archive_sha256": "99c98cbc7a17df1679488b7415559d6d06d39a9421040d33b427da9b588a2e01",
+      "embedded_replay_payload_sha256": "cd392f9da1ef4123c2007dc6aa2c36ab7d12839de0697e4b70caaa7334c2d9c9",
+      "extraction_meta_sha256": "d9c2f2a3e2c2fa9346c98ed86c32c858188056240053726cd3fd89effa465a98",
+      "events_sha256": "fc47c41a7c804822637946491084923e6c6a591ac822afe38fd29befc388f7be",
+      "rounds_sha256": "d29574544947047d12910bd674d16276151b18202821d4afc514f5b15bd6fe65",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      },
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "result": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 830,
+        "gems": [
+          513,
+          1017
+        ],
+        "steps": 147999
+      },
+      "draft": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "willow": [
+        {
+          "id": 3,
+          "team": "A",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 438,
+            "spentGold": 430,
+            "collectedGems": 63,
+            "submittedGems": 63,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 17142.31414413452,
+            "monsterDamageTaken": 2896,
+            "healingDone": 3294.602783203125,
+            "shieldingDone": 0,
+            "itemsBought": [
+              6,
+              4,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1
+            ],
+            "consumablesBought": [
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          "shop_events_chronological": [
+            {
+              "round": 69,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -60,
+              "items": {
+                "Treasure Shard of Strength": 2
+              }
+            },
+            {
+              "round": 179,
+              "turn": 0,
+              "team": "A",
+              "gold_delta": -90,
+              "items": {
+                "Treasure Shard of Strength": -2,
+                "Treasure Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 358,
+              "turn": 9,
+              "team": "A",
+              "gold_delta": -90,
+              "items": {
+                "Jungle Shard of Strength": 3
+              }
+            },
+            {
+              "round": 427,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -30,
+              "items": {
+                "Jungle Shard of Strength": 1
+              }
+            },
+            {
+              "round": 427,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 561,
+              "turn": 2,
+              "team": "A",
+              "gold_delta": -30,
+              "items": {
+                "Jungle Shard of Strength": -4,
+                "Jungle Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 561,
+              "turn": 2,
+              "team": "A",
+              "gold_delta": -30,
+              "items": {
+                "Power Shard of Strength": 1
+              }
+            },
+            {
+              "round": 714,
+              "turn": 5,
+              "team": "A",
+              "gold_delta": -30,
+              "items": {
+                "Power Shard of Strength": 1
+              }
+            },
+            {
+              "round": 803,
+              "turn": 4,
+              "team": "A",
+              "gold_delta": -60,
+              "items": {
+                "Power Shard of Strength": 2
+              }
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 480,
+            "spentGold": 480,
+            "collectedGems": 64,
+            "submittedGems": 64,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 19307.150150299072,
+            "monsterDamageTaken": 3458,
+            "healingDone": 2682,
+            "shieldingDone": 0,
+            "itemsBought": [
+              6,
+              5,
+              7,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1
+            ],
+            "consumablesBought": [
+              0,
+              0,
+              3,
+              0
+            ]
+          },
+          "shop_events_chronological": [
+            {
+              "round": 197,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Treasure Shard of Strength": 1
+              }
+            },
+            {
+              "round": 197,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 286,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Treasure Shard of Strength": 1
+              }
+            },
+            {
+              "round": 286,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 361,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Treasure Shard of Strength": 1
+              }
+            },
+            {
+              "round": 468,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -60,
+              "items": {
+                "Treasure Shard of Strength": -3,
+                "Treasure Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 468,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -60,
+              "items": {
+                "Jungle Shard of Strength": 2
+              }
+            },
+            {
+              "round": 468,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 499,
+              "turn": 7,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Jungle Shard of Strength": 1
+              }
+            },
+            {
+              "round": 616,
+              "turn": 4,
+              "team": "B",
+              "gold_delta": -60,
+              "items": {
+                "Jungle Shard of Strength": -3,
+                "Jungle Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 616,
+              "turn": 4,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Power Shard of Strength": 1
+              }
+            },
+            {
+              "round": 749,
+              "turn": 5,
+              "team": "B",
+              "gold_delta": -120,
+              "items": {
+                "Power Shard of Strength": -1,
+                "Power Emblem of Strength": 1
+              }
+            }
+          ]
+        }
+      ],
+      "teamA_willow_recall_counts": {
+        "recall_start": 726,
+        "recall_cancel": 716,
+        "recall_end": 9
+      },
+      "opponent_willow_recall_counts": {
+        "recall_start": 731,
+        "recall_cancel": 721,
+        "recall_end": 10
+      },
+      "teamA_willow_heal_casts": [
+        {
+          "round": 33,
+          "turn": 8,
+          "heals": [
+            [
+              2,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 59,
+          "turn": 8,
+          "heals": [
+            [
+              2,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 91,
+          "turn": 0,
+          "heals": [
+            [
+              4,
+              294
+            ]
+          ]
+        },
+        {
+          "round": 99,
+          "turn": 0,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 130,
+          "turn": 1,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 160,
+          "turn": 3,
+          "heals": [
+            [
+              4,
+              234
+            ]
+          ]
+        },
+        {
+          "round": 292,
+          "turn": 3,
+          "heals": [
+            [
+              4,
+              224
+            ]
+          ]
+        },
+        {
+          "round": 375,
+          "turn": 0,
+          "heals": [
+            [
+              2,
+              224
+            ]
+          ]
+        },
+        {
+          "round": 417,
+          "turn": 8,
+          "heals": [
+            [
+              1,
+              224
+            ]
+          ]
+        },
+        {
+          "round": 482,
+          "turn": 3,
+          "heals": [
+            [
+              1,
+              252
+            ]
+          ]
+        },
+        {
+          "round": 741,
+          "turn": 8,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 821,
+          "turn": 8,
+          "heals": [
+            [
+              2,
+              282.6
+            ]
+          ]
+        }
+      ],
+      "teamA_willow_healing_event_sum": 3294.6,
+      "camp_conversion_counts_by_team": {
+        "0": 68,
+        "1": 68
+      },
+      "first_20_camp_conversion_events": [
+        {
+          "r": 24,
+          "t": -1,
+          "k": "capture",
+          "g": 18,
+          "team": 0,
+          "shares": [
+            [
+              0,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 24,
+          "t": -1,
+          "k": "capture",
+          "g": 19,
+          "team": 1,
+          "shares": [
+            [
+              5,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 32,
+          "t": -1,
+          "k": "capture",
+          "g": 14,
+          "team": 0,
+          "shares": [
+            [
+              3,
+              4,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 36,
+          "t": -1,
+          "k": "capture",
+          "g": 21,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              15,
+              110
+            ]
+          ]
+        },
+        {
+          "r": 40,
+          "t": -1,
+          "k": "capture",
+          "g": 15,
+          "team": 1,
+          "shares": [
+            [
+              7,
+              4,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 40,
+          "t": -1,
+          "k": "capture",
+          "g": 20,
+          "team": 0,
+          "shares": [
+            [
+              2,
+              15,
+              110
+            ]
+          ]
+        },
+        {
+          "r": 48,
+          "t": -1,
+          "k": "capture",
+          "g": 26,
+          "team": 0,
+          "shares": [
+            [
+              3,
+              0,
+              20
+            ]
+          ]
+        },
+        {
+          "r": 62,
+          "t": -1,
+          "k": "capture",
+          "g": 17,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              8,
+              106
+            ]
+          ]
+        },
+        {
+          "r": 67,
+          "t": -1,
+          "k": "capture",
+          "g": 16,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              8,
+              80
+            ]
+          ]
+        },
+        {
+          "r": 73,
+          "t": -1,
+          "k": "capture",
+          "g": 13,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              4,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 83,
+          "t": -1,
+          "k": "capture",
+          "g": 18,
+          "team": 0,
+          "shares": [
+            [
+              0,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 83,
+          "t": -1,
+          "k": "capture",
+          "g": 19,
+          "team": 1,
+          "shares": [
+            [
+              5,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 94,
+          "t": -1,
+          "k": "capture",
+          "g": 12,
+          "team": 0,
+          "shares": [
+            [
+              1,
+              4,
+              53
+            ]
+          ]
+        },
+        {
+          "r": 100,
+          "t": -1,
+          "k": "capture",
+          "g": 10,
+          "team": 0,
+          "shares": [
+            [
+              2,
+              8,
+              80
+            ]
+          ]
+        },
+        {
+          "r": 104,
+          "t": -1,
+          "k": "capture",
+          "g": 11,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              8,
+              106
+            ]
+          ]
+        },
+        {
+          "r": 110,
+          "t": -1,
+          "k": "capture",
+          "g": 15,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              4,
+              48
+            ]
+          ]
+        },
+        {
+          "r": 140,
+          "t": -1,
+          "k": "capture",
+          "g": 18,
+          "team": 0,
+          "shares": [
+            [
+              0,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 140,
+          "t": -1,
+          "k": "capture",
+          "g": 19,
+          "team": 1,
+          "shares": [
+            [
+              5,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 141,
+          "t": -1,
+          "k": "capture",
+          "g": 21,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              15,
+              132
+            ]
+          ]
+        },
+        {
+          "r": 147,
+          "t": -1,
+          "k": "capture",
+          "g": 14,
+          "team": 0,
+          "shares": [
+            [
+              1,
+              4,
+              53
+            ]
+          ]
+        }
+      ],
+      "native_status": {
+        "play": {
+          "rollover": 1,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "service-base-f7",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "arm": "service-candidate",
+      "label": "Cells A",
+      "source": "replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/service-candidate-cells-102306611-A.repl26a",
+      "map": {
+        "name": "service-candidate-cells-102306611-A",
+        "hash": "4d7a316caff5e385",
+        "width": 55,
+        "height": 30,
+        "symmetry": "horizontal"
+      },
+      "archive_sha256": "ea43fa1d05c1447869998d798e0215a0d82cecb7676d68db3b4aba0534c3df94",
+      "embedded_replay_payload_sha256": "5637be68c905d41beef35847349edc0c7963ecc3d277950eeadd9535fb6edf01",
+      "extraction_meta_sha256": "5bc4cbb2a084b94539f41cbb9e656f83c323135893e0bccbc5799a785e1d2159",
+      "events_sha256": "9415746809e9674cf7d3644a94578e38bbf719471d76adb08f28254a150f8d3e",
+      "rounds_sha256": "622f0291836d5efb1207d28b3e8194fb485ebf1aee6a0396d1e4ae554dcfc695",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      },
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "result": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 891,
+        "gems": [
+          612,
+          1302
+        ],
+        "steps": 165305
+      },
+      "draft": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "willow": [
+        {
+          "id": 3,
+          "team": "A",
+          "stats": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 1,
+            "earnedGold": 484,
+            "spentGold": 460,
+            "collectedGems": 18,
+            "submittedGems": 18,
+            "championDamageDone": 354.09999084472656,
+            "championDamageTaken": 532,
+            "monsterDamageDone": 15537.105430603027,
+            "monsterDamageTaken": 3552,
+            "healingDone": 12179.921508789062,
+            "shieldingDone": 0,
+            "itemsBought": [
+              6,
+              5,
+              7,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1
+            ],
+            "consumablesBought": [
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          "shop_events_chronological": [
+            {
+              "round": 87,
+              "turn": 6,
+              "team": "A",
+              "gold_delta": -60,
+              "items": {
+                "Treasure Shard of Strength": 2
+              }
+            },
+            {
+              "round": 234,
+              "turn": 7,
+              "team": "A",
+              "gold_delta": -60,
+              "items": {
+                "Treasure Shard of Strength": 2
+              }
+            },
+            {
+              "round": 255,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -30,
+              "items": {
+                "Treasure Shard of Strength": -4,
+                "Treasure Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 255,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -60,
+              "items": {
+                "Jungle Shard of Strength": 2
+              }
+            },
+            {
+              "round": 255,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 405,
+              "turn": 4,
+              "team": "A",
+              "gold_delta": -90,
+              "items": {
+                "Jungle Shard of Strength": -2,
+                "Jungle Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 455,
+              "turn": 2,
+              "team": "A",
+              "gold_delta": -150,
+              "items": {
+                "Power Emblem of Strength": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 1,
+            "earnedGold": 1446,
+            "spentGold": 1180,
+            "collectedGems": 176,
+            "submittedGems": 176,
+            "championDamageDone": 260,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 17696.689987182617,
+            "monsterDamageTaken": 3677.9999923706055,
+            "healingDone": 14799.73974609375,
+            "shieldingDone": 0,
+            "itemsBought": [
+              6,
+              15,
+              7,
+              3,
+              16,
+              5,
+              17,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1,
+              36,
+              9,
+              37,
+              1
+            ],
+            "consumablesBought": [
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          "shop_events_chronological": [
+            {
+              "round": 253,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -60,
+              "items": {
+                "Treasure Shard of Strength": 2
+              }
+            },
+            {
+              "round": 253,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 352,
+              "turn": 2,
+              "team": "B",
+              "gold_delta": -90,
+              "items": {
+                "Treasure Shard of Strength": -2,
+                "Treasure Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 416,
+              "turn": 0,
+              "team": "B",
+              "gold_delta": -150,
+              "items": {
+                "Jungle Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 486,
+              "turn": 2,
+              "team": "B",
+              "gold_delta": -150,
+              "items": {
+                "Power Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 535,
+              "turn": 3,
+              "team": "B",
+              "gold_delta": -150,
+              "items": {
+                "Power Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 535,
+              "turn": 3,
+              "team": "B",
+              "gold_delta": -90,
+              "items": {
+                "Bruiser Shard of Strength": 3
+              }
+            },
+            {
+              "round": 624,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Bruiser Shard of Strength": 1
+              }
+            },
+            {
+              "round": 740,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Bruiser Shard of Strength": -4,
+                "Bruiser Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 740,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -150,
+              "items": {
+                "Durability Emblem of Health": 1
+              }
+            },
+            {
+              "round": 740,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -150,
+              "items": {
+                "Power Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 740,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -120,
+              "items": {
+                "Bruiser Shard of Strength": 4
+              }
+            }
+          ]
+        }
+      ],
+      "teamA_willow_recall_counts": {
+        "recall_start": 763,
+        "recall_cancel": 754,
+        "recall_end": 9
+      },
+      "opponent_willow_recall_counts": {
+        "recall_start": 753,
+        "recall_cancel": 742,
+        "recall_end": 10
+      },
+      "teamA_willow_heal_casts": [
+        {
+          "round": 9,
+          "turn": 4,
+          "heals": [
+            [
+              2,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 17,
+          "turn": 4,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 25,
+          "turn": 4,
+          "heals": [
+            [
+              4,
+              300
+            ]
+          ]
+        },
+        {
+          "round": 33,
+          "turn": 4,
+          "heals": [
+            [
+              2,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 58,
+          "turn": 3,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 66,
+          "turn": 1,
+          "heals": [
+            [
+              1,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 78,
+          "turn": 7,
+          "heals": [
+            [
+              0,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 113,
+          "turn": 0,
+          "heals": [
+            [
+              4,
+              312
+            ]
+          ]
+        },
+        {
+          "round": 121,
+          "turn": 0,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 130,
+          "turn": 1,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 225,
+          "turn": 8,
+          "heals": [
+            [
+              0,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 236,
+          "turn": 1,
+          "heals": [
+            [
+              2,
+              252
+            ]
+          ]
+        },
+        {
+          "round": 244,
+          "turn": 1,
+          "heals": [
+            [
+              4,
+              264
+            ]
+          ]
+        },
+        {
+          "round": 278,
+          "turn": 9,
+          "heals": [
+            [
+              2,
+              252
+            ]
+          ]
+        },
+        {
+          "round": 286,
+          "turn": 7,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 303,
+          "turn": 8,
+          "heals": [
+            [
+              4,
+              225.5
+            ]
+          ]
+        },
+        {
+          "round": 311,
+          "turn": 8,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 319,
+          "turn": 2,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 327,
+          "turn": 4,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 335,
+          "turn": 2,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 343,
+          "turn": 4,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 351,
+          "turn": 4,
+          "heals": [
+            [
+              2,
+              336
+            ]
+          ]
+        },
+        {
+          "round": 361,
+          "turn": 2,
+          "heals": [
+            [
+              2,
+              303
+            ]
+          ]
+        },
+        {
+          "round": 369,
+          "turn": 0,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 493,
+          "turn": 4,
+          "heals": [
+            [
+              4,
+              252
+            ]
+          ]
+        },
+        {
+          "round": 527,
+          "turn": 4,
+          "heals": [
+            [
+              2,
+              252
+            ]
+          ]
+        },
+        {
+          "round": 544,
+          "turn": 5,
+          "heals": [
+            [
+              2,
+              252
+            ]
+          ]
+        },
+        {
+          "round": 557,
+          "turn": 6,
+          "heals": [
+            [
+              1,
+              226.8
+            ]
+          ]
+        },
+        {
+          "round": 565,
+          "turn": 6,
+          "heals": [
+            [
+              1,
+              226.8
+            ]
+          ]
+        },
+        {
+          "round": 573,
+          "turn": 4,
+          "heals": [
+            [
+              4,
+              252
+            ]
+          ]
+        },
+        {
+          "round": 617,
+          "turn": 6,
+          "heals": [
+            [
+              1,
+              226.8
+            ]
+          ]
+        },
+        {
+          "round": 627,
+          "turn": 6,
+          "heals": [
+            [
+              0,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 635,
+          "turn": 4,
+          "heals": [
+            [
+              0,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 664,
+          "turn": 9,
+          "heals": [
+            [
+              1,
+              226.8
+            ]
+          ]
+        },
+        {
+          "round": 710,
+          "turn": 7,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 718,
+          "turn": 1,
+          "heals": [
+            [
+              0,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 730,
+          "turn": 9,
+          "heals": [
+            [
+              0,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 739,
+          "turn": 4,
+          "heals": [
+            [
+              1,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 782,
+          "turn": 5,
+          "heals": [
+            [
+              4,
+              340.2
+            ]
+          ]
+        },
+        {
+          "round": 801,
+          "turn": 8,
+          "heals": [
+            [
+              1,
+              360
+            ]
+          ]
+        }
+      ],
+      "teamA_willow_healing_event_sum": 12179.899999999998,
+      "camp_conversion_counts_by_team": {
+        "0": 56,
+        "1": 60
+      },
+      "first_20_camp_conversion_events": [
+        {
+          "r": 27,
+          "t": -1,
+          "k": "capture",
+          "g": 9,
+          "team": 0,
+          "shares": [
+            [
+              0,
+              18,
+              100
+            ],
+            [
+              2,
+              18,
+              100
+            ]
+          ]
+        },
+        {
+          "r": 27,
+          "t": -1,
+          "k": "capture",
+          "g": 10,
+          "team": 1,
+          "shares": [
+            [
+              5,
+              36,
+              200
+            ]
+          ]
+        },
+        {
+          "r": 32,
+          "t": -1,
+          "k": "capture",
+          "g": 11,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 33,
+          "t": -1,
+          "k": "capture",
+          "g": 12,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              0,
+              53
+            ]
+          ]
+        },
+        {
+          "r": 34,
+          "t": -1,
+          "k": "capture",
+          "g": 14,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 41,
+          "t": -1,
+          "k": "capture",
+          "g": 20,
+          "team": 1,
+          "shares": [
+            [
+              7,
+              0,
+              60
+            ]
+          ]
+        },
+        {
+          "r": 42,
+          "t": -1,
+          "k": "capture",
+          "g": 19,
+          "team": 0,
+          "shares": [
+            [
+              1,
+              0,
+              79
+            ]
+          ]
+        },
+        {
+          "r": 44,
+          "t": -1,
+          "k": "capture",
+          "g": 13,
+          "team": 0,
+          "shares": [
+            [
+              3,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 50,
+          "t": -1,
+          "k": "capture",
+          "g": 24,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              0,
+              26
+            ]
+          ]
+        },
+        {
+          "r": 58,
+          "t": -1,
+          "k": "capture",
+          "g": 17,
+          "team": 0,
+          "shares": [
+            [
+              1,
+              0,
+              27
+            ]
+          ]
+        },
+        {
+          "r": 60,
+          "t": -1,
+          "k": "capture",
+          "g": 21,
+          "team": 0,
+          "shares": [
+            [
+              2,
+              0,
+              60
+            ]
+          ]
+        },
+        {
+          "r": 63,
+          "t": -1,
+          "k": "capture",
+          "g": 23,
+          "team": 0,
+          "shares": [
+            [
+              3,
+              0,
+              20
+            ]
+          ]
+        },
+        {
+          "r": 71,
+          "t": -1,
+          "k": "capture",
+          "g": 8,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              36,
+              200
+            ]
+          ]
+        },
+        {
+          "r": 73,
+          "t": -1,
+          "k": "capture",
+          "g": 18,
+          "team": 1,
+          "shares": [
+            [
+              5,
+              0,
+              20
+            ]
+          ]
+        },
+        {
+          "r": 76,
+          "t": -1,
+          "k": "capture",
+          "g": 22,
+          "team": 1,
+          "shares": [
+            [
+              7,
+              0,
+              60
+            ]
+          ]
+        },
+        {
+          "r": 88,
+          "t": -1,
+          "k": "capture",
+          "g": 11,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 98,
+          "t": -1,
+          "k": "capture",
+          "g": 19,
+          "team": 0,
+          "shares": [
+            [
+              0,
+              0,
+              60
+            ]
+          ]
+        },
+        {
+          "r": 102,
+          "t": -1,
+          "k": "capture",
+          "g": 12,
+          "team": 1,
+          "shares": [
+            [
+              7,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 103,
+          "t": -1,
+          "k": "capture",
+          "g": 13,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 105,
+          "t": -1,
+          "k": "capture",
+          "g": 20,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              0,
+              80
+            ]
+          ]
+        }
+      ],
+      "native_status": {
+        "play": {
+          "rollover": 4,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "service-candidate-f7",
+            "bot_index": 0,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "arm": "service-candidate",
+      "label": "Archipelago 102306002 A",
+      "source": "replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/service-candidate-archipelago-102306002-A-A.repl26a",
+      "map": {
+        "name": "service-candidate-archipelago-102306002-A-A",
+        "hash": "dcb8a86d9d316438",
+        "width": 77,
+        "height": 77,
+        "symmetry": "vertical"
+      },
+      "archive_sha256": "09c27145cbb80760f396981289e0129ffc8c46665916349f3bf711c306e9750e",
+      "embedded_replay_payload_sha256": "12baa37e6499db340caf0d72692402391b45cccd0985fe0ac7299773bf21c5a9",
+      "extraction_meta_sha256": "33e6d3d0623540cb05cccd161dd8abe141b605652078616c57d3fbc6c3b22f4a",
+      "events_sha256": "103353d7e488b5a1f8a677dac9d84c9f314935a2247529b020f0bfa9df35a0d3",
+      "rounds_sha256": "77c9d657e9c73a18d4df400d6daae4018f0df762668fb8f6ca9112fd30517d93",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      },
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "result": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 830,
+        "gems": [
+          513,
+          1017
+        ],
+        "steps": 147998
+      },
+      "draft": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "willow": [
+        {
+          "id": 3,
+          "team": "A",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 438,
+            "spentGold": 430,
+            "collectedGems": 63,
+            "submittedGems": 63,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 17142.31414413452,
+            "monsterDamageTaken": 2896,
+            "healingDone": 3294.602783203125,
+            "shieldingDone": 0,
+            "itemsBought": [
+              6,
+              4,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1
+            ],
+            "consumablesBought": [
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          "shop_events_chronological": [
+            {
+              "round": 69,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -60,
+              "items": {
+                "Treasure Shard of Strength": 2
+              }
+            },
+            {
+              "round": 179,
+              "turn": 0,
+              "team": "A",
+              "gold_delta": -90,
+              "items": {
+                "Treasure Shard of Strength": -2,
+                "Treasure Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 358,
+              "turn": 9,
+              "team": "A",
+              "gold_delta": -90,
+              "items": {
+                "Jungle Shard of Strength": 3
+              }
+            },
+            {
+              "round": 427,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -30,
+              "items": {
+                "Jungle Shard of Strength": 1
+              }
+            },
+            {
+              "round": 427,
+              "turn": 8,
+              "team": "A",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 561,
+              "turn": 2,
+              "team": "A",
+              "gold_delta": -30,
+              "items": {
+                "Jungle Shard of Strength": -4,
+                "Jungle Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 561,
+              "turn": 2,
+              "team": "A",
+              "gold_delta": -30,
+              "items": {
+                "Power Shard of Strength": 1
+              }
+            },
+            {
+              "round": 714,
+              "turn": 5,
+              "team": "A",
+              "gold_delta": -30,
+              "items": {
+                "Power Shard of Strength": 1
+              }
+            },
+            {
+              "round": 803,
+              "turn": 4,
+              "team": "A",
+              "gold_delta": -60,
+              "items": {
+                "Power Shard of Strength": 2
+              }
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 480,
+            "spentGold": 480,
+            "collectedGems": 64,
+            "submittedGems": 64,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 19307.150150299072,
+            "monsterDamageTaken": 3458,
+            "healingDone": 2682,
+            "shieldingDone": 0,
+            "itemsBought": [
+              6,
+              5,
+              7,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1
+            ],
+            "consumablesBought": [
+              0,
+              0,
+              3,
+              0
+            ]
+          },
+          "shop_events_chronological": [
+            {
+              "round": 197,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Treasure Shard of Strength": 1
+              }
+            },
+            {
+              "round": 197,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 286,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Treasure Shard of Strength": 1
+              }
+            },
+            {
+              "round": 286,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 361,
+              "turn": 9,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Treasure Shard of Strength": 1
+              }
+            },
+            {
+              "round": 468,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -60,
+              "items": {
+                "Treasure Shard of Strength": -3,
+                "Treasure Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 468,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -60,
+              "items": {
+                "Jungle Shard of Strength": 2
+              }
+            },
+            {
+              "round": 468,
+              "turn": 8,
+              "team": "B",
+              "gold_delta": -10,
+              "items": null
+            },
+            {
+              "round": 499,
+              "turn": 7,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Jungle Shard of Strength": 1
+              }
+            },
+            {
+              "round": 616,
+              "turn": 4,
+              "team": "B",
+              "gold_delta": -60,
+              "items": {
+                "Jungle Shard of Strength": -3,
+                "Jungle Emblem of Strength": 1
+              }
+            },
+            {
+              "round": 616,
+              "turn": 4,
+              "team": "B",
+              "gold_delta": -30,
+              "items": {
+                "Power Shard of Strength": 1
+              }
+            },
+            {
+              "round": 749,
+              "turn": 5,
+              "team": "B",
+              "gold_delta": -120,
+              "items": {
+                "Power Shard of Strength": -1,
+                "Power Emblem of Strength": 1
+              }
+            }
+          ]
+        }
+      ],
+      "teamA_willow_recall_counts": {
+        "recall_start": 726,
+        "recall_cancel": 716,
+        "recall_end": 9
+      },
+      "opponent_willow_recall_counts": {
+        "recall_start": 731,
+        "recall_cancel": 721,
+        "recall_end": 10
+      },
+      "teamA_willow_heal_casts": [
+        {
+          "round": 33,
+          "turn": 8,
+          "heals": [
+            [
+              2,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 59,
+          "turn": 8,
+          "heals": [
+            [
+              2,
+              240
+            ]
+          ]
+        },
+        {
+          "round": 91,
+          "turn": 0,
+          "heals": [
+            [
+              4,
+              294
+            ]
+          ]
+        },
+        {
+          "round": 99,
+          "turn": 0,
+          "heals": [
+            [
+              4,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 130,
+          "turn": 1,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 160,
+          "turn": 3,
+          "heals": [
+            [
+              4,
+              234
+            ]
+          ]
+        },
+        {
+          "round": 292,
+          "turn": 3,
+          "heals": [
+            [
+              4,
+              224
+            ]
+          ]
+        },
+        {
+          "round": 375,
+          "turn": 0,
+          "heals": [
+            [
+              2,
+              224
+            ]
+          ]
+        },
+        {
+          "round": 417,
+          "turn": 8,
+          "heals": [
+            [
+              1,
+              224
+            ]
+          ]
+        },
+        {
+          "round": 482,
+          "turn": 3,
+          "heals": [
+            [
+              1,
+              252
+            ]
+          ]
+        },
+        {
+          "round": 741,
+          "turn": 8,
+          "heals": [
+            [
+              2,
+              360
+            ]
+          ]
+        },
+        {
+          "round": 821,
+          "turn": 8,
+          "heals": [
+            [
+              2,
+              282.6
+            ]
+          ]
+        }
+      ],
+      "teamA_willow_healing_event_sum": 3294.6,
+      "camp_conversion_counts_by_team": {
+        "0": 68,
+        "1": 68
+      },
+      "first_20_camp_conversion_events": [
+        {
+          "r": 24,
+          "t": -1,
+          "k": "capture",
+          "g": 18,
+          "team": 0,
+          "shares": [
+            [
+              0,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 24,
+          "t": -1,
+          "k": "capture",
+          "g": 19,
+          "team": 1,
+          "shares": [
+            [
+              5,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 32,
+          "t": -1,
+          "k": "capture",
+          "g": 14,
+          "team": 0,
+          "shares": [
+            [
+              3,
+              4,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 36,
+          "t": -1,
+          "k": "capture",
+          "g": 21,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              15,
+              110
+            ]
+          ]
+        },
+        {
+          "r": 40,
+          "t": -1,
+          "k": "capture",
+          "g": 15,
+          "team": 1,
+          "shares": [
+            [
+              7,
+              4,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 40,
+          "t": -1,
+          "k": "capture",
+          "g": 20,
+          "team": 0,
+          "shares": [
+            [
+              2,
+              15,
+              110
+            ]
+          ]
+        },
+        {
+          "r": 48,
+          "t": -1,
+          "k": "capture",
+          "g": 26,
+          "team": 0,
+          "shares": [
+            [
+              3,
+              0,
+              20
+            ]
+          ]
+        },
+        {
+          "r": 62,
+          "t": -1,
+          "k": "capture",
+          "g": 17,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              8,
+              106
+            ]
+          ]
+        },
+        {
+          "r": 67,
+          "t": -1,
+          "k": "capture",
+          "g": 16,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              8,
+              80
+            ]
+          ]
+        },
+        {
+          "r": 73,
+          "t": -1,
+          "k": "capture",
+          "g": 13,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              4,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 83,
+          "t": -1,
+          "k": "capture",
+          "g": 18,
+          "team": 0,
+          "shares": [
+            [
+              0,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 83,
+          "t": -1,
+          "k": "capture",
+          "g": 19,
+          "team": 1,
+          "shares": [
+            [
+              5,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 94,
+          "t": -1,
+          "k": "capture",
+          "g": 12,
+          "team": 0,
+          "shares": [
+            [
+              1,
+              4,
+              53
+            ]
+          ]
+        },
+        {
+          "r": 100,
+          "t": -1,
+          "k": "capture",
+          "g": 10,
+          "team": 0,
+          "shares": [
+            [
+              2,
+              8,
+              80
+            ]
+          ]
+        },
+        {
+          "r": 104,
+          "t": -1,
+          "k": "capture",
+          "g": 11,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              8,
+              106
+            ]
+          ]
+        },
+        {
+          "r": 110,
+          "t": -1,
+          "k": "capture",
+          "g": 15,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              4,
+              48
+            ]
+          ]
+        },
+        {
+          "r": 140,
+          "t": -1,
+          "k": "capture",
+          "g": 18,
+          "team": 0,
+          "shares": [
+            [
+              0,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 140,
+          "t": -1,
+          "k": "capture",
+          "g": 19,
+          "team": 1,
+          "shares": [
+            [
+              5,
+              14,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 141,
+          "t": -1,
+          "k": "capture",
+          "g": 21,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              15,
+              132
+            ]
+          ]
+        },
+        {
+          "r": 147,
+          "t": -1,
+          "k": "capture",
+          "g": 14,
+          "team": 0,
+          "shares": [
+            [
+              1,
+              4,
+              53
+            ]
+          ]
+        }
+      ],
+      "native_status": {
+        "play": {
+          "rollover": 1,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "service-candidate-f7",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "paired_action_comparison": [
+    {
+      "label": "Cells A",
+      "first_normalized_action_difference": {
+        "round": 411,
+        "turn": 0,
+        "actor_id": 3,
+        "base_actions": [
+          {
+            "r": 411,
+            "t": 0,
+            "k": "move",
+            "a": 3,
+            "f": [
+              1,
+              25
+            ],
+            "to": [
+              2,
+              24
+            ]
+          },
+          {
+            "r": 411,
+            "t": 0,
+            "k": "recall_start",
+            "a": 3,
+            "gems": 0,
+            "at": [
+              2,
+              24
+            ]
+          }
+        ],
+        "service_actions": [
+          {
+            "r": 411,
+            "t": 0,
+            "k": "move",
+            "a": 3,
+            "f": [
+              1,
+              25
+            ],
+            "to": [
+              1,
+              24
+            ]
+          },
+          {
+            "r": 411,
+            "t": 0,
+            "k": "recall_start",
+            "a": 3,
+            "gems": 0,
+            "at": [
+              1,
+              24
+            ]
+          }
+        ]
+      },
+      "base_action_count": 23192,
+      "service_action_count": 24144
+    },
+    {
+      "label": "Archipelago 102306002 A",
+      "first_normalized_action_difference": {
+        "round": 5,
+        "turn": 8,
+        "actor_id": 3,
+        "base_actions": [
+          {
+            "r": 5,
+            "t": 8,
+            "k": "recall_cancel",
+            "a": 3,
+            "gems": 0,
+            "cause": "manual",
+            "left": 4
+          },
+          {
+            "r": 5,
+            "t": 8,
+            "k": "move",
+            "a": 3,
+            "f": [
+              17,
+              58
+            ],
+            "to": [
+              16,
+              59
+            ]
+          },
+          {
+            "r": 5,
+            "t": 8,
+            "k": "ward",
+            "a": 3,
+            "to": [
+              14,
+              57
+            ]
+          }
+        ],
+        "service_actions": [
+          {
+            "r": 5,
+            "t": 8,
+            "k": "recall_cancel",
+            "a": 3,
+            "gems": 0,
+            "cause": "manual",
+            "left": 4
+          },
+          {
+            "r": 5,
+            "t": 8,
+            "k": "move",
+            "a": 3,
+            "f": [
+              17,
+              58
+            ],
+            "to": [
+              16,
+              59
+            ]
+          }
+        ]
+      },
+      "base_action_count": 23712,
+      "service_action_count": 23712
+    }
+  ],
+  "native_audits": {
+    "f7-base": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/native-f7-base.json",
+      "sha256": "825fb8faaecf02d2786d8f17d9a301ddc3cc025127814555358fc7ad866f3cb2",
+      "snapshot_mode": "v1_0_3_compact_timeline",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      }
+    },
+    "service-candidate": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/native-service.json",
+      "sha256": "36be2a500e181977e7238f971ece5ea0ea76c2a89fd565f4d9fb93de81a5c8eb",
+      "snapshot_mode": "v1_0_3_compact_timeline",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      }
+    }
+  }
+}

@@ -1,0 +1,179 @@
+diff -ru provenance/willow-astraeus-service-disabled-utility-f7-20261024-v1/source-before/src/bot.cpp provenance/willow-astraeus-service-disabled-utility-f7-20261024-v1/source-after/src/bot.cpp
+--- provenance/willow-astraeus-service-disabled-utility-f7-20261024-v1/source-before/src/bot.cpp	2026-10-24 01:33:30
++++ provenance/willow-astraeus-service-disabled-utility-f7-20261024-v1/source-after/src/bot.cpp	2026-10-24 01:34:38
+@@ -1348,33 +1348,41 @@
+     return clearing * clear + taken * (static_cast<float>(b.recall) + steps) / usable;
+ }
+ 
+-struct BuildUtility {
++struct BuildUtilityCore {
+     const World& world;
+     const Upkeep& upkeep;
+     float others;
+     const Build& now;
+-    bool service;
+-    float own_base, multiplier, service_base;
++    float own_base;
++    BuildUtilityCore(const World& w, const Upkeep& u, float o, const Build& n)
++        : world{w}, upkeep{u}, others{o}, now{n}, own_base{upkeep_cost(w, u, o, n, n)} {}
++};
++
++template<bool UseService> struct BuildUtility;
++
++template<> struct BuildUtility<false> : BuildUtilityCore {
++    BuildUtility(const World& w, const Upkeep& u, float o, const Build& n) : BuildUtilityCore{w, u, o, n} {}
++    float saved(const Build& b) const { return own_base - upkeep_cost(world, upkeep, others, now, b) + 0.0f; }
++};
++
++template<> struct BuildUtility<true> : BuildUtilityCore {
++    float multiplier, service_base;
+     mutable std::array<float, 16> focuses, services;
+     mutable int cached = 0;
+-    BuildUtility(const World& w, const Upkeep& u, float o, const Build& n, bool use_service)
+-        : world{w}, upkeep{u}, others{o}, now{n}, service{use_service}, own_base{upkeep_cost(w, u, o, n, n)},
+-          multiplier{use_service ? w.me().facts().abilities[w.me().facts().slot_of(AbilityKind::heal)].multiplier : 0},
+-          service_base{use_service ? observed_service(multiplier * n.focus) : 0} {
+-        if (service) focuses[0] = now.focus, services[0] = service_base, cached = 1;
++    BuildUtility(const World& w, const Upkeep& u, float o, const Build& n)
++        : BuildUtilityCore{w, u, o, n},
++          multiplier{w.me().facts().abilities[w.me().facts().slot_of(AbilityKind::heal)].multiplier},
++          service_base{observed_service(multiplier * n.focus)} {
++        focuses[0] = now.focus, services[0] = service_base, cached = 1;
+     }
+     float service_delta(const Build& b) const {
+-        if (!service) return 0;
+         for (int i = 0; i < cached; ++i)
+             if (focuses[i] == b.focus) return services[i] - service_base;
+         const float value = observed_service(multiplier * b.focus);
+         if (cached < static_cast<int>(focuses.size())) focuses[cached] = b.focus, services[cached++] = value;
+         return value - service_base;
+     }
+-    float saved(const Build& b) const {
+-        return own_base - upkeep_cost(world, upkeep, others, now, b)
+-               + service_delta(b);
+-    }
++    float saved(const Build& b) const { return own_base - upkeep_cost(world, upkeep, others, now, b) + service_delta(b); }
+ };
+ 
+ // Our mean steps from spawn while alive: the walk back out after a heal.
+@@ -1397,19 +1405,16 @@
+     unsigned cost;
+ };
+ // `bought`: the stats of shards bought since the turn's start.
+-Emblem best_emblem(const World& world, const Build& bought = {}) {
+-    const auto& f = world.me().facts();
+-    const auto& owned = my_items();
+-    const auto& self = world.me();
++template<bool UseService, typename Facts, typename Items, typename Self>
++Emblem best_emblem_impl(const World& world, const Build& bought, const Facts& f, const Items& owned, const Self& self) {
+     const Build now{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
+                     has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f,
+                     has_family(owned, monster) ? 1.1f : 1.0f,
+                     has_family(owned, home) ? home_recall_time : recall_turns(world)};
+     float others = 0;
+     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
+-    const bool service = self.type == cambc::champion_type::willow && has_family(owned, treasure);
+     if (self.type == cambc::champion_type::willow) service_history.treasure = has_family(owned, treasure);
+-    const BuildUtility utility{world, u, others, now, service};
++    const BuildUtility<UseService> utility{world, u, others, now};
+     const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
+         const unsigned left = 5 - owned[shard_of(family, stat)];
+         Build b = now;
+@@ -1420,15 +1425,17 @@
+         if (family == monster) b.camp_dealt = 1.1f;
+         if (family == home) b.recall = home_recall_time;
+         const float saved = utility.saved(b);
+-        debug_block({
+-            static unsigned rows = 0;
+-            if (service && service_history.published.count > 0 && rows < 256) {
+-                ++rows;
+-                std::printf("SERVICE-QUOTE %d revision %u family %d stat %d left %u cap %.9g next_cap %.9g service %.9g saved %.9g cost %u\n",
+-                            world.round, service_history.revision, family, stat, left, utility.multiplier * now.focus,
+-                            utility.multiplier * b.focus, utility.service_delta(b), saved, left * shard_price);
+-            }
+-        });
++        if constexpr (UseService) {
++            debug_block({
++                static unsigned rows = 0;
++                if (service_history.published.count > 0 && rows < 256) {
++                    ++rows;
++                    std::printf("SERVICE-QUOTE %d revision %u family %d stat %d left %u cap %.9g next_cap %.9g service %.9g saved %.9g cost %u\n",
++                                world.round, service_history.revision, family, stat, left, utility.multiplier * now.focus,
++                                utility.multiplier * b.focus, utility.service_delta(b), saved, left * shard_price);
++                }
++            });
++        }
+         return {family, stat, saved, left * shard_price};
+     };
+     if (f.passive == Passive::gem_focus && owned[shard_of(monster, health_stat)] > 0) return value(monster, health_stat);
+@@ -1473,11 +1480,20 @@
+             if (owned[shard_of(treasure, s)] > 0) stat = s;
+         return {treasure, stat, best.saved, (5 - owned[shard_of(treasure, stat)]) * shard_price};
+     }
+-    if (service)
++    if constexpr (UseService)
+         if (const auto e = value(bruiser, focus_stat); e.saved > best.saved) best = e;
+     return best;
+ }
+ 
++Emblem best_emblem(const World& world, const Build& bought = {}) {
++    const auto& f = world.me().facts();
++    const auto& owned = my_items();
++    const auto& self = world.me();
++    if (self.type == cambc::champion_type::willow && has_family(owned, treasure))
++        return best_emblem_impl<true>(world, bought, f, owned, self);
++    return best_emblem_impl<false>(world, bought, f, owned, self);
++}
++
+ // True if any shard was bought.
+ bool buy_shards(const World& world) {
+     unsigned gold = my_gold();
+@@ -1546,6 +1562,25 @@
+     float gain = 0;
+ };
+ 
++template<bool UseService>
++void set_prefix_gain(const World& world, PurchaseQuote& quote, const Build& now, const Build& bought,
++                     const Upkeep& u, float others, bool completes) {
++    const BuildUtility<UseService> utility{world, u, others, now};
++    quote.gain = gems_share(world) * rounds_per_gem * utility.saved(bought);
++    if constexpr (UseService) {
++        debug_block({
++            static unsigned rows = 0;
++            if (rows < 128) {
++                ++rows;
++                std::printf("SERVICE-PREFIX %d revision %u family %d stat %d count %u completes %d cap %.9g next_cap %.9g service %.9g saved %.9g gain %.9g\n",
++                            world.round, service_history.revision, quote.next.family, quote.next.stat, quote.count,
++                            static_cast<int>(completes), utility.multiplier * now.focus, utility.multiplier * bought.focus,
++                            utility.service_delta(bought), utility.saved(bought), quote.gain);
++            }
++        });
++    }
++}
++
+ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
+     const unsigned budget = my_gold() + gold_in;
+     if (budget < shard_price) return {};
+@@ -1571,18 +1606,10 @@
+     }
+     float others = 0;
+     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
+-    const BuildUtility utility{world, u, others, now, self.type == cambc::champion_type::willow && has_family(owned, treasure)};
+-    quote.gain = gems_share(world) * rounds_per_gem * utility.saved(bought);
+-    debug_block({
+-        static unsigned rows = 0;
+-        if (utility.service && rows < 128) {
+-            ++rows;
+-            std::printf("SERVICE-PREFIX %d revision %u family %d stat %d count %u completes %d cap %.9g next_cap %.9g service %.9g saved %.9g gain %.9g\n",
+-                        world.round, service_history.revision, quote.next.family, quote.next.stat, quote.count,
+-                        static_cast<int>(completes), utility.multiplier * now.focus, utility.multiplier * bought.focus,
+-                        utility.service_delta(bought), utility.saved(bought), quote.gain);
+-        }
+-    });
++    if (self.type == cambc::champion_type::willow && has_family(owned, treasure))
++        set_prefix_gain<true>(world, quote, now, bought, u, others, completes);
++    else
++        set_prefix_gain<false>(world, quote, now, bought, u, others, completes);
+     return quote;
+ }
+ 
