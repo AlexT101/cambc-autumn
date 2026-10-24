@@ -267,6 +267,15 @@ another harmless group was kept (CHANGES 91).
   version with four Safety calls a tile (`damage_bound` twice, `may_be_hit` twice: each prices every visible enemy's
   Reach) was 51.2% but doubled out-of-fuel turns (6744 vs 3528); without the stations' enemy pre-check, fuel +2.1%
   (p99 +7.8%) at 100M. 3- and 4-pick maps never run this code.
+- Astraeus Willow's turn on hyperion's (2026-10-23): `willow_economy_or_escape` gone. Its economy is hyperion's path
+  with the search off while Willow holds a capture, carries a bag to bank or goes to shop (`support_work`): heal first,
+  then `hold_capture` / `carry_bag` / the shop step (`strike_after` still takes a hit in reach). Its escape is a
+  `want_home` rule: any enemy that may hit Willow, seen or not, sends it home, bar on a capture; `retreat` does the
+  rest, so Willow's 9-tile escape ordering and the sleeping-camp bailout are gone (asleep monsters never hit; only
+  Willow's exposure counted them). The post-goal call is gone: in 62 traced games it took 486 turns and never moved
+  Willow (mostly a farm step onto a capture relabelled as a hold); after the change, turns ending exposed with a step
+  left were all capture holds. `support_recall` gone (a support retreat is a plain retreat turn). A/B against the
+  frozen c16939d on the 211 five-pick maps (422 games): 50.7% (CI 46.0-55.5), out-of-fuel turns 1769 vs 2635. Kept.
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
 - `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
   2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next
