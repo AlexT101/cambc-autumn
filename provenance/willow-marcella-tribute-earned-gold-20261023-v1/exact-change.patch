@@ -1,0 +1,45 @@
+diff --git a/tools/replay/README.md b/tools/replay/README.md
+index 4f01b4d..b157a6a 100644
+--- a/tools/replay/README.md
++++ b/tools/replay/README.md
+@@ -87,7 +87,7 @@ Every event has `s`, `r`, `t`, `k` (kind). `a` is the acting champion. Damage li
+ | `recall_end` | `a, gems, f, to` |
+ | `recall_cancel`, `tribute_cancel`, `teleport_cancel` | `a, gems, cause` (`damage`, `stun`, `death`, `manual`, `lock`, or a step kind), `left` (channel turns left) |
+ | `tribute_start` | `a, altar, gems, dur` (channel turn ends), `at` |
+-| `tribute_end` | `a, gems, total` (team total after) |
++| `tribute_end` | `a, gems, total` (team total after), `earnedGold` (v2: change in the champion's native lifetime earned-gold snapshot across this completion step; absent in v1 event streams) |
+ | `tribute_blocked` | `a, altar, gems`: submit at an enemy-locked altar (counts as a lock hit) |
+ | `lock_place` | `a, team, to` |
+ | `lock_destroyed` | `team, at` (detected at the next lock read: lock attacks, tributes, lock placements and round ends) |
+diff --git a/tools/replay/extract.mjs b/tools/replay/extract.mjs
+index bfc5653..afac985 100644
+--- a/tools/replay/extract.mjs
++++ b/tools/replay/extract.mjs
+@@ -12,7 +12,7 @@ import {
+ 
+ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+ let OUT_ROOT = isMainThread ? path.join(ROOT, 'replays', '.analysis') : workerData.out;
+-export const EXTRACTOR_VERSION = 1;
++export const EXTRACTOR_VERSION = 2;
+ const NONE = 0xFFFFFFFF;
+ const K = Object.fromEntries(STEP_KINDS.map((n, i) => [n, i]));
+ const ACTIONS = new Set([K.Move, K.Attack, K['Cast ability'], K.Recall, K['Submit gems'], K.Shop, K['Place ward'], K.Consumable, K['Cancel channel'], K['Place altar lock'], K['Teleport channel'], K['Sell item'], K['Movement blocked']]);
+@@ -341,7 +341,8 @@ export function extractGame(engines, file) {
+           }
+           case K['Gems submitted']: {
+             const p = byId.get(a);
+-            ev({ s, r, t, k: 'tribute_end', a, gems: p.gems, total: h.submittedGems[p.team] });
++            const c = curById.get(a);
++            ev({ s, r, t, k: 'tribute_end', a, gems: p.gems, total: h.submittedGems[p.team], earnedGold: r1(c.earned - p.earned) });
+             consumed = true; break;
+           }
+           case K['Teleport channel']: ev({ s, r, t, k: 'teleport_start', a, f: [st.from.x, st.from.y], to: [st.to.x, st.to.y] }); consumed = true; break;
+@@ -539,7 +540,7 @@ function validate(ctx, result, champions, events, stats, statsError) {
+       if (e.refl && e.reflBy !== undefined) { add(dealt, e.reflBy, e.refl); add(taken, e.a, e.refl); }
+     }
+     if (e.k === 'camp_attack') { add(monsterTaken, e.tgt, e.dmg); for (const [, v] of e.refl ?? []) add(monster, e.tgt, v); }
+-    if (e.k === 'tribute_end') add(tributed, e.a, e.gems);
++    if (e.k === 'tribute_end') { add(tributed, e.a, e.gems); add(earned, e.a, e.earnedGold ?? 0); }
+     if (e.k === 'capture') for (const [id, , gold] of e.shares) add(earned, id, gold);
+   }
+   for (const c of champions) {

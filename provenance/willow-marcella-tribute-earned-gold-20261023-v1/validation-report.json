@@ -1,0 +1,622 @@
+{
+  "extractorVersion": 2,
+  "results": [
+    {
+      "label": "successful engine probe",
+      "source": "replays/willow-marcella-treasure-tribute-probe-20261023-v2/payload/replay.repl26a",
+      "hash": "f13547cc82280988c0a60d9928c391c22ec28823a0fa443f972233fe5aa7d2c0",
+      "rounds": 2000,
+      "winner": 0,
+      "gems": [
+        19,
+        0
+      ],
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "marcella": [
+        {
+          "id": 0,
+          "team": 0,
+          "earnedGold": 388,
+          "submittedGems": 19
+        }
+      ],
+      "tributeEarnedGold": [
+        {
+          "round": 77,
+          "champion": 0,
+          "gems": 4,
+          "earnedGold": 8
+        },
+        {
+          "round": 303,
+          "champion": 0,
+          "gems": 15,
+          "earnedGold": 36
+        }
+      ],
+      "unchanged": null
+    },
+    {
+      "label": "a67 BigWorld",
+      "source": "replays/willow-sustainable-crew-fish-panel-20261023-v2/matches-final/parent-01big-world-12.repl26a",
+      "hash": "937e49df38e49207c80fdd557d38a612ca3390b9ea01c66be1b92da05b9cdbbd",
+      "rounds": 904,
+      "winner": 1,
+      "gems": [
+        778,
+        1008
+      ],
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "marcella": [
+        {
+          "id": 2,
+          "team": 0,
+          "earnedGold": 3095,
+          "submittedGems": 313
+        }
+      ],
+      "tributeEarnedGold": [
+        {
+          "round": 59,
+          "champion": 4,
+          "gems": 15,
+          "earnedGold": 0
+        },
+        {
+          "round": 88,
+          "champion": 4,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 101,
+          "champion": 6,
+          "gems": 56,
+          "earnedGold": 0
+        },
+        {
+          "round": 104,
+          "champion": 5,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 130,
+          "champion": 9,
+          "gems": 4,
+          "earnedGold": 0
+        },
+        {
+          "round": 145,
+          "champion": 1,
+          "gems": 45,
+          "earnedGold": 0
+        },
+        {
+          "round": 175,
+          "champion": 4,
+          "gems": 28,
+          "earnedGold": 0
+        },
+        {
+          "round": 211,
+          "champion": 5,
+          "gems": 7,
+          "earnedGold": 0
+        },
+        {
+          "round": 222,
+          "champion": 2,
+          "gems": 15,
+          "earnedGold": 30
+        },
+        {
+          "round": 226,
+          "champion": 10,
+          "gems": 35,
+          "earnedGold": 0
+        },
+        {
+          "round": 230,
+          "champion": 4,
+          "gems": 7,
+          "earnedGold": 0
+        },
+        {
+          "round": 238,
+          "champion": 8,
+          "gems": 14,
+          "earnedGold": 0
+        },
+        {
+          "round": 252,
+          "champion": 3,
+          "gems": 14,
+          "earnedGold": 0
+        },
+        {
+          "round": 258,
+          "champion": 7,
+          "gems": 49,
+          "earnedGold": 0
+        },
+        {
+          "round": 289,
+          "champion": 7,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 294,
+          "champion": 4,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 295,
+          "champion": 5,
+          "gems": 14,
+          "earnedGold": 0
+        },
+        {
+          "round": 313,
+          "champion": 6,
+          "gems": 56,
+          "earnedGold": 0
+        },
+        {
+          "round": 328,
+          "champion": 2,
+          "gems": 41,
+          "earnedGold": 98
+        },
+        {
+          "round": 349,
+          "champion": 7,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 353,
+          "champion": 4,
+          "gems": 7,
+          "earnedGold": 0
+        },
+        {
+          "round": 355,
+          "champion": 8,
+          "gems": 15,
+          "earnedGold": 0
+        },
+        {
+          "round": 358,
+          "champion": 1,
+          "gems": 30,
+          "earnedGold": 0
+        },
+        {
+          "round": 371,
+          "champion": 5,
+          "gems": 7,
+          "earnedGold": 0
+        },
+        {
+          "round": 395,
+          "champion": 9,
+          "gems": 4,
+          "earnedGold": 0
+        },
+        {
+          "round": 403,
+          "champion": 10,
+          "gems": 28,
+          "earnedGold": 0
+        },
+        {
+          "round": 406,
+          "champion": 7,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 416,
+          "champion": 4,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 441,
+          "champion": 2,
+          "gems": 41,
+          "earnedGold": 98
+        },
+        {
+          "round": 446,
+          "champion": 1,
+          "gems": 37,
+          "earnedGold": 0
+        },
+        {
+          "round": 464,
+          "champion": 7,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 479,
+          "champion": 6,
+          "gems": 56,
+          "earnedGold": 0
+        },
+        {
+          "round": 487,
+          "champion": 8,
+          "gems": 15,
+          "earnedGold": 0
+        },
+        {
+          "round": 515,
+          "champion": 10,
+          "gems": 7,
+          "earnedGold": 0
+        },
+        {
+          "round": 523,
+          "champion": 7,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 538,
+          "champion": 1,
+          "gems": 37,
+          "earnedGold": 0
+        },
+        {
+          "round": 560,
+          "champion": 2,
+          "gems": 41,
+          "earnedGold": 99
+        },
+        {
+          "round": 564,
+          "champion": 6,
+          "gems": 41,
+          "earnedGold": 0
+        },
+        {
+          "round": 582,
+          "champion": 7,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 603,
+          "champion": 8,
+          "gems": 15,
+          "earnedGold": 0
+        },
+        {
+          "round": 614,
+          "champion": 4,
+          "gems": 28,
+          "earnedGold": 0
+        },
+        {
+          "round": 621,
+          "champion": 3,
+          "gems": 4,
+          "earnedGold": 0
+        },
+        {
+          "round": 630,
+          "champion": 6,
+          "gems": 41,
+          "earnedGold": 0
+        },
+        {
+          "round": 631,
+          "champion": 1,
+          "gems": 37,
+          "earnedGold": 0
+        },
+        {
+          "round": 641,
+          "champion": 7,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 653,
+          "champion": 2,
+          "gems": 41,
+          "earnedGold": 98
+        },
+        {
+          "round": 669,
+          "champion": 5,
+          "gems": 7,
+          "earnedGold": 0
+        },
+        {
+          "round": 674,
+          "champion": 4,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 681,
+          "champion": 6,
+          "gems": 37,
+          "earnedGold": 0
+        },
+        {
+          "round": 700,
+          "champion": 7,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 708,
+          "champion": 8,
+          "gems": 15,
+          "earnedGold": 0
+        },
+        {
+          "round": 718,
+          "champion": 1,
+          "gems": 37,
+          "earnedGold": 0
+        },
+        {
+          "round": 720,
+          "champion": 2,
+          "gems": 41,
+          "earnedGold": 99
+        },
+        {
+          "round": 754,
+          "champion": 6,
+          "gems": 56,
+          "earnedGold": 0
+        },
+        {
+          "round": 759,
+          "champion": 7,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 765,
+          "champion": 1,
+          "gems": 15,
+          "earnedGold": 0
+        },
+        {
+          "round": 777,
+          "champion": 4,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 800,
+          "champion": 8,
+          "gems": 37,
+          "earnedGold": 0
+        },
+        {
+          "round": 802,
+          "champion": 2,
+          "gems": 41,
+          "earnedGold": 98
+        },
+        {
+          "round": 821,
+          "champion": 10,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 827,
+          "champion": 5,
+          "gems": 15,
+          "earnedGold": 0
+        },
+        {
+          "round": 833,
+          "champion": 9,
+          "gems": 4,
+          "earnedGold": 0
+        },
+        {
+          "round": 843,
+          "champion": 7,
+          "gems": 21,
+          "earnedGold": 0
+        },
+        {
+          "round": 853,
+          "champion": 2,
+          "gems": 37,
+          "earnedGold": 89
+        },
+        {
+          "round": 861,
+          "champion": 1,
+          "gems": 15,
+          "earnedGold": 0
+        },
+        {
+          "round": 862,
+          "champion": 8,
+          "gems": 37,
+          "earnedGold": 0
+        },
+        {
+          "round": 864,
+          "champion": 3,
+          "gems": 4,
+          "earnedGold": 0
+        },
+        {
+          "round": 884,
+          "champion": 6,
+          "gems": 41,
+          "earnedGold": 0
+        },
+        {
+          "round": 890,
+          "champion": 10,
+          "gems": 7,
+          "earnedGold": 0
+        },
+        {
+          "round": 893,
+          "champion": 2,
+          "gems": 15,
+          "earnedGold": 36
+        },
+        {
+          "round": 901,
+          "champion": 8,
+          "gems": 15,
+          "earnedGold": 0
+        },
+        {
+          "round": 904,
+          "champion": 7,
+          "gems": 21,
+          "earnedGold": 0
+        }
+      ],
+      "unchanged": {
+        "oldRounds": 904,
+        "newRounds": 904,
+        "oldWinner": 1,
+        "newWinner": 1,
+        "roundStateUnchanged": true,
+        "eventsUnchangedExceptEarnedGold": true,
+        "oldValidation": {
+          "ok": true,
+          "hard": [],
+          "soft": [
+            "champion 2 earnedGold: derived 2350, engine 3095"
+          ]
+        },
+        "unrelatedSoftUnchanged": true,
+        "removedMarcellaEarnedGoldWarning": true
+      }
+    },
+    {
+      "label": "a67 Boss",
+      "source": "replays/fish-comms-cached-default100k-20261023/cached/001-01boss-battle-12.repl26a",
+      "hash": "b3fc46242dae948dcb89e22c5dd39416e760c74717565c395ba70c0a127f83bf",
+      "rounds": 983,
+      "winner": 0,
+      "gems": [
+        1005,
+        0
+      ],
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": [
+          "champion 0 championDamageDone: derived 22651.6, engine 24901.9",
+          "champion 0 earnedGold: derived 4330, engine 3930",
+          "champion 4 championDamageDone: derived 9644.1, engine 10268.4",
+          "champion 4 earnedGold: derived 3194, engine 2954",
+          "champion 9 championDamageTaken: derived 2340, engine 0",
+          "champion 10 championDamageTaken: derived 1048, engine 6262.8"
+        ]
+      },
+      "marcella": [
+        {
+          "id": 2,
+          "team": 0,
+          "earnedGold": 5774,
+          "submittedGems": 751
+        }
+      ],
+      "tributeEarnedGold": [
+        {
+          "round": 587,
+          "champion": 3,
+          "gems": 15,
+          "earnedGold": 0
+        },
+        {
+          "round": 606,
+          "champion": 4,
+          "gems": 171,
+          "earnedGold": 0
+        },
+        {
+          "round": 698,
+          "champion": 2,
+          "gems": 732,
+          "earnedGold": 1756
+        },
+        {
+          "round": 701,
+          "champion": 1,
+          "gems": 30,
+          "earnedGold": 0
+        },
+        {
+          "round": 708,
+          "champion": 4,
+          "gems": 30,
+          "earnedGold": 0
+        },
+        {
+          "round": 743,
+          "champion": 3,
+          "gems": 8,
+          "earnedGold": 0
+        },
+        {
+          "round": 983,
+          "champion": 2,
+          "gems": 19,
+          "earnedGold": 46
+        }
+      ],
+      "unchanged": {
+        "oldRounds": 983,
+        "newRounds": 983,
+        "oldWinner": 0,
+        "newWinner": 0,
+        "roundStateUnchanged": true,
+        "eventsUnchangedExceptEarnedGold": true,
+        "oldValidation": {
+          "ok": true,
+          "hard": [],
+          "soft": [
+            "champion 0 championDamageDone: derived 22651.6, engine 24901.9",
+            "champion 0 earnedGold: derived 4330, engine 3930",
+            "champion 2 earnedGold: derived 3972, engine 5774",
+            "champion 4 championDamageDone: derived 9644.1, engine 10268.4",
+            "champion 4 earnedGold: derived 3194, engine 2954",
+            "champion 9 championDamageTaken: derived 2340, engine 0",
+            "champion 10 championDamageTaken: derived 1048, engine 6262.8"
+          ]
+        },
+        "unrelatedSoftUnchanged": true,
+        "removedMarcellaEarnedGoldWarning": true
+      }
+    }
+  ],
+  "probeNative": {
+    "rounds": 2000,
+    "outcome": "teamA",
+    "marcellaEarnedGold": "388"
+  }
+}

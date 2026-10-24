@@ -1,0 +1,20 @@
+{
+  "purpose": "Corrected replay extraction for Marcella tribute-earned-gold accounting",
+  "sources": [
+    {
+      "source": "replays/willow-marcella-treasure-tribute-probe-20261023-v2/payload/replay.repl26a",
+      "sha256": "f13547cc82280988c0a60d9928c391c22ec28823a0fa443f972233fe5aa7d2c0"
+    },
+    {
+      "source": "replays/willow-sustainable-crew-fish-panel-20261023-v2/matches-final/parent-01big-world-12.repl26a",
+      "sha256": "937e49df38e49207c80fdd557d38a612ca3390b9ea01c66be1b92da05b9cdbbd"
+    },
+    {
+      "source": "replays/fish-comms-cached-default100k-20261023/cached/001-01boss-battle-12.repl26a",
+      "sha256": "b3fc46242dae948dcb89e22c5dd39416e760c74717565c395ba70c0a127f83bf"
+    }
+  ],
+  "command": "nice -n 19 node tools/replay/extract.mjs replays/willow-marcella-treasure-tribute-probe-20261023-v2/payload/replay.repl26a replays/willow-sustainable-crew-fish-panel-20261023-v2/matches-final/parent-01big-world-12.repl26a replays/fish-comms-cached-default100k-20261023/cached/001-01boss-battle-12.repl26a --threads 1 --force --out provenance/willow-marcella-tribute-earned-gold-20261023-v1/extract-output > provenance/willow-marcella-tribute-earned-gold-20261023-v1/extraction.log 2>&1",
+  "worker": "one extractor process with one worker thread, nice priority 19",
+  "controlSearch": "A separate Fragment no-Marcella control was later identified and extracted under primary-v2-extract; its results are in fragment-control-report.json."
+}

@@ -1575,6 +1575,17 @@ currently sums capture/kill income but no tribute income. Native snapshot deltas
 Historical CHANGES101 found broad/fresh Treasure-first gains; generic forced Health and
 additional speculative Treasure-return pricing did not improve their historical baselines.
 
+The replay extractor is now corrected separately: v2 adds each tribute completion's native
+lifetime-earned-gold delta to `tribute_end.earnedGold`, and validation includes it. It does
+not infer historical bonuses from final inventory. The probe reconstructs 388 earned gold
+including the 8/36 tribute payments; exact a67 BigWorld and Boss reconstruct Marcella's
+3095/5774 and remove only her omitted-income warnings. Their native outcomes, round states
+and event sequences match old extractions except for the added field. Fragment, with no
+Marcella, has 55 tribute events with zero earned income and no validation notes. Other Boss
+warnings remain. Existing extractions are preserved; new outputs and source snapshots,
+patch, hashes and reports are under `provenance/willow-marcella-tribute-earned-gold-20261023-v1/`.
+The extractor version bump prevents reuse of older cache entries lacking the new field.
+
 Two separate source-only a67 experiments are being prepared: allow one existing-model-selected
 Jungle/Durability before Treasure for Willow, preserving begun items; and, after economy plus
 protection, substitute one newly selected BruiserStrength with BruiserFocus. The latter keeps

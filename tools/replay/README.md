@@ -87,7 +87,7 @@ Every event has `s`, `r`, `t`, `k` (kind). `a` is the acting champion. Damage li
 | `recall_end` | `a, gems, f, to` |
 | `recall_cancel`, `tribute_cancel`, `teleport_cancel` | `a, gems, cause` (`damage`, `stun`, `death`, `manual`, `lock`, or a step kind), `left` (channel turns left) |
 | `tribute_start` | `a, altar, gems, dur` (channel turn ends), `at` |
-| `tribute_end` | `a, gems, total` (team total after) |
+| `tribute_end` | `a, gems, total` (team total after), `earnedGold` (v2: change in the champion's native lifetime earned-gold snapshot across this completion step; absent in v1 event streams) |
 | `tribute_blocked` | `a, altar, gems`: submit at an enemy-locked altar (counts as a lock hit) |
 | `lock_place` | `a, team, to` |
 | `lock_destroyed` | `team, at` (detected at the next lock read: lock attacks, tributes, lock placements and round ends) |

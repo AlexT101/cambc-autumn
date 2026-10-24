@@ -1,0 +1,405 @@
+{
+  "label": "Fragment no-Marcella control",
+  "source": "replays/willow-upstream-c71be8c-integrated-fuelbench16-20261023-v2/games/00fragment-a/integration-candidate-vs-fixed-emulator-1792800133105.repl26a",
+  "outputHash": "9ec211555e752053",
+  "rounds": 1530,
+  "winner": 0,
+  "picks": [
+    [
+      "Prism",
+      "Vesper Vale",
+      "Heart of Ruin"
+    ],
+    [
+      "Prism",
+      "Vesper Vale",
+      "Heart of Ruin"
+    ]
+  ],
+  "champions": [
+    {
+      "id": 0,
+      "name": "Prism",
+      "earnedGold": 5160,
+      "submittedGems": 644
+    },
+    {
+      "id": 1,
+      "name": "Vesper Vale",
+      "earnedGold": 3008,
+      "submittedGems": 226
+    },
+    {
+      "id": 2,
+      "name": "Heart of Ruin",
+      "earnedGold": 2356,
+      "submittedGems": 206
+    },
+    {
+      "id": 3,
+      "name": "Prism",
+      "earnedGold": 1170,
+      "submittedGems": 0
+    },
+    {
+      "id": 4,
+      "name": "Vesper Vale",
+      "earnedGold": 1178,
+      "submittedGems": 64
+    },
+    {
+      "id": 5,
+      "name": "Heart of Ruin",
+      "earnedGold": 1176,
+      "submittedGems": 40
+    }
+  ],
+  "tributeCount": 55,
+  "tributeEarnedGold": [
+    {
+      "round": 68,
+      "champion": 4,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 94,
+      "champion": 5,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 94,
+      "champion": 1,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 204,
+      "champion": 4,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 215,
+      "champion": 5,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 242,
+      "champion": 1,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 301,
+      "champion": 1,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 333,
+      "champion": 5,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 416,
+      "champion": 2,
+      "gems": 8,
+      "earnedGold": 0
+    },
+    {
+      "round": 452,
+      "champion": 1,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 460,
+      "champion": 5,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 462,
+      "champion": 4,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 532,
+      "champion": 2,
+      "gems": 8,
+      "earnedGold": 0
+    },
+    {
+      "round": 557,
+      "champion": 5,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 608,
+      "champion": 4,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 616,
+      "champion": 1,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 683,
+      "champion": 1,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 684,
+      "champion": 5,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 692,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 718,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 731,
+      "champion": 5,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 756,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 786,
+      "champion": 1,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 794,
+      "champion": 5,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 796,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 855,
+      "champion": 1,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 878,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 907,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 971,
+      "champion": 1,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 974,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1000,
+      "champion": 2,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 1022,
+      "champion": 5,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1046,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1047,
+      "champion": 4,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1050,
+      "champion": 1,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1065,
+      "champion": 2,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 1101,
+      "champion": 5,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1104,
+      "champion": 1,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 1120,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1130,
+      "champion": 1,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1177,
+      "champion": 2,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 1199,
+      "champion": 1,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1223,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1227,
+      "champion": 1,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1257,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1289,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1318,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1342,
+      "champion": 1,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 1349,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1378,
+      "champion": 1,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 1389,
+      "champion": 1,
+      "gems": 8,
+      "earnedGold": 0
+    },
+    {
+      "round": 1398,
+      "champion": 2,
+      "gems": 4,
+      "earnedGold": 0
+    },
+    {
+      "round": 1451,
+      "champion": 2,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 1477,
+      "champion": 2,
+      "gems": 26,
+      "earnedGold": 0
+    },
+    {
+      "round": 1530,
+      "champion": 0,
+      "gems": 644,
+      "earnedGold": 0
+    }
+  ],
+  "validation": {
+    "ok": true,
+    "hard": [],
+    "soft": []
+  },
+  "comparison": {
+    "oldRounds": 1530,
+    "newRounds": 1530,
+    "oldWinner": 0,
+    "newWinner": 0,
+    "roundStateUnchanged": true,
+    "eventsUnchangedExceptEarnedGold": true,
+    "oldSoft": [],
+    "newSoft": []
+  }
+}
