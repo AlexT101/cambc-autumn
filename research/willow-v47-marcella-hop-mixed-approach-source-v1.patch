@@ -1,0 +1,414 @@
+diff -ruN provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/abilities.cpp bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/abilities.cpp
+--- provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/abilities.cpp	2026-10-24 01:18:40
++++ bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/abilities.cpp	2026-10-24 09:51:11
+@@ -199,9 +199,14 @@
+         const float v = value[(c.y - here.y + range) * side + (c.x - here.x + range)];
+         if (!(v > best.value && v >= min_weight_value)) continue;
+         if (harmful) {
+-            int hits = 0;
++            // A mixed-group approach can hit one attacker together with living clusters.
++            bool attacker = false;
+             for (auto p : *harmful)
+-                if (dist(c, p) <= 1 && ++hits >= 2) break;
++                if (dist(c, p) <= 1) { attacker = true; break; }
++            if (!attacker) continue;
++            int hits = 0;
++            for (const auto& t : targets)
++                if (dist(c, t.pos) <= 1 && ++hits >= 2) break;
+             if (hits < 2) continue;
+         }
+         best.slot = slot, best.value = v, best.tile = c;
+diff -ruN provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/bot.cpp bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/bot.cpp
+--- provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/bot.cpp	2026-10-24 01:18:40
++++ bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/bot.cpp	2026-10-24 09:51:11
+@@ -43,6 +43,7 @@
+ bool struck = false;   // the strike search ran this turn
+ // The Prism-Willow support code chose this turn: the wrap-up's strike, heal, shield and recall stay out.
+ bool support_owned = false;
++bool teleport_owned = false; // current crystal channel: no gameplay tail after decide()
+ bool support_requested = false, support_offered = false, support_retreat = false;
+ bool end_ward = false; // the turn-end ward, seeing more than our last observe
+ vec2 searched_at{};      // where the search's plan ended, and whether it had attacked by then
+@@ -152,11 +153,15 @@
+ bool carries_crystal() { return cambc::self().consumables()[cambc::consumable_type::tp_crystal].count() > 0; }
+ 
+ // Once a hop to an altar only a crystal reaches (StaticMap::hops) would have beaten walking to bank.
+-void buy_crystal(const Memory& memory) {
+-    if (!memory.wants_crystal) return;
++void buy_crystal(Memory& memory) {
++    if (memory.wants_farm_crystal && carries_crystal()) memory.wants_farm_crystal = false;
++    if (!memory.wants_crystal && !memory.wants_farm_crystal) return;
+     auto& me = cambc::self();
+     try {
+-        if (me.can_buy(cambc::consumable_type::tp_crystal)) me.buy(cambc::consumable_type::tp_crystal);
++        if (me.can_buy(cambc::consumable_type::tp_crystal)) {
++            me.buy(cambc::consumable_type::tp_crystal);
++            memory.wants_farm_crystal = false;
++        }
+     } catch (const cambc::error&) {
+     }
+ }
+@@ -780,7 +785,10 @@
+             if (const int s = field.at(l); s < best_steps) best = l, best_steps = s;
+         if (best.x >= 0) {
+             try {
+-                if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return;
++                if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) {
++                    teleport_owned = true;
++                    return;
++                }
+             } catch (const cambc::error&) {
+             }
+         }
+@@ -1654,6 +1662,123 @@
+                : 0;
+ }
+ 
++struct FarmHopQuote {
++    int group = -1;
++    float worth = 0, offset = 0, tail = 0, damage = 0, arrival_limit = 0;
++    std::uint32_t version = 0;
++};
++
++void see_again(World&, Pathing&, Safety&);
++
++// Current sleep/stuns/tanks cannot fund a three-phase commitment; known respawns count too.
++float farm_hop_camp_phase(const World& world, vec2 p, int round) {
++    float raw = 0;
++    for (const int g : world.map().groups_near(p, world.map().max_camp_reach)) {
++        const auto& c = world.camps[g];
++        if (c.state == CampState::cleared || (c.state == CampState::respawning && c.respawn_round > round)) continue;
++        const auto& G = world.map().groups[g];
++        for (int i = 0; i < static_cast<int>(G.members.size()); ++i) {
++            const auto& member = G.members[i];
++            if (member.strength > 0 && dist(p, member.pos) <= member.reach
++                && (c.state == CampState::respawning || c.health[i] > 0)) raw += member.strength;
++        }
++    }
++    return raw * camp_hit_factor();
++}
++
++bool ordinary_farm_hop(World& world, Pathing& pathing, Safety& safety, Memory& memory, const FarmHopQuote& quote) {
++    if (quote.group < 0 || memory.wants_crystal || memory.crew || channelling() || stunned_turn) return false;
++    const bool owned = carries_crystal();
++    if (!owned && my_gold() < 10) return false;
++    const auto& live_self = my_record();
++    const auto& quoted_self = world.me();
++    if (live_self.strength != quoted_self.strength || live_self.focus != quoted_self.focus
++        || live_self.max_health != quoted_self.max_health) return false;
++    const int g = quote.group, range = walk_range(world, g);
++    if (world.camps[g].version != quote.version || !pathing.approach_ready(g, range)) return false;
++    const Field* route = pathing.approach(g, range); // already prepared: no second route search
++    const vec2 here = my_position();
++    const int walking = route->at(here);
++    if (walking == unreachable || walking == 0) return false;
++    const int channel = cambc::constants::tp_crystal_time;
++    const bool can_walk = my_can_move();
++    int normal = walking + (can_walk ? 0 : 1);
++    if (normal <= channel) return false;
++    // Range3 cannot beat a shortest unobstructed walk when its channel costs at least3.
++    if (can_walk && channel >= 3 && !any_within(route->goals, here, walking - 1)) return false;
++    auto targets = pathing.teleport_targets();
++    bitboard dash{cambc::uninitialized};
++    dash.clear();
++    const int slot = world.me().facts().slot_of(AbilityKind::dash);
++    if (slot >= 0 && my_can_cast() && my_cooldown(slot) == 0) dash |= pathing.dash_landings();
++    auto candidates = targets;
++    candidates |= dash;
++    int remaining = unreachable;
++    vec2 landing{-1, -1};
++    // Both the ready-dash alternative and teleport are ranked in the same <=49-tile pass.
++    for (const vec2 p : Tiles<49>{candidates}) {
++        const int steps = route->at(p);
++        if (steps == unreachable) continue;
++        if (test(dash, p)) normal = std::min(normal, std::max(1, steps + (can_walk ? 0 : 1)));
++        if (test(targets, p) && p != here && steps < remaining) landing = p, remaining = steps;
++    }
++    if (landing.x < 0) return false;
++    const auto& c = world.camps[g];
++    const auto cycle = [&](int travel) {
++        const int wait = c.state == CampState::respawning ? std::max(0, c.respawn_round - world.round - travel) : 0;
++        return std::max(0.0f, static_cast<float>(travel + wait) + quote.offset) + quote.tail;
++    };
++    // Melee can hit on its last ordinary walk; an in-range crystal landing only works at R+3.
++    const bool melee_landing = remaining == 0 && c.state != CampState::cleared && world.me().facts().walk_and_attack_independent();
++    const int arrival = channel + remaining + (melee_landing ? 1 : 0);
++    const int wait = c.state == CampState::respawning ? std::max(0, c.respawn_round - world.round - arrival) : 0;
++    if (static_cast<float>(arrival + wait) > quote.arrival_limit) return false;
++    const float ordinary_cycle = cycle(normal), hopped_cycle = cycle(arrival);
++    const float worth = quote.worth - 10.0f * prices(world).per_gold;
++    if (!(rate(world, worth, hopped_cycle) > rate(world, quote.worth, ordinary_cycle))) return false;
++    // Only this economically useful destination and its source receive commitment checks.
++    see_again(world, pathing, safety);
++    world.throw_if_stale();
++    if (!pathing.approach_ready(g, range) || my_position() != here || memory.claim != g || memory.crew
++        || world.camps[g].version != quote.version || walk_range(world, g) != range) return false;
++    // Observe does not merge camp lifecycle. A visible topology change invalidates this prepared quote.
++    static bitboard observed_camps{cambc::uninitialized}, quoted_camps{cambc::uninitialized};
++    and_into(live_camp_tiles(), world.visible, observed_camps);
++    and_into(pathing.live_camps(), world.visible, quoted_camps);
++    if (observed_camps != quoted_camps) return false;
++    float source_damage = 0;
++    for (int turn = 1; turn <= channel; ++turn) source_damage += farm_hop_camp_phase(world, here, world.round + turn);
++    const float reserve = params::recall_health_fraction * my_max_health() + params::camp_risk * quote.damage;
++    const float healing = heal_rounds(world, source_damage, spawn_steps());
++    if (!(my_health() > source_damage + reserve)
++        || !(rate(world, worth, hopped_cycle + healing) > rate(world, quote.worth, ordinary_cycle))
++        || safety.channel_enemy_may_reach(here, channel + 1) || safety.channel_enemy_may_reach(landing, channel + 1)
++        || farm_hop_camp_phase(world, landing, world.round + channel + 1) > 0
++        || (pathing.guard() && test(*pathing.guard(), landing)) || test(pathing.blocked(), landing)) return false;
++    if (!owned) {
++        memory.wants_farm_crystal = true;
++        debug_block({ std::printf("FHOP %d g %d intent normal %.2f hop %.2f cost %.3f\n", world.round, g,
++                                 static_cast<double>(ordinary_cycle), static_cast<double>(hopped_cycle + healing),
++                                 static_cast<double>(10.0f * prices(world).per_gold)); });
++        return false;
++    }
++    bool started = false;
++    try { started = cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(landing); }
++    catch (const cambc::error&) {}
++    if (started) {
++        teleport_owned = true;
++        memory.wants_farm_crystal = false;
++        debug_block({ std::printf("FHOP %d g %d start %d %d normal %.2f hop %.2f damage %.1f\n", world.round, g,
++                                 landing.x, landing.y, static_cast<double>(ordinary_cycle),
++                                 static_cast<double>(hopped_cycle + healing), static_cast<double>(source_damage)); });
++        return true;
++    }
++    // One hidden-obstruction attempt only; refresh before the ordinary movement fallback.
++    see_again(world, pathing, safety);
++    world.throw_if_stale();
++    return false;
++}
++
+ // Farm's spell clear (spell_clear_rounds): from a tile within ability range of a live attacker of
+ // the group but out of every attacker's reach, casting at the attackers, with basic attacks on
+ // what cannot hit back. False with no such tile or way to one, for the usual approach.
+@@ -1742,8 +1867,8 @@
+     const auto& groups = map.groups;
+     const int range = world.me().facts().attack_range();
+     const float strength = floored_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
+-    const float max_health = my_max_health();
+-    const float spare_health = (my_health() - params::recall_health_fraction * max_health) / params::camp_risk;
++    const float max_health = my_max_health(), health = my_health();
++    const float spare_health = (health - params::recall_health_fraction * max_health) / params::camp_risk;
+     const int bag = bankable_bag(world, pathing);
+     const bool banks_bag = bag > 0 && !retaining_gems(world, pathing);
+     const int short_by = gems_short(world);
+@@ -1959,6 +2084,12 @@
+     // Per base gold of a group: we are paid it with our bonuses.
+     const float paid = gold_paid(world);
+     const float per_gold = prices(world).per_gold * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);
++    // Passive income is spendable only after tribute and a later shop; carried bags keep their
++    // existing chain value. bankable_bag can be zero even while a sealed altar leaves gems carried.
++    const bool tribute_income = world.me().facts().passive == Passive::stun_immune && per_gold > 0
++                                && decision == 'F' && !memory.banking && !memory.siege && siege_group() < 0 && my_gems() == 0;
++    const int income_horizon = tribute_income ? std::min(left, race_left(world)) : 0;
++    const int income_recall = tribute_income ? recall_turns(world) : 0;
+     // An ally in sight clearing its claimed damaging group gets help only if finishing it alone
+     // would take it below the recall line: one champion per camp otherwise.
+     const auto struggling = [&](int g) __attribute__((always_inline)) {
+@@ -2124,6 +2255,7 @@
+     static std::uint32_t clearing = 0;
+     if (const Clearing now{strength, reflect, spells, basic, range}; clearing == 0 || !(now == last_clearing))
+         last_clearing = now, ++clearing;
++    FarmHopQuote farm_hop_quote;
+     int help_group = -1, help_steps = unreachable;
+     // First readings of each group (clears, fields) can cost several times the estimate: stop with
+     // enough left for the walk after it, and read last turn's choice first so that a cut-short loop
+@@ -2213,6 +2345,12 @@
+             known.gold = known.weight * per_gold * static_cast<float>(group.gold);
+             known.gold_context = gold_context;
+         }
++        // An optimistic prune may include income later refused by health, ownership or route
++        // checks. Do not cache it: actual claims, prices and the selected weight can change.
++        const float tribute_bonus = tribute_income && !wins && group.gems > 0 && holders(group) == 1
++                                    && !(g < 256 && (ally_claims[g >> 6] >> (g & 63) & 1))
++                                    ? known.weight * static_cast<float>(cambc::constants::passive_abilities::marcella_tribute_gold_per_gem * group.gems) * per_gold : 0.0f;
++        const float optimistic_worth = known.gems + known.gold + tribute_bonus;
+         if (known.version != belief.version || known.fastest_strength != strength)
+             known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
+         const int walk = known.walk;
+@@ -2242,7 +2380,7 @@
+                                               && near < help_steps;
+                         const float near_cycle = std::max(0.0f, static_cast<float>(near + near_wait) - bank_now + bank)
+                                                  + static_cast<float>(capture_rounds()) + known.fastest;
+-                        if (!may_help && near_cycle > 0 && (known.gems + known.gold) / near_cycle <= best_value
++                        if (!may_help && near_cycle > 0 && optimistic_worth / near_cycle <= best_value
+                             && (!banks_bag || (known.gems + known.gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + known.fastest) <= from_altar_value))
+                             continue;
+                     }
+@@ -2267,7 +2405,7 @@
+         const float gems = known.gems, gold = known.gold, fastest = known.fastest;
+         // Risky groups matter only while no affordable one is found; skip the costly clearing
+         // estimate for groups that cannot beat it even with no clearing. A crew's share can.
+-        if (!claimed && best >= 0 && (gems + gold) / (trip + static_cast<float>(capture_rounds()) + fastest) <= best_value
++        if (!claimed && best >= 0 && optimistic_worth / (trip + static_cast<float>(capture_rounds()) + fastest) <= best_value
+             && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + fastest) <= from_altar_value))
+             continue;
+         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
+@@ -2344,7 +2482,7 @@
+         // Unless a partner shares the clear, it takes us alone at least the quicker of the two ways.
+         if (best >= 0 && (alone_damage <= spare_health || partner_output <= 0 || belief.state != CampState::alive)) {
+             const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
+-            if (worth / (trip + quickest + capture_rounds()) <= best_value
++            if (optimistic_worth / (trip + quickest + capture_rounds()) <= best_value
+                 && (!banks_bag || worth / (static_cast<float>(walk) + cycle_bank + quickest + capture_rounds()) <= from_altar_value))
+                 continue;
+         }
+@@ -2359,6 +2497,24 @@
+         if (too_late(clear_rounds)) continue;
+         const float cycle = trip + clear_rounds + capture_rounds();
+         float value = rate(world, worth, cycle);
++        if (tribute_bonus > 0 && damage <= spare_health && known.to_altar >= 0 && known.to_altar != unreachable
++            && (map.drafted() || map.from_ally_spawn_ready())) {
++            // Visible holders (including Prism) can take the new gems. group_at avoids building
++            // a capture-tile board just to check the bounded allied roster.
++            bool other_holder = false;
++            for (const auto& a : world.allies)
++                if (!a.is_self && a.alive && a.visible && map.group_at(a.pos) == g) { other_holder = true; break; }
++            if (!other_holder) {
++                const int back_to_work = map.ally_steps(g);
++                if (back_to_work != unreachable) {
++                    const int heal_turn = health < max_health || damage > 0 ? 1 : 0;
++                    const float delayed_cycle = static_cast<float>(steps + wait + capture_rounds() + known.to_altar
++                                                                  + known.tribute + income_recall + heal_turn + back_to_work) + clear_rounds;
++                    if (delayed_cycle <= static_cast<float>(income_horizon)) value += rate(world, tribute_bonus, delayed_cycle);
++                }
++            }
++        }
++        bool independent = damage <= spare_health;
+         if (damage > spare_health && partner_output > 0 && belief.state == CampState::alive) {
+             float joint_rounds = 0;
+             const float part = strength / (strength + partner_output);
+@@ -2371,7 +2527,12 @@
+         if (damage > spare_health && !ally_engaged(world, g)) {
+             if (value > risky_value) risky = g, risky_value = value, risky_steps = steps;
+         } else {
+-            if (value > best_value) best = g, best_value = value, best_steps = steps, best_spell = spell;
++            if (value > best_value) {
++                best = g, best_value = value, best_steps = steps, best_spell = spell;
++                const float arrival_limit = known.to_altar == unreachable ? std::numeric_limits<float>::infinity()
++                    : static_cast<float>(left - capture_rounds() - known.to_altar - tribute_turns(bag + group.gems)) - clear_rounds;
++                farm_hop_quote = independent ? FarmHopQuote{g, worth, bank - bank_now, clear_rounds + capture_rounds(), damage, arrival_limit, belief.version} : FarmHopQuote{};
++            }
+             if (banks_bag && walk != unreachable) {
+                 const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk) - bank_now) : 0.0f;
+                 const float from_altar = static_cast<float>(walk) + cycle_bank + via_altar + clear_rounds + capture_rounds();
+@@ -2396,6 +2557,10 @@
+         return true;
+     }
+     memory.farm_group = best;
++    const auto farm_hop = [&] {
++        return !banks_bag && !struck && !memory.crew && farm_hop_quote.group == best
++               && ordinary_farm_hop(world, pathing, safety, memory, farm_hop_quote);
++    };
+     // Our fields price a dash over a hole line; live routes walk round it.
+     const bool dasher = world.me().facts().has_dash();
+     if (dasher && test(map.near_crossable, here))
+@@ -2414,6 +2579,7 @@
+         return outside;
+     };
+     if (world.camps[best].state == CampState::cleared) {
++        if (farm_hop()) return true;
+         if (!zone) dash_towards(world, pathing, groups[best].tiles(), cap);
+         if (search) {
+             if (!pathing.step_towards(off_zone(groups[best].tiles()), zone, cap, groups[best].centre) && dasher) walk_on(best);
+@@ -2446,6 +2612,7 @@
+         if (melee) step_onto_cleared(world, pathing, best);
+         return true;
+     }
++    if (farm_hop()) return true;
+     const Field* dash_route = nullptr;
+     if (!zone && dash_towards(world, pathing, goals, cap, &dash_route) && attack_camp(world, passing) >= 0) return true;
+     if (dash_route) world.throw_if_stale();
+@@ -4871,7 +5038,10 @@
+     }
+     // One state read covers the channels until one is cancelled; a channel excludes the others.
+     const auto state = my_state();
+-    if (state.contains(cambc::champion_state::teleporting)) return;
++    if (state.contains(cambc::champion_state::teleporting)) {
++        teleport_owned = true;
++        return;
++    }
+     // Read again only after shopping changes our stats.
+     std::optional<bool> home;
+     if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, pathing, safety, memory, home)) return;
+@@ -5055,6 +5225,12 @@
+         memory.siege = false;
+         memory.staged_since = -1;
+     }
++    // Crystal use and its following channel turns admit only read-only bookkeeping.
++    if (teleport_owned) {
++        pathing.set_guard(nullptr);
++        count_use(world, start, could_attack);
++        return;
++    }
+     if (world.me().alive && see_revealed(world, pathing, safety)) searched = false;
+     if (!support_owned && strike_after(world, pathing, safety).searched)
+         searched = true, searched_at = my_position(), searched_hit = !my_can_attack();
+@@ -5085,6 +5261,7 @@
+     memory.damage = memory.round == world.round - 1 ? std::max(0.0f, memory.health - health) : 0;
+     decision = '-';
+     sieged = false;
++    teleport_owned = false;
+     searched = false;
+     struck = false;
+     support_owned = support_requested = support_offered = support_retreat = end_ward = false;
+diff -ruN provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/bot.h bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/bot.h
+--- provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/bot.h	2026-10-24 01:18:40
++++ bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/bot.h	2026-10-24 09:51:11
+@@ -19,6 +19,7 @@
+     int staged_since = -1; // round we started waiting near it for the others
+     int wait_altar = -1, wait_since = -1;   // the altar we wait at for a safe tribute, since when
+     int avoid_altar = -1, avoid_until = -1; // one we gave up waiting at, skipped until that round
++    bool wants_farm_crystal = false; // a priced farm route; bought only during normal shopping
+     bool wants_crystal = false; // a crystal hop to an altar would have beaten walking to bank
+     int recovery_start = -1, recovery_turns = 0;
+     int recovery_group = -1, recovery_closed_group = -1;
+diff -ruN provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/safety.cpp bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/safety.cpp
+--- provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/safety.cpp	2026-10-24 01:18:40
++++ bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/safety.cpp	2026-10-24 09:51:11
+@@ -2005,6 +2005,30 @@
+     return false;
+ }
+ 
++bool Safety::channel_enemy_may_reach(vec2 p, int activations) {
++    for (const auto& e : world_.enemies) {
++        if (!e.alive && e.respawn_earliest > world_.round + activations - 1) continue;
++        const auto& f = e.facts();
++        int reach = f.attack_range() + (f.passive == Passive::splash_attack ? 1 : 0);
++        for (const auto& ability : f.abilities)
++            if (ability.hits_enemies()) reach = std::max(reach, ability.reach());
++        // A ready mobility slot can be used once; kill resets may ready it each activation.
++        reach += activations + (f.has_dash() ? 2 * (f.passive == Passive::reset_on_kill ? activations : 1) : 0);
++        if (!e.alive) {
++            if (any_within(world_.map().enemy_spawn, p, reach)) return true;
++        } else if (e.visible) {
++            if (dist(p, e.pos) <= reach) return true;
++            if (e.teleport_pending() && (!in_bounds(e.tp_dest) || dist(p, e.tp_dest) <= reach)) return true;
++        } else {
++            // Ordinary credibility omits expired fixes; this does not prove unseen enemies absent.
++            if (!e.tracked) continue;
++            const int tiles = static_cast<int>(board_count(e.possible));
++            if (unseen_weight(reach, tiles) > 0 && any_within(e.possible, p, reach)) return true;
++        }
++    }
++    return false;
++}
++
+ bool Safety::any_threat() {
+     if (built_) return threat_count_ > 0;
+     for (auto left = live_enemies(); left; left &= left - 1) {
+diff -ruN provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/safety.h bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/safety.h
+--- provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/safety.h	2026-10-24 01:18:40
++++ bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/safety.h	2026-10-24 09:51:11
+@@ -283,6 +283,8 @@
+     // Whether a threat threats_at() lists may hit within `radius` of p: false spares its searches
+     // for every tile that close.
+     bool credible_enemy_may_hit_within(vec2 p, int radius);
++    // Quiet channel admission: maximum kit reach plus future activations, including fog credibility.
++    bool channel_enemy_may_reach(vec2 p, int activations);
+ 
+     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
+     // could hit p. Cut short (Trade::cut) rather than spend the turn's last `end_reserve`.

@@ -1,0 +1,20 @@
+diff -ruN bots/variants/willow-v47-marcella-hop-work/src/abilities.cpp bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/abilities.cpp
+--- bots/variants/willow-v47-marcella-hop-work/src/abilities.cpp	2026-10-24 09:51:10
++++ bots/variants/willow-v47-marcella-hop-mixed-approach-work/src/abilities.cpp	2026-10-24 09:51:11
+@@ -199,9 +199,14 @@
+         const float v = value[(c.y - here.y + range) * side + (c.x - here.x + range)];
+         if (!(v > best.value && v >= min_weight_value)) continue;
+         if (harmful) {
+-            int hits = 0;
++            // A mixed-group approach can hit one attacker together with living clusters.
++            bool attacker = false;
+             for (auto p : *harmful)
+-                if (dist(c, p) <= 1 && ++hits >= 2) break;
++                if (dist(c, p) <= 1) { attacker = true; break; }
++            if (!attacker) continue;
++            int hits = 0;
++            for (const auto& t : targets)
++                if (dist(c, t.pos) <= 1 && ++hits >= 2) break;
+             if (hits < 2) continue;
+         }
+         best.slot = slot, best.value = v, best.tile = c;

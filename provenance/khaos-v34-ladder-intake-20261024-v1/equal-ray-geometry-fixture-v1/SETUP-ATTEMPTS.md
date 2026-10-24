@@ -1,0 +1,3 @@
+# Fixture setup attempts
+
+The first host compile attempts exposed only mock/extractor wiring issues (the nested production type name, pointer-shaped labels, and direction-table alias). They were corrected in `build_fixture.py`; no production-source or assertion behavior was changed to make a test pass. A first assertion setup mistakenly placed the intended off-ray goal on a straight ray, then was corrected to a Chebyshev-2 off-ray goal. The current generated fixture passes all cases. Earlier generated files and compiler stderr were overwritten by the builder; these are setup notes, not lost gameplay or native-run evidence.

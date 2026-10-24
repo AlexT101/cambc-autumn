@@ -1,0 +1,58 @@
+{
+  "schema": "equal-ray-geometry-fixture-source-pins-v1",
+  "sourceAggregate": "c1e19d45475ca18d2a74c344da8372d9112cc9215c8261eb4023b987db02b4e5",
+  "sources": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-equal-ray-escape-work/src/pathing.cpp",
+      "sha256": "1989225a0ec12acb76e7a5fe44d74da810a26a116deed2aec33f2aa3df0260f6"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-equal-ray-escape-work/src/pathing.h",
+      "sha256": "4470710494785194a338a2775d9b428a4dcefa71a8551c42dd42dbb7354bb938"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-equal-ray-escape-work/src/util.h",
+      "sha256": "0e4cda586d2ce048e78b386da1cc18ea2bedc9ef45aedbdccab43dbe592626ff"
+    }
+  ],
+  "extracted": [
+    {
+      "source": "pathing.cpp",
+      "symbol": "Pathing::CampEscape::at",
+      "startByte": 15823,
+      "endByte": 16574,
+      "startLine": 379,
+      "endLine": 393
+    },
+    {
+      "source": "pathing.cpp",
+      "symbol": "CampEscape shortest-ray scan/update loop",
+      "startByte": 17624,
+      "endByte": 18192,
+      "startLine": 417,
+      "endLine": 428
+    },
+    {
+      "source": "pathing.cpp",
+      "symbol": "CampEscape exactness assignment",
+      "startByte": 18193,
+      "endByte": 18287,
+      "startLine": 429,
+      "endLine": 429
+    },
+    {
+      "source": "util.h",
+      "symbol": "directions[8]",
+      "startByte": 12672,
+      "endByte": 12872,
+      "startLine": 259,
+      "endLine": 260
+    }
+  ],
+  "limits": [
+    "The exact production at() body and ray scan/update loop are compiled and executed.",
+    "The goal/wall bitboards, bounds, direction vector arithmetic, and distance-field labels are declared host mocks.",
+    "The exact production exactness assignment runs with an independent host-mock any_within; Pathing cache key/rebuild/invalidation, native distance-field construction, route ranking caller, SDK and gameplay are not executed. Invalidation is source-reviewed and stale-result refusal is tested by setting valid=false.",
+    "The independent two-ray ranking case demonstrates that the newly labeled route is a usable candidate; it does not execute the production caller's ranking loop."
+  ]
+}

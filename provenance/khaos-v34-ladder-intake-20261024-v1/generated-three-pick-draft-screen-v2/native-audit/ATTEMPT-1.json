@@ -1,0 +1,6 @@
+{
+  "status": "failed_before_replay_scan",
+  "reason": "native auditor requires exactly two bot entries; initial combined input included six source paths",
+  "stderr": "native-audit/audit.stderr.log",
+  "follow_up": "Split exact source pairs into eight two-bot audit batches; no replay inputs or outputs were changed."
+}

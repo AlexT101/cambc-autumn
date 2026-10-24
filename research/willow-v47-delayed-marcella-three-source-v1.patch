@@ -1,0 +1,20 @@
+diff -ruN provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/draft.cpp bots/variants/willow-v47-delayed-marcella-three-work/src/draft.cpp
+--- provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/draft.cpp	2026-10-24 01:18:40
++++ bots/variants/willow-v47-delayed-marcella-three-work/src/draft.cpp	2026-10-24 09:59:22
+@@ -247,6 +247,16 @@
+         return chosen;
+     }
+     const auto picks = cambc::draft::team_size();
++    if (picks == 3) {
++        static constexpr auto chosen = [] {
++            auto order = std::to_array(params::draft_preference);
++            order[0] = cambc::champion_draft::vesper_vale;
++            order[1] = cambc::champion_draft::heart_of_ruin;
++            order[2] = cambc::champion_draft::marcella;
++            return order;
++        }();
++        return chosen;
++    }
+     if (picks == 4 || picks == 5) {
+         static const auto chosen = [] {
+             const auto roles = params::willow_draft && cambc::draft::team_size() == 5

@@ -1,0 +1,3028 @@
+{
+  "schema": "three-pick-order-proxy-income-results/v1",
+  "status": "complete",
+  "planned_games": 44,
+  "saved_games": 44,
+  "missing_rows": [],
+  "native_audit": {
+    "games_with_bot_faults": 0,
+    "games_with_diagnostic_codes": 0,
+    "body_count_mismatches": 0,
+    "candidate_sequence_mismatches": 0,
+    "opponent_roster_mismatches": 0,
+    "issues": []
+  },
+  "arm_opponent_results": [
+    {
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "opponent": "v33",
+      "candidate_source": "marcella-three-income",
+      "games": 12,
+      "wins": 5,
+      "wins_by_candidate_side": {
+        "A": 3,
+        "B": 2
+      },
+      "wins_by_map": {
+        "00collision": 1,
+        "00fragment": 1,
+        "00packs": 1,
+        "01broken-curve": 1,
+        "01gold-rush": 1,
+        "01the-farm": 0
+      },
+      "rosters": {
+        "Marcella; Vesper Vale; Heart of Ruin": 12
+      },
+      "display_opponent": "v33"
+    },
+    {
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "M/V/HoR",
+      "opponent": "proxy-mvt-three",
+      "candidate_source": "marcella-three",
+      "games": 4,
+      "wins": 4,
+      "wins_by_candidate_side": {
+        "A": 2,
+        "B": 2
+      },
+      "wins_by_map": {
+        "00fragment": 2,
+        "00packs": 2
+      },
+      "rosters": {
+        "Marcella; Vesper Vale; Heart of Ruin": 4
+      },
+      "display_opponent": "Marcella/Vendetta/Tavi fixed-roster proxy"
+    },
+    {
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "M/V/HoR",
+      "opponent": "proxy-vhv-three",
+      "candidate_source": "marcella-three",
+      "games": 4,
+      "wins": 4,
+      "wins_by_candidate_side": {
+        "A": 2,
+        "B": 2
+      },
+      "wins_by_map": {
+        "00fragment": 2,
+        "00packs": 2
+      },
+      "rosters": {
+        "Marcella; Vesper Vale; Heart of Ruin": 4
+      },
+      "display_opponent": "Vesper Vale/Heart of Ruin/Vendetta fixed-roster proxy"
+    },
+    {
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "P/V/HoR",
+      "opponent": "proxy-mvt-three",
+      "candidate_source": "f475",
+      "games": 4,
+      "wins": 2,
+      "wins_by_candidate_side": {
+        "A": 1,
+        "B": 1
+      },
+      "wins_by_map": {
+        "00fragment": 1,
+        "00packs": 1
+      },
+      "rosters": {
+        "Prism; Vesper Vale; Heart of Ruin": 4
+      },
+      "display_opponent": "Marcella/Vendetta/Tavi fixed-roster proxy"
+    },
+    {
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "P/V/HoR",
+      "opponent": "proxy-vhv-three",
+      "candidate_source": "f475",
+      "games": 4,
+      "wins": 3,
+      "wins_by_candidate_side": {
+        "A": 2,
+        "B": 1
+      },
+      "wins_by_map": {
+        "00fragment": 2,
+        "00packs": 1
+      },
+      "rosters": {
+        "Prism; Vesper Vale; Heart of Ruin": 4
+      },
+      "display_opponent": "Vesper Vale/Heart of Ruin/Vendetta fixed-roster proxy"
+    },
+    {
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/M",
+      "opponent": "proxy-mvt-three",
+      "candidate_source": "delayed-marcella",
+      "games": 4,
+      "wins": 3,
+      "wins_by_candidate_side": {
+        "A": 2,
+        "B": 1
+      },
+      "wins_by_map": {
+        "00fragment": 1,
+        "00packs": 2
+      },
+      "rosters": {
+        "Vesper Vale; Heart of Ruin; Marcella": 4
+      },
+      "display_opponent": "Marcella/Vendetta/Tavi fixed-roster proxy"
+    },
+    {
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/M",
+      "opponent": "proxy-vhv-three",
+      "candidate_source": "delayed-marcella",
+      "games": 4,
+      "wins": 3,
+      "wins_by_candidate_side": {
+        "A": 2,
+        "B": 1
+      },
+      "wins_by_map": {
+        "00fragment": 1,
+        "00packs": 2
+      },
+      "rosters": {
+        "Vesper Vale; Heart of Ruin; Marcella": 4
+      },
+      "display_opponent": "Vesper Vale/Heart of Ruin/Vendetta fixed-roster proxy"
+    },
+    {
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/P",
+      "opponent": "proxy-mvt-three",
+      "candidate_source": "delayed-prism",
+      "games": 4,
+      "wins": 3,
+      "wins_by_candidate_side": {
+        "A": 2,
+        "B": 1
+      },
+      "wins_by_map": {
+        "00fragment": 1,
+        "00packs": 2
+      },
+      "rosters": {
+        "Vesper Vale; Heart of Ruin; Prism": 4
+      },
+      "display_opponent": "Marcella/Vendetta/Tavi fixed-roster proxy"
+    },
+    {
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/P",
+      "opponent": "proxy-vhv-three",
+      "candidate_source": "delayed-prism",
+      "games": 4,
+      "wins": 3,
+      "wins_by_candidate_side": {
+        "A": 2,
+        "B": 1
+      },
+      "wins_by_map": {
+        "00fragment": 1,
+        "00packs": 2
+      },
+      "rosters": {
+        "Vesper Vale; Heart of Ruin; Prism": 4
+      },
+      "display_opponent": "Vesper Vale/Heart of Ruin/Vendetta fixed-roster proxy"
+    }
+  ],
+  "income_synergy_against_exact_reused_m3_control": {
+    "income_games": 12,
+    "reused_control_cells": 12,
+    "income_candidate_wins": 5,
+    "control_candidate_wins": 6,
+    "outcome_changes": {
+      "same": 9,
+      "loss": 2,
+      "gain": 1
+    },
+    "per_map_side": [
+      {
+        "map": "00collision",
+        "candidate_side": "A",
+        "income_candidate_won": true,
+        "reused_M3_candidate_won": true,
+        "change_in_outcome": "same",
+        "control_stats_sha256": "f4e54fd067915cc770be73352d2754080010d58964fbf31fb54ab9887b1035bc",
+        "control_replay_sha256": "18c60e0ca2304bda92f063829fc5cf4a8d8c18e0248aac5a3f8328ef7ee0b9cd"
+      },
+      {
+        "map": "00collision",
+        "candidate_side": "B",
+        "income_candidate_won": false,
+        "reused_M3_candidate_won": false,
+        "change_in_outcome": "same",
+        "control_stats_sha256": "825a8b03621a876153e51783a2b90c4bb8490ce1ec74ca1c4c241a2bb5666e35",
+        "control_replay_sha256": "e47fb36b6e00d5f338b4409b8a74b6f6527db7feec0a9b3d31a58bccc26c5514"
+      },
+      {
+        "map": "00fragment",
+        "candidate_side": "A",
+        "income_candidate_won": true,
+        "reused_M3_candidate_won": true,
+        "change_in_outcome": "same",
+        "control_stats_sha256": "3d4f996040fd6ec410a4416891855a089d733b6070c3e4bcdcdf8f201cc887bd",
+        "control_replay_sha256": "9552a3d2761440a581ece69da1d478cd209e4cd74b056fe58b4062df7eb95717"
+      },
+      {
+        "map": "00fragment",
+        "candidate_side": "B",
+        "income_candidate_won": false,
+        "reused_M3_candidate_won": true,
+        "change_in_outcome": "loss",
+        "control_stats_sha256": "5d5e10ec9d3bd24a26d80963a74e6400d161ee4e1ea86547cd30bccfe5f87c73",
+        "control_replay_sha256": "48b9af786e128d758f75e82adddb7f5f2fb4e130174ead4a629379dbc34357df"
+      },
+      {
+        "map": "00packs",
+        "candidate_side": "A",
+        "income_candidate_won": false,
+        "reused_M3_candidate_won": false,
+        "change_in_outcome": "same",
+        "control_stats_sha256": "dd24a2ad4df992cdf075fa72e79d868065496b797f3caf8f5b1886241abf3b35",
+        "control_replay_sha256": "dd45c4e45e0f8fbb6c2a876d10b89f7524f5510bff15c686feae7911c9892c11"
+      },
+      {
+        "map": "00packs",
+        "candidate_side": "B",
+        "income_candidate_won": true,
+        "reused_M3_candidate_won": false,
+        "change_in_outcome": "gain",
+        "control_stats_sha256": "e0c02e023ba87445f132812b0809d3e276570238f0725633710fae849e7621b2",
+        "control_replay_sha256": "9be8692692a3437f95b23693c05ffb95c039cf7bda7f94e5e07ebf66824a6cad"
+      },
+      {
+        "map": "01broken-curve",
+        "candidate_side": "A",
+        "income_candidate_won": false,
+        "reused_M3_candidate_won": false,
+        "change_in_outcome": "same",
+        "control_stats_sha256": "be0883d84f5d8a2b7b4a7cef8a7f575f72b86154b5f5f9615d2d214ac73c7077",
+        "control_replay_sha256": "5606bc3aa1bc5305aeb16249d634b73043b18ddd76f9d74ba7644a7a0c456c56"
+      },
+      {
+        "map": "01broken-curve",
+        "candidate_side": "B",
+        "income_candidate_won": true,
+        "reused_M3_candidate_won": true,
+        "change_in_outcome": "same",
+        "control_stats_sha256": "962c1d78677acf52fa8c5d62782137cef9e42d73ba98d18a151ff2560d23934f",
+        "control_replay_sha256": "253c3db93345eb1634a58cde1915aaf83269eba4eac8b6c3582c10c95bfb6691"
+      },
+      {
+        "map": "01gold-rush",
+        "candidate_side": "A",
+        "income_candidate_won": true,
+        "reused_M3_candidate_won": true,
+        "change_in_outcome": "same",
+        "control_stats_sha256": "65fdc0a11a6b8138b7cb6abc21567a41a46ff00fd22f2171f34dd43b6611b0df",
+        "control_replay_sha256": "6eb1923ab774fcffa63cab27abcf4a05e7891c40bc771cedf6b539f553a4915c"
+      },
+      {
+        "map": "01gold-rush",
+        "candidate_side": "B",
+        "income_candidate_won": false,
+        "reused_M3_candidate_won": true,
+        "change_in_outcome": "loss",
+        "control_stats_sha256": "53350ff73b7a5f52fa291ff4171ae3064b9977f5599c8d11bc56248b7137df93",
+        "control_replay_sha256": "de34405c98c9dfb90d39b7cd00d34a1f0d5975c2d4fd3cbea7a8bdf793a6134a"
+      },
+      {
+        "map": "01the-farm",
+        "candidate_side": "A",
+        "income_candidate_won": false,
+        "reused_M3_candidate_won": false,
+        "change_in_outcome": "same",
+        "control_stats_sha256": "4c3f63e6770ec6f95f2133b05643262dec8369fa43fed66a5c8d3470f43e5da1",
+        "control_replay_sha256": "6b378dac1cd0e1e0244f3ed5e55a8f96b8cab635ea6919e0af15a533cf136af2"
+      },
+      {
+        "map": "01the-farm",
+        "candidate_side": "B",
+        "income_candidate_won": false,
+        "reused_M3_candidate_won": false,
+        "change_in_outcome": "same",
+        "control_stats_sha256": "02b2ca7090677e55bb7ebdbf1356aeeef203e3adea7412892203011d3b9b1dc0",
+        "control_replay_sha256": "ecfb60c57e28aa749cb611e6b3c0c305144e972bde1967efb783a71f4b04ed73"
+      }
+    ],
+    "income_wins_by_side": {
+      "A": 3,
+      "B": 2
+    },
+    "control_wins_by_side": {
+      "A": 3,
+      "B": 3
+    }
+  },
+  "reused_m3_v33_controls": {
+    "count": 12,
+    "control_pins": {
+      "00collision/A": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00collision__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "f4e54fd067915cc770be73352d2754080010d58964fbf31fb54ab9887b1035bc",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00collision__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "18c60e0ca2304bda92f063829fc5cf4a8d8c18e0248aac5a3f8328ef7ee0b9cd"
+      },
+      "00collision/B": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00collision__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "825a8b03621a876153e51783a2b90c4bb8490ce1ec74ca1c4c241a2bb5666e35",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00collision__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "e47fb36b6e00d5f338b4409b8a74b6f6527db7feec0a9b3d31a58bccc26c5514"
+      },
+      "00fragment/A": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00fragment__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "3d4f996040fd6ec410a4416891855a089d733b6070c3e4bcdcdf8f201cc887bd",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00fragment__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "9552a3d2761440a581ece69da1d478cd209e4cd74b056fe58b4062df7eb95717"
+      },
+      "00fragment/B": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00fragment__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "5d5e10ec9d3bd24a26d80963a74e6400d161ee4e1ea86547cd30bccfe5f87c73",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00fragment__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "48b9af786e128d758f75e82adddb7f5f2fb4e130174ead4a629379dbc34357df"
+      },
+      "00packs/A": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00packs__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "dd24a2ad4df992cdf075fa72e79d868065496b797f3caf8f5b1886241abf3b35",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00packs__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "dd45c4e45e0f8fbb6c2a876d10b89f7524f5510bff15c686feae7911c9892c11"
+      },
+      "00packs/B": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00packs__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "e0c02e023ba87445f132812b0809d3e276570238f0725633710fae849e7621b2",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00packs__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "9be8692692a3437f95b23693c05ffb95c039cf7bda7f94e5e07ebf66824a6cad"
+      },
+      "01broken-curve/A": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01broken-curve__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "be0883d84f5d8a2b7b4a7cef8a7f575f72b86154b5f5f9615d2d214ac73c7077",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01broken-curve__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "5606bc3aa1bc5305aeb16249d634b73043b18ddd76f9d74ba7644a7a0c456c56"
+      },
+      "01broken-curve/B": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01broken-curve__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "962c1d78677acf52fa8c5d62782137cef9e42d73ba98d18a151ff2560d23934f",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01broken-curve__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "253c3db93345eb1634a58cde1915aaf83269eba4eac8b6c3582c10c95bfb6691"
+      },
+      "01gold-rush/A": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01gold-rush__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "65fdc0a11a6b8138b7cb6abc21567a41a46ff00fd22f2171f34dd43b6611b0df",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01gold-rush__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "6eb1923ab774fcffa63cab27abcf4a05e7891c40bc771cedf6b539f553a4915c"
+      },
+      "01gold-rush/B": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01gold-rush__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "53350ff73b7a5f52fa291ff4171ae3064b9977f5599c8d11bc56248b7137df93",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01gold-rush__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "de34405c98c9dfb90d39b7cd00d34a1f0d5975c2d4fd3cbea7a8bdf793a6134a"
+      },
+      "01the-farm/A": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01the-farm__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "4c3f63e6770ec6f95f2133b05643262dec8369fa43fed66a5c8d3470f43e5da1",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01the-farm__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "6b378dac1cd0e1e0244f3ed5e55a8f96b8cab635ea6919e0af15a533cf136af2"
+      },
+      "01the-farm/B": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01the-farm__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "02b2ca7090677e55bb7ebdbf1356aeeef203e3adea7412892203011d3b9b1dc0",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01the-farm__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "ecfb60c57e28aa749cb611e6b3c0c305144e972bde1967efb783a71f4b04ed73"
+      }
+    },
+    "replay_and_stats_local_existing_files": true
+  },
+  "rows": [
+    {
+      "order": 1,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "P/V/HoR",
+      "candidate_source": "f475",
+      "candidate_source_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00fragment",
+      "candidate_side": "A",
+      "A_source": "f475",
+      "B_source": "proxy-mvt-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1369,
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "d871e90f1b979c5783de6d2064f2db63a9a91c438372bbe84a8d07f979a52f42",
+      "replay_sha256": "b435a5f5d066f10563dcb35c8a076c0af4b5efc347aa2234f7cb7e166c13e2d5",
+      "reused_m3_control": null
+    },
+    {
+      "order": 2,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "P/V/HoR",
+      "candidate_source": "f475",
+      "candidate_source_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00fragment",
+      "candidate_side": "A",
+      "A_source": "f475",
+      "B_source": "proxy-vhv-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1334,
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "8d36e0c1091bf626ae9cd8d2c541aab9a84a99458a917c1658ed575da962f76b",
+      "replay_sha256": "aabcb78bf1588353dae444ca7f71836a748976cd3ed44be239a222fcd280a404",
+      "reused_m3_control": null
+    },
+    {
+      "order": 3,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "P/V/HoR",
+      "candidate_source": "f475",
+      "candidate_source_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00fragment",
+      "candidate_side": "B",
+      "A_source": "proxy-mvt-three",
+      "B_source": "f475",
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 1275,
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "e069aaea804ffad2542de9b76751d650d5e9692d443652965a1f410bf19fdfe7",
+      "replay_sha256": "e3cb8d4a5cd2ae5dcd36f331fc30a215946579b28d7876502512764f7dd8c991",
+      "reused_m3_control": null
+    },
+    {
+      "order": 4,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "P/V/HoR",
+      "candidate_source": "f475",
+      "candidate_source_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00fragment",
+      "candidate_side": "B",
+      "A_source": "proxy-vhv-three",
+      "B_source": "f475",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1328,
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "28225881ef296b2e01d897e3c10d5106fb3395c99c5d2ce693a13080cc230993",
+      "replay_sha256": "24d1e2825e655e27d492b8181a43fd3b7ce73870979aade9919e20ac7a989f58",
+      "reused_m3_control": null
+    },
+    {
+      "order": 5,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "P/V/HoR",
+      "candidate_source": "f475",
+      "candidate_source_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00packs",
+      "candidate_side": "A",
+      "A_source": "f475",
+      "B_source": "proxy-mvt-three",
+      "winner_side": "B",
+      "candidate_won": false,
+      "rounds_completed": 1085,
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "3af75ff3e006493e3be09c5261117806e7b3a91507df735ef40c6f7f4531d3aa",
+      "replay_sha256": "0530c350c14c85c81bab2a9a5834e1d6ca93274c05720ed5200f6326dea7ac40",
+      "reused_m3_control": null
+    },
+    {
+      "order": 6,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "P/V/HoR",
+      "candidate_source": "f475",
+      "candidate_source_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00packs",
+      "candidate_side": "A",
+      "A_source": "f475",
+      "B_source": "proxy-vhv-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 828,
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "a5bf10bc0e5689e2fd2b431a049e6b20ba36f2ce350d1d6ef43d8e6253014220",
+      "replay_sha256": "bb61951d415b3ca46bd8e10fd60fd0d175a8453908688862e6f6962cabf08ee5",
+      "reused_m3_control": null
+    },
+    {
+      "order": 7,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "P/V/HoR",
+      "candidate_source": "f475",
+      "candidate_source_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00packs",
+      "candidate_side": "B",
+      "A_source": "proxy-mvt-three",
+      "B_source": "f475",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1044,
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "7fbb1a63ee12a70f4b94bafe6678151bf1fbdb0793775989fee9477510e1f536",
+      "replay_sha256": "c9bd26a22594033e9a42522e4c664ec57aef092bf0654687e4e8a79f8ffa93af",
+      "reused_m3_control": null
+    },
+    {
+      "order": 8,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "P/V/HoR",
+      "candidate_source": "f475",
+      "candidate_source_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00packs",
+      "candidate_side": "B",
+      "A_source": "proxy-vhv-three",
+      "B_source": "f475",
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 1046,
+      "candidate_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "622d133f1bfc7c984eec72a57a22e5786ec5fccf1e3c56ac432370450b613995",
+      "replay_sha256": "0e39053179e01092753926a56ac3ad9ec37164f8b0708cf3fa5f52072981c070",
+      "reused_m3_control": null
+    },
+    {
+      "order": 9,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "M/V/HoR",
+      "candidate_source": "marcella-three",
+      "candidate_source_sha256": "5dc0f00960864250fa2fb26cac4d309c7cf55b9e4ffbc03c4b7b3c7a011b11fa",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00fragment",
+      "candidate_side": "A",
+      "A_source": "marcella-three",
+      "B_source": "proxy-mvt-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1581,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "6bee1f90d6efa3cc9911a0ef7f9710a555895ea49914c590b0c2decc8787ac89",
+      "replay_sha256": "71a43323a294af7345e95fc20e651f890928f7b4ce4638118c6042556a43b6ed",
+      "reused_m3_control": null
+    },
+    {
+      "order": 10,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "M/V/HoR",
+      "candidate_source": "marcella-three",
+      "candidate_source_sha256": "5dc0f00960864250fa2fb26cac4d309c7cf55b9e4ffbc03c4b7b3c7a011b11fa",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00fragment",
+      "candidate_side": "A",
+      "A_source": "marcella-three",
+      "B_source": "proxy-vhv-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1368,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "7bfbf2c973357d90ede06d8d9c9a92dac93b5d939cd24870223e996af79cf0e9",
+      "replay_sha256": "64e4b34d0302ac939e475f8a70594ea860140a9d30e7766e35cf7604447ecb5e",
+      "reused_m3_control": null
+    },
+    {
+      "order": 11,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "M/V/HoR",
+      "candidate_source": "marcella-three",
+      "candidate_source_sha256": "5dc0f00960864250fa2fb26cac4d309c7cf55b9e4ffbc03c4b7b3c7a011b11fa",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00fragment",
+      "candidate_side": "B",
+      "A_source": "proxy-mvt-three",
+      "B_source": "marcella-three",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1492,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "c0cf5e1c10c79004528fb6004034fa2e06c6e38b00186e07dcb838a7de97241b",
+      "replay_sha256": "18bd597849e23009aa4a57241364506e1c162d1f0b9aba3ec65781371ba37640",
+      "reused_m3_control": null
+    },
+    {
+      "order": 12,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "M/V/HoR",
+      "candidate_source": "marcella-three",
+      "candidate_source_sha256": "5dc0f00960864250fa2fb26cac4d309c7cf55b9e4ffbc03c4b7b3c7a011b11fa",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00fragment",
+      "candidate_side": "B",
+      "A_source": "proxy-vhv-three",
+      "B_source": "marcella-three",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1359,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "f298ddd701813b8f82d624b2cc1cab5bda749b401f75e7a0fad34e50928b065c",
+      "replay_sha256": "e053002fef12126f860dc7df152bfec14f15fd1c30ea91cc95a788f59331b6e3",
+      "reused_m3_control": null
+    },
+    {
+      "order": 13,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "M/V/HoR",
+      "candidate_source": "marcella-three",
+      "candidate_source_sha256": "5dc0f00960864250fa2fb26cac4d309c7cf55b9e4ffbc03c4b7b3c7a011b11fa",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00packs",
+      "candidate_side": "A",
+      "A_source": "marcella-three",
+      "B_source": "proxy-mvt-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 918,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "21267818287cd5cf20fd9096994514cae678f438cc071d12ad71fbcdb0c8568a",
+      "replay_sha256": "d02c24ac211e83d734caedb73de389c1355406f90a02146aed33e017e4a2abd7",
+      "reused_m3_control": null
+    },
+    {
+      "order": 14,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "M/V/HoR",
+      "candidate_source": "marcella-three",
+      "candidate_source_sha256": "5dc0f00960864250fa2fb26cac4d309c7cf55b9e4ffbc03c4b7b3c7a011b11fa",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00packs",
+      "candidate_side": "A",
+      "A_source": "marcella-three",
+      "B_source": "proxy-vhv-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 946,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "5aca1458af76e2338746449c834ad3cdb23481b1922f7ca51101d36da33147e0",
+      "replay_sha256": "b8749518650ce2d66e743ed03d2ddb1579c583a68fc2e2320aa50d929d7c934f",
+      "reused_m3_control": null
+    },
+    {
+      "order": 15,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "M/V/HoR",
+      "candidate_source": "marcella-three",
+      "candidate_source_sha256": "5dc0f00960864250fa2fb26cac4d309c7cf55b9e4ffbc03c4b7b3c7a011b11fa",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00packs",
+      "candidate_side": "B",
+      "A_source": "proxy-mvt-three",
+      "B_source": "marcella-three",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1066,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "e641e1b619f7e1e7980b1a1c422e3af5de5d5baafdd37f2961daab9807c82314",
+      "replay_sha256": "cd1bc3ae0a940e4a858b37bc9e83bb92231028e7ec90f36665e5302df0b98b1b",
+      "reused_m3_control": null
+    },
+    {
+      "order": 16,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "M/V/HoR",
+      "candidate_source": "marcella-three",
+      "candidate_source_sha256": "5dc0f00960864250fa2fb26cac4d309c7cf55b9e4ffbc03c4b7b3c7a011b11fa",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00packs",
+      "candidate_side": "B",
+      "A_source": "proxy-vhv-three",
+      "B_source": "marcella-three",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 892,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "117a6bd0a897b3d51ea83691b78a9e64a5f82dffefef58f36979eef9ed76c213",
+      "replay_sha256": "d56a3dd0f2f5435dca67672f971135bf6b32a5ace02d5bce9fda658a90fdb460",
+      "reused_m3_control": null
+    },
+    {
+      "order": 17,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/P",
+      "candidate_source": "delayed-prism",
+      "candidate_source_sha256": "f299a82c63f53eb33eba61ebd81983bed170644ce102895aec9c7a09ce652eac",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00fragment",
+      "candidate_side": "A",
+      "A_source": "delayed-prism",
+      "B_source": "proxy-mvt-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1601,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Prism"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "588c8d3f3f3c8d3de6474cf247d1c7b25c911795de997b85430d7bab1af0627d",
+      "replay_sha256": "93607a51e8ed69f0f6db2d84058381044dc3658cdaf9b44989065371bd5aad39",
+      "reused_m3_control": null
+    },
+    {
+      "order": 18,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/P",
+      "candidate_source": "delayed-prism",
+      "candidate_source_sha256": "f299a82c63f53eb33eba61ebd81983bed170644ce102895aec9c7a09ce652eac",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00fragment",
+      "candidate_side": "A",
+      "A_source": "delayed-prism",
+      "B_source": "proxy-vhv-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1507,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Prism"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "611426896e2805b14df0bb36b23350ec26daa44a3e38d58c2f910a2cabfd1eea",
+      "replay_sha256": "45bd30db957b5971e1fb788b88630558b407dcf452b4002e7211f56d58349564",
+      "reused_m3_control": null
+    },
+    {
+      "order": 19,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/P",
+      "candidate_source": "delayed-prism",
+      "candidate_source_sha256": "f299a82c63f53eb33eba61ebd81983bed170644ce102895aec9c7a09ce652eac",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00fragment",
+      "candidate_side": "B",
+      "A_source": "proxy-mvt-three",
+      "B_source": "delayed-prism",
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 1701,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Prism"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "fffd93a144df1d549ded88572c03cb3403da4edbf6d6523a24a2be5ba093f90f",
+      "replay_sha256": "e74613acd88d4ea5a8a9b0408b05b32545837791b13e115b275d2bcbbcd71fe7",
+      "reused_m3_control": null
+    },
+    {
+      "order": 20,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/P",
+      "candidate_source": "delayed-prism",
+      "candidate_source_sha256": "f299a82c63f53eb33eba61ebd81983bed170644ce102895aec9c7a09ce652eac",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00fragment",
+      "candidate_side": "B",
+      "A_source": "proxy-vhv-three",
+      "B_source": "delayed-prism",
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 1359,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Prism"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "72fe02a54dba69ae7a10cf2265e5b750b5a08f05736d441ef7ce712e6f69bc27",
+      "replay_sha256": "ce36449286aff8392c6cca7c9dba55a81013e5808fc35fe60b0ff3e64783e577",
+      "reused_m3_control": null
+    },
+    {
+      "order": 21,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/P",
+      "candidate_source": "delayed-prism",
+      "candidate_source_sha256": "f299a82c63f53eb33eba61ebd81983bed170644ce102895aec9c7a09ce652eac",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00packs",
+      "candidate_side": "A",
+      "A_source": "delayed-prism",
+      "B_source": "proxy-mvt-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 898,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Prism"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "301a9a9d0dd218d4e989aefbf6dc81382e530312a8de87a9e495374962b9f67b",
+      "replay_sha256": "d73ba4864211b41553bf41bf7de2fdad8ffe86a2273ffaf3c25c4de77f3e8406",
+      "reused_m3_control": null
+    },
+    {
+      "order": 22,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/P",
+      "candidate_source": "delayed-prism",
+      "candidate_source_sha256": "f299a82c63f53eb33eba61ebd81983bed170644ce102895aec9c7a09ce652eac",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00packs",
+      "candidate_side": "A",
+      "A_source": "delayed-prism",
+      "B_source": "proxy-vhv-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1112,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Prism"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "0d0133e3b643cdc3d2ceea9118f84439aaac10d6b377a94201031465260b8f2a",
+      "replay_sha256": "ec40094b8816cf2b6f105701c8c0dbd102cf204660a0c3a84e0b89936b55c4d2",
+      "reused_m3_control": null
+    },
+    {
+      "order": 23,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/P",
+      "candidate_source": "delayed-prism",
+      "candidate_source_sha256": "f299a82c63f53eb33eba61ebd81983bed170644ce102895aec9c7a09ce652eac",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00packs",
+      "candidate_side": "B",
+      "A_source": "proxy-mvt-three",
+      "B_source": "delayed-prism",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1020,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Prism"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "4ebb01cd12a57b3b89228637c02735b7a409f501f6107fc209d14a4e7eae216b",
+      "replay_sha256": "0811abf1864ece2f24b212f049e2dbbdfa61027f708b4269a28a6028c5a8ed0e",
+      "reused_m3_control": null
+    },
+    {
+      "order": 24,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/P",
+      "candidate_source": "delayed-prism",
+      "candidate_source_sha256": "f299a82c63f53eb33eba61ebd81983bed170644ce102895aec9c7a09ce652eac",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00packs",
+      "candidate_side": "B",
+      "A_source": "proxy-vhv-three",
+      "B_source": "delayed-prism",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1083,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Prism"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "23644645b3aecf82dff0307ff4e93c34db8144cc7dbd04ac1a1e6205eada0ea7",
+      "replay_sha256": "1cdeab09b8deb1b47bec8de56d3f1ebe91f9ad642562b32abe544c62ec7225d5",
+      "reused_m3_control": null
+    },
+    {
+      "order": 25,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/M",
+      "candidate_source": "delayed-marcella",
+      "candidate_source_sha256": "3e6d4dd4a7e5cf42bc9fd1dd889ba647a0561cea46efabb061cff7a41aea8103",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00fragment",
+      "candidate_side": "A",
+      "A_source": "delayed-marcella",
+      "B_source": "proxy-mvt-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1360,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Marcella"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "dc6ee86ffe458260569c0a6ee49f9097ea4fa28f1b87bca3322d7ad9f5fe5296",
+      "replay_sha256": "5a7b037b71eb8f221ce7e99fe81bff8272a4879bf373bce523faafa5da004b12",
+      "reused_m3_control": null
+    },
+    {
+      "order": 26,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/M",
+      "candidate_source": "delayed-marcella",
+      "candidate_source_sha256": "3e6d4dd4a7e5cf42bc9fd1dd889ba647a0561cea46efabb061cff7a41aea8103",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00fragment",
+      "candidate_side": "A",
+      "A_source": "delayed-marcella",
+      "B_source": "proxy-vhv-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1402,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Marcella"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "745a5f3a38575490322c6f2415d21b9c02da30f40c93818561599ae9e55a6583",
+      "replay_sha256": "57e86ecf7c3793b7cea0f54893389c6f38c0480c9892a29ba7f96db19976d7b7",
+      "reused_m3_control": null
+    },
+    {
+      "order": 27,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/M",
+      "candidate_source": "delayed-marcella",
+      "candidate_source_sha256": "3e6d4dd4a7e5cf42bc9fd1dd889ba647a0561cea46efabb061cff7a41aea8103",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00fragment",
+      "candidate_side": "B",
+      "A_source": "proxy-mvt-three",
+      "B_source": "delayed-marcella",
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 1426,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Marcella"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "eadde973a2b14aecb78b03c4fa37f16edbd836777fac4f8925803e187547cf2a",
+      "replay_sha256": "535f2c4419fde63dc45b2a7d4fa5d0b06f182c7053fd4b7c0b2cc3468521e981",
+      "reused_m3_control": null
+    },
+    {
+      "order": 28,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/M",
+      "candidate_source": "delayed-marcella",
+      "candidate_source_sha256": "3e6d4dd4a7e5cf42bc9fd1dd889ba647a0561cea46efabb061cff7a41aea8103",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00fragment",
+      "candidate_side": "B",
+      "A_source": "proxy-vhv-three",
+      "B_source": "delayed-marcella",
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 1444,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Marcella"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "9840c71599221166a0cfee55197f86cde608286b125a0755a027f95649ac1a02",
+      "replay_sha256": "a4b5ae8475b57d68a3e9bb711ecd719a19123cdf1ca26fb26546e2d168118869",
+      "reused_m3_control": null
+    },
+    {
+      "order": 29,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/M",
+      "candidate_source": "delayed-marcella",
+      "candidate_source_sha256": "3e6d4dd4a7e5cf42bc9fd1dd889ba647a0561cea46efabb061cff7a41aea8103",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00packs",
+      "candidate_side": "A",
+      "A_source": "delayed-marcella",
+      "B_source": "proxy-mvt-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1032,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Marcella"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "c1c3c01282b87ecccf6ea3c49a5e8bc36d2864a124f5081bb4f38093e067a84f",
+      "replay_sha256": "cabed01c0b7c38855c2abe15e7d7ec5f2691a850d91a51901b9dfc17b1f232b8",
+      "reused_m3_control": null
+    },
+    {
+      "order": 30,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/M",
+      "candidate_source": "delayed-marcella",
+      "candidate_source_sha256": "3e6d4dd4a7e5cf42bc9fd1dd889ba647a0561cea46efabb061cff7a41aea8103",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00packs",
+      "candidate_side": "A",
+      "A_source": "delayed-marcella",
+      "B_source": "proxy-vhv-three",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1302,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Marcella"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "9fa81de7a69f215afcffeb1d700394896cf4e460b8089d756594b47b3318287a",
+      "replay_sha256": "0639cf525f4478c5f0eeb36505e493f63a9a9b0ef68d7eedf795f06cfe372c98",
+      "reused_m3_control": null
+    },
+    {
+      "order": 31,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/M",
+      "candidate_source": "delayed-marcella",
+      "candidate_source_sha256": "3e6d4dd4a7e5cf42bc9fd1dd889ba647a0561cea46efabb061cff7a41aea8103",
+      "opponent_source": "proxy-mvt-three",
+      "opponent_source_sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "map": "00packs",
+      "candidate_side": "B",
+      "A_source": "proxy-mvt-three",
+      "B_source": "delayed-marcella",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 906,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Marcella"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Marcella",
+        "Vendetta",
+        "Tavi"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "606f157d2b20c78ab9b5f9924b1f3351e68d9df8793d5559fac1d69823d417cd",
+      "replay_sha256": "937381ff730f04f6011128a937fec3dbdffc7ff55bd88bb9c9af7cfde123788b",
+      "reused_m3_control": null
+    },
+    {
+      "order": 32,
+      "experiment": "revealed-prefix-order-proxy",
+      "recipe": "V/HoR/M",
+      "candidate_source": "delayed-marcella",
+      "candidate_source_sha256": "3e6d4dd4a7e5cf42bc9fd1dd889ba647a0561cea46efabb061cff7a41aea8103",
+      "opponent_source": "proxy-vhv-three",
+      "opponent_source_sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "map": "00packs",
+      "candidate_side": "B",
+      "A_source": "proxy-vhv-three",
+      "B_source": "delayed-marcella",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1043,
+      "candidate_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Marcella"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "7e452aea4abdeb6f8f92feb392020decfc8c6a9f4042cd4ada1f15b1ec172741",
+      "replay_sha256": "eec291b6c0d25a35ce935213e139d8e04e0bc1e6516a814a25e28f1bfa4a0535",
+      "reused_m3_control": null
+    },
+    {
+      "order": 33,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "00collision",
+      "candidate_side": "A",
+      "A_source": "marcella-three-income",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1102,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "7acf5b0c965742c5aa9f1edafee863290be850ad848309fd491ad39e74f4c545",
+      "replay_sha256": "d08f90d363984303019241b41ab6fc30a369cabe5595c22e0d440448c11e3314",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00collision__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "f4e54fd067915cc770be73352d2754080010d58964fbf31fb54ab9887b1035bc",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00collision__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "18c60e0ca2304bda92f063829fc5cf4a8d8c18e0248aac5a3f8328ef7ee0b9cd"
+      }
+    },
+    {
+      "order": 34,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "00collision",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "marcella-three-income",
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 1161,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "6fe813a78989cd66cc4e33315edeb111281062bb9ca5a17ac82996cac358014e",
+      "replay_sha256": "24e06ab92fc3c69ab85a1db18b6588b2b1a985aae1c3795ddaa1a394b1f9baaf",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00collision__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "825a8b03621a876153e51783a2b90c4bb8490ce1ec74ca1c4c241a2bb5666e35",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00collision__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "e47fb36b6e00d5f338b4409b8a74b6f6527db7feec0a9b3d31a58bccc26c5514"
+      }
+    },
+    {
+      "order": 35,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "00fragment",
+      "candidate_side": "A",
+      "A_source": "marcella-three-income",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1532,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "3d4f996040fd6ec410a4416891855a089d733b6070c3e4bcdcdf8f201cc887bd",
+      "replay_sha256": "969ba69181ab48af1e0ea0563ac410c2cee7c4f69fc82b7cf650ffe1c71a3fce",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00fragment__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "3d4f996040fd6ec410a4416891855a089d733b6070c3e4bcdcdf8f201cc887bd",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00fragment__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "9552a3d2761440a581ece69da1d478cd209e4cd74b056fe58b4062df7eb95717"
+      }
+    },
+    {
+      "order": 36,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "00fragment",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "marcella-three-income",
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 1338,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "2f78ddbe777b0c4918cb3b14c00507e1819d25402157c7bdfa21307e21073e5a",
+      "replay_sha256": "17bb6f80ada941ec00bd25b95f505fccff1fd696256f5d9615a937225e0b40f3",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00fragment__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "5d5e10ec9d3bd24a26d80963a74e6400d161ee4e1ea86547cd30bccfe5f87c73",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00fragment__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "48b9af786e128d758f75e82adddb7f5f2fb4e130174ead4a629379dbc34357df"
+      }
+    },
+    {
+      "order": 37,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "00packs",
+      "candidate_side": "A",
+      "A_source": "marcella-three-income",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_won": false,
+      "rounds_completed": 902,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "dd24a2ad4df992cdf075fa72e79d868065496b797f3caf8f5b1886241abf3b35",
+      "replay_sha256": "d9a22a7882e13053bace1dd4cb7fea69c8e31fde551f0a10df924551a7571270",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00packs__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "dd24a2ad4df992cdf075fa72e79d868065496b797f3caf8f5b1886241abf3b35",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00packs__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "dd45c4e45e0f8fbb6c2a876d10b89f7524f5510bff15c686feae7911c9892c11"
+      }
+    },
+    {
+      "order": 38,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "00packs",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "marcella-three-income",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1303,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "6b653268614bc9a71063efd49e1814cc9bf4f7544be53c223204f7e655cecbab",
+      "replay_sha256": "2c46b8c980febee8cb7be3845371795c48edd92f86b881df26dfa93ad97c272b",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00packs__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "e0c02e023ba87445f132812b0809d3e276570238f0725633710fae849e7621b2",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__00packs__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "9be8692692a3437f95b23693c05ffb95c039cf7bda7f94e5e07ebf66824a6cad"
+      }
+    },
+    {
+      "order": 39,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "01broken-curve",
+      "candidate_side": "A",
+      "A_source": "marcella-three-income",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_won": false,
+      "rounds_completed": 807,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "be0883d84f5d8a2b7b4a7cef8a7f575f72b86154b5f5f9615d2d214ac73c7077",
+      "replay_sha256": "f95ef40095b3c5e7b0ed1d497841007b9a53c1293ac6b83b80e9fc61cc54e5b7",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01broken-curve__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "be0883d84f5d8a2b7b4a7cef8a7f575f72b86154b5f5f9615d2d214ac73c7077",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01broken-curve__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "5606bc3aa1bc5305aeb16249d634b73043b18ddd76f9d74ba7644a7a0c456c56"
+      }
+    },
+    {
+      "order": 40,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "01broken-curve",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "marcella-three-income",
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 912,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "02aff21f59e57e6d3ea7fe72f3b02963aaf3370348d4ee727c975397bb006632",
+      "replay_sha256": "2547f7082c857b80d64010092600afc7213c8d9223122e0a2092310a371b70c7",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01broken-curve__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "962c1d78677acf52fa8c5d62782137cef9e42d73ba98d18a151ff2560d23934f",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01broken-curve__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "253c3db93345eb1634a58cde1915aaf83269eba4eac8b6c3582c10c95bfb6691"
+      }
+    },
+    {
+      "order": 41,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "01gold-rush",
+      "candidate_side": "A",
+      "A_source": "marcella-three-income",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1551,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "735f7b165feabff23c5dd3faafcafe111e75374c7c9d0a11e8611f0f6d46a633",
+      "replay_sha256": "04caec2cca7627b5907aed5ea54d84f25d074ee3a3025031ac4ab923875d98b2",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01gold-rush__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "65fdc0a11a6b8138b7cb6abc21567a41a46ff00fd22f2171f34dd43b6611b0df",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01gold-rush__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "6eb1923ab774fcffa63cab27abcf4a05e7891c40bc771cedf6b539f553a4915c"
+      }
+    },
+    {
+      "order": 42,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "01gold-rush",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "marcella-three-income",
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 2000,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "3a7d11e643fd48aca3f31e1dfb2aad538f76d32159e3ecb63ce76e0e21416bb6",
+      "replay_sha256": "1cf5a6eabf1fcfc075cee0de2b1593c79413a1f054b902b0ae8d4adce4bbba71",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": true,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01gold-rush__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "53350ff73b7a5f52fa291ff4171ae3064b9977f5599c8d11bc56248b7137df93",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01gold-rush__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "de34405c98c9dfb90d39b7cd00d34a1f0d5975c2d4fd3cbea7a8bdf793a6134a"
+      }
+    },
+    {
+      "order": 43,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "01the-farm",
+      "candidate_side": "A",
+      "A_source": "marcella-three-income",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_won": false,
+      "rounds_completed": 865,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "421c4da4a8ca5f1021502d3275c739935c9729b1a619f5bb36bceb59df5885e8",
+      "replay_sha256": "a6af3d21bbe6497d5597a1cccbe858afad5989c825d2582db0404e19226266d7",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01the-farm__vs-v33__candidate-A.statistics.json",
+        "statistics_sha256": "4c3f63e6770ec6f95f2133b05643262dec8369fa43fed66a5c8d3470f43e5da1",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01the-farm__vs-v33__candidate-A.repl26a",
+        "replay_sha256": "6b378dac1cd0e1e0244f3ed5e55a8f96b8cab635ea6919e0af15a533cf136af2"
+      }
+    },
+    {
+      "order": 44,
+      "experiment": "marcella-three-income-synergy",
+      "recipe": null,
+      "candidate_source": "marcella-three-income",
+      "candidate_source_sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "opponent_source": "v33",
+      "opponent_source_sha256": null,
+      "map": "01the-farm",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "marcella-three-income",
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 1112,
+      "candidate_roster": [
+        "Marcella",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "candidate_body_count": 3,
+      "opponent_roster": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 3,
+      "candidate_sequence_matches_recipe": true,
+      "opponent_roster_matches_control": true,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "diagnostic_codes": [],
+      "stats_sha256": "c167532832ac3b8c3b3d6a174fab59f57935eba1ba9064d392b14f451502e7aa",
+      "replay_sha256": "b65bfd88bd8095dbb640fe23ea7a038c055c1ad911584dc7acce40800735fc94",
+      "reused_m3_control": {
+        "candidate_roster": [
+          "Marcella",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "opponent_roster": [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        "candidate_won": false,
+        "statistics_path": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01the-farm__vs-v33__candidate-B.statistics.json",
+        "statistics_sha256": "02b2ca7090677e55bb7ebdbf1356aeeef203e3adea7412892203011d3b9b1dc0",
+        "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/outputs/marcella__01the-farm__vs-v33__candidate-B.repl26a",
+        "replay_sha256": "ecfb60c57e28aa749cb611e6b3c0c305144e972bde1967efb783a71f4b04ed73"
+      }
+    }
+  ],
+  "native_phase_audit": {
+    "schema": "three-pick-order-proxy-income-native-phase-audit/v1",
+    "complete": true,
+    "audit_script": "tools/replay/audit_native_status.mjs",
+    "audit_script_sha256": "17b3f0e95b2a848fae057909c82fa71c05049dcb8271c50b7952de8f649fcf1d",
+    "mode": "v1_0_3 pinned compact timeline native step-kind audit",
+    "games": 44,
+    "groups": [
+      {
+        "group": "income-M3-vs-v33",
+        "games": 12,
+        "candidate_bot": "willow-v47-marcella-three-income-work",
+        "opponent_bot": "v33",
+        "candidate": {
+          "play": {
+            "rollover": 10,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "opponent": {
+          "play": {
+            "rollover": 11,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "physical_sides": {
+          "A": {
+            "play": {
+              "rollover": 11,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          },
+          "B": {
+            "play": {
+              "rollover": 10,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "batch_results_sha256": "9137b5018e1af35c00d2e03e83ed31ac70d147b69b9663cd849150ff988222c4",
+        "status_sha256": "b01cc9417ca4ac9b1fff404d102aac65f0c3bc0a46ac72ecced0c6a586396913",
+        "snapshot_mode": "v1_0_3_compact_timeline",
+        "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      {
+        "group": "order-M-V-HoR-vs-proxy-mvt-three",
+        "games": 4,
+        "candidate_bot": "willow-v47-marcella-three-work",
+        "opponent_bot": "willow-v47-proxy-mvt-three-work",
+        "candidate": {
+          "play": {
+            "rollover": 5,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "opponent": {
+          "play": {
+            "rollover": 2,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "physical_sides": {
+          "A": {
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          },
+          "B": {
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "batch_results_sha256": "75abdc17bc415a567eaaffa378ebe974c296906ce9ea4066962e5b43ecec18d3",
+        "status_sha256": "14992092d988726dd1cab97b9cae67946b6d20d8fa7928a4eb383b95731c1373",
+        "snapshot_mode": "v1_0_3_compact_timeline",
+        "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      {
+        "group": "order-M-V-HoR-vs-proxy-vhv-three",
+        "games": 4,
+        "candidate_bot": "willow-v47-marcella-three-work",
+        "opponent_bot": "willow-v47-proxy-vhv-three-work",
+        "candidate": {
+          "play": {
+            "rollover": 4,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "opponent": {
+          "play": {
+            "rollover": 9,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "physical_sides": {
+          "A": {
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          },
+          "B": {
+            "play": {
+              "rollover": 8,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "batch_results_sha256": "02733ef5cfc9512a70503eefbda3dd0da137d430d5c0087b55afddab116776e1",
+        "status_sha256": "142ce0a15f1e2cee6cd3bfd4624f6319710967defeeceb7380cf2022e1cba861",
+        "snapshot_mode": "v1_0_3_compact_timeline",
+        "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      {
+        "group": "order-P-V-HoR-vs-proxy-mvt-three",
+        "games": 4,
+        "candidate_bot": "service-base-f7",
+        "opponent_bot": "willow-v47-proxy-mvt-three-work",
+        "candidate": {
+          "play": {
+            "rollover": 3,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "opponent": {
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "physical_sides": {
+          "A": {
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          },
+          "B": {
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "batch_results_sha256": "f1831a8a613b9460f86c92791dfd324fb131f311759cdf92d918ea5e1f2abc08",
+        "status_sha256": "23c50a7d3dd02e1b76a466b872b21f278bbdcf3020d42491add94d5fd26c5d3d",
+        "snapshot_mode": "v1_0_3_compact_timeline",
+        "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      {
+        "group": "order-P-V-HoR-vs-proxy-vhv-three",
+        "games": 4,
+        "candidate_bot": "service-base-f7",
+        "opponent_bot": "willow-v47-proxy-vhv-three-work",
+        "candidate": {
+          "play": {
+            "rollover": 4,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "opponent": {
+          "play": {
+            "rollover": 4,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "physical_sides": {
+          "A": {
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          },
+          "B": {
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "batch_results_sha256": "9364423059ab8fda23d8f42e120bdde196d89a0a38679782d8a1ba1611786607",
+        "status_sha256": "6811946581b7b41e4c970297c8b0e3e9f627b5b81f812d7ad5969708f306c607",
+        "snapshot_mode": "v1_0_3_compact_timeline",
+        "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      {
+        "group": "order-V-HoR-M-vs-proxy-mvt-three",
+        "games": 4,
+        "candidate_bot": "willow-v47-delayed-marcella-three-work",
+        "opponent_bot": "willow-v47-proxy-mvt-three-work",
+        "candidate": {
+          "play": {
+            "rollover": 3,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "opponent": {
+          "play": {
+            "rollover": 1,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "physical_sides": {
+          "A": {
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          },
+          "B": {
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "batch_results_sha256": "bfc64aa3e38b0c70141a851cab36a4d839028fa1a8c103c6db355527704c304a",
+        "status_sha256": "b661f85523f2415253e1061217848cca9b48e94abe9773a7e864b989e141ecfe",
+        "snapshot_mode": "v1_0_3_compact_timeline",
+        "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      {
+        "group": "order-V-HoR-M-vs-proxy-vhv-three",
+        "games": 4,
+        "candidate_bot": "willow-v47-delayed-marcella-three-work",
+        "opponent_bot": "willow-v47-proxy-vhv-three-work",
+        "candidate": {
+          "play": {
+            "rollover": 10,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "opponent": {
+          "play": {
+            "rollover": 4,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "physical_sides": {
+          "A": {
+            "play": {
+              "rollover": 10,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          },
+          "B": {
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "batch_results_sha256": "6876818632e645a0236b5b799193a5165fe2f81224490a7df9788273f130749b",
+        "status_sha256": "34ba06356a7c18262ed803758a0d6e7be890fd2dbbc3070c62b9db30418e11aa",
+        "snapshot_mode": "v1_0_3_compact_timeline",
+        "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      {
+        "group": "order-V-HoR-P-vs-proxy-mvt-three",
+        "games": 4,
+        "candidate_bot": "willow-v47-delayed-prism-three-work",
+        "opponent_bot": "willow-v47-proxy-mvt-three-work",
+        "candidate": {
+          "play": {
+            "rollover": 5,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "opponent": {
+          "play": {
+            "rollover": 5,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "physical_sides": {
+          "A": {
+            "play": {
+              "rollover": 7,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          },
+          "B": {
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "batch_results_sha256": "4a39bf0305a0e0e3d81b1071d6a06dd32e4337329d9c7179753897efd0898df1",
+        "status_sha256": "bb5590bce61261ac749f64e8238799a1d10e287f1f09030cfc2f3af79346bf30",
+        "snapshot_mode": "v1_0_3_compact_timeline",
+        "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      },
+      {
+        "group": "order-V-HoR-P-vs-proxy-vhv-three",
+        "games": 4,
+        "candidate_bot": "willow-v47-delayed-prism-three-work",
+        "opponent_bot": "willow-v47-proxy-vhv-three-work",
+        "candidate": {
+          "play": {
+            "rollover": 3,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "opponent": {
+          "play": {
+            "rollover": 7,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "physical_sides": {
+          "A": {
+            "play": {
+              "rollover": 6,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          },
+          "B": {
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "batch_results_sha256": "1debe92f62d9081f51c49ba6d06a6003404293d11df3ad6614bd043ddaa003c6",
+        "status_sha256": "4ec17de39bd168daa8c1280e8ca8bab13a6c0f74a06a384eef9b9565f55a3eaf",
+        "snapshot_mode": "v1_0_3_compact_timeline",
+        "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+      }
+    ]
+  }
+}

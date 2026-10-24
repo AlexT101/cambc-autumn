@@ -1,0 +1,12 @@
+diff -ruN bots/variants/willow-v47-delayed-prism-three-work/src/draft.cpp bots/variants/willow-v47-delayed-marcella-three-work/src/draft.cpp
+--- bots/variants/willow-v47-delayed-prism-three-work/src/draft.cpp	2026-10-24 09:59:22
++++ bots/variants/willow-v47-delayed-marcella-three-work/src/draft.cpp	2026-10-24 09:59:22
+@@ -252,7 +252,7 @@
+             auto order = std::to_array(params::draft_preference);
+             order[0] = cambc::champion_draft::vesper_vale;
+             order[1] = cambc::champion_draft::heart_of_ruin;
+-            order[2] = cambc::champion_draft::prism;
++            order[2] = cambc::champion_draft::marcella;
+             return order;
+         }();
+         return chosen;

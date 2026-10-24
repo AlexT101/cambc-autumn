@@ -1,0 +1,763 @@
+{
+  "schema": "generated-three-pick-native-phase-audit/v1",
+  "status": "complete",
+  "games": 192,
+  "snapshot_mode": "v1_0_3_compact_timeline",
+  "engine": {
+    "version": "v1_0_3"
+  },
+  "audit_result_hashes": {
+    "P-vs-f475": "a3e35f653697c5c1753ad00f4aeb25cc05c93ef0ef09a0dc96cb0caa0ce87c00",
+    "P-vs-v33": "bf6484ff5203ff5728b220c5b6589a2f510e222e6f07a771f924d86b37fb5ca9",
+    "S-vs-f475": "855424d3177d268caa28d1115ebb8f563c7cc3406f21709d86601b32b03b7aa1",
+    "S-vs-v33": "c878b9bf8e59512206901f0181027cbf8cafbadd9d89897961f079faee804b42",
+    "C-vs-f475": "47681ae22e971e428bb9f421a2378b90bb96c516b8c6b79192623c3fe91ea94c",
+    "C-vs-v33": "fd6ab01c842ca5c4f3557f18f8444495ac83dd8bce66cc72afcd61c46436e84b",
+    "M-vs-f475": "3df8dbf0b7169210229f808db8d8307baa90610ccbcd9efc0d479a007631e519",
+    "M-vs-v33": "c22389b19f991f221e30863d56a7ac7c507fb946fc0ff4fc673f90f3f53d2d4d"
+  },
+  "by_source": {
+    "P": {
+      "games": 48,
+      "phases": {
+        "play": {
+          "rollover": 67,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    "f475": {
+      "games": 96,
+      "phases": {
+        "play": {
+          "rollover": 161,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    "v33": {
+      "games": 96,
+      "phases": {
+        "play": {
+          "rollover": 178,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    "S": {
+      "games": 48,
+      "phases": {
+        "play": {
+          "rollover": 79,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    "C": {
+      "games": 48,
+      "phases": {
+        "play": {
+          "rollover": 112,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    "M": {
+      "games": 48,
+      "phases": {
+        "play": {
+          "rollover": 73,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    }
+  },
+  "by_physical_side": {
+    "A": {
+      "games": 192,
+      "phases": {
+        "play": {
+          "rollover": 337,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    "B": {
+      "games": 192,
+      "phases": {
+        "play": {
+          "rollover": 333,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    }
+  },
+  "by_arm_and_opponent": {
+    "P-vs-f475": {
+      "games": 24,
+      "sources": {
+        "P": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 35,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "f475": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 35,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      },
+      "physical_sides": {
+        "A": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 32,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "B": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 38,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      }
+    },
+    "P-vs-v33": {
+      "games": 24,
+      "sources": {
+        "P": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 32,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "v33": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 36,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      },
+      "physical_sides": {
+        "A": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 35,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "B": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 33,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      }
+    },
+    "S-vs-f475": {
+      "games": 24,
+      "sources": {
+        "S": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 38,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "f475": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 37,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      },
+      "physical_sides": {
+        "A": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 38,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "B": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 37,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      }
+    },
+    "S-vs-v33": {
+      "games": 24,
+      "sources": {
+        "S": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 41,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "v33": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 48,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      },
+      "physical_sides": {
+        "A": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 47,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "B": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 42,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      }
+    },
+    "C-vs-f475": {
+      "games": 24,
+      "sources": {
+        "C": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 55,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "f475": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 54,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      },
+      "physical_sides": {
+        "A": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 54,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "B": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 55,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      }
+    },
+    "C-vs-v33": {
+      "games": 24,
+      "sources": {
+        "C": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 57,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "v33": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 51,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      },
+      "physical_sides": {
+        "A": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 52,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "B": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 56,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      }
+    },
+    "M-vs-f475": {
+      "games": 24,
+      "sources": {
+        "M": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 37,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "f475": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 35,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      },
+      "physical_sides": {
+        "A": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 37,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "B": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 35,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      }
+    },
+    "M-vs-v33": {
+      "games": 24,
+      "sources": {
+        "M": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 36,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "v33": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 43,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      },
+      "physical_sides": {
+        "A": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 42,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        },
+        "B": {
+          "games": 24,
+          "phases": {
+            "play": {
+              "rollover": 37,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "zero_errors": true,
+  "auditor": "tools/replay/audit_native_status.mjs; exact two-source audit batches"
+}

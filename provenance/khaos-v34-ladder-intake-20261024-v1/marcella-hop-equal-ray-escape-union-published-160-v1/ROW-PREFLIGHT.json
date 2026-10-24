@@ -1,0 +1,19 @@
+{
+  "schema": "union-160-row-preflight-v1",
+  "rows": 160,
+  "maps": 40,
+  "maps_all_hash_verified": true,
+  "candidate_side_assignments": {
+    "A": 80,
+    "B": 80
+  },
+  "opponents": {
+    "f475": 80,
+    "v33": 80
+  },
+  "all_outputs_absent": true,
+  "candidate_manifest_entries_verified": 29,
+  "candidate_manifest_sha256": "37392769d9123c199b3d0f5fe0e01f4ec4cbf1083d42aa2c640a266e9a620719",
+  "candidate_normalized_src_relative_aggregate": "37392769d9123c199b3d0f5fe0e01f4ec4cbf1083d42aa2c640a266e9a620719",
+  "note": "Rows are pending root review; no native games authorized by this preparation."
+}

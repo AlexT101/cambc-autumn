@@ -1,0 +1,135 @@
+{
+  "schema": "selective-preservation-manifest-v1",
+  "purpose": "Compact, reviewable evidence for the completed 84-game equal-ray screen; raw replay/statistics files remain excluded and pinned by RAW-ARTIFACT-INVENTORY.json.",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 1399,
+      "sha256": "6dd5f5b0fc4354d37b2a9d3a371e470c535976933f243e2f0ffb3d3525dac1f4"
+    },
+    {
+      "path": "PLAN.json",
+      "bytes": 114262,
+      "sha256": "a97941e576f0c9721f43941bfaf9a5afb2199f09171a5ce529d06e6428449829"
+    },
+    {
+      "path": "ROWS.pending.tsv",
+      "bytes": 87719,
+      "sha256": "14dd9b8b51076362d89b9076c9ab5cbb33a9f1f28fcbc7d9e480b514d9d694a8"
+    },
+    {
+      "path": "ORDERED-ROWS.pending.json",
+      "bytes": 110374,
+      "sha256": "be7a4afcf26995017a7b789833af7d98a9a8e0af202f04e448caaf5b88f30e20"
+    },
+    {
+      "path": "run-batch.pending.manifest",
+      "bytes": 77460,
+      "sha256": "4fb4369cbb5f519d2ebc40b1fbb71e1743f6cf310f13277bfd20be4f33e7e4e1"
+    },
+    {
+      "path": "build-result.json",
+      "bytes": 3524,
+      "sha256": "83cb4b112962fd7b815ab86fb90ebfae1104a981c209cf064bc1a5910d154a38"
+    },
+    {
+      "path": "validate_rows.py",
+      "bytes": 1196,
+      "sha256": "573711771257fe138c3391fc607d7af02aef16d88ef763cb7443a8578be8b71d"
+    },
+    {
+      "path": "POSTFLIGHT.json",
+      "bytes": 1178,
+      "sha256": "2659ec63921e5abba233d3b7e10c9959c8f7ae85a83e2ce905b90e449a44d4bc"
+    },
+    {
+      "path": "RUN-PREFLIGHT.json",
+      "bytes": 1716,
+      "sha256": "9505f13c6079e245398d62f279876f19c20a10d48172edee78d8b06fb6625977"
+    },
+    {
+      "path": "run-attempt-cwd-failure.json",
+      "bytes": 545,
+      "sha256": "c58d89d6a623a84a3bb8fe7159bc5868d5b9c11bc9607f5605e0affe6129828c"
+    },
+    {
+      "path": "run.stdout.log",
+      "bytes": 54481,
+      "sha256": "cee76ff5b48c38e40c2cc1dadbf5da4ce4cb5d6e65fea22f7473fe5644a56147"
+    },
+    {
+      "path": "run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "RESULT.json",
+      "bytes": 96186,
+      "sha256": "42e28eaa59d5fc3338fa4119fc51d46d3f91c7b03271ad91330e7c68499418a4"
+    },
+    {
+      "path": "RESULT.md",
+      "bytes": 2631,
+      "sha256": "597d3c313cd11d72cc674c8ec52b548a37e3a02f34522336612f2418432576bd"
+    },
+    {
+      "path": "RUN-RECEIPT.json",
+      "bytes": 2180,
+      "sha256": "960f33483b787b470e577c81181399154ef5e5eba9ce9d05f61fb007dbb5c035"
+    },
+    {
+      "path": "audit_results.py",
+      "bytes": 8483,
+      "sha256": "a291f6fa6c3cc6f654c909889db6e74f691e18429c93581841f42afe05111d9d"
+    },
+    {
+      "path": "RAW-ARTIFACT-INVENTORY.json",
+      "bytes": 47117,
+      "sha256": "7c24c62e6fb07dbf040969b570152ca26090faebc8ba8f0fc3cda00b75bf391a"
+    },
+    {
+      "path": "../marcella-combination-screen-480-v1/RESULT.json",
+      "bytes": 507518,
+      "sha256": "9a62678d736d7250e3548639e254037bc5771c8b9d3eb63c7bcf2f9f82d7562a"
+    },
+    {
+      "path": "../equal-ray-geometry-fixture-v1/FIXTURE-RESULT.json",
+      "bytes": 1564,
+      "sha256": "3109da8f6dd4fff1ffd8c7d54f7f7018893a2599ee1aaa623b98f17b7fa34fac"
+    },
+    {
+      "path": "../equal-ray-geometry-fixture-v1/PRESERVATION-MANIFEST.json",
+      "bytes": 2154,
+      "sha256": "5cadb77369942fc9dff1596e82d8e229746b8f4744871d2c22db03b8d844405b"
+    },
+    {
+      "path": "../equal-ray-geometry-fixture-v1/SOURCE-PINS.json",
+      "bytes": 2418,
+      "sha256": "3188ecc7a1e2ec96d71f11b62bd4f20214b3a03b21a9a41146ef48e65b68e47b"
+    },
+    {
+      "path": "COMPARISON-CORRECTION.json",
+      "bytes": 1397,
+      "sha256": "ed6303b09ccc78145b6db5415921148ae91c94f89b982041672d75aa76a45e38"
+    },
+    {
+      "path": "RESULT-superseded-mixed-arm-comparison-v1.json",
+      "bytes": 94240,
+      "sha256": "6228ea9c920e53c85d175e4042898daac16264b4c25bae7dfc0d45f6db92dd82"
+    }
+  ],
+  "excluded_artifacts": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-equal-ray-escape/.cambc/build-release/bot.wasm",
+      "bytes": 1676162,
+      "sha256": "ec2790a185b85efc6f49db61e3f6f97c66720de61ec3f6a0ce03baf502ee4571",
+      "reason": "built runtime binary pinned in build-result.json; preserve in the existing runtime workspace, do not stage"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-equal-ray-escape/.cambc/build-release/bot-injected.wasm",
+      "bytes": 917910,
+      "sha256": "deb6af670e8ca9e542c3352aea5b1e3b546d29b6d2990e29c9fdb57eaece30c1",
+      "reason": "built runtime binary pinned in build-result.json; preserve in the existing runtime workspace, do not stage"
+    }
+  ]
+}

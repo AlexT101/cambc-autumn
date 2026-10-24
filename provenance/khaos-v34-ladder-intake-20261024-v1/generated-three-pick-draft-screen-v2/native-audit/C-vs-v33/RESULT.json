@@ -1,0 +1,2585 @@
+{
+  "schema": "native-turn-status-audit/v1",
+  "batch": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/native-audit/inputs/C-vs-v33",
+  "batch_results_sha256": "650d443b2a7034ac0ed4a87ecbbff1503be051e707e916bfcf062a6f636c2d32",
+  "release": true,
+  "games": 24,
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "snapshot_mode": "v1_0_3_compact_timeline",
+  "compact_timeline_pin": {
+    "version": "v1_0_3",
+    "wasmSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "officialDecoderSha256": "960affde6198366d2347bd21f43efec5bc06acc6cb0c53e5f7f96dbf87f027e6",
+    "visualizerBundleSha256": "b80358b2189444187c38880ee7218d84b4a013a1b379b93470659c4c6b2c4a24",
+    "snapshotSize": 40152
+  },
+  "source_pins": {
+    "C": "a817c175850315005e9724cdbdd0f3fff714ab175b037a864ed6772b450941be",
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "bots": [
+    {
+      "bot": "willow-v47-cassi-three-work",
+      "bot_index": 0,
+      "games": 24,
+      "play": {
+        "rollover": 57,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    },
+    {
+      "bot": "v33",
+      "bot_index": 1,
+      "games": 24,
+      "play": {
+        "rollover": 51,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    }
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-rows-102301101-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "c511b4f9df1175ba78ec1ac053f45ed67af5dd45d8319eba56a353f02ae6187a",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-rows-102301101.map26a",
+      "map_format": "map26a",
+      "map_sha256": "033274acd018eae830b0181d0b743ebe1f3e65ce53dd58a7318196e4acc17e30",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 6,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 1,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-rows-102301101-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "0191ae0b79fe8a50cd9b3be252e6dfa95942fcc927414f8c3703068fd7be63b0",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-rows-102301101.map26a",
+      "map_format": "map26a",
+      "map_sha256": "033274acd018eae830b0181d0b743ebe1f3e65ce53dd58a7318196e4acc17e30",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 4,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-donut-102405614-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "a577f54c066e21b4e899cf48b76bab20c1f000ed811f900b4753f2f4eedd472f",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-donut-102405614.map26a",
+      "map_format": "map26a",
+      "map_sha256": "0574bda0885ef9b32f78d3000c5565db2e37d62f1405bd0a15e83063b3ce3319",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 1,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 3,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-donut-102405614-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "42a12ab8f1cf4e31ddef550a015762c558c6d7f7799295e382cfaae06eeba966",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-donut-102405614.map26a",
+      "map_format": "map26a",
+      "map_sha256": "0574bda0885ef9b32f78d3000c5565db2e37d62f1405bd0a15e83063b3ce3319",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    },
+    {
+      "index": 4,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-serpentine-102307009-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "3c0952bc1920c62595672a3ca345ec23571bc5c7e8f7e7a29af39980a55c497d",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-serpentine-102307009.map26a",
+      "map_format": "map26a",
+      "map_sha256": "00a717afa55166b7937d7328d5c46b6d856f1215eef88091ad8700ba890a6b97",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 3,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    },
+    {
+      "index": 5,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-serpentine-102307009-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "4dbb1136e4fb7ab23d92af036ed306978f4525ed54e23d9d26cd48327d7c36c5",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-serpentine-102307009.map26a",
+      "map_format": "map26a",
+      "map_sha256": "00a717afa55166b7937d7328d5c46b6d856f1215eef88091ad8700ba890a6b97",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 1,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 6,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-diamond-102405516-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "22bfc0c8b35fe94412dcb5df04124c0a32a1ade19fcf05450659c43f422cfda2",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-diamond-102405516.map26a",
+      "map_format": "map26a",
+      "map_sha256": "14b85bd1f1c6033a2f9fbae8855dd60cafc49dd5523d79a889f339a220cd7b56",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 7,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 6,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 7,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-diamond-102405516-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "f5f2bc8afd42389a51fec78357bf798e4497d1407da8e90dff2ad6e4a6f718e2",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-diamond-102405516.map26a",
+      "map_format": "map26a",
+      "map_sha256": "14b85bd1f1c6033a2f9fbae8855dd60cafc49dd5523d79a889f339a220cd7b56",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 3,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 8,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-city-102306900-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "c4c29de294f1a83febd84729088a58161f696753f2d380cdc180e71ef6629ec3",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-city-102306900.map26a",
+      "map_format": "map26a",
+      "map_sha256": "919646ac8421d0d4bcff6a5b12c2301f134619788c368ce0859df24d7dac0d09",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 3,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    },
+    {
+      "index": 9,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-city-102306900-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "08a57b34300e7aad628964c83766ce377fe8bcd664bd6428b1a6aac07522b296",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-city-102306900.map26a",
+      "map_format": "map26a",
+      "map_sha256": "919646ac8421d0d4bcff6a5b12c2301f134619788c368ce0859df24d7dac0d09",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 3,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 10,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-blob-102406206-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "6d0f8a6336b6814590f0ae1347379e75006fe1033b8a63f6d601a895a7b263ff",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-blob-102406206.map26a",
+      "map_format": "map26a",
+      "map_sha256": "068a4b65bf7d5ca9e007ba3a19af3d0a0bd8232f5d23b29628ef9a0c74361af5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    },
+    {
+      "index": 11,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-blob-102406206-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "f8e8fa8273b608f7e410db06ec40921c4650fca8b2597a24754c80f60d3f1ce8",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-blob-102406206.map26a",
+      "map_format": "map26a",
+      "map_sha256": "068a4b65bf7d5ca9e007ba3a19af3d0a0bd8232f5d23b29628ef9a0c74361af5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    },
+    {
+      "index": 12,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-archipelago-102306018-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "9249d4e58d9ba27fdaa20db460cc298f467ad576ab36ca48fbc68b31cab25c68",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-archipelago-102306018.map26a",
+      "map_format": "map26a",
+      "map_sha256": "0c4948375fd2c8586e1a776a29eb47fed7426f422b14deb07bf6571af807090f",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 10,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 13,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-archipelago-102306018-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "49f26d36e8c660430e7b0660ec0a63fbc18d588d8e9c08e47d360ccbcf8e4838",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-archipelago-102306018.map26a",
+      "map_format": "map26a",
+      "map_sha256": "0c4948375fd2c8586e1a776a29eb47fed7426f422b14deb07bf6571af807090f",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 11,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 6,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 14,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-donut-102405617-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "ac2deaf2d9d060f4c1e2c513307a18959428632d78f697f33966a77b93b9f8e3",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-donut-102405617.map26a",
+      "map_format": "map26a",
+      "map_sha256": "49df08e75a8a7db08c43b662075777d2bc9e6a19ebe63f2700defdcda50d4e8f",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 8,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 15,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-donut-102405617-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "83eaaa301e33f7a2feda58791ece94f782aa68f0fe3d055e64617630e56d7bb5",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-donut-102405617.map26a",
+      "map_format": "map26a",
+      "map_sha256": "49df08e75a8a7db08c43b662075777d2bc9e6a19ebe63f2700defdcda50d4e8f",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 8,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 16,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-labyrinth-102306303-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "93d6a46d46e2c22eeac359a0e69df0863ececadca46b118d23cc10934e99fe96",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-labyrinth-102306303.map26a",
+      "map_format": "map26a",
+      "map_sha256": "1c352dbf152b8820bda199a038ffb69b8c1d527203feca8d091e66059e21acb4",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    },
+    {
+      "index": 17,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-labyrinth-102306303-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "6ffbd2435735e7cf49c1b485a158f2b7b90a53486d7dd4ebb0f3d7811ab456b1",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-labyrinth-102306303.map26a",
+      "map_format": "map26a",
+      "map_sha256": "1c352dbf152b8820bda199a038ffb69b8c1d527203feca8d091e66059e21acb4",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    },
+    {
+      "index": 18,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-spiral-102406404-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "80bb036e607efdb9c9ce13e25eaaed3902286add83a135556be58fb50ac8f005",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-spiral-102406404.map26a",
+      "map_format": "map26a",
+      "map_sha256": "008f151d0745a1eed5e40a8d2f684b31c8e1a998663e8b25cf4512b11a155ae5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 7,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 19,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-spiral-102406404-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "fcbbda175facd9df43c3f1b5fff3e9ae424d59654ff7b0def5fb6b7763232f4a",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-spiral-102406404.map26a",
+      "map_format": "map26a",
+      "map_sha256": "008f151d0745a1eed5e40a8d2f684b31c8e1a998663e8b25cf4512b11a155ae5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 8,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 20,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-star-102305406-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "571f169fe9d8eeb213c6c600bb166692c00f9d0ff13176b96be02875168d0e9e",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-star-102305406.map26a",
+      "map_format": "map26a",
+      "map_sha256": "203641a40ba4086741aa0ec0fe62b4f4193148a746353b516ed36cf159194118",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 11,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 6,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 21,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-star-102305406-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "b8e85c49acf91dc19f4deb507afb0d108f5b8041e01bbc1933812932119f2c2e",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen/gen-star-102305406.map26a",
+      "map_format": "map26a",
+      "map_sha256": "203641a40ba4086741aa0ec0fe62b4f4193148a746353b516ed36cf159194118",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 10,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 6,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "1": {
+                "actor_kind": 1,
+                "actor_index": 1,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              },
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 22,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-classic-102400016-vs-v33-candidate-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "6423e3ab95e99b5a859dbc12f69be8402e87d07d3e2573c756dd92cc3742eba2",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-classic-102400016.map26a",
+      "map_format": "map26a",
+      "map_sha256": "0036fdfd314928f150bef4eb958eabfbd7d44aeb53371c11f3b4935164e569af",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 3,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 23,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-classic-102400016-vs-v33-candidate-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "4bab2e88971f0b083b403dca58d977abe47957a8fb7e4d58503697445e20cba5",
+      "replay_engine": "v1_0_3",
+      "map": "maps/gen-s1/gen-classic-102400016.map26a",
+      "map_format": "map26a",
+      "map_sha256": "0036fdfd314928f150bef4eb958eabfbd7d44aeb53371c11f3b4935164e569af",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 1,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-cassi-three-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    }
+  ],
+  "notes": "Counts are native replay step kinds 26 (Turn rollover/fuel) and 27 (Bot error), classified by step.phase: 10 play, 12 draft, all remaining phases under other. For play statuses, physical team comes from the actor champion record in the same snapshot, not header.team; champion buckets use native actor kind/index. Snapshot mode is the pinned v1_0_3 compact timeline reader; the auditor does not extract events or metrics. Source pins are copied from results.json or adjacent economic-capture-summary.json when available."
+}

@@ -1,0 +1,68 @@
+{
+  "schema": "selective-preservation-manifest-v1",
+  "purpose": "Compact reproducible source-bound equal-ray geometry fixture; excludes generated host executable and transient compiler logs.",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 1387,
+      "sha256": "94ddfcd80b472958ac2dfb137ef8b71e2bc36f79a2772465f28ba138e93f1d57"
+    },
+    {
+      "path": "build_fixture.py",
+      "bytes": 12874,
+      "sha256": "bf40dbf800e0564a524a1403826ea4f7750b23fae71ad6c883118a383e272de4"
+    },
+    {
+      "path": "fixture.cpp",
+      "bytes": 8559,
+      "sha256": "a7c80926d8c413d97e2c70e1063161ff7b26b39633bb45f41818e015901993d6"
+    },
+    {
+      "path": "SOURCE-PINS.json",
+      "bytes": 2418,
+      "sha256": "3188ecc7a1e2ec96d71f11b62bd4f20214b3a03b21a9a41146ef48e65b68e47b"
+    },
+    {
+      "path": "FIXTURE-RESULT.json",
+      "bytes": 1564,
+      "sha256": "3109da8f6dd4fff1ffd8c7d54f7f7018893a2599ee1aaa623b98f17b7fa34fac"
+    },
+    {
+      "path": "SETUP-ATTEMPTS.md",
+      "bytes": 631,
+      "sha256": "43a5003c946a271643d1bea7de2e62613faece890fee4aa18e32f1c48d48700a"
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "fixture",
+      "bytes": 38216,
+      "sha256": "ff4b7cc398ff7b4b4189885479715af20894dff347e8be1755fb031378bb4da5",
+      "reason": "generated host binary, reproducible from build_fixture.py"
+    },
+    {
+      "path": "build.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "transient compiler log"
+    },
+    {
+      "path": "build.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "transient compiler log"
+    },
+    {
+      "path": "run.stdout.log",
+      "bytes": 92,
+      "sha256": "377d04fac01bab925890a00b9c5dccdb679acf8f608b1f431252c3ad22881285",
+      "reason": "transient run log; result is recorded in FIXTURE-RESULT.json"
+    },
+    {
+      "path": "run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "transient run log"
+    }
+  ]
+}

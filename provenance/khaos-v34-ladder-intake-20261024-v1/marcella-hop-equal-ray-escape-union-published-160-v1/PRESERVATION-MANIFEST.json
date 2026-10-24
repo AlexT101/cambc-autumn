@@ -1,0 +1,112 @@
+{
+  "schema": "marcella-hop-equal-ray-union-row-review-preservation-v1",
+  "purpose": "Compact build receipt and 160 ordered proposed A/B rows for root review; no native games have run.",
+  "files": [
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/PLAN.pending.json",
+      "bytes": 330579,
+      "sha256": "f47637af1d424267d83e526f6e271faec89a0d1b871a5ae61ee6557839734baf"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/ORDERED-ROWS.pending.json",
+      "bytes": 311255,
+      "sha256": "c3426ada2ebcc474e11ccf45407372994c1a040f29792a990207ad4a278006ab"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/ROWS.pending.tsv",
+      "bytes": 179424,
+      "sha256": "a13db6d0abb4a765fa2eb74a01d267a43e75dd368c27dc149499f724f715a0e2"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/ROW-PREFLIGHT.json",
+      "bytes": 606,
+      "sha256": "3597c6c41048c375f04faee784c08909a629c41732ed8bcaa680366765319373"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-release-v1/BUILD-RESULT.json",
+      "bytes": 4395,
+      "sha256": "d8e0c2b163f3c11c43b5e9f82540f84ed317e43a0572fc60ca5413a5319539b8"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-release-v1/SOURCE-COPY-PREFLIGHT.json",
+      "bytes": 4220,
+      "sha256": "65cda403e598cff551a61baa341edaf48ebd97741dc36187d6ddea47055cd30e"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-release-v1/build.stdout.log",
+      "bytes": 4478,
+      "sha256": "0d620c3bec02daf5be5faa0b1bdd5b9c0a7ccf3f60344012efd34ca99151d6f1"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-release-v1/build.stderr.log",
+      "bytes": 180,
+      "sha256": "ec996f44c37aa3a11b8893a81d8de92ffd2349d6721210c22873430f0517e322"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-release-v1/build.exit",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "PLAN.pending.json",
+      "bytes": 330572,
+      "sha256": "628d0f7d050a737ade1e9089eb652b4fe98b4dd43167c4f96e5a89b5e0b14b77"
+    },
+    {
+      "path": "ORDERED-ROWS.pending.json",
+      "bytes": 311255,
+      "sha256": "c3426ada2ebcc474e11ccf45407372994c1a040f29792a990207ad4a278006ab"
+    },
+    {
+      "path": "ROW-PREFLIGHT.json",
+      "bytes": 606,
+      "sha256": "3597c6c41048c375f04faee784c08909a629c41732ed8bcaa680366765319373"
+    },
+    {
+      "path": "SOURCE-AGGREGATE-CORRECTION.json",
+      "bytes": 1267,
+      "sha256": "caa7950573133ce4d1e549bb74343eedbd1267360beb8bd56097136d8a3da14f"
+    },
+    {
+      "path": "run.manifest",
+      "bytes": 0,
+      "sha256": ""
+    },
+    {
+      "path": "RUN-PREFLIGHT.json",
+      "bytes": 0,
+      "sha256": ""
+    }
+  ],
+  "source_review_references": [
+    {
+      "path": "research/willow-v47-marcella-hop-equal-ray-escape-source-checkpoint-20261024-v1.md",
+      "bytes": 2694,
+      "sha256": "1d56ed4c27fffa60d9bf0c50dfbf99128942fd8182217c9267bb5310fe670c5d"
+    },
+    {
+      "path": "research/willow-v47-marcella-hop-equal-ray-escape-source-v1-manifest.sha256",
+      "bytes": 2365,
+      "sha256": "37392769d9123c199b3d0f5fe0e01f4ec4cbf1083d42aa2c640a266e9a620719"
+    },
+    {
+      "path": "research/willow-v47-marcella-hop-equal-ray-escape-source-v1.patch",
+      "bytes": 42499,
+      "sha256": "3d8ca0ae0ca9d9fd2c64691813850b53565aae7950c073c6df0c983ef880b2d3"
+    }
+  ],
+  "excluded_artifacts": [
+    {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-marcella-hop-equal-ray-escape-union/.cambc/build-release/bot.wasm",
+      "bytes": 1684043,
+      "sha256": "e519f9679a2045afc612907057b784198c21faeab67c85aa924bc19e5159a439",
+      "reason": "generated Release binary; preserved in runtime workspace, not staged"
+    },
+    {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-marcella-hop-equal-ray-escape-union/.cambc/build-release/bot-injected.wasm",
+      "bytes": 925791,
+      "sha256": "cdc81ee46882b513adb4f56256acf30b4e61feced2c5a981bd424f4011d9a8b7",
+      "reason": "generated Release binary; preserved in runtime workspace, not staged"
+    }
+  ]
+}

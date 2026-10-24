@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Preserve the reviewed row bytes referenced by the experiment's SHA256 receipts.
+/provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/ROWS.pending.tsv -text

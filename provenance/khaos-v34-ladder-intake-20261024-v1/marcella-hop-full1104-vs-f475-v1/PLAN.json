@@ -1,0 +1,94 @@
+{
+  "schema": "marcella-hop-full1104-vs-f475-plan/v1",
+  "status": "1024_new_rows_prepared_waiting_root_review_no_games",
+  "purpose": "Extend the completed M+H vs frozen f475 published40 comparison to the exact published40 + gen + gen-s1 full1104 map frame. Existing published40 M+H/f475 A/B rows are reused exactly; only generated-map rows are new. The generated suites are development maps, not an untouched holdout.",
+  "frame": {
+    "map_inventory": "provenance/willow-focus-safe-yield-v33-full1104-preflight-20261024-v1/map-inventory.json",
+    "map_inventory_sha256": "6616b4c5fd900adfbabb2aef3898ba0ac734e4dcc25abd0b989e53d05326d52f",
+    "suite_counts": {
+      "published40": 40,
+      "gen": 256,
+      "gen-s1": 256
+    },
+    "full_map_count": 552,
+    "games_full_frame": 1104,
+    "verified_all_local_map_hashes": true,
+    "new_suites": [
+      "gen",
+      "gen-s1"
+    ],
+    "new_map_count": 512
+  },
+  "reuse": {
+    "panel": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-combination-screen-480-v1",
+    "exact_rows": 80,
+    "reused_rows_manifest": "REUSE-80.tsv",
+    "candidate": "marcella-hop",
+    "opponent": "f475"
+  },
+  "new_rows": 1024,
+  "new_games_by_suite": {
+    "gen": 512,
+    "gen-s1": 512
+  },
+  "ordered_row_rule": "suite gen then gen-s1, exact map order in full1104 map-inventory.json; for each map candidate physical side A then B. Both sides use normal native drafts.",
+  "candidate": {
+    "arm": "marcella-hop",
+    "label": "M+H",
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-marcella-hop-work",
+    "source_aggregate_sha256": "709ba31a186fb1e5b27a180ac58d50a913af10cba42ccbc31151ae36c04f26f4",
+    "source_manifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/research/willow-v47-marcella-hop-source-v1-manifest.sha256",
+    "source_manifest_sha256": "709ba31a186fb1e5b27a180ac58d50a913af10cba42ccbc31151ae36c04f26f4",
+    "source_manifest_files_verified": 29,
+    "expected_source_files": 29,
+    "patch": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/research/willow-v47-marcella-hop-source-v1.patch",
+    "patch_sha256": "32cc1acfd38e990f2c07c8bc30dd79123035cee0e1b60e053a8702c87867d577"
+  },
+  "baseline": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7",
+    "source_aggregate_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+    "raw_wasm_sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+    "injected_wasm_sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+  },
+  "candidate_build": {
+    "stable_wasm": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/marcella-combination-screen-480-v1/builds/marcella-hop.wasm",
+    "stable_wasm_sha256": "836806a4f23d3391665f1e3d1e3033337ffa34baed273defdd9b008fc342b0a3",
+    "raw_wasm": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-marcella-hop-work/.cambc/build-release/bot.wasm",
+    "raw_wasm_sha256": "0852fa613262f1e4942c774cc6ce4edb45e598d5bc61226e0237a41653d70536",
+    "injected_wasm": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-marcella-hop-work/.cambc/build-release/bot-injected.wasm",
+    "injected_wasm_sha256": "836806a4f23d3391665f1e3d1e3033337ffa34baed273defdd9b008fc342b0a3",
+    "cmake_cache_sha256": "975c4b14b9ccf81f34c83b19dcca40d975ba5bd14a912f6d00d33a1079e91b43",
+    "build_ninja_sha256": "ddda6e759fd9107497dc31b05a48d4ed153a82e6372752ca8e4543a6539125ff",
+    "compile_commands_sha256": "97d6099cafb12eaca018bc7d8d7e9aa97a77df2389fe475dcbeabe4fd349a719",
+    "cmake_generator": "Ninja",
+    "cmake_build_type": "Release",
+    "cmake_flags_release": "-O3 -DNDEBUG",
+    "ninja_command_flags": [
+      "FLAGS = -O3 -DNDEBUG",
+      "FLAGS = -O3 -DNDEBUG -std=c++20 -msimd128 -mbulk-memory -mbulk-memory-opt -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false"
+    ]
+  },
+  "runtime_pin_receipt": "provenance/willow-contact-priority-f7-20261024-v1/runtime-pins.json",
+  "runtime_pin_receipt_sha256": "36a85cfff6d691000c1df2f9d28db326c3d698378e8d307134f253fc70433950",
+  "engine_and_run_settings": {
+    "cambc_version": "3.0.5",
+    "engine": "v1_0_3",
+    "release": true,
+    "fuel_quantum": 100000,
+    "draft_mode": "native; no --test-draft; source params::test_draft=false",
+    "jobs_after_root_approval": 6,
+    "run_command_after_root_approval": "nice -n 19 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc run-batch /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-full1104-vs-f475-v1/RUN.manifest --jobs 6 --fuel-quantum 100000 --release --json"
+  },
+  "new_output_absence_verified": true,
+  "run_manifest_sha256": "9bca450138f3b39323bbc1025734aa595e157a926ed770249259ba92b0c72426",
+  "rows_tsv_sha256": "511b1ca8af7b1cf56a43ef7000ee84d17ad6cf2d8bbeaa49557e6b36aef7ca88",
+  "reuse_tsv_sha256": "0f56ca20dcc1a3ae64a72cce26ab01125176aabc557a78caddc3318307943dc8",
+  "uniqueness": {
+    "new_rows": 1024,
+    "unique_replays": 1024,
+    "unique_statistics": 1024,
+    "new_vs_reused_output_overlap": false
+  },
+  "native_audit_required": "For each new result audit actual native draft pick count, candidate roster/body count, native draft/play/other phase rollovers and bot-error counts; report side- and suite-specific outcomes. Preserve all failures. Reused published40 outcomes retain original source-panel audits.",
+  "root_review_required_before_run": true
+}

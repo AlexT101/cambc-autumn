@@ -1,0 +1,139 @@
+{
+  "schema": "intake-research-source-pin-inventory/v1",
+  "created_utc": "20261024T141939Z",
+  "references": [
+    {
+      "path": "research/marcella-delayed-tribute-value-source-design-20261024-v2.md",
+      "bytes": 8428,
+      "sha256": "5e1ad087ab390a804aa2bd3ae77d5d8b58d5622b0dfa22e51a36232518ff9914",
+      "mtime_ns": 1792847639801679000,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-bossbattle-support-p-trace-source-checkpoint-20261024-v1.md",
+      "bytes": 6009,
+      "sha256": "52ff1d34211fa689b0045c99ba9b8b4dfd8a7357cba9a5dce7fd46a438cd70d3",
+      "mtime_ns": 1792849802497263438,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-cassi-three-source-v1-manifest.sha256",
+      "bytes": 2365,
+      "sha256": "a817c175850315005e9724cdbdd0f3fff714ab175b037a864ed6772b450941be",
+      "mtime_ns": 1792848878260615083,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-cassi-three-source-v1.patch",
+      "bytes": 742,
+      "sha256": "8c66a7f75b4e0b52d6912c2006dafc9d57382a700d925b11353669e03d4169ad",
+      "mtime_ns": 1792848878382226354,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-delayed-marcella-three-source-v1-manifest.sha256",
+      "bytes": 2365,
+      "sha256": "3e6d4dd4a7e5cf42bc9fd1dd889ba647a0561cea46efabb061cff7a41aea8103",
+      "mtime_ns": 1792850391779601144,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-delayed-prism-three-source-v1-manifest.sha256",
+      "bytes": 2365,
+      "sha256": "f299a82c63f53eb33eba61ebd81983bed170644ce102895aec9c7a09ce652eac",
+      "mtime_ns": 1792850391715770414,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-fixed-three-role-screen-source-checkpoint-20261024-v1.md",
+      "bytes": 3459,
+      "sha256": "18d71d2efb3c00a12af73631f8f9756216c6171e4bbba2ebf7ad190a5b112f70",
+      "mtime_ns": 1792848913954606073,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-marcella-combinations-source-checkpoint-20261024-v1.md",
+      "bytes": 5481,
+      "sha256": "5a2f33cfd089d583ac38ad3586cb7205ffa177c51c64e6954cc3a8de3ff9d76b",
+      "mtime_ns": 1792850002840299912,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-marcella-three-income-source-v1-manifest.sha256",
+      "bytes": 2365,
+      "sha256": "e2e58e265e60546f9e44b65085c2a3939168c8cd92af1d8d93818aeb1fad4e2b",
+      "mtime_ns": 1792850391972780620,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-marcella-three-source-v1-manifest.sha256",
+      "bytes": 2365,
+      "sha256": "5dc0f00960864250fa2fb26cac4d309c7cf55b9e4ffbc03c4b7b3c7a011b11fa",
+      "mtime_ns": 1792848878325317441,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-marcella-three-source-v1.patch",
+      "bytes": 738,
+      "sha256": "fb5026075a483fa482a09a0e3e33d03de62ccbad27995a28f202500be52f3565",
+      "mtime_ns": 1792848878383889318,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-marcella-tribute-value-source-v1.patch",
+      "bytes": 7625,
+      "sha256": "baceaeac6b1110832afb18ccaf60cb960b38a7cda569ee6fd631fc424f76c892",
+      "mtime_ns": 1792848170009098688,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-proxy-mvt-three-source-v1-manifest.sha256",
+      "bytes": 2365,
+      "sha256": "9f67c51e334a32988e0045240802c73e94915c4a27b22f5041c8f07f0e37b5ce",
+      "mtime_ns": 1792850391845584365,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-proxy-vhv-three-source-v1-manifest.sha256",
+      "bytes": 2365,
+      "sha256": "5e7c5d880db62136b8d30e25a66d1f7e57a36fe8e68dedaa591114fc0f3d67e7",
+      "mtime_ns": 1792850391908012311,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-revealed-prefix-controls-source-checkpoint-20261024-v1.md",
+      "bytes": 7317,
+      "sha256": "cd8324aa4736c4850608eb2b2f027e422f684a6bba9765b46d66028772750642",
+      "mtime_ns": 1792850502592843012,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-stellar-three-source-v1-manifest.sha256",
+      "bytes": 2365,
+      "sha256": "4a875c3b63b1bbed9fa604bc78b64ebfa89fd387b10edf3c893a7cda92946c8c",
+      "mtime_ns": 1792848878190729789,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-stellar-three-source-v1.patch",
+      "bytes": 736,
+      "sha256": "8ed15ee781be4dfefd98c160cc2875d2494e812c2f127c99b4be884d3c257a56",
+      "mtime_ns": 1792848878380589807,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v47-three-pick-screen-interpretation-20261024-v1.md",
+      "bytes": 8215,
+      "sha256": "6b219f8d3ea4bb7e0ab38053fc95f9d71a8e8ac5dc5cb7321ac3bd9ad79348cc",
+      "mtime_ns": 1792851567157277054,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    },
+    {
+      "path": "research/willow-v48-deadline-bound-source-review-20261024-v1.md",
+      "bytes": 3652,
+      "sha256": "7ce2d8d441c3f42b4346dd9ca631e61b57727eee206e4d9d138e4c4e65b55acb",
+      "mtime_ns": 1792841737164687970,
+      "disposition": "reference-pin; root determines whether already present in HEAD"
+    }
+  ]
+}

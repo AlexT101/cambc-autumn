@@ -1,0 +1,3264 @@
+{
+  "schema": "marcella-hop-equal-ray-escape-union-native-results/v1",
+  "candidate_source_aggregate": "37392769d9123c199b3d0f5fe0e01f4ec4cbf1083d42aa2c640a266e9a620719",
+  "panels": {
+    "union-vs-f475": {
+      "opponent": "f475",
+      "games": 80,
+      "candidate_wins": {
+        "candidate_wins": 46,
+        "candidate_games": 80,
+        "candidate_wins_by_candidate_side": {
+          "A": 23,
+          "B": 23
+        }
+      },
+      "physical_wins": {
+        "B": 40,
+        "A": 40
+      },
+      "scores_submitted_gems": {
+        "candidate": 63401,
+        "opponent": 51727
+      },
+      "mean_rounds_completed": 1071.5625,
+      "rounds_min": 483,
+      "rounds_max": 2000,
+      "bot_faults_total": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "rows": [
+        {
+          "cell_id": "union-vs-f475-00ambush-candidateA",
+          "map": "00ambush.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 845,
+          "opponent_score": 1018,
+          "rounds_completed": 1146,
+          "rounds_started": 1147,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "a978c36b5951ab5e2c8b1ca31251d54706125a26e1b314b225d61460ae3c5e5f",
+          "replay_sha256": "c97c8b3f999ca8b903eb6ec6d5664a30f8c0f5a970934868186b12bdd9801918"
+        },
+        {
+          "cell_id": "union-vs-f475-00ambush-candidateB",
+          "map": "00ambush.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 809,
+          "opponent_score": 1014,
+          "rounds_completed": 1087,
+          "rounds_started": 1088,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "84a629f70372eb7bffeb2d62e2f67e578fd39bbf68c394d4e2fa00cc1482e881",
+          "replay_sha256": "1f7521800ba80fd9aa0ac50b18d0ad45a9901cfeac1a4d07954f2a21cc22adf8"
+        },
+        {
+          "cell_id": "union-vs-f475-00collision-candidateA",
+          "map": "00collision.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1061,
+          "opponent_score": 12,
+          "rounds_completed": 938,
+          "rounds_started": 939,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "1e250d8747d29875a6716f5756a9ce4517613f82c85f245599e29112a615ef38",
+          "replay_sha256": "cf8d92246839022f1f526c48926c0e93c93dc644263031c9ce393e9ea9bdcd9c"
+        },
+        {
+          "cell_id": "union-vs-f475-00collision-candidateB",
+          "map": "00collision.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 89,
+          "opponent_score": 1051,
+          "rounds_completed": 966,
+          "rounds_started": 967,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "11d41bdb2286a537ef06efce1214a64eb805f2d1f94a3aa9b5245f7d2adbc1ba",
+          "replay_sha256": "8a15b712e4bfc292cecd9fb9a7cd75290907706c28ae3707260fde726a2d29db"
+        },
+        {
+          "cell_id": "union-vs-f475-00contest-candidateA",
+          "map": "00contest.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1000,
+          "opponent_score": 0,
+          "rounds_completed": 1471,
+          "rounds_started": 1472,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "0ced6cb2aae9f4b3c56a02ed4c59349dae69cb5d6410fa33c5d974315303e2db",
+          "replay_sha256": "45a8e1662518e2a986a2a3c4aa7648f92812d07039f219ceba7fc3ca6cb55902"
+        },
+        {
+          "cell_id": "union-vs-f475-00contest-candidateB",
+          "map": "00contest.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 400,
+          "opponent_score": 800,
+          "rounds_completed": 2000,
+          "rounds_started": 2000,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "a311b4e0f87ad73b9842b3dcad1560aeed7b6d79aca621edf03608d031978e93",
+          "replay_sha256": "02dd81bb3eec6f9ff2d564a6037d35aca9d65f45bc14af60313bfab8ba1412fa"
+        },
+        {
+          "cell_id": "union-vs-f475-00corners-candidateA",
+          "map": "00corners.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1021,
+          "opponent_score": 141,
+          "rounds_completed": 844,
+          "rounds_started": 845,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "a9cd4bf90af9a75e9799ba7be0b524b69b9b3fb3ad39c15f446e7bd2d9456131",
+          "replay_sha256": "9d37155975dbf4a2fe461ee4ecd9101e8ae3bab9025a855cf33c52cb6525a8f2"
+        },
+        {
+          "cell_id": "union-vs-f475-00corners-candidateB",
+          "map": "00corners.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 136,
+          "opponent_score": 1019,
+          "rounds_completed": 735,
+          "rounds_started": 736,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "d6bf095df4ca8dcd7e6fc555d7d554d7a01ce7f724cba6c970a665f93b81bf48",
+          "replay_sha256": "5f70da83a97967177adf0bd5d9e5c841617b43f4f78d1dbff833121aa13f1cbd"
+        },
+        {
+          "cell_id": "union-vs-f475-00eight-candidateA",
+          "map": "00eight.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1029,
+          "opponent_score": 452,
+          "rounds_completed": 1019,
+          "rounds_started": 1020,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "00143ceec335199941a591101878320e56748bd19441c7dffa4ee904a980044d",
+          "replay_sha256": "7ea735ff1ba5fbe72d39ca3ced3f8c0f518a6a9a9b6357ca873a6ce98d3ad5ae"
+        },
+        {
+          "cell_id": "union-vs-f475-00eight-candidateB",
+          "map": "00eight.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1244,
+          "opponent_score": 388,
+          "rounds_completed": 1131,
+          "rounds_started": 1132,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "4aeb9746a24a82b96103dfcb1a9cd0b020424c28f03e0be8e1903a6fd943468e",
+          "replay_sha256": "0aaf54bcb71539a5bbeb168cdec8abe62a27d134473a701bc46689987f19fbed"
+        },
+        {
+          "cell_id": "union-vs-f475-00elkring-candidateA",
+          "map": "00elkring.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1012,
+          "opponent_score": 528,
+          "rounds_completed": 627,
+          "rounds_started": 628,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "a9f2c01f92d4ebd75b3df99e2999e4c0dba3299f7a97111e2db19e9bc9c836f9",
+          "replay_sha256": "45a219461886556bb5054d34e907aae23f3d41cfcaacfce909b5b730cfe2f958"
+        },
+        {
+          "cell_id": "union-vs-f475-00elkring-candidateB",
+          "map": "00elkring.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1012,
+          "opponent_score": 462,
+          "rounds_completed": 657,
+          "rounds_started": 658,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "3436716bc4f8f9a3674f190d981335acd359e9ef1ff606fbd177ee9620bdbc78",
+          "replay_sha256": "e0a559ab4704f1d4bf8beca30871a4de310688295274fa1faa0e06336d4586ec"
+        },
+        {
+          "cell_id": "union-vs-f475-00expanse-candidateA",
+          "map": "00expanse.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1007,
+          "opponent_score": 670,
+          "rounds_completed": 1078,
+          "rounds_started": 1079,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "2c6bbae9e7d6f810e641fb34e1f4d486dcf5b71b94573eb17763a55599ac7f3f",
+          "replay_sha256": "8971e2546df87b5ebe87a9498a8d772c8beaa9b48af6865ddef4caa22d810954"
+        },
+        {
+          "cell_id": "union-vs-f475-00expanse-candidateB",
+          "map": "00expanse.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1000,
+          "opponent_score": 772,
+          "rounds_completed": 1028,
+          "rounds_started": 1029,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "79a6f91723d0b6b9307d24c9507e6d0e8929069f2435fb4dc060477aada3840d",
+          "replay_sha256": "b19b7ce661fdb72dfbf13550e2fd168b14309737bba6a23a368595e36357430c"
+        },
+        {
+          "cell_id": "union-vs-f475-00fragment-candidateA",
+          "map": "00fragment.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1008,
+          "opponent_score": 56,
+          "rounds_completed": 1332,
+          "rounds_started": 1333,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "88626158fde15a0ba51bcb88763d1d412ef22e1e1dd5d26d0b338c6d3161ca56",
+          "replay_sha256": "32b409d6918667f8542b8867ba622b8007671039431e06af1caafd274bd8513b"
+        },
+        {
+          "cell_id": "union-vs-f475-00fragment-candidateB",
+          "map": "00fragment.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1014,
+          "opponent_score": 54,
+          "rounds_completed": 1270,
+          "rounds_started": 1271,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "ac4357d94c01a99828e3921bb3fa10a78f60701208acbaa641915b5b119eba68",
+          "replay_sha256": "d46b13074062457ad6f25de6661a6973f8f5c6c70fd80ab3ddd5252e6097818d"
+        },
+        {
+          "cell_id": "union-vs-f475-00gem-fields-candidateA",
+          "map": "00gem-fields.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 551,
+          "opponent_score": 1012,
+          "rounds_completed": 608,
+          "rounds_started": 609,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "de13ebfeb58f2df4ff470e7ec7e6362cb4de083aed598b1123cb1fe7231e953c",
+          "replay_sha256": "783a3a818f8264d3090a70e4e040e4d3d511d1bd9ba7c2646eda35ced0fbf738"
+        },
+        {
+          "cell_id": "union-vs-f475-00gem-fields-candidateB",
+          "map": "00gem-fields.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 990,
+          "opponent_score": 1092,
+          "rounds_completed": 683,
+          "rounds_started": 684,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "d6570b069db5105b5e3051bcb831899b0bba057f701a8177043ec06affb0480a",
+          "replay_sha256": "db9489318195915e0d9984440ffbc4382b0dd7324938c5d40db6205e2229d625"
+        },
+        {
+          "cell_id": "union-vs-f475-00gemfight-candidateA",
+          "map": "00gemfight.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1057,
+          "opponent_score": 68,
+          "rounds_completed": 760,
+          "rounds_started": 761,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "604811cee18f08af0650d4311d350f7ad361dfc39df732e906ac3cc331a7a696",
+          "replay_sha256": "938dd2f3183927f1462dcd3be2adaaebc6a4502013228bfb311fd7ab3307ef86"
+        },
+        {
+          "cell_id": "union-vs-f475-00gemfight-candidateB",
+          "map": "00gemfight.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1015,
+          "opponent_score": 148,
+          "rounds_completed": 790,
+          "rounds_started": 791,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "3a53e8ddaffde98d7d40bba6e8cac980a0ffd4c1f84bc1d60c9b65c14b47e6d8",
+          "replay_sha256": "b8841108591d707783a1b523d3dc009510e4fe675eb43b59d52a4e7159b48d99"
+        },
+        {
+          "cell_id": "union-vs-f475-00great-wall-candidateA",
+          "map": "00great-wall.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1035,
+          "opponent_score": 522,
+          "rounds_completed": 1027,
+          "rounds_started": 1028,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "46e01024ea385fb4ce9104a0add9482cab2791b1c6fcd8a61daf68c3c0794732",
+          "replay_sha256": "8c9ba83740b749c7f5aa1f40ad04b001e35e729e0056da7974bcc832dfdefff2"
+        },
+        {
+          "cell_id": "union-vs-f475-00great-wall-candidateB",
+          "map": "00great-wall.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 252,
+          "opponent_score": 1073,
+          "rounds_completed": 1036,
+          "rounds_started": 1037,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "82ec6ad1a3cd8ff8f091317eabc8823680422930ca1dd5046d963dcc366d567d",
+          "replay_sha256": "3b83285cbe6583dd61c5842bcd2dfb63b33ee8d1248244ee0b1b9f19f0527b27"
+        },
+        {
+          "cell_id": "union-vs-f475-00interlock-candidateA",
+          "map": "00interlock.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1008,
+          "opponent_score": 237,
+          "rounds_completed": 907,
+          "rounds_started": 908,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "dd947f4940ef74b0b084b46a5f05d2a588afef7fca84b8fbe70d49c1e48884fb",
+          "replay_sha256": "4b1e6148be617dd84033d29e23b1c628a3fd7d00017d6477fb851b06a46ca125"
+        },
+        {
+          "cell_id": "union-vs-f475-00interlock-candidateB",
+          "map": "00interlock.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 200,
+          "opponent_score": 1011,
+          "rounds_completed": 1007,
+          "rounds_started": 1008,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "e7c3179de4af41c6151a1f8dd1b5a2544536e702fc5f64cdfd8a0a88bb38bbbe",
+          "replay_sha256": "b7cbcc82e5fb1be86c647f9969e638bd78734612d4a623e1e69af69ed595264d"
+        },
+        {
+          "cell_id": "union-vs-f475-00lanes-candidateA",
+          "map": "00lanes.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 773,
+          "opponent_score": 1010,
+          "rounds_completed": 899,
+          "rounds_started": 900,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "17960590244a119739ac6b45ce2e797901a13deb643bf3dc91c4c790c836e3c0",
+          "replay_sha256": "5c7db3d768e68da9df060e2219c10e2e02587028064df8b2f49d528937672427"
+        },
+        {
+          "cell_id": "union-vs-f475-00lanes-candidateB",
+          "map": "00lanes.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 743,
+          "opponent_score": 1002,
+          "rounds_completed": 927,
+          "rounds_started": 928,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "d3e6cc3800895dea1b0ac61643e5de62b2fbb12af893123216a4e9d1e4a9ba35",
+          "replay_sha256": "7578bd103029841dc04d0e73abb71459114125f555e77583927b8553bab094bb"
+        },
+        {
+          "cell_id": "union-vs-f475-00lost-world-candidateA",
+          "map": "00lost-world.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 735,
+          "opponent_score": 1008,
+          "rounds_completed": 855,
+          "rounds_started": 856,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "f93111d1ba76e1ea18a212941f80bea35d35d3caa8916568287652d5a9447e30",
+          "replay_sha256": "46b2b6fe7d78769eaf1a8c6bdbf06a5554cd2603b07fc81fe2e5725e41d57b8c"
+        },
+        {
+          "cell_id": "union-vs-f475-00lost-world-candidateB",
+          "map": "00lost-world.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 462,
+          "opponent_score": 1008,
+          "rounds_completed": 819,
+          "rounds_started": 820,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "eab6459ee6caa09ca71b0ca35aae88b6e84f95219ec2a2e6a21f12b971057f02",
+          "replay_sha256": "81bd51942308a18e3a8f8a486b7a1250f249eecb6673c2f2da614872b75cc869"
+        },
+        {
+          "cell_id": "union-vs-f475-00monolith-candidateA",
+          "map": "00monolith.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1275,
+          "opponent_score": 635,
+          "rounds_completed": 1092,
+          "rounds_started": 1093,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "5c9061daa3933470de3e4d6900706dfe8d20214283631737b48e4a0c287d8a92",
+          "replay_sha256": "faad062ec3510276e71f63681a3f7a22b307c678a8166872f7c7a82754f60a30"
+        },
+        {
+          "cell_id": "union-vs-f475-00monolith-candidateB",
+          "map": "00monolith.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 635,
+          "opponent_score": 1275,
+          "rounds_completed": 1092,
+          "rounds_started": 1093,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "f36e5cb06a03a5fdeecb0803945612338400867142d1e67d9eee2a3460e476f6",
+          "replay_sha256": "6b69de5e0d2789509475e525cd06542d3a1c91de421775e541520bfe136dbea2"
+        },
+        {
+          "cell_id": "union-vs-f475-00packs-candidateA",
+          "map": "00packs.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 204,
+          "opponent_score": 1006,
+          "rounds_completed": 817,
+          "rounds_started": 818,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "03cd54dbc9b2236d5979b5d78960755fa7cb9ffe71508784ff24ab0982ec69dc",
+          "replay_sha256": "9c38c72ef3032959be34430e00c693c58db6b0768732c8637177b3bd9c8965b9"
+        },
+        {
+          "cell_id": "union-vs-f475-00packs-candidateB",
+          "map": "00packs.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1006,
+          "opponent_score": 204,
+          "rounds_completed": 817,
+          "rounds_started": 818,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "03cd54dbc9b2236d5979b5d78960755fa7cb9ffe71508784ff24ab0982ec69dc",
+          "replay_sha256": "ab0d70ae9f1b7f54113a157ea41028f11c95b5abb6aade0dd91981c8ce80bf6c"
+        },
+        {
+          "cell_id": "union-vs-f475-00pilgrimage-candidateA",
+          "map": "00pilgrimage.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1026,
+          "opponent_score": 616,
+          "rounds_completed": 1631,
+          "rounds_started": 1632,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "00852cf55221b34f991ad4da265867f6adcb8587821b671e7b037ddbddead1d7",
+          "replay_sha256": "8b0b323797f66a48bf4ee15a69a065f306ad36d7ae19a467a922e71eb86daf10"
+        },
+        {
+          "cell_id": "union-vs-f475-00pilgrimage-candidateB",
+          "map": "00pilgrimage.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1084,
+          "opponent_score": 900,
+          "rounds_completed": 1910,
+          "rounds_started": 1911,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "002c04253610bbdb32ef45c95c33c32aca0b47818d98127e175aadad0e10fde6",
+          "replay_sha256": "e0fd03010251df7605921e2bd0dade4807ca993413664862559d96927bca47b4"
+        },
+        {
+          "cell_id": "union-vs-f475-00quadrants-candidateA",
+          "map": "00quadrants.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 530,
+          "opponent_score": 1032,
+          "rounds_completed": 488,
+          "rounds_started": 489,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "af26fd57110fac0a5d6244f3151397c77485e552cc69949af8316b9ebfe83974",
+          "replay_sha256": "739f081e3890fdaaad2714fd48c1581deb21a5c478e8b72f2f0c7b29552d1c4e"
+        },
+        {
+          "cell_id": "union-vs-f475-00quadrants-candidateB",
+          "map": "00quadrants.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1024,
+          "opponent_score": 526,
+          "rounds_completed": 483,
+          "rounds_started": 484,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "64258cc7c11042f59bacc7ffd60228120db14221e16de1e3d9c1f35a47185117",
+          "replay_sha256": "c47bf928a0ec1c3493b0161731bc5dc6a2f478fced3888e2f74e9c000461de87"
+        },
+        {
+          "cell_id": "union-vs-f475-00reverse-spiral-candidateA",
+          "map": "00reverse-spiral.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 666,
+          "opponent_score": 1038,
+          "rounds_completed": 1382,
+          "rounds_started": 1383,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "6bf76eda5bebad6ce1dea7400629a21a72edc2b8ae5454a2bd17be540e00ce3b",
+          "replay_sha256": "96089a976498d111d9f1118b21f166b8f69236cb79b5092fe52d0db83105c2b5"
+        },
+        {
+          "cell_id": "union-vs-f475-00reverse-spiral-candidateB",
+          "map": "00reverse-spiral.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1037,
+          "opponent_score": 907,
+          "rounds_completed": 1335,
+          "rounds_started": 1336,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "dd644347345322296790ec88b38a2b9e24f33c11ecbd5b3bbf024dbec97dc7b8",
+          "replay_sha256": "3762141404a3b17acc73c27d714229da6832ab5c8233faa7243eef5c0ab5d25d"
+        },
+        {
+          "cell_id": "union-vs-f475-00road-of-riches-candidateA",
+          "map": "00road-of-riches.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1104,
+          "opponent_score": 230,
+          "rounds_completed": 810,
+          "rounds_started": 811,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "99d17dc708d45cea54e45536ae445674deb8951e5d11329e304556087deb6af9",
+          "replay_sha256": "52bf017130dfb78c5f42b25c471d8cd9cc78e369c0b7d459a93bc2d6c24a43e8"
+        },
+        {
+          "cell_id": "union-vs-f475-00road-of-riches-candidateB",
+          "map": "00road-of-riches.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1006,
+          "opponent_score": 77,
+          "rounds_completed": 834,
+          "rounds_started": 835,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "2e2c4cffce098e2e198fd8ff35ac6da3df1f4b39af1168add2582148f3bdaeca",
+          "replay_sha256": "07e7a335e70a068f7632978bf43b09e6f3d6da4b6fea053e10e1c5f3eed0e992"
+        },
+        {
+          "cell_id": "union-vs-f475-00rows-candidateA",
+          "map": "00rows.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 437,
+          "opponent_score": 1000,
+          "rounds_completed": 1230,
+          "rounds_started": 1231,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "e0dd3c953eaccd2d8516f54488786e2ad368c5ff12d289c0f71edf3914ea4adf",
+          "replay_sha256": "4d74d34e9ad4a7fb68e43fd27d7468129ad9e2df1f9d5825beaacae43d538df9"
+        },
+        {
+          "cell_id": "union-vs-f475-00rows-candidateB",
+          "map": "00rows.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1000,
+          "opponent_score": 382,
+          "rounds_completed": 1230,
+          "rounds_started": 1231,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "98ef0795a5e8627f953197ef10e053d174dfa0082daee5df3256a3d85c7febb5",
+          "replay_sha256": "d373407e1a28654f505fdbe4d804048ea8f5cbaae840d8a64f887837c6b9b1a0"
+        },
+        {
+          "cell_id": "union-vs-f475-00rushbait-v2-candidateA",
+          "map": "00rushbait-v2.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1019,
+          "opponent_score": 211,
+          "rounds_completed": 971,
+          "rounds_started": 972,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "30f7bae476e7f4124b7f6518fe587a5937eb0e5e1f7a9cd0f30cea3bf41836da",
+          "replay_sha256": "2aac84a5d7914e5d92ac6583e1a8a418571c26d3c9c85813f0a777c45ea1b5d9"
+        },
+        {
+          "cell_id": "union-vs-f475-00rushbait-v2-candidateB",
+          "map": "00rushbait-v2.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1003,
+          "opponent_score": 411,
+          "rounds_completed": 1287,
+          "rounds_started": 1288,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "ade4f74c42a386d5ced0440805fb97b6b4ffd9f493940018e3ebe6f535e354ec",
+          "replay_sha256": "7f18f25411f8324e0a778edf0d2a143889e6b2ce1405531ca34fb29127323965"
+        },
+        {
+          "cell_id": "union-vs-f475-00split-candidateA",
+          "map": "00split.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1000,
+          "opponent_score": 986,
+          "rounds_completed": 838,
+          "rounds_started": 839,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "d712559e8e2874315259a8b1629fe0357440ad6c8ace649731601360d68ff571",
+          "replay_sha256": "a58148fc082f8fafc4200af426e67f329e82c36f533b6a8e643c967d62e96054"
+        },
+        {
+          "cell_id": "union-vs-f475-00split-candidateB",
+          "map": "00split.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 630,
+          "opponent_score": 1006,
+          "rounds_completed": 655,
+          "rounds_started": 656,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "0e7aab993945777628bf396682079b3efe588427fffccc05395f7c6cd6262b41",
+          "replay_sha256": "a616936caffbd7973b18225f53f02e4c2bf1aa5748b1a25336a2da6d4e8bf2cb"
+        },
+        {
+          "cell_id": "union-vs-f475-00stampede-candidateA",
+          "map": "00stampede.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 80,
+          "opponent_score": 1040,
+          "rounds_completed": 1420,
+          "rounds_started": 1421,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "0b61862674e40684410e61a8700831c259b03621a6a90ce73ec52a42ec9b8d9e",
+          "replay_sha256": "3da6dd615c636e03a85aafd5b3fdadbb23ee7ad92480068e18b37a08a0dd1477"
+        },
+        {
+          "cell_id": "union-vs-f475-00stampede-candidateB",
+          "map": "00stampede.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 988,
+          "opponent_score": 212,
+          "rounds_completed": 2000,
+          "rounds_started": 2000,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "d017e5f0e8f1f3a7db7bb9df985bd87a0128b38141072fe72aa1df69c5c46918",
+          "replay_sha256": "cd69202b395f6cddcb2bf864f0f547061e7bb332b1d997f07b489f6a26bae90c"
+        },
+        {
+          "cell_id": "union-vs-f475-00swirl-candidateA",
+          "map": "00swirl.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1003,
+          "opponent_score": 240,
+          "rounds_completed": 967,
+          "rounds_started": 968,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "03a711bf4305858b46ee768057d2dbbc0477786b826f8e242b22650196b523ae",
+          "replay_sha256": "deaa6df2c6c4318c8e5bce698f60ab23b45514522a2e4224c745c4ad2ac4f13c"
+        },
+        {
+          "cell_id": "union-vs-f475-00swirl-candidateB",
+          "map": "00swirl.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 53,
+          "opponent_score": 1024,
+          "rounds_completed": 669,
+          "rounds_started": 670,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "02a009ab15e0eced1f0fd0f8ee17800c0ca985d3974ac2acb50b27ae8b714c9d",
+          "replay_sha256": "89a1381575e464ec8c035b3e79066b5b7501c70ee24b8154e0a3ccc964b02b95"
+        },
+        {
+          "cell_id": "union-vs-f475-01big-world-candidateA",
+          "map": "01big-world.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 587,
+          "opponent_score": 1029,
+          "rounds_completed": 922,
+          "rounds_started": 923,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "4454dbe8c3882f2436d33eb97abb4fc4f7ff4ee71e94760570b566c2170d5480",
+          "replay_sha256": "0530dd2f67accbc4b578a388743e74575eca1a7681c39683a1a8cb3bd8d28c00"
+        },
+        {
+          "cell_id": "union-vs-f475-01big-world-candidateB",
+          "map": "01big-world.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1040,
+          "opponent_score": 775,
+          "rounds_completed": 931,
+          "rounds_started": 932,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "02eb8a287b4ca300f4f33c62fc397722e1512f56cb0ddf5fd3e63b7235f4476f",
+          "replay_sha256": "c0049f4b0d7973c77cc79e83b158b8fed6c18c37c8c545c18ddc85d8d696e737"
+        },
+        {
+          "cell_id": "union-vs-f475-01boss-battle-candidateA",
+          "map": "01boss-battle.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 8,
+          "opponent_score": 1001,
+          "rounds_completed": 803,
+          "rounds_started": 804,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "097dfe720f828cc5a0037d66c06259a9ab74d75311244d528f3f6905fac5a314",
+          "replay_sha256": "be132396fe2f01e330748ccaf097700e7457f38bcd8bca006610fadc61d1e0bf"
+        },
+        {
+          "cell_id": "union-vs-f475-01boss-battle-candidateB",
+          "map": "01boss-battle.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1006,
+          "opponent_score": 0,
+          "rounds_completed": 1784,
+          "rounds_started": 1785,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "308e1cb1de24428f24284a814aaf083aa3ad9e3c8316eafe3d7a49ed8871a56e",
+          "replay_sha256": "a233e9b3a501dfd592fa1e25a4b5be2d0d77584b63e85c79563a1eb89e6c5dba"
+        },
+        {
+          "cell_id": "union-vs-f475-01broken-curve-candidateA",
+          "map": "01broken-curve.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1015,
+          "opponent_score": 548,
+          "rounds_completed": 828,
+          "rounds_started": 829,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "03031ed493fccf828ecc4602b76b795a44bc7cc5fe6c76d96f9a9f1594d61453",
+          "replay_sha256": "4601aebb83a7132b8ff0a5790476d4cc27d6abbbe1cd05690e98a3d27334a17e"
+        },
+        {
+          "cell_id": "union-vs-f475-01broken-curve-candidateB",
+          "map": "01broken-curve.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1087,
+          "opponent_score": 491,
+          "rounds_completed": 764,
+          "rounds_started": 765,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "0f6ccf1a04f01c4670ee7263cf3f8c4c9b927d0c33712c0f3beda8ec120a3559",
+          "replay_sha256": "98c83d5cebcdcc0228813f0b685dda35d745c6b2ea0b494f7c9ef4891c151e61"
+        },
+        {
+          "cell_id": "union-vs-f475-01concentrated-wealth-candidateA",
+          "map": "01concentrated-wealth.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 199,
+          "opponent_score": 1009,
+          "rounds_completed": 1147,
+          "rounds_started": 1148,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "277827f8a162b9193ebbe2d122269d71318fcf5cc6fd2a7594dd57fd8e9f093a",
+          "replay_sha256": "d67715f511bafc8e931de11e622bfc36f39a5d54908dca5b81eed9a8e82f4dec"
+        },
+        {
+          "cell_id": "union-vs-f475-01concentrated-wealth-candidateB",
+          "map": "01concentrated-wealth.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1091,
+          "opponent_score": 165,
+          "rounds_completed": 1200,
+          "rounds_started": 1201,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "c0d533bea818c8f176455bc276337c30ae6e821d8e6a0df317240b5d402b3b74",
+          "replay_sha256": "ea311d760e57fac1987092e2ee6e01e7960c2f149063bed70f95d1c4f1580c66"
+        },
+        {
+          "cell_id": "union-vs-f475-01corridors-candidateA",
+          "map": "01corridors.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1016,
+          "opponent_score": 246,
+          "rounds_completed": 1055,
+          "rounds_started": 1056,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "d6147b6ec6c773c433540652b630ed7c17e78ce4c15afab1255222af701762e9",
+          "replay_sha256": "72d6416df1683aca5142e11274666b7f37b7afaf6a2994fee3874bc743a1e2d1"
+        },
+        {
+          "cell_id": "union-vs-f475-01corridors-candidateB",
+          "map": "01corridors.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 700,
+          "opponent_score": 1000,
+          "rounds_completed": 1210,
+          "rounds_started": 1211,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "96dbd63c854c3e5d67f2b64e0d9cc72c9e5beface11916cae3b518329c99eb3e",
+          "replay_sha256": "9ee00f6136ce2aed710b8144ab5af56421a86198803f9d0f9a7d6633d1585b4a"
+        },
+        {
+          "cell_id": "union-vs-f475-01elk-arena-candidateA",
+          "map": "01elk-arena.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1032,
+          "opponent_score": 156,
+          "rounds_completed": 1397,
+          "rounds_started": 1398,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "0aaa8e8ae05bca078ab41e631af6c8c3dd8ea81be6b6368f0c0c9c262acef28c",
+          "replay_sha256": "d725813461db40737d3b524604c468840f5372af73b6980621a4da033a903105"
+        },
+        {
+          "cell_id": "union-vs-f475-01elk-arena-candidateB",
+          "map": "01elk-arena.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1008,
+          "opponent_score": 144,
+          "rounds_completed": 1273,
+          "rounds_started": 1274,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "ddc500846383c693b6170aaa80b07878c2418157efdc9bc4bd95d2a4ef90786b",
+          "replay_sha256": "a2c8871405945190ffff42796431e2a4568dab3c17e326bb43286792ccd99315"
+        },
+        {
+          "cell_id": "union-vs-f475-01fracture-candidateA",
+          "map": "01fracture.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 507,
+          "opponent_score": 1058,
+          "rounds_completed": 1196,
+          "rounds_started": 1197,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "b1066858324188b1c04cce007762a1b09c785470d94eb05e4a4fc3ad28aa9260",
+          "replay_sha256": "afb030fd165f2dd7f39b207eee4e3ac978260026d688bdab545f142eeb9c9703"
+        },
+        {
+          "cell_id": "union-vs-f475-01fracture-candidateB",
+          "map": "01fracture.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 345,
+          "opponent_score": 1152,
+          "rounds_completed": 1161,
+          "rounds_started": 1162,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "123b07a18bc36e6fef874abef9999877119579bd644ae22a495b92841def1a6e",
+          "replay_sha256": "0f3b79d0a9c17ca3203e4544fb17b4be17a2fb2e95cdcf8de394f121c325d6e3"
+        },
+        {
+          "cell_id": "union-vs-f475-01gold-rush-candidateA",
+          "map": "01gold-rush.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1001,
+          "opponent_score": 374,
+          "rounds_completed": 1812,
+          "rounds_started": 1813,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "67c64cf262f86c8ac11818128e35c45f171fe283fc8173a34d647b79e1cb61fc",
+          "replay_sha256": "08aafa200149c5586565fb48a81a3b0c3a10b1b9b1f290762e2ec4ba6d78760f"
+        },
+        {
+          "cell_id": "union-vs-f475-01gold-rush-candidateB",
+          "map": "01gold-rush.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 374,
+          "opponent_score": 1001,
+          "rounds_completed": 1812,
+          "rounds_started": 1813,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "749c226dcd3793a79ebcac9219e5d11719122bce117fb4ac2dbd505683c5dc19",
+          "replay_sha256": "3049ee73226b40a9f2e1f674b5b0f45ebf1ff62ecf84dc3dc0650f6853e40afe"
+        },
+        {
+          "cell_id": "union-vs-f475-01hooks-candidateA",
+          "map": "01hooks.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1012,
+          "opponent_score": 44,
+          "rounds_completed": 1088,
+          "rounds_started": 1089,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "713015be61573caba11e535287ff20515b53d8043933880a7623bd40fc0f9254",
+          "replay_sha256": "c80d3361cc161896e7f0ffab28dcecee48d112e4bedb231c9d15a57ff1af1445"
+        },
+        {
+          "cell_id": "union-vs-f475-01hooks-candidateB",
+          "map": "01hooks.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 110,
+          "opponent_score": 1012,
+          "rounds_completed": 1047,
+          "rounds_started": 1048,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "6efa37d474e460e540f5646eff4e5c997fc94e5d17011b32c2e1ffc81c440c0b",
+          "replay_sha256": "57bec8cd990aa22aaa373c029ec51c39bade158ab8866978f4c0d1518b715224"
+        },
+        {
+          "cell_id": "union-vs-f475-01islands-candidateA",
+          "map": "01islands.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1031,
+          "opponent_score": 608,
+          "rounds_completed": 825,
+          "rounds_started": 826,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "1aa7c4de1f167c0c5f488a3ac5db367e794b1f28294d58c53ea60def141fb85e",
+          "replay_sha256": "72c5e1686f0553baf499587abc3aefe08e517a6f518d4f2695626947562331ed"
+        },
+        {
+          "cell_id": "union-vs-f475-01islands-candidateB",
+          "map": "01islands.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1012,
+          "opponent_score": 880,
+          "rounds_completed": 783,
+          "rounds_started": 784,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "9bce32c80c266475176e3a1de35b4e9f36e37514ab275d1cbc6394f0e1bb3101",
+          "replay_sha256": "0a88b23f2dd67afc1cf72bfdfe7c69711882c0e369721f60c38070af847d322d"
+        },
+        {
+          "cell_id": "union-vs-f475-01shortcut-candidateA",
+          "map": "01shortcut.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 368,
+          "opponent_score": 1060,
+          "rounds_completed": 1091,
+          "rounds_started": 1092,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "085f8c62030a8baf5d7566425af4c7bfdafad0638b193c7d281695c6b71edeed",
+          "replay_sha256": "fdaba58bd3cc385cb3cd3c81d85e1611f031f2e2da39a3a6646be15736b9dcf1"
+        },
+        {
+          "cell_id": "union-vs-f475-01shortcut-candidateB",
+          "map": "01shortcut.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1291,
+          "opponent_score": 482,
+          "rounds_completed": 1282,
+          "rounds_started": 1283,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "17d9188429d95560d01e01de247ff106a6697b2794aa8cb8f2f1953f58901ebe",
+          "replay_sha256": "934221b5e14430ef6a8975de200f523603b9c99fe68ca40d329f4af25cace50c"
+        },
+        {
+          "cell_id": "union-vs-f475-01starfish-candidateA",
+          "map": "01starfish.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 244,
+          "opponent_score": 1020,
+          "rounds_completed": 972,
+          "rounds_started": 973,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "8fd130cd4123659080c92aaa9a371872252d34e5070bf78988edff56a90e0bb7",
+          "replay_sha256": "397105b4b3218ffd6edbad2d4810e6df021175aaaf3da0a6a0c6554252ee2b65"
+        },
+        {
+          "cell_id": "union-vs-f475-01starfish-candidateB",
+          "map": "01starfish.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1029,
+          "opponent_score": 118,
+          "rounds_completed": 984,
+          "rounds_started": 985,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "dfe3b7d0b7f074d3693fdcc8df2fd79bfbe3b780640eb5738e79b0c002d09242",
+          "replay_sha256": "593c1732bef700f89683e77d4826dce370ea46579fdc7e1e91fab3fb62ffb978"
+        },
+        {
+          "cell_id": "union-vs-f475-01starvation-candidateA",
+          "map": "01starvation.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 524,
+          "opponent_score": 760,
+          "rounds_completed": 2000,
+          "rounds_started": 2000,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "e18bb5ceff09fdfd9fbb44205fccab362d0fb74accdb6c4957b5b443ea89f7ac",
+          "replay_sha256": "2b11bfc73d369ffc4c424761febec5232f0ec537dd63f2085d30590c7a3fff26"
+        },
+        {
+          "cell_id": "union-vs-f475-01starvation-candidateB",
+          "map": "01starvation.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1092,
+          "opponent_score": 282,
+          "rounds_completed": 1760,
+          "rounds_started": 1761,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "15341f6a5d17eccb02153e0a46319577ecd3e50b9eaf9bb289ebf165d49d62ff",
+          "replay_sha256": "4c60de8499215179d450c014ece39840257853c7c3ec76f932298bbe3c26e51f"
+        },
+        {
+          "cell_id": "union-vs-f475-01the-farm-candidateA",
+          "map": "01the-farm.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "A",
+          "candidate_score": 1007,
+          "opponent_score": 181,
+          "rounds_completed": 827,
+          "rounds_started": 828,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "34d886c6a7d187f3ca8c30a24a980a3b5f23601147f678d7c9914971f9f4dccb",
+          "replay_sha256": "923170d371538bd0bbc6370b1f397c1cbc4912f47d5b8af9a5a2fae639f447d5"
+        },
+        {
+          "cell_id": "union-vs-f475-01the-farm-candidateB",
+          "map": "01the-farm.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1107,
+          "opponent_score": 520,
+          "rounds_completed": 858,
+          "rounds_started": 859,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "2e8c8042a058dce3db821967de3de8f79663e2b383e8d3b7dbf752adaa7e9ae4",
+          "replay_sha256": "361f81ae4f3d29fa067f3dc0840c47f589136b9b0619a725ffaa4f5859797f8f"
+        },
+        {
+          "cell_id": "union-vs-f475-01yellow-brick-road-candidateA",
+          "map": "01yellow-brick-road.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "f475",
+          "winner_side": "B",
+          "candidate_score": 614,
+          "opponent_score": 1010,
+          "rounds_completed": 681,
+          "rounds_started": 682,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "939bdd49b4228ebf65820f32ba5b086a2ec96b1e7f1a6206aeb84eac35777e04",
+          "replay_sha256": "947b58ee2bae603533f4846e195208f10aa7b1491978dab089176ae512980dcd"
+        },
+        {
+          "cell_id": "union-vs-f475-01yellow-brick-road-candidateB",
+          "map": "01yellow-brick-road.map26a",
+          "candidate_side": "B",
+          "A_source": "f475",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 626,
+          "opponent_score": 1015,
+          "rounds_completed": 627,
+          "rounds_started": 628,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "616afb1905f5aacf99175b9ee7ec3f58e38065a90b89b028b9fe26c66c1e6700",
+          "replay_sha256": "37fdee217918d7f8dd7807d18b7dbf164ed97f041dd8d7515e8187685d3d21c6"
+        }
+      ]
+    },
+    "union-vs-v33": {
+      "opponent": "v33",
+      "games": 80,
+      "candidate_wins": {
+        "candidate_wins": 41,
+        "candidate_games": 80,
+        "candidate_wins_by_candidate_side": {
+          "A": 20,
+          "B": 21
+        }
+      },
+      "physical_wins": {
+        "A": 39,
+        "B": 41
+      },
+      "scores_submitted_gems": {
+        "candidate": 57260,
+        "opponent": 59225
+      },
+      "mean_rounds_completed": 1070.125,
+      "rounds_min": 496,
+      "rounds_max": 2000,
+      "bot_faults_total": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "rows": [
+        {
+          "cell_id": "union-vs-v33-00ambush-candidateA",
+          "map": "00ambush.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1005,
+          "opponent_score": 855,
+          "rounds_completed": 1178,
+          "rounds_started": 1179,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "b0ced66f54f135a47b3b4ac6149b995cf7dc89468ac591f90264a0952057901b",
+          "replay_sha256": "28b25fbbee5e21cd733edd000e7b6b6143c4997907d2e4e34ced32f210af05e5"
+        },
+        {
+          "cell_id": "union-vs-v33-00ambush-candidateB",
+          "map": "00ambush.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1037,
+          "opponent_score": 321,
+          "rounds_completed": 1089,
+          "rounds_started": 1090,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "10cc7069528349d38cc05c0f3bca661ea48373fa3d14057e73b0a1e5996fc36c",
+          "replay_sha256": "63f1ae9055ad6c528e6a015b32e0c9e4b0b5902be3d9e13197fdaee95cf091a6"
+        },
+        {
+          "cell_id": "union-vs-v33-00collision-candidateA",
+          "map": "00collision.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1000,
+          "opponent_score": 60,
+          "rounds_completed": 903,
+          "rounds_started": 904,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "a454356896575860863e4e835fe60f4d4d86a9a4d5b1959c5212a2903694d7d8",
+          "replay_sha256": "0832de79ca34a8c53bc36f79dd182bc4ca8e145117165ff74348bfc7da70779d"
+        },
+        {
+          "cell_id": "union-vs-v33-00collision-candidateB",
+          "map": "00collision.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 130,
+          "opponent_score": 1160,
+          "rounds_completed": 1077,
+          "rounds_started": 1078,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "0d2b36cae57f44832f7711d7e1b20ba895db77dbe6415e982cd0f32c9e1dc4ff",
+          "replay_sha256": "c0a5439f9d650f0389ce4033d04eb650dc0f6ee9371d186b61cfe1896ef7ba97"
+        },
+        {
+          "cell_id": "union-vs-v33-00contest-candidateA",
+          "map": "00contest.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 0,
+          "opponent_score": 1000,
+          "rounds_completed": 1662,
+          "rounds_started": 1663,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "838cbfe9c0cb4b823c2a0a7ead9887b49ca70158a17becbb1bec93586ff7680c",
+          "replay_sha256": "12abb454403187021c3edea07f8686adca35048a3458d28b2a1da15b658ccd0b"
+        },
+        {
+          "cell_id": "union-vs-v33-00contest-candidateB",
+          "map": "00contest.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1000,
+          "opponent_score": 200,
+          "rounds_completed": 1757,
+          "rounds_started": 1758,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "de7def301a8ca8c949f1dd05e6e33c9b85e70a985119f6c8aebea7f051047ac1",
+          "replay_sha256": "6c00738f62285bcec5d996c7498b7d98f827969cd6d6e642f75b460bed5275bd"
+        },
+        {
+          "cell_id": "union-vs-v33-00corners-candidateA",
+          "map": "00corners.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1011,
+          "opponent_score": 228,
+          "rounds_completed": 897,
+          "rounds_started": 898,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "7e3c4cadfdf12e48f5bffd8789e82ed05bc179658de23c8035a9b05a6ce51dde",
+          "replay_sha256": "88bbd0c51172e53802dfc7fb80d7fe7a6e421b9fd0580cdacab578cfaf8b1e25"
+        },
+        {
+          "cell_id": "union-vs-v33-00corners-candidateB",
+          "map": "00corners.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 448,
+          "opponent_score": 1007,
+          "rounds_completed": 1035,
+          "rounds_started": 1036,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "176f3ba2cb324b166b1aaaeadb29334ce5ce3edccae9c0a38b7a520e9b7d234a",
+          "replay_sha256": "eb2673c90f6abb1c86fd78cafe6b46cc23e4413540e44c2892f6a149438aad56"
+        },
+        {
+          "cell_id": "union-vs-v33-00eight-candidateA",
+          "map": "00eight.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1023,
+          "opponent_score": 75,
+          "rounds_completed": 1042,
+          "rounds_started": 1043,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "cfd6e659c0fd8f98e6deade94f1e7f3d4cb7473efff14c86cad203e956e650c4",
+          "replay_sha256": "51ac9905c363472ce944fcfa09f11c1b8f18df25bb97eb822da05967bd3001eb"
+        },
+        {
+          "cell_id": "union-vs-v33-00eight-candidateB",
+          "map": "00eight.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 153,
+          "opponent_score": 1085,
+          "rounds_completed": 989,
+          "rounds_started": 990,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "b7227856ccf85470377fc546db9e8c38b4421f94b068f634dab465c6b3df354e",
+          "replay_sha256": "58624a6e1023aa126a7c3fb1498f0eff74d7af711408af51433f254b5b20da45"
+        },
+        {
+          "cell_id": "union-vs-v33-00elkring-candidateA",
+          "map": "00elkring.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 242,
+          "opponent_score": 1100,
+          "rounds_completed": 878,
+          "rounds_started": 879,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "428a32cb0dc51f80e1e6b5a7982df11824676322a50ae4c44f3d4e6f9df95da3",
+          "replay_sha256": "f3b3279bec2919ae350a6f75ed6cce4e33ce0ef5a6823d7939feba3a4b0dcf8b"
+        },
+        {
+          "cell_id": "union-vs-v33-00elkring-candidateB",
+          "map": "00elkring.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1496,
+          "opponent_score": 308,
+          "rounds_completed": 816,
+          "rounds_started": 817,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "6af9a746ea0c7b20722cb9ad73fe0e4a9316dbde2d729a5ede155fba109db719",
+          "replay_sha256": "4614c61248606db8e2979ca4f9c42ff0b6b210d5cf8c6c734fc5030eb5022057"
+        },
+        {
+          "cell_id": "union-vs-v33-00expanse-candidateA",
+          "map": "00expanse.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1040,
+          "opponent_score": 818,
+          "rounds_completed": 1101,
+          "rounds_started": 1102,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "64c34c26caaf83c188301cb735d7548c25c63a67ef0fd655540aefc36e9858d6",
+          "replay_sha256": "65bb8fbfc8ae2471a319699d031a3161841f01e5a60d67ed17ece781e6c42030"
+        },
+        {
+          "cell_id": "union-vs-v33-00expanse-candidateB",
+          "map": "00expanse.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1000,
+          "opponent_score": 772,
+          "rounds_completed": 1028,
+          "rounds_started": 1029,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "187b5e8c90c431daffcc157224e6f1b5b24c29e813451aa99b68a92f37675054",
+          "replay_sha256": "99636d8e5248bea21a5c121d229a4535b9886a716006df250afb61ad3911e6b0"
+        },
+        {
+          "cell_id": "union-vs-v33-00fragment-candidateA",
+          "map": "00fragment.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1062,
+          "opponent_score": 32,
+          "rounds_completed": 1359,
+          "rounds_started": 1360,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "145f2c65e694d7fe1b92717b25f181ecb08ffb3b791e102089fd2a291a73e7c4",
+          "replay_sha256": "e9cfad08fdd39cf365bcac09415d514d1d3b866cb821eb30ba09a18124cd0cb7"
+        },
+        {
+          "cell_id": "union-vs-v33-00fragment-candidateB",
+          "map": "00fragment.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1000,
+          "opponent_score": 112,
+          "rounds_completed": 1396,
+          "rounds_started": 1397,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "5c32e5d43d5ab6d42ffb44765472ea2749f7895cda8a303821fde104398ef115",
+          "replay_sha256": "23680de1aee8e8cad60eb064b2fb0f03b25603a8a1a2150ff2a7e0a1f93347ab"
+        },
+        {
+          "cell_id": "union-vs-v33-00gem-fields-candidateA",
+          "map": "00gem-fields.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1046,
+          "opponent_score": 745,
+          "rounds_completed": 570,
+          "rounds_started": 571,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "0e06d10b69bff4eb972c86e4781d11abc97ed276ab6423fad6ea0d24899555d9",
+          "replay_sha256": "9791a95187b0723b994f210edac4e9ad28b63913f2ef266e3e858d0e36469e05"
+        },
+        {
+          "cell_id": "union-vs-v33-00gem-fields-candidateB",
+          "map": "00gem-fields.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 920,
+          "opponent_score": 1006,
+          "rounds_completed": 533,
+          "rounds_started": 534,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "15234385ed58a683319bee0ad897dd378789f90829acf4f4c284545b13375e90",
+          "replay_sha256": "476275995a85a4e7ea2975abaf884deaccf91de9cdd352b8e1c87f81c1210863"
+        },
+        {
+          "cell_id": "union-vs-v33-00gemfight-candidateA",
+          "map": "00gemfight.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 253,
+          "opponent_score": 1160,
+          "rounds_completed": 958,
+          "rounds_started": 959,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "c7350830c60180cf60e5d5922e18672e860057525de3b01621bca9fc1f55c481",
+          "replay_sha256": "700d8fa148a9a7ca13cfdce64463a40d162e17fefae7d287dd23f7625460825f"
+        },
+        {
+          "cell_id": "union-vs-v33-00gemfight-candidateB",
+          "map": "00gemfight.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 82,
+          "opponent_score": 1063,
+          "rounds_completed": 703,
+          "rounds_started": 704,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "e583fd79673503f43deef75309dd5d23879bde02d6dac831c767c638d770451c",
+          "replay_sha256": "adc6a6bd74ee38937eb3c260eb2adf81617d605272870b7d884a0a3722e4d549"
+        },
+        {
+          "cell_id": "union-vs-v33-00great-wall-candidateA",
+          "map": "00great-wall.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 956,
+          "opponent_score": 1046,
+          "rounds_completed": 1088,
+          "rounds_started": 1089,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "ae3a9f542763fee6b81d2d67b54f6ad35489e9fd32471d63e015196a24823842",
+          "replay_sha256": "2ccd3a87aa6b7c330c74e7d2fdbc59f3727eedc9db9df5fcee5c09a11d77c8e1"
+        },
+        {
+          "cell_id": "union-vs-v33-00great-wall-candidateB",
+          "map": "00great-wall.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1153,
+          "opponent_score": 610,
+          "rounds_completed": 1049,
+          "rounds_started": 1050,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "d3715e58979cfa9dab939c98fec7ba721a25fe4b46941fe74da8c51ac4802e1a",
+          "replay_sha256": "5fbb1a9e24fa36021324f565646818383b328c99aa456412105edfdeb98164ec"
+        },
+        {
+          "cell_id": "union-vs-v33-00interlock-candidateA",
+          "map": "00interlock.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1028,
+          "opponent_score": 166,
+          "rounds_completed": 835,
+          "rounds_started": 836,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "c4d54cd39cd8771b828613d45a4eef6272e4d09df51ba5e6f2d2acc99397c045",
+          "replay_sha256": "e7a22bbeb558caa0b2e223c503db4450c7692ec2032659a523e6cbc669a2b998"
+        },
+        {
+          "cell_id": "union-vs-v33-00interlock-candidateB",
+          "map": "00interlock.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 363,
+          "opponent_score": 1052,
+          "rounds_completed": 1156,
+          "rounds_started": 1157,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "726f2647ecf425c14e6ab5cef74c7ee77df6406fcbe7790840456ae421919c6e",
+          "replay_sha256": "7936d09eb4fa4baed647e07dffcc0337893466520a58c8037af277ce591bb223"
+        },
+        {
+          "cell_id": "union-vs-v33-00lanes-candidateA",
+          "map": "00lanes.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1005,
+          "opponent_score": 730,
+          "rounds_completed": 877,
+          "rounds_started": 878,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "a5f99581bd32e4e9f5a87edb6b1eb3915eaca1455efc8b68248e1738326e732d",
+          "replay_sha256": "bf07d5867368dd132915370b008153693c5d543df8cbd791c0967b374071cbf3"
+        },
+        {
+          "cell_id": "union-vs-v33-00lanes-candidateB",
+          "map": "00lanes.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1016,
+          "opponent_score": 814,
+          "rounds_completed": 959,
+          "rounds_started": 960,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "d147c6d946b9cf9d44885ec0bdcb4ee724916a33cf8c17af0d6d0c5ee2087761",
+          "replay_sha256": "4a6d345ac9be213f09ca27b794762aa127f2d521af1fd38f25b41c9c146139d6"
+        },
+        {
+          "cell_id": "union-vs-v33-00lost-world-candidateA",
+          "map": "00lost-world.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1001,
+          "opponent_score": 798,
+          "rounds_completed": 1074,
+          "rounds_started": 1075,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "0fa2c29a4d7f1477f4330ae71ff4850efcdd9a5dda49259a98fc84bcce7374c9",
+          "replay_sha256": "6b21ee3699044be31f272ce5973ec4192b5ee9fb01f874c576aabba95b0fabd2"
+        },
+        {
+          "cell_id": "union-vs-v33-00lost-world-candidateB",
+          "map": "00lost-world.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1099,
+          "opponent_score": 840,
+          "rounds_completed": 1000,
+          "rounds_started": 1001,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "243ed087df4c6027ac819213878be3a51cd92a5eb92ac38065d6028aa9fb5e66",
+          "replay_sha256": "46b15af95ad31102595a17f9918d1a55b980d67a21d0226b2282486860d0d79f"
+        },
+        {
+          "cell_id": "union-vs-v33-00monolith-candidateA",
+          "map": "00monolith.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 519,
+          "opponent_score": 1006,
+          "rounds_completed": 930,
+          "rounds_started": 931,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "ca26781dcd0760121e34d107bc20b95b1ff8143da31c7c77fa95918985c91882",
+          "replay_sha256": "eb6dce9757b400022051f4d1af6ba8c4f3a95e6aaa8fb823ad191f2d2eecdb67"
+        },
+        {
+          "cell_id": "union-vs-v33-00monolith-candidateB",
+          "map": "00monolith.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 543,
+          "opponent_score": 1011,
+          "rounds_completed": 1081,
+          "rounds_started": 1082,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "bc5538ea9998cd6e166951501247c383f9e36722340c19d3edeaef5d6bfe3bc7",
+          "replay_sha256": "b1c76888c00dd7856d547dcdb31575bdda517d301ecb260ac48a7a20dd29eb5e"
+        },
+        {
+          "cell_id": "union-vs-v33-00packs-candidateA",
+          "map": "00packs.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 204,
+          "opponent_score": 1006,
+          "rounds_completed": 818,
+          "rounds_started": 819,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "f219adcec818ff10fc088e79a6d82c46c403a1ba2ee12e82e8df3bd2e3bb2ccc",
+          "replay_sha256": "734434e744daf185e35494f497c2a7eac170bcc05c8fcc784c9e52aff5cd97d3"
+        },
+        {
+          "cell_id": "union-vs-v33-00packs-candidateB",
+          "map": "00packs.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1016,
+          "opponent_score": 208,
+          "rounds_completed": 860,
+          "rounds_started": 861,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "f7d89482f7fec84113349e0e5cc9386ebafd5e1e69e7a5fd3dfadbcf5c0baf6d",
+          "replay_sha256": "b55f4db5f461dd8e7c1511223b9bce686d3d9255198e5174fb9a6df3657d1e5d"
+        },
+        {
+          "cell_id": "union-vs-v33-00pilgrimage-candidateA",
+          "map": "00pilgrimage.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1070,
+          "opponent_score": 210,
+          "rounds_completed": 1311,
+          "rounds_started": 1312,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "153c3110e7dde9a0064044ab65e2f67891491df0e1b2aafbfe8b7016c9ba9c1c",
+          "replay_sha256": "507331daf80237a738fee720988cc72472e9bfe1ff0cc2d6ff34415e2a19d593"
+        },
+        {
+          "cell_id": "union-vs-v33-00pilgrimage-candidateB",
+          "map": "00pilgrimage.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1145,
+          "opponent_score": 423,
+          "rounds_completed": 1620,
+          "rounds_started": 1621,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "4bf8a55f7b926a240271ced108ad99953ca82c3d1ddf6fda470fb82218fb15ed",
+          "replay_sha256": "6298fdbedaa4f298e617a65786f3e4e6be480a75fd4dba6f0362f71ca589a3fa"
+        },
+        {
+          "cell_id": "union-vs-v33-00quadrants-candidateA",
+          "map": "00quadrants.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1023,
+          "opponent_score": 646,
+          "rounds_completed": 572,
+          "rounds_started": 573,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "11bb7a4f51f0a00a9ad42d1c0540448cd56b1058f3eb5aa996d918a75e11705d",
+          "replay_sha256": "10eaeea78078f6419c09c7edc534cec5730907c41aa6808ac2359ffb660cf133"
+        },
+        {
+          "cell_id": "union-vs-v33-00quadrants-candidateB",
+          "map": "00quadrants.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1002,
+          "opponent_score": 695,
+          "rounds_completed": 506,
+          "rounds_started": 507,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "24afa9f95e5d9e2e268d6d69aba585ec0af858039f17ea4d401c7f1c7b64498b",
+          "replay_sha256": "c00dc65ae0dfdb9a710d245acf7a7222979c348576de5865df5e3f2133982ed6"
+        },
+        {
+          "cell_id": "union-vs-v33-00reverse-spiral-candidateA",
+          "map": "00reverse-spiral.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 319,
+          "opponent_score": 1025,
+          "rounds_completed": 1162,
+          "rounds_started": 1163,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "5cf8bceecc492de30dc2174215f01ba9b02fb91ef4454d6c518b1d1fbad92b63",
+          "replay_sha256": "4deb193c9226e925b2201732670ad0467be980f6328968dc6f19c76a49ace60a"
+        },
+        {
+          "cell_id": "union-vs-v33-00reverse-spiral-candidateB",
+          "map": "00reverse-spiral.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 310,
+          "opponent_score": 1085,
+          "rounds_completed": 1234,
+          "rounds_started": 1235,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "9bc4ddbcc42450a20d5416c87459cb0977d891d7ff10d8c257dc9a5e9568924d",
+          "replay_sha256": "2dc19802cd9aa17d8b3f209991c3a7836f44be4ae1abaab71205db3443ca1c06"
+        },
+        {
+          "cell_id": "union-vs-v33-00road-of-riches-candidateA",
+          "map": "00road-of-riches.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 163,
+          "opponent_score": 1182,
+          "rounds_completed": 688,
+          "rounds_started": 689,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "9ef534a2ae842a33f1e7bea16a2e523b8c4dee3f2cf9f9e945036898c0ff138e",
+          "replay_sha256": "dfc7f782a5961da91cff1fef525cdc71540624c68c746f6c0ffd728f39d8cbcc"
+        },
+        {
+          "cell_id": "union-vs-v33-00road-of-riches-candidateB",
+          "map": "00road-of-riches.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1152,
+          "opponent_score": 690,
+          "rounds_completed": 1686,
+          "rounds_started": 1687,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "d894c95e5705e40a181dc7dd135d06a854ff19c58eb483824a6bf24ac7f8720d",
+          "replay_sha256": "debd60437ba28f2a0ca4f7bb7afcc257fe494046fae4e597820d64af2b7c2299"
+        },
+        {
+          "cell_id": "union-vs-v33-00rows-candidateA",
+          "map": "00rows.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 437,
+          "opponent_score": 1000,
+          "rounds_completed": 1230,
+          "rounds_started": 1231,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "e0dd3c953eaccd2d8516f54488786e2ad368c5ff12d289c0f71edf3914ea4adf",
+          "replay_sha256": "4f42ec8948c5434f57ce8420488aaa7ed926c3fa9be9801677f9ca90e13d1d59"
+        },
+        {
+          "cell_id": "union-vs-v33-00rows-candidateB",
+          "map": "00rows.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1000,
+          "opponent_score": 382,
+          "rounds_completed": 1230,
+          "rounds_started": 1231,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "98ef0795a5e8627f953197ef10e053d174dfa0082daee5df3256a3d85c7febb5",
+          "replay_sha256": "4ba9bc62e8717cbbdad118f740388b84cb1ae2e66726671ca19651cb2b1fedbb"
+        },
+        {
+          "cell_id": "union-vs-v33-00rushbait-v2-candidateA",
+          "map": "00rushbait-v2.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1052,
+          "opponent_score": 997,
+          "rounds_completed": 1222,
+          "rounds_started": 1223,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "4cc1d1088a7bf583adf0587bd30b0e1f21e9b25901778cb0410378fc106210c7",
+          "replay_sha256": "d201eb73e384ec8174077e094cb3b9e3417c199079b494d9d92a51157bf41d40"
+        },
+        {
+          "cell_id": "union-vs-v33-00rushbait-v2-candidateB",
+          "map": "00rushbait-v2.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1020,
+          "opponent_score": 569,
+          "rounds_completed": 1195,
+          "rounds_started": 1196,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "497c954c46ad51e47c6c61d33833c81ef2e8af391f6975e11cbb715ab9be6b32",
+          "replay_sha256": "4f877a9387ebf62c7db9050eef045d08b6aea76d9a3484a866392f54cf091698"
+        },
+        {
+          "cell_id": "union-vs-v33-00split-candidateA",
+          "map": "00split.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 338,
+          "opponent_score": 1008,
+          "rounds_completed": 496,
+          "rounds_started": 497,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "0f3a3a83eb93c98f5864859ef25126d546ac9c48ed93148b7e400e9d3c543360",
+          "replay_sha256": "76baaa972d6ea3ecce98d1bd8d9541a835821d4637637697aaa08de42e0ff1eb"
+        },
+        {
+          "cell_id": "union-vs-v33-00split-candidateB",
+          "map": "00split.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 761,
+          "opponent_score": 1076,
+          "rounds_completed": 708,
+          "rounds_started": 709,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "ba4b39bdf828c443fbe0f4928a08a2d1ed4f3516f3dbda426d960fd059f5f246",
+          "replay_sha256": "33980553df26a498fe1431e187eb9c7ff9f2224153c0bb68d8faca43d4d436b3"
+        },
+        {
+          "cell_id": "union-vs-v33-00stampede-candidateA",
+          "map": "00stampede.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1120,
+          "opponent_score": 0,
+          "rounds_completed": 1393,
+          "rounds_started": 1394,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "3d6fb1f442bada02a98d6812d1e861b671823da24367ea9fde71d4cdb7a5180c",
+          "replay_sha256": "56630dde57fba12da54d71d08fb19303589ef8895db109bd21a5c3e07ffc4cff"
+        },
+        {
+          "cell_id": "union-vs-v33-00stampede-candidateB",
+          "map": "00stampede.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 0,
+          "opponent_score": 1040,
+          "rounds_completed": 1256,
+          "rounds_started": 1257,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "569667dcaeb3d1854393219adf32419f6295bffd32d2de76b9d79baa08324fe3",
+          "replay_sha256": "0918b7bc035b396bd8d5b868810ded5cf1c9536df6cdf81b7c849d61f66d5fda"
+        },
+        {
+          "cell_id": "union-vs-v33-00swirl-candidateA",
+          "map": "00swirl.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1024,
+          "opponent_score": 964,
+          "rounds_completed": 1240,
+          "rounds_started": 1241,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "1507015ac19de7b948db121fe39b600672eb5b51fd0097689b14838cfc38c002",
+          "replay_sha256": "e54e410fad733a02bad74c27460d08d4b129a151950611810212261d6103b75e"
+        },
+        {
+          "cell_id": "union-vs-v33-00swirl-candidateB",
+          "map": "00swirl.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 45,
+          "opponent_score": 1065,
+          "rounds_completed": 835,
+          "rounds_started": 836,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "071f401cc59326a3f79ce5f1ea73629def14dc742238a2480bfa9ed20298f79b",
+          "replay_sha256": "d1188271610038ffa980915adc274ebc465cb1e749c1ef07cbc91c11f23295e5"
+        },
+        {
+          "cell_id": "union-vs-v33-01big-world-candidateA",
+          "map": "01big-world.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 609,
+          "opponent_score": 1003,
+          "rounds_completed": 967,
+          "rounds_started": 968,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "08022f9b0286e9e379d83b894300908da74bd8c0c2ef8b2dd25959c799916141",
+          "replay_sha256": "31df2ed85d0807ae7a6a4863ee6d160dc782126b667bc501ec704b90fe1600d2"
+        },
+        {
+          "cell_id": "union-vs-v33-01big-world-candidateB",
+          "map": "01big-world.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 976,
+          "opponent_score": 1033,
+          "rounds_completed": 924,
+          "rounds_started": 925,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "f9ef6881ae3fdc71f8e929443c0584a1aa44f15951a8b6124438d6365b51c3a2",
+          "replay_sha256": "a98bc3e5261a030315dc5861f762403e80931b7cfc55bb4e7ce738b14634afa6"
+        },
+        {
+          "cell_id": "union-vs-v33-01boss-battle-candidateA",
+          "map": "01boss-battle.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1306,
+          "opponent_score": 0,
+          "rounds_completed": 937,
+          "rounds_started": 938,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "0192641c90f3eebc5d553efc9419460a9065fac80b1e5c9dd4df08c090cab6d1",
+          "replay_sha256": "be16bd24f27a3ce306f7a17d282cfb0c699202cfb525e4835bf05fc07ed450b0"
+        },
+        {
+          "cell_id": "union-vs-v33-01boss-battle-candidateB",
+          "map": "01boss-battle.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 0,
+          "opponent_score": 1037,
+          "rounds_completed": 966,
+          "rounds_started": 967,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "40d7b1dfc0546e50e0455f45b940318060b927e46841cc465f32e2460c98fc49",
+          "replay_sha256": "82c85177258c0804a869573f3a97936435a08f9c28ff2c232ae9a687f4d7885e"
+        },
+        {
+          "cell_id": "union-vs-v33-01broken-curve-candidateA",
+          "map": "01broken-curve.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1015,
+          "opponent_score": 548,
+          "rounds_completed": 828,
+          "rounds_started": 829,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "03031ed493fccf828ecc4602b76b795a44bc7cc5fe6c76d96f9a9f1594d61453",
+          "replay_sha256": "eafc5a7acef5ba8b068589f2d1e62afcc3b53f2769371a73e13a6d763f9aaae9"
+        },
+        {
+          "cell_id": "union-vs-v33-01broken-curve-candidateB",
+          "map": "01broken-curve.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 432,
+          "opponent_score": 1014,
+          "rounds_completed": 711,
+          "rounds_started": 712,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "a5e9262761f18c94159e00fb566adeb972f401589514a63b08c328dbff325510",
+          "replay_sha256": "ceaeb96c1573db153b8746f92b4849b147bca7915b5bae71ba98d72d9a0efd09"
+        },
+        {
+          "cell_id": "union-vs-v33-01concentrated-wealth-candidateA",
+          "map": "01concentrated-wealth.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 245,
+          "opponent_score": 1032,
+          "rounds_completed": 1192,
+          "rounds_started": 1193,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "9335eac0d744c31eb51153082f77768f2f51caade62508c9e15967a0d30b06ce",
+          "replay_sha256": "736080324f148c580f16577edd23e277eb0426b2625a7cde0979447e46e239e5"
+        },
+        {
+          "cell_id": "union-vs-v33-01concentrated-wealth-candidateB",
+          "map": "01concentrated-wealth.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 162,
+          "opponent_score": 1018,
+          "rounds_completed": 1210,
+          "rounds_started": 1211,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "38f68c1c78aa24aabb54043b55e96eaecd424c4a52645af74194880908524b20",
+          "replay_sha256": "1ebd315bcdddd1a18d157bea32bdd9639c46bb63ffbcf92e3dca076dbe31fe18"
+        },
+        {
+          "cell_id": "union-vs-v33-01corridors-candidateA",
+          "map": "01corridors.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 264,
+          "opponent_score": 1050,
+          "rounds_completed": 1061,
+          "rounds_started": 1062,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "1b208dc44d5482ab935d52573e36b528ff1f3d1df459213aea59f5c448c9aaee",
+          "replay_sha256": "ca0d960b3e5c45cd6e53bca65242f4caf5963915ccb2e0dfacf17430f408d7c5"
+        },
+        {
+          "cell_id": "union-vs-v33-01corridors-candidateB",
+          "map": "01corridors.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1054,
+          "opponent_score": 248,
+          "rounds_completed": 978,
+          "rounds_started": 979,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "d062df433e2540e57bd8791d00c48a070d251e24b205a3b7b74c702ac946e593",
+          "replay_sha256": "faa7be8c7546dbf162e6861ad653fa7a97f198d3673534c211f5f87f60d9508d"
+        },
+        {
+          "cell_id": "union-vs-v33-01elk-arena-candidateA",
+          "map": "01elk-arena.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 204,
+          "opponent_score": 1020,
+          "rounds_completed": 1562,
+          "rounds_started": 1563,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "95c13376660873e2e21b0c29968a043988f8946e72e80ea7f470750108440f92",
+          "replay_sha256": "16dc1f53d8301bdf63fc47c1b20a9d07bfd1dd91eef5e06d6b51a3fde18b3f20"
+        },
+        {
+          "cell_id": "union-vs-v33-01elk-arena-candidateB",
+          "map": "01elk-arena.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 72,
+          "opponent_score": 1008,
+          "rounds_completed": 1237,
+          "rounds_started": 1238,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "321f11653bd27e480a6732f972bbd6dc2a205aaf09e4b276e7a86cc6dc696e2d",
+          "replay_sha256": "61eaffd412ce20d372342dc4019842bcd781345886bfe0df30ed3ccf85f41f18"
+        },
+        {
+          "cell_id": "union-vs-v33-01fracture-candidateA",
+          "map": "01fracture.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 556,
+          "opponent_score": 1168,
+          "rounds_completed": 1316,
+          "rounds_started": 1317,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "8ef6665b1352f963eaa50a0c99b603b6d7c33c098c91fd3b8fa576317065eb13",
+          "replay_sha256": "dff750a31bdb1609bcd7475b86b343821375095c9c80914ca4360f12cfc132ba"
+        },
+        {
+          "cell_id": "union-vs-v33-01fracture-candidateB",
+          "map": "01fracture.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 197,
+          "opponent_score": 1047,
+          "rounds_completed": 1034,
+          "rounds_started": 1035,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "2042653d696b23d5cc9773ba523332400c74dd8609c11a75db9e20dbf996540f",
+          "replay_sha256": "6386cba7337ced0d8b200d7138129903f713f3bab009a88c4602c1c9ceed749c"
+        },
+        {
+          "cell_id": "union-vs-v33-01gold-rush-candidateA",
+          "map": "01gold-rush.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 341,
+          "opponent_score": 1001,
+          "rounds_completed": 1733,
+          "rounds_started": 1734,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "adf543ef8d6f3315d98fb40f4cb27be3874c7ba6e1c6307a44a31b69b611de46",
+          "replay_sha256": "62ae29ee35a3de91282e057464e6023297b1a3b000565ffcf916d05b4db77e8c"
+        },
+        {
+          "cell_id": "union-vs-v33-01gold-rush-candidateB",
+          "map": "01gold-rush.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1007,
+          "opponent_score": 280,
+          "rounds_completed": 1706,
+          "rounds_started": 1707,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "8dc61b3d105b494c0b66863dc69671eb9c0c856724f177fc1dcf73299c1c366c",
+          "replay_sha256": "57779b517c2406bf06c6ee2dd0c539befe3ef74000d028183e3ec3db67a5ba79"
+        },
+        {
+          "cell_id": "union-vs-v33-01hooks-candidateA",
+          "map": "01hooks.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1012,
+          "opponent_score": 0,
+          "rounds_completed": 902,
+          "rounds_started": 903,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "d015ef8dabe5fa2298d36fa5d977990bc151a7cf95ce4e92aae969eb490b64df",
+          "replay_sha256": "f31c19e707a8e27f8a80f9eeeb2f2cfdb11823aad07358ecc03a48ce4d73aa78"
+        },
+        {
+          "cell_id": "union-vs-v33-01hooks-candidateB",
+          "map": "01hooks.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1012,
+          "opponent_score": 44,
+          "rounds_completed": 1065,
+          "rounds_started": 1066,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "5c4224816ca54588aae98dc99d06e4047a9f4ee02997b5961c318c0d26aeb17c",
+          "replay_sha256": "278524529bdbc24480f481f28877b9305cd99d23b86e20f55a50f445450fb764"
+        },
+        {
+          "cell_id": "union-vs-v33-01islands-candidateA",
+          "map": "01islands.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 466,
+          "opponent_score": 1016,
+          "rounds_completed": 802,
+          "rounds_started": 803,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "701df2c4c61f868aa818c2214fc4ed32058a363015238c151be15e00b504250a",
+          "replay_sha256": "adac01b9e0956950e41a8f5e65f2e7685ead5134c9a55e9c5714594fef4e4ac8"
+        },
+        {
+          "cell_id": "union-vs-v33-01islands-candidateB",
+          "map": "01islands.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1004,
+          "opponent_score": 514,
+          "rounds_completed": 714,
+          "rounds_started": 715,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "051d9698aaddc65e990a23bfe198e5035a8c74271fdf41c1d44fcb49af8cf7b1",
+          "replay_sha256": "4c319c045f01996fbb4e22a7e3bb73bd7bbc98c3af8b93d0ed8de69f14dbd7bc"
+        },
+        {
+          "cell_id": "union-vs-v33-01shortcut-candidateA",
+          "map": "01shortcut.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 253,
+          "opponent_score": 1024,
+          "rounds_completed": 1112,
+          "rounds_started": 1113,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "eb931626ca73e8af212e27d58c4a6fae7108c6f7c794d43b8bd0be8d75b321a8",
+          "replay_sha256": "05f321e88c6d4f11cd437c55412abbd404ba0d8aa443ef99b9bd89d71b70d95b"
+        },
+        {
+          "cell_id": "union-vs-v33-01shortcut-candidateB",
+          "map": "01shortcut.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 647,
+          "opponent_score": 1275,
+          "rounds_completed": 1412,
+          "rounds_started": 1413,
+          "candidate_five_pick": 4,
+          "opponent_five_pick": 4,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "b109a2bb04d1c20fb9573d90a55a64572ed3e4f7dff78d3c6483351cf7b002f8",
+          "replay_sha256": "3d1272023f1574e193e2067a17db21ba55f13b75c64b0000c006a9f282561ef7"
+        },
+        {
+          "cell_id": "union-vs-v33-01starfish-candidateA",
+          "map": "01starfish.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1060,
+          "opponent_score": 137,
+          "rounds_completed": 1002,
+          "rounds_started": 1003,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "c5a3ae5cd21cbcfe522bae295d517612d4dcfdc5d736dfd6c2d6c013984adff1",
+          "replay_sha256": "2383ea14ebd7c190298af1e85497425e564d524943aba1f4b7d02c39ac672dda"
+        },
+        {
+          "cell_id": "union-vs-v33-01starfish-candidateB",
+          "map": "01starfish.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "A",
+          "candidate_score": 60,
+          "opponent_score": 1072,
+          "rounds_completed": 1043,
+          "rounds_started": 1044,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "2577dc8a9d04f46b1c5f1055f54fb197fec9ffcf99d139409c4c32dcc2f8d30d",
+          "replay_sha256": "3e24254d3f566e7f690f6da7a42103ca8ed89c3b4168acb6f04ec1d2954e3db8"
+        },
+        {
+          "cell_id": "union-vs-v33-01starvation-candidateA",
+          "map": "01starvation.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 208,
+          "opponent_score": 1024,
+          "rounds_completed": 1658,
+          "rounds_started": 1659,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "0782fd2c44c7cdf5d0e04de466a7e3d81a521b00f832b705bbff17a962b9dbaf",
+          "replay_sha256": "fb4700cfb31060246ddadfe48b77bf24a4f650fcbaba72045aec460f26e78c46"
+        },
+        {
+          "cell_id": "union-vs-v33-01starvation-candidateB",
+          "map": "01starvation.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 862,
+          "opponent_score": 526,
+          "rounds_completed": 2000,
+          "rounds_started": 2000,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "ce7ff7c38f4f3f8d2b1f4a65aacf7171d8c5226ced296b823c654337607b4403",
+          "replay_sha256": "502ba36895ad82074a6da138483ef241b89e0ffedab9ab6ea4b55c3c53f055a6"
+        },
+        {
+          "cell_id": "union-vs-v33-01the-farm-candidateA",
+          "map": "01the-farm.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "A",
+          "candidate_score": 1100,
+          "opponent_score": 349,
+          "rounds_completed": 878,
+          "rounds_started": 879,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "59cc0a5ea22f01a96ad182a70632d78ecd2677e238f7251adb7e047062c8812c",
+          "replay_sha256": "751fcc736df854574cf7589159786dc2f761e53df0c841e687fff3edcdbd6240"
+        },
+        {
+          "cell_id": "union-vs-v33-01the-farm-candidateB",
+          "map": "01the-farm.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1328,
+          "opponent_score": 919,
+          "rounds_completed": 1030,
+          "rounds_started": 1031,
+          "candidate_five_pick": 3,
+          "opponent_five_pick": 3,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "6bbc598f78c430e30dff6e550b45df5b8f2c9ee60fa82f322a3362e41458d704",
+          "replay_sha256": "c8b4d4db1c2e2168b145d3d513a256e07967da99c166586040a9e7b162eb8cee"
+        },
+        {
+          "cell_id": "union-vs-v33-01yellow-brick-road-candidateA",
+          "map": "01yellow-brick-road.map26a",
+          "candidate_side": "A",
+          "A_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "B_source": "v33",
+          "winner_side": "B",
+          "candidate_score": 921,
+          "opponent_score": 1019,
+          "rounds_completed": 782,
+          "rounds_started": 783,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "e4961676e4db49ad0d9529d32bec519fd22b8d221b112de502a1d50b2b1f2910",
+          "replay_sha256": "df47c9c921c5ef39b2a2b151db97f38b45efc4d4a43d15ff1a90ed0511a4c333"
+        },
+        {
+          "cell_id": "union-vs-v33-01yellow-brick-road-candidateB",
+          "map": "01yellow-brick-road.map26a",
+          "candidate_side": "B",
+          "A_source": "v33",
+          "B_source": "willow-v47-marcella-hop-equal-ray-escape-union",
+          "winner_side": "B",
+          "candidate_score": 1055,
+          "opponent_score": 348,
+          "rounds_completed": 566,
+          "rounds_started": 567,
+          "candidate_five_pick": 5,
+          "opponent_five_pick": 5,
+          "bot_faults": {
+            "teamA": 0,
+            "teamB": 0
+          },
+          "statistics_sha256": "351849717f67e7502085f73ee60533ca930f1e51ed1000a2cd64bb3befd647cf",
+          "replay_sha256": "5743fb89045b7e63deda289849a6fa6cceb2dbfda018c4e5631630d74ac5a011"
+        }
+      ]
+    }
+  }
+}

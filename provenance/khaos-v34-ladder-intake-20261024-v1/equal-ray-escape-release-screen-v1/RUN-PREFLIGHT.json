@@ -1,0 +1,36 @@
+{
+  "schema": "equal-ray-run-preflight-v1",
+  "approval": "root reviewed and approved 84 rows; exact manifest SHA 4fb4369cbb5f519d2ebc40b1fbb71e1743f6cf310f13277bfd20be4f33e7e4e1",
+  "command": [
+    "nice",
+    "-n",
+    "19",
+    "env",
+    "CMAKE_BUILD_PARALLEL_LEVEL=1",
+    "PATH=/Users/yufan/Library/Caches/cambc/wasi-sdk-33/bin:$PATH",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "run-batch",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/equal-ray-escape-release-screen-v1/run-batch.pending.manifest",
+    "--jobs",
+    "2",
+    "--release",
+    "--fuel-quantum",
+    "100000",
+    "--json",
+    "--color",
+    "never"
+  ],
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "jobs": 2,
+  "rows": 84,
+  "map_order_and_sides": "See root-approved ORDERED-ROWS.pending.json. Candidate-side is explicit for every row.",
+  "pins": {
+    "candidate_source": "c1e19d45475ca18d2a74c344da8372d9112cc9215c8261eb4023b987db02b4e5",
+    "candidate_raw": "ec2790a185b85efc6f49db61e3f6f97c66720de61ec3f6a0ce03baf502ee4571",
+    "candidate_injected": "deb6af670e8ca9e542c3352aea5b1e3b546d29b6d2990e29c9fdb57eaece30c1",
+    "sdk_cambc_h": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "sdk_imports_h": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "engine": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+  },
+  "initial_bad_cwd_attempt_receipt": "run-attempt-cwd-failure.json"
+}

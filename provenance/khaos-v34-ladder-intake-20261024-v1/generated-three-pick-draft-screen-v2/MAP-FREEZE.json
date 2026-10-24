@@ -1,0 +1,639 @@
+{
+  "schema": "generated-three-pick-map-freeze/v1",
+  "static_inventory": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-static-inventory-v2/RESULT.json",
+  "static_inventory_sha256": "1d591665b8e06bddc1e9a799d3cac44416a5d98bc9207cd6ab2ea46695177288",
+  "index_pins": {
+    "gen": "57b286d75aead0a5ef255d553268c92c0ec2d296cff26e03415b3a65a121f144",
+    "gen-s1": "fcd775d0cd1ca47322070933cc003a947bdc4954860a358c77b2de8b1af8f7ac"
+  },
+  "eligible_indexed_entries": 168,
+  "unique_maps": 168,
+  "selection_exceptions": [],
+  "outcome_blind": true,
+  "maps": [
+    {
+      "selection_order": 1,
+      "suite": "gen",
+      "preset": "rows",
+      "file": "gen-rows-102301101.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-rows-102301101.map26a",
+      "sha256": "033274acd018eae830b0181d0b743ebe1f3e65ce53dd58a7318196e4acc17e30",
+      "cell": {
+        "rampBand": "low",
+        "opennessBand": "below-median"
+      },
+      "mean_early_harmless_ramp_gems": 0,
+      "openness": 1.99,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 0,
+          "earlyHarmlessRampGroupCount": 1,
+          "conservativeHarmlessGems": 0,
+          "conservativeHarmlessGroupCount": 1,
+          "parallelHarmlessJobs": 1,
+          "nearestTributeTerrainOnly": {
+            "x": 5,
+            "y": 26,
+            "distance": 3
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 5,
+            "y": 26,
+            "distance": 3
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 0,
+          "earlyHarmlessRampGroupCount": 1,
+          "conservativeHarmlessGems": 0,
+          "conservativeHarmlessGroupCount": 1,
+          "parallelHarmlessJobs": 1,
+          "nearestTributeTerrainOnly": {
+            "x": 47,
+            "y": 26,
+            "distance": 3
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 47,
+            "y": 26,
+            "distance": 3
+          }
+        }
+      ]
+    },
+    {
+      "selection_order": 2,
+      "suite": "gen-s1",
+      "preset": "donut",
+      "file": "gen-donut-102405614.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen-s1/gen-donut-102405614.map26a",
+      "sha256": "0574bda0885ef9b32f78d3000c5565db2e37d62f1405bd0a15e83063b3ce3319",
+      "cell": {
+        "rampBand": "low",
+        "opennessBand": "below-median"
+      },
+      "mean_early_harmless_ramp_gems": 0,
+      "openness": 1.37,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 0,
+          "earlyHarmlessRampGroupCount": 1,
+          "conservativeHarmlessGems": 0,
+          "conservativeHarmlessGroupCount": 1,
+          "parallelHarmlessJobs": 1,
+          "nearestTributeTerrainOnly": {
+            "x": 50,
+            "y": 37,
+            "distance": 19
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 50,
+            "y": 37,
+            "distance": 19
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 0,
+          "earlyHarmlessRampGroupCount": 1,
+          "conservativeHarmlessGems": 0,
+          "conservativeHarmlessGroupCount": 1,
+          "parallelHarmlessJobs": 1,
+          "nearestTributeTerrainOnly": {
+            "x": 50,
+            "y": 26,
+            "distance": 19
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 50,
+            "y": 26,
+            "distance": 19
+          }
+        }
+      ]
+    },
+    {
+      "selection_order": 3,
+      "suite": "gen",
+      "preset": "serpentine",
+      "file": "gen-serpentine-102307009.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-serpentine-102307009.map26a",
+      "sha256": "00a717afa55166b7937d7328d5c46b6d856f1215eef88091ad8700ba890a6b97",
+      "cell": {
+        "rampBand": "low",
+        "opennessBand": "above-or-equal-median"
+      },
+      "mean_early_harmless_ramp_gems": 0,
+      "openness": 2.6,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 0,
+          "earlyHarmlessRampGroupCount": 0,
+          "conservativeHarmlessGems": 0,
+          "conservativeHarmlessGroupCount": 0,
+          "parallelHarmlessJobs": 0,
+          "nearestTributeTerrainOnly": {
+            "x": 27,
+            "y": 22,
+            "distance": 24
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 27,
+            "y": 22,
+            "distance": 24
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 0,
+          "earlyHarmlessRampGroupCount": 0,
+          "conservativeHarmlessGems": 0,
+          "conservativeHarmlessGroupCount": 0,
+          "parallelHarmlessJobs": 0,
+          "nearestTributeTerrainOnly": {
+            "x": 27,
+            "y": 12,
+            "distance": 24
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 27,
+            "y": 12,
+            "distance": 24
+          }
+        }
+      ]
+    },
+    {
+      "selection_order": 4,
+      "suite": "gen-s1",
+      "preset": "diamond",
+      "file": "gen-diamond-102405516.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen-s1/gen-diamond-102405516.map26a",
+      "sha256": "14b85bd1f1c6033a2f9fbae8855dd60cafc49dd5523d79a889f339a220cd7b56",
+      "cell": {
+        "rampBand": "low",
+        "opennessBand": "above-or-equal-median"
+      },
+      "mean_early_harmless_ramp_gems": 0,
+      "openness": 2.81,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 0,
+          "earlyHarmlessRampGroupCount": 2,
+          "conservativeHarmlessGems": 0,
+          "conservativeHarmlessGroupCount": 2,
+          "parallelHarmlessJobs": 2,
+          "nearestTributeTerrainOnly": {
+            "x": 22,
+            "y": 20,
+            "distance": 9
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 22,
+            "y": 20,
+            "distance": 9
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 0,
+          "earlyHarmlessRampGroupCount": 2,
+          "conservativeHarmlessGems": 0,
+          "conservativeHarmlessGroupCount": 2,
+          "parallelHarmlessJobs": 2,
+          "nearestTributeTerrainOnly": {
+            "x": 14,
+            "y": 16,
+            "distance": 9
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 14,
+            "y": 16,
+            "distance": 9
+          }
+        }
+      ]
+    },
+    {
+      "selection_order": 5,
+      "suite": "gen",
+      "preset": "city",
+      "file": "gen-city-102306900.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-city-102306900.map26a",
+      "sha256": "919646ac8421d0d4bcff6a5b12c2301f134619788c368ce0859df24d7dac0d09",
+      "cell": {
+        "rampBand": "middle",
+        "opennessBand": "below-median"
+      },
+      "mean_early_harmless_ramp_gems": 7,
+      "openness": 1.81,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 7,
+          "earlyHarmlessRampGroupCount": 1,
+          "conservativeHarmlessGems": 7,
+          "conservativeHarmlessGroupCount": 1,
+          "parallelHarmlessJobs": 1,
+          "nearestTributeTerrainOnly": {
+            "x": 44,
+            "y": 46,
+            "distance": 31
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 44,
+            "y": 46,
+            "distance": 31
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 7,
+          "earlyHarmlessRampGroupCount": 1,
+          "conservativeHarmlessGems": 7,
+          "conservativeHarmlessGroupCount": 1,
+          "parallelHarmlessJobs": 1,
+          "nearestTributeTerrainOnly": {
+            "x": 41,
+            "y": 39,
+            "distance": 31
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 41,
+            "y": 39,
+            "distance": 31
+          }
+        }
+      ]
+    },
+    {
+      "selection_order": 6,
+      "suite": "gen-s1",
+      "preset": "blob",
+      "file": "gen-blob-102406206.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen-s1/gen-blob-102406206.map26a",
+      "sha256": "068a4b65bf7d5ca9e007ba3a19af3d0a0bd8232f5d23b29628ef9a0c74361af5",
+      "cell": {
+        "rampBand": "middle",
+        "opennessBand": "below-median"
+      },
+      "mean_early_harmless_ramp_gems": 3.5,
+      "openness": 1.17,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 0,
+          "earlyHarmlessRampGroupCount": 0,
+          "conservativeHarmlessGems": 0,
+          "conservativeHarmlessGroupCount": 0,
+          "parallelHarmlessJobs": 0,
+          "nearestTributeTerrainOnly": {
+            "x": 35,
+            "y": 46,
+            "distance": 16
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 35,
+            "y": 46,
+            "distance": 17
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 7,
+          "earlyHarmlessRampGroupCount": 1,
+          "conservativeHarmlessGems": 7,
+          "conservativeHarmlessGroupCount": 1,
+          "parallelHarmlessJobs": 1,
+          "nearestTributeTerrainOnly": {
+            "x": 12,
+            "y": 1,
+            "distance": 16
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 12,
+            "y": 1,
+            "distance": 17
+          }
+        }
+      ]
+    },
+    {
+      "selection_order": 7,
+      "suite": "gen",
+      "preset": "archipelago",
+      "file": "gen-archipelago-102306018.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-archipelago-102306018.map26a",
+      "sha256": "0c4948375fd2c8586e1a776a29eb47fed7426f422b14deb07bf6571af807090f",
+      "cell": {
+        "rampBand": "middle",
+        "opennessBand": "above-or-equal-median"
+      },
+      "mean_early_harmless_ramp_gems": 7,
+      "openness": 2.67,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 7,
+          "earlyHarmlessRampGroupCount": 3,
+          "conservativeHarmlessGems": 7,
+          "conservativeHarmlessGroupCount": 3,
+          "parallelHarmlessJobs": 3,
+          "nearestTributeTerrainOnly": {
+            "x": 25,
+            "y": 38,
+            "distance": 4
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 25,
+            "y": 38,
+            "distance": 4
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 7,
+          "earlyHarmlessRampGroupCount": 3,
+          "conservativeHarmlessGems": 7,
+          "conservativeHarmlessGroupCount": 3,
+          "parallelHarmlessJobs": 3,
+          "nearestTributeTerrainOnly": {
+            "x": 35,
+            "y": 61,
+            "distance": 4
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 35,
+            "y": 61,
+            "distance": 4
+          }
+        }
+      ]
+    },
+    {
+      "selection_order": 8,
+      "suite": "gen-s1",
+      "preset": "donut",
+      "file": "gen-donut-102405617.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen-s1/gen-donut-102405617.map26a",
+      "sha256": "49df08e75a8a7db08c43b662075777d2bc9e6a19ebe63f2700defdcda50d4e8f",
+      "cell": {
+        "rampBand": "middle",
+        "opennessBand": "above-or-equal-median"
+      },
+      "mean_early_harmless_ramp_gems": 7,
+      "openness": 4.5,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 7,
+          "earlyHarmlessRampGroupCount": 2,
+          "conservativeHarmlessGems": 7,
+          "conservativeHarmlessGroupCount": 1,
+          "parallelHarmlessJobs": 2,
+          "nearestTributeTerrainOnly": {
+            "x": 68,
+            "y": 21,
+            "distance": 15
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 68,
+            "y": 21,
+            "distance": 15
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 7,
+          "earlyHarmlessRampGroupCount": 2,
+          "conservativeHarmlessGems": 7,
+          "conservativeHarmlessGroupCount": 1,
+          "parallelHarmlessJobs": 2,
+          "nearestTributeTerrainOnly": {
+            "x": 11,
+            "y": 21,
+            "distance": 15
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 11,
+            "y": 21,
+            "distance": 15
+          }
+        }
+      ]
+    },
+    {
+      "selection_order": 9,
+      "suite": "gen",
+      "preset": "labyrinth",
+      "file": "gen-labyrinth-102306303.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-labyrinth-102306303.map26a",
+      "sha256": "1c352dbf152b8820bda199a038ffb69b8c1d527203feca8d091e66059e21acb4",
+      "cell": {
+        "rampBand": "high",
+        "opennessBand": "below-median"
+      },
+      "mean_early_harmless_ramp_gems": 14,
+      "openness": 1.1,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 14,
+          "earlyHarmlessRampGroupCount": 1,
+          "conservativeHarmlessGems": 0,
+          "conservativeHarmlessGroupCount": 0,
+          "parallelHarmlessJobs": 1,
+          "nearestTributeTerrainOnly": {
+            "x": 3,
+            "y": 2,
+            "distance": 26
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 3,
+            "y": 2,
+            "distance": 28
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 14,
+          "earlyHarmlessRampGroupCount": 1,
+          "conservativeHarmlessGems": 0,
+          "conservativeHarmlessGroupCount": 0,
+          "parallelHarmlessJobs": 1,
+          "nearestTributeTerrainOnly": {
+            "x": 26,
+            "y": 32,
+            "distance": 26
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 26,
+            "y": 32,
+            "distance": 28
+          }
+        }
+      ]
+    },
+    {
+      "selection_order": 10,
+      "suite": "gen-s1",
+      "preset": "spiral",
+      "file": "gen-spiral-102406404.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen-s1/gen-spiral-102406404.map26a",
+      "sha256": "008f151d0745a1eed5e40a8d2f684b31c8e1a998663e8b25cf4512b11a155ae5",
+      "cell": {
+        "rampBand": "high",
+        "opennessBand": "below-median"
+      },
+      "mean_early_harmless_ramp_gems": 35,
+      "openness": 1.9,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 35,
+          "earlyHarmlessRampGroupCount": 3,
+          "conservativeHarmlessGems": 35,
+          "conservativeHarmlessGroupCount": 3,
+          "parallelHarmlessJobs": 3,
+          "nearestTributeTerrainOnly": {
+            "x": 21,
+            "y": 21,
+            "distance": 20
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 19,
+            "y": 41,
+            "distance": 24
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 35,
+          "earlyHarmlessRampGroupCount": 3,
+          "conservativeHarmlessGems": 35,
+          "conservativeHarmlessGroupCount": 3,
+          "parallelHarmlessJobs": 3,
+          "nearestTributeTerrainOnly": {
+            "x": 40,
+            "y": 40,
+            "distance": 20
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 42,
+            "y": 20,
+            "distance": 24
+          }
+        }
+      ]
+    },
+    {
+      "selection_order": 11,
+      "suite": "gen",
+      "preset": "star",
+      "file": "gen-star-102305406.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-star-102305406.map26a",
+      "sha256": "203641a40ba4086741aa0ec0fe62b4f4193148a746353b516ed36cf159194118",
+      "cell": {
+        "rampBand": "high",
+        "opennessBand": "above-or-equal-median"
+      },
+      "mean_early_harmless_ramp_gems": 28,
+      "openness": 3.7,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 28,
+          "earlyHarmlessRampGroupCount": 3,
+          "conservativeHarmlessGems": 28,
+          "conservativeHarmlessGroupCount": 3,
+          "parallelHarmlessJobs": 3,
+          "nearestTributeTerrainOnly": {
+            "x": 17,
+            "y": 67,
+            "distance": 31
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 17,
+            "y": 67,
+            "distance": 31
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 28,
+          "earlyHarmlessRampGroupCount": 3,
+          "conservativeHarmlessGems": 28,
+          "conservativeHarmlessGroupCount": 3,
+          "parallelHarmlessJobs": 3,
+          "nearestTributeTerrainOnly": {
+            "x": 82,
+            "y": 67,
+            "distance": 31
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 82,
+            "y": 67,
+            "distance": 31
+          }
+        }
+      ]
+    },
+    {
+      "selection_order": 12,
+      "suite": "gen-s1",
+      "preset": "classic",
+      "file": "gen-classic-102400016.map26a",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen-s1/gen-classic-102400016.map26a",
+      "sha256": "0036fdfd314928f150bef4eb958eabfbd7d44aeb53371c11f3b4935164e569af",
+      "cell": {
+        "rampBand": "high",
+        "opennessBand": "above-or-equal-median"
+      },
+      "mean_early_harmless_ramp_gems": 14,
+      "openness": 3.07,
+      "team_features": [
+        {
+          "team": "A",
+          "earlyHarmlessRampGems": 14,
+          "earlyHarmlessRampGroupCount": 2,
+          "conservativeHarmlessGems": 14,
+          "conservativeHarmlessGroupCount": 2,
+          "parallelHarmlessJobs": 2,
+          "nearestTributeTerrainOnly": {
+            "x": 29,
+            "y": 33,
+            "distance": 15
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 29,
+            "y": 33,
+            "distance": 15
+          }
+        },
+        {
+          "team": "B",
+          "earlyHarmlessRampGems": 14,
+          "earlyHarmlessRampGroupCount": 2,
+          "conservativeHarmlessGems": 14,
+          "conservativeHarmlessGroupCount": 2,
+          "parallelHarmlessJobs": 2,
+          "nearestTributeTerrainOnly": {
+            "x": 29,
+            "y": 39,
+            "distance": 15
+          },
+          "nearestTributeWithCampTilesBlocked": {
+            "x": 29,
+            "y": 39,
+            "distance": 15
+          }
+        }
+      ]
+    }
+  ]
+}

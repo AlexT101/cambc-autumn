@@ -1,0 +1,21 @@
+{
+  "schema": "union-row-source-aggregate-correction-v1",
+  "superseded_file_hashes": {
+    "PLAN.pending.json": "c4545595dcc91501d84ccda415287562dfee85d4aba7406b8c9d42eb0c36dbe1",
+    "ORDERED-ROWS.pending.json": "f9ea57c87d165e30572f4009108d16bb8f6868775b4e1078f1493c6394606231",
+    "ROW-PREFLIGHT.json": "8b90321e35edee05b7c557f139a2dc4fcc8f7c5ff3ecfc17a75ab676d1714e7e"
+  },
+  "corrected_files": {
+    "PLAN.pending.json": "f47637af1d424267d83e526f6e271faec89a0d1b871a5ae61ee6557839734baf",
+    "ORDERED-ROWS.pending.json": "c3426ada2ebcc474e11ccf45407372994c1a040f29792a990207ad4a278006ab",
+    "ROW-PREFLIGHT.json": "3597c6c41048c375f04faee784c08909a629c41732ed8bcaa680366765319373"
+  },
+  "wrong_value": "1781a95db5b808136e2af1cba95a1017bd936cdfd5ea9c5002862a26c9994985",
+  "correct_value": "37392769d9123c199b3d0f5fe0e01f4ec4cbf1083d42aa2c640a266e9a620719",
+  "reason": "The pending plan was initially populated from a pipeline whose filenames used absolute source paths. Canonical source aggregate is `cd <bot-root> && shasum -a 256 src/* | shasum -a 256`; runtime and repo source both produce 37392769\u2026 and exactly match the 29-file manifest. The absolute-path intermediate digest is not a source identity. No source bytes or build inputs changed.",
+  "candidate_repo_path_correction": {
+    "old": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-marcella-hop-equal-ray-work",
+    "corrected": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-marcella-hop-equal-ray-escape-work",
+    "reason": "Path label omitted `-escape-`; corrected to the exact reviewed source directory. Runtime and all ordered A/B rows already pointed at the correct union workspace/source identity."
+  }
+}

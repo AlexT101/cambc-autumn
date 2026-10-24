@@ -1,0 +1,18 @@
+diff -ruN bots/variants/willow-v47-marcella-tribute-value-work/src/draft.cpp bots/variants/willow-v47-marcella-three-income-work/src/draft.cpp
+--- bots/variants/willow-v47-marcella-tribute-value-work/src/draft.cpp	2026-10-24 09:21:44
++++ bots/variants/willow-v47-marcella-three-income-work/src/draft.cpp	2026-10-24 09:59:22
+@@ -247,6 +247,14 @@
+         return chosen;
+     }
+     const auto picks = cambc::draft::team_size();
++    if (picks == 3) {
++        static constexpr auto chosen = [] {
++            auto order = std::to_array(params::draft_preference);
++            order[0] = cambc::champion_draft::marcella;
++            return order;
++        }();
++        return chosen;
++    }
+     if (picks == 4 || picks == 5) {
+         static const auto chosen = [] {
+             const auto roles = params::willow_draft && cambc::draft::team_size() == 5

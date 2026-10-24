@@ -1,0 +1,42 @@
+{
+  "schema": "equal-ray-native-run-receipt-v1",
+  "status": "completed",
+  "approved_plan": {
+    "path": "provenance/khaos-v34-ladder-intake-20261024-v1/equal-ray-escape-release-screen-v1/PLAN.json",
+    "sha256": "a97941e576f0c9721f43941bfaf9a5afb2199f09171a5ce529d06e6428449829"
+  },
+  "ordered_rows_sha256": "be7a4afcf26995017a7b789833af7d98a9a8e0af202f04e448caaf5b88f30e20",
+  "run_batch_manifest_sha256": "4fb4369cbb5f519d2ebc40b1fbb71e1743f6cf310f13277bfd20be4f33e7e4e1",
+  "build_result_sha256": "83cb4b112962fd7b815ab86fb90ebfae1104a981c209cf064bc1a5910d154a38",
+  "run_preflight_sha256": "9505f13c6079e245398d62f279876f19c20a10d48172edee78d8b06fb6625977",
+  "postflight_sha256": "2659ec63921e5abba233d3b7e10c9959c8f7ae85a83e2ce905b90e449a44d4bc",
+  "execution": {
+    "games": 84,
+    "saved_replay_bundles": 84,
+    "failed_rows": 0,
+    "workers": 2,
+    "fuel": 100000,
+    "mode": "Release, native drafts"
+  },
+  "logs": {
+    "stdout": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/equal-ray-escape-release-screen-v1/run.stdout.log",
+      "bytes": 54481,
+      "sha256": "cee76ff5b48c38e40c2cc1dadbf5da4ce4cb5d6e65fea22f7473fe5644a56147"
+    },
+    "stderr": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/equal-ray-escape-release-screen-v1/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "setup_failure_retained": {
+    "path": "provenance/khaos-v34-ladder-intake-20261024-v1/equal-ray-escape-release-screen-v1/run-attempt-cwd-failure.json",
+    "sha256": "c58d89d6a623a84a3bb8fe7159bc5868d5b9c11bc9607f5605e0affe6129828c",
+    "classification": "prelaunch wrong-cwd setup attempt; no native row output"
+  },
+  "result_json_sha256": "42e28eaa59d5fc3338fa4119fc51d46d3f91c7b03271ad91330e7c68499418a4",
+  "result_markdown_sha256": "597d3c313cd11d72cc674c8ec52b548a37e3a02f34522336612f2418432576bd",
+  "note": "The originally reviewed plan/ordered rows/run manifest were not changed. Tool output reports all 84 bundles saved and zero failed.",
+  "comparison_correction_sha256": "ed6303b09ccc78145b6db5415921148ae91c94f89b982041672d75aa76a45e38"
+}

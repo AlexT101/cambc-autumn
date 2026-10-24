@@ -1,0 +1,25 @@
+{
+  "schema": "equal-ray-geometry-fixture-run-v1",
+  "command": [
+    "c++",
+    "-std=c++17",
+    "-O0",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/equal-ray-geometry-fixture-v1/fixture.cpp",
+    "-o",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/equal-ray-geometry-fixture-v1/fixture"
+  ],
+  "buildExit": 0,
+  "runExit": 0,
+  "stdout": "equal-ray production excerpts passed: unique/equal/longer/blocked/field/off-ray/stale cases\n",
+  "sourcePinsSha256": "3188ecc7a1e2ec96d71f11b62bd4f20214b3a03b21a9a41146ef48e65b68e47b",
+  "fixtureSha256": "a7c80926d8c413d97e2c70e1063161ff7b26b39633bb45f41818e015901993d6",
+  "coverageLimit": [
+    "The exact production at() body and ray scan/update loop are compiled and executed.",
+    "The goal/wall bitboards, bounds, direction vector arithmetic, and distance-field labels are declared host mocks.",
+    "The exact production exactness assignment runs with an independent host-mock any_within; Pathing cache key/rebuild/invalidation, native distance-field construction, route ranking caller, SDK and gameplay are not executed. Invalidation is source-reviewed and stale-result refusal is tested by setting valid=false.",
+    "The independent two-ray ranking case demonstrates that the newly labeled route is a usable candidate; it does not execute the production caller's ranking loop."
+  ]
+}

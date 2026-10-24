@@ -1,0 +1,275 @@
+{
+  "schema": "marcella-hop-f475-full1104-native-phase-audit/v1",
+  "status": "complete",
+  "new_cells": {
+    "games": 1024,
+    "audit": "native-audit/RESULT.json",
+    "audit_sha256": "19e23fbd6cb75c39fd044ef894fd2a0e94fde8d2817406d1af018b5a15ce0596",
+    "snapshot_mode": "v1_0_3_compact_timeline",
+    "engine": {
+      "version": "v1_0_3",
+      "cambc": "cambc 3.0.5",
+      "asset": "v1_0_3-DRqNt1t2.wasm",
+      "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+      "bytes": 638472,
+      "snapshotSize": 184760
+    },
+    "source_pins": {
+      "candidate": "709ba31a186fb1e5b27a180ac58d50a913af10cba42ccbc31151ae36c04f26f4",
+      "f475": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824"
+    },
+    "by_source": {
+      "marcella-hop": {
+        "games": 1024,
+        "phases": {
+          "play": {
+            "rollover": 2647,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "f475": {
+        "games": 1024,
+        "phases": {
+          "play": {
+            "rollover": 2672,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    },
+    "by_physical_side": {
+      "A": {
+        "games": 1024,
+        "phases": {
+          "play": {
+            "rollover": 2722,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "B": {
+        "games": 1024,
+        "phases": {
+          "play": {
+            "rollover": 2597,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    },
+    "by_suite": {
+      "gen": {
+        "games": 1024,
+        "phases": {
+          "play": {
+            "rollover": 2675,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "gen-s1": {
+        "games": 1024,
+        "phases": {
+          "play": {
+            "rollover": 2644,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    }
+  },
+  "exact_reused_cells": {
+    "games": 80,
+    "source_groups": {
+      "marcella-hop": {
+        "play": {
+          "rollover": 258,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      },
+      "f475": {
+        "play": {
+          "rollover": 248,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    "physical_sides": {
+      "A": {
+        "play": {
+          "rollover": 275,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      },
+      "B": {
+        "play": {
+          "rollover": 231,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    "audit_path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-combination-screen-480-v1/NATIVE-PHASE-AUDIT.json",
+    "audit_sha256": "b7384d63e8277c689772b6b4c7a431f18f189b7b2b89ec4d9cbabfeaab32a187",
+    "audit_group": "marcella-hop-vs-f475"
+  },
+  "full1104": {
+    "games": 1104,
+    "by_source": {
+      "marcella-hop": {
+        "games": 1104,
+        "phases": {
+          "play": {
+            "rollover": 2905,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "f475": {
+        "games": 1104,
+        "phases": {
+          "play": {
+            "rollover": 2920,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    },
+    "by_physical_side": {
+      "A": {
+        "games": 1104,
+        "phases": {
+          "play": {
+            "rollover": 2997,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "B": {
+        "games": 1104,
+        "phases": {
+          "play": {
+            "rollover": 2828,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    }
+  },
+  "zero_status_faults_all_new_cells": true,
+  "limitations": [
+    "The 80 published40 rows reuse the exact previously audited M+H/f475 cells; their per-source/per-physical-side aggregate comes from the prior native phase audit. The 1,024 generated cells are audited individually here."
+  ]
+}

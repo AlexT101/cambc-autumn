@@ -1,0 +1,182 @@
+diff -ruN provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/safety.cpp bots/variants/willow-v47-fight-support-contact-work/src/safety.cpp
+--- provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/safety.cpp	2026-10-24 01:18:40
++++ bots/variants/willow-v47-fight-support-contact-work/src/safety.cpp	2026-10-24 12:49:31
+@@ -170,6 +170,32 @@
+     }
+ };
+ 
++// These bodies cannot take part in either activation of exchange zero. Positions retain the
++// original roster order, including weakest-health ties and our watched fighter's identity.
++struct PendingAllies {
++    Side side;
++    unsigned positions = 0;
++
++    void join(Side& us) const {
++        Side joined;
++        joined.turn = us.turn;
++        joined.stunned = us.stunned;
++        joined.camp = us.camp;
++        int local = 0, remote = 0;
++        const int count = us.count + side.count;
++        for (int i = 0; i < count; ++i) {
++            const bool pending = positions >> i & 1;
++            Fighter f = pending ? side.fighters[remote++] : us.fighters[local++];
++            if (!pending && local - 1 == us.self) joined.self = i;
++            f.link = -1; // add() rebuilds local linked pairs after their indices move
++            // Its previous own turn passed while absent; the joining turn has not begun yet.
++            if (pending && f.shield_until < joined.turn) f.shield = 0, f.shield_until = never;
++            joined.add(f);
++        }
++        us = joined;
++    }
++};
++
+ int next_cast(const Fighter& f) { return std::min(f.ready_at[0], f.ready_at[1]); }
+ 
+ // A champion's casts, from its type, Strength and Focus alone. A heal is valued even with no ally
+@@ -536,12 +562,22 @@
+ // ends as {0, 0}, setting it and leaving self_falls unknown.
+ template <bool Dealt = false>
+ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = fight_horizon,
+-                             std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0, bool* falls_unknown = nullptr) {
++                             std::array<float, 4>* dealt = nullptr, std::uint64_t fuel_floor = 0, bool* falls_unknown = nullptr,
++                             const PendingAllies* pending = nullptr) {
+     int ours = 0, theirs = 0;
+     int watched = self_falls ? us.self : -1;
+     // Asked at the start and as either side loses a member.
+     for (int t = 0, alive = -1; t < 2 * horizon; ++t) {
+-        if (!Dealt && self_falls && us.alive + 16 * them.alive != alive) {
++        if (pending && t == 2) {
++            pending->join(us);
++            if (watched >= 0) watched = us.self;
++            them.weak = -2;
++            them.quiet_until = 0;
++            them.quiet_alive = -1;
++            alive = -1;
++            pending = nullptr;
++        }
++        if (!pending && !Dealt && self_falls && us.alive + 16 * them.alive != alive) {
+             alive = us.alive + 16 * them.alive;
+             const int theirs_left = horizon - theirs, ours_left = horizon - ours;
+             const auto cap = their_cap(us, them, horizon, ours_left);
+@@ -560,7 +596,7 @@
+                 });
+             }
+         }
+-        if (!Dealt && us.turn < us.quiet_until && them.turn < them.quiet_until) {
++        if (!pending && !Dealt && us.turn < us.quiet_until && them.turn < them.quiet_until) {
+             t = play_quiet(us, them, t, 2 * horizon, they_first, ours, theirs);
+             if (t == 2 * horizon) break;
+         }
+@@ -590,25 +626,28 @@
+ }
+ 
+ constinit std::array<Side, 2> debug_sides{};
++constinit PendingAllies debug_pending;
+ 
+ // Only the order where they strike first: `lost` is all callers need.
+ // Plays the fight out on the sides given, which callers discard: copying them is costly.
+-Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first = true, bool need_falls = true) {
++Trade trade(Side& us, Side& them, std::uint64_t fuel_floor = 0, bool they_first = true, bool need_falls = true,
++            const PendingAllies* pending = nullptr) {
+     Trade t;
+     t.allies = us.count;
+     t.enemies = them.count;
+     if constexpr (debug_fights) t.our_health = us.health(), t.their_health = them.health();
+     if (them.count == 0) return t;
+-    debug_block({ debug_sides = {us, them}; });
++    debug_block({ debug_sides = {us, them}; if (pending) debug_pending = *pending; });
+     bool unknown = false;
+     const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, fight_horizon, debug_fights ? &t.dealt : nullptr, fuel_floor,
+-                                                             need_falls ? nullptr : &unknown);
++                                                             need_falls ? nullptr : &unknown, pending);
+     t.falls_known = !unknown;
+     debug_block({
+         // An early end (outlives, overwhelmed) must agree with the fight played out.
+         bool falls = false;
+         std::array<float, 4> dealt{};
+-        const auto [a, b] = simulate<true>(debug_sides[0], debug_sides[1], they_first, &falls, fight_horizon, &dealt);
++        const auto [a, b] = simulate<true>(debug_sides[0], debug_sides[1], they_first, &falls, fight_horizon, &dealt, 0, nullptr,
++                                            pending ? &debug_pending : nullptr);
+         if (we_kill >= 0 && ((b > 0) != (they_kill > 0) || (t.falls_known && falls != t.self_falls)))
+             std::printf("FIGHT-EXIT-MISMATCH %d %d %d %d %d\n", cambc::round_number(), b, they_kill, falls, t.self_falls);
+     });
+@@ -701,6 +740,14 @@
+     side.plain = plain;
+ }
+ 
++void fill_stand_allies(Side& us, PendingAllies& pending, const World& world, unsigned bits, unsigned deferred, std::uint32_t& made) {
++    fill(us, world, world.allies, bits & ~deferred, made);
++    fill(pending.side, world, world.allies, deferred, made);
++    int at = 0;
++    for (; bits && at < max_fighters; bits &= bits - 1, ++at)
++        if (deferred >> std::countr_zero(bits) & 1) pending.positions |= 1u << at;
++}
++
+ void join_allies(const World& world, Side& us, vec2 p, std::uint32_t& made) { fill(us, world, world.allies, fighting_allies(world, p), made); }
+ 
+ } // namespace
+@@ -758,6 +805,39 @@
+     return out;
+ }
+ 
++// A full kit and both bodies' best movement are generous bounds: failure proves nothing.
++unsigned deferred_stand_allies(const World& world, unsigned allies, unsigned enemies) {
++    std::array<int, max_fighters> enemy_reach, enemy_move;
++    int count = 0;
++    for (auto left = enemies; left; left &= left - 1) {
++        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (!e.alive || !e.visible || e.pos_round != world.round || e.stats_round != world.round
++            || e.teleport_pending() || e.respawned_round >= world.round || count == max_fighters) return 0;
++        enemy_reach[count] = compute_strike(e.facts(), hit_strength(e), hit_focus(e), 3u).reach;
++        enemy_move[count++] = e.facts().has_dash() ? 3 : 1;
++    }
++    unsigned deferred = 0;
++    for (auto left = allies; left; left &= left - 1) {
++        const int i = std::countr_zero(left);
++        const auto& a = world.allies[static_cast<std::size_t>(i)];
++        const auto& f = a.facts();
++        if (a.is_self || !a.alive || !a.visible || a.pos_round != world.round || a.stats_round != world.round
++            || a.acted || a.stun_pending || a.teleport_pending() || a.respawned_round >= world.round
++            || f.passive == Passive::linked_pair || f.has(AbilityKind::heal) || f.has(AbilityKind::shield)) continue;
++        const int reach = compute_strike(f, hit_strength(a), hit_focus(a), 3u).reach;
++        const int move = f.has_dash() ? 3 : 1;
++        bool separate = count > 0;
++        int k = 0;
++        for (auto foes = enemies; foes && separate; foes &= foes - 1, ++k) {
++            const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(foes))];
++            const int d = dist(a.pos, e.pos);
++            separate = d > reach + enemy_move[k] && d > enemy_reach[k] + move;
++        }
++        if (separate) deferred |= 1u << i;
++    }
++    return deferred;
++}
++
+ // Called many times a turn for the same few champions: the last result per champion is kept,
+ // keyed by everything it depends on, and its widening to two turns once threat_strike() asks.
+ struct StrikeMemo {
+@@ -2310,9 +2390,12 @@
+     const std::uint32_t enemies = (key >> 16 & threat_mask_) | walking;
+     if (!enemies) return {};
+     const float camp = camp_damage(p, false);
+-    if (!walking && camp <= 0) return fight_of(key, falls);
++    const unsigned deferred = deferred_stand_allies(world_, key & 0xFFFFu, enemies);
++    if (!deferred && !walking && camp <= 0) return fight_of(key, falls);
+     Side us, them;
+-    fill(us, world_, world_.allies, key & 0xFFFFu, made_);
++    PendingAllies pending;
++    if (deferred) fill_stand_allies(us, pending, world_, key & 0xFFFFu, deferred, made_);
++    else fill(us, world_, world_.allies, key & 0xFFFFu, made_);
+     fill(them, world_, world_.enemies, enemies, made_);
+     int k = 0;
+     for (auto left = enemies; left && k < them.count; left &= left - 1, ++k)
+@@ -2320,7 +2403,7 @@
+     // camp_damage() counts our Durability, which hurt() applies.
+     us.camp = camp / world_.me().taken;
+     // With nobody in reach yet, we strike first: they must still win.
+-    return trade(us, them, end_reserve, (key >> 16) != 0, falls);
++    return trade(us, them, end_reserve, (key >> 16) != 0, falls, deferred ? &pending : nullptr);
+ }
+ 
+ int Safety::turns_to_kill_idle(vec2 p, int horizon) {

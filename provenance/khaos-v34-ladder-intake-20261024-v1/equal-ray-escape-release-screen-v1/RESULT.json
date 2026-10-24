@@ -1,0 +1,3729 @@
+{
+  "schema": "equal-ray-native-result-v1",
+  "status": "complete_native_batch_audited_from_all_84_statistics",
+  "source_aggregate": "c1e19d45475ca18d2a74c344da8372d9112cc9215c8261eb4023b987db02b4e5",
+  "candidate_vs_v33": {
+    "candidate_side_aggregator": "fixtures/candidate-source-aggregation/aggregate.py",
+    "counts": {
+      "candidate_wins": 43,
+      "candidate_games": 80,
+      "candidate_wins_by_candidate_side": {
+        "A": 20,
+        "B": 23
+      }
+    },
+    "games": 80,
+    "mean_rounds": 1065.34,
+    "A_source_score_total": 55847,
+    "B_source_score_total": 59075,
+    "bot_faults_by_physical_side": {
+      "A": 0,
+      "B": 0
+    },
+    "draft_picks_by_side": {
+      "A": 360,
+      "B": 360
+    },
+    "all_80_have_accepted_draft_rosters_and_zero_bot_faults": true,
+    "comparisons": [
+      {
+        "comparison": "f475-v33 complete 80",
+        "candidate_wins": 43,
+        "reference_wins": 45,
+        "exact_matched_cells": 80,
+        "gains_vs_reference": 12,
+        "losses_vs_reference": 14,
+        "unchanged": 54,
+        "gain_cells": [
+          {
+            "map": "00fragment",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00fragment",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00quadrants",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00reverse-spiral",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00rushbait-v2",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01hooks",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01islands",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01shortcut",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01yellow-brick-road",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01yellow-brick-road",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00ambush",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01starvation",
+            "candidate_side": "B"
+          }
+        ],
+        "loss_cells": [
+          {
+            "map": "00contest",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00elkring",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00gemfight",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00reverse-spiral",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00rushbait-v2",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01boss-battle",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01broken-curve",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01concentrated-wealth",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01corridors",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01elk-arena",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01shortcut",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01starfish",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01starfish",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01starvation",
+            "candidate_side": "A"
+          }
+        ]
+      },
+      {
+        "comparison": "connected escape full vs v33",
+        "candidate_wins": 43,
+        "reference_wins": 37,
+        "exact_matched_cells": 80,
+        "gains_vs_reference": 15,
+        "losses_vs_reference": 9,
+        "unchanged": 56,
+        "gain_cells": [
+          {
+            "map": "00elkring",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00fragment",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00lanes",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00pilgrimage",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00quadrants",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00quadrants",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00reverse-spiral",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00swirl",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01big-world",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01corridors",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01elk-arena",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01shortcut",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01the-farm",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01yellow-brick-road",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00ambush",
+            "candidate_side": "A"
+          }
+        ],
+        "loss_cells": [
+          {
+            "map": "00contest",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00elkring",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00gem-fields",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00split",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01boss-battle",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01concentrated-wealth",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01corridors",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01elk-arena",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01shortcut",
+            "candidate_side": "B"
+          }
+        ]
+      },
+      {
+        "comparison": "connected escape execution-only vs v33",
+        "candidate_wins": 43,
+        "reference_wins": 38,
+        "exact_matched_cells": 80,
+        "gains_vs_reference": 14,
+        "losses_vs_reference": 9,
+        "unchanged": 57,
+        "gain_cells": [
+          {
+            "map": "00elkring",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00fragment",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00pilgrimage",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00quadrants",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00quadrants",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00reverse-spiral",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00road-of-riches",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00swirl",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01elk-arena",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01shortcut",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01the-farm",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01yellow-brick-road",
+            "candidate_side": "A"
+          },
+          {
+            "map": "01yellow-brick-road",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00ambush",
+            "candidate_side": "A"
+          }
+        ],
+        "loss_cells": [
+          {
+            "map": "00collision",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00contest",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00contest",
+            "candidate_side": "B"
+          },
+          {
+            "map": "00elkring",
+            "candidate_side": "A"
+          },
+          {
+            "map": "00gem-fields",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01concentrated-wealth",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01elk-arena",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01shortcut",
+            "candidate_side": "B"
+          },
+          {
+            "map": "01starfish",
+            "candidate_side": "A"
+          }
+        ]
+      }
+    ]
+  },
+  "equal_ray_vs_execution_parent_stress": {
+    "counts": {
+      "candidate_wins": 3,
+      "candidate_games": 4,
+      "candidate_wins_by_candidate_side": {
+        "A": 3,
+        "B": 0
+      }
+    },
+    "games": 4,
+    "cells": [
+      {
+        "map": "01elk-arena",
+        "candidate_side": "A",
+        "winner_side": "A",
+        "candidate_win": true,
+        "score_A": 1020,
+        "score_B": 276,
+        "rounds_completed": 1550
+      },
+      {
+        "map": "01fracture",
+        "candidate_side": "A",
+        "winner_side": "B",
+        "candidate_win": false,
+        "score_A": 290,
+        "score_B": 1103,
+        "rounds_completed": 1152
+      },
+      {
+        "map": "00reverse-spiral",
+        "candidate_side": "A",
+        "winner_side": "A",
+        "candidate_win": true,
+        "score_A": 1005,
+        "score_B": 466,
+        "rounds_completed": 1288
+      },
+      {
+        "map": "01hooks",
+        "candidate_side": "A",
+        "winner_side": "A",
+        "candidate_win": true,
+        "score_A": 1045,
+        "score_B": 143,
+        "rounds_completed": 1400
+      }
+    ],
+    "cells_by_map": [
+      {
+        "map": "01elk-arena",
+        "candidate_side": "A",
+        "candidate_win": true,
+        "score_A": 1020,
+        "score_B": 276,
+        "rounds_completed": 1550
+      },
+      {
+        "map": "01fracture",
+        "candidate_side": "A",
+        "candidate_win": false,
+        "score_A": 290,
+        "score_B": 1103,
+        "rounds_completed": 1152
+      },
+      {
+        "map": "00reverse-spiral",
+        "candidate_side": "A",
+        "candidate_win": true,
+        "score_A": 1005,
+        "score_B": 466,
+        "rounds_completed": 1288
+      },
+      {
+        "map": "01hooks",
+        "candidate_side": "A",
+        "candidate_win": true,
+        "score_A": 1045,
+        "score_B": 143,
+        "rounds_completed": 1400
+      }
+    ]
+  },
+  "matches": [
+    {
+      "order": 1,
+      "arm": "equal-ray-vs-v33",
+      "map": "00collision",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1000,
+      "score_B": 60,
+      "rounds_started": 904,
+      "rounds_completed": 903,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "e05b81186d9146967d6cd7c95fc2759e62bc3b23b491139d060b4f35515e1464",
+      "statistics_sha256": "a454356896575860863e4e835fe60f4d4d86a9a4d5b1959c5212a2903694d7d8"
+    },
+    {
+      "order": 2,
+      "arm": "equal-ray-vs-v33",
+      "map": "00collision",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1160,
+      "score_B": 130,
+      "rounds_started": 1078,
+      "rounds_completed": 1077,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "80bd5dad715c0ecd176e58aca7c0606dd2a2ceb6a0c73ae25077ae4c37ef51de",
+      "statistics_sha256": "0d2b36cae57f44832f7711d7e1b20ba895db77dbe6415e982cd0f32c9e1dc4ff"
+    },
+    {
+      "order": 3,
+      "arm": "equal-ray-vs-v33",
+      "map": "00contest",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 0,
+      "score_B": 1000,
+      "rounds_started": 1663,
+      "rounds_completed": 1662,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "1a1f6cb48bb2cb64b85030ddf418d0225beec9dbad11bf3e32b3762fba3ae92d",
+      "statistics_sha256": "7849ff2e7265281e208f5be29c36b026b67f58ccdfa910960c2b1427981726fe"
+    },
+    {
+      "order": 4,
+      "arm": "equal-ray-vs-v33",
+      "map": "00contest",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1000,
+      "score_B": 0,
+      "rounds_started": 1944,
+      "rounds_completed": 1943,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "17d1ab9e0d5d79376f0b401303d82cdb50d6647825f1c114c938cd23ba55c359",
+      "statistics_sha256": "aeded2bb7887a55b128d4468b1d5113eb9bca19017889bcf501c721e1b3f6b4e"
+    },
+    {
+      "order": 5,
+      "arm": "equal-ray-vs-v33",
+      "map": "00corners",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1010,
+      "score_B": 451,
+      "rounds_started": 851,
+      "rounds_completed": 850,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "8910e7db5335ff9ee80867078bc6b9f696ce7a1afa51b98bed5224b602017da5",
+      "statistics_sha256": "d88962de9ef9041cbbf64ee9c4ab14b2e4c41187476fb3beb386ffadb05c6422"
+    },
+    {
+      "order": 6,
+      "arm": "equal-ray-vs-v33",
+      "map": "00corners",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1019,
+      "score_B": 426,
+      "rounds_started": 1063,
+      "rounds_completed": 1062,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "92be01c8e9d14e55f3545651d252d6d51d6acc9f16d5d616af3ff2ed4c49d144",
+      "statistics_sha256": "6bcb05f8c47744885e57fb17cd921dd14bac6fab34b23246b6dc76fb9c98ce2c"
+    },
+    {
+      "order": 7,
+      "arm": "equal-ray-vs-v33",
+      "map": "00elkring",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 242,
+      "score_B": 1100,
+      "rounds_started": 879,
+      "rounds_completed": 878,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "22708e4b4bc90e7a40adc383e7fb83a0712c8b129d59eb5fd821817d36bd8ba8",
+      "statistics_sha256": "428a32cb0dc51f80e1e6b5a7982df11824676322a50ae4c44f3d4e6f9df95da3"
+    },
+    {
+      "order": 8,
+      "arm": "equal-ray-vs-v33",
+      "map": "00elkring",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 308,
+      "score_B": 1496,
+      "rounds_started": 817,
+      "rounds_completed": 816,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "7d39e1e22e3f093d0f778d1cb18899298b65164965084248610893e007ec5b58",
+      "statistics_sha256": "6af9a746ea0c7b20722cb9ad73fe0e4a9316dbde2d729a5ede155fba109db719"
+    },
+    {
+      "order": 9,
+      "arm": "equal-ray-vs-v33",
+      "map": "00expanse",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 640,
+      "score_B": 1007,
+      "rounds_started": 939,
+      "rounds_completed": 938,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "f0210a15268a6cf61be2ba860fbef1fab6bd79bacb31ea9f1002f820f4b19d35",
+      "statistics_sha256": "d8697e69a4a815a9ca04e5a33ae5b9463661dce3fc6cdc20bfeb3421ea94c70c"
+    },
+    {
+      "order": 10,
+      "arm": "equal-ray-vs-v33",
+      "map": "00expanse",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 772,
+      "score_B": 1000,
+      "rounds_started": 1029,
+      "rounds_completed": 1028,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "b87295a17636b7b186c13aad5e9a2c3422b8920ff7cdd3f964ab5ec2b7ed121c",
+      "statistics_sha256": "a2af1e51f4fa4daabe0c8e3d1fd1c140de8455dd863c98b18fa22e19139bc1c1"
+    },
+    {
+      "order": 11,
+      "arm": "equal-ray-vs-v33",
+      "map": "00fragment",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1062,
+      "score_B": 32,
+      "rounds_started": 1360,
+      "rounds_completed": 1359,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "21b8820c5b003031a49714b3db9d587fc61c93b90890fc12f9d741cfa2e4bcc2",
+      "statistics_sha256": "145f2c65e694d7fe1b92717b25f181ecb08ffb3b791e102089fd2a291a73e7c4"
+    },
+    {
+      "order": 12,
+      "arm": "equal-ray-vs-v33",
+      "map": "00fragment",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 112,
+      "score_B": 1000,
+      "rounds_started": 1397,
+      "rounds_completed": 1396,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "c47e137820283b512b1180e7988a48d64e4612b89519574e6e9f8b436eecbe9d",
+      "statistics_sha256": "5c32e5d43d5ab6d42ffb44765472ea2749f7895cda8a303821fde104398ef115"
+    },
+    {
+      "order": 13,
+      "arm": "equal-ray-vs-v33",
+      "map": "00gem-fields",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1046,
+      "score_B": 745,
+      "rounds_started": 571,
+      "rounds_completed": 570,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "35e96d3e363b76c546c80e072affbf5f35417abf39560c015d2a2a2564db9f6a",
+      "statistics_sha256": "0e06d10b69bff4eb972c86e4781d11abc97ed276ab6423fad6ea0d24899555d9"
+    },
+    {
+      "order": 14,
+      "arm": "equal-ray-vs-v33",
+      "map": "00gem-fields",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1095,
+      "score_B": 549,
+      "rounds_started": 497,
+      "rounds_completed": 496,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "6e166c939a94d36a005c78eb274c933a039890f91f7e1984c4de11ceb207e15f",
+      "statistics_sha256": "1d6274066a5516cfcdedddc7103d3d2ed64c23ab2df408fd805a7d93677d902d"
+    },
+    {
+      "order": 15,
+      "arm": "equal-ray-vs-v33",
+      "map": "00gemfight",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 253,
+      "score_B": 1160,
+      "rounds_started": 959,
+      "rounds_completed": 958,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "e9e62d32046b55abee97ab4c5539091cd5cebec91e4f57f873a9480c58c97a37",
+      "statistics_sha256": "c7350830c60180cf60e5d5922e18672e860057525de3b01621bca9fc1f55c481"
+    },
+    {
+      "order": 16,
+      "arm": "equal-ray-vs-v33",
+      "map": "00gemfight",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1025,
+      "score_B": 68,
+      "rounds_started": 813,
+      "rounds_completed": 812,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "518638042b43bc8ac4c29cda138e0c19e0b3861bcceb30227481dd8ccc9bf154",
+      "statistics_sha256": "dc08ec8d8456f9e5e9db3d8a3a3ceedc9e4be686b37677ed74dc46d252fed9a0"
+    },
+    {
+      "order": 17,
+      "arm": "equal-ray-vs-v33",
+      "map": "00great-wall",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1008,
+      "score_B": 587,
+      "rounds_started": 1016,
+      "rounds_completed": 1015,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "8e27e5b8398ec7e383eca3401d0873edb5a1eed3c87e4647e881c628640d106c",
+      "statistics_sha256": "2a2cefb53cc1cdd9f8cbd3079ad6938f99ac32d7fccb6076ba4582a45ad755c7"
+    },
+    {
+      "order": 18,
+      "arm": "equal-ray-vs-v33",
+      "map": "00great-wall",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1054,
+      "score_B": 619,
+      "rounds_started": 1025,
+      "rounds_completed": 1024,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "dc73e90c376e625b5c83bb48954ce1987c84500b9931530141516161f7846388",
+      "statistics_sha256": "cec3fef2c85ddeb6ccb47b48c68c8c73a6d351207da17490fa9d36ea5e32f4b7"
+    },
+    {
+      "order": 19,
+      "arm": "equal-ray-vs-v33",
+      "map": "00interlock",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1032,
+      "score_B": 225,
+      "rounds_started": 892,
+      "rounds_completed": 891,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "99e6f9c6e1be85fd2429e6ac96611f4bf49953a94409adaef45c26e072604fc8",
+      "statistics_sha256": "5ad49ab92fe3f8a29ed1dc73646f1fcdc67825d75ee200c358b6ab1e7c8a6de2"
+    },
+    {
+      "order": 20,
+      "arm": "equal-ray-vs-v33",
+      "map": "00interlock",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1052,
+      "score_B": 363,
+      "rounds_started": 1157,
+      "rounds_completed": 1156,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "f5209f0e00b164ae3f88b755d4fb3741ceadc773382c7370999486d3a34dc09f",
+      "statistics_sha256": "726f2647ecf425c14e6ab5cef74c7ee77df6406fcbe7790840456ae421919c6e"
+    },
+    {
+      "order": 21,
+      "arm": "equal-ray-vs-v33",
+      "map": "00lanes",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 761,
+      "score_B": 1010,
+      "rounds_started": 914,
+      "rounds_completed": 913,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "a8d74d6ec88fbf74789a9dbc3bb7cb8f32db833c17fd5116061f03aaabbd4d71",
+      "statistics_sha256": "e2d9ad28f2bb6e5ef915da03cf1822e87c60cf404bedd7638c83c819495e5974"
+    },
+    {
+      "order": 22,
+      "arm": "equal-ray-vs-v33",
+      "map": "00lanes",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 642,
+      "score_B": 1112,
+      "rounds_started": 938,
+      "rounds_completed": 937,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "cd4a698cc78b639d3f74792355de7f394d80a0c1d35fdd10dd19de9c01e63d34",
+      "statistics_sha256": "451b0a566755643407769f290a0444a55fbfc656fb7885397757eebf9e82f01a"
+    },
+    {
+      "order": 23,
+      "arm": "equal-ray-vs-v33",
+      "map": "00lost-world",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 574,
+      "score_B": 1015,
+      "rounds_started": 729,
+      "rounds_completed": 728,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "b6418587d0c3e1ceb732369e5ded750b785ddc0fcb9a90be45d32ba128fe2844",
+      "statistics_sha256": "e0c4fd864d6c8afbb04543509bf94f4312aac37b3fbc6ad740b6088356e3bc72"
+    },
+    {
+      "order": 24,
+      "arm": "equal-ray-vs-v33",
+      "map": "00lost-world",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 84,
+      "score_B": 1001,
+      "rounds_started": 508,
+      "rounds_completed": 507,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "2c027b028fbde3649f7a4eed0ac66d2ae18886f96d3b9ddf7421d3e92dc44cfc",
+      "statistics_sha256": "522cdc0b0628761b60d3de5bd7085d31391bda69f876603ca80faa09b9602c98"
+    },
+    {
+      "order": 25,
+      "arm": "equal-ray-vs-v33",
+      "map": "00monolith",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 519,
+      "score_B": 1006,
+      "rounds_started": 931,
+      "rounds_completed": 930,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "60fdc226d0ca44a0f8615d62bfc11188e882faa13b914835592146efd8818a6c",
+      "statistics_sha256": "ca26781dcd0760121e34d107bc20b95b1ff8143da31c7c77fa95918985c91882"
+    },
+    {
+      "order": 26,
+      "arm": "equal-ray-vs-v33",
+      "map": "00monolith",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1011,
+      "score_B": 543,
+      "rounds_started": 1082,
+      "rounds_completed": 1081,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "1b6ff1c1e0e9b9d69b88a0d4135b3de73f96b197812c03ed26aea13a14c683cc",
+      "statistics_sha256": "bc5538ea9998cd6e166951501247c383f9e36722340c19d3edeaef5d6bfe3bc7"
+    },
+    {
+      "order": 27,
+      "arm": "equal-ray-vs-v33",
+      "map": "00packs",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 204,
+      "score_B": 1006,
+      "rounds_started": 819,
+      "rounds_completed": 818,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "90af54475e4e14674cb543313931c500f9728261a8cc6168459e486e4283653e",
+      "statistics_sha256": "f219adcec818ff10fc088e79a6d82c46c403a1ba2ee12e82e8df3bd2e3bb2ccc"
+    },
+    {
+      "order": 28,
+      "arm": "equal-ray-vs-v33",
+      "map": "00packs",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 208,
+      "score_B": 1016,
+      "rounds_started": 861,
+      "rounds_completed": 860,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "d089236f7b488482771098b3d54e270652864144b0545c815e2f9e12e742e9cc",
+      "statistics_sha256": "f7d89482f7fec84113349e0e5cc9386ebafd5e1e69e7a5fd3dfadbcf5c0baf6d"
+    },
+    {
+      "order": 29,
+      "arm": "equal-ray-vs-v33",
+      "map": "00pilgrimage",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1070,
+      "score_B": 210,
+      "rounds_started": 1307,
+      "rounds_completed": 1306,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "1f4dc20a7c7572a6398f127a5b3c68b621a9dc979aa4afb56c6a75e168b66862",
+      "statistics_sha256": "1140394c06116a5aea21fedf331f26c5b21b5eca18c3b6ec99ae820881ff202e"
+    },
+    {
+      "order": 30,
+      "arm": "equal-ray-vs-v33",
+      "map": "00pilgrimage",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 309,
+      "score_B": 1034,
+      "rounds_started": 1532,
+      "rounds_completed": 1531,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "d15c26cb4af37596f76d1135f6c02f05627e31fb5603a864a03e014d2585b8ee",
+      "statistics_sha256": "ba40b46cbaf6f76b9ce830ca075a7b5144bc4cffefc776433447dd6de4e5d015"
+    },
+    {
+      "order": 31,
+      "arm": "equal-ray-vs-v33",
+      "map": "00quadrants",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1023,
+      "score_B": 646,
+      "rounds_started": 573,
+      "rounds_completed": 572,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "b52ece5876d98c00ca7dd96722f538ac3f1a083cc02b490a8f6a005d1d627946",
+      "statistics_sha256": "4b982093b2958929a92c4621dcc4ce8fdb925aaa397435b161b4e8bc77d952f5"
+    },
+    {
+      "order": 32,
+      "arm": "equal-ray-vs-v33",
+      "map": "00quadrants",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 486,
+      "score_B": 1016,
+      "rounds_started": 459,
+      "rounds_completed": 458,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "c608c2b4b66d3a64d4875cadc19e58f43af62d9c8a83b4f63551ccbf23210567",
+      "statistics_sha256": "e42af8914ab6ae441033c670c26c028ac102f19581ec2dadffdecdb05b889dc0"
+    },
+    {
+      "order": 33,
+      "arm": "equal-ray-vs-v33",
+      "map": "00reverse-spiral",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 195,
+      "score_B": 1154,
+      "rounds_started": 1232,
+      "rounds_completed": 1231,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "7af18cd68555a4d7e7c9e81f84716aa1b04c6f0931ec56ce4e5f1e91b5f47d6d",
+      "statistics_sha256": "dfec993ecc6aab919e76d48db2511ae0bfe106718469cc77eb9ba4ffc08243aa"
+    },
+    {
+      "order": 34,
+      "arm": "equal-ray-vs-v33",
+      "map": "00reverse-spiral",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 471,
+      "score_B": 1026,
+      "rounds_started": 1701,
+      "rounds_completed": 1700,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "3f945501333cdfefb77c3e5a4d9de2a2b7d015a53638e84edd5b4c58efdcabf9",
+      "statistics_sha256": "403dcf5528caba45c10d44c67681c6a4d5a583371336eb327038d457bf891f3d"
+    },
+    {
+      "order": 35,
+      "arm": "equal-ray-vs-v33",
+      "map": "00road-of-riches",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 213,
+      "score_B": 1001,
+      "rounds_started": 785,
+      "rounds_completed": 784,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "46264eb1f6f753dd1b2e2322c2ffb3e22a3bab43409ae79f0527d50d9c587138",
+      "statistics_sha256": "cf84d73d159887c39c3e67f350de834f2446f76756cacae5baae35e9c1591437"
+    },
+    {
+      "order": 36,
+      "arm": "equal-ray-vs-v33",
+      "map": "00road-of-riches",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 476,
+      "score_B": 1747,
+      "rounds_started": 1210,
+      "rounds_completed": 1209,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "6e7cb0117d5715ecb4f221f7fc893dba7dbf5b4af927512ccf12f00205cb90fc",
+      "statistics_sha256": "916ca6625c4b96ceb2861d96bff6124b0a7cb5f4059b61e473a8403fe7911520"
+    },
+    {
+      "order": 37,
+      "arm": "equal-ray-vs-v33",
+      "map": "00rows",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 365,
+      "score_B": 1000,
+      "rounds_started": 1231,
+      "rounds_completed": 1230,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "97928f8a741299f44b1a2d459e9b5f8cba6a4f249831d3b6a906c74a68b2c9d1",
+      "statistics_sha256": "17613be455332799828f6576fa5526d8359d18af4c2bc115f732d8f2cd4debba"
+    },
+    {
+      "order": 38,
+      "arm": "equal-ray-vs-v33",
+      "map": "00rows",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 382,
+      "score_B": 1000,
+      "rounds_started": 1231,
+      "rounds_completed": 1230,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "3e821167c7c41a23feb55c0961060c5bdbd99713a3a3fbfa963c695f380d6e6f",
+      "statistics_sha256": "d0703b099032da3a4b35967c16b97f2378c9b8ebb1b1f98abdc437fb9777e934"
+    },
+    {
+      "order": 39,
+      "arm": "equal-ray-vs-v33",
+      "map": "00rushbait-v2",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 986,
+      "score_B": 1005,
+      "rounds_started": 1230,
+      "rounds_completed": 1229,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "9e0b61521433da50121805d87a564d5958ffe48fe0fa5d4220193e3cafd2b377",
+      "statistics_sha256": "ec961556914ce5a616e261772d58b2e63cd74380e1e7bb465e294014873c9840"
+    },
+    {
+      "order": 40,
+      "arm": "equal-ray-vs-v33",
+      "map": "00rushbait-v2",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 325,
+      "score_B": 1199,
+      "rounds_started": 1282,
+      "rounds_completed": 1281,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "dbfe27b0c8f32344a1467f2dfd4afec6ad24eee745faa889176cc75c83c6b461",
+      "statistics_sha256": "22169d7c834644adc00fe445fe8221d5d866adcdeac4fd9b92d886b994a81369"
+    },
+    {
+      "order": 41,
+      "arm": "equal-ray-vs-v33",
+      "map": "00split",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 805,
+      "score_B": 1004,
+      "rounds_started": 688,
+      "rounds_completed": 687,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "70db3d3bb2ca4227f2358a0b349c2ee94c867175fa498870179ae228b4f46429",
+      "statistics_sha256": "1bcab5df239a70eb87546e5b2b8b1a73d01314e854f345585a0c321d07f75c0b"
+    },
+    {
+      "order": 42,
+      "arm": "equal-ray-vs-v33",
+      "map": "00split",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 628,
+      "score_B": 1020,
+      "rounds_started": 689,
+      "rounds_completed": 688,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "7c1c9f306f31304719cd5601fbbb7d18f15adf78856f31a5d2d96b6363153a7e",
+      "statistics_sha256": "531392e0a6e454a5373da8cab5f37554e9eb78fb520688bffd12b0fd976bbceb"
+    },
+    {
+      "order": 43,
+      "arm": "equal-ray-vs-v33",
+      "map": "00stampede",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1120,
+      "score_B": 0,
+      "rounds_started": 1394,
+      "rounds_completed": 1393,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "3828b53ad74fd38fec976af469bfe19134c5c553e32dac95e0597b11130018a1",
+      "statistics_sha256": "3d6fb1f442bada02a98d6812d1e861b671823da24367ea9fde71d4cdb7a5180c"
+    },
+    {
+      "order": 44,
+      "arm": "equal-ray-vs-v33",
+      "map": "00stampede",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1040,
+      "score_B": 0,
+      "rounds_started": 1257,
+      "rounds_completed": 1256,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "942edc3ff3b684b552c703d1a43bd3737b33c0e63817797d5a1bd0852204beec",
+      "statistics_sha256": "569667dcaeb3d1854393219adf32419f6295bffd32d2de76b9d79baa08324fe3"
+    },
+    {
+      "order": 45,
+      "arm": "equal-ray-vs-v33",
+      "map": "00swirl",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1024,
+      "score_B": 964,
+      "rounds_started": 1241,
+      "rounds_completed": 1240,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "eb8704bdd7ab28fb66c6441e858a84d38f2bdf74053df6e6208b31abb394ca93",
+      "statistics_sha256": "1507015ac19de7b948db121fe39b600672eb5b51fd0097689b14838cfc38c002"
+    },
+    {
+      "order": 46,
+      "arm": "equal-ray-vs-v33",
+      "map": "00swirl",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 23,
+      "score_B": 1001,
+      "rounds_started": 660,
+      "rounds_completed": 659,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "5ac908c965659d42cd6c3c0f3dd5ba9100534983366f392aa4bbf94473ae8930",
+      "statistics_sha256": "61a0f54706e6c7e889ae8a6232b648b57f8f29987bef4f077e1cba9e0fcb71a5"
+    },
+    {
+      "order": 47,
+      "arm": "equal-ray-vs-v33",
+      "map": "01big-world",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 688,
+      "score_B": 1022,
+      "rounds_started": 1003,
+      "rounds_completed": 1002,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "50b9733087b1b5c6b9de85ccd0ca5cb5b4589bbb56dfef56b69b9b01546b4600",
+      "statistics_sha256": "42b429daed3d47a28793e5430375a95132f29e5304c4961f2df7779f767c7688"
+    },
+    {
+      "order": 48,
+      "arm": "equal-ray-vs-v33",
+      "map": "01big-world",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 718,
+      "score_B": 1015,
+      "rounds_started": 882,
+      "rounds_completed": 881,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "5cfb79ee10742e282b6fee04e832a63b521bf723c3e00cb4406e9ed8b5e349e2",
+      "statistics_sha256": "63f8300a5a4a482f49733471a749548b84575b9ef558e27412b142c5b90db285"
+    },
+    {
+      "order": 49,
+      "arm": "equal-ray-vs-v33",
+      "map": "01boss-battle",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 8,
+      "score_B": 1222,
+      "rounds_started": 1000,
+      "rounds_completed": 999,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "5b2ee794b821f5ea1682e6e46551e3815eef4df852bc9f225c087da358d186f2",
+      "statistics_sha256": "1aca4232ddcca117c7fbb3b41f94e2403859525c0a7cbdb24e723ca4f458c8bf"
+    },
+    {
+      "order": 50,
+      "arm": "equal-ray-vs-v33",
+      "map": "01boss-battle",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1075,
+      "score_B": 0,
+      "rounds_started": 1226,
+      "rounds_completed": 1225,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "8b474f84753096b10e71ae1c05fa0b9277b0349dc6434139aaddd4615014483e",
+      "statistics_sha256": "99e1815c079b9e57e9d9747ff7d2be35206801481d812b4a6e393b0ba8ae48c6"
+    },
+    {
+      "order": 51,
+      "arm": "equal-ray-vs-v33",
+      "map": "01broken-curve",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1015,
+      "score_B": 548,
+      "rounds_started": 829,
+      "rounds_completed": 828,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "134eb65f32e74117eebbbe67d656b922691614200ef0c2bb77bcf87eaedbf007",
+      "statistics_sha256": "03031ed493fccf828ecc4602b76b795a44bc7cc5fe6c76d96f9a9f1594d61453"
+    },
+    {
+      "order": 52,
+      "arm": "equal-ray-vs-v33",
+      "map": "01broken-curve",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1014,
+      "score_B": 432,
+      "rounds_started": 712,
+      "rounds_completed": 711,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "ee9e376584325067cb3e56d3d325c813f8faf458e2a14c272a642ea7baada3c3",
+      "statistics_sha256": "da68821539672469959e3e92c8bace69c91e6fc057388cf2275275696797932a"
+    },
+    {
+      "order": 53,
+      "arm": "equal-ray-vs-v33",
+      "map": "01concentrated-wealth",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 245,
+      "score_B": 1032,
+      "rounds_started": 1193,
+      "rounds_completed": 1192,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "70412ed44b1cbe144c508c9bdaf3adbc9ed04cd167f5780025d4c974581e7584",
+      "statistics_sha256": "f1db0fa6fb7623de564fc6ef1f94bbb05028b672ddd1cb1788de17119fa7bead"
+    },
+    {
+      "order": 54,
+      "arm": "equal-ray-vs-v33",
+      "map": "01concentrated-wealth",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1015,
+      "score_B": 397,
+      "rounds_started": 1271,
+      "rounds_completed": 1270,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "e232039c8edf0306f980bacd7bac1911ee948738e6ba5dd16d04319376f0748d",
+      "statistics_sha256": "a98a425527a97562e8158ade2f92812fee2c67387536344956d27e2d21dc45d1"
+    },
+    {
+      "order": 55,
+      "arm": "equal-ray-vs-v33",
+      "map": "01corridors",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 162,
+      "score_B": 1054,
+      "rounds_started": 955,
+      "rounds_completed": 954,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "5f2a6a82c2b84ab0d41c4fa2616a4b799bce3c9603e3f9ec82523c4d09785273",
+      "statistics_sha256": "322bedd6bbfc8e4159c5e53b0d134616df0db270622665c244657ae479eb3a75"
+    },
+    {
+      "order": 56,
+      "arm": "equal-ray-vs-v33",
+      "map": "01corridors",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 398,
+      "score_B": 1014,
+      "rounds_started": 1041,
+      "rounds_completed": 1040,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "3fb28929ed1cdecf4cb25b5071cc0689fbc23d7d87bde64cea4e42c3419661d2",
+      "statistics_sha256": "b7b2946677264dd3534c74bcd6e5a50283fef0ddf97feca50134e9ffb9e3f57b"
+    },
+    {
+      "order": 57,
+      "arm": "equal-ray-vs-v33",
+      "map": "01elk-arena",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1020,
+      "score_B": 204,
+      "rounds_started": 1533,
+      "rounds_completed": 1532,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "dde191658a645e98b1d36c60da5fe7ebfd35b7fe3d9935722bb56ee197e76c12",
+      "statistics_sha256": "e4fd734a460acaa6add34669febc7905ff50fb08806748c22678682a48cafd43"
+    },
+    {
+      "order": 58,
+      "arm": "equal-ray-vs-v33",
+      "map": "01elk-arena",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1008,
+      "score_B": 144,
+      "rounds_started": 1379,
+      "rounds_completed": 1378,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "8103b7fb615b62baa73824933f68eb2f8dfe6863cab6096f06fc0209444cc4ad",
+      "statistics_sha256": "04a55fb8d57856195e83b9c4690e821623bcb13cc3c1ece41c665674d100bebe"
+    },
+    {
+      "order": 59,
+      "arm": "equal-ray-vs-v33",
+      "map": "01fracture",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1040,
+      "score_B": 457,
+      "rounds_started": 1191,
+      "rounds_completed": 1190,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "b8e2b75f9252101a6692a1029921942c9e5d4d69f03761f703235df53d25c013",
+      "statistics_sha256": "80675346e4261e99e94b2b5bf77724b57bd85f47121b4c12c7bcad865b7ec9f1"
+    },
+    {
+      "order": 60,
+      "arm": "equal-ray-vs-v33",
+      "map": "01fracture",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1037,
+      "score_B": 278,
+      "rounds_started": 953,
+      "rounds_completed": 952,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "6d89515ab75cd67e350ec1b67a664e1b05be0f94c873d7211c1d1d08212aa39b",
+      "statistics_sha256": "39b3f37c098a3de4c955c746011110ad1db73427154822df3f85c5909e9d7950"
+    },
+    {
+      "order": 61,
+      "arm": "equal-ray-vs-v33",
+      "map": "01gold-rush",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 341,
+      "score_B": 1001,
+      "rounds_started": 1734,
+      "rounds_completed": 1733,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "1347f293b4e47810aa295bad83741bb4a3fd1567c0954d3a3d3b4f0e5e6c9143",
+      "statistics_sha256": "adf543ef8d6f3315d98fb40f4cb27be3874c7ba6e1c6307a44a31b69b611de46"
+    },
+    {
+      "order": 62,
+      "arm": "equal-ray-vs-v33",
+      "map": "01gold-rush",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 280,
+      "score_B": 1007,
+      "rounds_started": 1707,
+      "rounds_completed": 1706,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "496a9f2d70af29bcfd8309c92d5d19c126444850ea59874040a1569d4810c05f",
+      "statistics_sha256": "8dc61b3d105b494c0b66863dc69671eb9c0c856724f177fc1dcf73299c1c366c"
+    },
+    {
+      "order": 63,
+      "arm": "equal-ray-vs-v33",
+      "map": "01hooks",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1012,
+      "score_B": 176,
+      "rounds_started": 1220,
+      "rounds_completed": 1219,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "76ef50c5f10ace67f3aac8f36f860e7756b4c31e3d860fac57cc6e558424a4af",
+      "statistics_sha256": "507d6914fbf23f4e2d20728f479839e2e695e5ceca2decf0f171bdad5d8b82ba"
+    },
+    {
+      "order": 64,
+      "arm": "equal-ray-vs-v33",
+      "map": "01hooks",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 0,
+      "score_B": 1012,
+      "rounds_started": 1075,
+      "rounds_completed": 1074,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "3274b670fb7bdd05a472d87132e1c7c27827b16129c8bb89a33a3abf40b4b088",
+      "statistics_sha256": "0b388c289c191221ba476641e2b712f4c3e6ee5372bdad72826b5afc905dd2ed"
+    },
+    {
+      "order": 65,
+      "arm": "equal-ray-vs-v33",
+      "map": "01islands",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1019,
+      "score_B": 680,
+      "rounds_started": 739,
+      "rounds_completed": 738,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "2a3fc6ba7f37a81d1d2d679e4085f29558e70ac7d3818791b7d80e84b70c1e66",
+      "statistics_sha256": "33e2aec98633cde449cefbd506924ffdf341a4585d0fbac62d8d6d4813c16c86"
+    },
+    {
+      "order": 66,
+      "arm": "equal-ray-vs-v33",
+      "map": "01islands",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 614,
+      "score_B": 1005,
+      "rounds_started": 735,
+      "rounds_completed": 734,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "1b450435682b159f5bf830331432e13b2e64186913569621b7962e1fc64eb7b6",
+      "statistics_sha256": "589572de56eb6d932ea4b9e30c732a88ace7c043846d72e52f0a2440a48593d9"
+    },
+    {
+      "order": 67,
+      "arm": "equal-ray-vs-v33",
+      "map": "01shortcut",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1000,
+      "score_B": 359,
+      "rounds_started": 1090,
+      "rounds_completed": 1089,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "ce34bfd7213beafd21ef0c0a79e10de4ad5573b2c3f673919c6d24e9dd5608fd",
+      "statistics_sha256": "d3135453b0dd377a8f09f2260a3240de73ac0cc520725bf7f969a98756bba583"
+    },
+    {
+      "order": 68,
+      "arm": "equal-ray-vs-v33",
+      "map": "01shortcut",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1275,
+      "score_B": 647,
+      "rounds_started": 1413,
+      "rounds_completed": 1412,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "ccaeeaac957a822e0b720db9b0b9db491490f7406339b3b7f4a143224276dfec",
+      "statistics_sha256": "b109a2bb04d1c20fb9573d90a55a64572ed3e4f7dff78d3c6483351cf7b002f8"
+    },
+    {
+      "order": 69,
+      "arm": "equal-ray-vs-v33",
+      "map": "01starfish",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 206,
+      "score_B": 1000,
+      "rounds_started": 970,
+      "rounds_completed": 969,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "c5001c450f99c63d50be6a44e790e3a9e37435567974552327e672582c75f0e9",
+      "statistics_sha256": "ae02b6dd5ade739caa8a23649e77251416feb8f14bfb5a12e1f6600ca9ce011d"
+    },
+    {
+      "order": 70,
+      "arm": "equal-ray-vs-v33",
+      "map": "01starfish",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1194,
+      "score_B": 130,
+      "rounds_started": 1261,
+      "rounds_completed": 1260,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "8d713ee8a8e17f5e268ebd20cfd4fe20a672d3cb1b029b9d674daadde83d1e29",
+      "statistics_sha256": "1591dd2ca6be04359928ea5193a8950541cb0a3bf7f359d34a05ecb2eb6e509d"
+    },
+    {
+      "order": 71,
+      "arm": "equal-ray-vs-v33",
+      "map": "01the-farm",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1017,
+      "score_B": 463,
+      "rounds_started": 829,
+      "rounds_completed": 828,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "39df5755ae0a1f5a8dba4d16cb4dd82797c7a7f3395df79f85cfc8bd85df38be",
+      "statistics_sha256": "fe30a0a2f3f7364933ec39d0eb3975c08d922a38f8a4aac47c1941cc44862018"
+    },
+    {
+      "order": 72,
+      "arm": "equal-ray-vs-v33",
+      "map": "01the-farm",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 919,
+      "score_B": 1328,
+      "rounds_started": 1031,
+      "rounds_completed": 1030,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 3,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "cc71902cefe6db7a51cbf4c4a7205254c0e500777af36ccc1b48169957ce8ac4",
+      "statistics_sha256": "48e3cc72580b20c538e86c4fb0328998e99075fe564772327b2b7aede5c68333"
+    },
+    {
+      "order": 73,
+      "arm": "equal-ray-vs-v33",
+      "map": "01yellow-brick-road",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1057,
+      "score_B": 992,
+      "rounds_started": 777,
+      "rounds_completed": 776,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "89dd4543c622a7927c3cd7f219cb777a1326b63aa06d8c915e509b7156318375",
+      "statistics_sha256": "9743ca31da799fcc818d5dfc5492dd78aee67d0dacbd96a1616b7066d76b626c"
+    },
+    {
+      "order": 74,
+      "arm": "equal-ray-vs-v33",
+      "map": "01yellow-brick-road",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 724,
+      "score_B": 1082,
+      "rounds_started": 715,
+      "rounds_completed": 714,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "8eaba4fcd30f61ddc3d9c3271ff0d4afdbd7e52b93d8237b0c7c178dde71a48c",
+      "statistics_sha256": "e0495cde0577b4c506082eb7b007832b5ded29ad626fae420726c15db6a34888"
+    },
+    {
+      "order": 75,
+      "arm": "equal-ray-vs-v33",
+      "map": "00ambush",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1027,
+      "score_B": 269,
+      "rounds_started": 1128,
+      "rounds_completed": 1127,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "c08317fbaa14273fe70f0099e8a5ceb4a1a66f419d4cd93aaec295da68bff80e",
+      "statistics_sha256": "dceb43be2e2867e5a0588418918c5b9fe4d53a9b239bbdae2f5b1f82e56b038e"
+    },
+    {
+      "order": 76,
+      "arm": "equal-ray-vs-v33",
+      "map": "00ambush",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 260,
+      "score_B": 1004,
+      "rounds_started": 1050,
+      "rounds_completed": 1049,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "9371983b4df23c16b496c5e81a892273e96cc4876de0d46831ae1b70c18b84a2",
+      "statistics_sha256": "c78616af969a2f34df8f24c828dbeede137cde6d8190cf121d7981fe24b3b5bb"
+    },
+    {
+      "order": 77,
+      "arm": "equal-ray-vs-v33",
+      "map": "00eight",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1008,
+      "score_B": 86,
+      "rounds_started": 976,
+      "rounds_completed": 975,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "63b705f0ba69e5a115acf8ef6fce2e9461fee5af7489557392b799f04de0958d",
+      "statistics_sha256": "58f359ce8680aa27a299284fc085256528aa628ce7a39d2b5d80c8790c8050b1"
+    },
+    {
+      "order": 78,
+      "arm": "equal-ray-vs-v33",
+      "map": "00eight",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "A",
+      "candidate_win": false,
+      "score_A": 1037,
+      "score_B": 201,
+      "rounds_started": 957,
+      "rounds_completed": 956,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "f8159c3eca9ace109f49adb44352e577a4e8c0865f58660e63fc9658220d0243",
+      "statistics_sha256": "4944a62b7e761879685ce06966defe3ba18aa547eb59202b07ec4fa655dcffe5"
+    },
+    {
+      "order": 79,
+      "arm": "equal-ray-vs-v33",
+      "map": "01starvation",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "v33",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 364,
+      "score_B": 1040,
+      "rounds_started": 1650,
+      "rounds_completed": 1649,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "0235234b7887824cb58f88aa014d22ffe3c2ed917096c63f3e1f0bd40ad72790",
+      "statistics_sha256": "1126a972d7dfd7f4513c6cdff76ba26bdc0cf471b883bea5ffb19396c21126d4"
+    },
+    {
+      "order": 80,
+      "arm": "equal-ray-vs-v33",
+      "map": "01starvation",
+      "candidate_side": "B",
+      "A_source": "v33",
+      "B_source": "equal-ray",
+      "winner_side": "B",
+      "candidate_win": true,
+      "score_A": 216,
+      "score_B": 1020,
+      "rounds_started": 1744,
+      "rounds_completed": 1743,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "f970196e509351395f76223f4d138c6501e4d79475f4152d39e95821981433c5",
+      "statistics_sha256": "92ed79d99c4f54f059e5d3707b19207ca399b4db9ac2c59bac2b6137f6036cc1"
+    },
+    {
+      "order": 81,
+      "arm": "equal-ray-vs-execution-parent",
+      "map": "01elk-arena",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "execution-parent",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1020,
+      "score_B": 276,
+      "rounds_started": 1551,
+      "rounds_completed": 1550,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "e422671b1551e3e757a977ed9b352b9dd0ab33f5dd55552b07670e97be423e5d",
+      "statistics_sha256": "c811f5f9721f2bece1e74bfc0ce2a769fe80c5e777bd5ec157055a9a96ac38a8"
+    },
+    {
+      "order": 82,
+      "arm": "equal-ray-vs-execution-parent",
+      "map": "01fracture",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "execution-parent",
+      "winner_side": "B",
+      "candidate_win": false,
+      "score_A": 290,
+      "score_B": 1103,
+      "rounds_started": 1153,
+      "rounds_completed": 1152,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 5,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "4d44e1b5e1fa1c3731833a4061067a12853e1d8c4e4d341c3deb1e635938a83a",
+      "statistics_sha256": "bdcb264ab2bf6d72339b2be81edf99fd64fa47ba39648f794da41102ea5bdfb9"
+    },
+    {
+      "order": 83,
+      "arm": "equal-ray-vs-execution-parent",
+      "map": "00reverse-spiral",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "execution-parent",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1005,
+      "score_B": 466,
+      "rounds_started": 1289,
+      "rounds_completed": 1288,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "3d338299a89fa97f060db763b6b01946ed41fd4ceeb92b6d14c20935cc13fa4d",
+      "statistics_sha256": "730e57f4f8e86c90d6d56b79ad981cbf2f6a8323b12c592b0ebc44bb283d0b70"
+    },
+    {
+      "order": 84,
+      "arm": "equal-ray-vs-execution-parent",
+      "map": "01hooks",
+      "candidate_side": "A",
+      "A_source": "equal-ray",
+      "B_source": "execution-parent",
+      "winner_side": "A",
+      "candidate_win": true,
+      "score_A": 1045,
+      "score_B": 143,
+      "rounds_started": 1401,
+      "rounds_completed": 1400,
+      "teamA_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "teamB_picks": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Heart of Ruin"
+      ],
+      "draft_picks_per_side": 4,
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "detailed_capture_complete": true,
+      "replay_sha256": "764195669bbd50a4dfe19082ed83b2ce331c38fc32d59ed31da926da1dd7c97b",
+      "statistics_sha256": "1dc589d5228480734ad1ad5cc2bd56d8ff6d7d4219641dbd273fcbcf12c24f1f"
+    }
+  ],
+  "native_status": {
+    "v33": {
+      "games": 80,
+      "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+      "snapshot_mode": "v1_0_3_compact_timeline",
+      "bots": {
+        "willow-v47-equal-ray-escape": {
+          "games": 80,
+          "play": {
+            "rollover": 246,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "v33": {
+          "games": 80,
+          "play": {
+            "rollover": 553,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    },
+    "execution_parent": {
+      "games": 4,
+      "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+      "snapshot_mode": "v1_0_3_compact_timeline",
+      "bots": {
+        "willow-v47-equal-ray-escape": {
+          "games": 4,
+          "play": {
+            "rollover": 38,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "willow-v47-connected-escape-execution": {
+          "games": 4,
+          "play": {
+            "rollover": 38,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    }
+  },
+  "draft_pick_count_distribution_per_side": {
+    "3": 12,
+    "4": 18,
+    "5": 54
+  },
+  "native_status_paths": [
+    "native-audit/equal-ray-vs-v33/native-status.json",
+    "native-audit/equal-ray-vs-execution-parent/native-status.json"
+  ],
+  "limitations": [
+    "Four parent stress cells are one-sided candidate-A diagnostics, not a balanced outcome panel.",
+    "Outcome differences are exact matched map/physical-side cells, but are competitive diagnostics; only the full source/status audits establish the reported mechanical facts."
+  ],
+  "matched_marcella_hop_v33_screen": {
+    "source_result_path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-combination-screen-480-v1/RESULT.json",
+    "exact_arm": "marcella-hop (M+H)",
+    "source_aggregate": "709ba31a186fb1e5b27a180ac58d50a913af10cba42ccbc31151ae36c04f26f4",
+    "opponent": "v33",
+    "games": 80,
+    "candidate_wins": 52,
+    "candidate_losses": 28,
+    "candidate_wins_by_candidate_side": {
+      "A": 26,
+      "B": 26
+    },
+    "comparison_basis": "same 40 published maps \u00d7 physical sides; exact f475 ledger from 71 full-panel statistics files plus nine reused statistics files",
+    "f475_candidate_wins": 45,
+    "f475_losses_recovered": 12,
+    "f475_losses_recovered_cells": [
+      {
+        "map": "00ambush",
+        "candidate_side": "A"
+      },
+      {
+        "map": "00gem-fields",
+        "candidate_side": "B"
+      },
+      {
+        "map": "00gemfight",
+        "candidate_side": "A"
+      },
+      {
+        "map": "00lanes",
+        "candidate_side": "A"
+      },
+      {
+        "map": "00lost-world",
+        "candidate_side": "A"
+      },
+      {
+        "map": "00reverse-spiral",
+        "candidate_side": "B"
+      },
+      {
+        "map": "00road-of-riches",
+        "candidate_side": "A"
+      },
+      {
+        "map": "00split",
+        "candidate_side": "A"
+      },
+      {
+        "map": "01islands",
+        "candidate_side": "B"
+      },
+      {
+        "map": "01starvation",
+        "candidate_side": "B"
+      },
+      {
+        "map": "01yellow-brick-road",
+        "candidate_side": "A"
+      },
+      {
+        "map": "01yellow-brick-road",
+        "candidate_side": "B"
+      }
+    ],
+    "f475_wins_lost": 5,
+    "f475_wins_lost_cells": [
+      {
+        "map": "00elkring",
+        "candidate_side": "A"
+      },
+      {
+        "map": "00great-wall",
+        "candidate_side": "A"
+      },
+      {
+        "map": "00lanes",
+        "candidate_side": "B"
+      },
+      {
+        "map": "01big-world",
+        "candidate_side": "B"
+      },
+      {
+        "map": "01fracture",
+        "candidate_side": "A"
+      }
+    ],
+    "equal_ray_overlap": {
+      "f475_losses_recovered_by_both": 6,
+      "shared_recovered_cells": [
+        {
+          "map": "00ambush",
+          "candidate_side": "A"
+        },
+        {
+          "map": "00reverse-spiral",
+          "candidate_side": "B"
+        },
+        {
+          "map": "01islands",
+          "candidate_side": "B"
+        },
+        {
+          "map": "01starvation",
+          "candidate_side": "B"
+        },
+        {
+          "map": "01yellow-brick-road",
+          "candidate_side": "A"
+        },
+        {
+          "map": "01yellow-brick-road",
+          "candidate_side": "B"
+        }
+      ],
+      "M_plus_H_only_recovered": [
+        {
+          "map": "00gem-fields",
+          "candidate_side": "B"
+        },
+        {
+          "map": "00gemfight",
+          "candidate_side": "A"
+        },
+        {
+          "map": "00lanes",
+          "candidate_side": "A"
+        },
+        {
+          "map": "00lost-world",
+          "candidate_side": "A"
+        },
+        {
+          "map": "00road-of-riches",
+          "candidate_side": "A"
+        },
+        {
+          "map": "00split",
+          "candidate_side": "A"
+        }
+      ],
+      "equal_ray_only_recovered": [
+        {
+          "map": "00fragment",
+          "candidate_side": "A"
+        },
+        {
+          "map": "00fragment",
+          "candidate_side": "B"
+        },
+        {
+          "map": "00quadrants",
+          "candidate_side": "B"
+        },
+        {
+          "map": "00rushbait-v2",
+          "candidate_side": "B"
+        },
+        {
+          "map": "01hooks",
+          "candidate_side": "A"
+        },
+        {
+          "map": "01shortcut",
+          "candidate_side": "A"
+        }
+      ],
+      "f475_wins_lost_by_both": 1,
+      "shared_loss_cells": [
+        {
+          "map": "00elkring",
+          "candidate_side": "A"
+        }
+      ],
+      "M_plus_H_only_lost": [
+        {
+          "map": "00great-wall",
+          "candidate_side": "A"
+        },
+        {
+          "map": "00lanes",
+          "candidate_side": "B"
+        },
+        {
+          "map": "01big-world",
+          "candidate_side": "B"
+        },
+        {
+          "map": "01fracture",
+          "candidate_side": "A"
+        }
+      ],
+      "equal_ray_only_lost": [
+        {
+          "map": "00contest",
+          "candidate_side": "B"
+        },
+        {
+          "map": "00gemfight",
+          "candidate_side": "B"
+        },
+        {
+          "map": "00reverse-spiral",
+          "candidate_side": "A"
+        },
+        {
+          "map": "00rushbait-v2",
+          "candidate_side": "A"
+        },
+        {
+          "map": "01boss-battle",
+          "candidate_side": "B"
+        },
+        {
+          "map": "01broken-curve",
+          "candidate_side": "B"
+        },
+        {
+          "map": "01concentrated-wealth",
+          "candidate_side": "A"
+        },
+        {
+          "map": "01corridors",
+          "candidate_side": "A"
+        },
+        {
+          "map": "01elk-arena",
+          "candidate_side": "B"
+        },
+        {
+          "map": "01shortcut",
+          "candidate_side": "B"
+        },
+        {
+          "map": "01starfish",
+          "candidate_side": "A"
+        },
+        {
+          "map": "01starfish",
+          "candidate_side": "B"
+        },
+        {
+          "map": "01starvation",
+          "candidate_side": "A"
+        }
+      ]
+    },
+    "superseded_calculation_path": "provenance/khaos-v34-ladder-intake-20261024-v1/equal-ray-escape-release-screen-v1/RESULT-superseded-mixed-arm-comparison-v1.json",
+    "correction_record_path": "provenance/khaos-v34-ladder-intake-20261024-v1/equal-ray-escape-release-screen-v1/COMPARISON-CORRECTION.json",
+    "limitation": "descriptive matched-cell outcome comparison only; no causal or strength inference"
+  },
+  "comparison_correction_path": "provenance/khaos-v34-ladder-intake-20261024-v1/equal-ray-escape-release-screen-v1/COMPARISON-CORRECTION.json"
+}

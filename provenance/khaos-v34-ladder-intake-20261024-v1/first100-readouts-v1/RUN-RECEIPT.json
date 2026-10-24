@@ -1,0 +1,356 @@
+{
+  "schema": "willow-first100-readout-receipt-v1",
+  "created": "2026-10-24",
+  "purpose": "six existing candidate-A vs v33 replays, rounds1-100 macro/event chronology only",
+  "decode_command": "node tools/replay/extract.mjs <the six v2 candidate-A .repl26a paths> --threads 1 --out provenance/khaos-v34-ladder-intake-20261024-v1/first100-readouts-v1/extracted",
+  "analysis_command": "python3 provenance/khaos-v34-ladder-intake-20261024-v1/first100-readouts-v1/analyze_first100.py",
+  "python": "3.9.6",
+  "node": "v26.0.0",
+  "extractor_engine": "v1_0_3",
+  "engine_wasm_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+  "pins": {
+    "tools/replay/extract.mjs": {
+      "bytes": 43988,
+      "sha256": "2f1704991077bed0bac08dc3319ecd54ab88e42e2a23516d81974ead37fc180f"
+    },
+    "tools/replay/engine.mjs": {
+      "bytes": 24893,
+      "sha256": "f0f3c870c5331b13bad2f0950fed7fa09d65235a9b8f77d6867072b62c99c2c6"
+    },
+    "tools/replay/timeline_v103.mjs": {
+      "bytes": 4614,
+      "sha256": "5201df0d69c85f43dce382de7b661e1ccdd4e644a640fb18983a9fa708b3b772"
+    },
+    "tools/replay/engine/v1_0_3.wasm": {
+      "bytes": 638472,
+      "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+    },
+    "provenance/khaos-v34-ladder-intake-20261024-v1/first100-readouts-v1/analyze_first100.py": {
+      "bytes": 12612,
+      "sha256": "991808b9e6b7b64f1adcd2d6b7d744dcb93d36b72b27cc40469514b8a81ace50"
+    }
+  },
+  "replays": [
+    {
+      "label": "M-gen-gen-rows-102301101-vs-v33-candidate-A",
+      "input_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/M-gen-gen-rows-102301101-vs-v33-candidate-A.repl26a",
+        "bytes": 62596,
+        "sha256": "45ac720b28189d30578fbc86ff2b65d899dfa785dc330e0621f27dd7b11d08e3"
+      },
+      "extracted_directory": "45ac720b28189d30",
+      "map": {
+        "name": "M-gen-gen-rows-102301101-vs-v33-candidate-A",
+        "hash": "14d342bcd0d30f7f",
+        "width": 53,
+        "height": 53,
+        "symmetry": "horizontal"
+      },
+      "map_file": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/first100-readouts-v1/extracted/maps/14d342bcd0d30f7f.json",
+        "bytes": 5449,
+        "sha256": "e72d7b4620e0fdd766d80c3e8fa867b97d9b8ebfe84a8528ca0ad3de85d5a97d"
+      },
+      "decoded_files": {
+        "meta.json": {
+          "bytes": 4986,
+          "sha256": "7fc15aa68f2e3d5582e43f474cbac49d0aba534772ac3523c7a0df4f7ade4b6a"
+        },
+        "events.jsonl.gz": {
+          "bytes": 283919,
+          "sha256": "533d85526819b08bc2cce798062efc2e4b99a2d21684fe9f0c57b4890f334b9a"
+        },
+        "rounds.json.gz": {
+          "bytes": 75815,
+          "sha256": "920f809140c9be2001664eafa50b3fe7ed9a6e9a53cbec1ebaf9f7009b38793f"
+        }
+      },
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "outcome": {
+        "winner": 0,
+        "outcome": 1,
+        "rounds": 1820,
+        "gems": [
+          1005,
+          225
+        ],
+        "steps": 161650
+      }
+    },
+    {
+      "label": "M-gen-gen-star-102305406-vs-v33-candidate-A",
+      "input_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/M-gen-gen-star-102305406-vs-v33-candidate-A.repl26a",
+        "bytes": 18494,
+        "sha256": "562a8e590b7856dabbc75d78d13e00eafd61b07939c06d23481629b8ed97b78a"
+      },
+      "extracted_directory": "562a8e590b7856da",
+      "map": {
+        "name": "M-gen-gen-star-102305406-vs-v33-candidate-A",
+        "hash": "74a2598867b91454",
+        "width": 100,
+        "height": 100,
+        "symmetry": "horizontal"
+      },
+      "map_file": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/first100-readouts-v1/extracted/maps/74a2598867b91454.json",
+        "bytes": 52292,
+        "sha256": "47ba0a14f27f36f141374056d761c8c14f46efd94fd3c45850ecf2ce9ff05160"
+      },
+      "decoded_files": {
+        "meta.json": {
+          "bytes": 4339,
+          "sha256": "0100cd047f63f051fdf083f37c115ffddf19cca07263a037ef205bd6cd029796"
+        },
+        "events.jsonl.gz": {
+          "bytes": 80725,
+          "sha256": "bb5aa5cdc0649101b9e425a84d21adf794e3ada1e77e8bd2a1f3efa14fc35aa8"
+        },
+        "rounds.json.gz": {
+          "bytes": 34005,
+          "sha256": "93a4babce9c9c943fa92542f3daa9c0bbd5f2a450a1f0972ef8d0c0949d7ce5e"
+        }
+      },
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "outcome": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 458,
+        "gems": [
+          847,
+          1001
+        ],
+        "steps": 102057
+      }
+    },
+    {
+      "label": "C-gen-gen-star-102305406-vs-v33-candidate-A",
+      "input_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-star-102305406-vs-v33-candidate-A.repl26a",
+        "bytes": 21530,
+        "sha256": "571f169fe9d8eeb213c6c600bb166692c00f9d0ff13176b96be02875168d0e9e"
+      },
+      "extracted_directory": "571f169fe9d8eeb2",
+      "map": {
+        "name": "C-gen-gen-star-102305406-vs-v33-candidate-A",
+        "hash": "74a2598867b91454",
+        "width": 100,
+        "height": 100,
+        "symmetry": "horizontal"
+      },
+      "map_file": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/first100-readouts-v1/extracted/maps/74a2598867b91454.json",
+        "bytes": 52292,
+        "sha256": "47ba0a14f27f36f141374056d761c8c14f46efd94fd3c45850ecf2ce9ff05160"
+      },
+      "decoded_files": {
+        "meta.json": {
+          "bytes": 4657,
+          "sha256": "79107f24edd760c768baa133438aac17ee6176d1f0bf32da32cc2fc959d46373"
+        },
+        "events.jsonl.gz": {
+          "bytes": 96197,
+          "sha256": "8c77fa3d51362d8f10850defe258a069596a1345facc3f1d653c4f2a6ca5a10d"
+        },
+        "rounds.json.gz": {
+          "bytes": 36281,
+          "sha256": "80a2409530d09468a358b89bc5e78b0f4180feb20169faa707f43aeb4e601ca2"
+        }
+      },
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "outcome": {
+        "winner": 0,
+        "outcome": 1,
+        "rounds": 470,
+        "gems": [
+          1008,
+          518
+        ],
+        "steps": 110970
+      }
+    },
+    {
+      "label": "C-gen-s1-gen-classic-102400016-vs-v33-candidate-A",
+      "input_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-s1-gen-classic-102400016-vs-v33-candidate-A.repl26a",
+        "bytes": 46780,
+        "sha256": "6423e3ab95e99b5a859dbc12f69be8402e87d07d3e2573c756dd92cc3742eba2"
+      },
+      "extracted_directory": "6423e3ab95e99b5a",
+      "map": {
+        "name": "C-gen-s1-gen-classic-102400016-vs-v33-candidate-A",
+        "hash": "c9e0beb0f5b5f0ef",
+        "width": 73,
+        "height": 73,
+        "symmetry": "vertical"
+      },
+      "map_file": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/first100-readouts-v1/extracted/maps/c9e0beb0f5b5f0ef.json",
+        "bytes": 12435,
+        "sha256": "ed70641bbc5e5e603f8e49df9bcb5c628ef3bbbf342dea210924f09d02e7e45e"
+      },
+      "decoded_files": {
+        "meta.json": {
+          "bytes": 5341,
+          "sha256": "f853d11b20b6f6329e0722da0b854159b2c8017f4eb1a54d7254dcaf975d68fd"
+        },
+        "events.jsonl.gz": {
+          "bytes": 203029,
+          "sha256": "938ec5c5f59d983f1b584b6ab75e32bc2a3bf2b74e384af75534512db8b7cfc1"
+        },
+        "rounds.json.gz": {
+          "bytes": 57451,
+          "sha256": "3f6c907b8f2fef4fb864b21539168fa05401eaab571db5a96642bf4682f4a802"
+        }
+      },
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "outcome": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 1081,
+        "gems": [
+          600,
+          1007
+        ],
+        "steps": 141981
+      }
+    },
+    {
+      "label": "M-gen-s1-gen-classic-102400016-vs-v33-candidate-A",
+      "input_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/M-gen-s1-gen-classic-102400016-vs-v33-candidate-A.repl26a",
+        "bytes": 37175,
+        "sha256": "6b1b171133477f16c8b2f0f0ef5be38c0c24ff8ceecbcce4e3a5845c275dc540"
+      },
+      "extracted_directory": "6b1b171133477f16",
+      "map": {
+        "name": "M-gen-s1-gen-classic-102400016-vs-v33-candidate-A",
+        "hash": "c9e0beb0f5b5f0ef",
+        "width": 73,
+        "height": 73,
+        "symmetry": "vertical"
+      },
+      "map_file": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/first100-readouts-v1/extracted/maps/c9e0beb0f5b5f0ef.json",
+        "bytes": 12435,
+        "sha256": "ed70641bbc5e5e603f8e49df9bcb5c628ef3bbbf342dea210924f09d02e7e45e"
+      },
+      "decoded_files": {
+        "meta.json": {
+          "bytes": 4820,
+          "sha256": "417af13e0fc05b80b5660c9711b44a60fab6dfe4eb610e99e3073259a89f081f"
+        },
+        "events.jsonl.gz": {
+          "bytes": 168567,
+          "sha256": "559f88aeec3b0c725d3df5cce530261ad16faf359b514b7f4ae109ef2ddab55a"
+        },
+        "rounds.json.gz": {
+          "bytes": 48839,
+          "sha256": "cc60032cc1f1e541bb52a16e678d05658c2266d4a9d32230aee2e787504a805b"
+        }
+      },
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      },
+      "outcome": {
+        "winner": 0,
+        "outcome": 1,
+        "rounds": 972,
+        "gems": [
+          1010,
+          412
+        ],
+        "steps": 117228
+      }
+    },
+    {
+      "label": "C-gen-gen-rows-102301101-vs-v33-candidate-A",
+      "input_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-draft-screen-v2/outputs/C-gen-gen-rows-102301101-vs-v33-candidate-A.repl26a",
+        "bytes": 78718,
+        "sha256": "c511b4f9df1175ba78ec1ac053f45ed67af5dd45d8319eba56a353f02ae6187a"
+      },
+      "extracted_directory": "c511b4f9df1175ba",
+      "map": {
+        "name": "C-gen-gen-rows-102301101-vs-v33-candidate-A",
+        "hash": "14d342bcd0d30f7f",
+        "width": 53,
+        "height": 53,
+        "symmetry": "horizontal"
+      },
+      "map_file": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/first100-readouts-v1/extracted/maps/14d342bcd0d30f7f.json",
+        "bytes": 5449,
+        "sha256": "e72d7b4620e0fdd766d80c3e8fa867b97d9b8ebfe84a8528ca0ad3de85d5a97d"
+      },
+      "decoded_files": {
+        "meta.json": {
+          "bytes": 5666,
+          "sha256": "6203aeb999500db4f44adb1bb146b6262b3b2cb329d491929f389a2d01dffed3"
+        },
+        "events.jsonl.gz": {
+          "bytes": 342184,
+          "sha256": "9366f70649dd6b8aec80a951709af0f24154e3c81ca603b9b125cd47e29b7467"
+        },
+        "rounds.json.gz": {
+          "bytes": 87124,
+          "sha256": "9ba98354196315038b1be2a914d6c00a80207b55b706d4766aa76f554c2497ee"
+        }
+      },
+      "validation": {
+        "ok": true,
+        "hard": [],
+        "soft": [
+          "champion 0 championDamageTaken: derived 6613.1, engine 6205.5",
+          "champion 1 championDamageTaken: derived 10965.5, engine 12121.7",
+          "champion 6 championDamageDone: derived 34660.7, engine 35409.3",
+          "champion 6 earnedGold: derived 5430, engine 5190"
+        ]
+      },
+      "outcome": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 2000,
+        "gems": [
+          390,
+          885
+        ],
+        "steps": 198719
+      }
+    }
+  ],
+  "results": [
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/first100-readouts-v1/RESULT.json",
+      "bytes": 212863,
+      "sha256": "3821ce49fc83a3c2d1870e484f3181ac20e6810260950c7b1c32e5a0ee8560f6"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/first100-readouts-v1/RESULT.md",
+      "bytes": 12063,
+      "sha256": "abcc0aea90236e707b2127cef2780dedce63375b7279c41223a7a772cdd92846"
+    }
+  ],
+  "limitations": [
+    "Omniscient replay event chronology only; no actor-own-view reconstruction, decision attribution, counterfactual or gameplay implementation.",
+    "Four informational soft derived-stat mismatches on C-gen-gen-rows; all six have hard validation ok."
+  ]
+}

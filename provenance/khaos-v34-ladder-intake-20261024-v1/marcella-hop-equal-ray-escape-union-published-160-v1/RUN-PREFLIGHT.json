@@ -1,0 +1,30 @@
+{
+  "schema": "marcella-hop-equal-ray-union-native-run-preflight-v1",
+  "ordered_rows_sha256": "c3426ada2ebcc474e11ccf45407372994c1a040f29792a990207ad4a278006ab",
+  "plan_sha256": "f47637af1d424267d83e526f6e271faec89a0d1b871a5ae61ee6557839734baf",
+  "run_manifest_sha256": "ca72ee9228f6022b48af6a28129f396cc1e3e1cde6a61dae868487b1c9dd7d2b",
+  "rows": 160,
+  "map_hashes_verified": 40,
+  "all_outputs_absent": true,
+  "candidate_repo_source_aggregate": "37392769d9123c199b3d0f5fe0e01f4ec4cbf1083d42aa2c640a266e9a620719",
+  "candidate_runtime_source_aggregate": "37392769d9123c199b3d0f5fe0e01f4ec4cbf1083d42aa2c640a266e9a620719",
+  "raw_wasm_sha256": "e519f9679a2045afc612907057b784198c21faeab67c85aa924bc19e5159a439",
+  "injected_wasm_sha256": "cdc81ee46882b513adb4f56256acf30b4e61feced2c5a981bd424f4011d9a8b7",
+  "sdk": {
+    "cambc_h": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "imports_h": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502"
+  },
+  "tool": {
+    "cambc": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "execution": {
+    "release": true,
+    "fuel_quantum": 100000,
+    "jobs": 6,
+    "runner_cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+    "native_draft": true,
+    "total_other_game_workers_reported": 1,
+    "root_authorized": true
+  },
+  "note": "All A/B paths, candidate-side flags and map paths are copied from the row-reviewed ORDERED-ROWS.pending.json; no output existed at preflight."
+}

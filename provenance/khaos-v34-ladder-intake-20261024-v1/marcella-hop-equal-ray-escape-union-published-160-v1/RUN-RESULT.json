@@ -1,0 +1,96 @@
+{
+  "schema": "marcella-hop-equal-ray-escape-union-run-result/v1",
+  "candidate_source_aggregate_sha256": "37392769d9123c199b3d0f5fe0e01f4ec4cbf1083d42aa2c640a266e9a620719",
+  "source_manifest_sha256": "37392769d9123c199b3d0f5fe0e01f4ec4cbf1083d42aa2c640a266e9a620719",
+  "raw_wasm_sha256": "e519f9679a2045afc612907057b784198c21faeab67c85aa924bc19e5159a439",
+  "injected_wasm_sha256": "cdc81ee46882b513adb4f56256acf30b4e61feced2c5a981bd424f4011d9a8b7",
+  "toolchain": {
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "cambc_version": "3.0.5",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+  },
+  "sdk": {
+    "hashes": [
+      "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502"
+    ],
+    "mtimes": {
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/cambc.h": 1792774035.4819767,
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/imports.h": 1792774035.482489
+    }
+  },
+  "run": {
+    "exit_code": 0,
+    "scheduled": 160,
+    "completed": 160,
+    "errors": 0,
+    "release": true,
+    "fuel_quantum": 100000,
+    "jobs": 6,
+    "native_draft": true,
+    "runner_cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+    "run_stdout_sha256": "040d15519fd1d0165b5114c3c7dcb33746cdc068bcb741476cdeffd38a5be6a3",
+    "run_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "run_manifest_sha256": "ca72ee9228f6022b48af6a28129f396cc1e3e1cde6a61dae868487b1c9dd7d2b",
+    "preflight_rows_sha256": "c3426ada2ebcc474e11ccf45407372994c1a040f29792a990207ad4a278006ab"
+  },
+  "panels": {
+    "union-vs-f475": {
+      "games": 80,
+      "candidate_wins": {
+        "candidate_wins": 46,
+        "candidate_games": 80,
+        "candidate_wins_by_candidate_side": {
+          "A": 23,
+          "B": 23
+        }
+      },
+      "scores_submitted_gems": {
+        "candidate": 63401,
+        "opponent": 51727
+      },
+      "native_play_status": {
+        "willow-v47-marcella-hop-equal-ray-escape-union": {
+          "rollover": 255,
+          "bot_error": 0
+        },
+        "service-base-f7": {
+          "rollover": 242,
+          "bot_error": 0
+        }
+      },
+      "native_draft_other_zero": true,
+      "match_results_sha256": "cb49530dd9674aec2ecbc41c58868e2e79d4bc2c742392a1f5848d91cdcaeae8",
+      "native_status_sha256": "ef76e9fca154a1ed109e40161c9e2fead65756ecd415e19568ffc21bd7e43b8e"
+    },
+    "union-vs-v33": {
+      "games": 80,
+      "candidate_wins": {
+        "candidate_wins": 41,
+        "candidate_games": 80,
+        "candidate_wins_by_candidate_side": {
+          "A": 20,
+          "B": 21
+        }
+      },
+      "scores_submitted_gems": {
+        "candidate": 57260,
+        "opponent": 59225
+      },
+      "native_play_status": {
+        "willow-v47-marcella-hop-equal-ray-escape-union": {
+          "rollover": 260,
+          "bot_error": 0
+        },
+        "v33": {
+          "rollover": 621,
+          "bot_error": 0
+        }
+      },
+      "native_draft_other_zero": true,
+      "match_results_sha256": "40064a0398d7b2c3129e097160eb0f9e767b8ac29ee14b9c3f20b3ff09e385f0",
+      "native_status_sha256": "9847e8b95b63a33200e7510ef014125201e171e17d0685e9479bb268d53f7c38"
+    }
+  },
+  "build_receipt_status_note": "The separately pinned BUILD-RESULT.json was authored before the authorized 160-game batch and retains its historical status field saying games were pending; this RUN-RESULT.json supersedes that status for execution completion."
+}

@@ -3341,3 +3341,319 @@ substitution rule. Boss Battle's ordinary gems are behind damaging camps;
 carry ramp access and actual clearing contribution require chronology before
 attributing the Stellar gain to an economy feature. That bounded comparison
 is now nominated. All recipes are local experiments, not deployed drafts.
+
+Boss Battle's opening comparison rejects a simple early-ramp explanation:
+both support-P and support-S A clear g8 at26 and pay at32. Prism receives30
+gems in P, while Vesper receives them in S. The latter's292 paid gold versus
+220 is consistent with her33% passive. The sole altar at(25,20) has only one
+standable adjacent tile, occupied by Monolith20 at(24,20); P-A clears that
+member at570. Earlier banking was unavailable. HoR4's first own death at518
+loses203 gems after his514 outer-boss kill. An actor-known510–518 window is
+requested to distinguish necessary altar-opening work from an avoidable fight
+after new visibility. Existing f475 already recognizes sealing groups; a new
+map-name exception would duplicate that classification. Native checkpoint
+figures are preferred where the decoder's earned-gold reconciliation or
+dynamic-to-static group reward join is flagged.
+
+The Marcella delayed-income prototype (`8701885d...`) changes only bot.cpp
+on f475. It prices the new group's own solo tribute gold after capture,
+altar travel, tribute, recall/shop and return to work, using only already
+available route facts. Current bags, help/crew/partner rescue, winning captures
+and siege remain outside that term; all three optimistic solo prunes include
+its upper bound. Future income cannot fund HomeTrip or a present purchase.
+Actual my_gems, rather than bankable_bag (which can be zero at sealed altars),
+guards the empty-bag condition. Independent review and arithmetic/runtime
+validation remain pending.
+
+A single30-row ranked refresh succeeded after an HTTP503 retry. Its normal
+draft rows are19–11: Fish0–5, :3 5–0, Claudus5–0, Mite3–2, prism best girl2–3
+and Trzy Kwaterki4–1. Fish and Trzy are physicalA; the others areB. Map mixes
+and opponents differ, and metadata exposes no submission identity, so these
+are matchup nominations, not version-regression or adaptation estimates.
+Fresh Stampede losses d258ac97 (Fish, ownA) and e36d7ae5 (Mite, ownB) were
+downloaded for paired map diagnosis. The server rejected a concurrent download
+with HTTP409; the subsequent serial Fish retry succeeded. All failures and
+raw bundles are retained under ranked-refresh-v2. The source-known local
+experiments, active v47 and absence of any new upload are unchanged.
+
+The Elk Arena HoR trace now validates against each source's own original
+through round11: f475443 accepted inputs/13 start hashes/57 host segments,
+escape449/13/58. Each bounded host prefix records one matching rollover;
+the decoded native events separately show HoR4 rolling at r10 in both arms
+and again at r11 in f475. Both r10 decisions have
+790HP, camp DPS60 and leave=false before ordinary strike planning. f475's
+healthy geometric bound returns not trapped; escape's exact one-step witness
+also returns not trapped. At r11 the escape actor is already at(25,23), and
+its observed fight forecast now reports lost/self_falls, dispatching retreat.
+This excludes different r10 admission as the observed first fork; it does
+not establish why the eventual outcome reverses. No interpretation extends
+past the validated prefix. Setup patch/import errors remain preserved and
+are not counted as native gameplay failures.
+
+Root reviewed all160 actual ordered map/A/B rows and the native manifest for
+the execution-only escape control before approving its source-pinned build
+and run. JSON58d5e02a... and manifest09689d33... cover all40 published maps,
+both physical sides, and f475/v33. The initial8-worker invocation was
+interrupted during CPU coordination; raw outputs remain preserved and only
+fully validated completed rows may be reused. Interrupted artifacts are not
+native bot failures. The remaining batch uses6 workers alongside up to2
+helper compilation workers.
+
+The Marcella delayed-tribute source passed independent review of all29 files
+and its three optimistic prunes. Eight scalar Python-transcription fixtures
+pass; they are algebra checks, not production/native coverage. Native build
+and the matched40-map comparison are being prepared. No source-only benefit
+claim or historical activation gate is imposed.
+
+Three additional fixed draft controls replace only slot0 when team_size==3:
+Stellar (4a875c3b...), Cassi-and-Issac (a817c175...), and Marcella
+(5dc0f009...). Each changes only eight lines of draft.cpp against f475;
+all other pick counts, fallback handling and gameplay are retained. Root
+reviewed the complete patches. The planned screen uses all six published
+three-pick maps, both sides, against both frozen opponents; native drafts
+and Cassi's four-body roster must be checked. These are controls for a later
+public-map/revealed-prefix selector, not a deployed dynamic draft.
+
+Boss Battle's own-view export now shows all five enemies at HoR4's r515
+activation. At r516 its shield is gone, its own mobility is cooling down,
+and the enemy HoR's dash is ready; it nevertheless attacks camp20. At r517
+it is already stunned before acting, so that round is not a voluntary
+failure to retreat. The next bounded trace is r515–516 dispatch and
+already-computed threat/retreat results. Available observations and legal
+exits, rather than observer hindsight, must determine any change.
+
+Fresh Stampede native receipts establish late access to the large mixed
+160-gem group in both losses, but no uploaded-source identity. An initial
+summary inverted Mite's team death totals and misattributed tribute income;
+the native JSON has opponentA six deaths and1014 submitted gems, ownB four
+deaths and106 submitted gems. The generated prose is being corrected; no
+decision diagnosis uses those erroneous side assignments.
+
+The execution-only escape screen is complete:43/80 against f475 (A24/B19)
+and38/80 against v33 (A14/B24), with native play rollovers265/235 and265/537,
+respectively, and zero bot errors. The full connected arm was36/80 against
+f475 and37/80 against v33; original f475 was45/80 against v33. Restoring the
+old admission improves the direct parent matchup but does not recover the
+older-opponent result. No promotion follows. Full source/build/map/native
+and interrupted-attempt receipts are under
+`provenance/khaos-v34-ladder-intake-20261024-v1/connected-escape-execution-release-v1/`.
+
+Marcella's reviewed160-row panel is approved and running at6 workers,
+Release/100k/native drafts. Its source is8701885d..., raw WASM9ab59980...,
+injected3805d6ba.... All map/source/SDK pins passed preflight. The fixed-three
+draft screen's72 role/map/side recipes were reviewed, but its initial build
+receipt incorrectly labeled non-Release commands as Release and its f475
+manifest path disagreed with the pinned parent. Root caught both before any
+games; corrected builds and manifest are required. These setup errors are
+not outcome data and the failed receipts remain preserved.
+
+The Stampede Prism own-view confirms full-health, empty-bag reversal between
+(54,30) and(53,31) on rounds507–514, including a round with no visible enemy.
+It does not expose shared memory or prove source identity. Internal-cause
+claims still require exact reproduction; the unchanged recall stub timer is
+not itself a wasted-turn diagnosis.
+
+Marcella's native160 completes42/80 against f475 (A28/B14) and47/80 against
+v33 (A25/B22). Play rollovers are248/239 and245/522, respectively; native
+bot errors are zero. Submitted-gem totals are57345/56991 and60482/52760.
+All source/SDK/map/build postpins match. This is a modest diagnostic result
+against the baseline45/80 v33 panel; no release or blanket strength claim.
+The next experiment considers combinations with hop and mixed-camp approach,
+including interaction despite mixed individual results.
+
+The fixed-three Release/preflight defects were corrected before any games.
+Root reread all72 corrected actual native rows and inspected the generated
+CMake SDK include path. Manifest c7829b6e... now uses service-base-f7;
+Release injected modules are Stellar2f8cb4c1..., Cassi76e95b68... and
+Marcella da8ae345.... The screen is authorized at6 workers after Marcella
+completed, with12 exact f475/v33 controls reused once, and actual draft/body
+counts required. Initial non-Release artifacts remain distinctly preserved.
+
+The fixed-three screen completes72/72 new native games, with the expected
+three picks and three bodies for Stellar/Marcella or four for Cassi. All
+native bot errors are zero. Against f475/v33 respectively, Stellar wins3/12
+and4/12, Cassi7/12 and5/12, Marcella6/12 and6/12; the matched f475 control
+is7/12 against v33. Marcella wins Fragment on both sides against both
+opponents; Cassi does the same on Gold Rush. These are four deterministic
+cells each, not confidence estimates. Similar whole-layout gem totals do
+not explain their different outcomes. Packs, where every alternative loses
+both sides against v33 while the Prism control wins B, is a useful negative
+control. The next32-row experiment separates early versus delayed P/M,
+on Fragment/Packs against fixed f475-gameplay roster proxies. The proxies
+use observed Mite/Fish recipes, not their private policies. An adaptive
+choice must use only completed enemy draft rounds; no team-name rule or
+unrevealed third pick is available. A separate12-row M3+tribute-income
+union will test a recipient that the default three-pick roster lacks.
+
+Root reviewed the exact Marcella+mixed, Marcella+hop and all-three source
+unions before runtime preparation. Their aggregates are f38d7ce7...,
+709ba31a... and d6b2a89e..., with all87 source entries verified. The
+overlapping farm code retains each parent's changed lines; delayed tribute
+income affects goal ranking but never enters the hop quote's immediate
+worth or present purchasing budget. Three matched160-row screens are being
+prepared; actual ordered manifests still require review before games.
+
+The Boss Battle support-P trace's two actual ordered rows are reviewed:
+source-pinned production recorder, then instrumented trace, each physical A
+against the exact original physical-B action puppet on map53086e24....
+Interpretation is limited to actor4 rounds515–516 and requires accepted
+input, native state and host/rollover agreement with original ef551e97...
+through that window. Full-match execution does not extend the scope of
+trusted private-state interpretation. No gameplay fix or release follows
+from instrumented output alone. The active server remains v47; no upload
+or activation has occurred during this investigation.
+
+The three exact income/farm unions completed480/480 native Release games,
+with zero runner failures, statistics bot faults, diagnostic codes or
+roster-body mismatches. M+mixed wins41/80 against f475 and47/80 against v33;
+M+hop44/80 and52/80; M+hop+mixed43/80 and50/80. Their physical A/B wins
+against v33 are23/24,26/26 and24/26, respectively. The separate native
+phase-rollover audit is pending; these zero statistics faults do not imply
+zero fuel exhaustion. M+hop is nominated for broader generated-map testing,
+with triple retained as a secondary candidate. These are selected diagnostic
+results, not a release conclusion or proof of feature activation.
+
+Root reviewed all44 ordered rows of the delayed-carry/roster-proxy and
+M3-income screen, build records and map/source/SDK pins before authorizing
+Release/100k execution. Manifest40df9117... contains32 new proxy rows and12
+new synergy rows; the prior12 M3-v33 controls are reused, not rerun. Enemy
+recipes remain fixed f475-gameplay proxies. No adaptive draft is installed.
+
+The execution-only escape refinement c1e19d45... retains every equally
+short certified straight ray, exposing them to the existing endpoint ranking.
+Root reviewed its pathing-only13-insertion/8-deletion component patch and
+state proof. All original admission, Safety, ranking and dash behavior are
+preserved. Off-ray points remain unknown and field fallback/invalidation
+remain separate. This addresses a concrete coverage omission, not a proven
+cause of panel losses; meaningful geometry checks and native runs are next.
+
+Boss tracing caught setup mistakes before private-state interpretation:
+the recorder initially ran in Release despite requiring debug-only harness
+accounting, followed by a wrong-cwd/stale isolated puppet cache failure.
+The corrected debug recorder reproduces all47128 original accepted inputs
+and1553 round-start hashes, with zero bot faults. Its default1MiB output
+cap nevertheless truncated host records before the requested window, and
+the first trace diverges in round1. Both failed attempts are preserved and
+untrusted for diagnosis. The existing harness uses --log-limit64000000 and
+NUL-stripped recorder text; a corrected full-transcript attempt is underway.
+Original versus recorder reported fuel totals differ, so exact behavior
+does not establish per-turn fuel equivalence.
+
+The480-game pinned native-event audit is complete: zero Bot error events
+in every phase, zero draft/other rollovers. Play rollover totals are
+M+mixed254/266 versus f475 and256/557 versus v33; M+hop258/248 and288/551;
+triple253/267 and294/542 (candidate/opponent). These trajectory totals
+do not measure an isolated routine's cost.
+
+The44-game draft/order/synergy screen completes with all accepted recipes
+and body counts correct, zero native Bot error events and zero draft/other
+rollovers. Early M/Vesper/HoR wins4/4 against each fixed proxy. Early
+P/Vesper/HoR wins2/4 against Marcella/Vendetta/Tavi and3/4 against
+Vesper/HoR/Vendetta. Delayed Vesper/HoR/P and Vesper/HoR/M each win3/4
+against each proxy. Thus delaying the carry is not an established benefit,
+and these totals do not establish an opponent-prefix selector. M3+income
+wins5/12 versus v33 against the reused M3 control6/12, with one gain and
+two losses; neither independent nor combination success is assumed.
+
+The higher-log-cap Boss recorder covers the entire match and again matches
+all original actions and round-start states. The full trace still diverges
+in round1: an extra fuel_remaining call appears at actor0 segment0 index1172,
+followed by the first accepted-input fork at index28 on actor1. Its eventual
+515–516 diagnostic lines are untrusted. Truncation was real but was not the
+sole cause. A narrow host-call/source diagnostic is pending; this trace
+cannot establish that allied arrival forecasting caused the observed death.
+
+Root reviewed the full M+hop extension's 1024 ordered generated-map rows,
+their actual physical A/B bot paths, and the exact80 reused published-map
+cells before authorizing six workers. The fixed source709ba31a... is tested
+against f475 using normal native drafts, Release and100k fuel. The resulting
+1104-cell frame contains40 published maps and256 each from gen/gen-s1;
+these generated maps are development data, not a fresh holdout. RUN9bca4501...
+and ROWS511b1ca8... are pinned in marcella-hop-full1104-vs-f475-v1.
+
+The equal-ray geometry fixture executes extracted production ray discovery,
+exactness and CampEscape::at code; it retains equal shortest north/east
+routes, rejects longer/off-ray routes and exposes the second route to an
+independent risk ranking. Native cache rebuilding and the production caller
+are not covered by the fixture. Root reviewed all84 native screen rows:
+80 against v33 plus four candidate-A execution-parent stress cases. The
+source c1e19d45..., injected deb6af67... and RUN4fb4369c... are fixed; two
+workers run alongside the six-worker farming panel. No release follows
+from a passing geometry fixture alone.
+
+The next draft experiment selects12 generated three-pick maps from public
+initial-map accessibility and openness before reading outcomes. All four
+P/S/C/M first-slot recipes retain Vesper/HoR and play both sides against
+the same f475 and v33 controls (192 cells). Sampling bands are not proposed
+live thresholds. Existing delayed-P/M controls have identical losing cells,
+so no revealed-prefix counterpick rule is supported yet. Vesper's eligible
+monster income and Prism's monster-capture gems prevent binary cluster-count
+vetoes. See willow-v47-generated-three-pick-draft-screen-design-20261024-v1.md.
+
+The full M+hop development frame completed1104/1104 cells:542 wins, comprising
+249/512 in gen,249/512 in gen-s1 and44/80 reused published-map cells. Native
+three/four/five-pick totals are171/348,167/330 and204/426. Both sources have
+zero native Bot errors in every phase; play rollovers total2905 candidate
+and2920 f475. This does not establish a broad improvement over v47, despite
+the selected published/common-opponent gain. Neither promotion nor a
+feature-cost conclusion follows. FULL-RESULT.json6a46fbc7... and combined
+NATIVE-PHASE-RESULT.json13186c75... preserve exact source/side attribution.
+
+The equal-ray native screen completes43/80 against v33, compared with45/80
+for f475,37 for full escape and38 for execution-only escape. Against f475's
+same v33 cells it gains12 and loses14. The corrected exact M+hop arm is52/80
+with12 gains and5 losses; an initial mixed-arm/incomplete-baseline comparison
+is preserved as superseded. M+hop and equal-ray share6 recovered cells and1
+regression. Their union37392769... is an explicit interaction experiment,
+not an assumed additive gain. Root reviewed its exact component patches,
+Release build and all160 published map/A/B source/path rows before authorizing
+six workers against frozen f475 and v33. No source admission policy is changed.
+
+The generated three-pick screen uses the corrected v2 inventory and frozen
+192 rows. Complete connected camp groups are evaluated from each spawn;
+map-half labels are not ownership. The inventory includes harmless cluster
+health, safe access paths and destination bush opacity. Its Bresenham visibility
+approximation remains distinct from engine shadowcasting. Sampling rank bands
+split ties deterministically and are not live thresholds. The earlier flawed
+v1 selection ran no games. All192 v2 games completed; interpretation and native
+phase audit follow. There is still no installed adaptive draft.
+
+Stand-only ally-contact candidate88a0d261... is an isolated f475 child under
+independent review. Remote non-support allies proven unable to hit or be hit
+in the first exchange are absent from both its damage and recipient pools,
+then optimistically join the second exchange with original clocks. Review
+raised a possible outstanding-stun migration at joining. Inspection of the
+actual stand caller then established that its first-strike branch only includes
+approaching enemies, which cannot cast in exchange zero; the other branch
+consumes enemy-zero stuns before joining. The generic simulator concern is
+not an established reachable blocker. Fixtures must preserve that caller
+precondition. This is separate source evidence, not Boss Battle trace causality.
+
+The M+hop+equal-ray union completes160 native games:46/80 against f475
+(23/23 physical A/B candidate wins) and41/80 against v33 (20/21). Native
+errors are zero; play rollovers are255/242 and260/621 respectively. The
+combination improves its direct matchup while losing the M+hop common-opponent
+advantage; no additive or broad improvement is claimed.
+
+The192 generated draft cells complete with all native recipes/body counts
+correct, zero errors and zero draft/other rollovers. P/S/C/M total wins across
+the two controls are23/48,9/48,26/48 and30/48. In the predeclared public
+early-work descriptor, at least two harmless jobs favors C18/24 over M10/24;
+zero or one favors M20/24 over C8/24. This exploratory interaction nominates
+an adaptive experiment, not an established counterpick. Six first100-round
+readouts qualify the proposed mechanism: on Star both C and M have parallel
+work and203 total submitted-plus-carried gems at100 (C203+0, M168+35), so
+extra worker income is not demonstrated. On Classic C banks earlier yet loses
+later; M has greater earned gold. Rows favors M's actual early income. These
+are omniscient chronology, not actor-known decision attribution.
+
+User steering now prioritizes counterdrafting/draft variation and explicitly
+requests Alex's latest bot as the baseline. Fetched origin/main c0de6b4
+(latest Astraeus source80e21f3) and created clean sibling checkout
+counterdraft-development on codex/dynamic-draft-20261024. Gameplay changes113–133
+are retained there; earlier experimental overlays are not installed. Draft
+selection is unchanged upstream. Contact88's v1 host fixture only covers
+mocked actions/facts and is insufficient for production combat integration;
+its proposed v2 is paused with no build/game. Old source experiments remain
+preserved here, while draft work continues from the new checkout. No upload
+or activation was performed in this investigation.

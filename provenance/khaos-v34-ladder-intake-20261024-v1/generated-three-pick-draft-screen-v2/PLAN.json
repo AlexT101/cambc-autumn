@@ -1,0 +1,107 @@
+{
+  "schema": "generated-three-pick-fixed-carry-screen-plan/v1",
+  "status": "192_ordered_native_rows_prepared_waiting_root_review_no_games",
+  "purpose": "Outcome-blind fixed first-slot P/S/C/M roster comparison on the 12 public-feature-selected three-pick development maps against identical frozen f475 and v33 controls.",
+  "ordered_row_rule": "arms P,S,C,M; MAP-FREEZE selection order; candidate physical side A then B; opponents f475 then v33.",
+  "factorial": {
+    "arms": [
+      "P",
+      "S",
+      "C",
+      "M"
+    ],
+    "maps": 12,
+    "sides": [
+      "A",
+      "B"
+    ],
+    "opponents": [
+      "f475",
+      "v33"
+    ],
+    "rows": 192,
+    "rows_per_arm": 48
+  },
+  "static_inventory": "provenance/khaos-v34-ladder-intake-20261024-v1/generated-three-pick-static-inventory-v2/RESULT.json",
+  "static_inventory_sha256": "1d591665b8e06bddc1e9a799d3cac44416a5d98bc9207cd6ab2ea46695177288",
+  "map_freeze": "MAP-FREEZE.json",
+  "map_freeze_sha256": "33573de98bdb15b50509860f88d6ca0accc11f29140a97272562ec1b42f7a372",
+  "candidate_sources": {
+    "P": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7",
+      "aggregate_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824"
+    },
+    "S": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-stellar-three-work",
+      "aggregate_sha256": "4a875c3b63b1bbed9fa604bc78b64ebfa89fd387b10edf3c893a7cda92946c8c",
+      "manifest": "research/willow-v47-stellar-three-source-v1-manifest.sha256",
+      "manifest_sha256": "4a875c3b63b1bbed9fa604bc78b64ebfa89fd387b10edf3c893a7cda92946c8c",
+      "patch": "research/willow-v47-stellar-three-source-v1.patch",
+      "build": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/builds/stellar.wasm",
+      "build_sha256": "2f8cb4c1dd27f545176c988250bcb51497aa1c4a70b89d4d8b321a906369b978"
+    },
+    "C": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-cassi-three-work",
+      "aggregate_sha256": "a817c175850315005e9724cdbdd0f3fff714ab175b037a864ed6772b450941be",
+      "manifest": "research/willow-v47-cassi-three-source-v1-manifest.sha256",
+      "manifest_sha256": "a817c175850315005e9724cdbdd0f3fff714ab175b037a864ed6772b450941be",
+      "patch": "research/willow-v47-cassi-three-source-v1.patch",
+      "build": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/builds/cassi.wasm",
+      "build_sha256": "76e95b6885a9c6c4126a51e9fa183f75553a068176fc20f884939fb31b5df0d5"
+    },
+    "M": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-marcella-three-work",
+      "aggregate_sha256": "5dc0f00960864250fa2fb26cac4d309c7cf55b9e4ffbc03c4b7b3c7a011b11fa",
+      "manifest": "research/willow-v47-marcella-three-source-v1-manifest.sha256",
+      "manifest_sha256": "5dc0f00960864250fa2fb26cac4d309c7cf55b9e4ffbc03c4b7b3c7a011b11fa",
+      "patch": "research/willow-v47-marcella-three-source-v1.patch",
+      "build": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-three-role-screen-v1/builds/marcella.wasm",
+      "build_sha256": "da8ae3454e0b208acd056a4830636ba857191bf3d1b804a7c71c9a68dec87940"
+    }
+  },
+  "baseline_sources": {
+    "f475": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7",
+      "aggregate_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824"
+    },
+    "v33": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33",
+      "aggregate_sha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+    }
+  },
+  "engine_and_run_settings": {
+    "cambc": "3.0.5",
+    "engine": "v1_0_3",
+    "release": true,
+    "fuel_quantum": 100000,
+    "draft": "normal native",
+    "jobs_after_approval": 6
+  },
+  "runtime_pin_receipt": "provenance/willow-contact-priority-f7-20261024-v1/runtime-pins.json",
+  "runtime_pin_receipt_sha256": "36a85cfff6d691000c1df2f9d28db326c3d698378e8d307134f253fc70433950",
+  "native_audit_required": "Verify actual native pick/body counts, source-order picks, errors/rollovers; report by arm/opponent/map/side. C is three picks/four bodies.",
+  "new_rows": 192,
+  "output_paths_absent": true,
+  "run_manifest_sha256": "b377a064db7c85a019094e53d344107d9cfd47802d259f712e849c5338ba5b5c",
+  "rows_sha256": "14763e5862641b688a90a303a8bfe48e59778d47897caf14f4ed642e5e5e013c",
+  "root_review_required_before_games": true,
+  "baseline_artifacts_verified_before_run": {
+    "P": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7",
+      "aggregate_sha256": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "raw_wasm_path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/.cambc/build-release/bot.wasm",
+      "raw_wasm_sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+      "injected_wasm_path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/.cambc/build-release/bot-injected.wasm",
+      "injected_wasm_sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+    },
+    "v33": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33",
+      "aggregate_sha256": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "raw_wasm_path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33/.cambc/build-release/bot.wasm",
+      "raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "injected_wasm_path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33/.cambc/build-release/bot-injected.wasm",
+      "injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+    }
+  },
+  "baseline_verification_utc": "2026-10-24T16:49:23.552675+00:00"
+}

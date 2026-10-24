@@ -1,0 +1,7 @@
+{
+  "schema": "run-attempt-failure-v1",
+  "attempt": "initial approved batch invocation",
+  "error": "exec_command failed before process creation: requested cwd did not exist; no run-batch process started and no replay outputs were produced",
+  "requested_cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "correct_cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace"
+}

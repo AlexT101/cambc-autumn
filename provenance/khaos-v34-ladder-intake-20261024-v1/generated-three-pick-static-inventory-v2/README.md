@@ -1,0 +1,11 @@
+# Generated three-pick static inventory v2
+
+This is an outcome-blind inventory of the 168 unique native three-pick layouts present in the pinned `maps/gen` and `maps/gen-s1` indexes. `inventory.mjs` decodes each map with the existing native decoder and `Grid`; `RESULT.json` is the full per-map output, and `RESULT.md` is its compact selected-map view.
+
+The sample uses exact equal-count rank bands (56 maps per band), sorting by mean A/B early harmless-group gems and then map SHA to split ties. It crosses those bands with below/above-median openness and selects one representative from each suite where available, preferring a different preset within a cell. No outcome data informed selection.
+
+The feature pass uses complete `Grid.groups()` from both spawns, independent of camp team labels. Groups containing a monolith are excluded from ordinary groups. Rewards come from the grouped native camp types; camp HP, strength, and ranges come from the pinned rules file. Ordinary groups are ranked by each side's nearest reachable legal range-3 firing station, using eight-neighbour BFS, enemy spawn and camp tiles blocked, and a documented Bresenham visibility approximation. Conservative harmless supply also blocks every route tile in any damaging camp's static Chebyshev attack range.
+
+This is public-layout opportunity analysis, not a simulation of sleep, combat, capture, team control, unit decisions, or realized share. Bresenham visibility is not engine shadowcasting. Among the selected 12 maps, no case loses all terrain-accessible tribute altars when camp tiles are blocked; therefore the sample does not cover complete altar denial. The rotational `gen-blob-102406206` layout has a 0-vs-7 harmless-gem A/B difference in the nearest-three measure; mirrored-group comparison confirms the sole mismatch is at the four-way distance-3 cutoff tie. See `RESULT.json` for the exact groups and limitations.
+
+The v1 inventory and its draft-plan artifacts are preserved with `SUPERSEDED.md` notices. V1 used incorrect group ownership, reward/tercile handling, cluster HP, and endpoint-only safety logic. V2 informs the completed 192-row fixed-three role screen but remains a descriptive public-layout sample.

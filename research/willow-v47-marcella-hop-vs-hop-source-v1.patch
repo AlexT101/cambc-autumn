@@ -1,0 +1,91 @@
+diff -ruN bots/variants/willow-v47-farm-hop-work/src/bot.cpp bots/variants/willow-v47-marcella-hop-work/src/bot.cpp
+--- bots/variants/willow-v47-farm-hop-work/src/bot.cpp	2026-10-24 08:06:42
++++ bots/variants/willow-v47-marcella-hop-work/src/bot.cpp	2026-10-24 09:51:11
+@@ -1867,8 +1867,8 @@
+     const auto& groups = map.groups;
+     const int range = world.me().facts().attack_range();
+     const float strength = floored_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
+-    const float max_health = my_max_health();
+-    const float spare_health = (my_health() - params::recall_health_fraction * max_health) / params::camp_risk;
++    const float max_health = my_max_health(), health = my_health();
++    const float spare_health = (health - params::recall_health_fraction * max_health) / params::camp_risk;
+     const int bag = bankable_bag(world, pathing);
+     const bool banks_bag = bag > 0 && !retaining_gems(world, pathing);
+     const int short_by = gems_short(world);
+@@ -2084,6 +2084,12 @@
+     // Per base gold of a group: we are paid it with our bonuses.
+     const float paid = gold_paid(world);
+     const float per_gold = prices(world).per_gold * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);
++    // Passive income is spendable only after tribute and a later shop; carried bags keep their
++    // existing chain value. bankable_bag can be zero even while a sealed altar leaves gems carried.
++    const bool tribute_income = world.me().facts().passive == Passive::stun_immune && per_gold > 0
++                                && decision == 'F' && !memory.banking && !memory.siege && siege_group() < 0 && my_gems() == 0;
++    const int income_horizon = tribute_income ? std::min(left, race_left(world)) : 0;
++    const int income_recall = tribute_income ? recall_turns(world) : 0;
+     // An ally in sight clearing its claimed damaging group gets help only if finishing it alone
+     // would take it below the recall line: one champion per camp otherwise.
+     const auto struggling = [&](int g) __attribute__((always_inline)) {
+@@ -2339,6 +2345,12 @@
+             known.gold = known.weight * per_gold * static_cast<float>(group.gold);
+             known.gold_context = gold_context;
+         }
++        // An optimistic prune may include income later refused by health, ownership or route
++        // checks. Do not cache it: actual claims, prices and the selected weight can change.
++        const float tribute_bonus = tribute_income && !wins && group.gems > 0 && holders(group) == 1
++                                    && !(g < 256 && (ally_claims[g >> 6] >> (g & 63) & 1))
++                                    ? known.weight * static_cast<float>(cambc::constants::passive_abilities::marcella_tribute_gold_per_gem * group.gems) * per_gold : 0.0f;
++        const float optimistic_worth = known.gems + known.gold + tribute_bonus;
+         if (known.version != belief.version || known.fastest_strength != strength)
+             known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
+         const int walk = known.walk;
+@@ -2368,7 +2380,7 @@
+                                               && near < help_steps;
+                         const float near_cycle = std::max(0.0f, static_cast<float>(near + near_wait) - bank_now + bank)
+                                                  + static_cast<float>(capture_rounds()) + known.fastest;
+-                        if (!may_help && near_cycle > 0 && (known.gems + known.gold) / near_cycle <= best_value
++                        if (!may_help && near_cycle > 0 && optimistic_worth / near_cycle <= best_value
+                             && (!banks_bag || (known.gems + known.gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + known.fastest) <= from_altar_value))
+                             continue;
+                     }
+@@ -2393,7 +2405,7 @@
+         const float gems = known.gems, gold = known.gold, fastest = known.fastest;
+         // Risky groups matter only while no affordable one is found; skip the costly clearing
+         // estimate for groups that cannot beat it even with no clearing. A crew's share can.
+-        if (!claimed && best >= 0 && (gems + gold) / (trip + static_cast<float>(capture_rounds()) + fastest) <= best_value
++        if (!claimed && best >= 0 && optimistic_worth / (trip + static_cast<float>(capture_rounds()) + fastest) <= best_value
+             && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + fastest) <= from_altar_value))
+             continue;
+         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
+@@ -2470,7 +2482,7 @@
+         // Unless a partner shares the clear, it takes us alone at least the quicker of the two ways.
+         if (best >= 0 && (alone_damage <= spare_health || partner_output <= 0 || belief.state != CampState::alive)) {
+             const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
+-            if (worth / (trip + quickest + capture_rounds()) <= best_value
++            if (optimistic_worth / (trip + quickest + capture_rounds()) <= best_value
+                 && (!banks_bag || worth / (static_cast<float>(walk) + cycle_bank + quickest + capture_rounds()) <= from_altar_value))
+                 continue;
+         }
+@@ -2485,6 +2497,23 @@
+         if (too_late(clear_rounds)) continue;
+         const float cycle = trip + clear_rounds + capture_rounds();
+         float value = rate(world, worth, cycle);
++        if (tribute_bonus > 0 && damage <= spare_health && known.to_altar >= 0 && known.to_altar != unreachable
++            && (map.drafted() || map.from_ally_spawn_ready())) {
++            // Visible holders (including Prism) can take the new gems. group_at avoids building
++            // a capture-tile board just to check the bounded allied roster.
++            bool other_holder = false;
++            for (const auto& a : world.allies)
++                if (!a.is_self && a.alive && a.visible && map.group_at(a.pos) == g) { other_holder = true; break; }
++            if (!other_holder) {
++                const int back_to_work = map.ally_steps(g);
++                if (back_to_work != unreachable) {
++                    const int heal_turn = health < max_health || damage > 0 ? 1 : 0;
++                    const float delayed_cycle = static_cast<float>(steps + wait + capture_rounds() + known.to_altar
++                                                                  + known.tribute + income_recall + heal_turn + back_to_work) + clear_rounds;
++                    if (delayed_cycle <= static_cast<float>(income_horizon)) value += rate(world, tribute_bonus, delayed_cycle);
++                }
++            }
++        }
+         bool independent = damage <= spare_health;
+         if (damage > spare_health && partner_output > 0 && belief.state == CampState::alive) {
+             float joint_rounds = 0;

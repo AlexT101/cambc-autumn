@@ -1,0 +1,31 @@
+{
+  "schema": "marcella-hop-full1104-execution/v1",
+  "status": "complete_1024_native_replays_statistics_and_native_phase_audit",
+  "completed_utc": "2026-10-24T16:53:38.652744+00:00",
+  "plan_sha256": "8c448a763c4858389eb2a6e4464621f76ed73bc30000a93c5a512da7e9791c10",
+  "run_manifest_sha256": "9bca450138f3b39323bbc1025734aa595e157a926ed770249259ba92b0c72426",
+  "rows_sha256": "511b1ca8af7b1cf56a43ef7000ee84d17ad6cf2d8bbeaa49557e6b36aef7ca88",
+  "reuse_manifest_sha256": "0f56ca20dcc1a3ae64a72cce26ab01125176aabc557a78caddc3318307943dc8",
+  "new_replay_count": 1024,
+  "new_statistics_count": 1024,
+  "cli_exit_code": 0,
+  "failed_games": 0,
+  "command": "cambc 3.0.5 run-batch RUN.manifest --jobs 6 --fuel-quantum 100000 --release --json",
+  "cwd": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "sdk_path": "/Users/yufan/Library/Caches/cambc/wasi-sdk-33/bin",
+  "native_status_audit": "native-audit/RESULT.json",
+  "published40_reuse_rows": 80,
+  "published40_reuse_verified_by_REUSE_80": true,
+  "native_status_audit_sha256": "19e23fbd6cb75c39fd044ef894fd2a0e94fde8d2817406d1af018b5a15ce0596",
+  "native_audit_games": 1024,
+  "native_phase_result": "NATIVE-PHASE-RESULT.json",
+  "native_phase_result_sha256": "13186c7589535e6a99aca3bcc9bb263cba04557eab905471d4f40c9e9cfa08df",
+  "native_errors_by_source": {
+    "marcella-hop": 0,
+    "f475": 0
+  },
+  "native_play_rollovers_by_source": {
+    "marcella-hop": 2905,
+    "f475": 2920
+  }
+}

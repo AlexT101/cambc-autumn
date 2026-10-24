@@ -1,0 +1,30 @@
+# Boss Battle support-P HoR4: bounded diagnostic source
+
+2026-10-24. Diagnostic only, actor4 cached rounds515–516, following `research/willow-bossbattle-stampede-known-info-followup-20261024-v1.md` SHA256 `a0ebabdeca247914431847490cd1e1c59ac289b18a29ab2d0d40158d191b082f`. Read the companion altar-control review and saved actor-start own-view for these rounds. No gameplay repair or source-confirmed defect is claimed. No build/run, script/helper/harness/SDK edit, canonical or EXPERIMENTS change, release or submission.
+
+Parent `bots/variants/willow-v47-generalist-support-work` reverified unchanged aggregate `98470a7454a14a8aac2c501cdd702c5fc06b27862ba9948a3ed27d7bff1115c1`. Isolated src-only trace copy `bots/variants/willow-bossbattle-support-p-trace-work`; no `.cambc`, backup/reject files or other policy overlays. Six files differ: bot.cpp, main.cpp, pathing.cpp, plan.cpp, safety.cpp and util.h. The other23 files, including pathing.h, are unchanged.
+
+- All29-file manifest: `research/willow-bossbattle-support-p-trace-source-v1-manifest.sha256`, all29 checks pass; manifest SHA256/source aggregate `7ac42a03af10a4bce97d2d82d7a73a3a338370f753dcc96bafa8afeacc145469`.
+- Unified source patch: `research/willow-bossbattle-support-p-trace-source-v1.patch`, SHA256 `7bce39599f2bb3688e0886d2b8f8edbc71dc4c6b305b567a209a5ec8d82bce3f`;181 insertions/37 deletions across six files.
+
+## Logger and existing-call contract
+
+Uses the realized Elk trace pattern in `provenance/khaos-v34-ladder-intake-20261024-v1/elk-arena-ho4-trace-prep/f475.patch` and its build-traces receipt: debug_block printf is consumed under the existing fuel-exact recorder/trace wrappers. util.h's BOSS_TRACE macro filters cached World round515–516 and cached self handle4. Its arguments read existing locals/World beliefs only. No printing call obtains a new Safety answer, bitboard/field, roster/visibility/native record, my_* value or turns_before_ours result. No new route, model, board scan, fuel gate or simulation is added.
+
+This is **not** an ordinary debug-build replay guarantee. Luna must use the established release-code recorder and fuel/host virtualisation, then validate accepted inputs, native round states and host segments through516 before interpreting private branches. Existing trace/harness tools were read, never changed.
+
+Scalar expression splits retain production call order and original reachability: pack before paying_soon; low then outmatched then camp_trapped; lethal before optional enemy_seen; pursuit paying_soon before optional own_ground/max-health; continue_recall's home/threat/tribute/outruns chain; nonnegative siege candidate before readiness; teleport_pending before its turns_before_ours, then valid strike reach before the later turns_before_ours. Every split uses an already-required result once. The move guard expression and guard callback remain lazy and unchanged. No extra predicate is evaluated to fill a skipped log field.
+
+## What the bounded events identify
+
+- BB_RECALL/BB_WANT/BB_DECIDE: cached-home presence/value, reached low/pack/paying/camp/lethal/seen/pursuit/linked/Trade results, siege/claim/farm state, recall keep/cancel reasons and actual leave. BB_DISPATCH/BB_PLAN mark actual retreat/carry/chase/siege/farm flow, strike-search entry and returned moved/attacked/searched values.
+- BB_THREAT: naturally reached threat_strike next-turn round, cached native ready rounds, actual memo readiness slots, reached turns_before_ours and returned reach/widening path. No threat query is forced for an omitted enemy.
+- BB_STAND/BB_FIGHT/BB_FILL/BB_FIGHTER: existing hit/walking/key/enemy masks, evaluated enemy approach, cached versus new Trade, included side-local fighters, current health/shield/shield_until, existing arrives_at/ready_at/next_cast. Existing walking-enemy arrival replacements are logged after assignment. Thus nearby allied bodies are identifiable without inventing ally approach paths.
+- BB_SHIELD_EXPIRE marks the existing expiration branch; its local fighter/side_self can be joined to BB_FILL. BB_TRADE supplies trial IDs. The pre-existing debug verification simulation is tagged debug1; production simulation is debug0. The cached simulation round comes from the latest naturally requested fighter, without a native clock call. No new verification simulation was introduced.
+- BB_GUARD_INSTALL/EVAL/FIGHT/FORBID/RETURN logs actual deferred callback use, existing shortcut/outcome and only endpoints the original loop actually inserts. BB_PLAN_GUARD identifies the planner's existing temporary guard suspension/restoration. No guard is eagerly built for output. BB_TRY_MOVE/NATIVE_MOVE marks original guard rejection, native success, hidden blocker or exception; BB_PLAN_ACT tags exact planner operation/caller. Siege movement has separate before/after tags. BB_ATTACK and BB_WARD identify existing camp/ward attempts and outcomes.
+- BB_SIEGE logs reached candidate/sealing/ally/readiness and subsequent existing engaged/fresh/caster/tanked/hit/role/low/staged/distance/current-goal facts. The original current-goal test is stored once. Siege casts and attacks retain their order.
+- BB_NATIVE_END/ROLLOVER uses the existing main checked_round locals, not an extra round query, to distinguish native end/rollover from cached World round. Other r fields are explicitly cached; host segment validation remains authoritative across mid-function rollover.
+
+## Evidence boundary
+
+Saved own-view confirms HoR4 at23,19 with203 gems; round515 HP1980/shield914 timer1, existing blocked22,19 then attack/ward/recall; round516 HP1693/no shield, attack/recall. Which private caller owns those actions and whether leaving was feasible remain unresolved. This diagnostic changes no shield model, ally credit, siege threshold, escape or banking policy. No safe hypothetical endpoint is queried or asserted. A matching accepted prefix alone is insufficient if host segments/native state do not also match. Root source review precedes Luna's actual recorder/trace work.

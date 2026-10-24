@@ -1,0 +1,1053 @@
+{
+  "schema": "fixed-three-role-screen-results/v1",
+  "run_results_sha256": "9936e5a51ae1e90ec5b65d1c615294bdaf4e56e41b4cb794446892697fa4de12",
+  "draft_body_audit_sha256": "2cc7eb8345c5aef77c6a26bc27cead5ffee7150baff85b30a016901c543bddcb",
+  "native_status_by_pair": {
+    "cassi-vs-f475": {
+      "games": 12,
+      "bot_rows": [
+        {
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0,
+          "games": 12,
+          "play": {
+            "rollover": 24,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "service-base-f7",
+          "bot_index": 1,
+          "games": 12,
+          "play": {
+            "rollover": 18,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "all_play_draft_other_bot_errors_zero": true
+    },
+    "cassi-vs-v33": {
+      "games": 12,
+      "bot_rows": [
+        {
+          "bot": "willow-v47-cassi-three-work",
+          "bot_index": 0,
+          "games": 12,
+          "play": {
+            "rollover": 30,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "v33",
+          "bot_index": 1,
+          "games": 12,
+          "play": {
+            "rollover": 62,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "all_play_draft_other_bot_errors_zero": true
+    },
+    "marcella-vs-f475": {
+      "games": 12,
+      "bot_rows": [
+        {
+          "bot": "willow-v47-marcella-three-work",
+          "bot_index": 0,
+          "games": 12,
+          "play": {
+            "rollover": 15,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "service-base-f7",
+          "bot_index": 1,
+          "games": 12,
+          "play": {
+            "rollover": 22,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "all_play_draft_other_bot_errors_zero": true
+    },
+    "marcella-vs-v33": {
+      "games": 12,
+      "bot_rows": [
+        {
+          "bot": "willow-v47-marcella-three-work",
+          "bot_index": 0,
+          "games": 12,
+          "play": {
+            "rollover": 12,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "v33",
+          "bot_index": 1,
+          "games": 12,
+          "play": {
+            "rollover": 20,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "all_play_draft_other_bot_errors_zero": true
+    },
+    "stellar-vs-f475": {
+      "games": 12,
+      "bot_rows": [
+        {
+          "bot": "willow-v47-stellar-three-work",
+          "bot_index": 0,
+          "games": 12,
+          "play": {
+            "rollover": 15,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "service-base-f7",
+          "bot_index": 1,
+          "games": 12,
+          "play": {
+            "rollover": 21,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "all_play_draft_other_bot_errors_zero": true
+    },
+    "stellar-vs-v33": {
+      "games": 12,
+      "bot_rows": [
+        {
+          "bot": "willow-v47-stellar-three-work",
+          "bot_index": 0,
+          "games": 12,
+          "play": {
+            "rollover": 20,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "v33",
+          "bot_index": 1,
+          "games": 12,
+          "play": {
+            "rollover": 25,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "all_play_draft_other_bot_errors_zero": true
+    }
+  },
+  "per_arm_opponent": {
+    "stellar": {
+      "f475": {
+        "source_aggregator": {
+          "candidate_wins": 3,
+          "candidate_games": 12,
+          "candidate_wins_by_candidate_side": {
+            "A": 2,
+            "B": 1
+          }
+        },
+        "by_candidate_physical_side": {
+          "A": {
+            "games": 6,
+            "wins": 2,
+            "losses": 4,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": false,
+                "candidate_submitted_gems": "389",
+                "rounds": 1243,
+                "replay_sha256": "0bbaa24d42cc5d7324353ad5963856df99e1f5ed3abae725eabc0eca980e2f5d"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1004",
+                "rounds": 1517,
+                "replay_sha256": "bea817faa961f55880b6be1a0c55e91c4709deee7c6f28ab8f9f903fca276673"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": false,
+                "candidate_submitted_gems": "848",
+                "rounds": 1241,
+                "replay_sha256": "e923a4f043afb1e43bc65824be38383ab182ecc374c864d796d27947810926f8"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": false,
+                "candidate_submitted_gems": "899",
+                "rounds": 837,
+                "replay_sha256": "1a268b2358e4520d88afb06b78d4cc99b41debc12f2cfadd3769de23f0f3ac36"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1001",
+                "rounds": 1617,
+                "replay_sha256": "b7101cf1aba7d6be96689e7b1f725f712ba246e40149042e0c429bd880ffcd24"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": false,
+                "candidate_submitted_gems": "520",
+                "rounds": 959,
+                "replay_sha256": "076cf2a3261a6461135b6293371c48d8d8b88c40c2e689271335337e0990194b"
+              }
+            ]
+          },
+          "B": {
+            "games": 6,
+            "wins": 1,
+            "losses": 5,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": false,
+                "candidate_submitted_gems": "959",
+                "rounds": 1461,
+                "replay_sha256": "d0f4b2094976f41adc63b14edeb61e3c84f68b7fdc5cf774d5c292a5a6adc8ce"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": false,
+                "candidate_submitted_gems": "56",
+                "rounds": 1332,
+                "replay_sha256": "7f1188ea33f934e93b62bd706a794be07f74e9d398e817869d65cb148b48fd42"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1006",
+                "rounds": 1293,
+                "replay_sha256": "b7dd7413b469f0b7895f3162b76c2ce0e6dd4a7113b7fcd57f32d51aa3b425ba"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": false,
+                "candidate_submitted_gems": "919",
+                "rounds": 846,
+                "replay_sha256": "a98aa1400f84378db493d836f441f35864ccce5fefafd8dbf713a1c426121ca4"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": false,
+                "candidate_submitted_gems": "671",
+                "rounds": 1992,
+                "replay_sha256": "0765b98800ee8512975794d8cb1f1090366b58ef75f9aa09a37f0bf8fd9d58b9"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": false,
+                "candidate_submitted_gems": "445",
+                "rounds": 847,
+                "replay_sha256": "27d1e987c043c81af821f34cea2cf46a1ef5ee52b6cd70c3344415e0fb88030b"
+              }
+            ]
+          }
+        }
+      },
+      "v33": {
+        "source_aggregator": {
+          "candidate_wins": 4,
+          "candidate_games": 12,
+          "candidate_wins_by_candidate_side": {
+            "A": 2,
+            "B": 2
+          }
+        },
+        "by_candidate_physical_side": {
+          "A": {
+            "games": 6,
+            "wins": 2,
+            "losses": 4,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1001",
+                "rounds": 1043,
+                "replay_sha256": "17f9f2be4ed784d335c46935853fca567848d7c948478e113f73a804193d0c23"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1002",
+                "rounds": 1537,
+                "replay_sha256": "fa2a4a2ff406b648d768d1b75cca7aa72385ed45c364b18a1994adc9b7fe8561"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": false,
+                "candidate_submitted_gems": "498",
+                "rounds": 947,
+                "replay_sha256": "59ea0e1ed3c0b7a6009039198151cce6910939678634b96e139663e92be1d296"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": false,
+                "candidate_submitted_gems": "837",
+                "rounds": 821,
+                "replay_sha256": "31203533920d223cf9681b3cb98aea52d523ed0c65abbaeae4e0b1e2ff17fa1a"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": false,
+                "candidate_submitted_gems": "462",
+                "rounds": 1778,
+                "replay_sha256": "663363b0b67ce5c5f22e5a205b3639fc4fea5a904b33ef6b5ebf5de9e84cd1a8"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": false,
+                "candidate_submitted_gems": "534",
+                "rounds": 814,
+                "replay_sha256": "c0d1d6aa1a63f75496f3d388939589d4ed1b84cdbc9867c859aa1fd8ac16c10e"
+              }
+            ]
+          },
+          "B": {
+            "games": 6,
+            "wins": 2,
+            "losses": 4,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1001",
+                "rounds": 1296,
+                "replay_sha256": "73a463bb92666dca2806522b0785353de1980add77234f15a4612041f7f94b1a"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": false,
+                "candidate_submitted_gems": "32",
+                "rounds": 1304,
+                "replay_sha256": "8e4c84051ae3a1013f774fd156fd75b4f083d1576332870a0d107dea52951a78"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": false,
+                "candidate_submitted_gems": "984",
+                "rounds": 1328,
+                "replay_sha256": "e6570eedcc955eacb54dff6ced04ddbddb8368ed6b163088aefe39b5943ee832"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": false,
+                "candidate_submitted_gems": "806",
+                "rounds": 805,
+                "replay_sha256": "5c4eadc2dfe184b26dde738f4d510e307effbdc3fcd9d80504840f43dbb01885"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1001",
+                "rounds": 1548,
+                "replay_sha256": "cf95bd6ec0389ae7087db0171a0e9aeb6ec8a0593fca68766a93ba6816b6e182"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": false,
+                "candidate_submitted_gems": "489",
+                "rounds": 888,
+                "replay_sha256": "b6a160cdd7962c38d55349659e8d120ef70323e7214cf21dcfc5570aa0866050"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "cassi": {
+      "f475": {
+        "source_aggregator": {
+          "candidate_wins": 7,
+          "candidate_games": 12,
+          "candidate_wins_by_candidate_side": {
+            "A": 4,
+            "B": 3
+          }
+        },
+        "by_candidate_physical_side": {
+          "A": {
+            "games": 6,
+            "wins": 4,
+            "losses": 2,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1006",
+                "rounds": 1021,
+                "replay_sha256": "895a5525216a4284050afef3e6bc85a5b02268569ee860976de06fa67d6615b4"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": false,
+                "candidate_submitted_gems": "58",
+                "rounds": 1347,
+                "replay_sha256": "659095f553d66142b7e84df656656c46cf0243823e3751813b4f3db0b22be2b6"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": false,
+                "candidate_submitted_gems": "756",
+                "rounds": 1262,
+                "replay_sha256": "10e271f21a5550947b1c0c4341908ab10952277cc4c37ad94c5c73d653109c56"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1142",
+                "rounds": 796,
+                "replay_sha256": "2f8fdf14095aa64dd482e7bab65deb1aae8a84a81a88a921735a08a2f8c70e52"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1001",
+                "rounds": 1532,
+                "replay_sha256": "a8c96213e86000c1477a70e877bce23108021514d0701d0333e51ee370d57d26"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1073",
+                "rounds": 1064,
+                "replay_sha256": "ee00e90ae9a5ffb214426f16d85d304b6cbe1991b6441c8ff98474119104008b"
+              }
+            ]
+          },
+          "B": {
+            "games": 6,
+            "wins": 3,
+            "losses": 3,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1029",
+                "rounds": 1008,
+                "replay_sha256": "1bd83f48f63078c1289fdd264b60ff164f8652e455e5183085da55184b3b1dd9"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1002",
+                "rounds": 1409,
+                "replay_sha256": "49dc1db25e78cec326abc31179a31d4bc50176aff5697c6224c29a7954b8b761"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": false,
+                "candidate_submitted_gems": "208",
+                "rounds": 803,
+                "replay_sha256": "96a186695e44e6656a4b1701fe2de07e63fbe42ea34c9002d38ab9560820ceac"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": false,
+                "candidate_submitted_gems": "895",
+                "rounds": 819,
+                "replay_sha256": "80cc0220341be6451feebb6cfdfbb82d0e05c88b7ff35a5a80c25dbbe0e50b97"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1001",
+                "rounds": 1383,
+                "replay_sha256": "3e298e336e6455ef0713c5ba804c8d7eb01d35c4c4d337a37d731567ba5d3665"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": false,
+                "candidate_submitted_gems": "486",
+                "rounds": 873,
+                "replay_sha256": "f2e085f6f661721f9764d346fb8d72816490b5d31794fbde170ef6a8f350f681"
+              }
+            ]
+          }
+        }
+      },
+      "v33": {
+        "source_aggregator": {
+          "candidate_wins": 5,
+          "candidate_games": 12,
+          "candidate_wins_by_candidate_side": {
+            "A": 1,
+            "B": 4
+          }
+        },
+        "by_candidate_physical_side": {
+          "A": {
+            "games": 6,
+            "wins": 1,
+            "losses": 5,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": false,
+                "candidate_submitted_gems": "207",
+                "rounds": 1367,
+                "replay_sha256": "e34eaf54ac8bed747b65eb14791355dada2de78d2c3660cb4a2452ad56581ffb"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": false,
+                "candidate_submitted_gems": "48",
+                "rounds": 1518,
+                "replay_sha256": "43e07a3e4b71ca31bf88e367573a729fb70a1f856f3dd7ad9f3309b0fa3d2ead"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": false,
+                "candidate_submitted_gems": "124",
+                "rounds": 784,
+                "replay_sha256": "1353de2adb391bc545a5e9d8033fa9f071f7011e414c46c5c6989a55d4a9e8e2"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": false,
+                "candidate_submitted_gems": "782",
+                "rounds": 799,
+                "replay_sha256": "f43f56cf6f188676d2fd98e686841c1f2e276099bb38d62153d609f1792d4cc7"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1001",
+                "rounds": 1441,
+                "replay_sha256": "58a68580d6c21724169d1deece099316aa3ef14ad79095300a8cc3f0bddb38ad"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": false,
+                "candidate_submitted_gems": "518",
+                "rounds": 969,
+                "replay_sha256": "e603f5e7a29aa223b017395dd4a3673694dfe686daef75f7d4608bceba88822c"
+              }
+            ]
+          },
+          "B": {
+            "games": 6,
+            "wins": 4,
+            "losses": 2,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1026",
+                "rounds": 1223,
+                "replay_sha256": "92a71887b30ec043ed2c8615f067f4cd2f313baa520f083c35f359781728cc91"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": false,
+                "candidate_submitted_gems": "358",
+                "rounds": 1882,
+                "replay_sha256": "9b89398e04e4f7bc8b42c8b2e5416dc1b28ae5ff89daa1166ca63c84ca8d3673"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": false,
+                "candidate_submitted_gems": "208",
+                "rounds": 803,
+                "replay_sha256": "4b311ffae6bff40e620a14f316fcf9a42ad229eac7fc6a2f853259dfff7e5e75"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1004",
+                "rounds": 851,
+                "replay_sha256": "87602296b5398ecf7a49a7cfb88c1c3522769031af79eb89c52480969f59a918"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1001",
+                "rounds": 1509,
+                "replay_sha256": "dab2a0374bc45f4fbb33db75140323671581760d1f41a049c4c9cafe288e7555"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1034",
+                "rounds": 928,
+                "replay_sha256": "00ab97c69b61e66ef5f1ebc5cff5f1dbe58e9d83a8923f4f92e2faf9ee37bfef"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "marcella": {
+      "f475": {
+        "source_aggregator": {
+          "candidate_wins": 6,
+          "candidate_games": 12,
+          "candidate_wins_by_candidate_side": {
+            "A": 5,
+            "B": 1
+          }
+        },
+        "by_candidate_physical_side": {
+          "A": {
+            "games": 6,
+            "wins": 5,
+            "losses": 1,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1015",
+                "rounds": 1003,
+                "replay_sha256": "85965a7e3d284a19e908f11a921ffed8c91c13567c11f01ff2f50d0da60e59c7"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1004",
+                "rounds": 1459,
+                "replay_sha256": "a8906bfc2fd3ed297f1d8c339c647b6b2554e51875895ad33bc11e1daba8520c"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1018",
+                "rounds": 1236,
+                "replay_sha256": "f22211709bb91296cf441729bc61dfbcc07cb8d61e9cb710c4f14763872331ad"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": false,
+                "candidate_submitted_gems": "887",
+                "rounds": 867,
+                "replay_sha256": "aff61dc5cc5f7a1c29879c921b1d555a637e329bc04b1883f9a83d690708c462"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1001",
+                "rounds": 1631,
+                "replay_sha256": "fb987e14abf12678c65274a5bb70f01410fa337c41f23917457f5fc05acc4302"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1281",
+                "rounds": 981,
+                "replay_sha256": "64f294760bd5b0df38db9320b71f9869258479c833daa74523d186ddff05a778"
+              }
+            ]
+          },
+          "B": {
+            "games": 6,
+            "wins": 1,
+            "losses": 5,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": false,
+                "candidate_submitted_gems": "351",
+                "rounds": 1130,
+                "replay_sha256": "d53a52c21771c5292921676274b14419f0678030982cc9fb7d22f3f3eef7032c"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1008",
+                "rounds": 1400,
+                "replay_sha256": "c058d96bb5f6a5993b715d9a44c29313e8c856013f0a2031dd65e9c35a114aea"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": false,
+                "candidate_submitted_gems": "896",
+                "rounds": 1214,
+                "replay_sha256": "1db798fb6d1f8c1f5bf93fa0efe67567dd63f8588b0fb88f9d03d5330e44dca1"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": false,
+                "candidate_submitted_gems": "899",
+                "rounds": 867,
+                "replay_sha256": "87885e53f9655346f09bbbae0c4efc2197e22b6141c050a01665010106a99d9f"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": false,
+                "candidate_submitted_gems": "748",
+                "rounds": 1901,
+                "replay_sha256": "ea2adbbf88aeeb4edccde9b2cb0278355adfe8d89429155e2466bd159bf748b4"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": false,
+                "candidate_submitted_gems": "595",
+                "rounds": 957,
+                "replay_sha256": "3aee03f283fb4c91530f4471ae900c23a4f86b5646be590577557116dfdcb7cb"
+              }
+            ]
+          }
+        }
+      },
+      "v33": {
+        "source_aggregator": {
+          "candidate_wins": 6,
+          "candidate_games": 12,
+          "candidate_wins_by_candidate_side": {
+            "A": 3,
+            "B": 3
+          }
+        },
+        "by_candidate_physical_side": {
+          "A": {
+            "games": 6,
+            "wins": 3,
+            "losses": 3,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1036",
+                "rounds": 1137,
+                "replay_sha256": "18c60e0ca2304bda92f063829fc5cf4a8d8c18e0248aac5a3f8328ef7ee0b9cd"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1020",
+                "rounds": 1532,
+                "replay_sha256": "9552a3d2761440a581ece69da1d478cd209e4cd74b056fe58b4062df7eb95717"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": false,
+                "candidate_submitted_gems": "210",
+                "rounds": 902,
+                "replay_sha256": "dd45c4e45e0f8fbb6c2a876d10b89f7524f5510bff15c686feae7911c9892c11"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": false,
+                "candidate_submitted_gems": "883",
+                "rounds": 807,
+                "replay_sha256": "5606bc3aa1bc5305aeb16249d634b73043b18ddd76f9d74ba7644a7a0c456c56"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1007",
+                "rounds": 1519,
+                "replay_sha256": "6eb1923ab774fcffa63cab27abcf4a05e7891c40bc771cedf6b539f553a4915c"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": false,
+                "candidate_submitted_gems": "830",
+                "rounds": 1022,
+                "replay_sha256": "6b378dac1cd0e1e0244f3ed5e55a8f96b8cab635ea6919e0af15a533cf136af2"
+              }
+            ]
+          },
+          "B": {
+            "games": 6,
+            "wins": 3,
+            "losses": 3,
+            "maps": [
+              {
+                "map": "00collision",
+                "candidate_win": false,
+                "candidate_submitted_gems": "414",
+                "rounds": 1161,
+                "replay_sha256": "e47fb36b6e00d5f338b4409b8a74b6f6527db7feec0a9b3d31a58bccc26c5514"
+              },
+              {
+                "map": "00fragment",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1009",
+                "rounds": 1504,
+                "replay_sha256": "48b9af786e128d758f75e82adddb7f5f2fb4e130174ead4a629379dbc34357df"
+              },
+              {
+                "map": "00packs",
+                "candidate_win": false,
+                "candidate_submitted_gems": "574",
+                "rounds": 1097,
+                "replay_sha256": "9be8692692a3437f95b23693c05ffb95c039cf7bda7f94e5e07ebf66824a6cad"
+              },
+              {
+                "map": "01broken-curve",
+                "candidate_win": true,
+                "candidate_submitted_gems": "1270",
+                "rounds": 830,
+                "replay_sha256": "253c3db93345eb1634a58cde1915aaf83269eba4eac8b6c3582c10c95bfb6691"
+              },
+              {
+                "map": "01gold-rush",
+                "candidate_win": true,
+                "candidate_submitted_gems": "880",
+                "rounds": 2000,
+                "replay_sha256": "de34405c98c9dfb90d39b7cd00d34a1f0d5975c2d4fd3cbea7a8bdf793a6134a"
+              },
+              {
+                "map": "01the-farm",
+                "candidate_win": false,
+                "candidate_submitted_gems": "460",
+                "rounds": 799,
+                "replay_sha256": "ecfb60c57e28aa749cb611e6b3c0c305144e972bde1967efb783a71f4b04ed73"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "baseline_control_cells": [
+    {
+      "map": "00collision",
+      "f475_side": "A",
+      "winner": "f475",
+      "scoreA": 1010,
+      "scoreB": 133,
+      "rounds": 970,
+      "replay_sha256": "5a8c7d5c4028d580e82c6059e46667d4f1e0da12645e30c206f5b1c6ef98af5d",
+      "statistics_sha256": "0f9ab32ee8b756920664c2de0f2524dd1a2d5591e29f51c5461b74fe8b760575"
+    },
+    {
+      "map": "00collision",
+      "f475_side": "B",
+      "winner": "v33",
+      "scoreA": 1002,
+      "scoreB": 105,
+      "rounds": 1033,
+      "replay_sha256": "af309be1ee651c8b5f4e76859854f429ae1e6d3adfe318fc2f0adc3ab991f421",
+      "statistics_sha256": "dcc38c1015ce38f6966207270334c3c24a0d09dba7a717b8d4ef1e57426255ea"
+    },
+    {
+      "map": "00fragment",
+      "f475_side": "A",
+      "winner": "v33",
+      "scoreA": 96,
+      "scoreB": 1024,
+      "rounds": 1416,
+      "replay_sha256": "32966a0573366fbd449689b6af99cab9f2f7fa37a69605bc2d57e7c585c3f9b2",
+      "statistics_sha256": "9fb76e3346e779b74471197fab20ab29999bb874e48320a4c35e943a585948ad"
+    },
+    {
+      "map": "00fragment",
+      "f475_side": "B",
+      "winner": "v33",
+      "scoreA": 1010,
+      "scoreB": 96,
+      "rounds": 1320,
+      "replay_sha256": "e2f9a2eebd17916d8510cd49dbecdb3c010008b004fd5ea6aae44b4b9320d0da",
+      "statistics_sha256": "ad6e87846a1ba548592c19407b880ba87308df7735ac1816f851416fe3f48746"
+    },
+    {
+      "map": "00packs",
+      "f475_side": "A",
+      "winner": "v33",
+      "scoreA": 204,
+      "scoreB": 1006,
+      "rounds": 818,
+      "replay_sha256": "e39ca8b7e6896bd7784e979ac9577b9581b9ee193054d92dbe1e7504507cd908",
+      "statistics_sha256": "f219adcec818ff10fc088e79a6d82c46c403a1ba2ee12e82e8df3bd2e3bb2ccc"
+    },
+    {
+      "map": "00packs",
+      "f475_side": "B",
+      "winner": "f475",
+      "scoreA": 154,
+      "scoreB": 1024,
+      "rounds": 826,
+      "replay_sha256": "22fe5c06b55a9872b5f4b8ecae80be4cfeb4f59b762cb6555c7f334b4518ea2f",
+      "statistics_sha256": "9cde366088e4b721795c28067f080bf1b6d9e9b7f9c2f227025634f89f573ec1"
+    },
+    {
+      "map": "01broken-curve",
+      "f475_side": "A",
+      "winner": "f475",
+      "scoreA": 1000,
+      "scoreB": 365,
+      "rounds": 678,
+      "replay_sha256": "39e7757c3e90bbb87ee2e295640817be307533cf9d9f27e183899f31a396661d",
+      "statistics_sha256": "be9209b1dc9afcc5adaa1614e4a0052ed9219fcce4f219ea4b4575ea55c1a3cb"
+    },
+    {
+      "map": "01broken-curve",
+      "f475_side": "B",
+      "winner": "f475",
+      "scoreA": 578,
+      "scoreB": 1463,
+      "rounds": 878,
+      "replay_sha256": "2eddb8087360bb4f78749e5f14de3e71767237c7cab2fda915f9d4d46be6a4fa",
+      "statistics_sha256": "e59c193ad9c7d560406f9175efa8df8c9bbeffdd6f3b710a480a2134a369daa1"
+    },
+    {
+      "map": "01gold-rush",
+      "f475_side": "A",
+      "winner": "v33",
+      "scoreA": 704,
+      "scoreB": 913,
+      "rounds": 2000,
+      "replay_sha256": "9671f4818af50bae8960a6ede1d358878ea23aa4fecd168ede4c1a567b443d33",
+      "statistics_sha256": "f09a27260071c3ba4e98ad3cf10f938b1446cb8f6a88b6e4951a3cb226cedaea"
+    },
+    {
+      "map": "01gold-rush",
+      "f475_side": "B",
+      "winner": "f475",
+      "scoreA": 280,
+      "scoreB": 1007,
+      "rounds": 1706,
+      "replay_sha256": "4177b44bd51c2c5667050ecc0309e5ee27ea7f0ca53b0ea5501dfe3321bb74fc",
+      "statistics_sha256": "8dc61b3d105b494c0b66863dc69671eb9c0c856724f177fc1dcf73299c1c366c"
+    },
+    {
+      "map": "01the-farm",
+      "f475_side": "A",
+      "winner": "f475",
+      "scoreA": 1616,
+      "scoreB": 796,
+      "rounds": 1088,
+      "replay_sha256": "031ae54a0cd123b7276d5128332c6b5f92477a2d682b26fb839d8e7f5c86ef27",
+      "statistics_sha256": "18380a005ffa890604b8faddd6cb54013179929a1f17191059ae26b478228cfa"
+    },
+    {
+      "map": "01the-farm",
+      "f475_side": "B",
+      "winner": "f475",
+      "scoreA": 919,
+      "scoreB": 1328,
+      "rounds": 1030,
+      "replay_sha256": "0ddf0b66192f6d56887fb0046d7f21e39728bc0b29d4c72bbb0392ae872b048b",
+      "statistics_sha256": "5b04d8e6a96cea3658ad4f72c9cfa745e98a400a02613f0b73bb891b93120050"
+    }
+  ],
+  "limits": [
+    "Results are shown per candidate arm, opponent, physical side and map. No pooled 72-game win rate is reported.",
+    "Controls are exact reused f475-v33 cells on the same maps/sides; they are context, not extra candidate games.",
+    "Win counts were computed with fixtures/candidate-source-aggregation/aggregate.py."
+  ],
+  "audit_totals": {
+    "new_games": 72,
+    "completed": 72,
+    "failed": 0,
+    "native_draft_pick_counts": [
+      6
+    ],
+    "candidate_drafts_and_bodies_all_match": true,
+    "stats_bot_faults_nonzero_games": 0,
+    "native_phase_bot_errors": 0
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "generated-three-pick-draft-screen-execution/v1",
+  "status": "complete_192_replays_statistics_and_native_phase_audit",
+  "completed_utc": "2026-10-24T16:51:52.910292+00:00",
+  "run_manifest_sha256": "b377a064db7c85a019094e53d344107d9cfd47802d259f712e849c5338ba5b5c",
+  "rows_sha256": "14763e5862641b688a90a303a8bfe48e59778d47897caf14f4ed642e5e5e013c",
+  "replays": 192,
+  "statistics": 192,
+  "cli_exit_code": 0,
+  "command": "cambc 3.0.5 run-batch RUN.manifest --jobs 6 --fuel-quantum 100000 --release --json",
+  "cwd": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "sdk_path": "/Users/yufan/Library/Caches/cambc/wasi-sdk-33/bin",
+  "run_stdout": "logs/run.stdout.log",
+  "run_stderr": "logs/run.stderr.log",
+  "failed_attempt": "logs/attempt1-wrong-cwd.json",
+  "native_audit_pending": false,
+  "native_audit": "NATIVE-PHASE-RESULT.json",
+  "native_audit_sha256": "65a690ffc2a38fe4ee5b525d28be3b93e7bde6dd804a92d26355fcc62a50f131",
+  "native_audit_games": 192,
+  "native_errors_total": 0
+}

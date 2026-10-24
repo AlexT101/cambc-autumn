@@ -1,0 +1,112 @@
+{
+  "schema": "marcella-hop-equal-ray-escape-union-results-preservation/v1",
+  "purpose": "Compact source/build/run/result/native-status receipts. Raw replays and per-game statistics are retained locally and excluded from compact staging; their hashes are recorded in the per-cell match-results receipts.",
+  "candidate_source_aggregate_sha256": "37392769d9123c199b3d0f5fe0e01f4ec4cbf1083d42aa2c640a266e9a620719",
+  "files": [
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/RESULT.md",
+      "bytes": 4551,
+      "sha256": "d3cf824607e814bcbf1791fcbf30cb6ba54950aa41464d73a890222ebb181990"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/RESULT.json",
+      "bytes": 124840,
+      "sha256": "ac0cc5924882d13b89a3dfd3a6f87cace1448d9662aedc1eec3719e5a6570c21"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/outputs/union-vs-f475/match-results.json",
+      "bytes": 55869,
+      "sha256": "cb49530dd9674aec2ecbc41c58868e2e79d4bc2c742392a1f5848d91cdcaeae8"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/outputs/union-vs-f475/native-status.json",
+      "bytes": 210662,
+      "sha256": "ef76e9fca154a1ed109e40161c9e2fead65756ecd415e19568ffc21bd7e43b8e"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/outputs/union-vs-f475/native-audit-input/results.json",
+      "bytes": 38616,
+      "sha256": "595e88e8eaf513c5f2c639ac602b5b586c4dda1c5812f43964dfff51bcb9015c"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/outputs/union-vs-v33/match-results.json",
+      "bytes": 55714,
+      "sha256": "40064a0398d7b2c3129e097160eb0f9e767b8ac29ee14b9c3f20b3ff09e385f0"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/outputs/union-vs-v33/native-status.json",
+      "bytes": 218999,
+      "sha256": "9847e8b95b63a33200e7510ef014125201e171e17d0685e9479bb268d53f7c38"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/outputs/union-vs-v33/native-audit-input/results.json",
+      "bytes": 38444,
+      "sha256": "dbd2ea12fc1ae000c63d1d8995a12ee0e7dbd7214c9b2daf7d57cc30899c4efb"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/ROWS.pending.tsv",
+      "bytes": 179424,
+      "sha256": "a13db6d0abb4a765fa2eb74a01d267a43e75dd368c27dc149499f724f715a0e2"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/ORDERED-ROWS.pending.json",
+      "bytes": 311255,
+      "sha256": "c3426ada2ebcc474e11ccf45407372994c1a040f29792a990207ad4a278006ab"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/PLAN.pending.json",
+      "bytes": 330579,
+      "sha256": "f47637af1d424267d83e526f6e271faec89a0d1b871a5ae61ee6557839734baf"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/ROW-PREFLIGHT.json",
+      "bytes": 606,
+      "sha256": "3597c6c41048c375f04faee784c08909a629c41732ed8bcaa680366765319373"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/RUN-PREFLIGHT.json",
+      "bytes": 1601,
+      "sha256": "12574a63a1817c496b04a89b2b2e6416ac4031fbe994dea4e9ec7687857225f8"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/run.exit",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/run.stdout.log",
+      "bytes": 120379,
+      "sha256": "040d15519fd1d0165b5114c3c7dcb33746cdc068bcb741476cdeffd38a5be6a3"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/run.manifest",
+      "bytes": 160200,
+      "sha256": "ca72ee9228f6022b48af6a28129f396cc1e3e1cde6a61dae868487b1c9dd7d2b"
+    }
+  ],
+  "excluded_artifacts": [
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/outputs/union-vs-f475",
+      "items": 80,
+      "types": [
+        ".repl26a",
+        ".statistics.json"
+      ],
+      "note": "hashes listed per cell in outputs/union-vs-f475/match-results.json"
+    },
+    {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/marcella-hop-equal-ray-escape-union-published-160-v1/outputs/union-vs-v33",
+      "items": 80,
+      "types": [
+        ".repl26a",
+        ".statistics.json"
+      ],
+      "note": "hashes listed per cell in outputs/union-vs-v33/match-results.json"
+    }
+  ]
+}

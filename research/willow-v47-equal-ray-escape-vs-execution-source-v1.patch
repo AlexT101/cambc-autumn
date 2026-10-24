@@ -1,0 +1,62 @@
+diff -ruN bots/variants/willow-v47-connected-escape-execution-work/src/pathing.cpp bots/variants/willow-v47-equal-ray-escape-work/src/pathing.cpp
+--- bots/variants/willow-v47-connected-escape-execution-work/src/pathing.cpp	2026-10-24 09:02:18
++++ bots/variants/willow-v47-equal-ray-escape-work/src/pathing.cpp	2026-10-24 10:09:43
+@@ -381,9 +381,11 @@
+     if (steps == unreachable) return exhausted ? std::optional<int>{unreachable} : std::nullopt;
+     if (p == origin) return steps;
+     if (steps == 0) return test(goals, p) ? std::optional<int>{0} : std::nullopt;
+-    if (ray != vec2{}) {
+-        for (int k = 0; k <= steps; ++k)
+-            if (p == origin + vec2{ray.x * k, ray.y * k}) return steps - k;
++    if (rays) {
++        const int k = dist(p, origin);
++        if (k > steps) return std::nullopt;
++        for (unsigned i = 0; i < 8; ++i)
++            if ((rays & (1u << i)) && p == origin + vec2{directions[i].x * k, directions[i].y * k}) return steps - k;
+         return std::nullopt;
+     }
+     const int d = steps_at(*labels, p);
+@@ -408,16 +410,18 @@
+         copy_into(goals, out.goals);
+         out.origin = here;
+         out.steps = unreachable;
+-        out.ray = {};
++        out.rays = 0;
+         out.exact = out.exhausted = false;
+         if (test(goals, here)) out.steps = 0, out.exact = true;
+         else {
+-            for (const auto d : directions) {
++            for (unsigned i = 0; i < 8; ++i) {
++                const auto d = directions[i];
+                 for (int k = 1; k <= ray_limit; ++k) {
+                     const vec2 p = here + vec2{d.x * k, d.y * k};
+                     if (!in_bounds(p) || test(walls, p)) break;
+                     if (test(goals, p)) {
+-                        if (k < out.steps) out.steps = k, out.ray = d;
++                        if (k < out.steps) out.steps = k, out.rays = 0;
++                        if (k == out.steps) out.rays |= static_cast<std::uint8_t>(1u << i);
+                         break;
+                     }
+                 }
+@@ -435,7 +439,7 @@
+         const int layers = out.labels->compute_to_with_expansion_count(out.walls, out.goals, origin, visited, unreachable);
+         world_.throw_if_stale();
+         out.steps = steps_at(*out.labels, here);
+-        out.ray = {};
++        out.rays = 0;
+         out.exhausted = out.steps == unreachable && layers < unreachable;
+         out.exact = out.steps != unreachable || out.exhausted;
+         out.valid = true;
+diff -ruN bots/variants/willow-v47-connected-escape-execution-work/src/pathing.h bots/variants/willow-v47-equal-ray-escape-work/src/pathing.h
+--- bots/variants/willow-v47-connected-escape-execution-work/src/pathing.h	2026-10-24 09:02:18
++++ bots/variants/willow-v47-equal-ray-escape-work/src/pathing.h	2026-10-24 10:08:56
+@@ -75,7 +75,8 @@
+     void invalidate(); // after we move or dash
+ 
+     struct CampEscape {
+-        vec2 origin{-1, -1}, ray{};
++        vec2 origin{-1, -1};
++        std::uint8_t rays = 0; // bits in directions order: tied shortest straight witnesses; 0 uses labels
+         int steps = unreachable;
+         bool valid = false, exact = false, exhausted = false;
+         // Only completed labels are distances; an unlabelled dash endpoint is unknown.
