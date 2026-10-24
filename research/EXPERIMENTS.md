@@ -455,6 +455,18 @@ another harmless group was kept (CHANGES 91).
   50.4% of 512 (together 50.0% of 1024). Each change was kept on the committed suites, so 54.3% is selection; the fresh
   50.0% is the estimate: level in self-play. Most of the eight are correctness fixes, and two (119, 120) target
   ladder behaviour our bots lack.
+- Batch 2 fights (2026-10-24, against d3cc38f, 1104 games unless noted):
+  - Enemies who walk into a fight join the verdict (CHANGES 122). In want_home, prey and step_guard: 50.2% (47.2-53.1),
+    out-of-fuel turns 2813 vs 2596. Without step_guard (kept): 50.9% (48.0-53.8; gen-s1 52.0), 2573 vs 2778; fresh
+    seed 7321 52.1% of 512; against hyperion 53.4%. A debug trace showed verdicts flipping at arrivals 1-3 as
+    intended (no implementation error). The guard's earliest-arrival pricing makes every step tile with a nearby
+    enemy look worse than it is, which may be why it lost.
+  - Vesper attacks, then dashes clear in `retreat()` instead of dash + walk (`dash_clears(..., exposed)`): 48.9%
+    (46.0-51.9), 2495 vs 2557. Bundled with 121: 49.3%, 3/4-pick maps 48.9% of 724. Dropped: the walk it gives
+    up is a tile of distance the pursuer must close next turn, so it is a trade-off, not a free attack.
+  - Willow takes no chase (CHANGES 121): 49.5% of 380 five-pick games. Kept as a consistency fix.
+  - Enemies in bushes posted first in the shared sighting slot (CHANGES 124): 49.7% (46.8-52.7), 2573 vs 2564. Kept
+    as level; local bots stand in bushes little, so judge it on the ladder by blind damage taken.
 
 ## Fuel
 

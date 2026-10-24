@@ -226,13 +226,18 @@ void send(World& world, bool moved, bool refresh) {
     if (!sighted) {
         const int n = static_cast<int>(world.enemies.size());
         const int start = sight_x.get(bits) != 0 ? sight_index.get(bits) + 1 : 0;
-        for (int k = 0; k < n; ++k) {
-            const auto& e = world.enemies[(start + k) % n];
-            if (!e.visible) continue;
-            put_sighting(bits, e, round);
-            dirty = true;
-            break;
-        }
+        // An enemy in a bush first: only whoever shares its cluster sees it, while one in the open
+        // is seen by any teammate near enough.
+        const auto& bushes = world.map().bushes;
+        bool put = false;
+        for (int pass = 0; pass < 2 && !put; ++pass)
+            for (int k = 0; k < n; ++k) {
+                const auto& e = world.enemies[(start + k) % n];
+                if (!e.visible || (pass == 0 && !test(bushes, e.pos))) continue;
+                put_sighting(bits, e, round);
+                dirty = put = true;
+                break;
+            }
     }
     const auto pair = endpoints(world);
     const int writer = round & 1;

@@ -632,3 +632,12 @@ file while it was being applied); this entry is its record.
   1104 (50.9-56.8; CHANGES 120's bot read 50.5%).
 - Ladder suite, Prism: mean gold held 146 → 95, at game end 299 → 167, rounds at 300+ gold 159 → 119. Other
   champions about unchanged.
+
+## 124: enemies in bushes first in the shared sighting (astraeus, 2026-10-24)
+
+`comms::send` posts the one sighting a round for a visible enemy on a bush first, then round-robin as before: a bush
+tile cannot be seen from outside its cluster, so only whoever shares it sees that enemy, while one in the open is
+seen by any teammate near enough. In a trace, 208k of 607k damage from unseen attackers came from ones a teammate had
+seen that round or the one before, 931 of those 1,418 hits from bushes.
+
+- Against d3cc38f: 49.7% of 1104 (46.8-52.7; ladder 50.0, gen 50.6, gen-s1 48.8), out-of-fuel turns 2573 vs 2564.
