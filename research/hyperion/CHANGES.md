@@ -571,3 +571,12 @@ now also takes one from a tile a step away (melee only: a ranged walk spends the
 nothing but the victim reaches that tile (`only_threat`); the dash lands nearest our spawn (`dash_onto`).
 
 - Against 116: 50.2% of 1104 (47.2-53.1; ladder 50.0, gen 50.0, gen-s1 50.4), out-of-fuel turns 2810 vs 2802.
+
+## 119: a carrier on our own ground checks for pursuers (astraeus, 2026-10-24)
+
+`want_home` skipped the pursuit steps for a healthy champion on our own ground ("they have no reason to come for
+us"). A kill takes the whole bag, so a carrier of `brake_bag` or more (both bags for Cassi and Issac) now runs
+`stand(here, pursuit_steps)` there too; the fight sim still reads Prism's live Focus, so a winning fight still stays.
+
+- Against 118: 51.4% of 1104 (48.4-54.3; ladder 55.0, gen 51.2, gen-s1 51.0), out-of-fuel turns 2733 vs 2745.
+  Against 116: 51.1%, gems lost on death -5.4%, tributed +1.4%.

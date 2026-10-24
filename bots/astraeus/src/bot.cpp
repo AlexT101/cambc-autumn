@@ -2869,8 +2869,10 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
     // Out of sight and not lethal, nobody can win a fight here or pursue us.
     const bool lethal = safety.lethal(here);
     if (!lethal && !enemy_seen(world)) return false;
-    // Healthy on our own ground, they have no reason to come for us.
-    const bool pursued = !paying_soon(world, pathing) && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health());
+    // Healthy on our own ground, they have no reason to come for us, unless we carry a bag: a kill takes it.
+    const bool pursued = !paying_soon(world, pathing)
+                         && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health()
+                              && bag_at_stake(world) < params::brake_bag);
     const bool linked = partner(world) != nullptr;
     const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal);
     return t.lost || ((lethal || linked) && t.self_falls);
