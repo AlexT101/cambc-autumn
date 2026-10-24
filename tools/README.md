@@ -98,12 +98,15 @@ py tools/bulk_replays.py                              # unpack replay-bulk-zip/ 
 py tools/scrim_ladder.py --dry-run                    # top 5 teams x 3 groups: maps and commands, nothing queued
 py tools/scrim_ladder.py --teams 5 --sets 3 --seed 7  # asks before queuing (--yes skips)
 py tools/scrim_ladder.py --teams 10 --sets 7x5,3x5    # 7 groups each for the top 5, 3 each for the next 5
+py tools/scrim_ladder.py --sides alt --avoid replays/scrims/TIMESTAMP --wait-quota   # both sides, new maps, queue as quota frees
 py tools/scrim_ladder.py --resume replays/scrims/TIMESTAMP
+py tools/version_record.py 50                        # our version 50's record per opponent: kind, pick count, side
 ```
 
 - **fetch_replays.py** needs `cambc login` and `--threads 1` (downloads rate-limit). Options: `--kind ranked|unranked|all`, `--since`, `--max-groups N`, `--out` (`replays/ladder/`). Each group gets `<time>-<teamA>-vs-<teamB>-<id>/` with `<n>-<map>.repl26a` and `group.json`.
 - **bulk_replays.py** keeps ranked games between two of the day's top 15 teams and deletes each zip once extracted.
-- **scrim_ladder.py spends the team's unranked quota** (`cambc match-groups quota`): dry-run first. We are always team A; replays go to `replays/scrims/<timestamp>/`.
+- **scrim_ladder.py spends the team's unranked quota** (`cambc match-groups quota`; each group frees about an hour after it was queued): dry-run first. We are side A unless `--sides alt`; `--avoid` takes earlier run folders, so repeated maps go to the side not yet played. Replays go to `replays/scrims/<timestamp>/`.
+- **version_record.py** needs the website cookie (`%APPDATA%/cambc/web-cookie.txt`, as fetch_replays.py): the API shows submission versions only with it. `--kind`, `--json FILE` for per-game rows.
 
 ## Replay analysis: tools/replay
 

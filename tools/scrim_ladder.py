@@ -1,10 +1,11 @@
 """Play unranked match groups between our live submission and the top ladder teams, on maps we choose.
 Requires Python 3.10+ and `cambc login`.
 
-Each group is `cambc match-groups create <team id> --maps <five map ids>` and spends one unit of the
-team's unranked quota (`cambc match-groups quota`). The CLI has no side option and the requesting team
-plays side A in all five games, so sides cannot be balanced. Each team gets as many distinct maps as the
-pool allows, and any repeats are spread evenly. A run's plan, group ids and results go to
+Each group is `cambc match-groups create <team id> --maps <five map ids> --sides <five a/b>` and spends one
+unit of the team's unranked quota (`cambc match-groups quota`), which frees again about an hour after the
+group was queued. We play side A in every game unless `--sides alt`. Each team gets as many distinct maps as
+the pool allows, and any repeats are spread evenly; `--avoid` counts an earlier run's maps as already played
+and puts a repeated map on the side not yet played. A run's plan, group ids and results go to
 replays/scrims/<timestamp>/ (plan.json, summary.json), with the replays of each group in the layout
 fetch_replays.py uses."""
 
@@ -47,8 +48,11 @@ def top_teams(n):
     return teams[:n]
 
 
-def draw_maps(pool, sets, rng):
+def draw_maps(pool, sets, rng, played=None):
     used = {m["id"]: 0 for m in pool}
+    for mid, sides in (played or {}).items():
+        if mid in used:
+            used[mid] += len(sides)
     picks = []
     for _ in range(sets):
         order = sorted(pool, key=lambda m: (used[m["id"]], rng.random()))
@@ -68,26 +72,55 @@ def parse_sets(spec, teams):
     return (counts + counts[-1:] * teams)[:teams]
 
 
-def make_plan(teams, pool, sets, seed):
+def choose_sides(mode, maps, s, played):
+    """`a`/`b`: that side throughout. `alt`: alternate, starting on A in odd sets; a map already played against
+    this team on one side only goes to the other side."""
+    if mode in ("a", "b"):
+        return [mode] * len(maps)
+    sides = [("a", "b")[(i + s + 1) % 2] for i in range(len(maps))]
+    for i, m in enumerate(maps):
+        seen = set(played.get(m["id"], []))
+        if len(seen) == 1:
+            sides[i] = "b" if "a" in seen else "a"
+        played.setdefault(m["id"], []).append(sides[i])
+    return sides
+
+
+def earlier_maps(runs):
+    """Per team id, per map id: the sides we played it on in earlier runs' plan.json (side A before --sides)."""
+    played = {}
+    for run in runs:
+        for g in json.loads((run / "plan.json").read_text(encoding="utf-8"))["groups"]:
+            if not g.get("groupId"):
+                continue
+            for mid, side in zip(g["mapIds"], g.get("sides") or ["a"] * len(g["mapIds"])):
+                played.setdefault(g["teamId"], {}).setdefault(mid, []).append(side)
+    return played
+
+
+def make_plan(teams, pool, sets, seed, sides="a", earlier=None):
     groups = []
     for t, n in zip(teams, sets):
         rng = random.Random(f"{seed}:{t['teamId']}")
-        for s, maps in enumerate(draw_maps(pool, n, rng), 1):
+        played = {mid: list(v) for mid, v in (earlier or {}).get(t["teamId"], {}).items()}
+        for s, maps in enumerate(draw_maps(pool, n, rng, played), 1):
+            side = choose_sides(sides, maps, s, played)
             groups.append({
                 "rank": t["rank"], "team": t["name"], "teamId": t["teamId"], "set": s,
-                "maps": [m["name"] for m in maps], "mapIds": [m["id"] for m in maps],
-                "command": ["cambc", "match-groups", "create", t["teamId"], "--maps", ",".join(m["id"] for m in maps), "--json"],
+                "maps": [m["name"] for m in maps], "mapIds": [m["id"] for m in maps], "sides": side,
+                "command": ["cambc", "match-groups", "create", t["teamId"], "--maps", ",".join(m["id"] for m in maps),
+                            "--sides", ",".join(side), "--json"],
                 "groupId": None,
             })
     return groups
 
 
-def problems(quota, groups):
+def problems(quota, groups, wait_quota=False):
     found = []
     if not quota.get("ready", True):
         found.append("quota reports not ready (is a submission live?)")
     q = quota.get("quota") or {}
-    if q.get("limit") is not None and len(groups) > q["limit"] - q.get("used", 0):
+    if not wait_quota and q.get("limit") is not None and len(groups) > q["limit"] - q.get("used", 0):
         found.append(f"{len(groups)} groups planned but only {q['limit'] - q.get('used', 0)} of {q['limit']} left in the quota")
     gap, ranks, mine = quota.get("maxRankGap"), quota.get("opponentRanks") or {}, quota.get("requesterRank")
     for t in {g["teamId"]: g for g in groups}.values():
@@ -99,11 +132,11 @@ def problems(quota, groups):
 def print_plan(seed, pool, quota, groups):
     q = quota.get("quota") or {}
     print(f"seed {seed}, {len(pool)} maps in the pool, quota {q.get('used')}/{q.get('limit')} used, "
-          f"{len(groups)} groups ({len(groups) * GAMES_PER_GROUP} games) planned; we are side A in every game")
+          f"{len(groups)} groups ({len(groups) * GAMES_PER_GROUP} games) planned")
     for g in groups:
         if g["set"] == 1:
             print(f"\n#{g['rank']} {g['team']} ({g['teamId']})")
-        print(f"  set {g['set']}: {', '.join(g['maps'])}")
+        print(f"  set {g['set']}: " + ", ".join(f"{m} ({s.upper()})" for m, s in zip(g["maps"], g.get("sides") or "a" * 5)))
         print(f"    {' '.join(g['command'])}")
 
 
@@ -130,9 +163,27 @@ def created_group(stdout, opponent, known, since):
     return None
 
 
-def create_groups(out, state):
+def await_quota():
+    """Block until the quota has a free group, sleeping until its next reset."""
+    while True:
+        q = read_quota().get("quota") or {}
+        if q.get("limit") is None or q.get("used", 0) < q["limit"]:
+            return
+        wait = 60
+        if q.get("resetsAt"):
+            reset = datetime.fromisoformat(q["resetsAt"].replace("Z", "+00:00"))
+            wait = max(10, min(600, (reset - datetime.now(timezone.utc)).total_seconds() + 5))
+        print(f"quota full ({q.get('used')}/{q['limit']}); next reset {q.get('resetsAt')}, waiting {wait:.0f}s", flush=True)
+        sleep(wait)
+
+
+def create_groups(out, state, wait_quota=False):
     known = {MY_TEAM} | {g["teamId"] for g in state["groups"]} | {i for g in state["groups"] for i in g["mapIds"]}
     for i, g in enumerate(state["groups"], 1):
+        if g.get("groupId"):
+            continue
+        if wait_quota:
+            await_quota()
         since = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat().replace("+00:00", "Z")
         r = cambc(*g["command"][1:])
         g["createOutput"] = (r.stdout + r.stderr).strip()
@@ -221,6 +272,9 @@ def main():
     p.add_argument("--wait-timeout", type=int, default=7200, help="seconds to wait for the groups to finish")
     p.add_argument("--poll", type=int, default=30, help="seconds between status checks")
     p.add_argument("--out", type=Path, help="default replays/scrims/<timestamp>/")
+    p.add_argument("--sides", choices=("a", "b", "alt"), default="a", help="our side: a or b throughout, or alt (a,b,a,b,a, flipping each set)")
+    p.add_argument("--avoid", type=Path, nargs="*", default=[], help="earlier run folders whose maps count as played (per team)")
+    p.add_argument("--wait-quota", action="store_true", help="queue each group as the quota frees instead of refusing a plan larger than it")
     args = p.parse_args()
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")
@@ -233,9 +287,9 @@ def main():
     pool = sorted(quota.get("maps") or [], key=lambda m: m["name"])
     if not pool:
         sys.exit("cambc match-groups quota lists no maps")
-    groups = make_plan(top_teams(args.teams), pool, parse_sets(args.sets, args.teams), args.seed)
+    groups = make_plan(top_teams(args.teams), pool, parse_sets(args.sets, args.teams), args.seed, args.sides, earlier_maps(args.avoid))
     print_plan(args.seed, pool, quota, groups)
-    found = problems(quota, groups)
+    found = problems(quota, groups, args.wait_quota)
     for f in found:
         print(f"PROBLEM: {f}", file=sys.stderr)
     if args.dry_run:
@@ -255,7 +309,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     state = {"seed": args.seed, "created": datetime.now(timezone.utc).isoformat(), "pool": pool, "groups": groups}
     save(out, state)
-    create_groups(out, state)
+    create_groups(out, state, args.wait_quota)
     print(f"plan and group ids: {out / 'plan.json'}")
     if not args.no_wait:
         collect(out, state, args)
