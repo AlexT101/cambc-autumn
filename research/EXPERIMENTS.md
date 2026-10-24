@@ -3009,3 +3009,14 @@ exposure; it preserves altar reservations and support priorities. The historical
 Mite loss supplies a useful example of productive teleports, not proof that
 this addition will improve our route. Implementation starts from released v34;
 no new runtime or further API request is authorized by the source design alone.
+
+A source-known Willow funding review finds four zero-gold g13 payouts, 6,186 HP
+healed, and a concrete shared-clear opportunity at g19 in rounds 139–146.
+Sharing that 60-base-gold payout would give Willow 30 and Vesper 39.9 before
+Treasure, instead of Vesper's 79.8 alone. This funds a shard at a team bonus
+cost of 9.9, but also delays Vesper's growth. Focus adds only 15 heal capacity
+per shard and raises the current 60% cast threshold; Health adds survivability
+without direct heal scaling. The 30 gold would not itself trigger the existing
+non-Prism shop trip. The model omits marginal allied healing service, yet the
+evidence does not establish profitable redistribution. Preserve the local
+join/next-shop question for a bounded follow-up; no allocation code is changed.
