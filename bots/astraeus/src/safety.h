@@ -251,6 +251,13 @@ public:
     // At least damage_bound(p), counting every unseen threat at its most: no host queries or
     // strikes for them.
     float damage_ceiling(vec2 p, bool double_unacted = false);
+    // damage_bound(p) without and with `double_unacted`, and whether a blow reaches p or stuns, in
+    // one pass over the threats.
+    struct Bound {
+        float damage = 0, doubled = 0;
+        bool hits = false, stuns = false;
+    };
+    Bound bound(vec2 p);
     // `next`: in the next camp phase only, which a stunned member skips (rules: abilities.stun);
     // else in each camp phase while we stay.
     float camp_damage(vec2 p, bool worst = true, bool next = false);

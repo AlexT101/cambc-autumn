@@ -2024,6 +2024,18 @@ float Safety::damage_bound(vec2 p, bool double_unacted) {
     return total;
 }
 
+Safety::Bound Safety::bound(vec2 p) {
+    Bound out;
+    out.damage = out.doubled = camp_damage(p, true, true);
+    each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
+        out.damage += b.damage;
+        out.doubled += b.damage * (e.visible && !e.acted ? 2.0f : 1.0f);
+        out.hits |= b.hits;
+        out.stuns |= b.hits && b.stuns;
+    });
+    return out;
+}
+
 float Safety::damage_ceiling(vec2 p, bool double_unacted) {
     float total = camp_damage(p, true, true);
     for (auto left = live_enemies(); left; left &= left - 1) {

@@ -49,6 +49,8 @@ bool end_ward = false; // the turn-end ward, seeing more than our last observe
 vec2 searched_at{};      // where the search's plan ended, and whether it had attacked by then
 bool searched_hit = false;
 
+// damage, imminent: Safety::damage_bound, the second with enemies yet to act counted twice;
+// camp_imminent: the awake camps' part; camp_exit_burden: their hits until we are out of reach.
 struct SupportExposure {
     float damage = 0, imminent = 0, camp_imminent = 0, camp_exit_burden = 0;
     bool enemy = false, camp = false, stun = false;
@@ -4309,32 +4311,23 @@ bool each_camp_striker(const World& world, vec2 p, F&& f) {
     return true;
 }
 
-// `enemies`: false when no enemy can hit p, which skips their search.
+// Willow holds no fight: a tile any enemy or camp member may hit is unsafe. `enemies`: false when
+// no enemy can hit p, which spares their search.
 SupportExposure exposure_at(const World& world, Safety& safety, vec2 p, bool enemies = true) {
     SupportExposure risk;
-    std::array<Safety::ThreatAt, 16> threats;
-    const int n = enemies ? safety.threats_at(p, threats) : 0;
-    for (int i = 0; i < n; ++i) {
-        const auto& b = threats[i].blow;
-        if (!b.hits) continue;
-        const auto& e = world.enemies[threats[i].enemy];
-        risk.enemy = true;
-        risk.stun |= b.stuns;
-        risk.damage += b.damage;
-        risk.imminent += b.damage * (e.visible && !e.acted ? 2.0f : 1.0f);
+    risk.camp_imminent = risk.damage = risk.imminent = safety.camp_damage(p, true, true);
+    if (enemies) {
+        const auto b = safety.bound(p);
+        risk.damage = b.damage, risk.imminent = b.doubled, risk.enemy = b.hits, risk.stun = b.stuns;
     }
     each_camp_striker(world, p, [&](int g, std::size_t i, const CampMember& m) {
         const auto& c = world.camps[g];
-        if (c.state == CampState::cleared || (c.state == CampState::respawning && c.respawn_round > world.round + 1)
-            || (c.state == CampState::alive && c.health[i] <= 0)) return true;
-        // A tank may leave before the next camp phase; support never borrows its protection.
+        const bool returning = c.state == CampState::respawning && c.respawn_round <= world.round + 1;
+        if (!returning && (c.state != CampState::alive || c.health[i] <= 0)) return true;
+        // Asleep too: a tank may leave before the next camp phase, and no ally's protection is borrowed.
         risk.camp = true;
-        if ((c.state == CampState::alive && !c.member_asleep(i))
-            || (c.state == CampState::respawning && c.respawn_round <= world.round + 1)) {
-            risk.damage += m.strength, risk.imminent += m.strength;
-            risk.camp_imminent += m.strength;
+        if (returning || !c.member_asleep(i))
             risk.camp_exit_burden += m.strength * static_cast<float>(std::max(0, m.reach + 1 - dist(p, m.pos)));
-        }
         return true;
     });
     return risk;
