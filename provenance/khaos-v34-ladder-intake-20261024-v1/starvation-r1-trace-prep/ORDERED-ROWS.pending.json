@@ -1,0 +1,123 @@
+{
+  "schema": "starvation-r1-trace-ordered-rows/v1",
+  "status": "ROOT_REVIEWED_BUILD_AND_PREFIX_EXECUTION_AUTHORIZED",
+  "purpose": "Uninstrumented Release/recorder prefix validation and two fuel-virtualized source traces, limited to game rounds 0-1; no full matches and no altered actions.",
+  "harness_workspace": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws",
+  "harness_source": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness",
+  "workspace_sdk_patched": true,
+  "workspace_is_separate_from_production_release_sdk": true,
+  "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+  "engine_wasm_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+  "cambc_cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+  "single_worker": {
+    "jobs": 1,
+    "threads": 1,
+    "nice": 19
+  },
+  "rows": [
+    {
+      "key": "v48",
+      "candidate_source": "willow-finishing-recall-4d08241-work",
+      "candidate_aggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+      "side_A": "starvation-v48-release",
+      "recorder_side_A": "starvation-v48-recorder",
+      "tracer_side_A": "starvation-v48-trace",
+      "side_B_puppet": "p-starvation-v48-B",
+      "side_B_source": "recorded physical B script generated from paired source replay",
+      "source_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starvation__v48-A__f475-B.repl26a",
+      "source_replay_sha256": "02b613ee21a19936ba5bdd94e84ccf75cde2c7cb82ccf243b4a6c1f29201aadf",
+      "ordered_sides": [
+        "A=candidate source",
+        "B=fixed source-replay team-B puppet"
+      ],
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/maps/01starvation.map26a",
+      "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+      "round_cap": 2,
+      "actor_window": {
+        "actor": 1,
+        "champion": "Vesper Vale",
+        "round": 1
+      },
+      "outputs": {
+        "release_prefix": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/v48-release-prefix.repl26a",
+        "recorder_prefix": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/v48-recorder-prefix.repl26a",
+        "trace_prefix": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/v48-trace-prefix.repl26a",
+        "trace_stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/v48-trace.stdout.log"
+      },
+      "instrumentation_patches": [
+        {
+          "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/v48-bot.cpp.patch",
+          "sha256": "78c632eb8f42fabfbfed4d8f66b6f00bee1c9f9a07ec1af0871c46dd2c6b3343"
+        },
+        {
+          "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/v48-pathing.cpp.patch",
+          "sha256": "b416d629275060c6ea0d384f7123da09c941f1a0425c2f8ddd1d40b193672fbb"
+        }
+      ],
+      "proposed_commands": {
+        "release": "cambc run-batch v48-release-prefix.manifest --jobs 1 --release --fuel-quantum 100000 --rounds 2 --json --color never",
+        "recorder": "cambc run-batch v48-recorder-prefix.manifest --jobs 1 --fuel-quantum 100000 --rounds 2 --log-limit 64000000 --json --color never",
+        "trace": "cambc run-batch v48-trace-prefix.manifest --jobs 1 --fuel-quantum 100000 --rounds 2 --log-limit 64000000 --json --color never"
+      }
+    },
+    {
+      "key": "walk-control",
+      "candidate_source": "willow-v48-walk-altar-control-4d08241-work",
+      "candidate_aggregate": "c156da50c65ca11bf3da3ddec09a9cb285d02d5562dee1a72d45dfba8ab7bb4f",
+      "side_A": "starvation-walk-control-release",
+      "recorder_side_A": "starvation-walk-control-recorder",
+      "tracer_side_A": "starvation-walk-control-trace",
+      "side_B_puppet": "p-starvation-walk-control-B",
+      "side_B_source": "recorded physical B script generated from paired source replay",
+      "source_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__01starvation__v48_walk_altar-A.repl26a",
+      "source_replay_sha256": "e6c481f74dcc1eabe05580950933d57ead40895880b24067c67a2e69ff188338",
+      "ordered_sides": [
+        "A=candidate source",
+        "B=fixed source-replay team-B puppet"
+      ],
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/maps/01starvation.map26a",
+      "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+      "round_cap": 2,
+      "actor_window": {
+        "actor": 1,
+        "champion": "Vesper Vale",
+        "round": 1
+      },
+      "outputs": {
+        "release_prefix": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/walk-control-release-prefix.repl26a",
+        "recorder_prefix": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/walk-control-recorder-prefix.repl26a",
+        "trace_prefix": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/walk-control-trace-prefix.repl26a",
+        "trace_stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/walk-control-trace.stdout.log"
+      },
+      "instrumentation_patches": [
+        {
+          "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/walk-bot.cpp.patch",
+          "sha256": "d2a4e6d62ee1851059c9fb5aeea4dfeb7c5f66264b13ab76ac0e928b8e225526"
+        },
+        {
+          "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/walk-pathing.cpp.patch",
+          "sha256": "56d4641bf32f6a3ce3ea2b4c101bac2427aa359a9b4ed06963cb87066d5b5d76"
+        }
+      ],
+      "proposed_commands": {
+        "release": "cambc run-batch walk-control-release-prefix.manifest --jobs 1 --release --fuel-quantum 100000 --rounds 2 --json --color never",
+        "recorder": "cambc run-batch walk-control-recorder-prefix.manifest --jobs 1 --fuel-quantum 100000 --rounds 2 --log-limit 64000000 --json --color never",
+        "trace": "cambc run-batch walk-control-trace-prefix.manifest --jobs 1 --fuel-quantum 100000 --rounds 2 --log-limit 64000000 --json --color never"
+      }
+    }
+  ],
+  "status_gate": "Before interpreting trace, compare uninstrumented Release and recorder against the corresponding source replay through actor1 round1; require no accepted-input mismatch before/at the target prefix and require native round hashes equal for starts 0 and1. If that fails, trace is untrusted and stop. Then require traced-vs-recorder accepted input and call-hash/no-@! validation through round1.",
+  "fuel_gates": "No new Safety/native query and no repeated fuel check. Record scan k/evaluated and existing shortcut; omit actual fuel_ok values when inaccessible without perturbing the original short-circuit.",
+  "proposed_commands": {
+    "release": "cambc run-batch <release-prefix.pending.manifest> --jobs 1 --release --fuel-quantum 100000 --rounds 2 --json --color never",
+    "recorder": "cambc run-batch <recorder-prefix.pending.manifest> --jobs 1 --fuel-quantum 100000 --rounds 2 --log-limit 64000000 --json --color never",
+    "trace": "Use run-batch (not cambc run), jobs 1, fuel 100000, rounds 2; preserve the exact reviewed rows and per-row source replay."
+  },
+  "patch_pins": {
+    "v48-bot.cpp.patch": "78c632eb8f42fabfbfed4d8f66b6f00bee1c9f9a07ec1af0871c46dd2c6b3343",
+    "v48-pathing.cpp.patch": "b416d629275060c6ea0d384f7123da09c941f1a0425c2f8ddd1d40b193672fbb",
+    "walk-pathing.cpp.patch": "56d4641bf32f6a3ce3ea2b4c101bac2427aa359a9b4ed06963cb87066d5b5d76",
+    "walk-bot.cpp.patch": "d2a4e6d62ee1851059c9fb5aeea4dfeb7c5f66264b13ab76ac0e928b8e225526"
+  },
+  "review_required": true
+}

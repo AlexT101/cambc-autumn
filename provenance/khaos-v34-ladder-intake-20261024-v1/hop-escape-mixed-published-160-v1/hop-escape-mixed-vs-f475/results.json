@@ -1,0 +1,1219 @@
+{
+  "schema": "native-batch-results/v1",
+  "release": true,
+  "bots": [
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-hop-escape-mixed-approach",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7"
+  ],
+  "scheduled": 80,
+  "completed": 80,
+  "errors": 0,
+  "source_pins": {
+    "candidate_aggregate": "218e652166112cd3bc01da3442260f987119d33c028607fd58b0d391badebb78",
+    "candidate_raw_wasm": "45a9020d58e84b49e2709e276f9462a9c0457951ae5de218d193db7968a20f25",
+    "candidate_injected_wasm": "8c5bae86deba4f8dbeab6a3d588a01c2735f27662323611ed59d0d9322580234",
+    "opponent_aggregate": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824"
+  },
+  "matches": [
+    {
+      "index": 0,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00collision__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00collision.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1005,
+      "scoreB": 254,
+      "rounds": 1074
+    },
+    {
+      "index": 1,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00collision__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00collision.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1025,
+      "scoreB": 121,
+      "rounds": 886
+    },
+    {
+      "index": 2,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00contest__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00contest.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 0,
+      "scoreB": 1000,
+      "rounds": 1477
+    },
+    {
+      "index": 3,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00contest__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00contest.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 0,
+      "scoreB": 1000,
+      "rounds": 1370
+    },
+    {
+      "index": 4,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00corners__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00corners.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1013,
+      "scoreB": 364,
+      "rounds": 1013
+    },
+    {
+      "index": 5,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00corners__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00corners.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1422,
+      "scoreB": 93,
+      "rounds": 995
+    },
+    {
+      "index": 6,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00elkring__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00elkring.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1001,
+      "scoreB": 528,
+      "rounds": 702
+    },
+    {
+      "index": 7,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00elkring__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00elkring.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 990,
+      "scoreB": 1012,
+      "rounds": 886
+    },
+    {
+      "index": 8,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00expanse__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00expanse.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 541,
+      "scoreB": 1002,
+      "rounds": 1032
+    },
+    {
+      "index": 9,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00expanse__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00expanse.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 633,
+      "scoreB": 1023,
+      "rounds": 935
+    },
+    {
+      "index": 10,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00fragment__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00fragment.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 54,
+      "scoreB": 1048,
+      "rounds": 1314
+    },
+    {
+      "index": 11,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00fragment__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00fragment.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 28,
+      "scoreB": 1008,
+      "rounds": 1331
+    },
+    {
+      "index": 12,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00gem-fields__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 788,
+      "scoreB": 1008,
+      "rounds": 603
+    },
+    {
+      "index": 13,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00gem-fields__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 947,
+      "scoreB": 1001,
+      "rounds": 569
+    },
+    {
+      "index": 14,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00gemfight__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gemfight.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 245,
+      "scoreB": 1002,
+      "rounds": 1011
+    },
+    {
+      "index": 15,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00gemfight__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gemfight.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1153,
+      "scoreB": 18,
+      "rounds": 772
+    },
+    {
+      "index": 16,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00great-wall__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00great-wall.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1035,
+      "scoreB": 522,
+      "rounds": 1027
+    },
+    {
+      "index": 17,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00great-wall__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00great-wall.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1008,
+      "scoreB": 425,
+      "rounds": 1071
+    },
+    {
+      "index": 18,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00interlock__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00interlock.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1026,
+      "scoreB": 460,
+      "rounds": 987
+    },
+    {
+      "index": 19,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00interlock__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00interlock.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1019,
+      "scoreB": 377,
+      "rounds": 1213
+    },
+    {
+      "index": 20,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00lanes__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lanes.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1002,
+      "scoreB": 686,
+      "rounds": 824
+    },
+    {
+      "index": 21,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00lanes__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lanes.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1006,
+      "scoreB": 660,
+      "rounds": 857
+    },
+    {
+      "index": 22,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00lost-world__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lost-world.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1001,
+      "scoreB": 724,
+      "rounds": 964
+    },
+    {
+      "index": 23,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00lost-world__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lost-world.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 49,
+      "scoreB": 1008,
+      "rounds": 460
+    },
+    {
+      "index": 24,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00monolith__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00monolith.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1275,
+      "scoreB": 635,
+      "rounds": 1092
+    },
+    {
+      "index": 25,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00monolith__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00monolith.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1275,
+      "scoreB": 635,
+      "rounds": 1092
+    },
+    {
+      "index": 26,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00packs__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00packs.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 204,
+      "scoreB": 1006,
+      "rounds": 817
+    },
+    {
+      "index": 27,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00packs__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00packs.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 204,
+      "scoreB": 1006,
+      "rounds": 817
+    },
+    {
+      "index": 28,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00pilgrimage__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00pilgrimage.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1016,
+      "scoreB": 522,
+      "rounds": 1629
+    },
+    {
+      "index": 29,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00pilgrimage__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00pilgrimage.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 588,
+      "scoreB": 1010,
+      "rounds": 1700
+    },
+    {
+      "index": 30,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00quadrants__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00quadrants.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1022,
+      "scoreB": 525,
+      "rounds": 489
+    },
+    {
+      "index": 31,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00quadrants__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00quadrants.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 629,
+      "scoreB": 1001,
+      "rounds": 492
+    },
+    {
+      "index": 32,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00reverse-spiral__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00reverse-spiral.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 208,
+      "scoreB": 1027,
+      "rounds": 1106
+    },
+    {
+      "index": 33,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00reverse-spiral__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00reverse-spiral.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1012,
+      "scoreB": 466,
+      "rounds": 1283
+    },
+    {
+      "index": 34,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00road-of-riches__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00road-of-riches.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1084,
+      "scoreB": 404,
+      "rounds": 871
+    },
+    {
+      "index": 35,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00road-of-riches__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00road-of-riches.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 835,
+      "scoreB": 421,
+      "rounds": 2000
+    },
+    {
+      "index": 36,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00rows__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rows.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 482,
+      "scoreB": 1000,
+      "rounds": 1230
+    },
+    {
+      "index": 37,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00rows__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rows.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 382,
+      "scoreB": 1000,
+      "rounds": 1230
+    },
+    {
+      "index": 38,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00rushbait-v2__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rushbait-v2.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 993,
+      "scoreB": 1014,
+      "rounds": 1437
+    },
+    {
+      "index": 39,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00rushbait-v2__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rushbait-v2.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1007,
+      "scoreB": 398,
+      "rounds": 1309
+    },
+    {
+      "index": 40,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00split__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00split.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 784,
+      "scoreB": 1004,
+      "rounds": 753
+    },
+    {
+      "index": 41,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00split__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00split.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 700,
+      "scoreB": 1140,
+      "rounds": 708
+    },
+    {
+      "index": 42,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00stampede__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00stampede.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 0,
+      "scoreB": 1120,
+      "rounds": 1538
+    },
+    {
+      "index": 43,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00stampede__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00stampede.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 80,
+      "scoreB": 1040,
+      "rounds": 1454
+    },
+    {
+      "index": 44,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00swirl__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00swirl.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 177,
+      "scoreB": 1020,
+      "rounds": 908
+    },
+    {
+      "index": 45,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00swirl__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00swirl.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1024,
+      "scoreB": 824,
+      "rounds": 1013
+    },
+    {
+      "index": 46,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01big-world__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01big-world.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 718,
+      "scoreB": 1014,
+      "rounds": 953
+    },
+    {
+      "index": 47,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01big-world__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01big-world.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1018,
+      "scoreB": 859,
+      "rounds": 1020
+    },
+    {
+      "index": 48,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01boss-battle__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01boss-battle.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 2490,
+      "scoreB": 699,
+      "rounds": 1803
+    },
+    {
+      "index": 49,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01boss-battle__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01boss-battle.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1108,
+      "scoreB": 80,
+      "rounds": 1779
+    },
+    {
+      "index": 50,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01broken-curve__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01broken-curve.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1015,
+      "scoreB": 548,
+      "rounds": 828
+    },
+    {
+      "index": 51,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01broken-curve__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01broken-curve.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1040,
+      "scoreB": 579,
+      "rounds": 829
+    },
+    {
+      "index": 52,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01concentrated-wealth__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01concentrated-wealth.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 76,
+      "scoreB": 1004,
+      "rounds": 1008
+    },
+    {
+      "index": 53,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01concentrated-wealth__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01concentrated-wealth.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 74,
+      "scoreB": 1038,
+      "rounds": 1031
+    },
+    {
+      "index": 54,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01corridors__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01corridors.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1080,
+      "scoreB": 314,
+      "rounds": 1090
+    },
+    {
+      "index": 55,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01corridors__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01corridors.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 910,
+      "scoreB": 1052,
+      "rounds": 1838
+    },
+    {
+      "index": 56,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01elk-arena__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01elk-arena.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1020,
+      "scoreB": 96,
+      "rounds": 1328
+    },
+    {
+      "index": 57,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01elk-arena__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01elk-arena.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1026,
+      "scoreB": 54,
+      "rounds": 1205
+    },
+    {
+      "index": 58,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01fracture__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 550,
+      "scoreB": 1029,
+      "rounds": 1398
+    },
+    {
+      "index": 59,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01fracture__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1165,
+      "scoreB": 646,
+      "rounds": 1261
+    },
+    {
+      "index": 60,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01gold-rush__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 858,
+      "scoreB": 671,
+      "rounds": 2000
+    },
+    {
+      "index": 61,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01gold-rush__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 792,
+      "scoreB": 836,
+      "rounds": 2000
+    },
+    {
+      "index": 62,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01hooks__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01hooks.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 44,
+      "scoreB": 1012,
+      "rounds": 1022
+    },
+    {
+      "index": 63,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01hooks__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01hooks.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1012,
+      "scoreB": 110,
+      "rounds": 1198
+    },
+    {
+      "index": 64,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01islands__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01islands.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1006,
+      "scoreB": 477,
+      "rounds": 811
+    },
+    {
+      "index": 65,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01islands__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01islands.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1000,
+      "scoreB": 244,
+      "rounds": 662
+    },
+    {
+      "index": 66,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01shortcut__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01shortcut.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1039,
+      "scoreB": 391,
+      "rounds": 1365
+    },
+    {
+      "index": 67,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01shortcut__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01shortcut.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1093,
+      "scoreB": 946,
+      "rounds": 1360
+    },
+    {
+      "index": 68,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01starfish__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starfish.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1003,
+      "scoreB": 87,
+      "rounds": 971
+    },
+    {
+      "index": 69,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01starfish__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starfish.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 186,
+      "scoreB": 1003,
+      "rounds": 1048
+    },
+    {
+      "index": 70,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01the-farm__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01the-farm.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1005,
+      "scoreB": 167,
+      "rounds": 755
+    },
+    {
+      "index": 71,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01the-farm__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01the-farm.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 520,
+      "scoreB": 1107,
+      "rounds": 858
+    },
+    {
+      "index": 72,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01yellow-brick-road__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01yellow-brick-road.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 685,
+      "scoreB": 1018,
+      "rounds": 690
+    },
+    {
+      "index": 73,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01yellow-brick-road__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01yellow-brick-road.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 503,
+      "scoreB": 1002,
+      "rounds": 636
+    },
+    {
+      "index": 74,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00ambush__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00ambush.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1036,
+      "scoreB": 985,
+      "rounds": 1194
+    },
+    {
+      "index": 75,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00ambush__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00ambush.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 752,
+      "scoreB": 1032,
+      "rounds": 1221
+    },
+    {
+      "index": 76,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00eight__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "A",
+      "scoreA": 1448,
+      "scoreB": 200,
+      "rounds": 1104
+    },
+    {
+      "index": 77,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__00eight__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "A",
+      "scoreA": 1002,
+      "scoreB": 413,
+      "rounds": 1625
+    },
+    {
+      "index": 78,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01starvation__hop-escape-mixed-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starvation.map26a",
+      "A_source": "willow-v47-hop-escape-mixed-approach-work",
+      "B_source": "f475",
+      "winner_side": "B",
+      "scoreA": 196,
+      "scoreB": 1024,
+      "rounds": 1599
+    },
+    {
+      "index": 79,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/hop-escape-mixed-published-160-v1/hop-escape-mixed-vs-f475/hop-escape-mixed-vs-f475__01starvation__hop-escape-mixed-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starvation.map26a",
+      "A_source": "f475",
+      "B_source": "willow-v47-hop-escape-mixed-approach-work",
+      "winner_side": "B",
+      "scoreA": 336,
+      "scoreB": 1012,
+      "rounds": 1700
+    }
+  ]
+}

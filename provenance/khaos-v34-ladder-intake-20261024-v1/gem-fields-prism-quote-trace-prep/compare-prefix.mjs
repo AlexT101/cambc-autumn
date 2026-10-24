@@ -1,0 +1,18 @@
+import fs from 'node:fs';
+import { decodeInputs } from '../starvation-r1-trace-prep/inputs-prefix.mjs';
+import { decodeInputs as decodeOriginal } from '../../willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/inputs.mjs';
+import { compareInputs } from '../../willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/compare.mjs';
+const [originalPath, prefixPath, outPath] = process.argv.slice(2);
+if (!originalPath || !prefixPath || !outPath) throw new Error('usage: node compare-prefix.mjs ORIGINAL PREFIX OUTPUT.json');
+const ob = fs.readFileSync(originalPath), pb = fs.readFileSync(prefixPath);
+const original = await decodeOriginal(ob), originalAgain = await decodeInputs(ob), prefix = await decodeInputs(pb);
+const inputThrough = 7, boundary = 8;
+const cutInputs = x => ({ ...x, inputs: x.inputs.filter(r => r[1] <= inputThrough), roundHashes: [], result: { outcome: 0, round: 0, gems: 0 }, finalHash: 'prefix-only' });
+const cutRounds = x => ({ ...x, inputs: [], roundHashes: x.roundHashes.filter(r => r[0] <= boundary), result: { outcome: 0, round: 0, gems: 0 }, finalHash: 'prefix-only' });
+const ic = compareInputs(cutInputs(original), cutInputs(prefix));
+const rc = compareInputs(cutRounds(original), cutRounds(prefix));
+const decoderExact = !originalAgain.timelineEnded && JSON.stringify(originalAgain.inputs) === JSON.stringify(original.inputs) && JSON.stringify(originalAgain.roundHashes) === JSON.stringify(original.roundHashes) && originalAgain.finalHash === original.finalHash;
+const exact = decoderExact && prefix.timelineEnded && prefix.termination?.code === 18 && prefix.lastCompletedRound >= boundary && !ic.firstInputDiff && !rc.firstRoundDiff && cutInputs(original).inputs.length === cutInputs(prefix).inputs.length && rc.roundsMatched === boundary + 1;
+const out = { schema:'gem-fields-recorder-prefix/v1', input_through_round:inputThrough, round_hash_boundary:boundary, original_input_count:cutInputs(original).inputs.length, candidate_input_count:cutInputs(prefix).inputs.length, input_first_diff:ic.firstInputDiff, round_first_diff:rc.firstRoundDiff, matched_round_hash_count:rc.roundsMatched, original_round_hashes:cutRounds(original).roundHashes, candidate_round_hashes:cutRounds(prefix).roundHashes, original_full_input_count:original.inputs.length, original_full_round_hash_count:original.roundHashes.length, derived_full_original_decoder_exact:decoderExact, prefix_timeline_ended:prefix.timelineEnded, prefix_termination:prefix.termination, prefix_last_completed_round:prefix.lastCompletedRound, prefix_last_completed_step:prefix.lastCompletedStep, exact_through_requested_boundary:exact };
+fs.writeFileSync(outPath, JSON.stringify(out,null,2)+'\n');
+console.log(JSON.stringify(out,null,2));

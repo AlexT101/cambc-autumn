@@ -1,0 +1,749 @@
+{
+  "schema": "generalist-support-paired-18-result/v1",
+  "build_receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/BUILD-RESULT.json",
+  "execution": {
+    "release": true,
+    "fuel_quantum": 100000,
+    "native_draft": true,
+    "games_saved": 18,
+    "failed": 0,
+    "errors": 0
+  },
+  "arms": {
+    "support-p": {
+      "candidate_source": "willow-v47-generalist-support-work",
+      "candidate_source_aggregate": "98470a7454a14a8aac2c501cdd702c5fc06b27862ba9948a3ed27d7bff1115c1",
+      "candidate_raw_wasm_sha256": "0cf24998e15fbef539edf6701e3341a787a2b7f441857bc6febe5dd9b3a4dfd4",
+      "candidate_injected_wasm_sha256": "85f40adcc7f7597256db2985d897991bc55902a201bd7c2ea55c4e34668fa466",
+      "baseline_source": "service-base-f7",
+      "games": 6,
+      "candidate_wins": 3,
+      "candidate_games": 6,
+      "candidate_wins_by_candidate_side": {
+        "A": 2,
+        "B": 1
+      },
+      "candidate_submitted_gems": 4200,
+      "opponent_submitted_gems": 4650,
+      "native_status_by_bot": {
+        "willow-v47-generalist-support": {
+          "games": 6,
+          "play": {
+            "rollover": 6,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "v33": {
+          "games": 6,
+          "play": {
+            "rollover": 26,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/native-audit/support-p-vs-v33/status.json",
+      "baseline_reuse": [
+        {
+          "map": "00gem-fields",
+          "candidate_side": "A",
+          "baseline_source": "service-base-f7",
+          "winner_side": "A",
+          "baseline_candidate_win": true,
+          "scoreA": 1040,
+          "scoreB": 592,
+          "rounds": 537,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-v33-output-v2/f475-v33__00gem-fields__f475-A.repl26a",
+          "replay_sha256": "56fc2a6f2467bb7a626369309785bda116732e85ea983c565756edf4c20f10bb"
+        },
+        {
+          "map": "00gem-fields",
+          "candidate_side": "B",
+          "baseline_source": "service-base-f7",
+          "winner_side": "A",
+          "baseline_candidate_win": false,
+          "scoreA": 1004,
+          "scoreB": 126,
+          "rounds": 427,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00gem-fields__f475-B.repl26a",
+          "replay_sha256": "e057b11fa3c398986b26c2e80f755857b9d17cdb22581469782de9573ebe1e67"
+        },
+        {
+          "map": "01fracture",
+          "candidate_side": "A",
+          "baseline_source": "service-base-f7",
+          "winner_side": "A",
+          "baseline_candidate_win": true,
+          "scoreA": 1171,
+          "scoreB": 244,
+          "rounds": 1087,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01fracture__f475-A.repl26a",
+          "replay_sha256": "88c119b2564704aa20d175daeb0badb45e737dd1f5c3f32405b9d1852eed94d9"
+        },
+        {
+          "map": "01fracture",
+          "candidate_side": "B",
+          "baseline_source": "service-base-f7",
+          "winner_side": "A",
+          "baseline_candidate_win": false,
+          "scoreA": 1030,
+          "scoreB": 221,
+          "rounds": 984,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-v33-output-v2/f475-v33__01fracture__f475-B.repl26a",
+          "replay_sha256": "8c7a730bb03153d33c2553315bf5e67591007bba5854ade67de903a808595f01"
+        },
+        {
+          "map": "01big-world",
+          "candidate_side": "A",
+          "baseline_source": "service-base-f7",
+          "winner_side": "B",
+          "baseline_candidate_win": false,
+          "scoreA": 630,
+          "scoreB": 1022,
+          "rounds": 988,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01big-world__f475-A.repl26a",
+          "replay_sha256": "4dd934b27a432decc0586044f2d52574ecb4aeb61e77f0b458ff85edfa385148"
+        },
+        {
+          "map": "01big-world",
+          "candidate_side": "B",
+          "baseline_source": "service-base-f7",
+          "winner_side": "B",
+          "baseline_candidate_win": true,
+          "scoreA": 656,
+          "scoreB": 1011,
+          "rounds": 866,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01big-world__f475-B.repl26a",
+          "replay_sha256": "684e0fc6eafa43c312fe839caeccf2cf98f949e35d71b71cdb9dd9977828018c"
+        }
+      ],
+      "per_map": {
+        "00gem-fields": [
+          {
+            "arm": "support-p",
+            "map": "00gem-fields",
+            "candidate_side": "A",
+            "winner_source": "willow-v47-generalist-support-work",
+            "scoreA": 1040,
+            "scoreB": 592,
+            "rounds": 537,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__00gem-fields__support-p-A.repl26a",
+            "replay_sha256": "d10ebc571f64991fa2fd3d799743a5131914179491d8f1c979244c492ce5597e",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__00gem-fields__support-p-A.statistics.json",
+            "statistics_sha256": "2638b0ad3efc1f5a42f7e004119e90aeee131a9d5bcc9f3aeff028c23bcabbb1",
+            "baseline_source": "service-base-f7",
+            "baseline_winner_source": "service-base-f7",
+            "baseline_scoreA": 1040,
+            "baseline_scoreB": 592,
+            "baseline_rounds": 537,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-v33-output-v2/f475-v33__00gem-fields__f475-A.repl26a"
+          },
+          {
+            "arm": "support-p",
+            "map": "00gem-fields",
+            "candidate_side": "B",
+            "winner_source": "v33",
+            "scoreA": 1004,
+            "scoreB": 126,
+            "rounds": 427,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__00gem-fields__support-p-B.repl26a",
+            "replay_sha256": "15bd2911668418750a4cffc58ce4801ba3babbb8cffcd4e99863c6e535ce2f10",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__00gem-fields__support-p-B.statistics.json",
+            "statistics_sha256": "6f3915a2ad08c215a64ed9bbf169b16450e032e4a3b030f12bc44aa335b67495",
+            "baseline_source": "service-base-f7",
+            "baseline_winner_source": "v33",
+            "baseline_scoreA": 1004,
+            "baseline_scoreB": 126,
+            "baseline_rounds": 427,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00gem-fields__f475-B.repl26a"
+          }
+        ],
+        "01fracture": [
+          {
+            "arm": "support-p",
+            "map": "01fracture",
+            "candidate_side": "A",
+            "winner_source": "willow-v47-generalist-support-work",
+            "scoreA": 1171,
+            "scoreB": 244,
+            "rounds": 1087,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__01fracture__support-p-A.repl26a",
+            "replay_sha256": "42b6b1893ed140354e2740b0536cfb8862d49b236b2fc394110cd6a477041b22",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__01fracture__support-p-A.statistics.json",
+            "statistics_sha256": "6ece398579ca4d8b42e64fd75c9abccab19d5fd650209721362a62e15a83da24",
+            "baseline_source": "service-base-f7",
+            "baseline_winner_source": "service-base-f7",
+            "baseline_scoreA": 1171,
+            "baseline_scoreB": 244,
+            "baseline_rounds": 1087,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01fracture__f475-A.repl26a"
+          },
+          {
+            "arm": "support-p",
+            "map": "01fracture",
+            "candidate_side": "B",
+            "winner_source": "v33",
+            "scoreA": 1030,
+            "scoreB": 221,
+            "rounds": 984,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__01fracture__support-p-B.repl26a",
+            "replay_sha256": "8483a27e23bdf33b0bd40e3d20adc6dafec4fb1815adbc803b8c02951098d56d",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__01fracture__support-p-B.statistics.json",
+            "statistics_sha256": "d683aa4e3e086bd6f9d5750dedc28d74ffde5633d41583f5733b0460097d5999",
+            "baseline_source": "service-base-f7",
+            "baseline_winner_source": "v33",
+            "baseline_scoreA": 1030,
+            "baseline_scoreB": 221,
+            "baseline_rounds": 984,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-v33-output-v2/f475-v33__01fracture__f475-B.repl26a"
+          }
+        ],
+        "01big-world": [
+          {
+            "arm": "support-p",
+            "map": "01big-world",
+            "candidate_side": "A",
+            "winner_source": "v33",
+            "scoreA": 630,
+            "scoreB": 1022,
+            "rounds": 988,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__01big-world__support-p-A.repl26a",
+            "replay_sha256": "831607876342b0e9e7b857dac9b3225c0d3fa71d595d470f19e8b0e7becb8af9",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__01big-world__support-p-A.statistics.json",
+            "statistics_sha256": "50aabacfb67820320c5d09ab17991bad7148b0d8437bc3075476d1670f26af78",
+            "baseline_source": "service-base-f7",
+            "baseline_winner_source": "v33",
+            "baseline_scoreA": 630,
+            "baseline_scoreB": 1022,
+            "baseline_rounds": 988,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01big-world__f475-A.repl26a"
+          },
+          {
+            "arm": "support-p",
+            "map": "01big-world",
+            "candidate_side": "B",
+            "winner_source": "willow-v47-generalist-support-work",
+            "scoreA": 758,
+            "scoreB": 1012,
+            "rounds": 911,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__01big-world__support-p-B.repl26a",
+            "replay_sha256": "503869e600c6f3fc296b7f6ee6e9f14a97ed8134eced7d2d0033dd1684b1c163",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-p-vs-v33/support-p-vs-v33__01big-world__support-p-B.statistics.json",
+            "statistics_sha256": "28c5486616596efb46a174fbde3e9d48beb37de0ca4c703bd11e0e94f89ce18c",
+            "baseline_source": "service-base-f7",
+            "baseline_winner_source": "service-base-f7",
+            "baseline_scoreA": 656,
+            "baseline_scoreB": 1011,
+            "baseline_rounds": 866,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01big-world__f475-B.repl26a"
+          }
+        ]
+      }
+    },
+    "support-s": {
+      "candidate_source": "willow-v47-stellar-five-support-work",
+      "candidate_source_aggregate": "f5daacb599a2d2e248f9cef82126e6ec4761647995c9b454a5d3c21b8b5ed86a",
+      "candidate_raw_wasm_sha256": "7ef379522ef5bc9ce4df69653bbfd3185511f27b0305d5151828da15d7f0b4a2",
+      "candidate_injected_wasm_sha256": "b025fa57a20f308df786656ff05431f0f515a6baab053f49da67fcf7f75dce19",
+      "baseline_source": "willow-v47-stellar-five-work",
+      "games": 6,
+      "candidate_wins": 2,
+      "candidate_games": 6,
+      "candidate_wins_by_candidate_side": {
+        "A": 2,
+        "B": 0
+      },
+      "candidate_submitted_gems": 4901,
+      "opponent_submitted_gems": 4992,
+      "native_status_by_bot": {
+        "willow-v47-stellar-five-support": {
+          "games": 6,
+          "play": {
+            "rollover": 6,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "v33": {
+          "games": 6,
+          "play": {
+            "rollover": 33,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/native-audit/support-s-vs-v33/status.json",
+      "baseline_reuse": [
+        {
+          "map": "00gem-fields",
+          "candidate_side": "A",
+          "baseline_source": "willow-v47-stellar-five-work",
+          "winner_side": "B",
+          "baseline_candidate_win": false,
+          "scoreA": 952,
+          "scoreB": 1001,
+          "rounds": 667,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__00gem-fields__stellar-A.repl26a",
+          "replay_sha256": "08c6286837b91a48c294da91bad53c85c9114add9e6d9e87ac931cb5322fc241"
+        },
+        {
+          "map": "00gem-fields",
+          "candidate_side": "B",
+          "baseline_source": "willow-v47-stellar-five-work",
+          "winner_side": "B",
+          "baseline_candidate_win": true,
+          "scoreA": 546,
+          "scoreB": 1030,
+          "rounds": 537,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__00gem-fields__stellar-B.repl26a",
+          "replay_sha256": "a1342de7c158f48e7b47f179bf0f1cd6d72c66d93e6b2698831be1ef7fff574d"
+        },
+        {
+          "map": "01fracture",
+          "candidate_side": "A",
+          "baseline_source": "willow-v47-stellar-five-work",
+          "winner_side": "B",
+          "baseline_candidate_win": false,
+          "scoreA": 334,
+          "scoreB": 1023,
+          "rounds": 999,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01fracture__stellar-A.repl26a",
+          "replay_sha256": "04ca75178cd065ceede922fb598f568432a8936cae140945c3071ab5648f04f2"
+        },
+        {
+          "map": "01fracture",
+          "candidate_side": "B",
+          "baseline_source": "willow-v47-stellar-five-work",
+          "winner_side": "A",
+          "baseline_candidate_win": false,
+          "scoreA": 1000,
+          "scoreB": 468,
+          "rounds": 1166,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01fracture__stellar-B.repl26a",
+          "replay_sha256": "adc60589448f859e8d1d06871a571f5a5ff27eaafe049b7dfe4f6f6db036933b"
+        },
+        {
+          "map": "01big-world",
+          "candidate_side": "A",
+          "baseline_source": "willow-v47-stellar-five-work",
+          "winner_side": "B",
+          "baseline_candidate_win": false,
+          "scoreA": 763,
+          "scoreB": 1016,
+          "rounds": 1018,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01big-world__stellar-A.repl26a",
+          "replay_sha256": "ff97349e55ac8abcabf7087912b89eeff8ec7bcb3380e86b5209df12f1c69c0b"
+        },
+        {
+          "map": "01big-world",
+          "candidate_side": "B",
+          "baseline_source": "willow-v47-stellar-five-work",
+          "winner_side": "A",
+          "baseline_candidate_win": false,
+          "scoreA": 1005,
+          "scoreB": 661,
+          "rounds": 966,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01big-world__stellar-B.repl26a",
+          "replay_sha256": "25915407747c4be11fdfcd2d6ab5b30767076bad615438591d2883e0974cfaf2"
+        }
+      ],
+      "per_map": {
+        "00gem-fields": [
+          {
+            "arm": "support-s",
+            "map": "00gem-fields",
+            "candidate_side": "A",
+            "winner_source": "willow-v47-stellar-five-support-work",
+            "scoreA": 1061,
+            "scoreB": 564,
+            "rounds": 574,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__00gem-fields__support-s-A.repl26a",
+            "replay_sha256": "2af8ab5c5bca4efe0170ad02af203418c9df14d31ac04f1a38d7282f02fe1721",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__00gem-fields__support-s-A.statistics.json",
+            "statistics_sha256": "04ae88a567ef37b2dd343d6c8db3462421354219c2d61d22202fd46eccedfa5a",
+            "baseline_source": "willow-v47-stellar-five-work",
+            "baseline_winner_source": "v33",
+            "baseline_scoreA": 952,
+            "baseline_scoreB": 1001,
+            "baseline_rounds": 667,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__00gem-fields__stellar-A.repl26a"
+          },
+          {
+            "arm": "support-s",
+            "map": "00gem-fields",
+            "candidate_side": "B",
+            "winner_source": "v33",
+            "scoreA": 1002,
+            "scoreB": 716,
+            "rounds": 523,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__00gem-fields__support-s-B.repl26a",
+            "replay_sha256": "ea12562a86eb8fb823ac24b71b4e74314a178d43cc749f8686f60c93e0005484",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__00gem-fields__support-s-B.statistics.json",
+            "statistics_sha256": "bbf49dc55ceb6270816e8f59a8b1c5ca614cfd6fe4b0ee16c80e545ef8b8e028",
+            "baseline_source": "willow-v47-stellar-five-work",
+            "baseline_winner_source": "willow-v47-stellar-five-work",
+            "baseline_scoreA": 546,
+            "baseline_scoreB": 1030,
+            "baseline_rounds": 537,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__00gem-fields__stellar-B.repl26a"
+          }
+        ],
+        "01fracture": [
+          {
+            "arm": "support-s",
+            "map": "01fracture",
+            "candidate_side": "A",
+            "winner_source": "willow-v47-stellar-five-support-work",
+            "scoreA": 1000,
+            "scoreB": 333,
+            "rounds": 1040,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01fracture__support-s-A.repl26a",
+            "replay_sha256": "873e3282efc5c33f0e6dee149482f35f5a9eb543b2cf9831249177ca868d6a09",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01fracture__support-s-A.statistics.json",
+            "statistics_sha256": "38f834b6552131ec8d52a3fde7bd17b2850ebf200500ad6de11dd2ec09110ceb",
+            "baseline_source": "willow-v47-stellar-five-work",
+            "baseline_winner_source": "v33",
+            "baseline_scoreA": 334,
+            "baseline_scoreB": 1023,
+            "baseline_rounds": 999,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01fracture__stellar-A.repl26a"
+          },
+          {
+            "arm": "support-s",
+            "map": "01fracture",
+            "candidate_side": "B",
+            "winner_source": "v33",
+            "scoreA": 1054,
+            "scoreB": 371,
+            "rounds": 1166,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01fracture__support-s-B.repl26a",
+            "replay_sha256": "72994eb1baf6aa56609206414c2dafb9fec76d909a2c4f0cdb7d49424b8325cc",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01fracture__support-s-B.statistics.json",
+            "statistics_sha256": "af81201989a9e9c0383056d68f5b304fd24f15ce7d0ee6c8705fb6b0679b6f08",
+            "baseline_source": "willow-v47-stellar-five-work",
+            "baseline_winner_source": "v33",
+            "baseline_scoreA": 1000,
+            "baseline_scoreB": 468,
+            "baseline_rounds": 1166,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01fracture__stellar-B.repl26a"
+          }
+        ],
+        "01big-world": [
+          {
+            "arm": "support-s",
+            "map": "01big-world",
+            "candidate_side": "A",
+            "winner_source": "v33",
+            "scoreA": 771,
+            "scoreB": 1033,
+            "rounds": 952,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01big-world__support-s-A.repl26a",
+            "replay_sha256": "a0895ef524ffa05bc9d7c73b452afb7a7b2cd03ebd95c0b64ef6e48543c65a1e",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01big-world__support-s-A.statistics.json",
+            "statistics_sha256": "05a083f9089f8aae95d572ce66276c4f71ef783d44e609a7dcdb969da396ce54",
+            "baseline_source": "willow-v47-stellar-five-work",
+            "baseline_winner_source": "v33",
+            "baseline_scoreA": 763,
+            "baseline_scoreB": 1016,
+            "baseline_rounds": 1018,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01big-world__stellar-A.repl26a"
+          },
+          {
+            "arm": "support-s",
+            "map": "01big-world",
+            "candidate_side": "B",
+            "winner_source": "v33",
+            "scoreA": 1006,
+            "scoreB": 982,
+            "rounds": 990,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01big-world__support-s-B.repl26a",
+            "replay_sha256": "c6386989756911c039c295dcc885c151ba762da94f7ff4624c73f3d5752d6846",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01big-world__support-s-B.statistics.json",
+            "statistics_sha256": "4241f41225c21e91a4128e651cc4c673b2dec57c9d5c0c2288de036ed05744e9",
+            "baseline_source": "willow-v47-stellar-five-work",
+            "baseline_winner_source": "v33",
+            "baseline_scoreA": 1005,
+            "baseline_scoreB": 661,
+            "baseline_rounds": 966,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01big-world__stellar-B.repl26a"
+          }
+        ]
+      }
+    },
+    "support-c": {
+      "candidate_source": "willow-v47-cassi-five-support-work",
+      "candidate_source_aggregate": "ace0519e41ba5261d52955c2f17316de1099ad3ecc88d5c73f0a74b24b047421",
+      "candidate_raw_wasm_sha256": "7770be14370477a034fa0791d892825fb6812cdc27cd24851f5089ba6a39c941",
+      "candidate_injected_wasm_sha256": "4fe489057be8a252580ae12657b3bd6513a770f3b0778cc7b0ec668c54f93742",
+      "baseline_source": "willow-v47-cassi-five-work",
+      "games": 6,
+      "candidate_wins": 2,
+      "candidate_games": 6,
+      "candidate_wins_by_candidate_side": {
+        "A": 1,
+        "B": 1
+      },
+      "candidate_submitted_gems": 4801,
+      "opponent_submitted_gems": 5683,
+      "native_status_by_bot": {
+        "willow-v47-cassi-five-support": {
+          "games": 6,
+          "play": {
+            "rollover": 22,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "v33": {
+          "games": 6,
+          "play": {
+            "rollover": 48,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/native-audit/support-c-vs-v33/status.json",
+      "baseline_reuse": [
+        {
+          "map": "00gem-fields",
+          "candidate_side": "A",
+          "baseline_source": "willow-v47-cassi-five-work",
+          "winner_side": "B",
+          "baseline_candidate_win": false,
+          "scoreA": 719,
+          "scoreB": 1016,
+          "rounds": 598,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__00gem-fields__cassi-A.repl26a",
+          "replay_sha256": "aa870fd660bcf9b3eec0d0852c7dc06eed9fc3920f2c0d12011c26cd964cc22c"
+        },
+        {
+          "map": "00gem-fields",
+          "candidate_side": "B",
+          "baseline_source": "willow-v47-cassi-five-work",
+          "winner_side": "B",
+          "baseline_candidate_win": true,
+          "scoreA": 667,
+          "scoreB": 1028,
+          "rounds": 679,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__00gem-fields__cassi-B.repl26a",
+          "replay_sha256": "eb2e765c30608a52f8082ff6de804d99087405f2755922143cb1dcf0152f977c"
+        },
+        {
+          "map": "01fracture",
+          "candidate_side": "A",
+          "baseline_source": "willow-v47-cassi-five-work",
+          "winner_side": "B",
+          "baseline_candidate_win": false,
+          "scoreA": 341,
+          "scoreB": 1067,
+          "rounds": 1128,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__01fracture__cassi-A.repl26a",
+          "replay_sha256": "4042f2432667717b107678e84ec48d6c209bbb45236bc8a7866ec7da7732351a"
+        },
+        {
+          "map": "01fracture",
+          "candidate_side": "B",
+          "baseline_source": "willow-v47-cassi-five-work",
+          "winner_side": "A",
+          "baseline_candidate_win": false,
+          "scoreA": 1162,
+          "scoreB": 583,
+          "rounds": 1444,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__01fracture__cassi-B.repl26a",
+          "replay_sha256": "77eb39d1339cdc43d231e68ec63de1e5047bc5a7d8ecce4e157ca245bb7b2828"
+        },
+        {
+          "map": "01big-world",
+          "candidate_side": "A",
+          "baseline_source": "willow-v47-cassi-five-work",
+          "winner_side": "A",
+          "baseline_candidate_win": true,
+          "scoreA": 1015,
+          "scoreB": 804,
+          "rounds": 1060,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__01big-world__cassi-A.repl26a",
+          "replay_sha256": "f6f10dd80839f669b8afc09456b8d8c5711f906bc8faee4cf58e4db3e400323b"
+        },
+        {
+          "map": "01big-world",
+          "candidate_side": "B",
+          "baseline_source": "willow-v47-cassi-five-work",
+          "winner_side": "B",
+          "baseline_candidate_win": true,
+          "scoreA": 725,
+          "scoreB": 1014,
+          "rounds": 954,
+          "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__01big-world__cassi-B.repl26a",
+          "replay_sha256": "1a0350f8f9c64573db781aa3daf18f925b7677ea4f934d07f0f567c6780192c0"
+        }
+      ],
+      "per_map": {
+        "00gem-fields": [
+          {
+            "arm": "support-c",
+            "map": "00gem-fields",
+            "candidate_side": "A",
+            "winner_source": "v33",
+            "scoreA": 933,
+            "scoreB": 1027,
+            "rounds": 639,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__00gem-fields__support-c-A.repl26a",
+            "replay_sha256": "4d62d4baf42ff220cbce9d9af0c5630214d3bff8b512f27d48a9b3f17f0f7db5",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__00gem-fields__support-c-A.statistics.json",
+            "statistics_sha256": "533aade1753e91802cc29efeb1d2b9ef235bcfac989c187f37c17ca549c5c38a",
+            "baseline_source": "willow-v47-cassi-five-work",
+            "baseline_winner_source": "v33",
+            "baseline_scoreA": 719,
+            "baseline_scoreB": 1016,
+            "baseline_rounds": 598,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__00gem-fields__cassi-A.repl26a"
+          },
+          {
+            "arm": "support-c",
+            "map": "00gem-fields",
+            "candidate_side": "B",
+            "winner_source": "v33",
+            "scoreA": 1003,
+            "scoreB": 798,
+            "rounds": 629,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__00gem-fields__support-c-B.repl26a",
+            "replay_sha256": "18588fdcf0ea99bc192e45ed0da5dc2587b70cee017a5da01ec6ddb6b0158865",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__00gem-fields__support-c-B.statistics.json",
+            "statistics_sha256": "c9d16f8bc4b870384ce4bccc93966f3920826cbdd5104aeb936f03a503485b9b",
+            "baseline_source": "willow-v47-cassi-five-work",
+            "baseline_winner_source": "willow-v47-cassi-five-work",
+            "baseline_scoreA": 667,
+            "baseline_scoreB": 1028,
+            "baseline_rounds": 679,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__00gem-fields__cassi-B.repl26a"
+          }
+        ],
+        "01fracture": [
+          {
+            "arm": "support-c",
+            "map": "01fracture",
+            "candidate_side": "A",
+            "winner_source": "v33",
+            "scoreA": 611,
+            "scoreB": 1036,
+            "rounds": 1186,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__01fracture__support-c-A.repl26a",
+            "replay_sha256": "a177a247c9a9b642238da2af16a8abf066d0678f34c8f10c2301caa0192faf14",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__01fracture__support-c-A.statistics.json",
+            "statistics_sha256": "a27c0ae46837c1ae667f2693b019950cf30ffc92f441fa29d60f236bddf2196b",
+            "baseline_source": "willow-v47-cassi-five-work",
+            "baseline_winner_source": "v33",
+            "baseline_scoreA": 341,
+            "baseline_scoreB": 1067,
+            "baseline_rounds": 1128,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__01fracture__cassi-A.repl26a"
+          },
+          {
+            "arm": "support-c",
+            "map": "01fracture",
+            "candidate_side": "B",
+            "winner_source": "v33",
+            "scoreA": 1002,
+            "scoreB": 427,
+            "rounds": 1282,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__01fracture__support-c-B.repl26a",
+            "replay_sha256": "0dd2631ab849b036fe27df7a4ac384087631576cb6345162c2348284d472a354",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__01fracture__support-c-B.statistics.json",
+            "statistics_sha256": "08656d24bfbaae148906d8b8b717b226dbc35f990a8cd8d806702aed36558009",
+            "baseline_source": "willow-v47-cassi-five-work",
+            "baseline_winner_source": "v33",
+            "baseline_scoreA": 1162,
+            "baseline_scoreB": 583,
+            "baseline_rounds": 1444,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__01fracture__cassi-B.repl26a"
+          }
+        ],
+        "01big-world": [
+          {
+            "arm": "support-c",
+            "map": "01big-world",
+            "candidate_side": "A",
+            "winner_source": "willow-v47-cassi-five-support-work",
+            "scoreA": 1007,
+            "scoreB": 967,
+            "rounds": 1078,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__01big-world__support-c-A.repl26a",
+            "replay_sha256": "ec15a885877a8d44cc48892263b05a4752798bc051ada06b1e6a05a26d196483",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__01big-world__support-c-A.statistics.json",
+            "statistics_sha256": "67b0586e7f4016bc8daa1c89d1e32beb8d3a5396d0227e04809c61fcfeb1e601",
+            "baseline_source": "willow-v47-cassi-five-work",
+            "baseline_winner_source": "willow-v47-cassi-five-work",
+            "baseline_scoreA": 1015,
+            "baseline_scoreB": 804,
+            "baseline_rounds": 1060,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__01big-world__cassi-A.repl26a"
+          },
+          {
+            "arm": "support-c",
+            "map": "01big-world",
+            "candidate_side": "B",
+            "winner_source": "willow-v47-cassi-five-support-work",
+            "scoreA": 648,
+            "scoreB": 1025,
+            "rounds": 967,
+            "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__01big-world__support-c-B.repl26a",
+            "replay_sha256": "4981c758427f07e25d24bd58b69816928c7e2eecff5467709f3176ff4712562e",
+            "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-c-vs-v33/support-c-vs-v33__01big-world__support-c-B.statistics.json",
+            "statistics_sha256": "75c71a0b00dd67dfe45fdcc71b60aeb9e3b85a5b26f038de8d277838d2729a28",
+            "baseline_source": "willow-v47-cassi-five-work",
+            "baseline_winner_source": "willow-v47-cassi-five-work",
+            "baseline_scoreA": 725,
+            "baseline_scoreB": 1014,
+            "baseline_rounds": 954,
+            "baseline_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/cassi-vs-v33/cassi-vs-v33__01big-world__cassi-B.repl26a"
+          }
+        ]
+      }
+    }
+  }
+}

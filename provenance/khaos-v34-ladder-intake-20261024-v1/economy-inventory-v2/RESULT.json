@@ -1,0 +1,1410 @@
+{
+  "schema": "public40-static-economy-inventory-v2",
+  "sourceManifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-focus-safe-yield-v33-full1104-preflight-20261024-v1/map-inventory.json",
+  "sourceManifestSha256": "6616b4c5fd900adfbabb2aef3898ba0ac734e4dcc25abd0b989e53d05326d52f",
+  "mapCount": 40,
+  "rulesSource": "cambc-rules.yaml (camp rewards and group semantics)",
+  "scope": "Public whole-layout native map description; all mirrored camps/groups included. Accessibility/vision/ownership shares are not inferred.",
+  "rows": [
+    {
+      "name": "00ambush",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00ambush.map26a",
+      "sha256": "81ac8b6689f275d24e57d586f2451a160484c15144f86afd0c4450e02c39e579",
+      "width": 100,
+      "height": 100,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 2,
+        "elk": 10,
+        "golem": 0,
+        "gem_cluster": 16,
+        "gold_cluster": 18,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 270,
+        "gold": 1340
+      },
+      "ordinaryGroupCount": 12,
+      "ordinaryMixedGroupCount": 12,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.754,
+        "spawnDistance": 122,
+        "detour": 1.36,
+        "choke": 28,
+        "altarCount": 4,
+        "campDensity": 0.61
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00collision",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00collision.map26a",
+      "sha256": "6e3c67956080f8da5a0042e68ea481189cd6f61061a742a8be0354a9ea5c5620",
+      "width": 41,
+      "height": 41,
+      "pickcount": 3,
+      "nativeTeamSize": 3,
+      "campCounts": {
+        "wolf": 8,
+        "elk": 10,
+        "golem": 0,
+        "gem_cluster": 14,
+        "gold_cluster": 24,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 280,
+        "gold": 1700
+      },
+      "ordinaryGroupCount": 20,
+      "ordinaryMixedGroupCount": 20,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.766,
+        "spawnDistance": 33,
+        "detour": 0.92,
+        "choke": 20,
+        "altarCount": 2,
+        "campDensity": 4.32
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00contest",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00contest.map26a",
+      "sha256": "554240a5a793f8c1ac9c518cb6edbacab0129ec4dfd94b199331aaebd0bf418a",
+      "width": 50,
+      "height": 50,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 0,
+        "elk": 0,
+        "golem": 0,
+        "gem_cluster": 0,
+        "gold_cluster": 32,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 0,
+        "gold": 640
+      },
+      "ordinaryGroupCount": 12,
+      "ordinaryMixedGroupCount": 12,
+      "groupsContainingMonolith": 2,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.98,
+        "spawnDistance": 38,
+        "detour": 0.93,
+        "choke": 29,
+        "altarCount": 2,
+        "campDensity": 1.38
+      },
+      "gemClusterStratum": "zero",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00corners",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00corners.map26a",
+      "sha256": "97906cc38f503e027c041b681a877465519b3fcb19a410c316cf6efc40c909ea",
+      "width": 71,
+      "height": 71,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 14,
+        "elk": 18,
+        "golem": 0,
+        "gem_cluster": 10,
+        "gold_cluster": 32,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 396,
+        "gold": 2820
+      },
+      "ordinaryGroupCount": 30,
+      "ordinaryMixedGroupCount": 26,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.972,
+        "spawnDistance": 39,
+        "detour": 0.93,
+        "choke": 80,
+        "altarCount": 5,
+        "campDensity": 1.51
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00eight",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a",
+      "sha256": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+      "width": 41,
+      "height": 30,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 6,
+        "elk": 10,
+        "golem": 0,
+        "gem_cluster": 8,
+        "gold_cluster": 8,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 230,
+        "gold": 1300
+      },
+      "ordinaryGroupCount": 8,
+      "ordinaryMixedGroupCount": 8,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.945,
+        "spawnDistance": 45,
+        "detour": 1.18,
+        "choke": 25,
+        "altarCount": 1,
+        "campDensity": 2.73
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00elkring",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00elkring.map26a",
+      "sha256": "4621e92590befe6b0438b7ecdd8fde5aa85945b27535f4968e701cf86934746e",
+      "width": 30,
+      "height": 30,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 0,
+        "elk": 10,
+        "golem": 0,
+        "gem_cluster": 10,
+        "gold_cluster": 10,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 220,
+        "gold": 1100
+      },
+      "ordinaryGroupCount": 10,
+      "ordinaryMixedGroupCount": 10,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.948,
+        "spawnDistance": 30,
+        "detour": 1.11,
+        "choke": 17,
+        "altarCount": 2,
+        "campDensity": 3.48
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00expanse",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00expanse.map26a",
+      "sha256": "af4236f408f8450f7da871731f08ef80295f07fac86b541f6547639a78dc2205",
+      "width": 80,
+      "height": 80,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 10,
+        "elk": 14,
+        "golem": 0,
+        "gem_cluster": 16,
+        "gold_cluster": 34,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 362,
+        "gold": 2340
+      },
+      "ordinaryGroupCount": 24,
+      "ordinaryMixedGroupCount": 22,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.958,
+        "spawnDistance": 84,
+        "detour": 1.17,
+        "choke": 42,
+        "altarCount": 10,
+        "campDensity": 1.2
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00fragment",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00fragment.map26a",
+      "sha256": "46512bf4fe1fc57d1651b15d44c283cac69cfce1914a5000d19fab979f5b8bbb",
+      "width": 30,
+      "height": 30,
+      "pickcount": 3,
+      "nativeTeamSize": 3,
+      "campCounts": {
+        "wolf": 6,
+        "elk": 2,
+        "golem": 0,
+        "gem_cluster": 2,
+        "gold_cluster": 6,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 68,
+        "gold": 540
+      },
+      "ordinaryGroupCount": 6,
+      "ordinaryMixedGroupCount": 6,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.606,
+        "spawnDistance": 22,
+        "detour": 0.88,
+        "choke": 11,
+        "altarCount": 2,
+        "campDensity": 2.89
+      },
+      "gemClusterStratum": "minimum-positive-2",
+      "goldClusterStratum": "minimum-positive-6"
+    },
+    {
+      "name": "00gem-fields",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+      "sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+      "width": 50,
+      "height": 40,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 6,
+        "elk": 4,
+        "golem": 0,
+        "gem_cluster": 40,
+        "gold_cluster": 0,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 364,
+        "gold": 600
+      },
+      "ordinaryGroupCount": 18,
+      "ordinaryMixedGroupCount": 6,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.913,
+        "spawnDistance": 40,
+        "detour": 4.44,
+        "choke": 15,
+        "altarCount": 4,
+        "campDensity": 2.73
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "zero"
+    },
+    {
+      "name": "00gemfight",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gemfight.map26a",
+      "sha256": "1dfe5669ebcdf39e7769b5abf933c707804ee4a216881f89178e75e3dbc27239",
+      "width": 30,
+      "height": 30,
+      "pickcount": 4,
+      "nativeTeamSize": 4,
+      "campCounts": {
+        "wolf": 4,
+        "elk": 2,
+        "golem": 0,
+        "gem_cluster": 22,
+        "gold_cluster": 8,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 200,
+        "gold": 500
+      },
+      "ordinaryGroupCount": 19,
+      "ordinaryMixedGroupCount": 5,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.868,
+        "spawnDistance": 45,
+        "detour": 1.8,
+        "choke": 9,
+        "altarCount": 2,
+        "campDensity": 4.56
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00great-wall",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00great-wall.map26a",
+      "sha256": "1b22e5c068175913889a1ff497d310de303a9b1ddf78672f26c0777fda9f5bf2",
+      "width": 50,
+      "height": 40,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 8,
+        "elk": 8,
+        "golem": 4,
+        "gem_cluster": 44,
+        "gold_cluster": 12,
+        "monolith": 4
+      },
+      "ordinaryRewards": {
+        "gems": 576,
+        "gold": 1920
+      },
+      "ordinaryGroupCount": 15,
+      "ordinaryMixedGroupCount": 15,
+      "groupsContainingMonolith": 2,
+      "monolithMixedGroupCount": 2,
+      "geometry": {
+        "reachableFraction": 0.792,
+        "spawnDistance": 84,
+        "detour": 2.33,
+        "choke": 6,
+        "altarCount": 4,
+        "campDensity": 5.01
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00interlock",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00interlock.map26a",
+      "sha256": "140e5bc3ac11c7f74dfc4ed99cc53739a34be8d3f71a7f4d0520dc4a3c197e19",
+      "width": 40,
+      "height": 40,
+      "pickcount": 4,
+      "nativeTeamSize": 4,
+      "campCounts": {
+        "wolf": 6,
+        "elk": 8,
+        "golem": 0,
+        "gem_cluster": 8,
+        "gold_cluster": 12,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 200,
+        "gold": 1200
+      },
+      "ordinaryGroupCount": 14,
+      "ordinaryMixedGroupCount": 12,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.934,
+        "spawnDistance": 40,
+        "detour": 1.08,
+        "choke": 22,
+        "altarCount": 4,
+        "campDensity": 2.26
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00lanes",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lanes.map26a",
+      "sha256": "8ca26ed2ea65c7d80ceb9604a7431ca1dc056922912b4e2f46cad06051e4886a",
+      "width": 90,
+      "height": 30,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 30,
+        "elk": 6,
+        "golem": 0,
+        "gem_cluster": 12,
+        "gold_cluster": 36,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 294,
+        "gold": 2460
+      },
+      "ordinaryGroupCount": 42,
+      "ordinaryMixedGroupCount": 42,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.962,
+        "spawnDistance": 80,
+        "detour": 0.96,
+        "choke": 19,
+        "altarCount": 18,
+        "campDensity": 3.22
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00lost-world",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lost-world.map26a",
+      "sha256": "566697c98eace1c84152f571e9e1fa0b54ec64e038e4695305c874bd3dc2bc6e",
+      "width": 35,
+      "height": 31,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 8,
+        "elk": 2,
+        "golem": 1,
+        "gem_cluster": 42,
+        "gold_cluster": 24,
+        "monolith": 1
+      },
+      "ordinaryRewards": {
+        "gems": 364,
+        "gold": 1140
+      },
+      "ordinaryGroupCount": 33,
+      "ordinaryMixedGroupCount": 23,
+      "groupsContainingMonolith": 1,
+      "monolithMixedGroupCount": 1,
+      "geometry": {
+        "reachableFraction": 0.77,
+        "spawnDistance": 25,
+        "detour": 0.89,
+        "choke": 3,
+        "altarCount": 3,
+        "campDensity": 9.24
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00monolith",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00monolith.map26a",
+      "sha256": "ba5674bf2ab26336eb99df0c9e97c16b27bd231deffc023de1d873a05a558313",
+      "width": 50,
+      "height": 50,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 18,
+        "elk": 2,
+        "golem": 0,
+        "gem_cluster": 24,
+        "gold_cluster": 22,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 158,
+        "gold": 1340
+      },
+      "ordinaryGroupCount": 18,
+      "ordinaryMixedGroupCount": 16,
+      "groupsContainingMonolith": 2,
+      "monolithMixedGroupCount": 2,
+      "geometry": {
+        "reachableFraction": 0.955,
+        "spawnDistance": 48,
+        "detour": 1.12,
+        "choke": 26,
+        "altarCount": 6,
+        "campDensity": 2.84
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00packs",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00packs.map26a",
+      "sha256": "60ee7a86ee377a04a77d11008b78aaed9e2c1cfcfc4302055974195e078c675a",
+      "width": 31,
+      "height": 31,
+      "pickcount": 3,
+      "nativeTeamSize": 3,
+      "campCounts": {
+        "wolf": 8,
+        "elk": 4,
+        "golem": 0,
+        "gem_cluster": 8,
+        "gold_cluster": 22,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 148,
+        "gold": 1120
+      },
+      "ordinaryGroupCount": 8,
+      "ordinaryMixedGroupCount": 8,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.984,
+        "spawnDistance": 25,
+        "detour": 0.89,
+        "choke": 15,
+        "altarCount": 6,
+        "campDensity": 4.4
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00pilgrimage",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00pilgrimage.map26a",
+      "sha256": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673",
+      "width": 50,
+      "height": 65,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 6,
+        "elk": 6,
+        "golem": 0,
+        "gem_cluster": 10,
+        "gold_cluster": 48,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 184,
+        "gold": 1740
+      },
+      "ordinaryGroupCount": 23,
+      "ordinaryMixedGroupCount": 23,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.795,
+        "spawnDistance": 122,
+        "detour": 2.71,
+        "choke": 6,
+        "altarCount": 4,
+        "campDensity": 2.7
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00quadrants",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00quadrants.map26a",
+      "sha256": "261fe6c133f076653bda84e88965dc35c5a59a70e7730082b4c6df9ca892df92",
+      "width": 45,
+      "height": 45,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 16,
+        "elk": 4,
+        "golem": 2,
+        "gem_cluster": 81,
+        "gold_cluster": 0,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 763,
+        "gold": 1320
+      },
+      "ordinaryGroupCount": 21,
+      "ordinaryMixedGroupCount": 17,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.888,
+        "spawnDistance": 49,
+        "detour": 6.13,
+        "choke": 20,
+        "altarCount": 4,
+        "campDensity": 5.7
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "zero"
+    },
+    {
+      "name": "00reverse-spiral",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00reverse-spiral.map26a",
+      "sha256": "f57669ffc98b76a5c2e4eccba41690dc193efc29f067ee960605617b2cfb48e5",
+      "width": 30,
+      "height": 30,
+      "pickcount": 4,
+      "nativeTeamSize": 4,
+      "campCounts": {
+        "wolf": 12,
+        "elk": 4,
+        "golem": 2,
+        "gem_cluster": 22,
+        "gold_cluster": 6,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 334,
+        "gold": 1280
+      },
+      "ordinaryGroupCount": 14,
+      "ordinaryMixedGroupCount": 8,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.839,
+        "spawnDistance": 0,
+        "detour": 0,
+        "choke": 9,
+        "altarCount": 2,
+        "campDensity": 6.02
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "minimum-positive-6"
+    },
+    {
+      "name": "00road-of-riches",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00road-of-riches.map26a",
+      "sha256": "8365e18788720a079a906c0430e809317236acecccf888b517a1de409689b049",
+      "width": 40,
+      "height": 40,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 12,
+        "elk": 8,
+        "golem": 2,
+        "gem_cluster": 74,
+        "gold_cluster": 34,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 646,
+        "gold": 2200
+      },
+      "ordinaryGroupCount": 49,
+      "ordinaryMixedGroupCount": 27,
+      "groupsContainingMonolith": 2,
+      "monolithMixedGroupCount": 2,
+      "geometry": {
+        "reachableFraction": 0.825,
+        "spawnDistance": 242,
+        "detour": 17.29,
+        "choke": 2,
+        "altarCount": 2,
+        "campDensity": 9.88
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00rows",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rows.map26a",
+      "sha256": "6a4203ae1bfe86ad0f6b083f390cfd8e2f5e45f7e4102f6a2f27205d5333e701",
+      "width": 50,
+      "height": 50,
+      "pickcount": 4,
+      "nativeTeamSize": 4,
+      "campCounts": {
+        "wolf": 18,
+        "elk": 0,
+        "golem": 0,
+        "gem_cluster": 16,
+        "gold_cluster": 18,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 114,
+        "gold": 1080
+      },
+      "ordinaryGroupCount": 8,
+      "ordinaryMixedGroupCount": 8,
+      "groupsContainingMonolith": 1,
+      "monolithMixedGroupCount": 1,
+      "geometry": {
+        "reachableFraction": 0.907,
+        "spawnDistance": 72,
+        "detour": 1.71,
+        "choke": 9,
+        "altarCount": 2,
+        "campDensity": 2.36
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00rushbait-v2",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rushbait-v2.map26a",
+      "sha256": "f4dcc30269aa7d0983e7d244f72c3d2a9a6d7ce918cd00495d465b78b2609157",
+      "width": 30,
+      "height": 80,
+      "pickcount": 4,
+      "nativeTeamSize": 4,
+      "campCounts": {
+        "wolf": 10,
+        "elk": 8,
+        "golem": 0,
+        "gem_cluster": 14,
+        "gold_cluster": 12,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 258,
+        "gold": 1360
+      },
+      "ordinaryGroupCount": 18,
+      "ordinaryMixedGroupCount": 18,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.9,
+        "spawnDistance": 0,
+        "detour": 0,
+        "choke": 16,
+        "altarCount": 2,
+        "campDensity": 2.02
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00split",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00split.map26a",
+      "sha256": "1db691b7def9cb585314c7c4139ef1b79df87fcdbfab9d86ef31666c4709a4c4",
+      "width": 45,
+      "height": 35,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 16,
+        "elk": 6,
+        "golem": 2,
+        "gem_cluster": 32,
+        "gold_cluster": 28,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 422,
+        "gold": 1980
+      },
+      "ordinaryGroupCount": 30,
+      "ordinaryMixedGroupCount": 14,
+      "groupsContainingMonolith": 2,
+      "monolithMixedGroupCount": 2,
+      "geometry": {
+        "reachableFraction": 0.9,
+        "spawnDistance": 83,
+        "detour": 3.77,
+        "choke": 5,
+        "altarCount": 3,
+        "campDensity": 6.03
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00stampede",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00stampede.map26a",
+      "sha256": "49807e4756ec1b2030ed2ca7ebdd8a07f1a6ed7f2d2bd751e6941f5c0c877cdc",
+      "width": 60,
+      "height": 50,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 0,
+        "elk": 6,
+        "golem": 0,
+        "gem_cluster": 10,
+        "gold_cluster": 32,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 160,
+        "gold": 1180
+      },
+      "ordinaryGroupCount": 13,
+      "ordinaryMixedGroupCount": 13,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.793,
+        "spawnDistance": 54,
+        "detour": 1.15,
+        "choke": 12,
+        "altarCount": 2,
+        "campDensity": 2.01
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "00swirl",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00swirl.map26a",
+      "sha256": "e6f860670947b1326f34c86515db8ef6893c565eaa69e3f9a6464ec5744e1c93",
+      "width": 45,
+      "height": 30,
+      "pickcount": 4,
+      "nativeTeamSize": 4,
+      "campCounts": {
+        "wolf": 24,
+        "elk": 24,
+        "golem": 0,
+        "gem_cluster": 26,
+        "gold_cluster": 32,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 638,
+        "gold": 3760
+      },
+      "ordinaryGroupCount": 22,
+      "ordinaryMixedGroupCount": 22,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.707,
+        "spawnDistance": 12,
+        "detour": 0.8,
+        "choke": 8,
+        "altarCount": 2,
+        "campDensity": 11
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01big-world",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01big-world.map26a",
+      "sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+      "width": 100,
+      "height": 100,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 22,
+        "elk": 8,
+        "golem": 0,
+        "gem_cluster": 32,
+        "gold_cluster": 28,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 376,
+        "gold": 2160
+      },
+      "ordinaryGroupCount": 22,
+      "ordinaryMixedGroupCount": 22,
+      "groupsContainingMonolith": 2,
+      "monolithMixedGroupCount": 2,
+      "geometry": {
+        "reachableFraction": 0.878,
+        "spawnDistance": 138,
+        "detour": 1.86,
+        "choke": 19,
+        "altarCount": 6,
+        "campDensity": 1.05
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01boss-battle",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01boss-battle.map26a",
+      "sha256": "53086e249294aed6f427fe647d578303589a081e953c62a0ff8f20cade9993fa",
+      "width": 50,
+      "height": 41,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 30,
+        "elk": 44,
+        "golem": 0,
+        "gem_cluster": 0,
+        "gold_cluster": 82,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 780,
+        "gold": 6800
+      },
+      "ordinaryGroupCount": 30,
+      "ordinaryMixedGroupCount": 30,
+      "groupsContainingMonolith": 1,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.925,
+        "spawnDistance": 37,
+        "detour": 1.03,
+        "choke": 16,
+        "altarCount": 1,
+        "campDensity": 8.29
+      },
+      "gemClusterStratum": "zero",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01broken-curve",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01broken-curve.map26a",
+      "sha256": "1763423b171f3b61128b2a913a10f46ba550e7a2e79ae27dd89e915c952b5117",
+      "width": 40,
+      "height": 40,
+      "pickcount": 3,
+      "nativeTeamSize": 3,
+      "campCounts": {
+        "wolf": 10,
+        "elk": 12,
+        "golem": 0,
+        "gem_cluster": 18,
+        "gold_cluster": 22,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 346,
+        "gold": 1920
+      },
+      "ordinaryGroupCount": 20,
+      "ordinaryMixedGroupCount": 20,
+      "groupsContainingMonolith": 2,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.821,
+        "spawnDistance": 35,
+        "detour": 1.3,
+        "choke": 12,
+        "altarCount": 4,
+        "campDensity": 4.84
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01concentrated-wealth",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01concentrated-wealth.map26a",
+      "sha256": "dc09c386d5e9dec3cec8bc4575c19d43233e08790e138ccd02be4644f2808c65",
+      "width": 61,
+      "height": 61,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 12,
+        "elk": 3,
+        "golem": 0,
+        "gem_cluster": 12,
+        "gold_cluster": 18,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 177,
+        "gold": 1110
+      },
+      "ordinaryGroupCount": 11,
+      "ordinaryMixedGroupCount": 9,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.935,
+        "spawnDistance": 176,
+        "detour": 3.14,
+        "choke": 5,
+        "altarCount": 2,
+        "campDensity": 1.29
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01corridors",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01corridors.map26a",
+      "sha256": "794132d979b297de5a534da393af8932cd2d5cc9d831e79d2cefdb4617d4d5e8",
+      "width": 51,
+      "height": 40,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 22,
+        "elk": 12,
+        "golem": 0,
+        "gem_cluster": 12,
+        "gold_cluster": 20,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 324,
+        "gold": 2360
+      },
+      "ordinaryGroupCount": 11,
+      "ordinaryMixedGroupCount": 11,
+      "groupsContainingMonolith": 1,
+      "monolithMixedGroupCount": 1,
+      "geometry": {
+        "reachableFraction": 0.795,
+        "spawnDistance": 52,
+        "detour": 1.41,
+        "choke": 9,
+        "altarCount": 2,
+        "campDensity": 4.17
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01elk-arena",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01elk-arena.map26a",
+      "sha256": "72b8e03bc4378d5f988f9c1c07609848bfb42fd8a883cce01820d96212f21c0a",
+      "width": 50,
+      "height": 50,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 0,
+        "elk": 2,
+        "golem": 0,
+        "gem_cluster": 6,
+        "gold_cluster": 54,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 72,
+        "gold": 1260
+      },
+      "ordinaryGroupCount": 29,
+      "ordinaryMixedGroupCount": 27,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.904,
+        "spawnDistance": 18,
+        "detour": 0.82,
+        "choke": 40,
+        "altarCount": 2,
+        "campDensity": 2.72
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01fracture",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a",
+      "sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914",
+      "width": 61,
+      "height": 71,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 16,
+        "elk": 16,
+        "golem": 0,
+        "gem_cluster": 20,
+        "gold_cluster": 32,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 444,
+        "gold": 2720
+      },
+      "ordinaryGroupCount": 26,
+      "ordinaryMixedGroupCount": 24,
+      "groupsContainingMonolith": 2,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.782,
+        "spawnDistance": 159,
+        "detour": 2.45,
+        "choke": 4,
+        "altarCount": 3,
+        "campDensity": 2.53
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01gold-rush",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a",
+      "sha256": "6e564fdf09fdf67a4182a909d6985737b488742e64f2c3e164204e78bc64c898",
+      "width": 31,
+      "height": 31,
+      "pickcount": 3,
+      "nativeTeamSize": 3,
+      "campCounts": {
+        "wolf": 6,
+        "elk": 0,
+        "golem": 0,
+        "gem_cluster": 6,
+        "gold_cluster": 28,
+        "monolith": 1
+      },
+      "ordinaryRewards": {
+        "gems": 66,
+        "gold": 720
+      },
+      "ordinaryGroupCount": 14,
+      "ordinaryMixedGroupCount": 10,
+      "groupsContainingMonolith": 1,
+      "monolithMixedGroupCount": 1,
+      "geometry": {
+        "reachableFraction": 0.912,
+        "spawnDistance": 56,
+        "detour": 2.15,
+        "choke": 9,
+        "altarCount": 4,
+        "campDensity": 4.63
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01hooks",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01hooks.map26a",
+      "sha256": "23e58fe8f41ff66761ade251d3d10a9c3eead864f9ad74f12ad9e34f4bece378",
+      "width": 31,
+      "height": 31,
+      "pickcount": 4,
+      "nativeTeamSize": 4,
+      "campCounts": {
+        "wolf": 0,
+        "elk": 4,
+        "golem": 0,
+        "gem_cluster": 4,
+        "gold_cluster": 20,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 88,
+        "gold": 760
+      },
+      "ordinaryGroupCount": 12,
+      "ordinaryMixedGroupCount": 12,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.898,
+        "spawnDistance": 33,
+        "detour": 1.27,
+        "choke": 12,
+        "altarCount": 1,
+        "campDensity": 3.21
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01islands",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01islands.map26a",
+      "sha256": "d97cf04b738393812fb51024582e2a6cfba8a850b19ce031f2c1ad3d7b916acb",
+      "width": 60,
+      "height": 60,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 24,
+        "elk": 22,
+        "golem": 0,
+        "gem_cluster": 26,
+        "gold_cluster": 46,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 608,
+        "gold": 3860
+      },
+      "ordinaryGroupCount": 46,
+      "ordinaryMixedGroupCount": 42,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.566,
+        "spawnDistance": 62,
+        "detour": 1.24,
+        "choke": 12,
+        "altarCount": 10,
+        "campDensity": 5.76
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01shortcut",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01shortcut.map26a",
+      "sha256": "f77db387292e66a8aad7e912c179787db0c41b6632ee841a21593dfc279ecb3a",
+      "width": 40,
+      "height": 40,
+      "pickcount": 4,
+      "nativeTeamSize": 4,
+      "campCounts": {
+        "wolf": 6,
+        "elk": 20,
+        "golem": 0,
+        "gem_cluster": 38,
+        "gold_cluster": 20,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 520,
+        "gold": 2440
+      },
+      "ordinaryGroupCount": 19,
+      "ordinaryMixedGroupCount": 19,
+      "groupsContainingMonolith": 2,
+      "monolithMixedGroupCount": 2,
+      "geometry": {
+        "reachableFraction": 0.678,
+        "spawnDistance": 100,
+        "detour": 12.5,
+        "choke": 2,
+        "altarCount": 2,
+        "campDensity": 7.85
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01starfish",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starfish.map26a",
+      "sha256": "1edf115a0a788c010107148f975570961acc8e9fba4a013ad60f5ca2389cbb83",
+      "width": 50,
+      "height": 50,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 18,
+        "elk": 10,
+        "golem": 0,
+        "gem_cluster": 16,
+        "gold_cluster": 12,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 334,
+        "gold": 1860
+      },
+      "ordinaryGroupCount": 16,
+      "ordinaryMixedGroupCount": 8,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.462,
+        "spawnDistance": 40,
+        "detour": 0.93,
+        "choke": 7,
+        "altarCount": 2,
+        "campDensity": 4.81
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01starvation",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starvation.map26a",
+      "sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+      "width": 80,
+      "height": 80,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 4,
+        "elk": 4,
+        "golem": 0,
+        "gem_cluster": 8,
+        "gold_cluster": 22,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 132,
+        "gold": 960
+      },
+      "ordinaryGroupCount": 12,
+      "ordinaryMixedGroupCount": 10,
+      "groupsContainingMonolith": 2,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.885,
+        "spawnDistance": 182,
+        "detour": 2.43,
+        "choke": 3,
+        "altarCount": 2,
+        "campDensity": 0.7
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01the-farm",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01the-farm.map26a",
+      "sha256": "5cca9ed6eaaf6ef15a170a4ea78488237fda7b256e182a2e3360a14b485e09c3",
+      "width": 50,
+      "height": 40,
+      "pickcount": 3,
+      "nativeTeamSize": 3,
+      "campCounts": {
+        "wolf": 24,
+        "elk": 26,
+        "golem": 0,
+        "gem_cluster": 30,
+        "gold_cluster": 32,
+        "monolith": 2
+      },
+      "ordinaryRewards": {
+        "gems": 682,
+        "gold": 3940
+      },
+      "ordinaryGroupCount": 26,
+      "ordinaryMixedGroupCount": 26,
+      "groupsContainingMonolith": 2,
+      "monolithMixedGroupCount": 2,
+      "geometry": {
+        "reachableFraction": 0.917,
+        "spawnDistance": 40,
+        "detour": 0.91,
+        "choke": 14,
+        "altarCount": 6,
+        "campDensity": 6.18
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    },
+    {
+      "name": "01yellow-brick-road",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01yellow-brick-road.map26a",
+      "sha256": "130453395278cdabb1ff80564357a99ca8394afaef006fdede8beb88924a8fa0",
+      "width": 40,
+      "height": 30,
+      "pickcount": 5,
+      "nativeTeamSize": 5,
+      "campCounts": {
+        "wolf": 30,
+        "elk": 16,
+        "golem": 0,
+        "gem_cluster": 16,
+        "gold_cluster": 98,
+        "monolith": 0
+      },
+      "ordinaryRewards": {
+        "gems": 472,
+        "gold": 4600
+      },
+      "ordinaryGroupCount": 28,
+      "ordinaryMixedGroupCount": 28,
+      "groupsContainingMonolith": 0,
+      "monolithMixedGroupCount": 0,
+      "geometry": {
+        "reachableFraction": 0.978,
+        "spawnDistance": 28,
+        "detour": 0.88,
+        "choke": 23,
+        "altarCount": 10,
+        "campDensity": 13.45
+      },
+      "gemClusterStratum": "above-minimum",
+      "goldClusterStratum": "above-minimum"
+    }
+  ]
+}

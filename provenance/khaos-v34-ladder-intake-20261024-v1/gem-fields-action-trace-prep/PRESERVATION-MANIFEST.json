@@ -1,0 +1,191 @@
+{
+  "schema": "selective-preservation-manifest/v1",
+  "scope": "Gem Fields Prism AR trace source, validation and result; compact evidence only",
+  "files": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/TRACE-RESULT.json",
+      "sha256": "7635d44ff2d5f54bc177b6b3bb2acdbe3343eefd5e026aec8d6bfefe9e1d4f3b",
+      "bytes": 8578
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/TRACE-RESULT.md",
+      "sha256": "82163e70387753629e733be753ab9db253e800e047c629f90a49e768addd9cba",
+      "bytes": 1794
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/TRACE-ROW.pending.json",
+      "sha256": "a7138be927ed3cf0a34791db7a87f287a8ea18826d1ffbe1246b3d67f010948e",
+      "bytes": 4044
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/TRACE-ROW.pending.manifest",
+      "sha256": "7fbceaae6e60b4edd5276ce91e6f2486739288cd53113f603074be845d400548",
+      "bytes": 936
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/prefix-validation.json",
+      "sha256": "a00e434777eba991a5ed1538d2fdcbcbd6197ad3f0426167bfa271d27bf9222f",
+      "bytes": 1753
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/host-validation.stdout.json",
+      "sha256": "00ff8eef68af4469dca7b64808cad3f2417491e420ee763ffec0bc8e8340fb60",
+      "bytes": 1289
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/tracer-source-files.sha256.json",
+      "sha256": "1b3e2234ca9459f72a0061419fbdcc97a0800c6d92bf3b5fee6453882927e82f",
+      "bytes": 4650
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-instrumentation-v2.patch",
+      "sha256": "b26650c85f78c11821f46fd409e4cc87b78fb6ebcc1afa6dbc1623c0664f08a7",
+      "bytes": 18219
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-instrumentation-v1-incorrect.patch",
+      "sha256": "db3801aa9fd0d02054aaaef7ae22e2c3b09a2c28eae01d0d59669108f4762c47",
+      "bytes": 18541
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-instrumentation-v2-intermediate.patch",
+      "sha256": "7750432baf8d1cb9e6b42e1f0a230abbf369575766293044d1cde4037f2e5b0a",
+      "bytes": 18559
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-instrumentation.patch",
+      "sha256": "db3801aa9fd0d02054aaaef7ae22e2c3b09a2c28eae01d0d59669108f4762c47",
+      "bytes": 18541
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/CORRECTION-HISTORY.md",
+      "sha256": "00f7f458a0fe79e0f3b8caff394ec9eca857fda2406b361e9b99eff3377e5594",
+      "bytes": 861
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/build.exit.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/build-sdk-before.json",
+      "sha256": "81727d1db9322d6b0acb165d091fd2690197d29dfc3e66faa573267dbadea863",
+      "bytes": 666
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/build-sdk-after.json",
+      "sha256": "81727d1db9322d6b0acb165d091fd2690197d29dfc3e66faa573267dbadea863",
+      "bytes": 666
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/compare-prefix.mjs",
+      "sha256": "da2cfaa96bcbfb879856c8250ede3c525746755eeac538480a02e0260561b474",
+      "bytes": 2753,
+      "kind": "reused_validation_tool"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/starvation-r1-trace-prep/validate-trace.mjs",
+      "sha256": "a3b9092f67687e0fb1c90df1b4e7ff60bf27ebf33ab6d98a0aaf0e50d2bb8efb",
+      "bytes": 4187,
+      "kind": "reused_validation_tool"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/inputs.mjs",
+      "sha256": "0214bb69814ee32a0c1b337584f043f7276604ab381592ed965c902c0fe14d5b",
+      "bytes": 6556,
+      "kind": "reused_validation_tool"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/compare.mjs",
+      "sha256": "0273b7052d31f5a54e15285fd1e3aa4fd7f4dddd6a71262d150110540f3daa42",
+      "bytes": 8330,
+      "kind": "reused_validation_tool"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/TRACE-ROW.final.json",
+      "sha256": "0398996d0ed03abf8c694110156741f296e1e302c0a7dba1da1a18200e936a5e",
+      "bytes": 4181,
+      "kind": "executed trace row; supersedes pending metadata without altering its original receipt"
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-prefix.repl26a",
+      "sha256": "836a4c116b6274e956d9014838be59926aeb723f1c2947ed6e8bfbb58c24339c",
+      "bytes": 5198,
+      "reason": "raw replay/log or large derived input; preserved locally byte-exact"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-inner.repl26a",
+      "sha256": "6b2adf13426090a8a27a99d4e035a63a102f97ffc77a4cc757279f7d4a25ff7f",
+      "bytes": 9456,
+      "reason": "raw replay/log or large derived input; preserved locally byte-exact"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-team-a.stdout",
+      "sha256": "9a3ad46abdb9552ab6a75fbb4e613a039fa7de6942f9ad11fa7161fe0cfca6ca",
+      "bytes": 17859,
+      "reason": "raw replay/log or large derived input; preserved locally byte-exact"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-team-b.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "reason": "raw replay/log or large derived input; preserved locally byte-exact"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-team-a.fuel",
+      "sha256": "9d7dfea556eeaa0d94915cd3c763a3011a76cfb515142a9b3623ed7559701e20",
+      "bytes": 437,
+      "reason": "raw replay/log or large derived input; preserved locally byte-exact"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-team-b.fuel",
+      "sha256": "789c75661db0216738acb4c5456942d5cf767b7fce6c5948822d730a688a951d",
+      "bytes": 437,
+      "reason": "raw replay/log or large derived input; preserved locally byte-exact"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/original-source-inputs.json",
+      "sha256": "4c9994f6ea16ad7814e56cc530e220a25e6a82e4404d304118cb5bb42a80f7e5",
+      "bytes": 755081,
+      "reason": "raw replay/log or large derived input; preserved locally byte-exact"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/trace.stdout.log",
+      "sha256": "38dedc53055041982fe0d605b011dd5bf84a9ed1e57db44347ba1480cefc3f2d",
+      "bytes": 1151,
+      "reason": "raw replay/log or large derived input; preserved locally byte-exact"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/trace.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "reason": "raw replay/log or large derived input; preserved locally byte-exact"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/build.stdout.log",
+      "sha256": "3bed6acf7ccdc5e3bf0b2f5915175bb8d221275d9377c783473d01b7091bfe50",
+      "bytes": 4465,
+      "reason": "raw replay/log or large derived input; preserved locally byte-exact"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/build.stderr.log",
+      "sha256": "ec996f44c37aa3a11b8893a81d8de92ffd2349d6721210c22873430f0517e322",
+      "bytes": 180,
+      "reason": "raw replay/log or large derived input; preserved locally byte-exact"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/gem-fields-action-trace/.cambc/build/bot.wasm",
+      "sha256": "e1e966a0572f976cc63e0d42d34a601878d45bc39e0ae5950be2ccd340f6ed81",
+      "bytes": 1747659,
+      "reason": "compiled tracer binary; pinned in TRACE-RESULT.json"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/gem-fields-action-trace/.cambc/build/bot-injected.wasm",
+      "sha256": "866b3a471675a08ff8ee4aa7dc8fbb82f3481a5af0049bdfab62ca4a7adc9dd2",
+      "bytes": 987892,
+      "reason": "compiled tracer binary; pinned in TRACE-RESULT.json"
+    }
+  ]
+}

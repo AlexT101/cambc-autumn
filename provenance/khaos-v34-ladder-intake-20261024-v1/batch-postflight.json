@@ -1,0 +1,101 @@
+{
+  "schema": "release-batch-postflight/v1",
+  "completed_unix": 1792840011.837685,
+  "sdk_workspace_files": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/cambc.h",
+      "sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "mtime_ns": 1792774035481976768,
+      "size": 218074,
+      "unchanged_from_preflight": true
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/imports.h",
+      "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "mtime_ns": 1792774035482489096,
+      "size": 27810,
+      "unchanged_from_preflight": true
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/cmake/CMakeLists.txt",
+      "sha256": "a2f9978b9d948623b48ac4fca70692a604bc5cdac2c50c115558ba891a26b78c",
+      "mtime_ns": 1792774035408818847,
+      "size": 1822,
+      "unchanged_from_preflight": true
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/cambc.toml",
+      "sha256": "a0e36b45e114dedb61b421a5f45d85127fe88a8474cffec6500bc9ec0b480a50",
+      "mtime_ns": 1792774035408710890,
+      "size": 42,
+      "unchanged_from_preflight": true
+    }
+  ],
+  "sdk_mtime_sha_unchanged": true,
+  "source_aggregates_rechecked": {
+    "f475": {
+      "recipe": "cd <project> && shasum -a 256 src/* | shasum -a 256",
+      "value": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824"
+    },
+    "v48": {
+      "recipe": "cd <project> && shasum -a 256 src/* | shasum -a 256",
+      "value": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68"
+    }
+  },
+  "release_artifacts": {
+    "f475": {
+      "raw": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/.cambc/build-release/bot.wasm",
+        "sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+        "expected_sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+        "bytes": 1667916,
+        "unchanged": true
+      },
+      "injected": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/.cambc/build-release/bot-injected.wasm",
+        "sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804",
+        "expected_sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804",
+        "bytes": 909664,
+        "unchanged": true
+      }
+    },
+    "v48": {
+      "raw": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work/.cambc/build-release/bot.wasm",
+        "sha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+        "expected_sha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+        "bytes": 1669221,
+        "unchanged": true
+      },
+      "injected": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work/.cambc/build-release/bot-injected.wasm",
+        "sha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525",
+        "expected_sha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525",
+        "bytes": 910969,
+        "unchanged": true
+      }
+    }
+  },
+  "native_status_totals_by_bot": {
+    "service-base-f7": {
+      "play_rollover": 241,
+      "play_bot_error": 0,
+      "draft_rollover": 0,
+      "draft_bot_error": 0,
+      "games": 80
+    },
+    "willow-finishing-recall-4d08241-work": {
+      "play_rollover": 275,
+      "play_bot_error": 0,
+      "draft_rollover": 0,
+      "draft_bot_error": 0,
+      "games": 80
+    }
+  },
+  "native_status_audit_sha256": "aa6d1e68e7da9cc2ff4f878ae428a1fd72c55a6ccd3ba70866b54d183b3b985d",
+  "tool_hashes": {
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "native_auditor_sha256": "17b3f0e95b2a848fae057909c82fa71c05049dcb8271c50b7952de8f649fcf1d"
+  }
+}

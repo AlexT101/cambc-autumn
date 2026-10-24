@@ -1,0 +1,8 @@
+11541e6c6a17b8973c73905c7a1ab705e4ffadc8e6c232f7403ff98e66dd316b  -
+b545df8eeb6ac8c5508c3f281853d6e9bac681fa3c47b21a0a2b783af0f3fa00  -
+92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6  bots/service-base-f7/.cambc/build-release/bot.wasm
+340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804  bots/service-base-f7/.cambc/build-release/bot-injected.wasm
+f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7  bots/v33/.cambc/build-release/bot.wasm
+4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792  bots/v33/.cambc/build-release/bot-injected.wasm
+894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3  sdk/cpp/cambc.h
+888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502  sdk/cpp/imports.h

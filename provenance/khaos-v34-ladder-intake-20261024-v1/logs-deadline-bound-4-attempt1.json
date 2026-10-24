@@ -1,0 +1,10 @@
+{
+  "status": "failed_before_any_match",
+  "exit_code": 1,
+  "cause": "run-batch invoked with current directory set to the provenance folder instead of the pinned runtime workspace; CMake rejected the cache source path",
+  "stdout_capture": "reconstructed from immediate exec result after the successful rerun overwrote the first-attempt log path; not original byte capture",
+  "stderr_capture": "reconstructed verbatim from immediate exec result after the successful rerun overwrote the first-attempt log path; not original byte capture",
+  "replays_started": 0,
+  "replays_created": 0,
+  "corrected_attempt": "run-deadline-bound-4.sh with explicit cd to pinned runtime workspace"
+}

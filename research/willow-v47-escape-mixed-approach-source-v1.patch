@@ -1,0 +1,404 @@
+diff --git a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/abilities.cpp b/bots/variants/willow-v47-escape-mixed-approach-work/src/abilities.cpp
+index eb0dbad..6182777 100644
+--- a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/abilities.cpp
++++ b/bots/variants/willow-v47-escape-mixed-approach-work/src/abilities.cpp
+@@ -199,9 +199,14 @@ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& ta
+         const float v = value[(c.y - here.y + range) * side + (c.x - here.x + range)];
+         if (!(v > best.value && v >= min_weight_value)) continue;
+         if (harmful) {
+-            int hits = 0;
++            // A mixed-group approach can hit one attacker together with living clusters.
++            bool attacker = false;
+             for (auto p : *harmful)
+-                if (dist(c, p) <= 1 && ++hits >= 2) break;
++                if (dist(c, p) <= 1) { attacker = true; break; }
++            if (!attacker) continue;
++            int hits = 0;
++            for (const auto& t : targets)
++                if (dist(c, t.pos) <= 1 && ++hits >= 2) break;
+             if (hits < 2) continue;
+         }
+         best.slot = slot, best.value = v, best.tile = c;
+diff --git a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/bot.cpp b/bots/variants/willow-v47-escape-mixed-approach-work/src/bot.cpp
+index d7a0d4f..226c723 100644
+--- a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/bot.cpp
++++ b/bots/variants/willow-v47-escape-mixed-approach-work/src/bot.cpp
+@@ -73,6 +73,7 @@ Stations& stations_cache() {
+ }
+ const Stations& stations(const World& world, Safety& safety, vec2 here);
+ void guard_steps(const World& world, Pathing& pathing, Safety& safety);
++void see_again(World& world, Pathing& pathing, Safety& safety);
+ 
+ // Read by tools/replay/fight_calibration.py.
+ void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1) {
+@@ -298,39 +299,42 @@ void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
+     if (!pathing.step_towards(field, &avoid)) pathing.step_towards(field);
+ }
+ 
+-// Out of the camps' reach first, along the cheapest neighbour: walking home past an awake camp
+-// takes a hit every step, while a recall started outside its reach goes home untouched.
+-bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+-    if (!my_can_move()) return false;
++// Only labelled descending tiles promise connected progress; a low-damage pocket does not.
++std::optional<vec2> camp_escape_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+     const vec2 here = my_position();
+-    if (safety.camp_damage(here) <= 0) return false;
+-    // A camp hits every tile in its reach alike, so one step's damage cannot tell the way out from
+-    // a walk along the edge of its reach: count the hits still to come before leaving it.
+-    static bitboard exits{cambc::uninitialized};
+-    or_into(world.map().standable, safety.camp_area(), exits);
+-    exits ^= safety.camp_area();
+-    const int longest = world.map().max_camp_reach;
+-    int walk_out = 1;
+-    while (walk_out <= longest && !any_within(exits, here, walk_out)) ++walk_out;
+-    // A step changes the walk out by at most one: only a step that shortens it needs telling apart.
+-    const auto cost = [&](vec2 p) {
+-        const float camp = safety.camp_damage(p);
+-        float damage = safety.damage_bound(p);
+-        if (camp > 0 && walk_out > 1) damage += camp * static_cast<float>(p != here && any_within(exits, p, walk_out - 1) ? walk_out - 2 : walk_out - 1);
+-        return damage;
+-    };
+-    const auto& blocked = pathing.blocked();
++    const auto& route = pathing.camp_escape(safety.camp_area(), world.map().max_camp_reach + 1, true);
++    if (!route.exact || route.steps == unreachable || route.steps == 0) return std::nullopt;
++    const float here_damage = safety.damage_bound(here);
++    const float here_enemy = here_damage - safety.camp_damage(here, true, true);
++    const float here_cost = here_damage + safety.camp_damage(here) * static_cast<float>(route.steps - 1);
+     std::optional<vec2> best;
+-    float best_damage = cost(here);
+-    int best_home = home.at(here);
+-    for (auto d : directions) {
++    float best_cost = std::numeric_limits<float>::infinity();
++    int best_home = unreachable;
++    for (const auto d : directions) {
+         const vec2 p = here + d;
+-        if (!in_bounds(p) || test(blocked, p)) continue;
+-        const float damage = cost(p);
++        const auto remaining = route.at(p);
++        if (!remaining || *remaining >= route.steps) continue;
++        const float damage = safety.damage_bound(p);
++        if (damage - safety.camp_damage(p, true, true) > here_enemy) continue;
++        const float cost = damage + safety.camp_damage(p) * static_cast<float>(std::max(0, *remaining - 1));
++        if (enemy_seen(world) && cost > here_cost) continue;
+         const int steps = home.at(p);
+-        if (damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
++        if (cost < best_cost || (cost == best_cost && steps < best_home)) best = p, best_cost = cost, best_home = steps;
+     }
+-    return best && pathing.try_move(*best);
++    return best;
++}
++
++bool flee_camps(World& world, Pathing& pathing, Safety& safety, const Field& home) {
++    if (!my_can_move()) return false;
++    const vec2 here = my_position();
++    if (safety.camp_damage(here) <= 0) return false;
++    if (const auto best = camp_escape_step(world, pathing, safety, home)) {
++        bool refused = true;
++        if (pathing.try_move(*best, &refused)) return true;
++        if (!refused) see_again(world, pathing, safety);
++    }
++    debug_block({ std::printf("CEXIT %d fallback\n", world.round); });
++    return false; // unknown/unreachable, enemy-constrained, or refused: retain emergency escape
+ }
+ 
+ // Inside danger a route home is only the shortest walk, ties in compass order, which can lead
+@@ -385,6 +389,79 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
+     pathing.step_towards(home);
+ }
+ 
++// With no visible enemy, compare a camp dash's whole activation against its connected walk.
++bool connected_camp_dash(World& world, Pathing& pathing, Safety& safety, const Field& home, bool& connected) {
++    connected = false;
++    const vec2 here = my_position();
++    if (enemy_seen(world) || safety.camp_damage(here) <= 0) return false;
++    const int slot = world.me().facts().slot_of(AbilityKind::dash);
++    if (slot < 0 || !my_can_cast() || my_cooldown(slot) > 0) return false;
++    const auto& escape = pathing.camp_escape(safety.camp_area(), world.map().max_camp_reach + 1, true);
++    if (!escape.exact || escape.steps == unreachable) return false;
++    connected = true;
++    const bool walking = my_can_move();
++    const auto ordinary = walking ? camp_escape_step(world, pathing, safety, home) : std::nullopt;
++    const vec2 normal = ordinary ? *ordinary : here;
++    const int normal_steps = *escape.at(normal);
++    const float normal_damage = safety.damage_bound(normal);
++    struct Endpoint { int steps; float damage; };
++    Unwritten<Endpoint, 49> points;
++    std::array<bool, 49> evaluated{};
++    const auto endpoint = [&](vec2 p) -> const Endpoint& {
++        const int i = p.x - here.x + 3 + 7 * (p.y - here.y + 3);
++        if (!evaluated[i]) {
++            evaluated[i] = true;
++            const auto steps = escape.at(p);
++            points.a[i] = {steps ? *steps : unreachable, 0};
++            if (steps && *steps < normal_steps) points.a[i].damage = safety.damage_bound(p);
++        }
++        return points.a[i];
++    };
++    vec2 landing{-1, -1}, finish{-1, -1};
++    int best_steps = normal_steps, best_home = unreachable;
++    float best_damage = normal_damage;
++    for (const auto p : Tiles<25>{pathing.dash_landings()}) {
++        const auto consider = [&](vec2 q) {
++            if (!in_bounds(q)) return;
++            const auto& e = endpoint(q);
++            if (e.steps == unreachable || e.steps >= normal_steps || e.damage > normal_damage) return;
++            const int home_steps = home.at(q);
++            if (e.steps < best_steps || (e.steps == best_steps && (e.damage < best_damage
++                || (e.damage == best_damage && home_steps < best_home))))
++                landing = p, finish = q, best_steps = e.steps, best_damage = e.damage, best_home = home_steps;
++        };
++        consider(p);
++        if (walking) for (const auto d : directions) consider(p + d);
++    }
++    if (landing.x < 0) return false;
++    if (!camp_escape_dash(world, pathing, landing)) {
++        see_again(world, pathing, safety);
++        return false;
++    }
++    see_again(world, pathing, safety);
++    world.throw_if_stale();
++    // A newly revealed enemy takes the existing enemy escape; no stale endpoint is imposed.
++    if (enemy_seen(world)) {
++        retreat_step(world, pathing, safety, home);
++        return true;
++    }
++    const vec2 now = my_position();
++    if (safety.camp_damage(now) <= 0) return true;
++    if (my_can_move() && dist(now, finish) == 1) {
++        const auto& fresh = pathing.camp_escape(safety.camp_area(), world.map().max_camp_reach + 1, true);
++        const auto remaining = fresh.at(finish);
++        const auto step = camp_escape_step(world, pathing, safety, home);
++        const float ordinary_damage = safety.damage_bound(step ? *step : now);
++        if (remaining && *remaining < fresh.steps && safety.damage_bound(finish) <= ordinary_damage) {
++            bool refused = true;
++            if (pathing.try_move(finish, &refused)) return true;
++            if (!refused) see_again(world, pathing, safety);
++        }
++    }
++    if (!flee_camps(world, pathing, safety, home)) retreat_step(world, pathing, safety, home);
++    return true;
++}
++
+ bool break_lock(const World& world, int altar) {
+     auto& me = cambc::self();
+     const vec2 p = world.map().altars[altar].pos;
+@@ -2819,30 +2896,19 @@ bool paying_soon(const World& world, Pathing& pathing) {
+ 
+ bool outmatched(const World& world, Pathing& pathing) { return in_pack_zone(world, world.me().pos) && !paying_soon(world, pathing); }
+ 
+-// Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
+-int camp_exit_rounds(const World& world, Safety& safety, vec2 here) {
+-    const auto& open = world.map().standable;
+-    const auto out = [&](vec2 p) { return in_bounds(p) && test(open, p) && safety.camp_damage(p) <= 0; };
+-    const int longest = world.map().max_camp_reach;
+-    for (int r = 1; r <= longest; ++r)
+-        for (int i = -r; i <= r; ++i)
+-            if (out({here.x + i, here.y - r}) || out({here.x + i, here.y + r}) || out({here.x - r, here.y + i})
+-                || out({here.x + r, here.y + i}))
+-                return r;
+-    return longest + 1;
+-}
+-
+ // Camps keep hitting while we walk out of their reach: leave while the health still covers that.
+ // A siege (Memory::siege) keeps its own health limits for its group's hits.
+-bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, bool sieging) {
++bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 here, float health, bool sieging) {
+     if (sieging) return false;
+     const float dps = safety.camp_damage(here);
+     if (dps <= 0) return false;
+     const auto exit_cost = [&](int rounds) { return dps * (1.5f * static_cast<float>(rounds) + 1.0f); };
+-    // The exit takes 1 to max_camp_reach + 1 rounds: the bounds settle most cases without the search.
+-    if (health > exit_cost(world.map().max_camp_reach + 1)) return false;
+     if (health <= exit_cost(1)) return true;
+-    return health <= exit_cost(camp_exit_rounds(world, safety, here));
++    const auto& witness = pathing.camp_escape(safety.camp_area(), world.map().max_camp_reach + 1);
++    if (witness.steps != unreachable && health > exit_cost(witness.steps)) return false;
++    if (witness.exact) return witness.steps == unreachable || health <= exit_cost(witness.steps);
++    const auto& connected = pathing.camp_escape(safety.camp_area(), world.map().max_camp_reach + 1, true);
++    return !connected.exact || connected.steps == unreachable || health <= exit_cost(connected.steps);
+ }
+ 
+ // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
+@@ -2852,7 +2918,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, bool siegin
+     if (test(world.map().ally_spawn, here)) return false;
+     const float health = my_health();
+     const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world, pathing);
+-    if (low || outmatched(world, pathing) || camp_trapped(world, safety, here, health, sieging)) return true;
++    if (low || outmatched(world, pathing) || camp_trapped(world, pathing, safety, here, health, sieging)) return true;
+     // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
+     // bar on a capture, which pays without one.
+     if (world.me().type == cambc::champion_type::willow && !holding_capture(world, pathing) && !contesting(world)
+@@ -4231,9 +4297,12 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+         return;
+     }
+     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
+-    dash_away(world, pathing, pathing.to_ally_spawn(), dead);
+-    reset_and_attack_enemy(world);
+-    if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
++    bool connected = false;
++    if (!connected_camp_dash(world, pathing, safety, pathing.to_ally_spawn(), connected)) {
++        if (!connected) dash_away(world, pathing, pathing.to_ally_spawn(), dead);
++        reset_and_attack_enemy(world);
++        if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
++    }
+     if (melee && attack_enemy(world)) reset_and_attack_enemy(world, true);
+     reset_and_attack_enemy(world);
+ }
+diff --git a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/pathing.cpp b/bots/variants/willow-v47-escape-mixed-approach-work/src/pathing.cpp
+index 3e97ea0..6cc8d83 100644
+--- a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/pathing.cpp
++++ b/bots/variants/willow-v47-escape-mixed-approach-work/src/pathing.cpp
+@@ -39,6 +39,7 @@ const bitboard& Pathing::foot() const {
+ }
+ 
+ void Pathing::begin_turn() {
++    if (camp_escape_) camp_escape_->valid = false;
+     guard_ = nullptr, guard_fn_ = nullptr; // a turn abandoned as stale left its guard set
+     blocked_fresh_ = false;
+     pos_fresh_ = false;
+@@ -369,11 +370,80 @@ const bitboard& Pathing::blocked() {
+ }
+ 
+ void Pathing::invalidate() {
++    if (camp_escape_) camp_escape_->valid = false;
+     blocked_fresh_ = false;
+     pos_fresh_ = false;
+     dashes_seen_ = outside_dashes();
+ }
+ 
++std::optional<int> Pathing::CampEscape::at(vec2 p) const {
++    if (!valid || !exact || !in_bounds(p) || test(walls, p)) return std::nullopt;
++    if (steps == unreachable) return exhausted ? std::optional<int>{unreachable} : std::nullopt;
++    if (p == origin) return steps;
++    if (steps == 0) return test(goals, p) ? std::optional<int>{0} : std::nullopt;
++    if (ray != vec2{}) {
++        for (int k = 0; k <= steps; ++k)
++            if (p == origin + vec2{ray.x * k, ray.y * k}) return steps - k;
++        return std::nullopt;
++    }
++    const int d = steps_at(*labels, p);
++    return d <= steps ? std::optional<int>{d} : std::nullopt;
++}
++
++const Pathing::CampEscape& Pathing::camp_escape(const bitboard& hazard, int ray_limit, bool exact) {
++    world_.throw_if_stale();
++    if (!camp_escape_) camp_escape_ = std::make_unique<CampEscape>();
++    auto& out = *camp_escape_;
++    static bitboard walls{cambc::uninitialized}, goals{cambc::uninitialized};
++    occupied_into(walls); // attacks can change occupancy without moving or invalidating blocked()
++    if (const auto* held = guard()) or_into(walls, *held, walls);
++    const vec2 here = my_pos();
++    set_tile(walls, here, false);
++    and_into(map().standable, hazard, goals);
++    xor_into(goals, map().standable, goals);
++    drop(goals, walls);
++    if (!out.valid || out.origin != here || out.walls != walls || out.goals != goals) {
++        out.valid = false;
++        copy_into(walls, out.walls);
++        copy_into(goals, out.goals);
++        out.origin = here;
++        out.steps = unreachable;
++        out.ray = {};
++        out.exact = out.exhausted = false;
++        if (test(goals, here)) out.steps = 0, out.exact = true;
++        else {
++            for (const auto d : directions) {
++                for (int k = 1; k <= ray_limit; ++k) {
++                    const vec2 p = here + vec2{d.x * k, d.y * k};
++                    if (!in_bounds(p) || test(walls, p)) break;
++                    if (test(goals, p)) {
++                        if (k < out.steps) out.steps = k, out.ray = d;
++                        break;
++                    }
++                }
++            }
++            if (out.steps != unreachable) out.exact = !any_within(goals, here, out.steps - 1);
++        }
++        out.valid = true;
++    }
++    if (!out.exact && (exact || out.steps == unreachable)) {
++        out.valid = false;
++        if (!out.labels) out.labels = std::make_unique<cambc::distance_field>();
++        static bitboard origin, visited{cambc::uninitialized};
++        origin.clear();
++        set_tile(origin, here);
++        const int layers = out.labels->compute_to_with_expansion_count(out.walls, out.goals, origin, visited, unreachable);
++        world_.throw_if_stale();
++        out.steps = steps_at(*out.labels, here);
++        out.ray = {};
++        out.exhausted = out.steps == unreachable && layers < unreachable;
++        out.exact = out.steps != unreachable || out.exhausted;
++        out.valid = true;
++    }
++    world_.throw_if_stale();
++    return out;
++}
++
+ vec2 Pathing::my_pos() {
+     const auto round = round_now();
+     if (dashes_seen_ != outside_dashes()) invalidate();
+diff --git a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/pathing.h b/bots/variants/willow-v47-escape-mixed-approach-work/src/pathing.h
+index cc6a6bf..2ba9f3e 100644
+--- a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/pathing.h
++++ b/bots/variants/willow-v47-escape-mixed-approach-work/src/pathing.h
+@@ -74,6 +74,18 @@ public:
+     void occupied_into(bitboard& out); // blocked() with our own tile set
+     void invalidate(); // after we move or dash
+ 
++    struct CampEscape {
++        vec2 origin{-1, -1}, ray{};
++        int steps = unreachable;
++        bool valid = false, exact = false, exhausted = false;
++        // Only completed labels are distances; an unlabelled dash endpoint is unknown.
++        std::optional<int> at(vec2 p) const;
++        bitboard walls{cambc::uninitialized}, goals{cambc::uninitialized};
++        std::unique_ptr<cambc::distance_field> labels;
++    };
++    // One lazy result, shared by admission and retreat only while these actual inputs agree.
++    const CampEscape& camp_escape(const bitboard& hazard, int ray_limit, bool exact = false);
++
+     // A hidden blocker fails a move without spending the walk; the other first steps are tried,
+     // then the route is replanned.
+     // An optional aim breaks equal-distance ties, retaining compass order for equal aim distance.
+@@ -204,6 +216,7 @@ private:
+     vec2 pos_;
+     std::uint32_t pos_round_ = 0;
+     bool pos_fresh_ = false;
++    std::unique_ptr<CampEscape> camp_escape_;
+     unsigned dashes_seen_ = 0; // outside_dashes() when our tile was last read
+ };
+ 
+diff --git a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/self_abilities.cpp b/bots/variants/willow-v47-escape-mixed-approach-work/src/self_abilities.cpp
+index 1c91998..ed015de 100644
+--- a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/self_abilities.cpp
++++ b/bots/variants/willow-v47-escape-mixed-approach-work/src/self_abilities.cpp
+@@ -408,6 +408,16 @@ bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dea
+     return dash_to_first(dash, pathing, landings);
+ }
+ 
++bool camp_escape_dash(const World& world, Pathing& pathing, vec2 landing) {
++    const int dash = ready(world, AbilityKind::dash);
++    if (dash < 0 || !test(pathing.dash_landings(), landing) || wakes_camp(world, landing)
++        || landing_suicidal(world, landing)) return false;
++    Landings selected;
++    selected.count = 1;
++    selected.tiles[0] = landing;
++    return dash_to_first(dash, pathing, selected);
++}
++
+ bool dash_clears(const World& world, Pathing& pathing, vec2 dead) {
+     if (!world.me().facts().has_dash() || ready(world, AbilityKind::dash) < 0) return false;
+     const auto& threats = threats_near(world, my_position(), dead);
+diff --git a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/self_abilities.h b/bots/variants/willow-v47-escape-mixed-approach-work/src/self_abilities.h
+index 82ebff8..5da752b 100644
+--- a/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/self_abilities.h
++++ b/bots/variants/willow-v47-escape-mixed-approach-work/src/self_abilities.h
+@@ -41,6 +41,8 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief*
+ // Out of the reach of visible enemies and awake camps, tie-broken towards `home`. `dead`: the
+ // tile of an enemy we killed this turn, which the beliefs still hold alive.
+ bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dead = {-1, -1});
++// One selected camp-escape landing, retaining the ordinary wake/retaliation/cast checks.
++bool camp_escape_dash(const World& world, Pathing& pathing, vec2 landing);
+ // A ready dash could land out of every visible enemy's and awake camp's reach, `dead` aside.
+ bool dash_clears(const World& world, Pathing& pathing, vec2 dead);
+ 

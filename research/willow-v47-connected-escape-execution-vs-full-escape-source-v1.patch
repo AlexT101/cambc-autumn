@@ -1,0 +1,50 @@
+diff --git a/bots/variants/willow-v47-connected-escape-work/src/bot.cpp b/bots/variants/willow-v47-connected-escape-execution-work/src/bot.cpp
+index 226c723..50764af 100644
+--- a/bots/variants/willow-v47-connected-escape-work/src/bot.cpp
++++ b/bots/variants/willow-v47-connected-escape-execution-work/src/bot.cpp
+@@ -2896,19 +2896,30 @@ bool paying_soon(const World& world, Pathing& pathing) {
+ 
+ bool outmatched(const World& world, Pathing& pathing) { return in_pack_zone(world, world.me().pos) && !paying_soon(world, pathing); }
+ 
++// Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
++int camp_exit_rounds(const World& world, Safety& safety, vec2 here) {
++    const auto& open = world.map().standable;
++    const auto out = [&](vec2 p) { return in_bounds(p) && test(open, p) && safety.camp_damage(p) <= 0; };
++    const int longest = world.map().max_camp_reach;
++    for (int r = 1; r <= longest; ++r)
++        for (int i = -r; i <= r; ++i)
++            if (out({here.x + i, here.y - r}) || out({here.x + i, here.y + r}) || out({here.x - r, here.y + i})
++                || out({here.x + r, here.y + i}))
++                return r;
++    return longest + 1;
++}
++
+ // Camps keep hitting while we walk out of their reach: leave while the health still covers that.
+ // A siege (Memory::siege) keeps its own health limits for its group's hits.
+-bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 here, float health, bool sieging) {
++bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, bool sieging) {
+     if (sieging) return false;
+     const float dps = safety.camp_damage(here);
+     if (dps <= 0) return false;
+     const auto exit_cost = [&](int rounds) { return dps * (1.5f * static_cast<float>(rounds) + 1.0f); };
++    // The exit takes 1 to max_camp_reach + 1 rounds: the bounds settle most cases without the search.
++    if (health > exit_cost(world.map().max_camp_reach + 1)) return false;
+     if (health <= exit_cost(1)) return true;
+-    const auto& witness = pathing.camp_escape(safety.camp_area(), world.map().max_camp_reach + 1);
+-    if (witness.steps != unreachable && health > exit_cost(witness.steps)) return false;
+-    if (witness.exact) return witness.steps == unreachable || health <= exit_cost(witness.steps);
+-    const auto& connected = pathing.camp_escape(safety.camp_area(), world.map().max_camp_reach + 1, true);
+-    return !connected.exact || connected.steps == unreachable || health <= exit_cost(connected.steps);
++    return health <= exit_cost(camp_exit_rounds(world, safety, here));
+ }
+ 
+ // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
+@@ -2918,7 +2929,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, bool siegin
+     if (test(world.map().ally_spawn, here)) return false;
+     const float health = my_health();
+     const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world, pathing);
+-    if (low || outmatched(world, pathing) || camp_trapped(world, pathing, safety, here, health, sieging)) return true;
++    if (low || outmatched(world, pathing) || camp_trapped(world, safety, here, health, sieging)) return true;
+     // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
+     // bar on a capture, which pays without one.
+     if (world.me().type == cambc::champion_type::willow && !holding_capture(world, pathing) && !contesting(world)

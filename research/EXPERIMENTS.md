@@ -3226,3 +3226,118 @@ zero Vesper income, and zero gem clusters does not mean zero Prism scaling.
 Future counterpicks must use only already-revealed enemy selections; the
 current first-call draft cache cannot provide that by itself. See the pinned
 map-economy/counterdraft design and fixed-role source checkpoint for scope.
+
+The macro factorial has now completed the following independent 80-game
+panels (candidate-source wins, not physical A wins):
+
+| f475-derived arm | Against f475 | Against v33 |
+| --- | ---: | ---: |
+| Farm hop | 39 | 47 |
+| Connected escape | 36 | 37 |
+| Mixed-camp approach qualifier | 39 | 44 |
+| Hop + escape | 39 | 35 |
+| Hop + mixed approach | 41 | 46 |
+| Escape + mixed approach | 39 | 37 |
+| Hop + escape + mixed approach | 42 | 41 |
+
+The two remaining pairs, hop+mixed (`7e5dc37a...`) and escape+mixed
+(`e8d10ca2...`), are exact source unions and have now completed evaluation. All completed
+new native panels above report zero bot errors and zero draft/other-phase
+faults. Neither a true local mechanism nor a stronger combination than its
+single parent is sufficient to claim a release improvement; all remain local.
+For clarity, the baseline-v33 native audit's 260/549 play rollovers cover its
+full80 games, including reused cells, rather than only the71 new games.
+
+Common-v33 comparisons nominate concrete follow-ups. Hop has four gained wins
+and two lost wins; escape has ten gains and18 losses. The first input fork on
+Reverse Spiral B is r4 HoR7 setting priority14 in f475 versus ending its turn
+in hop. Fracture A first differs at r6 Prism0: both start the activation at
+(6,6), cancel recall and move to(7,7); f475 additionally attempts the blocked
+move to(7,9) before recall, whereas hop recalls immediately. The own view has
+no nearby visible enemy or camp. This is not evidence of an unsafe teleport.
+Elk Arena A's escape comparison first differs at r10 HoR4: f475 rolls over
+before an action; the candidate moves from(23,24), dashes and attacks amid
+visible camps and four visible enemies. Its own HP is790. This is a computation/action
+fork, not yet a witnessed connected-retreat decision. Own-view raw channel
+type1 is recall; an initial helper description as teleport was corrected.
+
+The first fixed-roster screen completed18 new games. Across the six map/side
+cells per recipe against frozen v33, baseline Prism wins3, Stellar1,
+Cassi&Issac3 and the Vesper-to-Vendetta substitution2. Cassi wins both Big World
+sides but neither Fracture side; all three alternatives lose Gem Fields A and
+win B. This small screen measures implemented policies and does not justify
+a map threshold or team counterpick. Draft/body receipts confirm the requested
+five selections, with six actors for Cassi&Issac.
+
+Readiness review found no missing-kit or six-body capacity blocker, but the
+dedicated Willow service and safe approach-cast path are Prism-only. The stable
+generalist support prototype binds one immutable client, preferring actual
+Prism, then Stellar, then Cassi, with Willow as healer. It preserves Prism's
+gem/economic policies and does not make Issac a second mailbox writer. Sources
+`98470a74...` (same Prism draft control), `f5daacb5...` (Stellar) and
+`ace0519e...` (Cassi) passed independent source review and builds. The approved
+18 new games compare these three six-cell arms with their corresponding18
+already-completed baseline cells. Source-only priority does not establish the
+best support client or coordinate the linked pair's distant retreat.
+
+The public map economy inventory v1 mistakenly counted the canonical stored
+half as the whole layout. It is preserved as superseded evidence; use
+`economy-inventory-v2` only. The corrected expansion deduplicates shared
+symmetry camps/groups and cross-checks existing native Gem Fields, Fracture and
+Big World extracts. Contest has zero ordinary gem income, while Boss Battle
+has no gem clusters but780 ordinary monster gems per whole-layout clear;
+these are distinct draft cases. Whole-layout totals are not attainable team
+shares. The host escape fixture now executes extracted `CampEscape::at`,
+dash legality helper and endpoint-selection code with independent small-grid
+expected results. It does not test the native field cache or game execution.
+
+The support screen is complete: support-Prism wins3/6, support-Stellar2/6 and
+support-Cassi2/6 against v33, compared with their respective original3/6,1/6
+and3/6. All18 new games have zero native bot errors and zero draft/other
+rollovers; play rollovers are6/26,6/33 and22/48 (candidate/opponent). The
+Prism control keeps five exact score/round endpoints; Big World B remains a
+win but changes its trajectory. Stellar gains Gem Fields A and Fracture A,
+loses Gem Fields B, and still loses both Big World sides. Cassi keeps its two
+Big World wins but loses the former Gem Fields B win. Thus support is a real
+gameplay interaction, not a universal correction to the alternative roster.
+The two missing baseline references in the support receipt were recovered
+from the original pinned files without reruns. The earlier preservation
+snapshot's pending status is historical, not current.
+
+Both missing factorial pairs are now authorized after root reviewed every
+ordered map/A/B row. The next predeclared draft screen contrasts Contest and
+Boss Battle with support-enabled Prism/Stellar/Cassi, and Gem Fields versus
+Quadrants with default Vesper versus Vendetta. All four maps have five picks.
+This separates zero ordinary gems from zero gem clusters, and checks two
+different positive gold supplies despite zero gold clusters. No dynamic
+selector, release number, upload or activation follows from this screen alone.
+
+The completed missing-pair audits report hop+mixed play rollovers247/268
+versus f475 and304/598 versus v33; escape+mixed255/219 and269/566. All four
+panels have zero native bot errors and zero draft/other rollovers or errors.
+The initial combined native-audit input was rejected because that tool requires
+two bots; the corrected per-opponent audits and failed attempt are retained.
+No game rerun was needed. These results complete all seven nonempty subsets of
+the three features on the same40-map, two-side, two-opponent screen. Different
+trajectories prevent interpreting total rollovers as a per-call cost change.
+
+The execution-only escape control (`fcdf6007...`) retains original f475
+camp_exit_rounds/camp_trapped/want_home byte-for-byte and all reviewed connected
+direction/dash execution from the full escape arm. Independent review confirmed
+the separation. It intentionally retains the old unsound geometric admission
+bound; removing the connected admission query also changes cost/cache warming,
+so it cannot alone isolate policy from computation. The bounded Elk Arena
+caller trace and matched outcome screen remain pending.
+
+The edge-economy draft screen completed all14 new games plus six exact reused
+cells, with native audits for all20 and no bot errors in the new games.
+Support-Prism wins one side each on Contest/Boss Battle; support-Stellar wins
+neither Contest side but both Boss Battle sides; support-Cassi wins one
+Contest side and neither Boss Battle side. Default Vesper and substitute
+Vendetta each win one side on Gem Fields and Quadrants: their Gem Fields wins
+are opposite sides, while Quadrants preserves the same winner side. Thus
+neither zero ordinary gems nor zero gold clusters gives a tested universal
+substitution rule. Boss Battle's ordinary gems are behind damaging camps;
+carry ramp access and actual clearing contribution require chronology before
+attributing the Stellar gain to an economy feature. That bounded comparison
+is now nominated. All recipes are local experiments, not deployed drafts.

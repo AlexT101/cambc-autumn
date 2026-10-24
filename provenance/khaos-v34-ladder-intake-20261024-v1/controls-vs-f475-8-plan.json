@@ -1,0 +1,133 @@
+{
+  "schema": "single-change-control-vs-f475-plan/v1",
+  "status": "NOT_RUN_ROOT_REVIEW_REQUIRED",
+  "rows_total": 8,
+  "purpose": "Isolate whether reviewed single-change controls recover the 00eight/01starvation regressions seen in v48-vs-f475, with both physical sides.",
+  "source_aggregates": {
+    "v47_recall": "64d9c8fd9d587d898139983138341b8346681fc2c32a0804c359ae25613c9cb5",
+    "v48_walk_altar": "c156da50c65ca11bf3da3ddec09a9cb285d02d5562dee1a72d45dfba8ab7bb4f",
+    "f475": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824"
+  },
+  "raw_injected_hashes": {
+    "v47_recall": {
+      "raw": "8f633b0448aa5a8c83a9fee04000abd3bf86b05b922ae9076a3253c610fe79ab",
+      "injected": "3f12047d61c432c878d0625e7a187c9ca3ea143128fb898df7d5bd8ab2265aa8"
+    },
+    "v48_walk_altar": {
+      "raw": "2b8850d88448673f272effd26144f913e7056ccde93e19b8b913bf379f0da563",
+      "injected": "f5935677bfacf3cf059359907dd1e52e34c56d342121bb1b322ca17e5763dd0d"
+    },
+    "f475": {
+      "raw": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+      "injected": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+    }
+  },
+  "manifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/release-compare-controls-vs-f475-8.pending.manifest",
+  "manifest_sha256": "2b75cfc7b71c2b9d9bbde584a34227f4b7c9aaa964e27ce8b20d44638dd068fb",
+  "run_settings": {
+    "release": true,
+    "jobs": 1,
+    "fuel_quantum": 100000,
+    "nice": 19,
+    "normal_native_draft": true,
+    "do_not_run_until_root_reviews_ordered_rows": true
+  },
+  "rows": [
+    {
+      "id": "v47_recall-vs-f475__00eight__v47_recall-A",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a",
+      "map_sha256": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+      "A": "v47_recall",
+      "B": "f475",
+      "candidate": "v47_recall",
+      "candidate_side": "A",
+      "normal_native_draft": true,
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v47_recall-vs-f475__00eight__v47_recall-A.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v47_recall-vs-f475__00eight__v47_recall-A.statistics.json"
+    },
+    {
+      "id": "v48_walk_altar-vs-f475__00eight__v48_walk_altar-A",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a",
+      "map_sha256": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+      "A": "v48_walk_altar",
+      "B": "f475",
+      "candidate": "v48_walk_altar",
+      "candidate_side": "A",
+      "normal_native_draft": true,
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__00eight__v48_walk_altar-A.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__00eight__v48_walk_altar-A.statistics.json"
+    },
+    {
+      "id": "v47_recall-vs-f475__00eight__v47_recall-B",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a",
+      "map_sha256": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+      "A": "f475",
+      "B": "v47_recall",
+      "candidate": "v47_recall",
+      "candidate_side": "B",
+      "normal_native_draft": true,
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v47_recall-vs-f475__00eight__v47_recall-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v47_recall-vs-f475__00eight__v47_recall-B.statistics.json"
+    },
+    {
+      "id": "v48_walk_altar-vs-f475__00eight__v48_walk_altar-B",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a",
+      "map_sha256": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+      "A": "f475",
+      "B": "v48_walk_altar",
+      "candidate": "v48_walk_altar",
+      "candidate_side": "B",
+      "normal_native_draft": true,
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__00eight__v48_walk_altar-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__00eight__v48_walk_altar-B.statistics.json"
+    },
+    {
+      "id": "v47_recall-vs-f475__01starvation__v47_recall-A",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starvation.map26a",
+      "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+      "A": "v47_recall",
+      "B": "f475",
+      "candidate": "v47_recall",
+      "candidate_side": "A",
+      "normal_native_draft": true,
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v47_recall-vs-f475__01starvation__v47_recall-A.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v47_recall-vs-f475__01starvation__v47_recall-A.statistics.json"
+    },
+    {
+      "id": "v48_walk_altar-vs-f475__01starvation__v48_walk_altar-A",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starvation.map26a",
+      "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+      "A": "v48_walk_altar",
+      "B": "f475",
+      "candidate": "v48_walk_altar",
+      "candidate_side": "A",
+      "normal_native_draft": true,
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__01starvation__v48_walk_altar-A.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__01starvation__v48_walk_altar-A.statistics.json"
+    },
+    {
+      "id": "v47_recall-vs-f475__01starvation__v47_recall-B",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starvation.map26a",
+      "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+      "A": "f475",
+      "B": "v47_recall",
+      "candidate": "v47_recall",
+      "candidate_side": "B",
+      "normal_native_draft": true,
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v47_recall-vs-f475__01starvation__v47_recall-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v47_recall-vs-f475__01starvation__v47_recall-B.statistics.json"
+    },
+    {
+      "id": "v48_walk_altar-vs-f475__01starvation__v48_walk_altar-B",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starvation.map26a",
+      "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+      "A": "f475",
+      "B": "v48_walk_altar",
+      "candidate": "v48_walk_altar",
+      "candidate_side": "B",
+      "normal_native_draft": true,
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__01starvation__v48_walk_altar-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__01starvation__v48_walk_altar-B.statistics.json"
+    }
+  ]
+}

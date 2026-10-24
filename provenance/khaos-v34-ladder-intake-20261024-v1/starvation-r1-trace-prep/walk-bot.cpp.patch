@@ -1,0 +1,65 @@
+--- a/walk-bot.cpp
++++ b/walk-bot.cpp
+@@ -1737,6 +1737,7 @@
+ // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
+ [[gnu::flatten]] bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
++    const bool trace_starvation = world.round == 1 && static_cast<std::uint32_t>(world.me().handle) == 1;
+     if (pick_up(world, pathing, memory)) return true;
+     const auto& map = world.map();
+     const auto& groups = map.groups;
+@@ -2274,8 +2275,15 @@
+         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
+             if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
+             const int last = known.to_altar;
+-            return last != unreachable
+-                   && static_cast<float>(steps + wait + capture_rounds() + last + tribute_turns(bag + group.gems)) + clear_rounds > static_cast<float>(left);
++            float deadline = 0;
++            bool late = false;
++            if (last != unreachable) {
++                deadline = static_cast<float>(steps + wait + capture_rounds() + last + tribute_turns(bag + group.gems)) + clear_rounds;
++                late = deadline > static_cast<float>(left);
++            }
++            debug_block({ if (trace_starvation) std::printf("STAR_LATE r%u actor%u g%d steps%d wait%d clear%.3f last%d left%d deadline%.3f late%d\n",
++                world.round, static_cast<std::uint32_t>(world.me().handle), g, steps, wait, clear_rounds, last, left, deadline, late); });
++            return late;
+         };
+         const float worth = gems + gold;
+         if (claimed) {
+@@ -2379,6 +2387,8 @@
+             }
+         }
+     }
++    debug_block({ if (trace_starvation) std::printf("STAR_SCAN r%u actor%u first%d evaluated%d k%d bag%d banks%d short%d best%d bestv%.6f shared%d sharedv%.6f help%d risky%d riskyv%.6f\n",
++        world.round, static_cast<std::uint32_t>(world.me().handle), first, evaluated, k, bag, banks_bag, short_by, best, best_value, shared, shared_value, help_group, risky, risky_value); });
+     if (k < evaluated) note_shortcut("farm-partial-evaluation");
+     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+     if (banks_bag && attack_in_range()) return true;
+@@ -2390,6 +2400,8 @@
+     if (shared >= 0 && (best < 0 || shared_value > best_value))
+         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false;
+     if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false;
++    debug_block({ if (trace_starvation) std::printf("STAR_PICK r%u actor%u farm%d best%d steps%d spell%d shared%d help%d risky%d claim%d crew%d\n",
++        world.round, static_cast<std::uint32_t>(world.me().handle), memory.farm_group, best, best_steps, spell, shared, help_group, risky, memory.claim, memory.crew); });
+     if (best < 0) {
+         // Cut short before weighing even last turn's choice: walk on towards it.
+         if (k == 0 && memory.farm_group >= 0) memory.claim = memory.farm_group, walk_on(memory.farm_group);
+@@ -2403,6 +2415,9 @@
+             return true;
+     const int cap = best_steps + max_detour;
+     const bool search = fuel_ok(search_cost_estimate(cap) + end_reserve);
++    debug_block({ if (trace_starvation) std::printf("STAR_ROUTE r%u actor%u best%d centre%d,%d cap%d search%d dasher%d cleared%d zone%d\n",
++        world.round, static_cast<std::uint32_t>(world.me().handle), best, groups[best].centre.x, groups[best].centre.y, cap, search, dasher,
++        world.camps[best].state == CampState::cleared, zone != nullptr); });
+     // In a scratch board, valid until the next call.
+     const auto off_zone = [&](const bitboard& goals) __attribute__((always_inline)) -> const bitboard& {
+         if (!zone) return goals;
+@@ -2440,6 +2455,8 @@
+         refused->set(here, false);
+     }
+     const auto& goals = refused ? *refused : *tiles;
++    debug_block({ if (trace_starvation) std::printf("STAR_GOALS r%u actor%u best%d here%d,%d attacktiles%d refused%d\n",
++        world.round, static_cast<std::uint32_t>(world.me().handle), best, here.x, here.y, test(*tiles, here), refused.has_value()); });
+     if (test(goals, here)) { // attacked from here; stay
+         cast_at_camp(world, best);
+         reset_and_attack_camp(world, best);

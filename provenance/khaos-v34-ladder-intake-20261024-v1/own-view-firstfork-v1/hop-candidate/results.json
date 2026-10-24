@@ -1,0 +1,27 @@
+{
+  "schema": "native-batch-results/v1",
+  "release": true,
+  "bots": [
+    "willow-v47-farm-hop",
+    "v33"
+  ],
+  "scheduled": 1,
+  "completed": 1,
+  "errors": 0,
+  "build_mode": "Release, fuel 100000",
+  "source_pins": {
+    "willow-v47-farm-hop": "63f5deb00dbf445d3e60261f78b359d4931939751d0eb00f843750a8ecaa7f8f",
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "matches": [
+    {
+      "index": 0,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-farm-hop-160-output-v1/hop-vs-v33/hop-vs-v33__01fracture__hop-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a"
+    }
+  ]
+}

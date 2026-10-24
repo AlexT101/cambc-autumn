@@ -1,0 +1,36 @@
+{
+  "aggregate": "4b5a71e6535bb7b0ccfec3ad26fa6a1c5cef066807576792384e9966efdc0343",
+  "raw_wasm": "8067d3f0ffc681ff3daf89e5fef3cb56674479c6f5ce1bde72a1ceb30b622c4c",
+  "injected_wasm": "28849738baf8583dc04202fb1cd016729e44f1fba4452928357f2ab99c8b82d5",
+  "rows": 160,
+  "all_outputs_absent": true,
+  "all_maps_match": true,
+  "sdk_before": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/cambc.h",
+      "sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "mtime_ns": 1792774035481976768,
+      "bytes": 218074
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/imports.h",
+      "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "mtime_ns": 1792774035482489096,
+      "bytes": 27810
+    }
+  ],
+  "sdk_current": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/cambc.h",
+      "sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "mtime_ns": 1792774035481976768,
+      "bytes": 218074
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/imports.h",
+      "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "mtime_ns": 1792774035482489096,
+      "bytes": 27810
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "schema": "starvation-r1-trace-validation/v1",
+  "label": "walk-control",
+  "timeline": {
+    "recorderEndedAtTimeline": true,
+    "traceEndedAtTimeline": true,
+    "recorderLastRound": 3,
+    "traceLastRound": 3
+  },
+  "hostCallValidation": {
+    "recorderSegments": 15,
+    "traceSegments": 15,
+    "segmentComparison": {
+      "counts": [
+        15,
+        15
+      ],
+      "common": 15,
+      "diff": [],
+      "onlyA": [],
+      "onlyB": []
+    },
+    "recorderRolloverPoints": 0,
+    "traceReproducedRolloverPoints": 0,
+    "rolloverComparison": {
+      "counts": [
+        0,
+        0
+      ],
+      "common": 0,
+      "diff": [],
+      "onlyA": [],
+      "onlyB": []
+    },
+    "mismatchLines": [],
+    "hardMismatchLines": [],
+    "passed": true
+  },
+  "originalReplayNativeStatusThroughRound1": {},
+  "statusNote": "Counts are sourced from the matching original full replay but filtered to round <= 1; empty means no native rollover or Bot error in the target prefix.",
+  "traceFields": [
+    {
+      "tag": "STAR_ALTAR",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "group": 13,
+        "hit": 0,
+        "anywarm": 0,
+        "draft": 1,
+        "field": 0,
+        "result": 73
+      },
+      "line": "STAR_ALTAR r1 actor1 g13 hit0 anywarm0 draft1 field0 result73"
+    },
+    {
+      "tag": "STAR_LATE",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "group": 13,
+        "steps": 83,
+        "wait": 0,
+        "clear": 4,
+        "last": 73,
+        "left": 1999,
+        "deadline": 167,
+        "late": 0
+      },
+      "line": "STAR_LATE r1 actor1 g13 steps83 wait0 clear4.000 last73 left1999 deadline167.000 late0"
+    },
+    {
+      "tag": "STAR_ALTAR",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "group": 0,
+        "hit": 0,
+        "anywarm": 0,
+        "draft": 1,
+        "field": 0,
+        "result": 68
+      },
+      "line": "STAR_ALTAR r1 actor1 g0 hit0 anywarm0 draft1 field0 result68"
+    },
+    {
+      "tag": "STAR_LATE",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "group": 0,
+        "steps": 49,
+        "wait": 0,
+        "clear": 6,
+        "last": 68,
+        "left": 1999,
+        "deadline": 130,
+        "late": 0
+      },
+      "line": "STAR_LATE r1 actor1 g0 steps49 wait0 clear6.000 last68 left1999 deadline130.000 late0"
+    },
+    {
+      "tag": "STAR_ALTAR",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "group": 1,
+        "hit": 0,
+        "anywarm": 0,
+        "draft": 1,
+        "field": 0,
+        "result": 68
+      },
+      "line": "STAR_ALTAR r1 actor1 g1 hit0 anywarm0 draft1 field0 result68"
+    },
+    {
+      "tag": "STAR_LATE",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "group": 1,
+        "steps": 55,
+        "wait": 0,
+        "clear": 6,
+        "last": 68,
+        "left": 1999,
+        "deadline": 136,
+        "late": 0
+      },
+      "line": "STAR_LATE r1 actor1 g1 steps55 wait0 clear6.000 last68 left1999 deadline136.000 late0"
+    },
+    {
+      "tag": "STAR_ALTAR",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "group": 2,
+        "hit": 0,
+        "anywarm": 0,
+        "draft": 1,
+        "field": 0,
+        "result": 3
+      },
+      "line": "STAR_ALTAR r1 actor1 g2 hit0 anywarm0 draft1 field0 result3"
+    },
+    {
+      "tag": "STAR_LATE",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "group": 2,
+        "steps": 69,
+        "wait": 0,
+        "clear": 172,
+        "last": 3,
+        "left": 1999,
+        "deadline": 259,
+        "late": 0
+      },
+      "line": "STAR_LATE r1 actor1 g2 steps69 wait0 clear172.000 last3 left1999 deadline259.000 late0"
+    },
+    {
+      "tag": "STAR_SCAN",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "first": 12,
+        "evaluated": 14,
+        "k": 5,
+        "bag": 0,
+        "banks": 0,
+        "short": 1000,
+        "best": 0,
+        "bestv": 0.22285,
+        "shared": -1,
+        "sharedv": 0,
+        "help": -1,
+        "risky": 2,
+        "riskyv": 0.35921
+      },
+      "line": "STAR_SCAN r1 actor1 first12 evaluated14 k5 bag0 banks0 short1000 best0 bestv0.222850 shared-1 sharedv0.000000 help-1 risky2 riskyv0.359210"
+    },
+    {
+      "tag": "STAR_PICK",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "farm": -1,
+        "best": 0,
+        "steps": 49,
+        "spell": 0,
+        "shared": -1,
+        "help": -1,
+        "risky": 2,
+        "claim": 0,
+        "crew": 0
+      },
+      "line": "STAR_PICK r1 actor1 farm-1 best0 steps49 spell0 shared-1 help-1 risky2 claim0 crew0"
+    },
+    {
+      "tag": "STAR_ROUTE",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "best": 0,
+        "centre": [
+          35,
+          75
+        ],
+        "cap": 65,
+        "search": 1,
+        "dasher": 1,
+        "cleared": 0,
+        "zone": 0
+      },
+      "line": "STAR_ROUTE r1 actor1 best0 centre35,75 cap65 search1 dasher1 cleared0 zone0"
+    },
+    {
+      "tag": "STAR_GOALS",
+      "values": {
+        "round": 1,
+        "actor": 1,
+        "best": 0,
+        "here": [
+          2,
+          48
+        ],
+        "attacktiles": 0,
+        "refused": 0
+      },
+      "line": "STAR_GOALS r1 actor1 best0 here2,48 attacktiles0 refused0"
+    }
+  ],
+  "source_prefix_validation": "walk-control-recorder-prefix-validation.json",
+  "trace_replay_sha256": "14ece130cb6f6e5f289439fc8028381236e366e3a47a2f129db6387e5b47e2d9",
+  "recorder_replay_sha256": "5cdb9e16120a81cfd0af2e20730daaab3c4a2973c959f403fe00f09e0ec3268f"
+}

@@ -1,0 +1,93 @@
+{
+  "schema": "gem-fields-v48-source-identity-replay-plan/v1",
+  "status": "TEAM_B_PUPPET_BUILT_NO_GAME_PENDING_ROOT_REVIEW",
+  "purpose": "Test whether the local v48 Release source reproduces its own accepted-input/state prefix in the downloaded Gem Fields match and identify the first action divergence for trace nomination. The opponent is a fixed replay puppet; this is a source identity/prefix diagnostic, not a competitive result.",
+  "original_match_id": "8cb125e6-d24b-4db2-be97-52211ba30f6a",
+  "official_version_identity": "unverified; timestamp/draft do not establish which submission binary produced the replay",
+  "original_order": {
+    "candidate_side": "A",
+    "opponent_side": "B",
+    "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+    "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5"
+  },
+  "original_artifacts": {
+    "raw_zip": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/raw/8cb125e6-d24b-4db2-be97-52211ba30f6a.zip",
+      "bytes": 24353,
+      "sha256": "9e709f404f329ca73d698cf14ce4dd84a54fa0d39a259ff0b145111c9e754af7"
+    },
+    "inner_replay": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/raw/8cb125e6-d24b-4db2-be97-52211ba30f6a.repl26a",
+      "bytes": 87784,
+      "sha256": "ea2e606f23eb1e6dbf2f8392515cc68b52a0a99d7e3fd5fb8c695527e6160ac3"
+    },
+    "original_team_a_fuel_sha256": "see exact team-a.fuel member in preserved ZIP; must verify before use",
+    "team_a_fuel": {
+      "zip_member": "team-a.fuel",
+      "sha256": "6a986b63fd4baf35b756f9a66f960872f2f6131d6208240023d0c31b3280e673",
+      "side": "physical A"
+    },
+    "team_b_fuel": {
+      "present": false,
+      "note": "The saved bundle has no team-b.fuel member."
+    }
+  },
+  "candidate": {
+    "name": "local Khaos_v34/v48",
+    "project": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work",
+    "source_aggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "raw_sha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+    "injected_sha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525",
+    "no_rebuild": true
+  },
+  "puppet_side": "generate recorded team index 1 from this exact replay and run it as physical B; preserve its native draft picks and action script",
+  "harness": {
+    "root": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness",
+    "pins": {
+      "decode_all.mjs": "facfe68ac016dfc7fd75d6586e88a9e6a2d375540b3349b576f1727a5125bc7e",
+      "inputs.mjs": "0214bb69814ee32a0c1b337584f043f7276604ab381592ed965c902c0fe14d5b",
+      "gen_puppet.mjs": "31b4b09efc29ccb430fa1dafd7a86a672a46e7334a1e153a231458a787db1e82",
+      "compare.mjs": "0273b7052d31f5a54e15285fd1e3aa4fd7f4dddd6a71262d150110540f3daa42"
+    }
+  },
+  "input_list": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-puppet-input-list.json",
+  "steps": [
+    "Decode the one preserved inner replay with decode_all.mjs --threads 1; verify the decoded input file and puppet draft against the original physical B draft.",
+    "Generate a team-1 puppet with gen_puppet.mjs in a dedicated isolated project; compare its requested script actions, then build that puppet using the existing runtime SDK without modifying other bots.",
+    "Run exactly one local Release game on maps/00gem-fields.map26a with candidate v48 on A and the fixed recorded-input puppet on B, fuel quantum 100000, jobs 1, nice 19. This is not a v47/v48 or v33 competitive cell.",
+    "Compare accepted native input sequence and round-start hashes to the original replay through the first divergence; record the first candidate-side actor/action and per-side fuel/status. Do not call an opponent-puppet full-match outcome a competitive benchmark."
+  ],
+  "proposed_match_manifest_status": "not created or executed until root reviews a concrete generated-puppet project/build source pin and ordered candidate-A/puppet-B row",
+  "limits": [
+    "Replay does not establish official bot version from timestamp or draft.",
+    "A fixed puppet does not adapt to counterfactual candidate actions.",
+    "Use the match only for source identity and first-fork nomination; real games versus frozen bots are outcome tests."
+  ],
+  "original_match_metadata": {
+    "map": "00gem-fields (maps/00gem-fields.map26a)",
+    "physical_A_draft": [
+      "Prism",
+      "Vesper Vale",
+      "Marcella",
+      "Willow",
+      "Heart of Ruin"
+    ],
+    "physical_B_draft": [
+      "Prism",
+      "Marcella",
+      "Ryth",
+      "Heart of Ruin",
+      "Vesper Vale"
+    ],
+    "metadata_source": "MACRO-RESULT.json"
+  },
+  "build_receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-puppet-build.json",
+  "build_receipt_sha256": "8ba180aa90d5f82af97b8dd940c4b18968c1e987633a05c8b9d5845e1b724220",
+  "ordered_pending_row": {
+    "manifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-puppet-local-row.pending.manifest",
+    "manifest_sha256": "67577c6281461bedf153daf928930f0560ff3505433b215e4e82a422b3cb03e2",
+    "physical_A": "local v48 candidate",
+    "physical_B": "team-index-1 recorded B-action puppet",
+    "not_run": true
+  }
+}

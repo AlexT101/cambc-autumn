@@ -1,0 +1,30 @@
+{
+  "schema": "source-control-first-input-divergence-plan/v1",
+  "status": "PREPARED_NOT_RUN_PENDING_BASELINE_ROWS_AND_ROOT_REVIEW",
+  "tool": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/compare.mjs",
+  "tool_sha256": "0273b7052d31f5a54e15285fd1e3aa4fd7f4dddd6a71262d150110540f3daa42",
+  "cases": [
+    {
+      "map": "00eight",
+      "original": "f475-selfplay A vs f475 B replay",
+      "rerun": "v47-recall-only A vs f475 B replay",
+      "original_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-selfplay-output/f475-selfplay__00eight.repl26a",
+      "rerun_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v47_recall-vs-f475__00eight__v47_recall-A.repl26a",
+      "question": "First accepted input and round-state difference when v47+recall replaces f475 on A while B remains f475."
+    },
+    {
+      "map": "01starvation",
+      "original": "v48 A vs f475 B replay",
+      "rerun": "v48-walk-altar A vs f475 B replay",
+      "original_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starvation__v48-A__f475-B.repl26a",
+      "rerun_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__01starvation__v48_walk_altar-A.repl26a",
+      "question": "First accepted input and round-state difference when v48 walk-altar lookup is reverted, with A and B sides held fixed."
+    }
+  ],
+  "comparison_command_template": "node /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/compare.mjs <original replay.repl26a> <control replay.repl26a>",
+  "limits": [
+    "Run only after f475 self-play rows are approved and complete.",
+    "Comparator uses recorded accepted inputs, round hashes, and final results.",
+    "Do not implement trace instrumentation before locating a causal first fork."
+  ]
+}

@@ -1,0 +1,394 @@
+{
+"sdk_allies": [
+5,
+3
+],
+"sdk_altar_locks": [
+5,
+3
+],
+"sdk_attack": [
+4,
+3
+],
+"sdk_Bitboard_DrawChebyshev": [
+6,
+3
+],
+"sdk_Bitboard_ExportLinearBuffer": [
+5,
+3
+],
+"sdk_Bitboard_GetSetBits": [
+6,
+3
+],
+"sdk_Bitboard_ImportRawBuffer": [
+5,
+3
+],
+"sdk_Bitboard_Intersect": [
+5,
+3
+],
+"sdk_Bitboard_IsEqual": [
+5,
+3
+],
+"sdk_Bitboard_IsZero": [
+4,
+3
+],
+"sdk_Bitboard_Not": [
+4,
+3
+],
+"sdk_Bitboard_NumSetBits": [
+4,
+3
+],
+"sdk_Bitboard_One": [
+3,
+3
+],
+"sdk_Bitboard_ReachableMask": [
+7,
+3
+],
+"sdk_Bitboard_Set": [
+6,
+3
+],
+"sdk_Bitboard_ShadowCast": [
+7,
+3
+],
+"sdk_Bitboard_ShiftRight": [
+5,
+3
+],
+"sdk_Bitboard_ShiftUp": [
+5,
+3
+],
+"sdk_Bitboard_Test": [
+6,
+3
+],
+"sdk_Bitboard_Union": [
+5,
+3
+],
+"sdk_Bitboard_Xor": [
+5,
+3
+],
+"sdk_Bitboard_Zero": [
+3,
+3
+],
+"sdk_DistanceField_ComputeToWithExpansionCount": [
+9,
+3
+],
+"sdk_DistanceField_ComputeWithExpansionCount": [
+8,
+3
+],
+"sdk_DistanceField_Get": [
+6,
+3
+],
+"sdk_champion_channel_time": [
+4,
+3
+],
+"sdk_bc_champion_priority": [
+5,
+3
+],
+"sdk_bc_get_last_error": [
+4,
+3
+],
+"sdk_bc_map_mask": [
+4,
+3
+],
+"sdk_bc_map_symmetry": [
+3,
+3
+],
+"sdk_bc_metadata": [
+3,
+3
+],
+"sdk_bc_round_number": [
+3,
+3
+],
+"sdk_bc_submit_draft_memory": [
+4,
+3
+],
+"sdk_bc_submitted_gems": [
+4,
+3
+],
+"sdk_ally_occupancy": [
+3,
+3
+],
+"sdk_ally_ward_occupancy": [
+3,
+3
+],
+"sdk_camp_occupancy": [
+3,
+3
+],
+"sdk_enemy_occupancy": [
+3,
+3
+],
+"sdk_teleport_occupancy": [
+3,
+3
+],
+"sdk_vision": [
+3,
+3
+],
+"sdk_ward_vision": [
+5,
+3
+],
+"sdk_buy_consumable": [
+3,
+3
+],
+"sdk_buy_item": [
+4,
+3
+],
+"sdk_camp": [
+4,
+3
+],
+"sdk_camp_buffs": [
+6,
+3
+],
+"sdk_camp_design": [
+4,
+3
+],
+"sdk_camp_group_cooldown": [
+4,
+3
+],
+"sdk_camp_group_state": [
+4,
+3
+],
+"sdk_camp_state": [
+4,
+3
+],
+"sdk_cancel_channel": [
+2,
+3
+],
+"sdk_cast": [
+8,
+3
+],
+"sdk_champion": [
+4,
+3
+],
+"sdk_champion_ability_damage": [
+5,
+3
+],
+"sdk_champion_ability_damage_against": [
+6,
+3
+],
+"sdk_champion_ability_heal": [
+5,
+3
+],
+"sdk_champion_ability_props": [
+5,
+3
+],
+"sdk_champion_ability_shield": [
+5,
+3
+],
+"sdk_champion_at": [
+5,
+3
+],
+"sdk_champion_buff_data": [
+6,
+3
+],
+"sdk_champion_can_shop": [
+5,
+3
+],
+"sdk_champion_consumables": [
+4,
+3
+],
+"sdk_champion_cooldown": [
+5,
+3
+],
+"sdk_champion_design": [
+4,
+3
+],
+"sdk_champion_gems": [
+4,
+3
+],
+"sdk_champion_gold": [
+4,
+3
+],
+"sdk_champion_identity": [
+4,
+3
+],
+"sdk_champion_is_alive": [
+4,
+3
+],
+"sdk_champion_items": [
+4,
+3
+],
+"sdk_champion_wards": [
+4,
+3
+],
+"sdk_consumable_info": [
+4,
+3
+],
+"sdk_draft_champion": [
+3,
+3
+],
+"sdk_draft_get": [
+5,
+3
+],
+"sdk_draft_memory_size": [
+3,
+3
+],
+"sdk_draft_num_rounds": [
+3,
+3
+],
+"sdk_enemies": [
+5,
+3
+],
+"sdk_fuel_remaining": [
+2,
+3
+],
+"sdk_get_settings": [
+3,
+3
+],
+"sdk_has_camp": [
+5,
+3
+],
+"sdk_item_info": [
+4,
+3
+],
+"sdk_map_camp_layout": [
+5,
+3
+],
+"sdk_move_to": [
+5,
+3
+],
+"sdk_my_champion": [
+2,
+3
+],
+"sdk_my_team": [
+2,
+3
+],
+"sdk_num_allies": [
+3,
+3
+],
+"sdk_num_enemies": [
+3,
+3
+],
+"sdk_place_ward": [
+5,
+3
+],
+"sdk_read_draft_memory": [
+5,
+3
+],
+"sdk_read_shared_memory": [
+5,
+3
+],
+"sdk_recall": [
+2,
+3
+],
+"sdk_set_priority": [
+3,
+3
+],
+"sdk_shared_memory_size": [
+3,
+3
+],
+"sdk_spawn_region": [
+4,
+3
+],
+"sdk_submit_gems": [
+4,
+3
+],
+"sdk_teleports": [
+5,
+3
+],
+"sdk_use_consumable": [
+6,
+3
+],
+"sdk_wards": [
+5,
+3
+],
+"sdk_write_shared_memory": [
+5,
+3
+],
+"sdk_yield": [
+2,
+1
+]
+}

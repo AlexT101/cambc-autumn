@@ -1,0 +1,25 @@
+{
+  "schema": "provenance-preservation-manifest-v1",
+  "artifacts": [
+    {
+      "path": "README.md",
+      "sha256": "610d862a00c1393115b6e8838bc680c7cbc77b69a058f13e50bd43ec0d81c8cb",
+      "bytes": 1037
+    },
+    {
+      "path": "SOURCE-PINS.json",
+      "sha256": "cfb89bec39e65a42e50dba22324d8a67cf7e71164222cddce2316f41da28b43b",
+      "bytes": 1668
+    },
+    {
+      "path": "build_fixture.py",
+      "sha256": "4e0ccef93b471480bf66ac06f53ab1e3a2664edcd04e228ed4356914a2fb2486",
+      "bytes": 7593
+    },
+    {
+      "path": "fixture.cpp",
+      "sha256": "bb86db5ae0564f1c4776fa5461ec8a3038940f8d07bf349eac130bf158ad43fb",
+      "bytes": 7646
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Attempted build log redirection from runtime workspace cwd before creating an absolute provenance/logs directory; shell reported no such output path. No build was started. Attempt wrapper also used zsh readonly variable name `status`. Preserved as a setup-only failed attempt; no source/SDK was changed.

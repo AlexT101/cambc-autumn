@@ -1,0 +1,23 @@
+{
+  "schema": "live-ur-native-audit-input/v1",
+  "release": false,
+  "bots": [
+    "own-team active v47 (source attribution is unverified)",
+    "Claudus"
+  ],
+  "scheduled": 1,
+  "completed": 1,
+  "errors": 0,
+  "note": "Replay source attribution is unverified at the source-aggregate level. The user states the active server submission was v47; this synthetic input does not claim the replay's exact binary/source identity.",
+  "matches": [
+    {
+      "index": 0,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/raw/6431a334-0746-4bac-b46d-847637121163.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a"
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "schema": "isolated-release-control-build-result/v1",
+  "completed_unix": 1792840199.9592772,
+  "sequential": true,
+  "games_run": 0,
+  "builds": [
+    {
+      "label": "v47-recall-only",
+      "source_original": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-finishing-recall-work",
+      "source_aggregate": "64d9c8fd9d587d898139983138341b8346681fc2c32a0804c359ae25613c9cb5",
+      "workspace_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-recall-only-4d08241-work",
+      "workspace_source_aggregate": "64d9c8fd9d587d898139983138341b8346681fc2c32a0804c359ae25613c9cb5",
+      "source_file_count": 29,
+      "copied_only_src": true,
+      "build_status": "release_built",
+      "source_aggregate_after": "64d9c8fd9d587d898139983138341b8346681fc2c32a0804c359ae25613c9cb5",
+      "raw_wasm": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-recall-only-4d08241-work/.cambc/build-release/bot.wasm",
+        "bytes": 1668739,
+        "sha256": "8f633b0448aa5a8c83a9fee04000abd3bf86b05b922ae9076a3253c610fe79ab"
+      },
+      "injected_wasm": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-recall-only-4d08241-work/.cambc/build-release/bot-injected.wasm",
+        "bytes": 910487,
+        "sha256": "3f12047d61c432c878d0625e7a187c9ca3ea143128fb898df7d5bd8ab2265aa8"
+      },
+      "build_exit_code": 0,
+      "stdout_sha256": "11ee5ecad670b4c23746960b1c42f1e86e9183ef0931f0caae949c5a844e4f3f",
+      "stderr_sha256": "ec996f44c37aa3a11b8893a81d8de92ffd2349d6721210c22873430f0517e322",
+      "stderr_notes": "expected Cambc injection and stale-debug-section removal messages; build exited 0"
+    },
+    {
+      "label": "v48-walk-altar-only",
+      "source_original": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v48-walk-altar-control-work",
+      "source_aggregate": "c156da50c65ca11bf3da3ddec09a9cb285d02d5562dee1a72d45dfba8ab7bb4f",
+      "workspace_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v48-walk-altar-control-4d08241-work",
+      "workspace_source_aggregate": "c156da50c65ca11bf3da3ddec09a9cb285d02d5562dee1a72d45dfba8ab7bb4f",
+      "source_file_count": 29,
+      "copied_only_src": true,
+      "build_status": "release_built",
+      "source_aggregate_after": "c156da50c65ca11bf3da3ddec09a9cb285d02d5562dee1a72d45dfba8ab7bb4f",
+      "raw_wasm": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v48-walk-altar-control-4d08241-work/.cambc/build-release/bot.wasm",
+        "bytes": 1669145,
+        "sha256": "2b8850d88448673f272effd26144f913e7056ccde93e19b8b913bf379f0da563"
+      },
+      "injected_wasm": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v48-walk-altar-control-4d08241-work/.cambc/build-release/bot-injected.wasm",
+        "bytes": 910893,
+        "sha256": "f5935677bfacf3cf059359907dd1e52e34c56d342121bb1b322ca17e5763dd0d"
+      },
+      "build_exit_code": 0,
+      "stdout_sha256": "535911817cc2f41f385a6a0a07c7c5190a3b0420a423e54dc5863654afb77630",
+      "stderr_sha256": "ec996f44c37aa3a11b8893a81d8de92ffd2349d6721210c22873430f0517e322",
+      "stderr_notes": "expected Cambc injection and stale-debug-section removal messages; build exited 0"
+    }
+  ],
+  "sdk_files_postflight": {
+    "sdk/cpp/cambc.h": {
+      "sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "mtime_ns": 1792774035481976768,
+      "size": 218074,
+      "unchanged": true
+    },
+    "sdk/cpp/imports.h": {
+      "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "mtime_ns": 1792774035482489096,
+      "size": 27810,
+      "unchanged": true
+    },
+    "cmake/CMakeLists.txt": {
+      "sha256": "a2f9978b9d948623b48ac4fca70692a604bc5cdac2c50c115558ba891a26b78c",
+      "mtime_ns": 1792774035408818847,
+      "size": 1822,
+      "unchanged": true
+    },
+    "cambc.toml": {
+      "sha256": "a0e36b45e114dedb61b421a5f45d85127fe88a8474cffec6500bc9ec0b480a50",
+      "mtime_ns": 1792774035408710890,
+      "size": 42,
+      "unchanged": true
+    }
+  },
+  "sdk_hashes_and_mtimes_unchanged": true,
+  "cli": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "build_settings": {
+    "release": true,
+    "nice": 19,
+    "CMAKE_BUILD_PARALLEL_LEVEL": 1
+  },
+  "receipt_attempt_note": "A prior receipt-generation attempt referenced an incorrect second log filename and failed before writing; no build rerun was needed. This result uses the actual retained logs.",
+  "build_status": "complete_both_release_builds_exit_0"
+}

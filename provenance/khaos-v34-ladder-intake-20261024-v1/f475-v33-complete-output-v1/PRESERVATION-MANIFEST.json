@@ -1,0 +1,919 @@
+{
+  "schema": "f475-v33-panel-preservation-manifest/v1",
+  "files": [
+    {
+      "path": "../f475-v33-71-rows.pending.json",
+      "bytes": 93451,
+      "sha256": "8f9b2bbbe4951b8c569881005cfda387772ae72cb659c0b89789b6487ddfe647"
+    },
+    {
+      "path": "../f475-v33-71-rows.pending.manifest",
+      "bytes": 60580,
+      "sha256": "c8a262d91def8d0aa7ea9b1a013beb581f76ae64c2a3757f774614e549e51b86"
+    },
+    {
+      "path": "../f475-v33-71-invocation.json",
+      "bytes": 956,
+      "sha256": "bc45e7e4ae1eff804c51d9dcc95a500a9bbf9cc5c776457f714a13d06b906f32"
+    },
+    {
+      "path": "../f475-v33-71-preflight-hashes.txt",
+      "bytes": 764,
+      "sha256": "177995491e10ca9aead32cef0429e310e30dbf448ca464f4965f1af94066a786"
+    },
+    {
+      "path": "../f475-v33-71-sdk-mtime-before.txt",
+      "bytes": 382,
+      "sha256": "5474652d9ecc7a6f819c62db63a67dcd8affb6f54bf5378ba32f0c5e25269376"
+    },
+    {
+      "path": "../f475-v33-71-sdk-mtime-after.txt",
+      "bytes": 382,
+      "sha256": "5474652d9ecc7a6f819c62db63a67dcd8affb6f54bf5378ba32f0c5e25269376"
+    },
+    {
+      "path": "../f475-v33-71-run.exit.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "RESULT.json",
+      "bytes": 32471,
+      "sha256": "de87d40d53815133dda521e3122c17a9a6cdb3fde1931a546659c07f94e019e5"
+    },
+    {
+      "path": "RESULT.md",
+      "bytes": 4206,
+      "sha256": "8cba501622972f44093e747e15608022742a8e42a0210f071c746a496cec3102"
+    },
+    {
+      "path": "native-audit/native-status.json",
+      "bytes": 210608,
+      "sha256": "afdf614b21bf141d3383c09ecabc6ca57e712cff73914f45bffd94f862a340af"
+    },
+    {
+      "path": "native-audit/results.json",
+      "bytes": 33684,
+      "sha256": "dc1ac78bf36bbfc6a0e0408008ee923e1fdef1adfd21342a089d19d8f1de14cb"
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "f475-v33__00collision__f475-A.repl26a",
+      "bytes": 33961,
+      "sha256": "5a8c7d5c4028d580e82c6059e46667d4f1e0da12645e30c206f5b1c6ef98af5d",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00collision__f475-B.repl26a",
+      "bytes": 36646,
+      "sha256": "af309be1ee651c8b5f4e76859854f429ae1e6d3adfe318fc2f0adc3ab991f421",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00contest__f475-A.repl26a",
+      "bytes": 90431,
+      "sha256": "2c207eb0450d7f2349397522c986592a66a114c8cc9f8c4af9019ec71db3f235",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00contest__f475-B.repl26a",
+      "bytes": 91284,
+      "sha256": "366c59a9532146ce57c16cf84dd8cb55714b06b4fe3d5acd02a9e63adb229fc1",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00corners__f475-A.repl26a",
+      "bytes": 63237,
+      "sha256": "f8c0febc452ac495b4694873eddbcc832967abf6bc5f9f4f61278c575440eaf2",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00corners__f475-B.repl26a",
+      "bytes": 61300,
+      "sha256": "5d4b7cde4360c767aef23fff362dcfc42fbc7dc4e8a51d6c55efa191560fab78",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00elkring__f475-A.repl26a",
+      "bytes": 39726,
+      "sha256": "a10e92ff3bf78989d5f98d9a301974ae50abe76ebf6614f9855ed7170344c9b9",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00elkring__f475-B.repl26a",
+      "bytes": 45110,
+      "sha256": "ee193515e8a5bd864403bef6867c79a3fa3af6de29ec5ff15869c8e8927f8a34",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00expanse__f475-A.repl26a",
+      "bytes": 55982,
+      "sha256": "6f4a73efe9662be2f732291ce0449256273c93f74182ac43424859dc2e6435cb",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00expanse__f475-B.repl26a",
+      "bytes": 61054,
+      "sha256": "4e222d1d68c514255c7f4dcdd57279687a4cddd0ad6bd3bdca44e2f826ef829e",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00fragment__f475-A.repl26a",
+      "bytes": 49157,
+      "sha256": "32966a0573366fbd449689b6af99cab9f2f7fa37a69605bc2d57e7c585c3f9b2",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00fragment__f475-B.repl26a",
+      "bytes": 43701,
+      "sha256": "e2f9a2eebd17916d8510cd49dbecdb3c010008b004fd5ea6aae44b4b9320d0da",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00gem-fields__f475-B.repl26a",
+      "bytes": 26706,
+      "sha256": "e057b11fa3c398986b26c2e80f755857b9d17cdb22581469782de9573ebe1e67",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00gemfight__f475-A.repl26a",
+      "bytes": 42438,
+      "sha256": "fc20332048ebfe450e9f784f50ce66541e59eb1059136d94ca3f4d4f78ad35ae",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00gemfight__f475-B.repl26a",
+      "bytes": 57749,
+      "sha256": "6358f0506a2f152f9998d1f2e82234a89bc8c80d1f56b620ca74ae84009a7840",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00great-wall__f475-A.repl26a",
+      "bytes": 56562,
+      "sha256": "9cc32343ad379e67eeab79e9ce68618bf665b71efcd5951df31660b7305fb50c",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00great-wall__f475-B.repl26a",
+      "bytes": 59441,
+      "sha256": "99183abe89ba19c6b9bf49ecf4a486737f62d60df0297618cc7cdcb93abd0178",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00interlock__f475-A.repl26a",
+      "bytes": 47309,
+      "sha256": "a5c05daff80fc2e1aa757aab98729e357217ac79fc2b883a4d902a0464cd4e14",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00interlock__f475-B.repl26a",
+      "bytes": 50377,
+      "sha256": "063fdc540b5fabdcde541d471c893e4c4c6202fa8b84f65dd892b41cdce9d058",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00lanes__f475-A.repl26a",
+      "bytes": 54301,
+      "sha256": "cb8dfc4750758fe3a711ca9da0edbf9a5936f3571f5bd5d7eb8388faa3325cba",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00lanes__f475-B.repl26a",
+      "bytes": 58136,
+      "sha256": "818e178fb37d6b91fbc4152fdda8c5cf576ecfc9b3a58d0a17f3f8633f946289",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00lost-world__f475-A.repl26a",
+      "bytes": 42148,
+      "sha256": "cc4a12c18f46609f377b0a00d3f98a822382b803ed5e9d5b109579a8b1c9dac6",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00lost-world__f475-B.repl26a",
+      "bytes": 29793,
+      "sha256": "229bf6fab22686ea91e9cd79c2eb00d3a5b4b2fb1b2b63b7fa5c5cee3d3b7942",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00monolith__f475-A.repl26a",
+      "bytes": 55218,
+      "sha256": "fb982655e420f87872fb2e5832bd4158cf8eb07f000e520a6dd9d8bc3fe99cd0",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00monolith__f475-B.repl26a",
+      "bytes": 64074,
+      "sha256": "bc56bad7e1d501cfedb5bb54fecf7a693fb3d869bcfb0974abd0a1c81364a2f5",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00packs__f475-A.repl26a",
+      "bytes": 28912,
+      "sha256": "e39ca8b7e6896bd7784e979ac9577b9581b9ee193054d92dbe1e7504507cd908",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00packs__f475-B.repl26a",
+      "bytes": 28538,
+      "sha256": "22fe5c06b55a9872b5f4b8ecae80be4cfeb4f59b762cb6555c7f334b4518ea2f",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00pilgrimage__f475-A.repl26a",
+      "bytes": 79877,
+      "sha256": "cc16570e2ebe39fc3f9bfc094c241bdaf63aab559ae25094df0dd02f488588ef",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00pilgrimage__f475-B.repl26a",
+      "bytes": 109640,
+      "sha256": "2d79ca99b503f06060bf20edb7d9ebebf66e40c97ad13bdc773134b30d53eaf7",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00quadrants__f475-A.repl26a",
+      "bytes": 33401,
+      "sha256": "1aba65aaa94edbcea2320532fd9ce859d0c3172d8e21dccd8f8137712f87b6de",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00quadrants__f475-B.repl26a",
+      "bytes": 27129,
+      "sha256": "96f3e971b659a69b277b477a944adcf56db2700c39d02de85adc51374e3a0bd0",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00reverse-spiral__f475-A.repl26a",
+      "bytes": 57736,
+      "sha256": "c489836e844628df8d77a164580cf335b0bbcf29969f97c94167264146e9a67f",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00reverse-spiral__f475-B.repl26a",
+      "bytes": 49558,
+      "sha256": "21b3ff55ced68d902c828be3cd8e8d5b21fca03a9f43b3fb967d2bb1474b6bf8",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00road-of-riches__f475-A.repl26a",
+      "bytes": 50363,
+      "sha256": "c6242fd7767ee63555ec2e79648f34a8c36e514f0ec56501c111f4b6952fe526",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00road-of-riches__f475-B.repl26a",
+      "bytes": 51985,
+      "sha256": "f16a2365b032829503a5a4d67dd1db3f15d4a545399876901a99c8c8c01f20d1",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00rows__f475-A.repl26a",
+      "bytes": 53774,
+      "sha256": "642b6f36ce9fc000ea3bdee1233fa12f7c3cee8da90bbaea58f9a7023f53a697",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00rows__f475-B.repl26a",
+      "bytes": 53731,
+      "sha256": "23800073561b2ffcc7a1754ad7d29d6ba64ec11c42eeb73ff167917740cf71a6",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00rushbait-v2__f475-A.repl26a",
+      "bytes": 56493,
+      "sha256": "b1725dadb0f4ac15dd26ae8b423bf9daef56a433c496a8fbe9d2095563d97ced",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00rushbait-v2__f475-B.repl26a",
+      "bytes": 66152,
+      "sha256": "839d0aec2af757d7051b8c9cd5fc29584c7d12c8acaa08a5cc6de8e3fa66e362",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00split__f475-A.repl26a",
+      "bytes": 42634,
+      "sha256": "62bdd986c999dfdb12114e00229fe2d5606ea1499121e6fa881db779942034b3",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00split__f475-B.repl26a",
+      "bytes": 46646,
+      "sha256": "c4daa38f9d5b08b10f0ad7daf8239bd9a2e03d79c2b098c5eeacac881d9003e8",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00stampede__f475-A.repl26a",
+      "bytes": 75241,
+      "sha256": "37f7aa2ea7433b14c2752e164e467b80b72a900dd159db97fdcc7f30bb1dd1d0",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00stampede__f475-B.repl26a",
+      "bytes": 67526,
+      "sha256": "bc32817a092403906ee846d433c5e6e895b293aa63a9edea6be3c670aabdf52c",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00swirl__f475-A.repl26a",
+      "bytes": 46495,
+      "sha256": "e40dba5acb26783d32d18a93d23767b61a11ecc0ac06856c8a1fde83005350c5",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00swirl__f475-B.repl26a",
+      "bytes": 31847,
+      "sha256": "fe84d70437b03d593aac4116d692548e49395bb96bc4dcaa7f172d4ed9cb769c",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01big-world__f475-A.repl26a",
+      "bytes": 61170,
+      "sha256": "4dd934b27a432decc0586044f2d52574ecb4aeb61e77f0b458ff85edfa385148",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01big-world__f475-B.repl26a",
+      "bytes": 53816,
+      "sha256": "684e0fc6eafa43c312fe839caeccf2cf98f949e35d71b71cdb9dd9977828018c",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01boss-battle__f475-A.repl26a",
+      "bytes": 70851,
+      "sha256": "8859627c72ab094a14dfac30e9b200239b69f8c5ddf642b13263f561fb97dc28",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01boss-battle__f475-B.repl26a",
+      "bytes": 38009,
+      "sha256": "39a1f1127dcbf2f9d996888f0348dc788098ad32a7ab98a16ccb5ea951a1bc53",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01broken-curve__f475-A.repl26a",
+      "bytes": 24542,
+      "sha256": "39e7757c3e90bbb87ee2e295640817be307533cf9d9f27e183899f31a396661d",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01broken-curve__f475-B.repl26a",
+      "bytes": 30955,
+      "sha256": "2eddb8087360bb4f78749e5f14de3e71767237c7cab2fda915f9d4d46be6a4fa",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01concentrated-wealth__f475-A.repl26a",
+      "bytes": 64465,
+      "sha256": "44246c79be80d70d7ac729c59c8201f5a3f8c7d22fd3301a23b73bdd48204dc4",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01corridors__f475-A.repl26a",
+      "bytes": 72543,
+      "sha256": "c1061f78192b9ea2ac9bb10f50632f2e1e016a636234cb35307a212a83e0dc2b",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01corridors__f475-B.repl26a",
+      "bytes": 57615,
+      "sha256": "253870e7c6de7b95805b63654f27bab581776893c1492c610948b23bb436099a",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01elk-arena__f475-A.repl26a",
+      "bytes": 75778,
+      "sha256": "41cb085bab336dd88cec7e7b4aba26107ef19e2f5461bb65b0a970f8819c36b0",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01elk-arena__f475-B.repl26a",
+      "bytes": 88614,
+      "sha256": "41f07c6b97209b9055857ce3b0d0a7426c77a84f9d2bec55137aa451b135e85e",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01fracture__f475-A.repl26a",
+      "bytes": 67426,
+      "sha256": "88c119b2564704aa20d175daeb0badb45e737dd1f5c3f32405b9d1852eed94d9",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01gold-rush__f475-A.repl26a",
+      "bytes": 67406,
+      "sha256": "9671f4818af50bae8960a6ede1d358878ea23aa4fecd168ede4c1a567b443d33",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01gold-rush__f475-B.repl26a",
+      "bytes": 58202,
+      "sha256": "4177b44bd51c2c5667050ecc0309e5ee27ea7f0ca53b0ea5501dfe3321bb74fc",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01hooks__f475-A.repl26a",
+      "bytes": 46618,
+      "sha256": "5e8c3108d852d877c1bf60e5b85008063ee9ff354cb245cb73d857a34a0392d2",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01hooks__f475-B.repl26a",
+      "bytes": 45075,
+      "sha256": "58611c15caf12d7e617c808a2fe187a13ccc0de9233e643c10e7d6fefdfb9c14",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01islands__f475-A.repl26a",
+      "bytes": 45986,
+      "sha256": "e142b787fd176015402bb432104ee9bdcc62361aba13d1184c5f081903b6466a",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01islands__f475-B.repl26a",
+      "bytes": 44227,
+      "sha256": "da0712f65c2a74141767cf703e1cfdec38f13ed316f2550c23b186ab23f0fcba",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01shortcut__f475-A.repl26a",
+      "bytes": 57951,
+      "sha256": "f56bdcdad83bd2a217fe64b7cbd33c01f87236ddadea933fd468aefa84df12df",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01shortcut__f475-B.repl26a",
+      "bytes": 54814,
+      "sha256": "d5fd5a2bda25e2ad5eba6addf8aa4dae244a4e51c7044cc2bb92fb99dc79506c",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01starfish__f475-A.repl26a",
+      "bytes": 53054,
+      "sha256": "8d87bc4de582180ea0d7edec8f2e56b71272d2e306b3348835a173e6a9e7b186",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01starfish__f475-B.repl26a",
+      "bytes": 54398,
+      "sha256": "b1641c815bad554de94ceeedafe9c464c46672fae92b78cc5773a3f1267c1505",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01the-farm__f475-A.repl26a",
+      "bytes": 37359,
+      "sha256": "031ae54a0cd123b7276d5128332c6b5f92477a2d682b26fb839d8e7f5c86ef27",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01the-farm__f475-B.repl26a",
+      "bytes": 36616,
+      "sha256": "0ddf0b66192f6d56887fb0046d7f21e39728bc0b29d4c72bbb0392ae872b048b",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01yellow-brick-road__f475-A.repl26a",
+      "bytes": 49192,
+      "sha256": "cffb034a3d3376d8025194842fdad83b6b05b38e8cda762a55f54f68e9401f13",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01yellow-brick-road__f475-B.repl26a",
+      "bytes": 44040,
+      "sha256": "beeb3f2d7f9694aaf22081d6b3505ee87744dfae08b07eee619320ae9d6de65f",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00collision__f475-A.statistics.json",
+      "bytes": 541256,
+      "sha256": "0f9ab32ee8b756920664c2de0f2524dd1a2d5591e29f51c5461b74fe8b760575",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00collision__f475-B.statistics.json",
+      "bytes": 543795,
+      "sha256": "dcc38c1015ce38f6966207270334c3c24a0d09dba7a717b8d4ef1e57426255ea",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00contest__f475-A.statistics.json",
+      "bytes": 821652,
+      "sha256": "c624c0b6baae9eeab40c3b34a01dc87d722c21325b1146796def4b34bc228c99",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00contest__f475-B.statistics.json",
+      "bytes": 825676,
+      "sha256": "a2ecd43b07b8c34cac0fcbb788ae17809cadd5b7ba0577c9c552fbabd5d1b771",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00corners__f475-A.statistics.json",
+      "bytes": 831752,
+      "sha256": "216349600b06b9f82a00f54c96c62ff59900a47e4c3ae4da09f549bfe0352c81",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00corners__f475-B.statistics.json",
+      "bytes": 793992,
+      "sha256": "7c3b238c63cf523e90b7863e878283435ba66bba3566dfa38b8513941bb47e63",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00elkring__f475-A.statistics.json",
+      "bytes": 586345,
+      "sha256": "f971af7d07b0cb52bf4b3069bc3336230a9aadfeebf22f78fb3ca040723580e5",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00elkring__f475-B.statistics.json",
+      "bytes": 636069,
+      "sha256": "2c7069141633dee3b8589ef6bcb20afcb2e75cf755fd046381238d109a023232",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00expanse__f475-A.statistics.json",
+      "bytes": 730069,
+      "sha256": "438d12e892162e256a40997f00b37355f27e77f89774fe84713568feedabc67d",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00expanse__f475-B.statistics.json",
+      "bytes": 765797,
+      "sha256": "a2af1e51f4fa4daabe0c8e3d1fd1c140de8455dd863c98b18fa22e19139bc1c1",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00fragment__f475-A.statistics.json",
+      "bytes": 682409,
+      "sha256": "9fb76e3346e779b74471197fab20ab29999bb874e48320a4c35e943a585948ad",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00fragment__f475-B.statistics.json",
+      "bytes": 637691,
+      "sha256": "ad6e87846a1ba548592c19407b880ba87308df7735ac1816f851416fe3f48746",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00gem-fields__f475-B.statistics.json",
+      "bytes": 423968,
+      "sha256": "6f3915a2ad08c215a64ed9bbf169b16450e032e4a3b030f12bc44aa335b67495",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00gemfight__f475-A.statistics.json",
+      "bytes": 526139,
+      "sha256": "5d2e61e92dabc7ac9e1fc23c69f1d941ff755497fa2b4c8ee385a8acb5bf7886",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00gemfight__f475-B.statistics.json",
+      "bytes": 699870,
+      "sha256": "a38f4386c0ffbe4c7051202dd7a443a1c72ec34762bf6596cdab8445d96fec4b",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00great-wall__f475-A.statistics.json",
+      "bytes": 582257,
+      "sha256": "4671d59fd6a51d04681a2d52020ca7b389a33aadea09a09ba2350b34d506715a",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00great-wall__f475-B.statistics.json",
+      "bytes": 614419,
+      "sha256": "2fb4d6ba51ec61dda289263c2d7a2d4ef8e3052f1be71ef22ed3af687311e0b3",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00interlock__f475-A.statistics.json",
+      "bytes": 617361,
+      "sha256": "22ee050e815ce576e50b26e471ff0743de58a2c93a0bf84b1a1c7fc09492b4f6",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00interlock__f475-B.statistics.json",
+      "bytes": 700785,
+      "sha256": "b24b6eb1ae9c80ada06cfecaa8f4395dbd7ac271f7ce1686b6ee366021c315f7",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00lanes__f475-A.statistics.json",
+      "bytes": 870037,
+      "sha256": "e2d9ad28f2bb6e5ef915da03cf1822e87c60cf404bedd7638c83c819495e5974",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00lanes__f475-B.statistics.json",
+      "bytes": 901764,
+      "sha256": "f8b8b670adbea429ed9541e814078f80550d3937daf586ed15d2d2c1ae1fdb2a",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00lost-world__f475-A.statistics.json",
+      "bytes": 618637,
+      "sha256": "e0c4fd864d6c8afbb04543509bf94f4312aac37b3fbc6ad740b6088356e3bc72",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00lost-world__f475-B.statistics.json",
+      "bytes": 422765,
+      "sha256": "522cdc0b0628761b60d3de5bd7085d31391bda69f876603ca80faa09b9602c98",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00monolith__f475-A.statistics.json",
+      "bytes": 765433,
+      "sha256": "1b5362a1e420c68c6905ed7f32a1eeabce5551dfb154ff88db2098a046ed5951",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00monolith__f475-B.statistics.json",
+      "bytes": 842852,
+      "sha256": "bc5538ea9998cd6e166951501247c383f9e36722340c19d3edeaef5d6bfe3bc7",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00packs__f475-A.statistics.json",
+      "bytes": 452738,
+      "sha256": "f219adcec818ff10fc088e79a6d82c46c403a1ba2ee12e82e8df3bd2e3bb2ccc",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00packs__f475-B.statistics.json",
+      "bytes": 447605,
+      "sha256": "9cde366088e4b721795c28067f080bf1b6d9e9b7f9c2f227025634f89f573ec1",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00pilgrimage__f475-A.statistics.json",
+      "bytes": 804675,
+      "sha256": "54c6680906dfe3d5231154135a3a166d81fd885b39a160445c476fba8c3edd09",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00pilgrimage__f475-B.statistics.json",
+      "bytes": 1128237,
+      "sha256": "6fb9a86722ea215b3c10cefa395caa8d16be17144ab90559782edc6477bacfb3",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00quadrants__f475-A.statistics.json",
+      "bytes": 511490,
+      "sha256": "884ed22b4bcd5ed8eca98fc14c0c2482c75848ba44907c98f15a1f276feb4677",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00quadrants__f475-B.statistics.json",
+      "bytes": 432139,
+      "sha256": "5810e39b0b71f112e5d04820d4d3f8a282d70df34e79f177b5ce8ac5b4044f4c",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00reverse-spiral__f475-A.statistics.json",
+      "bytes": 671467,
+      "sha256": "8c7fc49251ce687fa19e994570a93126ee472cecdcff4023d0d8323736b73ed7",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00reverse-spiral__f475-B.statistics.json",
+      "bytes": 595386,
+      "sha256": "5c7a02bb70442d1d8fe12652a35b22fa79e3ca20e4494a08500cd47bae6ae5a0",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00road-of-riches__f475-A.statistics.json",
+      "bytes": 592312,
+      "sha256": "187eb6e935c04931eebc8bff6064631b91f7b4e27599bc59d6c8daefc7a6c4b4",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00road-of-riches__f475-B.statistics.json",
+      "bytes": 600538,
+      "sha256": "3beefb8c97b85fad620efc330f72f60afc0e631c0088f8b1e35253cf83a60337",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00rows__f475-A.statistics.json",
+      "bytes": 699020,
+      "sha256": "d4edd994cf704eb728947e6b88a7820056313c801689b3620d4a2a763ad3b985",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00rows__f475-B.statistics.json",
+      "bytes": 699020,
+      "sha256": "d4edd994cf704eb728947e6b88a7820056313c801689b3620d4a2a763ad3b985",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00rushbait-v2__f475-A.statistics.json",
+      "bytes": 709151,
+      "sha256": "b54aaa92cb503c14a8d1ddc1b76e6afe0bbebe6f745eaa890fd0e6fad225b76c",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00rushbait-v2__f475-B.statistics.json",
+      "bytes": 853427,
+      "sha256": "9d37468c192fb792595da8e8808ee02a2906f71e881a92140b8841ea0b3a815b",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00split__f475-A.statistics.json",
+      "bytes": 600789,
+      "sha256": "36095e03ecb7eaa3b12d9574e11d477b31a0880f7b34c63de8a3866429c45823",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00split__f475-B.statistics.json",
+      "bytes": 664496,
+      "sha256": "34d811cb4f2f7c28d2210fb5160a64ef7f5420579c9d14b9e8f6e3e53b02ec5b",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00stampede__f475-A.statistics.json",
+      "bytes": 784235,
+      "sha256": "43f73d5646581bb0010ae7d85727fc9afd0ae8de1b74a4f145d8db3e5a5d75a1",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00stampede__f475-B.statistics.json",
+      "bytes": 681223,
+      "sha256": "569667dcaeb3d1854393219adf32419f6295bffd32d2de76b9d79baa08324fe3",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00swirl__f475-A.statistics.json",
+      "bytes": 802460,
+      "sha256": "da082d4454eee2d813cda1d19e9c04dd143a148221ab34086bfe78a07a5aae22",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__00swirl__f475-B.statistics.json",
+      "bytes": 562032,
+      "sha256": "b90aac1c8add7c9b0ccdcd9263c36c0c2dcac184179ceb2170764e4be8cd1385",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01big-world__f475-A.statistics.json",
+      "bytes": 637018,
+      "sha256": "50aabacfb67820320c5d09ab17991bad7148b0d8437bc3075476d1670f26af78",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01big-world__f475-B.statistics.json",
+      "bytes": 584427,
+      "sha256": "f590577c73c910cd15df1cd928eddb75e39aff54b1e17110ef63e035a08de255",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01boss-battle__f475-A.statistics.json",
+      "bytes": 972552,
+      "sha256": "50b279d140a69043f28d75b1a17b3c6ca7ba9724af4eb20e7c4a96469f90fac9",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01boss-battle__f475-B.statistics.json",
+      "bytes": 679774,
+      "sha256": "270b4a0af002a97058e23ad6420b4a410a8fdd5c91a68803feb21a463be491e2",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01broken-curve__f475-A.statistics.json",
+      "bytes": 502984,
+      "sha256": "be9209b1dc9afcc5adaa1614e4a0052ed9219fcce4f219ea4b4575ea55c1a3cb",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01broken-curve__f475-B.statistics.json",
+      "bytes": 614551,
+      "sha256": "e59c193ad9c7d560406f9175efa8df8c9bbeffdd6f3b710a480a2134a369daa1",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01concentrated-wealth__f475-A.statistics.json",
+      "bytes": 718814,
+      "sha256": "d6398cdaa42dea369cca513ea92148e5fd4fe11de43ee7dd67ebc3d3c57f8ab2",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01corridors__f475-A.statistics.json",
+      "bytes": 945487,
+      "sha256": "ab08f1f058784eec016b31c0cca60cd22ce41fa0917e6b52b1a38a4291ae9c1d",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01corridors__f475-B.statistics.json",
+      "bytes": 762972,
+      "sha256": "135fc6a4860eee12f98444b9abba93f51f3218bc82bb9bdb424d5e0156d90c51",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01elk-arena__f475-A.statistics.json",
+      "bytes": 1200900,
+      "sha256": "883ffae10325096ce7c64695b667811bc6837bf3c909faa00ed44385096b72b9",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01elk-arena__f475-B.statistics.json",
+      "bytes": 1398722,
+      "sha256": "f2b4a42f574be27e4a0a6789d05a33e1f592e2372aa89ff2e6d83f84d8ca068a",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01fracture__f475-A.statistics.json",
+      "bytes": 879422,
+      "sha256": "6ece398579ca4d8b42e64fd75c9abccab19d5fd650209721362a62e15a83da24",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01gold-rush__f475-A.statistics.json",
+      "bytes": 1004446,
+      "sha256": "f09a27260071c3ba4e98ad3cf10f938b1446cb8f6a88b6e4951a3cb226cedaea",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01gold-rush__f475-B.statistics.json",
+      "bytes": 866037,
+      "sha256": "8dc61b3d105b494c0b66863dc69671eb9c0c856724f177fc1dcf73299c1c366c",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01hooks__f475-A.statistics.json",
+      "bytes": 710100,
+      "sha256": "cf3146c0d9e940a17b599efdaf21e34fdf1efd6eacacb5be1c18ad0480a9b5e5",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01hooks__f475-B.statistics.json",
+      "bytes": 690133,
+      "sha256": "2c395a8642402f612db4caa8e69776e3f0fba3868a6d4e5942420e797fdd5175",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01islands__f475-A.statistics.json",
+      "bytes": 660630,
+      "sha256": "1555083bfb8a11e9601fadb8e9001b849701f81fc999b17f6b67e2f693f1ae79",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01islands__f475-B.statistics.json",
+      "bytes": 598945,
+      "sha256": "8916611a3e4dd4b662bd58ac8ec6cd0784092fdfae503f3ddd76e5ea855bdecd",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01shortcut__f475-A.statistics.json",
+      "bytes": 715210,
+      "sha256": "e3a8844d96115bccace46952fa6f8ddf9be4250cedf4c242054d819d329f9133",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01shortcut__f475-B.statistics.json",
+      "bytes": 697423,
+      "sha256": "fb55bd9dd55f6b8b3c9ba6995413465fba3cd743e1b5cb930e3d48e268e0eedc",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01starfish__f475-A.statistics.json",
+      "bytes": 787451,
+      "sha256": "11f92061e82d153b564475a806ecd33f5ad9d59abe9e9a90dc4fc17b6a80bd44",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01starfish__f475-B.statistics.json",
+      "bytes": 846125,
+      "sha256": "ae3d58c7ffd46ea81180dcaa82c5ab12cf47caca3efbcac3cf310c82bacf8747",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01the-farm__f475-A.statistics.json",
+      "bytes": 626501,
+      "sha256": "18380a005ffa890604b8faddd6cb54013179929a1f17191059ae26b478228cfa",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01the-farm__f475-B.statistics.json",
+      "bytes": 623236,
+      "sha256": "5b04d8e6a96cea3658ad4f72c9cfa745e98a400a02613f0b73bb891b93120050",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01yellow-brick-road__f475-A.statistics.json",
+      "bytes": 910578,
+      "sha256": "d579560b57f407ec8c7eb25eff7e48b98800904ff8db5e3842da5e4a299b98b1",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    },
+    {
+      "path": "f475-v33__01yellow-brick-road__f475-B.statistics.json",
+      "bytes": 857744,
+      "sha256": "f436ab7977b57fa81ac467158ebe668cae671de87c1f7d05162c9f9703bf436c",
+      "reason": "native replay/statistics artifact retained locally; omitted from compact staging"
+    }
+  ],
+  "notes": [
+    "All 71 new games were run from the explicit primary runtime workspace with Release/native draft/100k fuel/jobs6/nice19.",
+    "Source and engine/map pins are recorded in pending JSON and row records.",
+    "SDK bytes and mtimes matched before and after."
+  ]
+}

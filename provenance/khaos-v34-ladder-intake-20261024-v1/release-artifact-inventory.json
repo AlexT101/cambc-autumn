@@ -1,0 +1,44 @@
+{
+  "schema": "f475-v48-existing-release-inventory/v1",
+  "no_build_or_source_change": true,
+  "f475": {
+    "source_dir": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7",
+    "source_aggregate": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+    "raw_wasm": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/.cambc/build-release/bot.wasm",
+      "bytes": 1667916,
+      "sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6"
+    },
+    "injected_wasm": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/.cambc/build-release/bot-injected.wasm",
+      "bytes": 909664,
+      "sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+    },
+    "independent_runtime_pin": "provenance/willow-contact-priority-f7-20261024-v1/runtime-pins.json",
+    "verification": "local source aggregate and raw/injected hashes match frozen f7 parent runtime pin"
+  },
+  "v48": {
+    "source_dir": "bots/Khaos_v34",
+    "source_aggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "raw_wasm": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work/.cambc/build-release/bot.wasm",
+      "bytes": 1669221,
+      "sha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b"
+    },
+    "injected_wasm": {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work/.cambc/build-release/bot-injected.wasm",
+      "bytes": 910969,
+      "sha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525"
+    },
+    "release_receipt": "provenance/Khaos_v34-release/release.json",
+    "release_status": "server version 48 submitted; source identity local-only, remote payload not retrieved"
+  },
+  "shared_toolchain": {
+    "cambc_version": "cambc 3.0.5",
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "sdk_header_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "imports_header_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502"
+  },
+  "interpretation": "The f475-to-v48 source delta includes the latest-base port changes as well as finishing-recall work; post-submit timestamps do not identify the replay source version."
+}

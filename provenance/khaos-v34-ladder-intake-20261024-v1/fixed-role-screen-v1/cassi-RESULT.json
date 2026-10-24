@@ -1,0 +1,129 @@
+{
+  "schema": "fixed-role-screen-result/v1",
+  "variant": "cassi",
+  "candidate_source": "willow-v47-cassi-five-work",
+  "candidate_source_aggregate": "3eed096b658e5db51630d44c346a9cf3a07c6624885d80e4a5a2eed442641938",
+  "games": 6,
+  "candidate_wins": 3,
+  "candidate_games": 6,
+  "candidate_wins_by_candidate_side": {
+    "A": 1,
+    "B": 2
+  },
+  "candidate_score_sum": 4700,
+  "opponent_score_sum": 5441,
+  "physical_score_sums": {
+    "A": 4629,
+    "B": 5512
+  },
+  "actor_count_distribution": {
+    "6": 6
+  },
+  "draft_selection_frequency": {
+    "Cassi & Issac; Vesper Vale; Marcella; Willow; Heart of Ruin": 6
+  },
+  "per_map": {
+    "00gem-fields": [
+      {
+        "candidate_side": "A",
+        "winner_side": "B",
+        "candidate_win": false,
+        "scoreA": 719,
+        "scoreB": 1016,
+        "rounds": 598,
+        "candidate_actor_count": 6
+      },
+      {
+        "candidate_side": "B",
+        "winner_side": "B",
+        "candidate_win": true,
+        "scoreA": 667,
+        "scoreB": 1028,
+        "rounds": 679,
+        "candidate_actor_count": 6
+      }
+    ],
+    "01fracture": [
+      {
+        "candidate_side": "A",
+        "winner_side": "B",
+        "candidate_win": false,
+        "scoreA": 341,
+        "scoreB": 1067,
+        "rounds": 1128,
+        "candidate_actor_count": 6
+      },
+      {
+        "candidate_side": "B",
+        "winner_side": "A",
+        "candidate_win": false,
+        "scoreA": 1162,
+        "scoreB": 583,
+        "rounds": 1444,
+        "candidate_actor_count": 6
+      }
+    ],
+    "01big-world": [
+      {
+        "candidate_side": "A",
+        "winner_side": "A",
+        "candidate_win": true,
+        "scoreA": 1015,
+        "scoreB": 804,
+        "rounds": 1060,
+        "candidate_actor_count": 6
+      },
+      {
+        "candidate_side": "B",
+        "winner_side": "B",
+        "candidate_win": true,
+        "scoreA": 725,
+        "scoreB": 1014,
+        "rounds": 954,
+        "candidate_actor_count": 6
+      }
+    ]
+  },
+  "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/native-audit/cassi-vs-v33/status.json",
+  "native_status_by_bot": {
+    "willow-v47-cassi-five": {
+      "games": 6,
+      "play": {
+        "rollover": 8,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    },
+    "v33": {
+      "games": 6,
+      "play": {
+        "rollover": 50,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    }
+  },
+  "execution": {
+    "release": true,
+    "fuel_quantum": 100000,
+    "native_draft": true,
+    "games": 6,
+    "build_pins": {
+      "source_aggregate": "3eed096b658e5db51630d44c346a9cf3a07c6624885d80e4a5a2eed442641938"
+    }
+  }
+}

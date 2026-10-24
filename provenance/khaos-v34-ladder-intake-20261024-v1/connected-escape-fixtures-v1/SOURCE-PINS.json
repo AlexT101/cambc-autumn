@@ -1,0 +1,44 @@
+{
+  "schema": "connected-escape-source-fixture-v1",
+  "sources": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-connected-escape-work/src/pathing.cpp",
+      "sha256": "638cd341e0d70a1d8d3d93edbd0e128860921fbb88023171dfcf3c4886512909"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-connected-escape-work/src/self_abilities.cpp",
+      "sha256": "64994f3b594c2f995490846f8427b97ab644946f2158ed9f07e2095a7f62e1a7"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-connected-escape-work/src/bot.cpp",
+      "sha256": "c29b4a19babbfa8aa953bb35d57ae6af1ab46609b551955b35159339b9e14cd8"
+    }
+  ],
+  "extracted": [
+    {
+      "source": "pathing.cpp",
+      "symbol": "Pathing::CampEscape::at",
+      "startByte": 15823,
+      "endByte": 16458,
+      "startLine": 379,
+      "endLine": 391
+    },
+    {
+      "source": "self_abilities.cpp",
+      "symbol": "camp_escape_dash",
+      "startByte": 18950,
+      "endByte": 19361,
+      "startLine": 411,
+      "endLine": 419
+    },
+    {
+      "source": "bot.cpp",
+      "symbol": "connected_camp_dash endpoint selection loop",
+      "startByte": 18667,
+      "endByte": 20118,
+      "startLine": 407,
+      "endLine": 437
+    }
+  ],
+  "coverage_limit": "The exact at(), camp_escape_dash(), and endpoint-selection excerpts are compiled against declared host mocks. camp_escape cache construction/invalidation, SDK calls, and native gameplay are not executed."
+}

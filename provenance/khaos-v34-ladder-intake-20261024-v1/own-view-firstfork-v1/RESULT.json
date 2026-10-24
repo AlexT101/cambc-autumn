@@ -1,0 +1,2085 @@
+{
+  "schema": "own-view-firstfork-review/v1",
+  "limits": "Only actor-own-view visible/known state and actions; hidden enemy state omitted. Firstfork inputs are local deterministic source comparisons, not same-runtime counterfactual state after first divergence.",
+  "windows": [
+    {
+      "label": "actor4 (Heart of Ruin), physical A, baseline f475/v33",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01elk-arena__f475-A.repl26a",
+      "replay_sha256": "41cb085bab336dd88cec7e7b4aba26107ef19e2f5461bb65b0a970f8819c36b0",
+      "replay_payload_sha256": "17d98acc02268be1c527a42def76f04d50baae3ed2ecd061c2def14c1d3bcb6e",
+      "window": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/own-view-firstfork-v1/escape-baseline/window.json",
+      "window_sha256": "af26343b2c317e5717761848f1570e463397d532848f7e36ed88f9c244dfc7a4",
+      "turns": [
+        {
+          "round": 9,
+          "position": {
+            "raw": [
+              22,
+              24
+            ],
+            "own_frame": [
+              22,
+              24
+            ]
+          },
+          "health": 970,
+          "gems": 0,
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "visible_enemies": [
+            {
+              "id": 6,
+              "type": "Vesper Vale",
+              "position": {
+                "raw": [
+                  28,
+                  24
+                ],
+                "own_frame": [
+                  28,
+                  24
+                ]
+              },
+              "health": 940,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 7,
+              "type": "Marcella",
+              "position": {
+                "raw": [
+                  27,
+                  25
+                ],
+                "own_frame": [
+                  27,
+                  25
+                ]
+              },
+              "health": 1200,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 8,
+              "type": "Willow",
+              "position": {
+                "raw": [
+                  30,
+                  24
+                ],
+                "own_frame": [
+                  30,
+                  24
+                ]
+              },
+              "health": 700,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 9,
+              "type": "Heart of Ruin",
+              "position": {
+                "raw": [
+                  27,
+                  24
+                ],
+                "own_frame": [
+                  27,
+                  24
+                ]
+              },
+              "health": 970,
+              "channel": {
+                "type": 0,
+                "timer": 0
+              }
+            }
+          ],
+          "local_camps": [
+            {
+              "id": 0,
+              "type": "Elk",
+              "position": [
+                24,
+                24
+              ],
+              "visibility": "own_view_known",
+              "health": 2320,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 1,
+              "type": "Elk",
+              "position": [
+                25,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 2320,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 2,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 3,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                24
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 4,
+              "type": "Gold cluster",
+              "position": [
+                22,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 5,
+              "type": "Gold cluster",
+              "position": [
+                27,
+                22
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 2
+            },
+            {
+              "id": 6,
+              "type": "Gold cluster",
+              "position": [
+                21,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 32,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                23
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 33,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                26
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 34,
+              "type": "Gem cluster",
+              "position": [
+                26,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 35,
+              "type": "Gem cluster",
+              "position": [
+                23,
+                25
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 36,
+              "type": "Gold cluster",
+              "position": [
+                20,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 38,
+              "type": "Gold cluster",
+              "position": [
+                23,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 39,
+              "type": "Gold cluster",
+              "position": [
+                26,
+                22
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 2
+            }
+          ],
+          "actions": [
+            {
+              "kind": "move",
+              "step_index": 1552,
+              "destination": [
+                23,
+                24
+              ]
+            },
+            {
+              "kind": "recall",
+              "step_index": 1553
+            },
+            {
+              "kind": "set_priority",
+              "step_index": 1554,
+              "priority": 16
+            }
+          ],
+          "turn_end": "end_turn"
+        },
+        {
+          "round": 10,
+          "position": {
+            "raw": [
+              23,
+              24
+            ],
+            "own_frame": [
+              23,
+              24
+            ]
+          },
+          "health": 790,
+          "gems": 0,
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "visible_enemies": [
+            {
+              "id": 6,
+              "type": "Vesper Vale",
+              "position": {
+                "raw": [
+                  26,
+                  25
+                ],
+                "own_frame": [
+                  26,
+                  25
+                ]
+              },
+              "health": 940,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 7,
+              "type": "Marcella",
+              "position": {
+                "raw": [
+                  27,
+                  25
+                ],
+                "own_frame": [
+                  27,
+                  25
+                ]
+              },
+              "health": 1200,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 8,
+              "type": "Willow",
+              "position": {
+                "raw": [
+                  29,
+                  24
+                ],
+                "own_frame": [
+                  29,
+                  24
+                ]
+              },
+              "health": 700,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 9,
+              "type": "Heart of Ruin",
+              "position": {
+                "raw": [
+                  26,
+                  24
+                ],
+                "own_frame": [
+                  26,
+                  24
+                ]
+              },
+              "health": 855,
+              "channel": {
+                "type": 0,
+                "timer": 0
+              }
+            }
+          ],
+          "local_camps": [
+            {
+              "id": 0,
+              "type": "Elk",
+              "position": [
+                24,
+                24
+              ],
+              "visibility": "own_view_known",
+              "health": 2320,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 1,
+              "type": "Elk",
+              "position": [
+                25,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 2320,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 2,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 3,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                24
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 4,
+              "type": "Gold cluster",
+              "position": [
+                22,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 5,
+              "type": "Gold cluster",
+              "position": [
+                27,
+                22
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 2
+            },
+            {
+              "id": 6,
+              "type": "Gold cluster",
+              "position": [
+                21,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 7,
+              "type": "Gold cluster",
+              "position": [
+                28,
+                25
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 4
+            },
+            {
+              "id": 32,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                23
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 33,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                26
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 34,
+              "type": "Gem cluster",
+              "position": [
+                26,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 35,
+              "type": "Gem cluster",
+              "position": [
+                23,
+                25
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 36,
+              "type": "Gold cluster",
+              "position": [
+                20,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 38,
+              "type": "Gold cluster",
+              "position": [
+                23,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 39,
+              "type": "Gold cluster",
+              "position": [
+                26,
+                22
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 2
+            }
+          ],
+          "actions": [],
+          "turn_end": "fuel_rollover"
+        },
+        {
+          "round": 11,
+          "position": {
+            "raw": [
+              23,
+              24
+            ],
+            "own_frame": [
+              23,
+              24
+            ]
+          },
+          "health": 730,
+          "gems": 0,
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "visible_enemies": [
+            {
+              "id": 6,
+              "type": "Vesper Vale",
+              "position": {
+                "raw": [
+                  26,
+                  25
+                ],
+                "own_frame": [
+                  26,
+                  25
+                ]
+              },
+              "health": 825,
+              "channel": {
+                "type": 0,
+                "timer": 0
+              }
+            },
+            {
+              "id": 7,
+              "type": "Marcella",
+              "position": {
+                "raw": [
+                  26,
+                  26
+                ],
+                "own_frame": [
+                  26,
+                  26
+                ]
+              },
+              "health": 1200,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 8,
+              "type": "Willow",
+              "position": {
+                "raw": [
+                  28,
+                  24
+                ],
+                "own_frame": [
+                  28,
+                  24
+                ]
+              },
+              "health": 700,
+              "channel": {
+                "type": 0,
+                "timer": 0
+              }
+            },
+            {
+              "id": 9,
+              "type": "Heart of Ruin",
+              "position": {
+                "raw": [
+                  26,
+                  24
+                ],
+                "own_frame": [
+                  26,
+                  24
+                ]
+              },
+              "health": 855,
+              "channel": {
+                "type": 0,
+                "timer": 0
+              }
+            }
+          ],
+          "local_camps": [
+            {
+              "id": 0,
+              "type": "Elk",
+              "position": [
+                24,
+                24
+              ],
+              "visibility": "own_view_known",
+              "health": 2320,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 1,
+              "type": "Elk",
+              "position": [
+                25,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 2320,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 2,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 3,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                24
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 4,
+              "type": "Gold cluster",
+              "position": [
+                22,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 5,
+              "type": "Gold cluster",
+              "position": [
+                27,
+                22
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 2
+            },
+            {
+              "id": 6,
+              "type": "Gold cluster",
+              "position": [
+                21,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 7,
+              "type": "Gold cluster",
+              "position": [
+                28,
+                25
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 4
+            },
+            {
+              "id": 32,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                23
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 33,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                26
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 34,
+              "type": "Gem cluster",
+              "position": [
+                26,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 35,
+              "type": "Gem cluster",
+              "position": [
+                23,
+                25
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 36,
+              "type": "Gold cluster",
+              "position": [
+                20,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 38,
+              "type": "Gold cluster",
+              "position": [
+                23,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 39,
+              "type": "Gold cluster",
+              "position": [
+                26,
+                22
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 2
+            }
+          ],
+          "actions": [
+            {
+              "kind": "move",
+              "step_index": 1919,
+              "destination": [
+                23,
+                23
+              ]
+            },
+            {
+              "kind": "cast_ability",
+              "step_index": 1920,
+              "ability_slot": 1,
+              "ability": "Dash",
+              "target": [
+                25,
+                23
+              ]
+            },
+            {
+              "kind": "attack",
+              "step_index": 1921
+            }
+          ],
+          "turn_end": "fuel_rollover"
+        }
+      ],
+      "firstfork_json": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/first-fork-comparisons-v1/escape-elk-arena-A.json",
+      "firstfork_json_sha256": "3fccfe9f895131ac49f533acca6d62f0c278e7ecdbab545fe95df4fc062729d0"
+    },
+    {
+      "label": "actor4 (Heart of Ruin), physical A, connected-escape/v33",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/connected-escape-160-output-v1/escape-vs-v33/escape-vs-v33__01elk-arena__escape-A.repl26a",
+      "replay_sha256": "e92a81ce426fa07a38026bcff62ea5b76780d2d79482a4fda6e568635a84819e",
+      "replay_payload_sha256": "0d1cf0ad72bda4b5b8690119fe5cd119665172287bb9a153eae4955c7d53dd95",
+      "window": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/own-view-firstfork-v1/escape-candidate/window.json",
+      "window_sha256": "aa718296bd3be394bc63d770d75a74c7d511b62465266060a9b9a366feadf799",
+      "turns": [
+        {
+          "round": 9,
+          "position": {
+            "raw": [
+              22,
+              24
+            ],
+            "own_frame": [
+              22,
+              24
+            ]
+          },
+          "health": 970,
+          "gems": 0,
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "visible_enemies": [
+            {
+              "id": 6,
+              "type": "Vesper Vale",
+              "position": {
+                "raw": [
+                  28,
+                  24
+                ],
+                "own_frame": [
+                  28,
+                  24
+                ]
+              },
+              "health": 940,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 7,
+              "type": "Marcella",
+              "position": {
+                "raw": [
+                  27,
+                  25
+                ],
+                "own_frame": [
+                  27,
+                  25
+                ]
+              },
+              "health": 1200,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 8,
+              "type": "Willow",
+              "position": {
+                "raw": [
+                  30,
+                  24
+                ],
+                "own_frame": [
+                  30,
+                  24
+                ]
+              },
+              "health": 700,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 9,
+              "type": "Heart of Ruin",
+              "position": {
+                "raw": [
+                  27,
+                  24
+                ],
+                "own_frame": [
+                  27,
+                  24
+                ]
+              },
+              "health": 970,
+              "channel": {
+                "type": 0,
+                "timer": 0
+              }
+            }
+          ],
+          "local_camps": [
+            {
+              "id": 0,
+              "type": "Elk",
+              "position": [
+                24,
+                24
+              ],
+              "visibility": "own_view_known",
+              "health": 2320,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 1,
+              "type": "Elk",
+              "position": [
+                25,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 2320,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 2,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 3,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                24
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 4,
+              "type": "Gold cluster",
+              "position": [
+                22,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 5,
+              "type": "Gold cluster",
+              "position": [
+                27,
+                22
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 2
+            },
+            {
+              "id": 6,
+              "type": "Gold cluster",
+              "position": [
+                21,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 32,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                23
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 33,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                26
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 34,
+              "type": "Gem cluster",
+              "position": [
+                26,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 35,
+              "type": "Gem cluster",
+              "position": [
+                23,
+                25
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 36,
+              "type": "Gold cluster",
+              "position": [
+                20,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 38,
+              "type": "Gold cluster",
+              "position": [
+                23,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 39,
+              "type": "Gold cluster",
+              "position": [
+                26,
+                22
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 2
+            }
+          ],
+          "actions": [
+            {
+              "kind": "move",
+              "step_index": 1552,
+              "destination": [
+                23,
+                24
+              ]
+            },
+            {
+              "kind": "recall",
+              "step_index": 1553
+            },
+            {
+              "kind": "set_priority",
+              "step_index": 1554,
+              "priority": 16
+            }
+          ],
+          "turn_end": "end_turn"
+        },
+        {
+          "round": 10,
+          "position": {
+            "raw": [
+              23,
+              24
+            ],
+            "own_frame": [
+              23,
+              24
+            ]
+          },
+          "health": 790,
+          "gems": 0,
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "visible_enemies": [
+            {
+              "id": 6,
+              "type": "Vesper Vale",
+              "position": {
+                "raw": [
+                  26,
+                  25
+                ],
+                "own_frame": [
+                  26,
+                  25
+                ]
+              },
+              "health": 940,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 7,
+              "type": "Marcella",
+              "position": {
+                "raw": [
+                  27,
+                  25
+                ],
+                "own_frame": [
+                  27,
+                  25
+                ]
+              },
+              "health": 1200,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 8,
+              "type": "Willow",
+              "position": {
+                "raw": [
+                  29,
+                  24
+                ],
+                "own_frame": [
+                  29,
+                  24
+                ]
+              },
+              "health": 700,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 9,
+              "type": "Heart of Ruin",
+              "position": {
+                "raw": [
+                  26,
+                  24
+                ],
+                "own_frame": [
+                  26,
+                  24
+                ]
+              },
+              "health": 855,
+              "channel": {
+                "type": 0,
+                "timer": 0
+              }
+            }
+          ],
+          "local_camps": [
+            {
+              "id": 0,
+              "type": "Elk",
+              "position": [
+                24,
+                24
+              ],
+              "visibility": "own_view_known",
+              "health": 2320,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 1,
+              "type": "Elk",
+              "position": [
+                25,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 2320,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 2,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 3,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                24
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 4,
+              "type": "Gold cluster",
+              "position": [
+                22,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 5,
+              "type": "Gold cluster",
+              "position": [
+                27,
+                22
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 2
+            },
+            {
+              "id": 6,
+              "type": "Gold cluster",
+              "position": [
+                21,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 7,
+              "type": "Gold cluster",
+              "position": [
+                28,
+                25
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 4
+            },
+            {
+              "id": 32,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                23
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 33,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                26
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 34,
+              "type": "Gem cluster",
+              "position": [
+                26,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 35,
+              "type": "Gem cluster",
+              "position": [
+                23,
+                25
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 36,
+              "type": "Gold cluster",
+              "position": [
+                20,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 38,
+              "type": "Gold cluster",
+              "position": [
+                23,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 39,
+              "type": "Gold cluster",
+              "position": [
+                26,
+                22
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 2
+            }
+          ],
+          "actions": [
+            {
+              "kind": "move",
+              "step_index": 1748,
+              "destination": [
+                23,
+                23
+              ]
+            },
+            {
+              "kind": "cast_ability",
+              "step_index": 1749,
+              "ability_slot": 1,
+              "ability": "Dash",
+              "target": [
+                25,
+                23
+              ]
+            },
+            {
+              "kind": "attack",
+              "step_index": 1750
+            }
+          ],
+          "turn_end": "fuel_rollover"
+        },
+        {
+          "round": 11,
+          "position": {
+            "raw": [
+              25,
+              23
+            ],
+            "own_frame": [
+              25,
+              23
+            ]
+          },
+          "health": 790,
+          "gems": 0,
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "visible_enemies": [
+            {
+              "id": 6,
+              "type": "Vesper Vale",
+              "position": {
+                "raw": [
+                  26,
+                  25
+                ],
+                "own_frame": [
+                  26,
+                  25
+                ]
+              },
+              "health": 885,
+              "channel": {
+                "type": 0,
+                "timer": 0
+              }
+            },
+            {
+              "id": 7,
+              "type": "Marcella",
+              "position": {
+                "raw": [
+                  27,
+                  24
+                ],
+                "own_frame": [
+                  27,
+                  24
+                ]
+              },
+              "health": 1200,
+              "channel": {
+                "type": 1,
+                "timer": 4
+              }
+            },
+            {
+              "id": 8,
+              "type": "Willow",
+              "position": {
+                "raw": [
+                  28,
+                  24
+                ],
+                "own_frame": [
+                  28,
+                  24
+                ]
+              },
+              "health": 700,
+              "channel": {
+                "type": 0,
+                "timer": 0
+              }
+            },
+            {
+              "id": 9,
+              "type": "Heart of Ruin",
+              "position": {
+                "raw": [
+                  26,
+                  24
+                ],
+                "own_frame": [
+                  26,
+                  24
+                ]
+              },
+              "health": 940,
+              "channel": {
+                "type": 0,
+                "timer": 0
+              }
+            }
+          ],
+          "local_camps": [
+            {
+              "id": 0,
+              "type": "Elk",
+              "position": [
+                24,
+                24
+              ],
+              "visibility": "own_view_known",
+              "health": 2154.25,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 1,
+              "type": "Elk",
+              "position": [
+                25,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 2320,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 2,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 3,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 4,
+              "type": "Gold cluster",
+              "position": [
+                22,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 5,
+              "type": "Gold cluster",
+              "position": [
+                27,
+                22
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": true,
+              "group": 2
+            },
+            {
+              "id": 6,
+              "type": "Gold cluster",
+              "position": [
+                21,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 7,
+              "type": "Gold cluster",
+              "position": [
+                28,
+                25
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 4
+            },
+            {
+              "id": 32,
+              "type": "Gem cluster",
+              "position": [
+                24,
+                23
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 33,
+              "type": "Gem cluster",
+              "position": [
+                25,
+                26
+              ],
+              "visibility": "own_view_known",
+              "health": 40,
+              "awake": true,
+              "group": 0
+            },
+            {
+              "id": 34,
+              "type": "Gem cluster",
+              "position": [
+                26,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 35,
+              "type": "Gem cluster",
+              "position": [
+                23,
+                25
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 0
+            },
+            {
+              "id": 36,
+              "type": "Gold cluster",
+              "position": [
+                20,
+                24
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 3
+            },
+            {
+              "id": 37,
+              "type": "Gold cluster",
+              "position": [
+                29,
+                25
+              ],
+              "visibility": "own_view_known",
+              "health": 30,
+              "awake": true,
+              "group": 4
+            },
+            {
+              "id": 38,
+              "type": "Gold cluster",
+              "position": [
+                23,
+                27
+              ],
+              "visibility": "own_view_known",
+              "health": 120,
+              "awake": false,
+              "group": 1
+            },
+            {
+              "id": 39,
+              "type": "Gold cluster",
+              "position": [
+                26,
+                22
+              ],
+              "visibility": "static_map_only",
+              "health": null,
+              "awake": null,
+              "group": 2
+            }
+          ],
+          "actions": [
+            {
+              "kind": "attack",
+              "step_index": 1924
+            },
+            {
+              "kind": "move",
+              "step_index": 1925,
+              "destination": [
+                26,
+                23
+              ]
+            },
+            {
+              "kind": "recall",
+              "step_index": 1926
+            }
+          ],
+          "turn_end": "end_turn"
+        }
+      ],
+      "firstfork_json": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/first-fork-comparisons-v1/escape-elk-arena-A.json",
+      "firstfork_json_sha256": "3fccfe9f895131ac49f533acca6d62f0c278e7ecdbab545fe95df4fc062729d0"
+    },
+    {
+      "label": "actor0 (Prism), physical A, baseline f475/v33",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01fracture__f475-A.repl26a",
+      "replay_sha256": "88c119b2564704aa20d175daeb0badb45e737dd1f5c3f32405b9d1852eed94d9",
+      "replay_payload_sha256": "4740c41904ea6012bf8a05c1cbe3cb5df3ba9fe7ce1e2eb68952b93b2758019c",
+      "window": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/own-view-firstfork-v1/hop-baseline/window.json",
+      "window_sha256": "a92100b6f652f40c6423c476e356feafee81463cd2419f6cb54147616adec81c",
+      "turns": [
+        {
+          "round": 5,
+          "position": {
+            "raw": [
+              5,
+              5
+            ],
+            "own_frame": [
+              5,
+              5
+            ]
+          },
+          "health": 700,
+          "gems": 0,
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "visible_enemies": [],
+          "local_camps": [],
+          "actions": [
+            {
+              "kind": "cancel_channel",
+              "step_index": 974
+            },
+            {
+              "kind": "move",
+              "step_index": 975,
+              "destination": [
+                6,
+                6
+              ]
+            },
+            {
+              "kind": "recall",
+              "step_index": 976
+            }
+          ],
+          "turn_end": "end_turn"
+        },
+        {
+          "round": 6,
+          "position": {
+            "raw": [
+              6,
+              6
+            ],
+            "own_frame": [
+              6,
+              6
+            ]
+          },
+          "health": 700,
+          "gems": 0,
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "visible_enemies": [],
+          "local_camps": [],
+          "actions": [
+            {
+              "kind": "cancel_channel",
+              "step_index": 1193
+            },
+            {
+              "kind": "move",
+              "step_index": 1194,
+              "destination": [
+                7,
+                7
+              ]
+            },
+            {
+              "kind": "movement_blocked",
+              "step_index": 1195,
+              "destination": [
+                7,
+                9
+              ]
+            },
+            {
+              "kind": "recall",
+              "step_index": 1196
+            }
+          ],
+          "turn_end": "end_turn"
+        },
+        {
+          "round": 7,
+          "position": {
+            "raw": [
+              7,
+              7
+            ],
+            "own_frame": [
+              7,
+              7
+            ]
+          },
+          "health": 700,
+          "gems": 0,
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "visible_enemies": [],
+          "local_camps": [],
+          "actions": [
+            {
+              "kind": "cancel_channel",
+              "step_index": 1391
+            },
+            {
+              "kind": "movement_blocked",
+              "step_index": 1392,
+              "destination": [
+                7,
+                9
+              ]
+            },
+            {
+              "kind": "move",
+              "step_index": 1393,
+              "destination": [
+                8,
+                6
+              ]
+            },
+            {
+              "kind": "recall",
+              "step_index": 1394
+            }
+          ],
+          "turn_end": "end_turn"
+        }
+      ],
+      "firstfork_json": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/first-fork-comparisons-v1/hop-fracture-A.json",
+      "firstfork_json_sha256": "673252ceb60a67bbc897bdbc485c4b0ec6d27df9c359bbfa265e44e6843c4c2e"
+    },
+    {
+      "label": "actor0 (Prism), physical A, farm-hop/v33",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-farm-hop-160-output-v1/hop-vs-v33/hop-vs-v33__01fracture__hop-A.repl26a",
+      "replay_sha256": "253c1297c9895347d927f833bbb72a54e8105ad808f409d8c77c8041032e59c8",
+      "replay_payload_sha256": "c3b2059c13adc895c41f043eee01562015c5fa32f3fd891250441a941510c08f",
+      "window": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/own-view-firstfork-v1/hop-candidate/window.json",
+      "window_sha256": "bf02e155407ad2acab2addc98fa8d3580562bacc37fabb6fe9aad32115fc5646",
+      "turns": [
+        {
+          "round": 5,
+          "position": {
+            "raw": [
+              5,
+              5
+            ],
+            "own_frame": [
+              5,
+              5
+            ]
+          },
+          "health": 700,
+          "gems": 0,
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "visible_enemies": [],
+          "local_camps": [],
+          "actions": [
+            {
+              "kind": "cancel_channel",
+              "step_index": 974
+            },
+            {
+              "kind": "move",
+              "step_index": 975,
+              "destination": [
+                6,
+                6
+              ]
+            },
+            {
+              "kind": "recall",
+              "step_index": 976
+            }
+          ],
+          "turn_end": "end_turn"
+        },
+        {
+          "round": 6,
+          "position": {
+            "raw": [
+              6,
+              6
+            ],
+            "own_frame": [
+              6,
+              6
+            ]
+          },
+          "health": 700,
+          "gems": 0,
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "visible_enemies": [],
+          "local_camps": [],
+          "actions": [
+            {
+              "kind": "cancel_channel",
+              "step_index": 1193
+            },
+            {
+              "kind": "move",
+              "step_index": 1194,
+              "destination": [
+                7,
+                7
+              ]
+            },
+            {
+              "kind": "recall",
+              "step_index": 1195
+            }
+          ],
+          "turn_end": "end_turn"
+        },
+        {
+          "round": 7,
+          "position": {
+            "raw": [
+              7,
+              7
+            ],
+            "own_frame": [
+              7,
+              7
+            ]
+          },
+          "health": 700,
+          "gems": 0,
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "visible_enemies": [],
+          "local_camps": [],
+          "actions": [
+            {
+              "kind": "cancel_channel",
+              "step_index": 1390
+            },
+            {
+              "kind": "move",
+              "step_index": 1391,
+              "destination": [
+                8,
+                6
+              ]
+            },
+            {
+              "kind": "recall",
+              "step_index": 1392
+            }
+          ],
+          "turn_end": "end_turn"
+        }
+      ],
+      "firstfork_json": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/first-fork-comparisons-v1/hop-fracture-A.json",
+      "firstfork_json_sha256": "673252ceb60a67bbc897bdbc485c4b0ec6d27df9c359bbfa265e44e6843c4c2e",
+      "actor_start_correction": "Actor0 Prism begins r6 at raw/own-frame (6,6), moves to (7,7), then baseline attempts blocked (7,9) and recalls; candidate moves to (7,7) and recalls. The r6 snapshot at (7,7) is after the initial move, not actor-turn start."
+    }
+  ],
+  "channel_enum_note": "Raw channel type values are decoded by tools/replay/engine_own_view_v3_compat.mjs CHANNELS: type 1 is recall, 2 tribute, 3 teleport, 4 teleport_scroll. Do not call type 1 teleport."
+}

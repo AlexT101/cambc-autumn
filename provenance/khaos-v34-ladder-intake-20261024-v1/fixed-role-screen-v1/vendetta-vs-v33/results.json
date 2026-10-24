@@ -1,0 +1,109 @@
+{
+  "schema": "native-batch-results/v1",
+  "release": true,
+  "bots": [
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-vendetta-five",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33"
+  ],
+  "scheduled": 6,
+  "completed": 6,
+  "errors": 0,
+  "source_pins": {
+    "candidate_aggregate": "897529e6d30f8fca6cb3f3c732d3a90954c675c1e1e5259457f2309da0267871",
+    "candidate_raw_wasm": "d1f1d620ba13b19130d0bd5156ac1c310c5ce6fc8bf5ce319b145615d3854afb",
+    "candidate_injected_wasm": "c95c6113846838419a24ec6256cf8334c4bfef55291c1b6f2340d5cfb64a0e7d",
+    "opponent_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "matches": [
+    {
+      "index": 0,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__00gem-fields__vendetta-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+      "A_source": "willow-v47-vendetta-five-work",
+      "B_source": "v33",
+      "winner_side": "B",
+      "scoreA": 658,
+      "scoreB": 1211,
+      "rounds": 574
+    },
+    {
+      "index": 1,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__00gem-fields__vendetta-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+      "A_source": "v33",
+      "B_source": "willow-v47-vendetta-five-work",
+      "winner_side": "B",
+      "scoreA": 701,
+      "scoreB": 1023,
+      "rounds": 553
+    },
+    {
+      "index": 2,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__01fracture__vendetta-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a",
+      "A_source": "willow-v47-vendetta-five-work",
+      "B_source": "v33",
+      "winner_side": "B",
+      "scoreA": 432,
+      "scoreB": 1032,
+      "rounds": 1232
+    },
+    {
+      "index": 3,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__01fracture__vendetta-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a",
+      "A_source": "v33",
+      "B_source": "willow-v47-vendetta-five-work",
+      "winner_side": "A",
+      "scoreA": 1059,
+      "scoreB": 487,
+      "rounds": 1099
+    },
+    {
+      "index": 4,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__01big-world__vendetta-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01big-world.map26a",
+      "A_source": "willow-v47-vendetta-five-work",
+      "B_source": "v33",
+      "winner_side": "A",
+      "scoreA": 1004,
+      "scoreB": 982,
+      "rounds": 973
+    },
+    {
+      "index": 5,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__01big-world__vendetta-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01big-world.map26a",
+      "A_source": "v33",
+      "B_source": "willow-v47-vendetta-five-work",
+      "winner_side": "A",
+      "scoreA": 1019,
+      "scoreB": 931,
+      "rounds": 965
+    }
+  ]
+}

@@ -1,0 +1,701 @@
+{
+  "schema": "native-turn-status-audit/v1",
+  "batch": "provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33",
+  "batch_results_sha256": "bc7fcc68b99e38429919f66cd379d8b9b89fff076ef722129c1886f6489f4075",
+  "release": true,
+  "games": 6,
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "snapshot_mode": "v1_0_3_compact_timeline",
+  "compact_timeline_pin": {
+    "version": "v1_0_3",
+    "wasmSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "officialDecoderSha256": "960affde6198366d2347bd21f43efec5bc06acc6cb0c53e5f7f96dbf87f027e6",
+    "visualizerBundleSha256": "b80358b2189444187c38880ee7218d84b4a013a1b379b93470659c4c6b2c4a24",
+    "snapshotSize": 40152
+  },
+  "source_pins": {
+    "candidate_aggregate": "f5daacb599a2d2e248f9cef82126e6ec4761647995c9b454a5d3c21b8b5ed86a",
+    "candidate_raw_wasm": "7ef379522ef5bc9ce4df69653bbfd3185511f27b0305d5151828da15d7f0b4a2",
+    "candidate_injected_wasm": "b025fa57a20f308df786656ff05431f0f515a6baab053f49da67fcf7f75dce19",
+    "opponent_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "bots": [
+    {
+      "bot": "willow-v47-stellar-five-support",
+      "bot_index": 0,
+      "games": 6,
+      "play": {
+        "rollover": 6,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    },
+    {
+      "bot": "v33",
+      "bot_index": 1,
+      "games": 6,
+      "play": {
+        "rollover": 33,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    }
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__00gem-fields__support-s-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "2af8ab5c5bca4efe0170ad02af203418c9df14d31ac04f1a38d7282f02fe1721",
+      "replay_engine": "v1_0_3",
+      "map": "maps/00gem-fields.map26a",
+      "map_format": "map26a",
+      "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-stellar-five-support",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 5,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-stellar-five-support",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 5,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 1,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__00gem-fields__support-s-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "ea12562a86eb8fb823ac24b71b4e74314a178d43cc749f8686f60c93e0005484",
+      "replay_engine": "v1_0_3",
+      "map": "maps/00gem-fields.map26a",
+      "map_format": "map26a",
+      "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-stellar-five-support",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 6,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 6,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-stellar-five-support",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01fracture__support-s-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "873e3282efc5c33f0e6dee149482f35f5a9eb543b2cf9831249177ca868d6a09",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01fracture.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-stellar-five-support",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 5,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-stellar-five-support",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 3,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01fracture__support-s-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "72994eb1baf6aa56609206414c2dafb9fec76d909a2c4f0cdb7d49424b8325cc",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01fracture.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-stellar-five-support",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 7,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 6,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 5,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-stellar-five-support",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 4,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01big-world__support-s-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "a0895ef524ffa05bc9d7c73b452afb7a7b2cd03ebd95c0b64ef6e48543c65a1e",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01big-world.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-stellar-five-support",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 9,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-stellar-five-support",
+            "bot_index": 0,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 7,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 5,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/support-s-vs-v33/support-s-vs-v33__01big-world__support-s-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "c6386989756911c039c295dcc885c151ba762da94f7ff4624c73f3d5752d6846",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01big-world.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-stellar-five-support",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 7,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-stellar-five-support",
+            "bot_index": 0,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "notes": "Counts are native replay step kinds 26 (Turn rollover/fuel) and 27 (Bot error), classified by step.phase: 10 play, 12 draft, all remaining phases under other. For play statuses, physical team comes from the actor champion record in the same snapshot, not header.team; champion buckets use native actor kind/index. Snapshot mode is the pinned v1_0_3 compact timeline reader; the auditor does not extract events or metrics. Source pins are copied from results.json or adjacent economic-capture-summary.json when available."
+}

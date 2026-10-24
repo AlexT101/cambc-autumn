@@ -1,0 +1,43 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T10:48:38.335399+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "nice",
+    "-n",
+    "19",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "matches",
+    "list",
+    "--team",
+    "547efb5b-57e5-4355-8501-3b331f506d62",
+    "--kind",
+    "ranked",
+    "--limit",
+    "30",
+    "--json"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/raw/ranked-latest30.stdout.json",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/logs/ranked-latest30.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.036484583,
+      "run_end_monotonic": 0.141502041
+    },
+    {
+      "run_start_monotonic": 1.046622125,
+      "run_end_monotonic": 1.151638916
+    }
+  ],
+  "pid": 42648,
+  "process_group_id": 42648,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T10:48:39.453191+00:00"
+}

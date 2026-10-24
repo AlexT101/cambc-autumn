@@ -1,0 +1,712 @@
+{
+  "schema": "native-turn-status-audit/v1",
+  "batch": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33",
+  "batch_results_sha256": "1051e622dbe766cd1de9fc26c0870fd9f61c602cace6830f455c5397118853c3",
+  "release": true,
+  "games": 6,
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "snapshot_mode": "v1_0_3_compact_timeline",
+  "compact_timeline_pin": {
+    "version": "v1_0_3",
+    "wasmSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "officialDecoderSha256": "960affde6198366d2347bd21f43efec5bc06acc6cb0c53e5f7f96dbf87f027e6",
+    "visualizerBundleSha256": "b80358b2189444187c38880ee7218d84b4a013a1b379b93470659c4c6b2c4a24",
+    "snapshotSize": 40152
+  },
+  "source_pins": {
+    "candidate_aggregate": "0c166e820c493aaa222d5fd065fb56d9caff766c3f8caf8795d1898d4397a82d",
+    "candidate_raw_wasm": "2887d75026f5add1e34b9a2a25e4d4a395250a945f6ea9bc83dc26b6fad64025",
+    "candidate_injected_wasm": "f4d9980098a151435de3fa466878bf67e903fcc1ddbf7df85933e957550d19dd",
+    "opponent_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "bots": [
+    {
+      "bot": "willow-v47-stellar-five",
+      "bot_index": 0,
+      "games": 6,
+      "play": {
+        "rollover": 9,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    },
+    {
+      "bot": "v33",
+      "bot_index": 1,
+      "games": 6,
+      "play": {
+        "rollover": 37,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    }
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__00gem-fields__stellar-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "08c6286837b91a48c294da91bad53c85c9114add9e6d9e87ac931cb5322fc241",
+      "replay_engine": "v1_0_3",
+      "map": "maps/00gem-fields.map26a",
+      "map_format": "map26a",
+      "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-stellar-five",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 5,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-stellar-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "7": {
+                "actor_kind": 1,
+                "actor_index": 7,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 1,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__00gem-fields__stellar-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "a1342de7c158f48e7b47f179bf0f1cd6d72c66d93e6b2698831be1ef7fff574d",
+      "replay_engine": "v1_0_3",
+      "map": "maps/00gem-fields.map26a",
+      "map_format": "map26a",
+      "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-stellar-five",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 7,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 6,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-stellar-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01fracture__stellar-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "04ca75178cd065ceede922fb598f568432a8936cae140945c3071ab5648f04f2",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01fracture.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-stellar-five",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 8,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-stellar-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 8,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 7,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 3,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01fracture__stellar-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "adc60589448f859e8d1d06871a571f5a5ff27eaafe049b7dfe4f6f6db036933b",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01fracture.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-stellar-five",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 4,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-stellar-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 4,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01big-world__stellar-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "ff97349e55ac8abcabf7087912b89eeff8ec7bcb3380e86b5209df12f1c69c0b",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01big-world.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-stellar-five",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 12,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-stellar-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 11,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 6,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 5,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/stellar-vs-v33/stellar-vs-v33__01big-world__stellar-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "25915407747c4be11fdfcd2d6ab5b30767076bad615438591d2883e0974cfaf2",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01big-world.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-stellar-five",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 10,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-stellar-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "notes": "Counts are native replay step kinds 26 (Turn rollover/fuel) and 27 (Bot error), classified by step.phase: 10 play, 12 draft, all remaining phases under other. For play statuses, physical team comes from the actor champion record in the same snapshot, not header.team; champion buckets use native actor kind/index. Snapshot mode is the pinned v1_0_3 compact timeline reader; the auditor does not extract events or metrics. Source pins are copied from results.json or adjacent economic-capture-summary.json when available."
+}

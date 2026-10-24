@@ -1,0 +1,1 @@
+release-prefix run-batch exit=1

@@ -1,0 +1,726 @@
+{
+  "bots": [
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v48-deadline-bound",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33"
+  ],
+  "scheduled": 78,
+  "completed": 78,
+  "errors": 0,
+  "matches": [
+    {
+      "index": 0,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00ambush__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00ambush.map26a"
+    },
+    {
+      "index": 1,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00ambush__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00ambush.map26a"
+    },
+    {
+      "index": 2,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00collision__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00collision.map26a"
+    },
+    {
+      "index": 3,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00collision__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00collision.map26a"
+    },
+    {
+      "index": 4,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00contest__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00contest.map26a"
+    },
+    {
+      "index": 5,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00contest__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00contest.map26a"
+    },
+    {
+      "index": 6,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00corners__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00corners.map26a"
+    },
+    {
+      "index": 7,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00corners__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00corners.map26a"
+    },
+    {
+      "index": 8,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00eight__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a"
+    },
+    {
+      "index": 9,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00eight__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a"
+    },
+    {
+      "index": 10,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00elkring__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00elkring.map26a"
+    },
+    {
+      "index": 11,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00elkring__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00elkring.map26a"
+    },
+    {
+      "index": 12,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00expanse__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00expanse.map26a"
+    },
+    {
+      "index": 13,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00expanse__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00expanse.map26a"
+    },
+    {
+      "index": 14,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00fragment__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00fragment.map26a"
+    },
+    {
+      "index": 15,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00fragment__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00fragment.map26a"
+    },
+    {
+      "index": 16,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00gem-fields__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a"
+    },
+    {
+      "index": 17,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00gem-fields__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a"
+    },
+    {
+      "index": 18,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00gemfight__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gemfight.map26a"
+    },
+    {
+      "index": 19,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00gemfight__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gemfight.map26a"
+    },
+    {
+      "index": 20,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00great-wall__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00great-wall.map26a"
+    },
+    {
+      "index": 21,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00great-wall__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00great-wall.map26a"
+    },
+    {
+      "index": 22,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00interlock__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00interlock.map26a"
+    },
+    {
+      "index": 23,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00interlock__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00interlock.map26a"
+    },
+    {
+      "index": 24,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00lanes__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lanes.map26a"
+    },
+    {
+      "index": 25,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00lanes__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lanes.map26a"
+    },
+    {
+      "index": 26,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00lost-world__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lost-world.map26a"
+    },
+    {
+      "index": 27,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00lost-world__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lost-world.map26a"
+    },
+    {
+      "index": 28,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00monolith__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00monolith.map26a"
+    },
+    {
+      "index": 29,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00monolith__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00monolith.map26a"
+    },
+    {
+      "index": 30,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00packs__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00packs.map26a"
+    },
+    {
+      "index": 31,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00packs__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00packs.map26a"
+    },
+    {
+      "index": 32,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00pilgrimage__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00pilgrimage.map26a"
+    },
+    {
+      "index": 33,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00pilgrimage__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00pilgrimage.map26a"
+    },
+    {
+      "index": 34,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00quadrants__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00quadrants.map26a"
+    },
+    {
+      "index": 35,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00quadrants__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00quadrants.map26a"
+    },
+    {
+      "index": 36,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00reverse-spiral__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00reverse-spiral.map26a"
+    },
+    {
+      "index": 37,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00reverse-spiral__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00reverse-spiral.map26a"
+    },
+    {
+      "index": 38,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00road-of-riches__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00road-of-riches.map26a"
+    },
+    {
+      "index": 39,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00road-of-riches__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00road-of-riches.map26a"
+    },
+    {
+      "index": 40,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00rows__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rows.map26a"
+    },
+    {
+      "index": 41,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00rows__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rows.map26a"
+    },
+    {
+      "index": 42,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00rushbait-v2__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rushbait-v2.map26a"
+    },
+    {
+      "index": 43,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00rushbait-v2__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rushbait-v2.map26a"
+    },
+    {
+      "index": 44,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00split__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00split.map26a"
+    },
+    {
+      "index": 45,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00split__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00split.map26a"
+    },
+    {
+      "index": 46,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00stampede__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00stampede.map26a"
+    },
+    {
+      "index": 47,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00stampede__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00stampede.map26a"
+    },
+    {
+      "index": 48,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00swirl__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00swirl.map26a"
+    },
+    {
+      "index": 49,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__00swirl__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00swirl.map26a"
+    },
+    {
+      "index": 50,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01big-world__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01big-world.map26a"
+    },
+    {
+      "index": 51,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01big-world__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01big-world.map26a"
+    },
+    {
+      "index": 52,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01boss-battle__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01boss-battle.map26a"
+    },
+    {
+      "index": 53,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01boss-battle__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01boss-battle.map26a"
+    },
+    {
+      "index": 54,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01broken-curve__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01broken-curve.map26a"
+    },
+    {
+      "index": 55,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01broken-curve__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01broken-curve.map26a"
+    },
+    {
+      "index": 56,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01concentrated-wealth__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01concentrated-wealth.map26a"
+    },
+    {
+      "index": 57,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01concentrated-wealth__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01concentrated-wealth.map26a"
+    },
+    {
+      "index": 58,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01corridors__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01corridors.map26a"
+    },
+    {
+      "index": 59,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01corridors__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01corridors.map26a"
+    },
+    {
+      "index": 60,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01elk-arena__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01elk-arena.map26a"
+    },
+    {
+      "index": 61,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01elk-arena__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01elk-arena.map26a"
+    },
+    {
+      "index": 62,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01fracture__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a"
+    },
+    {
+      "index": 63,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01fracture__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a"
+    },
+    {
+      "index": 64,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01gold-rush__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a"
+    },
+    {
+      "index": 65,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01gold-rush__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a"
+    },
+    {
+      "index": 66,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01hooks__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01hooks.map26a"
+    },
+    {
+      "index": 67,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01hooks__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01hooks.map26a"
+    },
+    {
+      "index": 68,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01islands__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01islands.map26a"
+    },
+    {
+      "index": 69,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01islands__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01islands.map26a"
+    },
+    {
+      "index": 70,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01shortcut__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01shortcut.map26a"
+    },
+    {
+      "index": 71,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01shortcut__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01shortcut.map26a"
+    },
+    {
+      "index": 72,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01starfish__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starfish.map26a"
+    },
+    {
+      "index": 73,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01starfish__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starfish.map26a"
+    },
+    {
+      "index": 74,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01the-farm__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01the-farm.map26a"
+    },
+    {
+      "index": 75,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01the-farm__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01the-farm.map26a"
+    },
+    {
+      "index": 76,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01yellow-brick-road__deadline-A__v33-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01yellow-brick-road.map26a"
+    },
+    {
+      "index": 77,
+      "order": [
+        1,
+        0
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-published-comparison/outputs/candidate-vs-v33/candidate-vs-v33__01yellow-brick-road__v33-A__deadline-B.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01yellow-brick-road.map26a"
+    }
+  ],
+  "release": true,
+  "source_pins": {
+    "deadline": {
+      "source_aggregate": "46c5b5580f63e14d47c4cb3887ea7f626af6abed4a42eebfb0d635ec22d7703d",
+      "raw": "bb0410068590410d62d7193ac125382e09318661c33ef14f788dd5f63271e385",
+      "injected": "1342f2f098c48d5117d43e13789fc21934b0b544f1b6ba42bd1e315a84d32609"
+    },
+    "v33": {
+      "source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "raw": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "injected": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+    }
+  }
+}

@@ -1,0 +1,296 @@
+{
+  "schema": "willow-v47-missing-factorial-160-result/v1",
+  "source": "willow-v47-hop-mixed-approach-work",
+  "source_aggregate": "7e5dc37a4b897a38f2cd2cffedfed6f8c68562698919b929210fe2b538d1fb88",
+  "candidate_binaries": {
+    "raw": {
+      "sha256": "d19e237156ad031d2222176c0d77b5eec94ed6e633bef08e9ba592804209de42"
+    },
+    "injected": {
+      "sha256": "31ac04a21627c7eb394bf46e73bbe2ca1b4a84f2a2ef79e317253dd383a2733a"
+    }
+  },
+  "execution": {
+    "release": true,
+    "fuel_quantum": 100000,
+    "native_draft": true,
+    "jobs": 8,
+    "cli_exit_code": 0,
+    "saved": 160,
+    "failed": 0,
+    "native_status_audits": "4 per-opponent reports, 80 games each, pinned full actor/side attribution; see native-audit/*/status.json"
+  },
+  "panels": {
+    "service-base-f7": {
+      "opponent_source": "service-base-f7",
+      "games": 80,
+      "candidate_wins": 41,
+      "candidate_games": 80,
+      "candidate_wins_by_candidate_side": {
+        "A": 23,
+        "B": 18
+      },
+      "candidate_submitted_gems": 58322,
+      "opponent_submitted_gems": 59720,
+      "rows": [
+        "hop-mixed-f475-00collision-candA",
+        "hop-mixed-f475-00collision-candB",
+        "hop-mixed-f475-00contest-candA",
+        "hop-mixed-f475-00contest-candB",
+        "hop-mixed-f475-00corners-candA",
+        "hop-mixed-f475-00corners-candB",
+        "hop-mixed-f475-00elkring-candA",
+        "hop-mixed-f475-00elkring-candB",
+        "hop-mixed-f475-00expanse-candA",
+        "hop-mixed-f475-00expanse-candB",
+        "hop-mixed-f475-00fragment-candA",
+        "hop-mixed-f475-00fragment-candB",
+        "hop-mixed-f475-00gem-fields-candA",
+        "hop-mixed-f475-00gem-fields-candB",
+        "hop-mixed-f475-00gemfight-candA",
+        "hop-mixed-f475-00gemfight-candB",
+        "hop-mixed-f475-00great-wall-candA",
+        "hop-mixed-f475-00great-wall-candB",
+        "hop-mixed-f475-00interlock-candA",
+        "hop-mixed-f475-00interlock-candB",
+        "hop-mixed-f475-00lanes-candA",
+        "hop-mixed-f475-00lanes-candB",
+        "hop-mixed-f475-00lost-world-candA",
+        "hop-mixed-f475-00lost-world-candB",
+        "hop-mixed-f475-00monolith-candA",
+        "hop-mixed-f475-00monolith-candB",
+        "hop-mixed-f475-00packs-candA",
+        "hop-mixed-f475-00packs-candB",
+        "hop-mixed-f475-00pilgrimage-candA",
+        "hop-mixed-f475-00pilgrimage-candB",
+        "hop-mixed-f475-00quadrants-candA",
+        "hop-mixed-f475-00quadrants-candB",
+        "hop-mixed-f475-00reverse-spiral-candA",
+        "hop-mixed-f475-00reverse-spiral-candB",
+        "hop-mixed-f475-00road-of-riches-candA",
+        "hop-mixed-f475-00road-of-riches-candB",
+        "hop-mixed-f475-00rows-candA",
+        "hop-mixed-f475-00rows-candB",
+        "hop-mixed-f475-00rushbait-v2-candA",
+        "hop-mixed-f475-00rushbait-v2-candB",
+        "hop-mixed-f475-00split-candA",
+        "hop-mixed-f475-00split-candB",
+        "hop-mixed-f475-00stampede-candA",
+        "hop-mixed-f475-00stampede-candB",
+        "hop-mixed-f475-00swirl-candA",
+        "hop-mixed-f475-00swirl-candB",
+        "hop-mixed-f475-01big-world-candA",
+        "hop-mixed-f475-01big-world-candB",
+        "hop-mixed-f475-01boss-battle-candA",
+        "hop-mixed-f475-01boss-battle-candB",
+        "hop-mixed-f475-01broken-curve-candA",
+        "hop-mixed-f475-01broken-curve-candB",
+        "hop-mixed-f475-01concentrated-wealth-candA",
+        "hop-mixed-f475-01concentrated-wealth-candB",
+        "hop-mixed-f475-01corridors-candA",
+        "hop-mixed-f475-01corridors-candB",
+        "hop-mixed-f475-01elk-arena-candA",
+        "hop-mixed-f475-01elk-arena-candB",
+        "hop-mixed-f475-01fracture-candA",
+        "hop-mixed-f475-01fracture-candB",
+        "hop-mixed-f475-01gold-rush-candA",
+        "hop-mixed-f475-01gold-rush-candB",
+        "hop-mixed-f475-01hooks-candA",
+        "hop-mixed-f475-01hooks-candB",
+        "hop-mixed-f475-01islands-candA",
+        "hop-mixed-f475-01islands-candB",
+        "hop-mixed-f475-01shortcut-candA",
+        "hop-mixed-f475-01shortcut-candB",
+        "hop-mixed-f475-01starfish-candA",
+        "hop-mixed-f475-01starfish-candB",
+        "hop-mixed-f475-01the-farm-candA",
+        "hop-mixed-f475-01the-farm-candB",
+        "hop-mixed-f475-01yellow-brick-road-candA",
+        "hop-mixed-f475-01yellow-brick-road-candB",
+        "hop-mixed-f475-00ambush-candA",
+        "hop-mixed-f475-00ambush-candB",
+        "hop-mixed-f475-00eight-candA",
+        "hop-mixed-f475-00eight-candB",
+        "hop-mixed-f475-01starvation-candA",
+        "hop-mixed-f475-01starvation-candB"
+      ],
+      "native_status_by_bot": {
+        "willow-v47-hop-mixed-approach": {
+          "bot": "willow-v47-hop-mixed-approach",
+          "bot_index": 0,
+          "games": 80,
+          "play": {
+            "rollover": 247,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "service-base-f7": {
+          "bot": "service-base-f7",
+          "bot_index": 1,
+          "games": 80,
+          "play": {
+            "rollover": 268,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "status_audit_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/missing-factorial-pairs-v1/hop-mixed-published-160-v1/native-audit/service-base-f7/status.json",
+      "status_audit_sha256": "e6d3357cb68187088ad4baeb4a77c7cec16e4f64444398ba78fc1c720a13f7e5"
+    },
+    "v33": {
+      "opponent_source": "v33",
+      "games": 80,
+      "candidate_wins": 46,
+      "candidate_games": 80,
+      "candidate_wins_by_candidate_side": {
+        "A": 20,
+        "B": 26
+      },
+      "candidate_submitted_gems": 61767,
+      "opponent_submitted_gems": 52891,
+      "rows": [
+        "hop-mixed-v33-00collision-candA",
+        "hop-mixed-v33-00collision-candB",
+        "hop-mixed-v33-00contest-candA",
+        "hop-mixed-v33-00contest-candB",
+        "hop-mixed-v33-00corners-candA",
+        "hop-mixed-v33-00corners-candB",
+        "hop-mixed-v33-00elkring-candA",
+        "hop-mixed-v33-00elkring-candB",
+        "hop-mixed-v33-00expanse-candA",
+        "hop-mixed-v33-00expanse-candB",
+        "hop-mixed-v33-00fragment-candA",
+        "hop-mixed-v33-00fragment-candB",
+        "hop-mixed-v33-00gem-fields-candA",
+        "hop-mixed-v33-00gem-fields-candB",
+        "hop-mixed-v33-00gemfight-candA",
+        "hop-mixed-v33-00gemfight-candB",
+        "hop-mixed-v33-00great-wall-candA",
+        "hop-mixed-v33-00great-wall-candB",
+        "hop-mixed-v33-00interlock-candA",
+        "hop-mixed-v33-00interlock-candB",
+        "hop-mixed-v33-00lanes-candA",
+        "hop-mixed-v33-00lanes-candB",
+        "hop-mixed-v33-00lost-world-candA",
+        "hop-mixed-v33-00lost-world-candB",
+        "hop-mixed-v33-00monolith-candA",
+        "hop-mixed-v33-00monolith-candB",
+        "hop-mixed-v33-00packs-candA",
+        "hop-mixed-v33-00packs-candB",
+        "hop-mixed-v33-00pilgrimage-candA",
+        "hop-mixed-v33-00pilgrimage-candB",
+        "hop-mixed-v33-00quadrants-candA",
+        "hop-mixed-v33-00quadrants-candB",
+        "hop-mixed-v33-00reverse-spiral-candA",
+        "hop-mixed-v33-00reverse-spiral-candB",
+        "hop-mixed-v33-00road-of-riches-candA",
+        "hop-mixed-v33-00road-of-riches-candB",
+        "hop-mixed-v33-00rows-candA",
+        "hop-mixed-v33-00rows-candB",
+        "hop-mixed-v33-00rushbait-v2-candA",
+        "hop-mixed-v33-00rushbait-v2-candB",
+        "hop-mixed-v33-00split-candA",
+        "hop-mixed-v33-00split-candB",
+        "hop-mixed-v33-00stampede-candA",
+        "hop-mixed-v33-00stampede-candB",
+        "hop-mixed-v33-00swirl-candA",
+        "hop-mixed-v33-00swirl-candB",
+        "hop-mixed-v33-01big-world-candA",
+        "hop-mixed-v33-01big-world-candB",
+        "hop-mixed-v33-01boss-battle-candA",
+        "hop-mixed-v33-01boss-battle-candB",
+        "hop-mixed-v33-01broken-curve-candA",
+        "hop-mixed-v33-01broken-curve-candB",
+        "hop-mixed-v33-01concentrated-wealth-candA",
+        "hop-mixed-v33-01concentrated-wealth-candB",
+        "hop-mixed-v33-01corridors-candA",
+        "hop-mixed-v33-01corridors-candB",
+        "hop-mixed-v33-01elk-arena-candA",
+        "hop-mixed-v33-01elk-arena-candB",
+        "hop-mixed-v33-01fracture-candA",
+        "hop-mixed-v33-01fracture-candB",
+        "hop-mixed-v33-01gold-rush-candA",
+        "hop-mixed-v33-01gold-rush-candB",
+        "hop-mixed-v33-01hooks-candA",
+        "hop-mixed-v33-01hooks-candB",
+        "hop-mixed-v33-01islands-candA",
+        "hop-mixed-v33-01islands-candB",
+        "hop-mixed-v33-01shortcut-candA",
+        "hop-mixed-v33-01shortcut-candB",
+        "hop-mixed-v33-01starfish-candA",
+        "hop-mixed-v33-01starfish-candB",
+        "hop-mixed-v33-01the-farm-candA",
+        "hop-mixed-v33-01the-farm-candB",
+        "hop-mixed-v33-01yellow-brick-road-candA",
+        "hop-mixed-v33-01yellow-brick-road-candB",
+        "hop-mixed-v33-00ambush-candA",
+        "hop-mixed-v33-00ambush-candB",
+        "hop-mixed-v33-00eight-candA",
+        "hop-mixed-v33-00eight-candB",
+        "hop-mixed-v33-01starvation-candA",
+        "hop-mixed-v33-01starvation-candB"
+      ],
+      "native_status_by_bot": {
+        "willow-v47-hop-mixed-approach": {
+          "bot": "willow-v47-hop-mixed-approach",
+          "bot_index": 0,
+          "games": 80,
+          "play": {
+            "rollover": 304,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "v33": {
+          "bot": "v33",
+          "bot_index": 1,
+          "games": 80,
+          "play": {
+            "rollover": 598,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "status_audit_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/missing-factorial-pairs-v1/hop-mixed-published-160-v1/native-audit/v33/status.json",
+      "status_audit_sha256": "2a4093bacf5a2a463b7cae8d82309ec6da10036c27260906bc0d5f1fcf71fd31"
+    }
+  },
+  "candidate_source_aggregation_fixture": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixtures/candidate-source-aggregation/aggregate.py",
+    "self_test": "passed"
+  },
+  "results_json_sha256": "7a81805bf7fdffc5f920a8d09c69459c249a18220f02742111a9b8d9f56c76a5",
+  "run_manifest_sha256": "04a6436895cf3cbaca5a50dc991599b2fd8ce2bdcf0b163aabdcbe6c3146ab30",
+  "stderr_bytes": 0
+}

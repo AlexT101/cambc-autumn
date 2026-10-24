@@ -1,0 +1,436 @@
+{
+  "schema": "native-turn-status-audit/v1",
+  "batch": "provenance/khaos-v34-ladder-intake-20261024-v1/native-audit-v48-walk-vs-f475-input",
+  "batch_results_sha256": "490da034ee8b3285ae945b6a554cc69089ad65308db45f4e36b6929b0e82f3f2",
+  "release": true,
+  "games": 4,
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "snapshot_mode": "v1_0_3_compact_timeline",
+  "compact_timeline_pin": {
+    "version": "v1_0_3",
+    "wasmSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "officialDecoderSha256": "960affde6198366d2347bd21f43efec5bc06acc6cb0c53e5f7f96dbf87f027e6",
+    "visualizerBundleSha256": "b80358b2189444187c38880ee7218d84b4a013a1b379b93470659c4c6b2c4a24",
+    "snapshotSize": 40152
+  },
+  "source_pins": {
+    "v48_walk_altar": {
+      "project": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v48-walk-altar-control-4d08241-work"
+    },
+    "f475": {
+      "project": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7"
+    }
+  },
+  "bots": [
+    {
+      "bot": "willow-v48-walk-altar-control-4d08241-work",
+      "bot_index": 0,
+      "games": 4,
+      "play": {
+        "rollover": 26,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    },
+    {
+      "bot": "service-base-f7",
+      "bot_index": 1,
+      "games": 4,
+      "play": {
+        "rollover": 16,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    }
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__00eight__v48_walk_altar-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "5efd6fe244ce28f160e34d6aef4ffd0d4006a0b23fa925e7600907033eadd1ea",
+      "replay_engine": "v1_0_3",
+      "map": "maps/00eight.map26a",
+      "map_format": "map26a",
+      "map_sha256": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v48-walk-altar-control-4d08241-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "service-base-f7",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 11,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v48-walk-altar-control-4d08241-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "service-base-f7",
+            "bot_index": 1,
+            "play": {
+              "rollover": 7,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 7,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 1,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__00eight__v48_walk_altar-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "020ea808cf251e3b19b988327ea9ad947939081c3e2450ba8bd3db39473aa5fb",
+      "replay_engine": "v1_0_3",
+      "map": "maps/00eight.map26a",
+      "map_format": "map26a",
+      "map_sha256": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "service-base-f7",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v48-walk-altar-control-4d08241-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 16,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "service-base-f7",
+            "bot_index": 1,
+            "play": {
+              "rollover": 5,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 5,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v48-walk-altar-control-4d08241-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 11,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 11,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__01starvation__v48_walk_altar-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "e6c481f74dcc1eabe05580950933d57ead40895880b24067c67a2e69ff188338",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01starvation.map26a",
+      "map_format": "map26a",
+      "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v48-walk-altar-control-4d08241-work",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "service-base-f7",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 10,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v48-walk-altar-control-4d08241-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 10,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 10,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "service-base-f7",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    },
+    {
+      "index": 3,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__01starvation__v48_walk_altar-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "1be953f6006ed2868bb93c93b203004cd536fb33ed261be905237ac5c1fd49a8",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01starvation.map26a",
+      "map_format": "map26a",
+      "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "service-base-f7",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v48-walk-altar-control-4d08241-work",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 5,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "service-base-f7",
+            "bot_index": 1,
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v48-walk-altar-control-4d08241-work",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "notes": "Counts are native replay step kinds 26 (Turn rollover/fuel) and 27 (Bot error), classified by step.phase: 10 play, 12 draft, all remaining phases under other. For play statuses, physical team comes from the actor champion record in the same snapshot, not header.team; champion buckets use native actor kind/index. Snapshot mode is the pinned v1_0_3 compact timeline reader; the auditor does not extract events or metrics. Source pins are copied from results.json or adjacent economic-capture-summary.json when available."
+}

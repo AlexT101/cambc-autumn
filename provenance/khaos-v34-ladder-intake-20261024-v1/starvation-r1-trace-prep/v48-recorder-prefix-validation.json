@@ -1,0 +1,102 @@
+{
+  "schema": "source-replay-prefix-comparison/v1",
+  "label": "v48-recorder",
+  "max_round_included": 1,
+  "source_was_truncated": true,
+  "termination": {
+    "code": 18,
+    "message": "engine error 18: replay next: End of timeline."
+  },
+  "last_completed_round": 3,
+  "last_completed_step": 369,
+  "derived_decoder_full_original_crosscheck": {
+    "exact": true,
+    "inputs": [
+      60123,
+      60123
+    ],
+    "round_hashes": [
+      1626,
+      1626
+    ]
+  },
+  "original_input_count_through_round_1": 42,
+  "candidate_input_count_through_round_1": 42,
+  "original_round_starts_through_round_2": [
+    [
+      0,
+      20,
+      "0e89b9c9918cc81d"
+    ],
+    [
+      1,
+      21,
+      "f03ad9b0320bfa98"
+    ],
+    [
+      2,
+      169,
+      "dbc97ed3e854c531"
+    ]
+  ],
+  "candidate_round_starts_through_round_2": [
+    [
+      0,
+      20,
+      "0e89b9c9918cc81d"
+    ],
+    [
+      1,
+      21,
+      "f03ad9b0320bfa98"
+    ],
+    [
+      2,
+      169,
+      "dbc97ed3e854c531"
+    ]
+  ],
+  "first_input_diff": null,
+  "first_round_diff": null,
+  "rounds_matched_through_boundary_round_2": 3,
+  "prefix_exact_through_round_1": true,
+  "target_actor1_round1_input": {
+    "original": [
+      89,
+      1,
+      29,
+      4,
+      10,
+      1,
+      1,
+      2,
+      48,
+      3,
+      47,
+      -1,
+      -1,
+      0,
+      0,
+      0
+    ],
+    "candidate": [
+      89,
+      1,
+      29,
+      4,
+      10,
+      1,
+      1,
+      2,
+      48,
+      3,
+      47,
+      -1,
+      -1,
+      0,
+      0,
+      0
+    ]
+  },
+  "full_result_comparison": "not applicable: candidate replay is intentionally truncated after round 2"
+}

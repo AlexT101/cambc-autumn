@@ -1,0 +1,129 @@
+{
+ "inputs": [
+  60123,
+  70765
+ ],
+ "firstInputDiff": {
+  "index": 29,
+  "round": 1,
+  "step": 89,
+  "actor": 1,
+  "kind": "Move",
+  "rerunKind": "Move",
+  "original": "s89 r1 Move@10 actor1:1 (2,48)->(3,47) slot-1 pr0 x0,0",
+  "rerun": "s89 r1 Move@10 actor1:1 (2,48)->(3,49) slot-1 pr0 x0,0",
+  "originalRec": [
+   89,
+   1,
+   29,
+   4,
+   10,
+   1,
+   1,
+   2,
+   48,
+   3,
+   47,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ],
+  "rerunRec": [
+   89,
+   1,
+   29,
+   4,
+   10,
+   1,
+   1,
+   2,
+   48,
+   3,
+   49,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ },
+ "roundsMatched": 2,
+ "rounds": [
+  1626,
+  1894
+ ],
+ "firstRoundDiff": {
+  "round": 2,
+  "step": 169,
+  "rerunStep": 166
+ },
+ "result": [
+  {
+   "outcome": 2,
+   "round": 1625,
+   "gems": [
+    252,
+    1000
+   ]
+  },
+  {
+   "outcome": 1,
+   "round": 1893,
+   "gems": [
+    1124,
+    304
+   ]
+  }
+ ],
+ "resultMatch": false,
+ "exact": false,
+ "exactIgnoringRollovers": false,
+ "firstInputDiffIgnoringRollovers": {
+  "index": 29,
+  "round": 1,
+  "step": 89,
+  "actor": 1,
+  "kind": "Move",
+  "rerunKind": "Move",
+  "original": "s89 r1 Move@10 actor1:1 (2,48)->(3,47) slot-1 pr0 x0,0",
+  "rerun": "s89 r1 Move@10 actor1:1 (2,48)->(3,49) slot-1 pr0 x0,0",
+  "originalRec": [
+   89,
+   1,
+   29,
+   4,
+   10,
+   1,
+   1,
+   2,
+   48,
+   3,
+   47,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ],
+  "rerunRec": [
+   89,
+   1,
+   29,
+   4,
+   10,
+   1,
+   1,
+   2,
+   48,
+   3,
+   49,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ }
+}

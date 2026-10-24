@@ -1,0 +1,778 @@
+{
+  "schema": "first-fork-and-source-identity-results/v1",
+  "status": "complete_three_approved_games_and_one_approved_source_identity_game_no_trace",
+  "source_build_pins": {
+    "f475": {
+      "aggregate": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "raw": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+      "injected": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+    },
+    "v47-recall-only": {
+      "aggregate": "64d9c8fd9d587d898139983138341b8346681fc2c32a0804c359ae25613c9cb5",
+      "raw": "8f633b0448aa5a8c83a9fee04000abd3bf86b05b922ae9076a3253c610fe79ab",
+      "injected": "3f12047d61c432c878d0625e7a187c9ca3ea143128fb898df7d5bd8ab2265aa8"
+    },
+    "v48": {
+      "aggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+      "raw": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+      "injected": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525"
+    },
+    "v48-walk-altar-only": {
+      "aggregate": "c156da50c65ca11bf3da3ddec09a9cb285d02d5562dee1a72d45dfba8ab7bb4f",
+      "raw": "2b8850d88448673f272effd26144f913e7056ccde93e19b8b913bf379f0da563",
+      "injected": "f5935677bfacf3cf059359907dd1e52e34c56d342121bb1b322ca17e5763dd0d"
+    },
+    "gem-fields-puppet": {
+      "aggregate": "b9a0b99e47541182d9c4d5eb43f4a3007a9a82f85e6b9cef450501c740933051",
+      "raw": "b3c79e829487b50b3249feb2e6c9f13f1aa38fe89b8eba79d5d6d5d8304aa16f",
+      "injected": "b3c79e829487b50b3249feb2e6c9f13f1aa38fe89b8eba79d5d6d5d8304aa16f"
+    }
+  },
+  "comparisons": {
+    "eight-selfplay-vs-v47-recall": {
+      "comparison_file": "provenance/khaos-v34-ladder-intake-20261024-v1/comparison-eight-selfplay-vs-v47-recall.json",
+      "comparison_sha256": "13bc7fb9ca10b410c44fe07086be0d00ab7a5b7fd4d2948b665bfd08e5ace40f",
+      "original_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/planned-selfplay-output/f475-selfplay__00eight.repl26a",
+        "sha256": "0c32fc45b39a75b2683babc524638e3b032e40084e65ad14e0127c613257529e"
+      },
+      "rerun_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v47_recall-vs-f475__00eight__v47_recall-A.repl26a",
+        "sha256": "7340f7c79574caab0bd32d406820f64c482ab5195c8d8d65a81e51dca1783402"
+      },
+      "raw_payload_equal": false,
+      "comparator": {
+        "inputs": [
+          59450,
+          59450
+        ],
+        "firstInputDiff": null,
+        "roundsMatched": 2001,
+        "rounds": [
+          2001,
+          2001
+        ],
+        "firstRoundDiff": null,
+        "result": [
+          {
+            "outcome": 2,
+            "round": 2000,
+            "gems": [
+              263,
+              993
+            ]
+          },
+          {
+            "outcome": 2,
+            "round": 2000,
+            "gems": [
+              263,
+              993
+            ]
+          }
+        ],
+        "resultMatch": true,
+        "exact": true,
+        "exactIgnoringRollovers": true
+      },
+      "original_statistics": {
+        "score_A": 263,
+        "score_B": 993,
+        "winner": "teamB",
+        "rounds_completed": 2000,
+        "seed": "4688072832035281268",
+        "map_hash": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+        "bot_faults": {
+          "teamA": 0,
+          "teamB": 0
+        }
+      },
+      "rerun_statistics": {
+        "score_A": 263,
+        "score_B": 993,
+        "winner": "teamB",
+        "rounds_completed": 2000,
+        "seed": "4688072832035281268",
+        "map_hash": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+        "bot_faults": {
+          "teamA": 0,
+          "teamB": 0
+        }
+      }
+    },
+    "starvation-v48-vs-walk-altar": {
+      "comparison_file": "provenance/khaos-v34-ladder-intake-20261024-v1/comparison-starvation-v48-vs-walk-altar.json",
+      "comparison_sha256": "a532eb8a73c71218d21ca3e61258eef93e2eee7faaabb6c80930d9506c2bc7e5",
+      "original_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starvation__v48-A__f475-B.repl26a",
+        "sha256": "02b613ee21a19936ba5bdd94e84ccf75cde2c7cb82ccf243b4a6c1f29201aadf"
+      },
+      "rerun_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v48_walk_altar-vs-f475__01starvation__v48_walk_altar-A.repl26a",
+        "sha256": "e6c481f74dcc1eabe05580950933d57ead40895880b24067c67a2e69ff188338"
+      },
+      "raw_payload_equal": false,
+      "comparator": {
+        "inputs": [
+          60123,
+          70765
+        ],
+        "firstInputDiff": {
+          "index": 29,
+          "round": 1,
+          "step": 89,
+          "actor": 1,
+          "kind": "Move",
+          "rerunKind": "Move",
+          "original": "s89 r1 Move@10 actor1:1 (2,48)->(3,47) slot-1 pr0 x0,0",
+          "rerun": "s89 r1 Move@10 actor1:1 (2,48)->(3,49) slot-1 pr0 x0,0",
+          "originalRec": [
+            89,
+            1,
+            29,
+            4,
+            10,
+            1,
+            1,
+            2,
+            48,
+            3,
+            47,
+            -1,
+            -1,
+            0,
+            0,
+            0
+          ],
+          "rerunRec": [
+            89,
+            1,
+            29,
+            4,
+            10,
+            1,
+            1,
+            2,
+            48,
+            3,
+            49,
+            -1,
+            -1,
+            0,
+            0,
+            0
+          ]
+        },
+        "roundsMatched": 2,
+        "rounds": [
+          1626,
+          1894
+        ],
+        "firstRoundDiff": {
+          "round": 2,
+          "step": 169,
+          "rerunStep": 166
+        },
+        "result": [
+          {
+            "outcome": 2,
+            "round": 1625,
+            "gems": [
+              252,
+              1000
+            ]
+          },
+          {
+            "outcome": 1,
+            "round": 1893,
+            "gems": [
+              1124,
+              304
+            ]
+          }
+        ],
+        "resultMatch": false,
+        "exact": false,
+        "exactIgnoringRollovers": false
+      },
+      "original_statistics": {
+        "score_A": 252,
+        "score_B": 1000,
+        "winner": "teamB",
+        "rounds_completed": 1624,
+        "seed": "13738424024871290893",
+        "map_hash": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+        "bot_faults": {
+          "teamA": 0,
+          "teamB": 0
+        }
+      },
+      "rerun_statistics": {
+        "score_A": 1124,
+        "score_B": 304,
+        "winner": "teamA",
+        "rounds_completed": 1892,
+        "seed": "13738424024871290893",
+        "map_hash": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+        "bot_faults": {
+          "teamA": 0,
+          "teamB": 0
+        }
+      },
+      "first_difference_context": {
+        "physical_team": "A",
+        "actor_id": 1,
+        "actor_name": "Vesper Vale",
+        "round": 1,
+        "input_index": 29,
+        "native_step": 89,
+        "original_action": "s89 r1 Move@10 actor1:1 (2,48)->(3,47) slot-1 pr0 x0,0",
+        "control_action": "s89 r1 Move@10 actor1:1 (2,48)->(3,49) slot-1 pr0 x0,0",
+        "first_round_hash_divergence": {
+          "round": 2,
+          "step": 169,
+          "rerunStep": 166
+        }
+      }
+    },
+    "gem-fields-v48-puppet-vs-original": {
+      "comparison_file": "provenance/khaos-v34-ladder-intake-20261024-v1/comparison-gem-fields-v48-puppet-vs-original.json",
+      "comparison_sha256": "2f99fc65d61dd27149eba9098e1f9a33b37fb4bfea9294f9f3d7f01ec2442a01",
+      "original_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/raw/8cb125e6-d24b-4db2-be97-52211ba30f6a.repl26a",
+        "sha256": "ea2e606f23eb1e6dbf2f8392515cc68b52a0a99d7e3fd5fb8c695527e6160ac3"
+      },
+      "rerun_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-puppet-output/v48-A__gem-fields-puppet-B.repl26a",
+        "sha256": "e80049ca1d346777c0eb547a80a923cac023c313419a9323f68de65d1989ea5d"
+      },
+      "raw_payload_equal": false,
+      "comparator": {
+        "inputs": [
+          15202,
+          15202
+        ],
+        "firstInputDiff": null,
+        "roundsMatched": 544,
+        "rounds": [
+          544,
+          544
+        ],
+        "firstRoundDiff": null,
+        "result": [
+          {
+            "outcome": 2,
+            "round": 543,
+            "gems": [
+              429,
+              1077
+            ]
+          },
+          {
+            "outcome": 2,
+            "round": 543,
+            "gems": [
+              429,
+              1077
+            ]
+          }
+        ],
+        "resultMatch": true,
+        "exact": true,
+        "exactIgnoringRollovers": true
+      },
+      "original_statistics": null,
+      "rerun_statistics": {
+        "score_A": 429,
+        "score_B": 1077,
+        "winner": "teamB",
+        "rounds_completed": 542,
+        "seed": "14897117031117991802",
+        "map_hash": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+        "bot_faults": {
+          "teamA": 0,
+          "teamB": 0
+        }
+      }
+    },
+    "eight-selfplay-vs-v47-recall-B": {
+      "comparison_file": "provenance/khaos-v34-ladder-intake-20261024-v1/comparison-eight-selfplay-vs-v47-recall-B.json",
+      "comparison_sha256": "fb34d8cd256be9ce4d8e3a79dab0222fa5ff8af9761e6efb1011b4ace95e1ced",
+      "original_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/planned-selfplay-output/f475-selfplay__00eight.repl26a",
+        "sha256": "0c32fc45b39a75b2683babc524638e3b032e40084e65ad14e0127c613257529e"
+      },
+      "rerun_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/planned-control-ablation-output/v47_recall-vs-f475__00eight__v47_recall-B.repl26a",
+        "sha256": "a26e00fbf20ffa9d39662d004ecdf80bf1c30b9e96e15d86402625d2d228f0b0"
+      },
+      "raw_payload_equal": false,
+      "comparator": {
+        "inputs": [
+          59450,
+          35952
+        ],
+        "firstInputDiff": {
+          "index": 10371,
+          "round": 269,
+          "step": 42785,
+          "actor": 8,
+          "kind": "Move",
+          "rerunKind": "Move",
+          "original": "s42785 r269 Move@10 actor1:8 (26,8)->(25,8) slot-1 pr0 x0,0",
+          "rerun": "s42785 r269 Move@10 actor1:8 (26,8)->(25,9) slot-1 pr0 x0,0",
+          "originalRec": [
+            42785,
+            269,
+            10371,
+            4,
+            10,
+            1,
+            8,
+            26,
+            8,
+            25,
+            8,
+            -1,
+            -1,
+            0,
+            0,
+            0
+          ],
+          "rerunRec": [
+            42785,
+            269,
+            10371,
+            4,
+            10,
+            1,
+            8,
+            26,
+            8,
+            25,
+            9,
+            -1,
+            -1,
+            0,
+            0,
+            0
+          ]
+        },
+        "roundsMatched": 270,
+        "rounds": [
+          2001,
+          993
+        ],
+        "firstRoundDiff": {
+          "round": 270,
+          "step": 42841,
+          "rerunStep": 42841
+        },
+        "result": [
+          {
+            "outcome": 2,
+            "round": 2000,
+            "gems": [
+              263,
+              993
+            ]
+          },
+          {
+            "outcome": 1,
+            "round": 992,
+            "gems": [
+              1023,
+              338
+            ]
+          }
+        ],
+        "resultMatch": false,
+        "exact": false,
+        "exactIgnoringRollovers": false,
+        "firstInputDiffIgnoringRollovers": {
+          "index": 10371,
+          "round": 269,
+          "step": 42785,
+          "actor": 8,
+          "kind": "Move",
+          "rerunKind": "Move",
+          "original": "s42785 r269 Move@10 actor1:8 (26,8)->(25,8) slot-1 pr0 x0,0",
+          "rerun": "s42785 r269 Move@10 actor1:8 (26,8)->(25,9) slot-1 pr0 x0,0",
+          "originalRec": [
+            42785,
+            269,
+            10371,
+            4,
+            10,
+            1,
+            8,
+            26,
+            8,
+            25,
+            8,
+            -1,
+            -1,
+            0,
+            0,
+            0
+          ],
+          "rerunRec": [
+            42785,
+            269,
+            10371,
+            4,
+            10,
+            1,
+            8,
+            26,
+            8,
+            25,
+            9,
+            -1,
+            -1,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "original_statistics": {
+        "score_A": 263,
+        "score_B": 993,
+        "winner": "teamB",
+        "rounds_completed": 2000,
+        "seed": "4688072832035281268",
+        "map_hash": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+        "bot_faults": {
+          "teamA": 0,
+          "teamB": 0
+        }
+      },
+      "rerun_statistics": {
+        "score_A": 1023,
+        "score_B": 338,
+        "winner": "teamA",
+        "rounds_completed": 991,
+        "seed": "4688072832035281268",
+        "map_hash": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+        "bot_faults": {
+          "teamA": 0,
+          "teamB": 0
+        }
+      }
+    },
+    "gem-fields-f475-puppet-vs-original": {
+      "comparison_file": "provenance/khaos-v34-ladder-intake-20261024-v1/comparison-gem-fields-f475-puppet-vs-original.json",
+      "comparison_sha256": "2f99fc65d61dd27149eba9098e1f9a33b37fb4bfea9294f9f3d7f01ec2442a01",
+      "original_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/raw/8cb125e6-d24b-4db2-be97-52211ba30f6a.repl26a",
+        "sha256": "ea2e606f23eb1e6dbf2f8392515cc68b52a0a99d7e3fd5fb8c695527e6160ac3"
+      },
+      "rerun_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/f475-A-puppet-B-output/f475-A__recorded-B-puppet.repl26a",
+        "sha256": "e17018805d01867dcacf06ebb3d47208f832d6d34b1f4ac4f4e5189dca4fc377"
+      },
+      "raw_payload_equal": false,
+      "comparator": {
+        "inputs": [
+          15202,
+          15202
+        ],
+        "firstInputDiff": null,
+        "roundsMatched": 544,
+        "rounds": [
+          544,
+          544
+        ],
+        "firstRoundDiff": null,
+        "result": [
+          {
+            "outcome": 2,
+            "round": 543,
+            "gems": [
+              429,
+              1077
+            ]
+          },
+          {
+            "outcome": 2,
+            "round": 543,
+            "gems": [
+              429,
+              1077
+            ]
+          }
+        ],
+        "resultMatch": true,
+        "exact": true,
+        "exactIgnoringRollovers": true,
+        "firstInputDiffIgnoringRollovers": null
+      },
+      "original_statistics": null,
+      "rerun_statistics": {
+        "score_A": 429,
+        "score_B": 1077,
+        "winner": "teamB",
+        "rounds_completed": 542,
+        "seed": "14897117031117991802",
+        "map_hash": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+        "bot_faults": {
+          "teamA": 0,
+          "teamB": 0
+        }
+      }
+    },
+    "gem-fields-v48-vs-f475-puppet": {
+      "comparison_file": "provenance/khaos-v34-ladder-intake-20261024-v1/comparison-gem-fields-v48-vs-f475-puppet.json",
+      "comparison_sha256": "2f99fc65d61dd27149eba9098e1f9a33b37fb4bfea9294f9f3d7f01ec2442a01",
+      "original_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-puppet-output/v48-A__gem-fields-puppet-B.repl26a",
+        "sha256": "e80049ca1d346777c0eb547a80a923cac023c313419a9323f68de65d1989ea5d"
+      },
+      "rerun_replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/f475-A-puppet-B-output/f475-A__recorded-B-puppet.repl26a",
+        "sha256": "e17018805d01867dcacf06ebb3d47208f832d6d34b1f4ac4f4e5189dca4fc377"
+      },
+      "raw_payload_equal": false,
+      "comparator": {
+        "inputs": [
+          15202,
+          15202
+        ],
+        "firstInputDiff": null,
+        "roundsMatched": 544,
+        "rounds": [
+          544,
+          544
+        ],
+        "firstRoundDiff": null,
+        "result": [
+          {
+            "outcome": 2,
+            "round": 543,
+            "gems": [
+              429,
+              1077
+            ]
+          },
+          {
+            "outcome": 2,
+            "round": 543,
+            "gems": [
+              429,
+              1077
+            ]
+          }
+        ],
+        "resultMatch": true,
+        "exact": true,
+        "exactIgnoringRollovers": true,
+        "firstInputDiffIgnoringRollovers": null
+      },
+      "original_statistics": {
+        "score_A": 429,
+        "score_B": 1077,
+        "winner": "teamB",
+        "rounds_completed": 542,
+        "seed": "14897117031117991802",
+        "map_hash": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+        "bot_faults": {
+          "teamA": 0,
+          "teamB": 0
+        }
+      },
+      "rerun_statistics": {
+        "score_A": 429,
+        "score_B": 1077,
+        "winner": "teamB",
+        "rounds_completed": 542,
+        "seed": "14897117031117991802",
+        "map_hash": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+        "bot_faults": {
+          "teamA": 0,
+          "teamB": 0
+        }
+      }
+    }
+  },
+  "native_status": {
+    "native-status-three-selfplay.json": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/native-status-three-selfplay.json",
+      "sha256": "446c6ab61309d944966de9dc27e3d8cb1474effed0371909fa267fafb6f7a46a",
+      "games": 2,
+      "bots": [
+        {
+          "bot": "service-base-f7",
+          "bot_index": 0,
+          "games": 2,
+          "play": {
+            "rollover": 8,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "service-base-f7",
+          "bot_index": 1,
+          "games": 2,
+          "play": {
+            "rollover": 8,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ]
+    },
+    "native-status-three-gem-fields-puppet.json": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/native-status-three-gem-fields-puppet.json",
+      "sha256": "d2ee1fa07c9e02c33236bfdab4e58e0145da7f9fa0c490ddd0c4318f110d44c2",
+      "games": 1,
+      "bots": [
+        {
+          "bot": "willow-finishing-recall-4d08241-work",
+          "bot_index": 0,
+          "games": 1,
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "gem-fields-puppet-8cb125e6",
+          "bot_index": 1,
+          "games": 1,
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ]
+    }
+  },
+  "gem_fields_original": {
+    "match_id": "8cb125e6-d24b-4db2-be97-52211ba30f6a",
+    "official_submission_version": "unverified",
+    "raw_zip_sha256": "9e709f404f329ca73d698cf14ce4dd84a54fa0d39a259ff0b145111c9e754af7",
+    "original_inner_replay_sha256": "ea2e606f23eb1e6dbf2f8392515cc68b52a0a99d7e3fd5fb8c695527e6160ac3",
+    "team_a_fuel_sha256": "6a986b63fd4baf35b756f9a66f960872f2f6131d6208240023d0c31b3280e673",
+    "decoded_team_b_script": {
+      "team_index": 1,
+      "actions": 3118,
+      "turns": 2304,
+      "rollovers": 0,
+      "problems": 0,
+      "draft_numeric": [
+        5,
+        6,
+        0,
+        11,
+        1
+      ],
+      "draft_names": [
+        "Prism",
+        "Marcella",
+        "Ryth",
+        "Heart of Ruin",
+        "Vesper Vale"
+      ],
+      "decoded_gzip_sha256": "68a391f456692eb2397bda001b30b8ddacaa09cf424a3e8b511611a4a1221335"
+    }
+  },
+  "comparison_tool": {
+    "path": "provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/compare.mjs",
+    "sha256": "0273b7052d31f5a54e15285fd1e3aa4fd7f4dddd6a71262d150110540f3daa42"
+  },
+  "interpretation_limits": [
+    "On Eight, recall-only on physical A is fully behaviorally identical to f475 self-play: 59,450 accepted inputs, all 2,001 round-start hashes, and result. This A-side loss is an unchanged baseline, not an adverse recall witness.",
+    "On Eight, recall-only on physical B diverges from f475 self-play at accepted-input index10,371, round269, native step42,785, actor8 (Willow): Move (26,8)->(25,8) versus (25,9). The first differing round-start hash is round270. This is an early B-side policy effect; it does not explain the complete outcome.",
+    "At Starvation, the first accepted-input divergence is a round-1 movement by A-side actor1 (Vesper Vale), before later outcomes. This points to an early routing decision, not a full causal explanation.",
+    "On Gem Fields, local v48 A and local f475 A each match the fixed recorded B puppet replay across accepted inputs, all544 round hashes, and result. The original replay has no verified submission/version identity; these are source-specific behavioral reproductions of one fixed input sequence, not competitive comparisons.",
+    "No trace instrumentation or additional games beyond the approved f475-versus-puppet identity cell were run."
+  ],
+  "round_convention": "Comparator result.round is the one-based engine result round; statistics roundsCompleted can be one less. Examples: Eight recall-B 992 vs991 completed; Starvation walk-altar 1893 vs1892; Gem Fields both puppet comparisons 543 vs542.",
+  "f475_puppet_game": {
+    "ordered_sides": {
+      "A": "f475 service-base-f7",
+      "B": "same fixed recorded team-1 puppet"
+    },
+    "row_plan": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/f475-vs-gem-fields-puppet-row.pending.json",
+      "sha256": "445851af1216d9c96ac6faaa889557b972c4b962f3350ec4855fd77b6b01bffe",
+      "manifest_sha256": "e64d93dc90fb1f420bf90b3eddd334d13312b7974cbb5543171da95e53a26d9b"
+    },
+    "replay": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/f475-A-puppet-B-output/f475-A__recorded-B-puppet.repl26a",
+      "sha256": "e17018805d01867dcacf06ebb3d47208f832d6d34b1f4ac4f4e5189dca4fc377",
+      "bytes": 26957
+    },
+    "statistics": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/f475-A-puppet-B-output/f475-A__recorded-B-puppet.statistics.json",
+      "sha256": "095afb535142d7d72cf707789d38c5d80ce0af5c33abbfb458678d4c1af4adfb",
+      "bytes": 480658,
+      "score_A": 429,
+      "score_B": 1077,
+      "winner": "teamB",
+      "rounds_completed": 542,
+      "seed": "14897117031117991802"
+    },
+    "native_status": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/native-status-f475-puppet.json",
+      "sha256": "b7bedcc7744d46e3905ed63cfbb40cf1fa3db16144b1512503177a521d6ffe54",
+      "A_rollovers": 0,
+      "A_bot_errors": 0,
+      "B_rollovers": 0,
+      "B_bot_errors": 0
+    },
+    "failed_wrong_cwd_attempt": {
+      "stdout": "provenance/khaos-v34-ladder-intake-20261024-v1/f475-vs-gem-fields-puppet-run.stdout.log",
+      "stdout_sha256": "f335aecada6ee7d575c4628e456c3662952dde71f42f37b91f7764c0cce5454a",
+      "stderr": "provenance/khaos-v34-ladder-intake-20261024-v1/f475-vs-gem-fields-puppet-run.stderr.log",
+      "stderr_sha256": "f928542eb26b65877163dae95ca77a0c58b390d144170a6576680e6b8d115e2b",
+      "status": "cmake configure failed before any game; source CMake path mismatch because run invoked from repo root"
+    },
+    "successful_run_log": {
+      "stdout": "provenance/khaos-v34-ladder-intake-20261024-v1/f475-vs-gem-fields-puppet-run2.stdout.log",
+      "stdout_sha256": "0bba18355f8eab188714c1de11ac8c7f57164edce7b0733e74649186cd68c1c3",
+      "stderr": "provenance/khaos-v34-ladder-intake-20261024-v1/f475-vs-gem-fields-puppet-run2.stderr.log",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tool_pins": {
+      "engine_wasm": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+      "CLI": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+      "f475_raw": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+      "f475_injected": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804",
+      "puppet_raw_and_injected": "b3c79e829487b50b3249feb2e6c9f13f1aa38fe89b8eba79d5d6d5d8304aa16f"
+    },
+    "fuel_comparison": "not performed: local replay bundle did not preserve team-a.fuel, so no paired local-vs-original fuel streams exist"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schema": "gem-fields-prism0-r6-r7-trace-ordered-rows/v1",
+  "status": "pending_root_path_review_no_execution",
+  "global_options": {
+    "rounds": 8,
+    "jobs": 1,
+    "fuel_quantum": 100000,
+    "mode": "normal debug; omit --release"
+  },
+  "rows": [
+    {
+      "order": 1,
+      "phase": "recorder-prefix",
+      "A": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/gem-fields-f475-recorder",
+      "B": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/gem-fields-puppet-8cb125e6",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+      "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/recorder-prefix.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/recorder-prefix.statistics.json",
+      "expected_source": "exact f475 release source wrapped with existing calibrated recorder header"
+    },
+    {
+      "order": 2,
+      "phase": "trace-prefix",
+      "A": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/gem-fields-f475-trace",
+      "B": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/gem-fields-puppet-8cb125e6",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+      "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/trace-prefix.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/trace-prefix.statistics.json",
+      "expected_source": "f475 bot.cpp with pinned GQ logging patch plus existing trace harness wrapper/recorder data"
+    }
+  ],
+  "source_and_tool_pins": "PINS.json",
+  "outputs_absent": true
+}

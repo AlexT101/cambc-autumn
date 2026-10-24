@@ -1,0 +1,162 @@
+{
+  "schema": "gem-fields-prism0-r6-r7-preservation-manifest/v1",
+  "files": [
+    {
+      "path": "TRACE-RESULT.json",
+      "bytes": 5015,
+      "sha256": "c854049e30b4f6c1d844649757f195dbc9a50e1f323f735694f5a23330a6f2ba"
+    },
+    {
+      "path": "TRACE-INVOCATION.json",
+      "bytes": 1216,
+      "sha256": "807c9464748b92c5a41f1ea7d63e42340c732982ec9c12126a003e2c9a803086"
+    },
+    {
+      "path": "PLAN.json",
+      "bytes": 4944,
+      "sha256": "e23d952c4e9f8ec435f39b3dcb84c49cbe25a4f28581190fd3e78ac356c29289"
+    },
+    {
+      "path": "PINS.json",
+      "bytes": 5016,
+      "sha256": "a982ff797234bd34cbdd322961b5778ac66ff22c26d15fb51cee6065520b2e48"
+    },
+    {
+      "path": "TRACE-ROWS.pending.json",
+      "bytes": 2843,
+      "sha256": "e181555b276d419109ce4901f189ce0f3f5cdf2c60c612b71f722400c276b2fd"
+    },
+    {
+      "path": "TRACE-ROWS.pending.manifest",
+      "bytes": 1845,
+      "sha256": "354ec6689ab76c52007b3ef2f6b44d554263a4eb6e00919616c0256d566f70c2"
+    },
+    {
+      "path": "recorder-prefix-validation.json",
+      "bytes": 1753,
+      "sha256": "a00e434777eba991a5ed1538d2fdcbcbd6197ad3f0426167bfa271d27bf9222f"
+    },
+    {
+      "path": "trace-vs-recorder-prefix-validation.json",
+      "bytes": 1521,
+      "sha256": "79d9f0d5bb315517c94dfff66b45a050aac264c38c395dce2c498309779aebb2"
+    },
+    {
+      "path": "trace-host-validation.json",
+      "bytes": 257,
+      "sha256": "7b73ac66682d7f1978831ab45f30724063431703349d2804ca90f7311ac6d917"
+    },
+    {
+      "path": "native-audit/native-prefix-status.json",
+      "bytes": 925,
+      "sha256": "7cc6fd74aeb57d32ce2519c77d8b7ddfef16cb7563e49e319f1a8a25ebd219d1"
+    },
+    {
+      "path": "compare-prefix.mjs",
+      "bytes": 2753,
+      "sha256": "da2cfaa96bcbfb879856c8250ede3c525746755eeac538480a02e0260561b474"
+    },
+    {
+      "path": "compare-two-prefixes.mjs",
+      "bytes": 1791,
+      "sha256": "6adac323b47330092a5605c1a0dcc0b84322a340204a437d8bcae50a0d60476b"
+    },
+    {
+      "path": "f475-prism0-r6-7-quote.patch",
+      "bytes": 22448,
+      "sha256": "6e2a682d37d6895af2ea1f3214092d0e92adb2d527cc2cfc82ba0219735c001b"
+    },
+    {
+      "path": "f475-bot.instrumented.cpp",
+      "bytes": 271793,
+      "sha256": "35f6f3c9d72a17a519f4a52f70ccf32c14a712482cf94696df95cc424a05be1f"
+    },
+    {
+      "path": "recorder-cost-verification-v2.json",
+      "bytes": 3219,
+      "sha256": "045022f3363943d185704caa5c889a4f556775590e9f1dbc0bfde130a276bed3"
+    },
+    {
+      "path": "recorder-run-batch.txt",
+      "bytes": 927,
+      "sha256": "c0fbf9aab5fe461b179439babb0c54a1de9a565f80cda6453a6101f5f651be3f"
+    },
+    {
+      "path": "trace-run-batch.txt",
+      "bytes": 918,
+      "sha256": "623e9c5e5745d1859f0a72afa49d36773ecfe31c4acdcc29280075e1b72fdce2"
+    },
+    {
+      "path": "logs/recorder-run.exit.txt",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "path": "logs/recorder-run-v2.exit.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "logs/trace-data.exit.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "logs/trace-wrapper.exit.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "logs/trace-build.exit.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "logs/trace-run.exit.txt",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "logs/native-audit.exit.txt",
+      "bytes": 2,
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "recorder-prefix.repl26a",
+      "bytes": 14954,
+      "sha256": "2bb108ecf73e963cab1958a38f45dcce1549e741d38291b5fed08d69d11cbc0f",
+      "reason": "raw replay or extracted task stdout; retained locally but not a compact source artifact"
+    },
+    {
+      "path": "trace-prefix.repl26a",
+      "bytes": 5435,
+      "sha256": "b005aa0292d8fb211024e314ecd3a4567001b9132a9ad9dd66e4d0c3189b0685",
+      "reason": "raw replay or extracted task stdout; retained locally but not a compact source artifact"
+    },
+    {
+      "path": "recorder-prefix-team-a.stdout",
+      "bytes": 38784,
+      "sha256": "05e60d5a587a846cd8dd0bc16d5212c389d6b4bee390be93c05412e4d9de494a",
+      "reason": "raw replay or extracted task stdout; retained locally but not a compact source artifact"
+    },
+    {
+      "path": "trace-prefix-team-a.stdout",
+      "bytes": 19148,
+      "sha256": "0af8c34598d8a99b7b670585128ec7b876844a929c3ad27f161a2368818f8f24",
+      "reason": "raw replay or extracted task stdout; retained locally but not a compact source artifact"
+    },
+    {
+      "path": "native-audit/results.json",
+      "bytes": 625,
+      "sha256": "5798cdaf516abbe780537c12315b3ea4ed5eda1f09ac3b2e74890be613f21250",
+      "reason": "raw replay or extracted task stdout; retained locally but not a compact source artifact"
+    }
+  ],
+  "notes": [
+    "Run-batch initial attempt from the primary repo cwd is retained under logs and failed with a CMake source-directory cache mismatch; successful invocations used the explicitly pinned harness workspace cwd.",
+    "The first count_ops attempt is retained; successful retry pinned bundled wasi-sdk-33/bin on PATH.",
+    "Generic full-timeline comparator and native audit attempts on the capped bundle failed on expected EngineError18. Prefix-specific validators are the evidence."
+  ]
+}

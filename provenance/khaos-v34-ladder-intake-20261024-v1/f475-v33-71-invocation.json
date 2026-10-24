@@ -1,0 +1,13 @@
+{
+  "schema": "f475-v33-panel-invocation/v1",
+  "cambc": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "sdk_bin": "/Users/yufan/Library/Caches/cambc/wasi-sdk-33/bin",
+  "sdk_bin_reason": "persist bundled llvm-objdump path for workflows that run count_ops; do not refresh SDK or its mtimes",
+  "jobs": 6,
+  "fuel_quantum": 100000,
+  "release": true,
+  "draft": "native",
+  "run_command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 PATH=/Users/yufan/Library/Caches/cambc/wasi-sdk-33/bin:$PATH /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc run-batch <absolute-manifest> --jobs 6 --fuel-quantum 100000 --json --color never --release",
+  "already_approved_to_execute": false
+}

@@ -1,0 +1,109 @@
+{
+  "schema": "gem-fields-recorder-trace-prefix/v1",
+  "input_through_round": 7,
+  "round_hash_boundary": 8,
+  "recorded_inputs": 225,
+  "traced_inputs": 225,
+  "first_input_diff": null,
+  "first_round_diff": null,
+  "matched_round_hash_count": 9,
+  "recorded_round_hashes": [
+    [
+      0,
+      20,
+      "931172ee04b56de9"
+    ],
+    [
+      1,
+      21,
+      "e9195cee2fea9b8d"
+    ],
+    [
+      2,
+      181,
+      "16426d3d62ff8e53"
+    ],
+    [
+      3,
+      336,
+      "9ef3186e46ddc4e8"
+    ],
+    [
+      4,
+      490,
+      "f13fb4176a59dedd"
+    ],
+    [
+      5,
+      648,
+      "97d2314fa0287b26"
+    ],
+    [
+      6,
+      805,
+      "3cfe554e9c8ea156"
+    ],
+    [
+      7,
+      962,
+      "50f012ba8bb75621"
+    ],
+    [
+      8,
+      1124,
+      "aecae1446b39bf9e"
+    ]
+  ],
+  "traced_round_hashes": [
+    [
+      0,
+      20,
+      "931172ee04b56de9"
+    ],
+    [
+      1,
+      21,
+      "e9195cee2fea9b8d"
+    ],
+    [
+      2,
+      181,
+      "16426d3d62ff8e53"
+    ],
+    [
+      3,
+      336,
+      "9ef3186e46ddc4e8"
+    ],
+    [
+      4,
+      490,
+      "f13fb4176a59dedd"
+    ],
+    [
+      5,
+      648,
+      "97d2314fa0287b26"
+    ],
+    [
+      6,
+      805,
+      "3cfe554e9c8ea156"
+    ],
+    [
+      7,
+      962,
+      "50f012ba8bb75621"
+    ],
+    [
+      8,
+      1124,
+      "aecae1446b39bf9e"
+    ]
+  ],
+  "recorded_timeline_ended": true,
+  "traced_timeline_ended": true,
+  "recorded_last_round": 9,
+  "traced_last_round": 9,
+  "exact_through_requested_boundary": true
+}

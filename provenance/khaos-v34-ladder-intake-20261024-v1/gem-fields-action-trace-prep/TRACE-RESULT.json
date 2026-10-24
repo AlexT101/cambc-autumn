@@ -1,0 +1,209 @@
+{
+  "schema": "gem-fields-action-realization-trace-result/v1",
+  "status": "exact-prefix-source-bound-diagnostic",
+  "scope": "physical-A Prism actor0 rounds6\u20137 on Gem Fields; AR-only instrumentation against f475. No quote-log patch was applied.",
+  "row": {
+    "order": 1,
+    "A": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/gem-fields-action-trace",
+    "B": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/gem-fields-puppet-8cb125e6",
+    "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+    "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+    "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-prefix.repl26a",
+    "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-prefix.statistics.json",
+    "physical_meaning": "A=f475 source with action-realization-only logging (no quote-log patch) plus the existing calibrated recorder wrapper; B=the same recorded physical-B puppet as the exact 225-input prefix",
+    "output_absent": false,
+    "instrumentation_composition": "AR-only source patch against f475; no quote-log patch. Existing calibrated recorder wrapper is reused."
+  },
+  "settings": {
+    "mode": "normal debug",
+    "round_cap": 8,
+    "fuel_quantum": 100000,
+    "jobs": 1,
+    "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws",
+    "exit_code": 0,
+    "run_failures": 0
+  },
+  "source_pins": {
+    "f475_aggregate": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+    "production_bot_cpp_sha256": "77041c7738b6249979a9812d67425d4c083296b0af71878edd985b0bd6daf85e",
+    "production_abilities_cpp_sha256": "c6559729a996e1f5803990d0f0eb2094c89fb7752dd3fbf57118595f56369467",
+    "AR_patch_sha256": "b26650c85f78c11821f46fd409e4cc87b78fb6ebcc1afa6dbc1623c0664f08a7",
+    "instrumented_project_src_aggregate": "67c29c0e364090d2779b0b15536bab5d867845f3e13a273a51e1efff64b63d69",
+    "instrumented_source_hash_list_sha256": "1b3e2234ca9459f72a0061419fbdcc97a0800c6d92bf3b5fee6453882927e82f"
+  },
+  "tool_pins": {
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_v1_0_3_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "sdk_cambc_h_sha256": "3443c4b5399feb8fa15f907ed5b71b88af57c1975445571398d32f20f51343ba",
+    "sdk_imports_h_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "trace_wrapper_config_sha256": "f129c90ec1ea26b66096845492acf72581d2af8474989193d1e7133868ed9dfc",
+    "trace_wrapper_source_sha256": "086870e3c89819f8fb5e1a5449d0c7ad760d2bc17678a752045e2d08c906ec5c",
+    "trace_header_sha256": "66c9484f4d896db0fea5dec6fa6b7ac1a89804b95286bf6467a3fcb3d333cbda",
+    "trace_data_header_sha256": "3754c74468b383b95c4c9502acedc69acc20fc5d513cfb2cfa9b72c88f767907"
+  },
+  "binary_pins": {
+    "raw_wasm_sha256": "e1e966a0572f976cc63e0d42d34a601878d45bc39e0ae5950be2ccd340f6ed81",
+    "injected_wasm_sha256": "866b3a471675a08ff8ee4aa7dc8fbb82f3481a5af0049bdfab62ca4a7adc9dd2"
+  },
+  "replay": {
+    "zip_sha256": "836a4c116b6274e956d9014838be59926aeb723f1c2947ed6e8bfbb58c24339c",
+    "inner_replay_payload_sha256": "6b2adf13426090a8a27a99d4e035a63a102f97ffc77a4cc757279f7d4a25ff7f",
+    "existing_recorder_inner_payload_sha256": "6b2adf13426090a8a27a99d4e035a63a102f97ffc77a4cc757279f7d4a25ff7f",
+    "same_inner_payload_as_trusted_recorder": true
+  },
+  "prefix_validation": {
+    "schema": "gem-fields-recorder-prefix/v1",
+    "input_through_round": 7,
+    "round_hash_boundary": 8,
+    "original_input_count": 225,
+    "candidate_input_count": 225,
+    "input_first_diff": null,
+    "round_first_diff": null,
+    "matched_round_hash_count": 9,
+    "original_round_hashes": [
+      [
+        0,
+        20,
+        "931172ee04b56de9"
+      ],
+      [
+        1,
+        21,
+        "e9195cee2fea9b8d"
+      ],
+      [
+        2,
+        181,
+        "16426d3d62ff8e53"
+      ],
+      [
+        3,
+        336,
+        "9ef3186e46ddc4e8"
+      ],
+      [
+        4,
+        490,
+        "f13fb4176a59dedd"
+      ],
+      [
+        5,
+        648,
+        "97d2314fa0287b26"
+      ],
+      [
+        6,
+        805,
+        "3cfe554e9c8ea156"
+      ],
+      [
+        7,
+        962,
+        "50f012ba8bb75621"
+      ],
+      [
+        8,
+        1124,
+        "aecae1446b39bf9e"
+      ]
+    ],
+    "candidate_round_hashes": [
+      [
+        0,
+        20,
+        "931172ee04b56de9"
+      ],
+      [
+        1,
+        21,
+        "e9195cee2fea9b8d"
+      ],
+      [
+        2,
+        181,
+        "16426d3d62ff8e53"
+      ],
+      [
+        3,
+        336,
+        "9ef3186e46ddc4e8"
+      ],
+      [
+        4,
+        490,
+        "f13fb4176a59dedd"
+      ],
+      [
+        5,
+        648,
+        "97d2314fa0287b26"
+      ],
+      [
+        6,
+        805,
+        "3cfe554e9c8ea156"
+      ],
+      [
+        7,
+        962,
+        "50f012ba8bb75621"
+      ],
+      [
+        8,
+        1124,
+        "aecae1446b39bf9e"
+      ]
+    ],
+    "original_full_input_count": 15202,
+    "original_full_round_hash_count": 544,
+    "derived_full_original_decoder_exact": true,
+    "prefix_timeline_ended": true,
+    "prefix_termination": {
+      "code": 18,
+      "message": "engine error 18: replay next: End of timeline."
+    },
+    "prefix_last_completed_round": 9,
+    "prefix_last_completed_step": 1347,
+    "exact_through_requested_boundary": true
+  },
+  "host_validation": {
+    "recorder_segments": 45,
+    "trace_segments": 45,
+    "segments_exact": true,
+    "diff": [],
+    "only_recorder": [],
+    "only_trace": [],
+    "mismatch_lines": [],
+    "status_rollover_points": 0,
+    "trace_stdout_oof_or_mismatch_lines": []
+  },
+  "native_status_original_match_through_round7": {
+    "status_steps": [],
+    "basis": "original full match input stream filtered through round7; 225 accepted inputs and 9 round-start state hashes match tracer prefix exactly"
+  },
+  "observed_AR_lines": [
+    "AR_PICK r6 actor0 group4 steps15 spell0 claim4 crew0 here18,19",
+    "AR_CAMP_MEMBERS r6 g4 ready1,1 members8 harmful1 allVisible0",
+    "AR_GROUND r6 g4 slot1 targets8 harmful1 rejected_lt27 maxRejected400.000 hits1 centre21,23 selected0.000 tile-1,-1",
+    "AR_CAMP_CHOICE r6 g4 slot-1 value0.000 tile-1,-1",
+    "AR_SELECTED r6 g4 slot-1 value0.000 tile-1,-1",
+    "AR_EXECUTE r6 g4 slot-1 result0",
+    "AR_APPROACH r6 actor0 group4 spell0 returned0",
+    "AR_ATTACK_TILES r6 group4 ready1",
+    "AR_ROUTE r6 group4 route=attack-tiles moved1",
+    "AR_PICK r7 actor0 group4 steps14 spell0 claim4 crew0 here17,20",
+    "AR_GATE r7 g4 reject=damaging-camp-exposure other4 member0 distance4 reach4",
+    "AR_APPROACH r7 actor0 group4 spell0 returned0",
+    "AR_ATTACK_TILES r7 group4 ready1",
+    "AR_ROUTE r7 group4 route=attack-tiles moved1"
+  ],
+  "interpretation": {
+    "round6": "Selected group4. Approach cast was reached. camp_cast saw 8 targets, one harmful. Seven candidate centers were rejected by the existing fewer-than-two-harmful-hit rule; maximum already-computed rejected value was400 at(21,23), with one hit. No cast was selected/executed; attack tiles were available and the attack-tiles route moved. In the raw format, `rejected_lt27` is literal label `rejected_lt2` followed by count7.",
+    "round7": "Selected group4. First approach rejection was damaging-camp exposure: own group4 member0 at distance4, reach4. Attack tiles were available and the attack-tiles route moved."
+  },
+  "limits": [
+    "Source-instrumented tracer validated against existing exact recorder prefix; not a fresh native match or competitive outcome.",
+    "The trace was capped at round8; EngineError18/end-of-timeline is expected, not a bot failure.",
+    "No additional native/Safety queries were added. Instrumentation adds stdout logging and can affect runtime cost; validated input/state prefix is the evidence."
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "provenance-preservation-manifest-v1",
+  "artifacts": [
+    {
+      "path": "CROSSCHECK.json",
+      "sha256": "5310794dd549a915af9d8c6f2bb1d80caca974917808950bfc9cda63d6e34f5f",
+      "bytes": 2601
+    },
+    {
+      "path": "CROSSCHECK.md",
+      "sha256": "c83343515739e9f3cfe0a111f93eea0a122e8d2e873b35413ca73b016f3b13b8",
+      "bytes": 1212
+    },
+    {
+      "path": "README.md",
+      "sha256": "f018921250f2b8f268eec07e93ef62425e655c1ea513b56cd689d52507de6e2b",
+      "bytes": 1050
+    },
+    {
+      "path": "RESULT.json",
+      "sha256": "16b31ee66e5dd98bb12b8ac2bbd2d42dfccaade467a0f34a27fdfe4fbdd463eb",
+      "bytes": 40734
+    },
+    {
+      "path": "RESULT.md",
+      "sha256": "3d058c10dc60ac9ae5f86d183cb8df158d0fcb8eb4a0754dc1bdc5a6199601d1",
+      "bytes": 6753
+    },
+    {
+      "path": "SOURCE-PINS.json",
+      "sha256": "814dbabad7627fb467890897e920bdee9c8cf43d0fd081b3878e0145a0860c9d",
+      "bytes": 1233
+    },
+    {
+      "path": "inventory.mjs",
+      "sha256": "a25cb486fe78e95b4df98335db8e5fa5bd2844d5eb33dd7eaf14aa4fa8bd21df",
+      "bytes": 6108
+    }
+  ]
+}

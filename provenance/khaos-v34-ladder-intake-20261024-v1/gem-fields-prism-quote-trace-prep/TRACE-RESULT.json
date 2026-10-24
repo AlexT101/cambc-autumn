@@ -1,0 +1,104 @@
+{
+  "schema": "gem-fields-prism0-r6-r7-trace-result/v1",
+  "status": "completed_exact_prefix; source-bound diagnostic only",
+  "requested_match": "local f475 physical A vs recorded Gem Fields B puppet",
+  "map": {
+    "path": "maps/00gem-fields.map26a",
+    "sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5"
+  },
+  "settings": {
+    "run_mode": "normal debug; --release omitted",
+    "rounds_option": 8,
+    "fuel_quantum": 100000,
+    "jobs": 1
+  },
+  "source_pins": {
+    "f475_release_src_aggregate": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+    "instrumented_bot_cpp_sha256": "35f6f3c9d72a17a519f4a52f70ccf32c14a712482cf94696df95cc424a05be1f",
+    "instrumentation_patch_sha256": "6e2a682d37d6895af2ea1f3214092d0e92adb2d527cc2cfc82ba0219735c001b",
+    "puppet_src_aggregate": "b9a0b99e47541182d9c4d5eb43f4a3007a9a82f85e6b9cef450501c740933051"
+  },
+  "tool_pins": {
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_v1_0_3_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "sdk_cambc_h_sha256": "3443c4b5399feb8fa15f907ed5b71b88af57c1975445571398d32f20f51343ba",
+    "sdk_imports_h_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502"
+  },
+  "builds": {
+    "recorder": {
+      "src_tree_aggregate_includes_harness": "8e36d68ec7b5277c3e0296432a1dae3309d9fc664d4935765eb5a6e9fafecb90",
+      "raw_wasm_sha256": "e1a49d72ca7fc5639fc3497b40a13b04cc73dbd8cf4cb290a08fe6a97a8e9f58",
+      "injected_wasm_sha256": "0af3046b3ff70683e143140bb7d05b22bd0deff013cacbcba01dd4fdf1a495de"
+    },
+    "tracer": {
+      "src_tree_aggregate_includes_instrumented_bot_harness_and_rec_data": "cb49ba1b3ca304743d63e68bb0911e197de7ffb5982c1abe3a674e5e724ffd36",
+      "raw_wasm_sha256": "4b33e2c4e7e823fdd9965df7b1c43aa276a5e3256d8143fdcada1ff48ab4a86a",
+      "injected_wasm_sha256": "26193ec36bf8c8f709154e205d53048d1dcc5f53413aaaa059e413b3c91656ae"
+    },
+    "puppet": {
+      "src_tree_aggregate": "b9a0b99e47541182d9c4d5eb43f4a3007a9a82f85e6b9cef450501c740933051",
+      "raw_wasm_sha256": "b3c79e829487b50b3249feb2e6c9f13f1aa38fe89b8eba79d5d6d5d8304aa16f",
+      "injected_wasm_sha256": "b3c79e829487b50b3249feb2e6c9f13f1aa38fe89b8eba79d5d6d5d8304aa16f"
+    }
+  },
+  "recorded_prefix": {
+    "zip_sha256": "2bb108ecf73e963cab1958a38f45dcce1549e741d38291b5fed08d69d11cbc0f",
+    "inner_replay_payload_sha256": "6b2adf13426090a8a27a99d4e035a63a102f97ffc77a4cc757279f7d4a25ff7f",
+    "full_input_comparison_to_original": {
+      "exact": true,
+      "through_round": 7,
+      "input_count": 225,
+      "round_start_hash_boundary": 8,
+      "matched_round_hashes": 9,
+      "original_full_input_count": 15202,
+      "original_full_round_hash_count": 544,
+      "original_full_decoder_crosscheck": true
+    }
+  },
+  "trace_prefix": {
+    "zip_sha256": "b005aa0292d8fb211024e314ecd3a4567001b9132a9ad9dd66e4d0c3189b0685",
+    "inner_replay_payload_sha256": "6b2adf13426090a8a27a99d4e035a63a102f97ffc77a4cc757279f7d4a25ff7f",
+    "same_inner_payload_as_recorder": true,
+    "recorder_vs_trace": {
+      "exact": true,
+      "through_round": 7,
+      "input_count_each": 225,
+      "round_start_hash_boundary": 8,
+      "matched_round_hashes": 9,
+      "host_segments_recorder_y_vs_trace_v": 45,
+      "host_segment_mismatches": 0,
+      "host_mismatch_lines": 0,
+      "forced_out_of_fuel": 0,
+      "native_rollovers_or_bot_errors_through_decoded_prefix": 0,
+      "timeline_end": {
+        "engine_error": 18,
+        "last_completed_round": 9,
+        "last_completed_step": 1347
+      }
+    }
+  },
+  "trace_observation": {
+    "team": "A",
+    "actor_id": 0,
+    "rounds": [
+      6,
+      7
+    ],
+    "gq_log_lines": 22,
+    "summary": "Both turns enter farm with farm/claim group 4 and crew 0. Group 4 is state 0 with 71 gems/90 gold, unclaimed and non-winning. No helper is selected. Existing solo evaluation chooses group 4 at 15 steps/value 0.692690 in round 6 and 14 steps/value 0.734156 in round 7. This reports evaluated branch values only; it is not a competitive outcome or proof of a broader mechanism."
+  },
+  "limitations": [
+    "Only the approved cap through round 7 was interpreted.",
+    "Whole-replay native auditor does not support capped timelines; its EngineError18 result was retained, and native status for this prefix was counted from decoder-recorded step headers.",
+    "A generic compare.mjs run on intentionally truncated replays failed at timeline end; dedicated prefix comparisons are the evidence."
+  ],
+  "files": {
+    "recorded_validation": "recorder-prefix-validation.json",
+    "trace_prefix_validation": "trace-vs-recorder-prefix-validation.json",
+    "host_validation": "trace-host-validation.json",
+    "native_prefix_status": "native-audit/native-prefix-status.json",
+    "team_a_trace_log": "trace-prefix-team-a.stdout",
+    "instrumentation_patch": "f475-prism0-r6-7-quote.patch",
+    "invocation": "TRACE-INVOCATION.json"
+  }
+}

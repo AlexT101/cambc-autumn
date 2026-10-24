@@ -1,0 +1,11 @@
+{
+  "recorder_y_segments": 45,
+  "trace_v_segments": 45,
+  "common_segments": 45,
+  "differing_segments": [],
+  "trace_host_mismatch_lines": [],
+  "trace_forced_oof_lines": [],
+  "trace_rollovers": [],
+  "GQ_line_count": 22,
+  "host_segments_exact": true
+}

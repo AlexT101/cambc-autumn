@@ -1,0 +1,94 @@
+{
+  "schema": "generalist-support-release-builds/v1",
+  "tool": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+  "command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 cambc build --release <absolute runtime bot>",
+  "runtime_workspace": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "source_builds": [
+    {
+      "role": "support-p",
+      "source_name": "willow-v47-generalist-support-work",
+      "source_repo_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-generalist-support-work",
+      "source_aggregate": "98470a7454a14a8aac2c501cdd702c5fc06b27862ba9948a3ed27d7bff1115c1",
+      "runtime_bot_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-generalist-support",
+      "runtime_aggregate": "98470a7454a14a8aac2c501cdd702c5fc06b27862ba9948a3ed27d7bff1115c1",
+      "build_exit": 0,
+      "build_log": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/logs/generalist-build.log",
+      "raw_wasm": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-generalist-support/.cambc/build-release/bot.wasm",
+        "sha256": "0cf24998e15fbef539edf6701e3341a787a2b7f441857bc6febe5dd9b3a4dfd4",
+        "bytes": 1667766
+      },
+      "injected_wasm": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-generalist-support/.cambc/build-release/bot-injected.wasm",
+        "sha256": "85f40adcc7f7597256db2985d897991bc55902a201bd7c2ea55c4e34668fa466",
+        "bytes": 909514
+      }
+    },
+    {
+      "role": "support-s",
+      "source_name": "willow-v47-stellar-five-support-work",
+      "source_repo_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-stellar-five-support-work",
+      "source_aggregate": "f5daacb599a2d2e248f9cef82126e6ec4761647995c9b454a5d3c21b8b5ed86a",
+      "runtime_bot_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-stellar-five-support",
+      "runtime_aggregate": "f5daacb599a2d2e248f9cef82126e6ec4761647995c9b454a5d3c21b8b5ed86a",
+      "build_exit": 0,
+      "build_log": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/logs/stellar-build.log",
+      "raw_wasm": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-stellar-five-support/.cambc/build-release/bot.wasm",
+        "sha256": "7ef379522ef5bc9ce4df69653bbfd3185511f27b0305d5151828da15d7f0b4a2",
+        "bytes": 1667814
+      },
+      "injected_wasm": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-stellar-five-support/.cambc/build-release/bot-injected.wasm",
+        "sha256": "b025fa57a20f308df786656ff05431f0f515a6baab053f49da67fcf7f75dce19",
+        "bytes": 909562
+      }
+    },
+    {
+      "role": "support-c",
+      "source_name": "willow-v47-cassi-five-support-work",
+      "source_repo_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-cassi-five-support-work",
+      "source_aggregate": "ace0519e41ba5261d52955c2f17316de1099ad3ecc88d5c73f0a74b24b047421",
+      "runtime_bot_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-cassi-five-support",
+      "runtime_aggregate": "ace0519e41ba5261d52955c2f17316de1099ad3ecc88d5c73f0a74b24b047421",
+      "build_exit": 0,
+      "build_log": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/logs/cassi-build.log",
+      "raw_wasm": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-cassi-five-support/.cambc/build-release/bot.wasm",
+        "sha256": "7770be14370477a034fa0791d892825fb6812cdc27cd24851f5089ba6a39c941",
+        "bytes": 1667814
+      },
+      "injected_wasm": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-cassi-five-support/.cambc/build-release/bot-injected.wasm",
+        "sha256": "4fe489057be8a252580ae12657b3bd6513a770f3b0778cc7b0ec668c54f93742",
+        "bytes": 909562
+      }
+    }
+  ],
+  "sdk_before": {
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/cambc.h": {
+      "sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "mtime_ns": 1792774035481976768,
+      "bytes": 218074
+    },
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/imports.h": {
+      "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "mtime_ns": 1792774035482489096,
+      "bytes": 27810
+    }
+  },
+  "sdk_after": {
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/cambc.h": {
+      "sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "mtime_ns": 1792774035481976768,
+      "bytes": 218074
+    },
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/imports.h": {
+      "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "mtime_ns": 1792774035482489096,
+      "bytes": 27810
+    }
+  },
+  "sdk_unchanged": true,
+  "failed_setup_attempt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/generalist-support-18-v1/logs/failed-setup-attempt.txt"
+}

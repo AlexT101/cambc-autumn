@@ -1,0 +1,27 @@
+{
+  "schema": "native-batch-results/v1",
+  "release": true,
+  "bots": [
+    "service-base-f7",
+    "v33"
+  ],
+  "scheduled": 1,
+  "completed": 1,
+  "errors": 0,
+  "build_mode": "Release, fuel 100000",
+  "source_pins": {
+    "service-base-f7": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "matches": [
+    {
+      "index": 0,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01fracture__f475-A.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a"
+    }
+  ]
+}

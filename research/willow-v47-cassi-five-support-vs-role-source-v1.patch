@@ -1,0 +1,212 @@
+diff --git a/bots/variants/willow-v47-cassi-five-work/src/bot.cpp b/bots/variants/willow-v47-cassi-five-support-work/src/bot.cpp
+index d7a0d4f..d2b3af7 100644
+--- a/bots/variants/willow-v47-cassi-five-work/src/bot.cpp
++++ b/bots/variants/willow-v47-cassi-five-support-work/src/bot.cpp
+@@ -4429,12 +4429,6 @@ bool support_view(Reach::Window viewers, vec2 target, vec2 p) {
+            && static_cast<bool>(viewers & Reach::Window::bit(9 * (y + 4) + x + 4));
+ }
+ 
+-const ChampionBelief* support_endpoint(const World& world, cambc::champion_type type) {
+-    for (const auto& a : world.allies)
+-        if (a.type == type) return &a;
+-    return nullptr;
+-}
+-
+ void close_recovery(Memory& memory, float health) {
+     if (memory.recovery_start >= 0) {
+         memory.recovery_closed_group = memory.recovery_group;
+@@ -4644,19 +4638,20 @@ bool support_work(const World& world, Pathing& pathing, Safety& safety, const Me
+ // neither wanting home nor at work (decide).
+ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible) {
+     mate_eligible = false;
++    const auto pair = support_pair(world);
+     const bool willow = world.me().type == cambc::champion_type::willow;
+-    const bool prism = world.me().type == cambc::champion_type::prism;
+-    if ((!willow && !prism) || stunned_turn) return false;
++    const bool support_client = pair[0] && pair[0]->is_self;
++    if ((!willow && !support_client) || stunned_turn) return false;
+     std::optional<bool> protects;
+     const auto protected_work = [&] {
+-        if (!protects) protects = prism && support_work(world, pathing, safety, memory);
++        if (!protects) protects = support_client && support_work(world, pathing, safety, memory);
+         return *protects;
+     };
+-    const auto* mate = support_endpoint(world, willow ? cambc::champion_type::prism : cambc::champion_type::willow);
++    const auto* mate = pair[willow ? 0 : 1];
+     const vec2 here = my_position();
+     const float health = my_health();
+     const auto abandon_recovery = [&] {
+-        if (prism && memory.recovery_start >= 0) {
++        if (support_client && memory.recovery_start >= 0) {
+             close_recovery(memory, health);
+             support_retreat = !recovered_for_work(world, safety, memory);
+         }
+@@ -4671,7 +4666,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+         memory.formation_start = world.round - 4;
+         memory.formation_turns = 4;
+     }
+-    if (prism && memory.recovery_reentry) {
++    if (support_client && memory.recovery_reentry) {
+         if (memory.recovery_closed_group < 0 || memory.farm_group != memory.recovery_closed_group
+             || test(world.map().ally_spawn, here) || recovered_for_work(world, safety, memory))
+             memory.recovery_reentry = false;
+@@ -4681,7 +4676,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+             return false;
+         }
+     }
+-    if (prism && memory.farm_group != memory.recovery_closed_group) memory.recovery_closed_health = -1;
++    if (support_client && memory.farm_group != memory.recovery_closed_group) memory.recovery_closed_health = -1;
+     if (!mate || !mate->alive || !mate->visible || !mate->can_act(world.round) || !visible_record(mate->handle)) {
+         abandon_recovery();
+         memory.formation_start = -1;
+@@ -4694,7 +4689,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     mate_eligible = !observed_channel;
+     if (observed_channel || protected_work() || test(world.map().ally_spawn, here)) {
+         if (memory.recovery_start >= 0) close_recovery(memory, health);
+-        if (prism && observed_channel && !protected_work()) support_retreat = !recovered_for_work(world, safety, memory);
++        if (support_client && observed_channel && !protected_work()) support_retreat = !recovered_for_work(world, safety, memory);
+         return false;
+     }
+ 
+@@ -4705,7 +4700,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     const bool ready = heal_ready(world, healer, amount);
+     if (willow && ready) view_count = heal_views(world, here, amount, views);
+     Reach::Window formation_view;
+-    if (prism) {
++    if (support_client) {
+         if (memory.recovery_start >= 0 && (health > memory.recovery_health || !ready)) {
+             close_recovery(memory, health);
+             support_retreat = !recovered_for_work(world, safety, memory);
+@@ -4764,7 +4759,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+         if (willow && p != here && camp >= 0 && world.camps[camp].state == CampState::cleared) continue;
+         const bool in_range = support_view(formation_view, mate->pos, p);
+         const int gap = in_range ? 0 : dist(p, mate->pos);
+-        if (prism) {
++        if (support_client) {
+             if (!in_range || (p == here && memory.recovery_turns > 0 && !comms::support_available(world))) continue;
+         }
+         int target = -1;
+@@ -4791,7 +4786,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     if (!found) return abandon_recovery();
+     const auto commit_support = [&] {
+         support_owned = true;
+-        if (prism) {
++        if (support_client) {
+             if (memory.recovery_start < 0) memory.recovery_start = world.round, memory.recovery_group = memory.farm_group;
+             ++memory.recovery_turns;
+             memory.recovery_health = health;
+@@ -4821,13 +4816,13 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+             support_owned = true;
+             memory.claim = -1;
+             memory.crew = false;
+-            if (prism) close_recovery(memory, health);
++            if (support_client) close_recovery(memory, health);
+             return true;
+         }
+     } else commit_support();
+     world.throw_if_stale();
+     support_owned = true;
+-    if (prism) {
++    if (support_client) {
+         support_requested = true;
+         decision = 'r';
+         // Waiting in place spends no walk, and the tile is out of every reach: a basic attack is free.
+@@ -4893,7 +4888,8 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+         return;
+     }
+     const bool willow = world.me().type == cambc::champion_type::willow;
+-    const bool prism = world.me().type == cambc::champion_type::prism;
++    const auto pair = support_pair(world);
++    const bool support_client = pair[0] && pair[0]->is_self;
+     // Healing needs a turn end on spawn; a recall arrives at turn start.
+     const bool mend = on_spawn && my_health() < my_max_health();
+     const bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory.siege));
+@@ -4901,8 +4897,8 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     const bool working = willow && !mend && !leave && support_work(world, pathing, safety, memory);
+     const bool strikes = !working && strike_possible(world);
+     bool mate_eligible = false;
+-    if (!mend && (prism || (willow && !leave && !working))
+-        && support_endpoint(world, willow ? cambc::champion_type::prism : cambc::champion_type::willow)
++    if (!mend && (support_client || (willow && !leave && !working))
++        && pair[willow ? 0 : 1]
+         && local_support(world, pathing, safety, memory, leave, mate_eligible))
+         return;
+     if (willow && !mend && !leave && !strikes && !stunned_turn && !working && !mate_eligible && !support_retreat
+diff --git a/bots/variants/willow-v47-cassi-five-work/src/comms.cpp b/bots/variants/willow-v47-cassi-five-support-work/src/comms.cpp
+index dde56d5..337d928 100644
+--- a/bots/variants/willow-v47-cassi-five-work/src/comms.cpp
++++ b/bots/variants/willow-v47-cassi-five-support-work/src/comms.cpp
+@@ -20,7 +20,7 @@ namespace {
+ //   [48, 56)  claimed group + 1, 0 = none
+ //   [56, 59)  claiming ally's index
+ //   [59, 62)  sighting write count
+-//   [31, 32)  support payload; even rounds Prism requests, odd rounds Willow offers
++//   [31, 32)  support payload; even rounds the bound client requests, odd rounds Willow offers
+ //   [62, 64)  support writer round modulo four
+ // The write count makes a sighting rewritten unchanged, with the same parity, still read as new.
+ // A claim or a bag is a standing state, rewritten only when it changes or as a reminder.
+@@ -75,25 +75,9 @@ support_mailbox::State support;
+ int support_intent_round = -1;
+ bool support_intent_value = false;
+ 
+-// Prism and Willow, found once: the picks are fixed after the draft.
+-std::array<const ChampionBelief*, 2> endpoints(const World& world) {
+-    static std::array<int, 2> index{-2, -2};
+-    if (index[0] == -2) {
+-        index = {-1, -1};
+-        for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
+-            if (world.allies[i].type == cambc::champion_type::prism) index[0] = i;
+-            if (world.allies[i].type == cambc::champion_type::willow) index[1] = i;
+-        }
+-    }
+-    std::array<const ChampionBelief*, 2> pair{};
+-    for (int i = 0; i < 2; ++i)
+-        if (index[i] >= 0) pair[i] = &world.allies[index[i]];
+-    return pair;
+-}
+-
+ // Only the pair reads the mailbox.
+ void receive_support(const World& world, std::uint64_t bits) {
+-    const auto pair = endpoints(world);
++    const auto pair = support_pair(world);
+     if (!pair[0] || !pair[1] || (!pair[0]->is_self && !pair[1]->is_self)) return;
+     std::array<support_mailbox::Endpoint, 2> endpoint{};
+     for (int i = 0; i < 2; ++i)
+@@ -234,7 +218,7 @@ void send(World& world, bool moved, bool refresh) {
+             break;
+         }
+     }
+-    const auto pair = endpoints(world);
++    const auto pair = support_pair(world);
+     const int writer = round & 1;
+     if (pair[0] && pair[1] && pair[writer]->is_self) {
+         const bool positive = support_mailbox::publish_value(round, support_intent_round, support_intent_value,
+diff --git a/bots/variants/willow-v47-cassi-five-work/src/world.h b/bots/variants/willow-v47-cassi-five-support-work/src/world.h
+index 63ea7de..949f6f9 100644
+--- a/bots/variants/willow-v47-cassi-five-work/src/world.h
++++ b/bots/variants/willow-v47-cassi-five-support-work/src/world.h
+@@ -551,6 +551,24 @@ private:
+     int updated_round_ = -1;
+ };
+ 
++// One stable service client and Willow, bound to the actual roster even while either is absent.
++inline std::array<const ChampionBelief*, 2> support_pair(const World& world) {
++    static std::array<int, 2> index{-2, -2};
++    if (index[0] == -2) {
++        index = {-1, -1};
++        int preferred = 3;
++        for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
++            const auto type = world.allies[i].type;
++            const int rank = type == cambc::champion_type::prism ? 0 : type == cambc::champion_type::stellar ? 1
++                            : type == cambc::champion_type::cassi ? 2 : 3;
++            if (rank < preferred) index[0] = i, preferred = rank;
++            if (type == cambc::champion_type::willow) index[1] = i;
++        }
++    }
++    if (index[0] < 0 || index[1] < 0) return {};
++    return {&world.allies[index[0]], &world.allies[index[1]]};
++}
++
+ // Cassi or Issac: the other body on its side, whose death is its own; null for anyone else.
+ inline const ChampionBelief* linked_partner(const World& world, const ChampionBelief& c) {
+     if (c.facts().passive != Passive::linked_pair) return nullptr;

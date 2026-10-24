@@ -1,0 +1,33 @@
+--- a/pathing.cpp
++++ b/pathing.cpp
+@@ -1,6 +1,7 @@
+ #include "pathing.h"
+ #include <algorithm>
+ #include <array>
++#include <cstdio>
+ #include "world.h"
+ 
+ namespace aph {
+@@ -89,10 +90,19 @@
+ 
+ int Pathing::centre_to_altar(int group) {
+     auto& steps = entry(centre_to_altar_, map().groups.size(), group);
++    const bool hit = steps.has_value(), field_warm = static_cast<bool>(any_altar_);
++    bool used_draft = false, used_field = false;
+     // Draft steps use walking walls; a dasher keeps its own field's graph, as for spawn steps.
+-    if (!steps && (!world_.me().facts().has_dash() || map().crossable.is_empty())) steps = map().drafted_altar_steps(group);
+-    if (!steps) steps = to_any_altar().at(map().groups[group].centre);
+-    return *steps;
++    if (!steps && (!world_.me().facts().has_dash() || map().crossable.is_empty())) {
++        used_draft = true;
++        steps = map().drafted_altar_steps(group);
++    }
++    if (!steps) { used_field = true; steps = to_any_altar().at(map().groups[group].centre); }
++    const int result = *steps;
++    debug_block({ if (world_.round == 1 && static_cast<std::uint32_t>(world_.me().handle) == 1)
++        std::printf("STAR_ALTAR r%u actor%u g%d hit%d anywarm%d draft%d field%d result%d\n",
++          world_.round, static_cast<std::uint32_t>(world_.me().handle), group, hit, field_warm, used_draft, used_field, result); });
++    return result;
+ }
+ 
+ const bitboard& Pathing::live_camps() {

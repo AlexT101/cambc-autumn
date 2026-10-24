@@ -1,0 +1,321 @@
+--- a/bot.cpp
++++ b/bot.cpp
+@@ -1737,6 +1737,7 @@
+ // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
+ [[gnu::flatten]] bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
++    const bool trace_ar = my_handle() == 0 && world.round >= 6 && world.round <= 7;
+     if (pick_up(world, pathing, memory)) return true;
+     const auto& map = world.map();
+     const auto& groups = map.groups;
+@@ -1912,20 +1913,39 @@
+         if (g < 0) return false;
+         // Descending it walks around walls and live camps; a live route only helps past allies.
+         const auto walk = [&](const Field& field, int target) __attribute__((always_inline)) {
+-            return dash_across(world, pathing, field) || pathing.descend(field, zone, groups[target].centre)
+-                   || pathing.step_towards(field, zone, groups[target].centre);
++            const bool dashed = dash_across(world, pathing, field);
++            if (dashed) {
++                debug_block({ if (trace_ar && target == 4) std::printf("AR_WALK r%d g%d route=dash\n", world.round, target); });
++                return true;
++            }
++            const bool descended = pathing.descend(field, zone, groups[target].centre);
++            if (descended) {
++                debug_block({ if (trace_ar && target == 4) std::printf("AR_WALK r%d g%d route=descend\n", world.round, target); });
++                return true;
++            }
++            const bool stepped = pathing.step_towards(field, zone, groups[target].centre);
++            debug_block({ if (trace_ar && target == 4) std::printf("AR_WALK r%d g%d route=step moved%d\n", world.round, target, static_cast<int>(stepped)); });
++            return stepped;
+         };
+         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
++        debug_block({ if (trace_ar && g == 4) std::printf("AR_WALK r%d g%d field=unavailable previous%d\n", world.round, g, previous); });
+         // Too short of fuel to search the way to a new choice: last turn's, whose way is known.
+         if (previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous))) {
+             note_shortcut("farm-kept-target");
+             memory.farm_group = memory.claim = previous;
+             memory.crew = false;
++            debug_block({ if (trace_ar && g == 4) std::printf("AR_WALK r%d intended%d route=previous target%d\n", world.round, g, previous); });
+             return walk(*pathing.approach(previous, walk_range(world, previous)), previous);
+         }
+-        if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, zone, groups[g].centre);
++        if (const auto* centre = pathing.from_centre(g)) {
++            const bool moved = pathing.descend(*centre, zone, groups[g].centre);
++            debug_block({ if (trace_ar && g == 4) std::printf("AR_WALK r%d g%d route=centre moved%d\n", world.round, g, static_cast<int>(moved)); });
++            return moved;
++        }
+         note_shortcut("crow-flies-farm");
+-        return pathing.step_closer(groups[g].centre, zone, groups[g].centre);
++        const bool moved = pathing.step_closer(groups[g].centre, zone, groups[g].centre);
++        debug_block({ if (trace_ar && g == 4) std::printf("AR_WALK r%d g%d route=centre-fallback moved%d\n", world.round, g, static_cast<int>(moved)); });
++        return moved;
+     };
+     // The walk comes before choosing better: fuel for its search is kept back from the evaluation.
+     const auto walk_reserve = [&](int g) __attribute__((always_inline)) { return g < 0 ? std::uint64_t{0} : pathing.approach_cost(g, walk_range(world, g)); };
+@@ -2395,6 +2415,8 @@
+         if (k == 0 && memory.farm_group >= 0) memory.claim = memory.farm_group, walk_on(memory.farm_group);
+         return true;
+     }
++    debug_block({ if (trace_ar && best == 4) std::printf("AR_PICK r%d actor%u group%d steps%d spell%d claim%d crew%d here%d,%d\n",
++        world.round, my_handle(), best, best_steps, static_cast<int>(spell), memory.claim, static_cast<int>(memory.crew), here.x, here.y); });
+     memory.farm_group = best;
+     // Our fields price a dash over a hole line; live routes walk round it.
+     const bool dasher = world.me().facts().has_dash();
+@@ -2424,13 +2446,20 @@
+         return true;
+     }
+     if (spell && dist(here, groups[best].centre) <= vision_radius + ability_range
+-        && spell_clear(world, pathing, best, zone, cap))
++        && spell_clear(world, pathing, best, zone, cap)) {
++        debug_block({ if (trace_ar && best == 4) std::printf("AR_SPELL_CLEAR r%d group%d result=handled\n", world.round, best); });
+         return true;
+-    if (cast_at_camp_on_approach(world, best)) return true;
++    }
++    const bool approach_cast = cast_at_camp_on_approach(world, best);
++    debug_block({ if (trace_ar && best == 4) std::printf("AR_APPROACH r%d actor%u group%d spell%d returned%d\n",
++        world.round, my_handle(), best, static_cast<int>(spell), static_cast<int>(approach_cast)); });
++    if (approach_cast) return true;
+     const auto* tiles = farm_attack_tiles(world, pathing, best, range, [&] { return end_reserve + walk_reserve(best); });
++    debug_block({ if (trace_ar && best == 4) std::printf("AR_ATTACK_TILES r%d group%d ready%d\n", world.round, best, static_cast<int>(tiles != nullptr)); });
+     if (!tiles) {
+         note_shortcut("farm-no-attack-tiles");
+-        walk_on(best);
++        const bool moved = walk_on(best);
++        debug_block({ if (trace_ar && best == 4) std::printf("AR_ROUTE r%d group%d route=walk-on-no-attack-tiles moved%d\n", world.round, best, static_cast<int>(moved)); });
+         return true;
+     }
+     // In range and sight with the attack unspent: our pick may have been refused in passing.
+@@ -2451,12 +2480,25 @@
+     if (dash_route) world.throw_if_stale();
+     bool walked = dash_route && pathing.descend(*dash_route, zone, groups[best].centre);
+     debug_block({ if (walked) std::printf("DASH-FOLLOW %d %u group %d\n", world.round, my_handle(), best); });
+-    if (!walked)
+-        walked = fuel_ok(search_cost_estimate(cap) + end_reserve)
+-                     ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
+-                           || pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre)
+-                     : (note_shortcut("farm-no-route"), walk_on(best));
+-    if (!walked && dasher) walk_on(best);
++    if (!walked) {
++        const bool enough_for_search = fuel_ok(search_cost_estimate(cap) + end_reserve);
++        if (enough_for_search) {
++            const bool main_route = pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre);
++            const bool adjacent_route = !main_route
++                && pathing.step_towards(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre);
++            walked = main_route || adjacent_route;
++            debug_block({ if (trace_ar && best == 4) std::printf("AR_ROUTE r%d group%d route=%s moved%d\n", world.round, best,
++                main_route ? "attack-tiles" : adjacent_route ? "adjacent" : "none", static_cast<int>(walked)); });
++        } else {
++            note_shortcut("farm-no-route");
++            walked = walk_on(best);
++            debug_block({ if (trace_ar && best == 4) std::printf("AR_ROUTE r%d group%d route=walk-on-fuel-short moved%d\n", world.round, best, static_cast<int>(walked)); });
++        }
++    }
++    if (!walked && dasher) {
++        const bool fallback = walk_on(best);
++        debug_block({ if (trace_ar && best == 4) std::printf("AR_ROUTE r%d group%d route=walk-on-dash-fallback moved%d\n", world.round, best, static_cast<int>(fallback)); });
++    }
+     if (walked) {
+         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
+         see_revealed(world, pathing, safety);
+--- a/abilities.cpp
++++ b/abilities.cpp
+@@ -162,7 +162,8 @@
+ 
+ // Centres within `range` of `here`, off `skip`.
+ Cast best_ground(int slot, float min_weight_value, const std::vector<Target>& targets, vec2 here, int range,
+-                 const bitboard& skip, const std::vector<vec2>* harmful = nullptr) {
++                 const bitboard& skip, const std::vector<vec2>* harmful = nullptr,
++                 bool trace_ar = false, int trace_round = -1, int trace_group = -1) {
+     constexpr int max_range = 5; // ability ranges are 4
+     Cast best;
+     if (targets.empty()) return best;
+@@ -181,6 +182,9 @@
+         for (const auto& t : targets) around(t, [](float& v) { v = 0; });
+     else
+         std::fill_n(value.begin(), side * side, 0.0f);
++    int trace_rejected = 0, trace_max_hits = -1;
++    float trace_max_rejected_value = 0;
++    vec2 trace_max_rejected_centre{-1, -1};
+     static bitboard centres{cambc::uninitialized};
+     clear_board(centres);
+     for (const auto& t : targets) {
+@@ -202,10 +206,26 @@
+             int hits = 0;
+             for (auto p : *harmful)
+                 if (dist(c, p) <= 1 && ++hits >= 2) break;
+-            if (hits < 2) continue;
++            if (hits < 2) {
++                debug_block({
++                    if (trace_ar) {
++                        ++trace_rejected;
++                        if (v > trace_max_rejected_value) {
++                            trace_max_rejected_value = v;
++                            trace_max_rejected_centre = c;
++                            trace_max_hits = hits;
++                        }
++                    }
++                });
++                continue;
++            }
+         }
+         best.slot = slot, best.value = v, best.tile = c;
+     }
++    debug_block({ if (trace_ar) std::printf("AR_GROUND r%d g%d slot%d targets%zu harmful%zu rejected_lt2%d maxRejected%.3f hits%d centre%d,%d selected%.3f tile%d,%d\n",
++        trace_round, trace_group, slot, targets.size(), harmful ? harmful->size() : 0, trace_rejected,
++        static_cast<double>(trace_max_rejected_value), trace_max_hits, trace_max_rejected_centre.x, trace_max_rejected_centre.y,
++        static_cast<double>(best.value), best.tile.x, best.tile.y); });
+     return best;
+ }
+ 
+@@ -391,7 +411,11 @@
+ }
+ 
+ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_value, bool approach = false) {
+-    if (!my_can_cast()) return {};
++    const bool trace_ar = approach && group == 4 && my_handle() == 0 && world.round >= 6 && world.round <= 7;
++    if (!my_can_cast()) {
++        debug_block({ if (trace_ar) std::printf("AR_CAMP r%d g%d reject=my-can-cast\n", world.round, group); });
++        return {};
++    }
+     const auto& f = world.me().facts();
+     const std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};
+     if (!ready[0] && !ready[1]) return {};
+@@ -400,7 +424,11 @@
+     const auto& g = world.map().groups[group];
+     const bool harmless_approach = approach && g.strength <= 0;
+     if ((g.has_monolith && group != siege_group()) || world.camps[group].state != CampState::alive) return {};
+-    if (enemy_within(world, here, hold_range)) return {};
++    const bool enemy_hold = enemy_within(world, here, hold_range);
++    if (enemy_hold) {
++        debug_block({ if (trace_ar) std::printf("AR_CAMP r%d g%d reject=enemy-within-hold-range\n", world.round, group); });
++        return {};
++    }
+     // A ranged walk also spends the basic: require our native position to be unchanged.
+     const bool post_basic = !approach && !attackers_only && !my_can_attack() && !walked(world);
+     bool all_visible = post_basic;
+@@ -443,7 +471,12 @@
+         members.push_back({i, g.members[i].pos, health, stun, harms});
+         if (approach && harms) harmful.push_back(g.members[i].pos);
+     }
+-    if (members.empty()) return {};
++    if (members.empty()) {
++        debug_block({ if (trace_ar) std::printf("AR_CAMP r%d g%d members0 harmful%zu\n", world.round, group, harmful.size()); });
++        return {};
++    }
++    debug_block({ if (trace_ar) std::printf("AR_CAMP_MEMBERS r%d g%d ready%d,%d members%zu harmful%zu allVisible%d\n",
++        world.round, group, static_cast<int>(ready[0]), static_cast<int>(ready[1]), members.size(), harmful.size(), static_cast<int>(all_visible)); });
+     // A spell clear has no basic attack to finish an attacker under the usual floor: it would stand
+     // idle beside it for good. Every damage spell's raw exceeds the floor, so only finishing casts pass.
+     float floor_value = min_camp_value;
+@@ -498,7 +531,8 @@
+                 if (other != group && world.camps[other].state == CampState::alive) draw_alive_members(world, other, skip);
+             skip_rens(raw, a.reach(), 1, skip);
+             best.offer(best_ground(s, finishes ? 0.0f : any_value ? 1.0f : floor_value, targets, here, a.range(), skip,
+-                                   approach && !harmless_approach ? &harmful : nullptr));
++                                   approach && !harmless_approach ? &harmful : nullptr,
++                                   trace_ar, world.round, group));
+         } else if (a.lands()) {
+             // A dash off a cleared group gives up its capture.
+             if (const int at = world.map().group_at(here); at >= 0 && world.camps[at].state == CampState::cleared) continue;
+@@ -563,12 +597,14 @@
+             }
+         }
+     }
++    debug_block({ if (trace_ar) std::printf("AR_CAMP_CHOICE r%d g%d slot%d value%.3f tile%d,%d\n",
++        world.round, group, best.slot, static_cast<double>(best.value), best.tile.x, best.tile.y); });
+     return best;
+ }
+ 
+ } // namespace
+ 
+-bool enemy_tribute_wins(const World& world, const ChampionBelief& e) {
++bool cast_at_camp(const World& world, const ChampionBelief& e) {
+     return e.alive && e.visible && e.channel == Channel::tribute
+            && world.score.enemy + e.gems >= static_cast<int>(cambc::constants::winning_gems);
+ }
+@@ -598,36 +634,73 @@
+ 
+ bool cast_at_camp_on_approach(const World& world, int group) {
+     world.throw_if_stale();
+-    if (world.me().type != cambc::champion_type::prism
+-        || (!world.me().ability_ready(0, world.round) && !world.me().ability_ready(1, world.round))
+-        || !my_can_cast() || walked(world))
+-        return false;
++    const bool trace_ar = group == 4 && my_handle() == 0 && world.round >= 6 && world.round <= 7;
++    if (world.me().type != cambc::champion_type::prism) {
++        debug_block({ if (trace_ar) std::printf("AR_GATE r%d g%d reject=not-prism\n", world.round, group); });
++        return false;
++    }
++    const bool ready0 = world.me().ability_ready(0, world.round);
++    const bool ready = ready0 || world.me().ability_ready(1, world.round);
++    if (!ready) {
++        debug_block({ if (trace_ar) std::printf("AR_GATE r%d g%d reject=no-slot-ready\n", world.round, group); });
++        return false;
++    }
++    if (!my_can_cast()) {
++        debug_block({ if (trace_ar) std::printf("AR_GATE r%d g%d reject=my-can-cast\n", world.round, group); });
++        return false;
++    }
++    if (walked(world)) {
++        debug_block({ if (trace_ar) std::printf("AR_GATE r%d g%d reject=already-walked\n", world.round, group); });
++        return false;
++    }
+     const auto& c = world.camps[group];
+-    if (c.state != CampState::alive) return false;
++    if (c.state != CampState::alive) {
++        debug_block({ if (trace_ar) std::printf("AR_GATE r%d g%d reject=group-state state%d\n", world.round, group, static_cast<int>(c.state)); });
++        return false;
++    }
+     const auto& map = world.map();
+     const auto& g = map.groups[group];
+     const bool harmless = g.strength <= 0;
+-    if (harmless ? g.members.size() <= 1 : c.awake != Awake::awake) return false;
++    if (harmless ? g.members.size() <= 1 : c.awake != Awake::awake) {
++        debug_block({ if (trace_ar) std::printf("AR_GATE r%d g%d reject=group-awake harmless%d awake%d\n",
++            world.round, group, static_cast<int>(harmless), static_cast<int>(c.awake)); });
++        return false;
++    }
+     const vec2 here = my_position();
+     const int range = world.me().facts().attack_range();
+-    for (std::size_t i = 0; i < g.members.size(); ++i)
+-        if ((harmless || c.health[i] > 0) && dist(here, g.members[i].pos) <= range && cambc::vision::has_camp(g.members[i].pos))
+-            return false;
++    for (std::size_t i = 0; i < g.members.size(); ++i) {
++        if (!(harmless || c.health[i] > 0)) continue;
++        const int d = dist(here, g.members[i].pos);
++        if (d > range) continue;
++        if (!cambc::vision::has_camp(g.members[i].pos)) continue;
++        debug_block({ if (trace_ar) std::printf("AR_GATE r%d g%d reject=basic-range member%zu distance%d range%d\n", world.round, group, i, d, range); });
++        return false;
++    }
+     for (int other : map.groups_near(here, map.max_camp_reach)) {
+         if (world.camps[other].state != CampState::alive) continue;
+         const auto& members = map.groups[other].members;
+-        for (std::size_t i = 0; i < members.size(); ++i)
+-            if (world.camps[other].health[i] > 0 && members[i].strength > 0 && dist(here, members[i].pos) <= members[i].reach)
+-                return false;
++        for (std::size_t i = 0; i < members.size(); ++i) {
++            if (world.camps[other].health[i] <= 0) continue;
++            if (members[i].strength <= 0) continue;
++            const int d = dist(here, members[i].pos);
++            if (d > members[i].reach) continue;
++            debug_block({ if (trace_ar) std::printf("AR_GATE r%d g%d reject=damaging-camp-exposure other%d member%zu distance%d reach%d\n",
++                world.round, group, other, i, d, members[i].reach); });
++            return false;
++        }
+     }
+     try {
+         const auto selected = camp_cast(world, group, false, false, true);
++        debug_block({ if (trace_ar) std::printf("AR_SELECTED r%d g%d slot%d value%.3f tile%d,%d\n",
++            world.round, group, selected.slot, static_cast<double>(selected.value), selected.tile.x, selected.tile.y); });
+         world.throw_if_stale();
+         const bool cast = selected.execute();
+         world.throw_if_stale();
+         camp_hits() += cast;
++        debug_block({ if (trace_ar) std::printf("AR_EXECUTE r%d g%d slot%d result%d\n", world.round, group, selected.slot, static_cast<int>(cast)); });
+         return cast;
+     } catch (const cambc::error&) {
++        debug_block({ if (trace_ar) std::printf("AR_EXECUTE r%d g%d error\n", world.round, group); });
+         return false;
+     }
+ }

@@ -1,0 +1,66 @@
+{
+  "production_bot_cpp": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/bot.cpp",
+    "sha256": "77041c7738b6249979a9812d67425d4c083296b0af71878edd985b0bd6daf85e"
+  },
+  "production_release_wasm": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/.cambc/build-release/bot.wasm",
+    "sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6"
+  },
+  "replay_used_for exact_input": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-A-puppet-B-output/f475-A__recorded-B-puppet.repl26a",
+    "sha256": "e17018805d01867dcacf06ebb3d47208f832d6d34b1f4ac4f4e5189dca4fc377"
+  },
+  "original_vs_puppet_exactness": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/comparison-gem-fields-f475-puppet-vs-original.json",
+    "sha256": "2f99fc65d61dd27149eba9098e1f9a33b37fb4bfea9294f9f3d7f01ec2442a01"
+  },
+  "instrumented_bot_cpp": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/f475-bot.instrumented.cpp",
+    "sha256": "35f6f3c9d72a17a519f4a52f70ccf32c14a712482cf94696df95cc424a05be1f"
+  },
+  "instrumentation_patch": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/f475-prism0-r6-7-quote.patch",
+    "sha256": "6e2a682d37d6895af2ea1f3214092d0e92adb2d527cc2cfc82ba0219735c001b"
+  },
+  "harness_gen_wrappers": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/gen_wrappers.py",
+    "sha256": "942890527818f35ba25c27d61a462984df1e2bc13d0b27774ce5d10412d0eea0"
+  },
+  "harness_count_ops": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/count_ops.py",
+    "sha256": "610ede1243687aeb0ba71231219b7138f0ccfa467dd867fbdb755e640f64a87d"
+  },
+  "harness_trace_batch": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/trace_batch.py",
+    "sha256": "43f579d22cd8c894f76dc2524eac8a0414dde469b89297b097b21a5cb046ebf8"
+  },
+  "harness_trace_data": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/trace_data.py",
+    "sha256": "363c81f2b9597a7d8cd1038136815a60ae987e6d55eca885c4125412faa9c967"
+  },
+  "harness_compare": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/compare.mjs",
+    "sha256": "0273b7052d31f5a54e15285fd1e3aa4fd7f4dddd6a71262d150110540f3daa42"
+  },
+  "harness_inputs": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/inputs.mjs",
+    "sha256": "0214bb69814ee32a0c1b337584f043f7276604ab381592ed965c902c0fe14d5b"
+  },
+  "run_batched": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/run_batched.py",
+    "sha256": "f42bb562ef6925c88f78b67adc59b950c4a8441695eeb83beec9c3e9a99cde19"
+  },
+  "harness_trace_header": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/wrappers/harness_trace.h",
+    "sha256": "66c9484f4d896db0fea5dec6fa6b7ac1a89804b95286bf6467a3fcb3d333cbda"
+  },
+  "harness_trace_data_header": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/wrappers/harness_trace_data.h",
+    "sha256": "3754c74468b383b95c4c9502acedc69acc20fc5d513cfb2cfa9b72c88f767907"
+  },
+  "harness_sdk_header": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/sdk/cpp/cambc.h",
+    "sha256": "3443c4b5399feb8fa15f907ed5b71b88af57c1975445571398d32f20f51343ba"
+  }
+}

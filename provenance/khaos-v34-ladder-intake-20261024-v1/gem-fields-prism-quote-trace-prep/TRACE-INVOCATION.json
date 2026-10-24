@@ -1,0 +1,15 @@
+{
+  "schema": "gem-fields-prism0-r6-r7-trace-invocation/v1",
+  "workspace_cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws",
+  "cambc": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+  "sdk_tool_bin": "/Users/yufan/Library/Caches/cambc/wasi-sdk-33/bin",
+  "llvm_objdump_path": "/Users/yufan/Library/Caches/cambc/wasi-sdk-33/bin/llvm-objdump",
+  "sdk_refresh_performed": false,
+  "cmd_environment": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1",
+  "build_command": "cambc build bots/gem-fields-f475-trace",
+  "run_command": "cambc run-batch <absolute trace row> --jobs 1 --rounds 8 --fuel-quantum 100000 --json --color never",
+  "run_cwd_explicit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws",
+  "run_mode": "normal debug, --release omitted",
+  "output": "trace-prefix.repl26a",
+  "initial_failed_cwd_attempt_preserved": "logs/recorder-run.stdout.log and logs/recorder-run.stderr.log"
+}

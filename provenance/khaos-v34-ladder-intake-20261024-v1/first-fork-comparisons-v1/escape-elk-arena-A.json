@@ -1,0 +1,129 @@
+{
+ "inputs": [
+  45436,
+  48118
+ ],
+ "firstInputDiff": {
+  "index": 375,
+  "round": 10,
+  "step": 1748,
+  "actor": 4,
+  "kind": "Turn rollover",
+  "rerunKind": "Move",
+  "original": "s1748 r10 Turn rollover@10 actor1:4 (23,24)->(23,24) slot-1 pr0 x0,0",
+  "rerun": "s1748 r10 Move@10 actor1:4 (23,24)->(23,23) slot-1 pr0 x0,0",
+  "originalRec": [
+   1748,
+   10,
+   375,
+   26,
+   10,
+   1,
+   4,
+   23,
+   24,
+   23,
+   24,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ],
+  "rerunRec": [
+   1748,
+   10,
+   375,
+   4,
+   10,
+   1,
+   4,
+   23,
+   24,
+   23,
+   23,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ },
+ "roundsMatched": 11,
+ "rounds": [
+  1293,
+  1324
+ ],
+ "firstRoundDiff": {
+  "round": 11,
+  "step": 1848,
+  "rerunStep": 1853
+ },
+ "result": [
+  {
+   "outcome": 1,
+   "round": 1292,
+   "gems": [
+    1044,
+    108
+   ]
+  },
+  {
+   "outcome": 2,
+   "round": 1323,
+   "gems": [
+    144,
+    1008
+   ]
+  }
+ ],
+ "resultMatch": false,
+ "exact": false,
+ "exactIgnoringRollovers": false,
+ "firstInputDiffIgnoringRollovers": {
+  "index": 375,
+  "round": 10,
+  "step": 1748,
+  "actor": 4,
+  "kind": "Turn rollover",
+  "rerunKind": "Move",
+  "original": "s1748 r10 Turn rollover@10 actor1:4 (23,24)->(23,24) slot-1 pr0 x0,0",
+  "rerun": "s1748 r10 Move@10 actor1:4 (23,24)->(23,23) slot-1 pr0 x0,0",
+  "originalRec": [
+   1748,
+   10,
+   375,
+   26,
+   10,
+   1,
+   4,
+   23,
+   24,
+   23,
+   24,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ],
+  "rerunRec": [
+   1748,
+   10,
+   375,
+   4,
+   10,
+   1,
+   4,
+   23,
+   24,
+   23,
+   23,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ }
+}

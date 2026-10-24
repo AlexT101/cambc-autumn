@@ -1,0 +1,53 @@
+{
+  "schema": "gem-fields-prism0-action-realization-trace-row/v1",
+  "status": "awaiting_root_review_no_execution",
+  "global_options": {
+    "rounds": 8,
+    "jobs": 1,
+    "fuel_quantum": 100000,
+    "mode": "normal debug (no --release)",
+    "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws",
+    "cli": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc"
+  },
+  "row": {
+    "order": 1,
+    "A": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/gem-fields-action-trace",
+    "B": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/bots/gem-fields-puppet-8cb125e6",
+    "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+    "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+    "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-prefix.repl26a",
+    "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-prefix.statistics.json",
+    "physical_meaning": "A=f475 source with existing quote-trace instrumentation plus reviewed action-realization logging; B=the same recorded physical-B puppet as the exact 225-input prefix",
+    "output_absent": true
+  },
+  "source_inputs": {
+    "action_realization_patch": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-action-trace-prep/action-realization-instrumentation.patch",
+      "sha256": "db3801aa9fd0d02054aaaef7ae22e2c3b09a2c28eae01d0d59669108f4762c47"
+    },
+    "production_bot_cpp": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/bot.cpp",
+      "sha256": "77041c7738b6249979a9812d67425d4c083296b0af71878edd985b0bd6daf85e"
+    },
+    "production_abilities_cpp": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/src/abilities.cpp",
+      "sha256": "c6559729a996e1f5803990d0f0eb2094c89fb7752dd3fbf57118595f56369467"
+    },
+    "base_quote_trace_patch": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/f475-prism0-r6-7-quote.patch",
+      "sha256": "6e2a682d37d6895af2ea1f3214092d0e92adb2d527cc2cfc82ba0219735c001b"
+    },
+    "exact_existing_input": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/recorder-prefix.repl26a",
+      "sha256": "2bb108ecf73e963cab1958a38f45dcce1549e741d38291b5fed08d69d11cbc0f"
+    },
+    "existing_prefix_validation": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/recorder-prefix-validation.json",
+      "sha256": "a00e434777eba991a5ed1538d2fdcbcbd6197ad3f0426167bfa271d27bf9222f"
+    }
+  },
+  "execution": {
+    "will_reuse_existing_prefix_and_puppet": "yes; no recorder rerun",
+    "trace_run_authorized": "pending exact instrumentation review and row review"
+  }
+}

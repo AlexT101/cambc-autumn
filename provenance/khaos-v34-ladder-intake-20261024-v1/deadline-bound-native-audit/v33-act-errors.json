@@ -1,0 +1,32 @@
+{
+  "batch": "provenance/khaos-v34-ladder-intake-20261024-v1/deadline-bound-native-audit/v33",
+  "results_sha256": "df2170d07c635ac6da86f0aff074a65400e1de5dcff14e88eadf3338d9eb73c3",
+  "candidate": "willow-v48-deadline-bound",
+  "reference": "v33",
+  "completed": 2,
+  "bots": {
+    "willow-v48-deadline-bound": {
+      "bot_index": 0,
+      "matches_with_errors": 0,
+      "error_lines": 0,
+      "match_round_instances": 0,
+      "physical_side_lines": {
+        "A": 0,
+        "B": 0
+      },
+      "error_code_counts": {}
+    },
+    "v33": {
+      "bot_index": 1,
+      "matches_with_errors": 0,
+      "error_lines": 0,
+      "match_round_instances": 0,
+      "physical_side_lines": {
+        "A": 0,
+        "B": 0
+      },
+      "error_code_counts": {}
+    }
+  },
+  "rows": []
+}

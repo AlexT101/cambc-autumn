@@ -1,0 +1,44 @@
+{
+  "schema": "matched-common-v33-run-preflight/v1",
+  "time_unix": 1792840275.861377,
+  "plan_sha256": "37d5e5f32f1f7e5ceb6230890226d84178ca3f4db9e8161bce685b0f06b3b737",
+  "manifest_sha256": "9a6ae25069f5249162cc4bac2a5d743b9ac0a23f0716d237f05ceaafe8a809a6",
+  "sources": {
+    "f475": {
+      "aggregate": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "raw": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+      "injected": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+    },
+    "v48": {
+      "aggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+      "raw": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b",
+      "injected": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525"
+    },
+    "v33": {
+      "aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "raw": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "injected": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+    }
+  },
+  "sdk_workspace": {
+    "sdk/cpp/cambc.h": {
+      "sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "mtime_ns": 1792774035481976768
+    },
+    "sdk/cpp/imports.h": {
+      "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "mtime_ns": 1792774035482489096
+    },
+    "cmake/CMakeLists.txt": {
+      "sha256": "a2f9978b9d948623b48ac4fca70692a604bc5cdac2c50c115558ba891a26b78c",
+      "mtime_ns": 1792774035408818847
+    },
+    "cambc.toml": {
+      "sha256": "a0e36b45e114dedb61b421a5f45d85127fe88a8474cffec6500bc9ec0b480a50",
+      "mtime_ns": 1792774035408710890
+    }
+  },
+  "all_maps_pinned": true,
+  "all_outputs_absent": true,
+  "root_approved": true
+}

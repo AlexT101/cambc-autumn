@@ -1,0 +1,232 @@
+{
+  "schema": "deadline-bound-starvation-four-cell-result/v1",
+  "source_aggregate": "46c5b5580f63e14d47c4cb3887ea7f626af6abed4a42eebfb0d635ec22d7703d",
+  "source_review": "research/willow-v48-deadline-bound-source-review-20261024-v1.md",
+  "map": "maps/01starvation.map26a",
+  "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+  "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+  "normal_native_draft": true,
+  "release_100k": true,
+  "run_batch_exit": 0,
+  "runner_failures": 0,
+  "build": {
+    "raw_wasm_sha256": "bb0410068590410d62d7193ac125382e09318661c33ef14f788dd5f63271e385",
+    "injected_wasm_sha256": "1342f2f098c48d5117d43e13789fc21934b0b544f1b6ba42bd1e315a84d32609",
+    "workspace": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+    "sdk_unchanged_from_preflight": true
+  },
+  "status_audit": {
+    "tool": "tools/replay/audit_native_status.mjs",
+    "mode": "v1_0_3 compact timeline",
+    "files": [
+      "deadline-bound-native-audit/f475-native-status.json",
+      "deadline-bound-native-audit/v33-native-status.json"
+    ]
+  },
+  "games": [
+    {
+      "id": "deadline-A__f475-B",
+      "A": "deadline",
+      "B": "f475",
+      "map": "01starvation",
+      "candidate_side": "A",
+      "opponent": "f475",
+      "opponent_side": "B",
+      "outcome": "teamA",
+      "winner": "deadline",
+      "submitted_gems_A": 1124,
+      "submitted_gems_B": 304,
+      "rounds_started": 1893,
+      "rounds_completed": 1892,
+      "final_input": 70764,
+      "seed": "13738424024871290893",
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "play_rollovers_total": 10,
+      "by_side": [
+        {
+          "side": "A",
+          "bot": "willow-v48-deadline-bound",
+          "bot_errors": 0,
+          "rollovers": {
+            "Heart of Ruin": 10
+          }
+        },
+        {
+          "side": "B",
+          "bot": "service-base-f7",
+          "bot_errors": 0,
+          "rollovers": {}
+        }
+      ],
+      "bundle_sha256": "b94086f84dd9890d0235cbfdbb401bf1fa6299d8af7061af5566f47dab3af1d7",
+      "inner_replay_sha256": "b2925757b0d8a168e2d26addea800386eae1428e60ed053d42746ee717a0e128",
+      "statistics_sha256": "e8f7c2b42a69c32522f7c3a7f2d40fe52775f92fd4e8fa6e3c2728a886300927",
+      "bundle_path": "deadline-bound-output/starvation__deadline-A__f475-B.repl26a",
+      "statistics_path": "deadline-bound-output/starvation__deadline-A__f475-B.statistics.json"
+    },
+    {
+      "id": "f475-A__deadline-B",
+      "A": "f475",
+      "B": "deadline",
+      "map": "01starvation",
+      "candidate_side": "B",
+      "opponent": "f475",
+      "opponent_side": "A",
+      "outcome": "teamB",
+      "winner": "deadline",
+      "submitted_gems_A": 408,
+      "submitted_gems_B": 1024,
+      "rounds_started": 1953,
+      "rounds_completed": 1952,
+      "final_input": 72471,
+      "seed": "13738424024871290893",
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "play_rollovers_total": 4,
+      "by_side": [
+        {
+          "side": "A",
+          "bot": "service-base-f7",
+          "bot_errors": 0,
+          "rollovers": {
+            "Heart of Ruin": 2
+          }
+        },
+        {
+          "side": "B",
+          "bot": "willow-v48-deadline-bound",
+          "bot_errors": 0,
+          "rollovers": {
+            "Willow": 1,
+            "Heart of Ruin": 1
+          }
+        }
+      ],
+      "bundle_sha256": "1755cbf2b30d5a2c3fb74ae816afc538d78327a3a98b752d98e5c6adce10334e",
+      "inner_replay_sha256": "7eae6d36b5d0ae739fda79ca02a5542fb4f007c55f5694b965681558e0bc2af8",
+      "statistics_sha256": "0e832df67fac01b293bfaa005ac947ab92ed00ef6550f2a66ff7dd76f7ca94c6",
+      "bundle_path": "deadline-bound-output/starvation__f475-A__deadline-B.repl26a",
+      "statistics_path": "deadline-bound-output/starvation__f475-A__deadline-B.statistics.json"
+    },
+    {
+      "id": "deadline-A__v33-B",
+      "A": "deadline",
+      "B": "v33",
+      "map": "01starvation",
+      "candidate_side": "A",
+      "opponent": "v33",
+      "opponent_side": "B",
+      "outcome": "teamB",
+      "winner": "v33",
+      "submitted_gems_A": 176,
+      "submitted_gems_B": 1084,
+      "rounds_started": 1558,
+      "rounds_completed": 1557,
+      "final_input": 58205,
+      "seed": "13738424024871290893",
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "play_rollovers_total": 17,
+      "by_side": [
+        {
+          "side": "A",
+          "bot": "willow-v48-deadline-bound",
+          "bot_errors": 0,
+          "rollovers": {
+            "Heart of Ruin": 1
+          }
+        },
+        {
+          "side": "B",
+          "bot": "v33",
+          "bot_errors": 0,
+          "rollovers": {
+            "Vesper Vale": 1,
+            "Willow": 14,
+            "Heart of Ruin": 1
+          }
+        }
+      ],
+      "bundle_sha256": "6509ba71ad6f499863ae853e449e3e3feb0ce27113c7f84ce3bc9b6219b1b84d",
+      "inner_replay_sha256": "8f44e52278b4a09e714053c35a5fd647d03ca0a36a85e23349c33a78dc6d4432",
+      "statistics_sha256": "ddbf541102a72bac8ff13949cafa1373c9d55cc71cb601748fea24527024b660",
+      "bundle_path": "deadline-bound-output/starvation__deadline-A__v33-B.repl26a",
+      "statistics_path": "deadline-bound-output/starvation__deadline-A__v33-B.statistics.json"
+    },
+    {
+      "id": "v33-A__deadline-B",
+      "A": "v33",
+      "B": "deadline",
+      "map": "01starvation",
+      "candidate_side": "B",
+      "opponent": "v33",
+      "opponent_side": "A",
+      "outcome": "teamA",
+      "winner": "v33",
+      "submitted_gems_A": 1006,
+      "submitted_gems_B": 440,
+      "rounds_started": 1965,
+      "rounds_completed": 1964,
+      "final_input": 73320,
+      "seed": "13738424024871290893",
+      "bot_faults": {
+        "teamA": 0,
+        "teamB": 0
+      },
+      "play_rollovers_total": 21,
+      "by_side": [
+        {
+          "side": "A",
+          "bot": "v33",
+          "bot_errors": 0,
+          "rollovers": {
+            "Prism": 1,
+            "Vesper Vale": 1,
+            "Willow": 12,
+            "Heart of Ruin": 5
+          }
+        },
+        {
+          "side": "B",
+          "bot": "willow-v48-deadline-bound",
+          "bot_errors": 0,
+          "rollovers": {
+            "Heart of Ruin": 2
+          }
+        }
+      ],
+      "bundle_sha256": "31913a920d4693c2b62d099dd110cdfa8b04b84e36ccfd4883132a70780ee38c",
+      "inner_replay_sha256": "7b4b13eb3c93d26ad14b43fcb6904687204af6bbe72b458c1e8e2a5579c8de1e",
+      "statistics_sha256": "f4218b31cac045a0f785fd09623d768eee3436b431489745126c2f4de4f0f7c1",
+      "bundle_path": "deadline-bound-output/starvation__v33-A__deadline-B.repl26a",
+      "statistics_path": "deadline-bound-output/starvation__v33-A__deadline-B.statistics.json"
+    }
+  ],
+  "run_batch": {
+    "exit_code": 0,
+    "jobs": 1,
+    "release": true,
+    "fuel_quantum": 100000,
+    "manifest_sha256": "c959754ac823565f1a904686c9b057ada340652c3cc01754d88d359605eda6c4",
+    "preflight_sha256": "76aa40223eef7c7ff1f37ecb7641edc961b05b945f76478143be36f87cb4ec37",
+    "postflight_sha256": "9d71797a9efc59f32a4f8c966e00c31780a2e7867f7ad0ee78f3ee5fe79b44cc",
+    "stdout_sha256": "832f124f7a7f0fcec2554fc501530f9a972cc78a3a19c5d33a67868820d2e4ff",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "native_status_audit_sha256": {
+      "f475": "e2b7e7d8ccc9fb133b164f70e47823ae60b9f844ca8a165ad26e562d62d944d1",
+      "v33": "d8f8ea269c53a6f45928dacfa59fa1b64a0b7d285722120d49152402d80fa8af"
+    },
+    "caught_act_error_audit_sha256": {
+      "f475": "cfe731ff3c8665fd6c8e6356ab9773fec4b341b207b9ff3ba046b070da3c8120",
+      "v33": "5087056b89cdbddbcdf05a53234802f633b15426111299da6cfe6326687fbe6d"
+    },
+    "pre_game_failed_attempt_preserved": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/logs-deadline-bound-4-attempt1.json"
+  }
+}

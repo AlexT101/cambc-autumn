@@ -1,0 +1,27 @@
+{
+  "candidate": "willow-v47-hop-escape-mixed-approach-work",
+  "source_aggregate": "218e652166112cd3bc01da3442260f987119d33c028607fd58b0d391badebb78",
+  "runtime_copy": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-hop-escape-mixed-approach",
+  "runtime_aggregate": "218e652166112cd3bc01da3442260f987119d33c028607fd58b0d391badebb78",
+  "build_exit": 0,
+  "sdk_before": {
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/cambc.h": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/imports.h": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502"
+  },
+  "sdk_after": {
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/cambc.h": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/sdk/cpp/imports.h": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502"
+  },
+  "binaries": {
+    "raw": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-hop-escape-mixed-approach/.cambc/build-release/bot.wasm",
+      "sha256": "45a9020d58e84b49e2709e276f9462a9c0457951ae5de218d193db7968a20f25",
+      "bytes": 1682867
+    },
+    "injected": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-hop-escape-mixed-approach/.cambc/build-release/bot-injected.wasm",
+      "sha256": "8c5bae86deba4f8dbeab6a3d588a01c2735f27662323611ed59d0d9322580234",
+      "bytes": 924615
+    }
+  }
+}

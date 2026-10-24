@@ -1,0 +1,476 @@
+{
+  "schema": "khaos-v34-postsubmit-macro-audit/v1",
+  "scope": {
+    "sample": "two root-selected ordinary five-pick ranked losses",
+    "submission_cutoff_utc": "2026-10-24T10:17:24Z",
+    "version_attribution": "provisional post-submit only; replay metadata has no submission/version ID",
+    "willow_first_excluded": true
+  },
+  "latest_ranked_history": {
+    "latest30": {
+      "n": 30,
+      "wins": 12,
+      "losses": 18
+    },
+    "post_cutoff_provisional": {
+      "n": 15,
+      "wins": 5,
+      "losses": 10
+    },
+    "immediately_preceding15": {
+      "n": 15,
+      "wins": 7,
+      "losses": 8
+    },
+    "all_merged_non_willow_first_ranked": {
+      "n": 125,
+      "wins": 69,
+      "losses": 56
+    },
+    "pre_cutoff_non_willow_first": {
+      "n": 110,
+      "wins": 64,
+      "losses": 46
+    },
+    "opponent_windows": {
+      "prism_best_girl": "1\u20134",
+      "Claudus_Maximus": "0\u20135",
+      "Mite": "4\u20131"
+    },
+    "matched_cell": {
+      "map": "01fracture",
+      "opponent": "Claudus Maximus",
+      "our_side": "B",
+      "pre_sample": 1,
+      "pre_losses": 1,
+      "post_sample": 1,
+      "post_losses": 1
+    },
+    "opponent_windows_period": "15 provisional post-cutoff rows, not all latest30"
+  },
+  "games": [
+    {
+      "match_id": "8cb125e6-d24b-4db2-be97-52211ba30f6a",
+      "map": "00gem_fields",
+      "our_side": "A",
+      "opponent": "prism best girl",
+      "our_draft": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_draft": [
+        "Prism",
+        "Marcella",
+        "Ryth",
+        "Heart of Ruin",
+        "Vesper Vale"
+      ],
+      "result": {
+        "winner_side": "B",
+        "rounds": 543,
+        "gems_by_side": [
+          429,
+          1077
+        ]
+      },
+      "capture_event_share_gems": [
+        555,
+        986
+      ],
+      "capture_event_share_gold": [
+        530,
+        1539
+      ],
+      "completed_tribute_gems": [
+        429,
+        1077
+      ],
+      "native_status": {
+        "our_play_rollovers": 0,
+        "our_play_bot_errors": 0,
+        "opponent_play_rollovers": 0,
+        "opponent_play_bot_errors": 0
+      },
+      "champions": {
+        "our_Prism_actor0": {
+          "collected": 126,
+          "submitted": 0,
+          "end_bag": 35,
+          "kills": 0,
+          "deaths": 1,
+          "assists": 1,
+          "champion_damage": 1779.95,
+          "recalls_started": 465,
+          "recalls_cancelled": 462,
+          "manual_recall_cancels": 447,
+          "recalls_completed": 2,
+          "gold_earned": 0,
+          "items_bought": []
+        },
+        "opponent_Prism_actor5": {
+          "collected": 505,
+          "submitted": 505,
+          "end_bag": 0,
+          "kills": 3,
+          "deaths": 0,
+          "assists": 2,
+          "champion_damage": 5272.25,
+          "recalls_started": 4,
+          "recalls_cancelled": 0,
+          "recalls_completed": 4,
+          "gold_earned": 915
+        },
+        "our_Willow_actor3": {
+          "collected": 84,
+          "submitted": 84,
+          "end_bag": 0,
+          "kills": 0,
+          "deaths": 1,
+          "assists": 1,
+          "champion_damage": 330,
+          "healing_done": 5469.8,
+          "recalls_started": 418,
+          "recalls_cancelled": 417,
+          "manual_recall_cancels": 410,
+          "recalls_completed": 1
+        }
+      },
+      "notable_events": [
+        {
+          "round": 31,
+          "kind": "capture",
+          "group": 5,
+          "team": "B",
+          "shares": [
+            [
+              5,
+              71,
+              90
+            ]
+          ]
+        },
+        {
+          "round": 99,
+          "kind": "capture",
+          "group": 11,
+          "team": "B",
+          "shares": [
+            [
+              5,
+              36,
+              90
+            ]
+          ]
+        },
+        {
+          "round": 104,
+          "kind": "shop",
+          "actor": 5,
+          "items": {
+            "Durability Emblem of Health": 1
+          }
+        },
+        {
+          "round": 330,
+          "kind": "death",
+          "victim": 0,
+          "killer": 5,
+          "cause": "Cast ability",
+          "gems_dropped": 91,
+          "gems_to_killer": 91
+        }
+      ]
+    },
+    {
+      "match_id": "6431a334-0746-4bac-b46d-847637121163",
+      "map": "01fracture",
+      "our_side": "B",
+      "opponent": "Claudus Maximus",
+      "our_draft": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_draft": [
+        "Vesper Vale",
+        "Heart of Ruin",
+        "Vendetta",
+        "Tavi",
+        "Marcella"
+      ],
+      "result": {
+        "winner_side": "A",
+        "rounds": 886,
+        "gems_by_side": [
+          1025,
+          317
+        ]
+      },
+      "capture_event_share_gems": [
+        1130,
+        493
+      ],
+      "capture_event_share_gold": [
+        8189,
+        3224
+      ],
+      "completed_tribute_gems": [
+        1025,
+        317
+      ],
+      "native_status": {
+        "our_play_rollovers": 0,
+        "our_play_bot_errors": 0,
+        "opponent_play_rollovers": 0,
+        "opponent_play_bot_errors": 0
+      },
+      "champions": {
+        "our_Prism_actor5": {
+          "collected": 176,
+          "submitted": 0,
+          "end_bag": 176,
+          "kills": 0,
+          "deaths": 0,
+          "champion_damage": 0,
+          "recalls_started": 841,
+          "recalls_cancelled": 835,
+          "manual_recall_cancels": 767,
+          "damage_recall_cancels": 68,
+          "recalls_completed": 5
+        },
+        "our_Willow_actor8": {
+          "collected": 12,
+          "submitted": 12,
+          "end_bag": 0,
+          "kills": 0,
+          "deaths": 2,
+          "champion_damage": 214.5,
+          "healing_done": 1380,
+          "recalls_started": 726,
+          "recalls_cancelled": 722,
+          "manual_recall_cancels": 636,
+          "damage_recall_cancels": 85,
+          "death_recall_cancels": 1,
+          "recalls_completed": 3
+        },
+        "opponent_Vesper_actor0": {
+          "collected": 351,
+          "submitted": 351,
+          "end_bag": 0,
+          "kills": 2,
+          "deaths": 0,
+          "champion_damage": 1540,
+          "recalls_started": 11,
+          "recalls_cancelled": 0,
+          "recalls_completed": 11
+        },
+        "opponent_Marcella_actor4": {
+          "collected": 101,
+          "submitted": 57,
+          "end_bag": 44,
+          "kills": 2,
+          "deaths": 0,
+          "champion_damage": 2174.7
+        }
+      },
+      "notable_events": [
+        {
+          "round": 180,
+          "kind": "death",
+          "victim": 8,
+          "killer": 0,
+          "cause": "Attack"
+        },
+        {
+          "round": 587,
+          "kind": "death",
+          "victim": 8,
+          "killer": 0,
+          "cause": "Attack"
+        },
+        {
+          "round": 839,
+          "kind": "death",
+          "victim": 6,
+          "killer": 4,
+          "cause": "Attack"
+        },
+        {
+          "round": 844,
+          "kind": "death",
+          "victim": 9,
+          "killer": 4,
+          "cause": "Attack"
+        }
+      ],
+      "end_bag_gems_by_side": [
+        105,
+        176
+      ],
+      "score_gap_reconciliation": {
+        "score_gap_A_minus_B": 708,
+        "A_capture_share_advantage": 637,
+        "our_B_end_bag": 176,
+        "A_end_bag": 105,
+        "formula": "637 + 176 - 105 = 708"
+      }
+    }
+  ],
+  "engine": {
+    "version": "v1_0_3",
+    "wasm_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "native_status_audit_mode": "compact timeline",
+    "native_status_audit_totals": "0 rollovers and 0 Bot errors for both sides in both games",
+    "auditor": "tools/replay/audit_native_status.mjs"
+  },
+  "pins": {
+    "gem_fields": {
+      "bundle": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/raw/8cb125e6-d24b-4db2-be97-52211ba30f6a.zip",
+        "bytes": 24353,
+        "sha256": "9e709f404f329ca73d698cf14ce4dd84a54fa0d39a259ff0b145111c9e754af7"
+      },
+      "replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/raw/8cb125e6-d24b-4db2-be97-52211ba30f6a.repl26a",
+        "bytes": 87784,
+        "sha256": "ea2e606f23eb1e6dbf2f8392515cc68b52a0a99d7e3fd5fb8c695527e6160ac3"
+      },
+      "meta": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/extracted/ea2e606f23eb1e6d/meta.json",
+        "bytes": 6431,
+        "sha256": "31f3ca8b9594f5593acdc86a7034697b09e4b72a939c798ac8f2ad5f9ae1ce9f"
+      },
+      "events": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/extracted/ea2e606f23eb1e6d/events.jsonl.gz",
+        "bytes": 106625,
+        "sha256": "cbd19ad3210685b2e1d1f4720180364ff3d3faa6c86bad86962f57850d8fe28c"
+      },
+      "rounds": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/extracted/ea2e606f23eb1e6d/rounds.json.gz",
+        "bytes": 39379,
+        "sha256": "309fb1c6273e84539bede99a5cf7e9d171d8a6d92413687a606d5eed499e6311"
+      },
+      "map": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/extracted/maps/d22495f1f242da29.json",
+        "bytes": 8286,
+        "sha256": "e923dd93f1db74eeaf0cd96b42cb968e5dc4f369fd0e81efdfa5bba16394d5e7"
+      }
+    },
+    "fracture": {
+      "bundle": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/raw/6431a334-0746-4bac-b46d-847637121163.zip",
+        "bytes": 41033,
+        "sha256": "92f6ba2b658c1e6ab53efc33bfa8e7eeefe2624a7561e77231f5366af1027666"
+      },
+      "replay": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/raw/6431a334-0746-4bac-b46d-847637121163.repl26a",
+        "bytes": 187314,
+        "sha256": "e173d5a45b8562cb7691825d535e8b18ae59260dba5796c915e948765f34a9d7"
+      },
+      "meta": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/extracted/e173d5a45b8562cb/meta.json",
+        "bytes": 6757,
+        "sha256": "eec006856e1dfcc373beb8331b971bec5564a589be50bb142ce86dab8aec6af0"
+      },
+      "events": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/extracted/e173d5a45b8562cb/events.jsonl.gz",
+        "bytes": 188332,
+        "sha256": "d2d968f853b4591577fc97ec833629e10fe4ef27e5595be323419c9633537ecd"
+      },
+      "rounds": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/extracted/e173d5a45b8562cb/rounds.json.gz",
+        "bytes": 60134,
+        "sha256": "3ea65bcc75f698aa684d9f19ff9fbeed33be9ed9a1f6b3f66ffa8acffafc5a56"
+      },
+      "map": {
+        "path": "provenance/khaos-v34-ladder-intake-20261024-v1/extracted/maps/8f17d2cbf1d64f77.json",
+        "bytes": 19437,
+        "sha256": "73ca7fc6b7f0332ce7e81805b43ed02e7fea1237cefdb522461e429836ebab7b"
+      }
+    },
+    "native_status": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/receipts/native-status.json",
+      "bytes": 5959,
+      "sha256": "a2cc26569f81cbc60162f21c3a8e5dc0201f99d91907024f2f1895ffea1f19ad"
+    },
+    "native_status_input": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/native-audit-input/results.json",
+      "bytes": 1090,
+      "sha256": "0d05f8f7494d27d9d45d7a210deb2a9ec721541798d683f486e124d01d1f3924"
+    },
+    "extract_duty": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/receipts/extract-two.duty.json",
+      "bytes": 5174,
+      "sha256": "b1ddb94a255336c2aff9fef3c892e713fbd1c8b7089ff7d5015be7f89377e2d8"
+    },
+    "native_audit_duty": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/receipts/native-audit.duty.json",
+      "bytes": 1769,
+      "sha256": "44de7a058654a86ce0c16a9070fcb41aaea4ca1b75a8e7b552cdde1b1c5234f1"
+    },
+    "own_view_prism": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/own-view-windows-v1/gem-fields-prism0-r1-9.json",
+      "bytes": 106331,
+      "sha256": "133e8279b2583c89b2d62be4c11e64b71890136518c8dc6f658dc2dde42fa915"
+    },
+    "own_view_vesper": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/own-view-windows-v1/gem-fields-vesper1-r1-9.json",
+      "bytes": 119290,
+      "sha256": "b4aac81060a32d331b36448806c6a7605bee11a9012d593ddd4df639f361785c"
+    },
+    "own_view_input": {
+      "path": "provenance/khaos-v34-ladder-intake-20261024-v1/ownview-batch/results.json",
+      "bytes": 959,
+      "sha256": "d87ecfdcb316836d9ecb870bb2bf7f446f656e30a08c65b485a28257b3fbac6a"
+    },
+    "own_view_exporter": {
+      "path": "tools/replay/export_actor_own_view_window_v3_local.mjs",
+      "bytes": 20721,
+      "sha256": "4d578b4642ec9c16ee25fada9272fd71da28b8fe4e3f00f38b649205ce9b9052"
+    }
+  },
+  "interpretive_limits": [
+    "Repeated recall_start/cancel counts are normal end-turn recall-stub cadence absent context; do not interpret as abnormal retreat/re-engagement.",
+    "Post-submit replays have unknown exact submission/source version.",
+    "The event stream omits actor-private information and does not establish why a route or fight was chosen."
+  ],
+  "own_view_windows": {
+    "source_attribution": "unverified public replay; exact submission/version is unknown",
+    "rounds": [
+      1,
+      9
+    ],
+    "actors": [
+      {
+        "id": 0,
+        "name": "Prism",
+        "physical_side": "A",
+        "window": "own-view-windows-v1/gem-fields-prism0-r1-9.json",
+        "visible_opponents": "none; all enemy entries identity_only",
+        "observations": [
+          "R7 took 60 damage from Elk camp 8/group 4",
+          "No gold/items and no attacks in window"
+        ]
+      },
+      {
+        "id": 1,
+        "name": "Vesper Vale",
+        "physical_side": "A",
+        "window": "own-view-windows-v1/gem-fields-vesper1-r1-9.json",
+        "visible_opponents": "none; all enemy entries identity_only",
+        "observations": [
+          "Routed to group 4 and attacked gem camps47 and49",
+          "Elk camp8/group4 hit for 60 at R5,R6,R8,R9",
+          "Killed camp47 at R6 and camp49 at R9",
+          "Willow healed 240 at R9"
+        ]
+      }
+    ],
+    "interpretation": "No visible PvP contact in these two early actor windows; recall start/cancel cadence reflects end-turn recall stubs, not abnormal re-engagement evidence."
+  }
+}

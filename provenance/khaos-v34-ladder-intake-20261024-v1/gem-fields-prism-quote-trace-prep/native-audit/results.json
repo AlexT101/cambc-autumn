@@ -1,0 +1,22 @@
+{
+  "schema": "local-prefix-native-audit/v1",
+  "release": false,
+  "bots": [
+    "gem-fields-f475-trace",
+    "gem-fields-puppet-8cb125e6"
+  ],
+  "scheduled": 1,
+  "completed": 1,
+  "errors": 0,
+  "matches": [
+    {
+      "index": 0,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/trace-prefix.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a"
+    }
+  ]
+}

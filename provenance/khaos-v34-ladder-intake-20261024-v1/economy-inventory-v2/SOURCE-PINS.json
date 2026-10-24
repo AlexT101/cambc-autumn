@@ -1,0 +1,25 @@
+{
+  "schema": "public40-economy-source-pins-v1",
+  "files": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/mapgen/wasm.mjs",
+      "sha256": "bf04ad01931caa2f12df34dd5ac9a51ab16cd35150e0014e2dc7b4ddcb2cae0f"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/mapgen/grid.mjs",
+      "sha256": "40b0114116820b2d8fc11c59a428a7efd6130e1996ed2dec636bf86e9efd590b"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/mapgen/generate.mjs",
+      "sha256": "4cfa0cf70eae54636d7ce51e015d7b73f698a9a77cab7075ef2fce5e836a7e6c"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/cambc-rules.yaml",
+      "sha256": "fb43d57780c1c071790e9063670e3627f96771a54ac65bf7d60e97b00ab971d8"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-focus-safe-yield-v33-full1104-preflight-20261024-v1/map-inventory.json",
+      "sha256": "6616b4c5fd900adfbabb2aef3898ba0ac734e4dcc25abd0b989e53d05326d52f"
+    }
+  ]
+}

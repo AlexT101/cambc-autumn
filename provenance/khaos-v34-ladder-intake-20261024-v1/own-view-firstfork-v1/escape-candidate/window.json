@@ -1,0 +1,2874 @@
+{
+  "schema": "actor-own-view-window/v3",
+  "label": "01elk-arena-Heart of Ruin-actor4-r9-11",
+  "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/connected-escape-160-output-v1/escape-vs-v33/escape-vs-v33__01elk-arena__escape-A.repl26a",
+  "replay_file_sha256": "e92a81ce426fa07a38026bcff62ea5b76780d2d79482a4fda6e568635a84819e",
+  "replay_payload_sha256": "0d1cf0ad72bda4b5b8690119fe5cd119665172287bb9a153eae4955c7d53dd95",
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "map": "escape-vs-v33__01elk-arena__escape-A",
+  "map_path": "maps/01elk-arena.map26a",
+  "map_sha256": "72b8e03bc4378d5f988f9c1c07609848bfb42fd8a883cce01820d96212f21c0a",
+  "build_mode": "Release, fuel 100000",
+  "source_aggregates": {
+    "willow-v47-connected-escape": "4b5a71e6535bb7b0ccfec3ad26fa6a1c5cef066807576792384e9966efdc0343",
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "source_attribution": {
+    "status": "exact_source_pins",
+    "provenance": "provenance/khaos-v34-ladder-intake-20261024-v1/own-view-firstfork-v1/escape-candidate/results.json:source_pins"
+  },
+  "actor": {
+    "id": 4,
+    "name": "Heart of Ruin",
+    "team": 0,
+    "physical_side": "A"
+  },
+  "static_camp_layout": "Expanded stable id/coordinate/type/group rows from the observer snapshot; own-view dynamic camp state joins by native camp id.",
+  "selected_rounds": [
+    9,
+    11
+  ],
+  "exported_rounds": [
+    9,
+    10,
+    11
+  ],
+  "observation_limits": "Champion health/position/items/channel are included only for actors visible in this actor perspective; hidden enemy state is omitted. Static nearby map terrain and camps are included; dynamic camp state is included only when own-view known. Replay snapshot does not expose this actor shared-memory word or altar-usability evaluation.",
+  "alignment": "Turn observations are captured at the first phase-10 snapshot for this actor and round. For optional selected action steps, before uses timeline snapshot N-1 and after uses snapshot N; timeline snapshot N contains the state after the action recorded at step index N.",
+  "selected_action_step_indices": [],
+  "selected_action_step_snapshots": [],
+  "turns": [
+    {
+      "round": 9,
+      "turn": 0,
+      "snapshot_step_index": 1551,
+      "observation": {
+        "self": {
+          "id": 4,
+          "type": "Heart of Ruin",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              22,
+              24
+            ],
+            "own_frame": [
+              22,
+              24
+            ]
+          },
+          "health": 970,
+          "max_health": 1000,
+          "strength": 30,
+          "cooldowns": [
+            5,
+            0
+          ],
+          "abilities": [
+            "Shield",
+            "Dash"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {},
+          "consumables": {},
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": true,
+            "movement_used": false,
+            "raw": 1043,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                19,
+                27
+              ],
+              "own_frame": [
+                19,
+                27
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 35,
+            "focus": 80,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              7
+            ],
+            "abilities": [
+              "CC",
+              "AoE damage"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                21,
+                25
+              ],
+              "own_frame": [
+                21,
+                25
+              ]
+            },
+            "health": 940,
+            "max_health": 1000,
+            "strength": 55,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              4,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                21,
+                24
+              ],
+              "own_frame": [
+                21,
+                24
+              ]
+            },
+            "health": 1200,
+            "max_health": 1200,
+            "strength": 45,
+            "focus": 60,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 3,
+            "type": "Willow",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                19,
+                24
+              ],
+              "own_frame": [
+                19,
+                24
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 55,
+            "focus": 120,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Heal",
+              "Attack reset"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 5,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                28,
+                24
+              ],
+              "own_frame": [
+                28,
+                24
+              ]
+            },
+            "health": 940,
+            "max_health": 1000,
+            "strength": 55,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              4,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 7,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                27,
+                25
+              ],
+              "own_frame": [
+                27,
+                25
+              ]
+            },
+            "health": 1200,
+            "max_health": 1200,
+            "strength": 45,
+            "focus": 60,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 8,
+            "type": "Willow",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                30,
+                24
+              ],
+              "own_frame": [
+                30,
+                24
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 55,
+            "focus": 120,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Heal",
+              "Attack reset"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 9,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                27,
+                24
+              ],
+              "own_frame": [
+                27,
+                24
+              ]
+            },
+            "health": 970,
+            "max_health": 1000,
+            "strength": 30,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              5,
+              0
+            ],
+            "abilities": [
+              "Shield",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 0,
+              "timer": 0
+            }
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                21,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                22,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                24,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                25,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                26,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                27
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                27
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                22,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                24,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                25,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                26,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                22,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                24,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                25,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                26,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                27
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                27
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                27
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                22,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                24,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                25,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                26,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": [
+            {
+              "position": [
+                22,
+                22
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                27
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ]
+        },
+        "local_camps": [
+          {
+            "id": 0,
+            "type": "Elk",
+            "position": [
+              24,
+              24
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 2320,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 1,
+            "type": "Elk",
+            "position": [
+              25,
+              25
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 2320,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 2,
+            "type": "Gem cluster",
+            "position": [
+              24,
+              25
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 40,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 3,
+            "type": "Gem cluster",
+            "position": [
+              25,
+              24
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 40,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 4,
+            "type": "Gold cluster",
+            "position": [
+              22,
+              27
+            ],
+            "group": 1,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": false
+          },
+          {
+            "id": 5,
+            "type": "Gold cluster",
+            "position": [
+              27,
+              22
+            ],
+            "group": 2,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": false
+          },
+          {
+            "id": 6,
+            "type": "Gold cluster",
+            "position": [
+              21,
+              24
+            ],
+            "group": 3,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 32,
+            "type": "Gem cluster",
+            "position": [
+              24,
+              23
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 40,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 33,
+            "type": "Gem cluster",
+            "position": [
+              25,
+              26
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 40,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 34,
+            "type": "Gem cluster",
+            "position": [
+              26,
+              24
+            ],
+            "group": 0,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 35,
+            "type": "Gem cluster",
+            "position": [
+              23,
+              25
+            ],
+            "group": 0,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 36,
+            "type": "Gold cluster",
+            "position": [
+              20,
+              24
+            ],
+            "group": 3,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 38,
+            "type": "Gold cluster",
+            "position": [
+              23,
+              27
+            ],
+            "group": 1,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": false
+          },
+          {
+            "id": 39,
+            "type": "Gold cluster",
+            "position": [
+              26,
+              22
+            ],
+            "group": 2,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": false
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "move",
+          "step_index": 1552,
+          "destination": [
+            23,
+            24
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 1553
+        },
+        {
+          "kind": "set_priority",
+          "step_index": 1554,
+          "priority": 16
+        }
+      ]
+    },
+    {
+      "round": 10,
+      "turn": 1,
+      "snapshot_step_index": 1747,
+      "observation": {
+        "self": {
+          "id": 4,
+          "type": "Heart of Ruin",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              23,
+              24
+            ],
+            "own_frame": [
+              23,
+              24
+            ]
+          },
+          "health": 790,
+          "max_health": 1000,
+          "strength": 30,
+          "cooldowns": [
+            4,
+            0
+          ],
+          "abilities": [
+            "Shield",
+            "Dash"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {},
+          "consumables": {},
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": true,
+            "movement_used": false,
+            "raw": 1043,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                19,
+                27
+              ],
+              "own_frame": [
+                19,
+                27
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 35,
+            "focus": 80,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              6
+            ],
+            "abilities": [
+              "CC",
+              "AoE damage"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                23,
+                25
+              ],
+              "own_frame": [
+                23,
+                25
+              ]
+            },
+            "health": 885,
+            "max_health": 1000,
+            "strength": 55,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              3,
+              7
+            ],
+            "abilities": [
+              "Attack reset",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 0,
+              "timer": 0
+            }
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                21,
+                24
+              ],
+              "own_frame": [
+                21,
+                24
+              ]
+            },
+            "health": 1200,
+            "max_health": 1200,
+            "strength": 45,
+            "focus": 60,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 3,
+            "type": "Willow",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                20,
+                24
+              ],
+              "own_frame": [
+                20,
+                24
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 55,
+            "focus": 120,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Heal",
+              "Attack reset"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 5,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                26,
+                25
+              ],
+              "own_frame": [
+                26,
+                25
+              ]
+            },
+            "health": 940,
+            "max_health": 1000,
+            "strength": 55,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              3,
+              7
+            ],
+            "abilities": [
+              "Attack reset",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 7,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                27,
+                25
+              ],
+              "own_frame": [
+                27,
+                25
+              ]
+            },
+            "health": 1200,
+            "max_health": 1200,
+            "strength": 45,
+            "focus": 60,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              7
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 8,
+            "type": "Willow",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                29,
+                24
+              ],
+              "own_frame": [
+                29,
+                24
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 55,
+            "focus": 120,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Heal",
+              "Attack reset"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 9,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                26,
+                24
+              ],
+              "own_frame": [
+                26,
+                24
+              ]
+            },
+            "health": 855,
+            "max_health": 1000,
+            "strength": 30,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              3,
+              0
+            ],
+            "abilities": [
+              "Shield",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 0,
+              "timer": 0
+            }
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                21,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                22,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                24,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                25,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                26,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                28,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                28,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                27
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                28,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                22,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                24,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                25,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                26,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                28,
+                29
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                22,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                24,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                25,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                26,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                28,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                27
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                27
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                27
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                28,
+                27
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                22,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                24,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                25,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                26,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": [
+            {
+              "position": [
+                22,
+                22
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                27
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ]
+        },
+        "local_camps": [
+          {
+            "id": 0,
+            "type": "Elk",
+            "position": [
+              24,
+              24
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 2320,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 1,
+            "type": "Elk",
+            "position": [
+              25,
+              25
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 2320,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 2,
+            "type": "Gem cluster",
+            "position": [
+              24,
+              25
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 40,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 3,
+            "type": "Gem cluster",
+            "position": [
+              25,
+              24
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 40,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 4,
+            "type": "Gold cluster",
+            "position": [
+              22,
+              27
+            ],
+            "group": 1,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": false
+          },
+          {
+            "id": 5,
+            "type": "Gold cluster",
+            "position": [
+              27,
+              22
+            ],
+            "group": 2,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": false
+          },
+          {
+            "id": 6,
+            "type": "Gold cluster",
+            "position": [
+              21,
+              24
+            ],
+            "group": 3,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 7,
+            "type": "Gold cluster",
+            "position": [
+              28,
+              25
+            ],
+            "group": 4,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 32,
+            "type": "Gem cluster",
+            "position": [
+              24,
+              23
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 40,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 33,
+            "type": "Gem cluster",
+            "position": [
+              25,
+              26
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 40,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 34,
+            "type": "Gem cluster",
+            "position": [
+              26,
+              24
+            ],
+            "group": 0,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 35,
+            "type": "Gem cluster",
+            "position": [
+              23,
+              25
+            ],
+            "group": 0,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 36,
+            "type": "Gold cluster",
+            "position": [
+              20,
+              24
+            ],
+            "group": 3,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 38,
+            "type": "Gold cluster",
+            "position": [
+              23,
+              27
+            ],
+            "group": 1,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": false
+          },
+          {
+            "id": 39,
+            "type": "Gold cluster",
+            "position": [
+              26,
+              22
+            ],
+            "group": 2,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": false
+          }
+        ]
+      },
+      "turn_end": "fuel_rollover",
+      "actions": [
+        {
+          "kind": "move",
+          "step_index": 1748,
+          "destination": [
+            23,
+            23
+          ]
+        },
+        {
+          "kind": "cast_ability",
+          "step_index": 1749,
+          "ability_slot": 1,
+          "ability": "Dash",
+          "target": [
+            25,
+            23
+          ]
+        },
+        {
+          "kind": "attack",
+          "step_index": 1750
+        }
+      ]
+    },
+    {
+      "round": 11,
+      "turn": 0,
+      "snapshot_step_index": 1923,
+      "observation": {
+        "self": {
+          "id": 4,
+          "type": "Heart of Ruin",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              25,
+              23
+            ],
+            "own_frame": [
+              25,
+              23
+            ]
+          },
+          "health": 790,
+          "max_health": 1000,
+          "strength": 30,
+          "cooldowns": [
+            3,
+            7
+          ],
+          "abilities": [
+            "Shield",
+            "Dash"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {},
+          "consumables": {},
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": true,
+            "movement_used": false,
+            "raw": 1043,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                19,
+                27
+              ],
+              "own_frame": [
+                19,
+                27
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 35,
+            "focus": 80,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              5
+            ],
+            "abilities": [
+              "CC",
+              "AoE damage"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                23,
+                25
+              ],
+              "own_frame": [
+                23,
+                25
+              ]
+            },
+            "health": 830,
+            "max_health": 1000,
+            "strength": 55,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              2,
+              6
+            ],
+            "abilities": [
+              "Attack reset",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                21,
+                24
+              ],
+              "own_frame": [
+                21,
+                24
+              ]
+            },
+            "health": 1200,
+            "max_health": 1200,
+            "strength": 45,
+            "focus": 60,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 3,
+            "type": "Willow",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                21,
+                25
+              ],
+              "own_frame": [
+                21,
+                25
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 55,
+            "focus": 120,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Heal",
+              "Attack reset"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 5,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                26,
+                25
+              ],
+              "own_frame": [
+                26,
+                25
+              ]
+            },
+            "health": 885,
+            "max_health": 1000,
+            "strength": 55,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              2,
+              6
+            ],
+            "abilities": [
+              "Attack reset",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 0,
+              "timer": 0
+            }
+          },
+          {
+            "id": 7,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                27,
+                24
+              ],
+              "own_frame": [
+                27,
+                24
+              ]
+            },
+            "health": 1200,
+            "max_health": 1200,
+            "strength": 45,
+            "focus": 60,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              6
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 8,
+            "type": "Willow",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                28,
+                24
+              ],
+              "own_frame": [
+                28,
+                24
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 55,
+            "focus": 120,
+            "buffs": [],
+            "cooldowns": [
+              7,
+              0
+            ],
+            "abilities": [
+              "Heal",
+              "Attack reset"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 0,
+              "timer": 0
+            }
+          },
+          {
+            "id": 9,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                26,
+                24
+              ],
+              "own_frame": [
+                26,
+                24
+              ]
+            },
+            "health": 940,
+            "max_health": 1000,
+            "strength": 30,
+            "focus": 100,
+            "buffs": [
+              {
+                "type": "Stun",
+                "timer": 1,
+                "magnitude": 0
+              }
+            ],
+            "cooldowns": [
+              3,
+              0
+            ],
+            "abilities": [
+              "Shield",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 0,
+              "timer": 0
+            }
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                21,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                22,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                24,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                25,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                26,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                28,
+                20
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                28,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                29,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                30,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                28,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                29,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                30,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                29,
+                18
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                30,
+                18
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                22,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                24,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                25,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                26,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                21
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                28,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                29,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                30,
+                22
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                27
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                21,
+                27
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                28,
+                27
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                29,
+                27
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                30,
+                27
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                22,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                24,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                25,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                26,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                28
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": [
+            {
+              "position": [
+                22,
+                22
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                27,
+                27
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ]
+        },
+        "local_camps": [
+          {
+            "id": 0,
+            "type": "Elk",
+            "position": [
+              24,
+              24
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 2154.25,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 1,
+            "type": "Elk",
+            "position": [
+              25,
+              25
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 2320,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 2,
+            "type": "Gem cluster",
+            "position": [
+              24,
+              25
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 40,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 3,
+            "type": "Gem cluster",
+            "position": [
+              25,
+              24
+            ],
+            "group": 0,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 4,
+            "type": "Gold cluster",
+            "position": [
+              22,
+              27
+            ],
+            "group": 1,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": false
+          },
+          {
+            "id": 5,
+            "type": "Gold cluster",
+            "position": [
+              27,
+              22
+            ],
+            "group": 2,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 6,
+            "type": "Gold cluster",
+            "position": [
+              21,
+              24
+            ],
+            "group": 3,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 7,
+            "type": "Gold cluster",
+            "position": [
+              28,
+              25
+            ],
+            "group": 4,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 32,
+            "type": "Gem cluster",
+            "position": [
+              24,
+              23
+            ],
+            "group": 0,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 33,
+            "type": "Gem cluster",
+            "position": [
+              25,
+              26
+            ],
+            "group": 0,
+            "visibility": "own_view_known",
+            "health": 40,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 34,
+            "type": "Gem cluster",
+            "position": [
+              26,
+              24
+            ],
+            "group": 0,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 35,
+            "type": "Gem cluster",
+            "position": [
+              23,
+              25
+            ],
+            "group": 0,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 36,
+            "type": "Gold cluster",
+            "position": [
+              20,
+              24
+            ],
+            "group": 3,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 37,
+            "type": "Gold cluster",
+            "position": [
+              29,
+              25
+            ],
+            "group": 4,
+            "visibility": "own_view_known",
+            "health": 30,
+            "max_health": 120,
+            "awake": true
+          },
+          {
+            "id": 38,
+            "type": "Gold cluster",
+            "position": [
+              23,
+              27
+            ],
+            "group": 1,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": false
+          },
+          {
+            "id": 39,
+            "type": "Gold cluster",
+            "position": [
+              26,
+              22
+            ],
+            "group": 2,
+            "visibility": "static_map_only"
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "attack",
+          "step_index": 1924
+        },
+        {
+          "kind": "move",
+          "step_index": 1925,
+          "destination": [
+            26,
+            23
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 1926
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "schema": "starvation-r1-fuel-exact-source-trace-plan/v1",
+  "status": "SOURCE_PATCH_PREPARED_NO_TRACE_BUILD_OR_RUN",
+  "target": {
+    "map": "maps/01starvation.map26a",
+    "physical_side": "A",
+    "actor_id": 1,
+    "champion": "Vesper Vale",
+    "round": 1,
+    "first_divergence": {
+      "accepted_input_index_zero_based": 29,
+      "native_step": 89,
+      "candidate_move": "(2,48)->(3,47)",
+      "walk_control_move": "(2,48)->(3,49)"
+    }
+  },
+  "candidate": {
+    "source": "willow-finishing-recall-4d08241-work",
+    "aggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "replay": "planned-output/01starvation__v48-A__f475-B.repl26a",
+    "replay_sha256": "02b613ee21a19936ba5bdd94e84ccf75cde2c7cb82ccf243b4a6c1f29201aadf",
+    "bot_cpp_sha256": "12b287870f0e516829ccd0ce47765391e273729af1529fdc3df2f719da060d46",
+    "pathing_cpp_sha256": "92a39b3ea569cc25e52b5677f93cc57197e5fd45ec3fc6280b4d93e1630a0c6f"
+  },
+  "control": {
+    "source": "willow-v48-walk-altar-control-4d08241-work",
+    "aggregate": "c156da50c65ca11bf3da3ddec09a9cb285d02d5562dee1a72d45dfba8ab7bb4f",
+    "replay": "planned-control-ablation-output/v48_walk_altar-vs-f475__01starvation__v48_walk_altar-A.repl26a",
+    "replay_sha256": "e6c481f74dcc1eabe05580950933d57ead40895880b24067c67a2e69ff188338",
+    "bot_cpp_sha256": "12b287870f0e516829ccd0ce47765391e273729af1529fdc3df2f719da060d46",
+    "pathing_cpp_sha256": "a3dd7e76421c88df98af01df330f6338a5d7b3003b2344d8c411b14842f77191"
+  },
+  "logging": {
+    "patches": {
+      "v48-bot.cpp.patch": "78c632eb8f42fabfbfed4d8f66b6f00bee1c9f9a07ec1af0871c46dd2c6b3343",
+      "v48-pathing.cpp.patch": "b416d629275060c6ea0d384f7123da09c941f1a0425c2f8ddd1d40b193672fbb",
+      "walk-bot.cpp.patch": "d2a4e6d62ee1851059c9fb5aeea4dfeb7c5f66264b13ab76ac0e928b8e225526",
+      "walk-pathing.cpp.patch": "56d4641bf32f6a3ce3ea2b4c101bac2427aa359a9b4ed06963cb87066d5b5d76"
+    },
+    "fields": [
+      "centre_to_altar cache hit and any_altar preexisting state, selected draft/field path, returned steps",
+      "too_late calls with existing local operands/result (only when executed)",
+      "farm scan first/evaluated/k and already-computed best/shared/help/risky",
+      "selected target, best steps, route search result, cleared/zone state, attack tile/refused state"
+    ],
+    "no_new_native_or_safety_queries": true,
+    "fuel_gates": "No re-evaluation or new fuel query. Existing fuel gate results are not logged where unavailable without restructuring the evaluated expression; k/evaluated and existing shortcut remain the evidence."
+  },
+  "execution": {
+    "proposed": "Use copied existing recorder/tracer harness in isolated provenance workspace, one row at a time, exact source plus original B puppet; cap trace to rounds 0-1, then compare accepted inputs/native round hashes through the actor1 move. Do not interpret any trace after first prefix mismatch.",
+    "no_build_or_run_yet": true,
+    "review_required_before_compile": true
+  },
+  "limits": [
+    "This is logging-only source preparation; it does not establish a trace result.",
+    "The fixed opponent puppet does not adapt to the altered action.",
+    "The two original replays have separate B-side recorded scripts; each trace must validate against its own source replay.",
+    "The gate result is intentionally omitted if capturing it would require adding/repeating a fuel query or changing a short-circuit."
+  ]
+}

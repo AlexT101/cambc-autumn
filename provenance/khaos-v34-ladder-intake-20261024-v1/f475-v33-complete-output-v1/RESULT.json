@@ -1,0 +1,1146 @@
+{
+  "schema": "f475-v33-complete-panel-result/v1",
+  "rows": [
+    {
+      "map": "00collision",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1010,
+      "scoreB": 133,
+      "rounds": 970,
+      "new": true,
+      "replay_sha256": "5a8c7d5c4028d580e82c6059e46667d4f1e0da12645e30c206f5b1c6ef98af5d",
+      "statistics_sha256": "0f9ab32ee8b756920664c2de0f2524dd1a2d5591e29f51c5461b74fe8b760575"
+    },
+    {
+      "map": "00collision",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1002,
+      "scoreB": 105,
+      "rounds": 1033,
+      "new": true,
+      "replay_sha256": "af309be1ee651c8b5f4e76859854f429ae1e6d3adfe318fc2f0adc3ab991f421",
+      "statistics_sha256": "dcc38c1015ce38f6966207270334c3c24a0d09dba7a717b8d4ef1e57426255ea"
+    },
+    {
+      "map": "00contest",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 0,
+      "scoreB": 1000,
+      "rounds": 1553,
+      "new": true,
+      "replay_sha256": "2c207eb0450d7f2349397522c986592a66a114c8cc9f8c4af9019ec71db3f235",
+      "statistics_sha256": "c624c0b6baae9eeab40c3b34a01dc87d722c21325b1146796def4b34bc228c99"
+    },
+    {
+      "map": "00contest",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 200,
+      "scoreB": 1000,
+      "rounds": 1573,
+      "new": true,
+      "replay_sha256": "366c59a9532146ce57c16cf84dd8cb55714b06b4fe3d5acd02a9e63adb229fc1",
+      "statistics_sha256": "a2ecd43b07b8c34cac0fcbb788ae17809cadd5b7ba0577c9c552fbabd5d1b771"
+    },
+    {
+      "map": "00corners",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1025,
+      "scoreB": 352,
+      "rounds": 1021,
+      "new": true,
+      "replay_sha256": "f8c0febc452ac495b4694873eddbcc832967abf6bc5f9f4f61278c575440eaf2",
+      "statistics_sha256": "216349600b06b9f82a00f54c96c62ff59900a47e4c3ae4da09f549bfe0352c81"
+    },
+    {
+      "map": "00corners",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1001,
+      "scoreB": 390,
+      "rounds": 968,
+      "new": true,
+      "replay_sha256": "5d4b7cde4360c767aef23fff362dcfc42fbc7dc4e8a51d6c55efa191560fab78",
+      "statistics_sha256": "7c3b238c63cf523e90b7863e878283435ba66bba3566dfa38b8513941bb47e63"
+    },
+    {
+      "map": "00elkring",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1012,
+      "scoreB": 374,
+      "rounds": 670,
+      "new": true,
+      "replay_sha256": "a10e92ff3bf78989d5f98d9a301974ae50abe76ebf6614f9855ed7170344c9b9",
+      "statistics_sha256": "f971af7d07b0cb52bf4b3069bc3336230a9aadfeebf22f78fb3ca040723580e5"
+    },
+    {
+      "map": "00elkring",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 385,
+      "scoreB": 1012,
+      "rounds": 785,
+      "new": true,
+      "replay_sha256": "ee193515e8a5bd864403bef6867c79a3fa3af6de29ec5ff15869c8e8927f8a34",
+      "statistics_sha256": "2c7069141633dee3b8589ef6bcb20afcb2e75cf755fd046381238d109a023232"
+    },
+    {
+      "map": "00expanse",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 640,
+      "scoreB": 1007,
+      "rounds": 938,
+      "new": true,
+      "replay_sha256": "6f4a73efe9662be2f732291ce0449256273c93f74182ac43424859dc2e6435cb",
+      "statistics_sha256": "438d12e892162e256a40997f00b37355f27e77f89774fe84713568feedabc67d"
+    },
+    {
+      "map": "00expanse",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 772,
+      "scoreB": 1000,
+      "rounds": 1028,
+      "new": true,
+      "replay_sha256": "4e222d1d68c514255c7f4dcdd57279687a4cddd0ad6bd3bdca44e2f826ef829e",
+      "statistics_sha256": "a2af1e51f4fa4daabe0c8e3d1fd1c140de8455dd863c98b18fa22e19139bc1c1"
+    },
+    {
+      "map": "00fragment",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 96,
+      "scoreB": 1024,
+      "rounds": 1416,
+      "new": true,
+      "replay_sha256": "32966a0573366fbd449689b6af99cab9f2f7fa37a69605bc2d57e7c585c3f9b2",
+      "statistics_sha256": "9fb76e3346e779b74471197fab20ab29999bb874e48320a4c35e943a585948ad"
+    },
+    {
+      "map": "00fragment",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1010,
+      "scoreB": 96,
+      "rounds": 1320,
+      "new": true,
+      "replay_sha256": "e2f9a2eebd17916d8510cd49dbecdb3c010008b004fd5ea6aae44b4b9320d0da",
+      "statistics_sha256": "ad6e87846a1ba548592c19407b880ba87308df7735ac1816f851416fe3f48746"
+    },
+    {
+      "map": "00gem-fields",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1004,
+      "scoreB": 126,
+      "rounds": 427,
+      "new": true,
+      "replay_sha256": "e057b11fa3c398986b26c2e80f755857b9d17cdb22581469782de9573ebe1e67",
+      "statistics_sha256": "6f3915a2ad08c215a64ed9bbf169b16450e032e4a3b030f12bc44aa335b67495"
+    },
+    {
+      "map": "00gemfight",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 215,
+      "scoreB": 1038,
+      "rounds": 910,
+      "new": true,
+      "replay_sha256": "fc20332048ebfe450e9f784f50ce66541e59eb1059136d94ca3f4d4f78ad35ae",
+      "statistics_sha256": "5d2e61e92dabc7ac9e1fc23c69f1d941ff755497fa2b4c8ee385a8acb5bf7886"
+    },
+    {
+      "map": "00gemfight",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 347,
+      "scoreB": 1057,
+      "rounds": 1312,
+      "new": true,
+      "replay_sha256": "6358f0506a2f152f9998d1f2e82234a89bc8c80d1f56b620ca74ae84009a7840",
+      "statistics_sha256": "a38f4386c0ffbe4c7051202dd7a443a1c72ec34762bf6596cdab8445d96fec4b"
+    },
+    {
+      "map": "00great-wall",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1050,
+      "scoreB": 436,
+      "rounds": 978,
+      "new": true,
+      "replay_sha256": "9cc32343ad379e67eeab79e9ce68618bf665b71efcd5951df31660b7305fb50c",
+      "statistics_sha256": "4671d59fd6a51d04681a2d52020ca7b389a33aadea09a09ba2350b34d506715a"
+    },
+    {
+      "map": "00great-wall",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1013,
+      "scoreB": 469,
+      "rounds": 1024,
+      "new": true,
+      "replay_sha256": "99183abe89ba19c6b9bf49ecf4a486737f62d60df0297618cc7cdcb93abd0178",
+      "statistics_sha256": "2fb4d6ba51ec61dda289263c2d7a2d4ef8e3052f1be71ef22ed3af687311e0b3"
+    },
+    {
+      "map": "00interlock",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1032,
+      "scoreB": 214,
+      "rounds": 1031,
+      "new": true,
+      "replay_sha256": "a5c05daff80fc2e1aa757aab98729e357217ac79fc2b883a4d902a0464cd4e14",
+      "statistics_sha256": "22ee050e815ce576e50b26e471ff0743de58a2c93a0bf84b1a1c7fc09492b4f6"
+    },
+    {
+      "map": "00interlock",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1029,
+      "scoreB": 443,
+      "rounds": 1111,
+      "new": true,
+      "replay_sha256": "063fdc540b5fabdcde541d471c893e4c4c6202fa8b84f65dd892b41cdce9d058",
+      "statistics_sha256": "b24b6eb1ae9c80ada06cfecaa8f4395dbd7ac271f7ce1686b6ee366021c315f7"
+    },
+    {
+      "map": "00lanes",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 761,
+      "scoreB": 1010,
+      "rounds": 913,
+      "new": true,
+      "replay_sha256": "cb8dfc4750758fe3a711ca9da0edbf9a5936f3571f5bd5d7eb8388faa3325cba",
+      "statistics_sha256": "e2d9ad28f2bb6e5ef915da03cf1822e87c60cf404bedd7638c83c819495e5974"
+    },
+    {
+      "map": "00lanes",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 864,
+      "scoreB": 1007,
+      "rounds": 986,
+      "new": true,
+      "replay_sha256": "818e178fb37d6b91fbc4152fdda8c5cf576ecfc9b3a58d0a17f3f8633f946289",
+      "statistics_sha256": "f8b8b670adbea429ed9541e814078f80550d3937daf586ed15d2d2c1ae1fdb2a"
+    },
+    {
+      "map": "00lost-world",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 574,
+      "scoreB": 1015,
+      "rounds": 728,
+      "new": true,
+      "replay_sha256": "cc4a12c18f46609f377b0a00d3f98a822382b803ed5e9d5b109579a8b1c9dac6",
+      "statistics_sha256": "e0c4fd864d6c8afbb04543509bf94f4312aac37b3fbc6ad740b6088356e3bc72"
+    },
+    {
+      "map": "00lost-world",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 84,
+      "scoreB": 1001,
+      "rounds": 507,
+      "new": true,
+      "replay_sha256": "229bf6fab22686ea91e9cd79c2eb00d3a5b4b2fb1b2b63b7fa5c5cee3d3b7942",
+      "statistics_sha256": "522cdc0b0628761b60d3de5bd7085d31391bda69f876603ca80faa09b9602c98"
+    },
+    {
+      "map": "00monolith",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 519,
+      "scoreB": 1006,
+      "rounds": 930,
+      "new": true,
+      "replay_sha256": "fb982655e420f87872fb2e5832bd4158cf8eb07f000e520a6dd9d8bc3fe99cd0",
+      "statistics_sha256": "1b5362a1e420c68c6905ed7f32a1eeabce5551dfb154ff88db2098a046ed5951"
+    },
+    {
+      "map": "00monolith",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1011,
+      "scoreB": 543,
+      "rounds": 1081,
+      "new": true,
+      "replay_sha256": "bc56bad7e1d501cfedb5bb54fecf7a693fb3d869bcfb0974abd0a1c81364a2f5",
+      "statistics_sha256": "bc5538ea9998cd6e166951501247c383f9e36722340c19d3edeaef5d6bfe3bc7"
+    },
+    {
+      "map": "00packs",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 204,
+      "scoreB": 1006,
+      "rounds": 818,
+      "new": true,
+      "replay_sha256": "e39ca8b7e6896bd7784e979ac9577b9581b9ee193054d92dbe1e7504507cd908",
+      "statistics_sha256": "f219adcec818ff10fc088e79a6d82c46c403a1ba2ee12e82e8df3bd2e3bb2ccc"
+    },
+    {
+      "map": "00packs",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 154,
+      "scoreB": 1024,
+      "rounds": 826,
+      "new": true,
+      "replay_sha256": "22fe5c06b55a9872b5f4b8ecae80be4cfeb4f59b762cb6555c7f334b4518ea2f",
+      "statistics_sha256": "9cde366088e4b721795c28067f080bf1b6d9e9b7f9c2f227025634f89f573ec1"
+    },
+    {
+      "map": "00pilgrimage",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1030,
+      "scoreB": 210,
+      "rounds": 1357,
+      "new": true,
+      "replay_sha256": "cc16570e2ebe39fc3f9bfc094c241bdaf63aab559ae25094df0dd02f488588ef",
+      "statistics_sha256": "54c6680906dfe3d5231154135a3a166d81fd885b39a160445c476fba8c3edd09"
+    },
+    {
+      "map": "00pilgrimage",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 829,
+      "scoreB": 1023,
+      "rounds": 1859,
+      "new": true,
+      "replay_sha256": "2d79ca99b503f06060bf20edb7d9ebebf66e40c97ad13bdc773134b30d53eaf7",
+      "statistics_sha256": "6fb9a86722ea215b3c10cefa395caa8d16be17144ab90559782edc6477bacfb3"
+    },
+    {
+      "map": "00quadrants",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1012,
+      "scoreB": 625,
+      "rounds": 521,
+      "new": true,
+      "replay_sha256": "1aba65aaa94edbcea2320532fd9ce859d0c3172d8e21dccd8f8137712f87b6de",
+      "statistics_sha256": "884ed22b4bcd5ed8eca98fc14c0c2482c75848ba44907c98f15a1f276feb4677"
+    },
+    {
+      "map": "00quadrants",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1015,
+      "scoreB": 432,
+      "rounds": 429,
+      "new": true,
+      "replay_sha256": "96f3e971b659a69b277b477a944adcf56db2700c39d02de85adc51374e3a0bd0",
+      "statistics_sha256": "5810e39b0b71f112e5d04820d4d3f8a282d70df34e79f177b5ce8ac5b4044f4c"
+    },
+    {
+      "map": "00reverse-spiral",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1019,
+      "scoreB": 647,
+      "rounds": 1309,
+      "new": true,
+      "replay_sha256": "c489836e844628df8d77a164580cf335b0bbcf29969f97c94167264146e9a67f",
+      "statistics_sha256": "8c7fc49251ce687fa19e994570a93126ee472cecdcff4023d0d8323736b73ed7"
+    },
+    {
+      "map": "00reverse-spiral",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1000,
+      "scoreB": 123,
+      "rounds": 1110,
+      "new": true,
+      "replay_sha256": "21b3ff55ced68d902c828be3cd8e8d5b21fca03a9f43b3fb967d2bb1474b6bf8",
+      "statistics_sha256": "5c7a02bb70442d1d8fe12652a35b22fa79e3ca20e4494a08500cd47bae6ae5a0"
+    },
+    {
+      "map": "00road-of-riches",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 149,
+      "scoreB": 1051,
+      "rounds": 868,
+      "new": true,
+      "replay_sha256": "c6242fd7767ee63555ec2e79648f34a8c36e514f0ec56501c111f4b6952fe526",
+      "statistics_sha256": "187eb6e935c04931eebc8bff6064631b91f7b4e27599bc59d6c8daefc7a6c4b4"
+    },
+    {
+      "map": "00road-of-riches",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 176,
+      "scoreB": 1018,
+      "rounds": 905,
+      "new": true,
+      "replay_sha256": "f16a2365b032829503a5a4d67dd1db3f15d4a545399876901a99c8c8c01f20d1",
+      "statistics_sha256": "3beefb8c97b85fad620efc330f72f60afc0e631c0088f8b1e35253cf83a60337"
+    },
+    {
+      "map": "00rows",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 382,
+      "scoreB": 1000,
+      "rounds": 1230,
+      "new": true,
+      "replay_sha256": "642b6f36ce9fc000ea3bdee1233fa12f7c3cee8da90bbaea58f9a7023f53a697",
+      "statistics_sha256": "d4edd994cf704eb728947e6b88a7820056313c801689b3620d4a2a763ad3b985"
+    },
+    {
+      "map": "00rows",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 382,
+      "scoreB": 1000,
+      "rounds": 1230,
+      "new": true,
+      "replay_sha256": "23800073561b2ffcc7a1754ad7d29d6ba64ec11c42eeb73ff167917740cf71a6",
+      "statistics_sha256": "d4edd994cf704eb728947e6b88a7820056313c801689b3620d4a2a763ad3b985"
+    },
+    {
+      "map": "00rushbait-v2",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1016,
+      "scoreB": 488,
+      "rounds": 1225,
+      "new": true,
+      "replay_sha256": "b1725dadb0f4ac15dd26ae8b423bf9daef56a433c496a8fbe9d2095563d97ced",
+      "statistics_sha256": "b54aaa92cb503c14a8d1ddc1b76e6afe0bbebe6f745eaa890fd0e6fad225b76c"
+    },
+    {
+      "map": "00rushbait-v2",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1001,
+      "scoreB": 824,
+      "rounds": 1418,
+      "new": true,
+      "replay_sha256": "839d0aec2af757d7051b8c9cd5fc29584c7d12c8acaa08a5cc6de8e3fa66e362",
+      "statistics_sha256": "9d37468c192fb792595da8e8808ee02a2906f71e881a92140b8841ea0b3a815b"
+    },
+    {
+      "map": "00split",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 460,
+      "scoreB": 1009,
+      "rounds": 708,
+      "new": true,
+      "replay_sha256": "62bdd986c999dfdb12114e00229fe2d5606ea1499121e6fa881db779942034b3",
+      "statistics_sha256": "36095e03ecb7eaa3b12d9574e11d477b31a0880f7b34c63de8a3866429c45823"
+    },
+    {
+      "map": "00split",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 621,
+      "scoreB": 1076,
+      "rounds": 792,
+      "new": true,
+      "replay_sha256": "c4daa38f9d5b08b10f0ad7daf8239bd9a2e03d79c2b098c5eeacac881d9003e8",
+      "statistics_sha256": "34d811cb4f2f7c28d2210fb5160a64ef7f5420579c9d14b9e8f6e3e53b02ec5b"
+    },
+    {
+      "map": "00stampede",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1040,
+      "scoreB": 80,
+      "rounds": 1366,
+      "new": true,
+      "replay_sha256": "37f7aa2ea7433b14c2752e164e467b80b72a900dd159db97fdcc7f30bb1dd1d0",
+      "statistics_sha256": "43f73d5646581bb0010ae7d85727fc9afd0ae8de1b74a4f145d8db3e5a5d75a1"
+    },
+    {
+      "map": "00stampede",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1040,
+      "scoreB": 0,
+      "rounds": 1256,
+      "new": true,
+      "replay_sha256": "bc32817a092403906ee846d433c5e6e895b293aa63a9edea6be3c670aabdf52c",
+      "statistics_sha256": "569667dcaeb3d1854393219adf32419f6295bffd32d2de76b9d79baa08324fe3"
+    },
+    {
+      "map": "00swirl",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1007,
+      "scoreB": 294,
+      "rounds": 1048,
+      "new": true,
+      "replay_sha256": "e40dba5acb26783d32d18a93d23767b61a11ecc0ac06856c8a1fde83005350c5",
+      "statistics_sha256": "da082d4454eee2d813cda1d19e9c04dd143a148221ab34086bfe78a07a5aae22"
+    },
+    {
+      "map": "00swirl",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 15,
+      "scoreB": 1009,
+      "rounds": 697,
+      "new": true,
+      "replay_sha256": "fe84d70437b03d593aac4116d692548e49395bb96bc4dcaa7f172d4ed9cb769c",
+      "statistics_sha256": "b90aac1c8add7c9b0ccdcd9263c36c0c2dcac184179ceb2170764e4be8cd1385"
+    },
+    {
+      "map": "01big-world",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 630,
+      "scoreB": 1022,
+      "rounds": 988,
+      "new": true,
+      "replay_sha256": "4dd934b27a432decc0586044f2d52574ecb4aeb61e77f0b458ff85edfa385148",
+      "statistics_sha256": "50aabacfb67820320c5d09ab17991bad7148b0d8437bc3075476d1670f26af78"
+    },
+    {
+      "map": "01big-world",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 656,
+      "scoreB": 1011,
+      "rounds": 866,
+      "new": true,
+      "replay_sha256": "684e0fc6eafa43c312fe839caeccf2cf98f949e35d71b71cdb9dd9977828018c",
+      "statistics_sha256": "f590577c73c910cd15df1cd928eddb75e39aff54b1e17110ef63e035a08de255"
+    },
+    {
+      "map": "01boss-battle",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 0,
+      "scoreB": 1199,
+      "rounds": 1551,
+      "new": true,
+      "replay_sha256": "8859627c72ab094a14dfac30e9b200239b69f8c5ddf642b13263f561fb97dc28",
+      "statistics_sha256": "50b279d140a69043f28d75b1a17b3c6ca7ba9724af4eb20e7c4a96469f90fac9"
+    },
+    {
+      "map": "01boss-battle",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 0,
+      "scoreB": 1015,
+      "rounds": 655,
+      "new": true,
+      "replay_sha256": "39a1f1127dcbf2f9d996888f0348dc788098ad32a7ab98a16ccb5ea951a1bc53",
+      "statistics_sha256": "270b4a0af002a97058e23ad6420b4a410a8fdd5c91a68803feb21a463be491e2"
+    },
+    {
+      "map": "01broken-curve",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1000,
+      "scoreB": 365,
+      "rounds": 678,
+      "new": true,
+      "replay_sha256": "39e7757c3e90bbb87ee2e295640817be307533cf9d9f27e183899f31a396661d",
+      "statistics_sha256": "be9209b1dc9afcc5adaa1614e4a0052ed9219fcce4f219ea4b4575ea55c1a3cb"
+    },
+    {
+      "map": "01broken-curve",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 578,
+      "scoreB": 1463,
+      "rounds": 878,
+      "new": true,
+      "replay_sha256": "2eddb8087360bb4f78749e5f14de3e71767237c7cab2fda915f9d4d46be6a4fa",
+      "statistics_sha256": "e59c193ad9c7d560406f9175efa8df8c9bbeffdd6f3b710a480a2134a369daa1"
+    },
+    {
+      "map": "01concentrated-wealth",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1000,
+      "scoreB": 92,
+      "rounds": 1052,
+      "new": true,
+      "replay_sha256": "44246c79be80d70d7ac729c59c8201f5a3f8c7d22fd3301a23b73bdd48204dc4",
+      "statistics_sha256": "d6398cdaa42dea369cca513ea92148e5fd4fe11de43ee7dd67ebc3d3c57f8ab2"
+    },
+    {
+      "map": "01corridors",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1090,
+      "scoreB": 484,
+      "rounds": 1228,
+      "new": true,
+      "replay_sha256": "c1061f78192b9ea2ac9bb10f50632f2e1e016a636234cb35307a212a83e0dc2b",
+      "statistics_sha256": "ab08f1f058784eec016b31c0cca60cd22ce41fa0917e6b52b1a38a4291ae9c1d"
+    },
+    {
+      "map": "01corridors",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 172,
+      "scoreB": 1008,
+      "rounds": 970,
+      "new": true,
+      "replay_sha256": "253870e7c6de7b95805b63654f27bab581776893c1492c610948b23bb436099a",
+      "statistics_sha256": "135fc6a4860eee12f98444b9abba93f51f3218bc82bb9bdb424d5e0156d90c51"
+    },
+    {
+      "map": "01elk-arena",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1044,
+      "scoreB": 108,
+      "rounds": 1291,
+      "new": true,
+      "replay_sha256": "41cb085bab336dd88cec7e7b4aba26107ef19e2f5461bb65b0a970f8819c36b0",
+      "statistics_sha256": "883ffae10325096ce7c64695b667811bc6837bf3c909faa00ed44385096b72b9"
+    },
+    {
+      "map": "01elk-arena",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 216,
+      "scoreB": 1008,
+      "rounds": 1471,
+      "new": true,
+      "replay_sha256": "41f07c6b97209b9055857ce3b0d0a7426c77a84f9d2bec55137aa451b135e85e",
+      "statistics_sha256": "f2b4a42f574be27e4a0a6789d05a33e1f592e2372aa89ff2e6d83f84d8ca068a"
+    },
+    {
+      "map": "01fracture",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1171,
+      "scoreB": 244,
+      "rounds": 1087,
+      "new": true,
+      "replay_sha256": "88c119b2564704aa20d175daeb0badb45e737dd1f5c3f32405b9d1852eed94d9",
+      "statistics_sha256": "6ece398579ca4d8b42e64fd75c9abccab19d5fd650209721362a62e15a83da24"
+    },
+    {
+      "map": "01gold-rush",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 704,
+      "scoreB": 913,
+      "rounds": 2000,
+      "new": true,
+      "replay_sha256": "9671f4818af50bae8960a6ede1d358878ea23aa4fecd168ede4c1a567b443d33",
+      "statistics_sha256": "f09a27260071c3ba4e98ad3cf10f938b1446cb8f6a88b6e4951a3cb226cedaea"
+    },
+    {
+      "map": "01gold-rush",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 280,
+      "scoreB": 1007,
+      "rounds": 1706,
+      "new": true,
+      "replay_sha256": "4177b44bd51c2c5667050ecc0309e5ee27ea7f0ca53b0ea5501dfe3321bb74fc",
+      "statistics_sha256": "8dc61b3d105b494c0b66863dc69671eb9c0c856724f177fc1dcf73299c1c366c"
+    },
+    {
+      "map": "01hooks",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 66,
+      "scoreB": 1012,
+      "rounds": 1029,
+      "new": true,
+      "replay_sha256": "5e8c3108d852d877c1bf60e5b85008063ee9ff354cb245cb73d857a34a0392d2",
+      "statistics_sha256": "cf3146c0d9e940a17b599efdaf21e34fdf1efd6eacacb5be1c18ad0480a9b5e5"
+    },
+    {
+      "map": "01hooks",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 66,
+      "scoreB": 1012,
+      "rounds": 1008,
+      "new": true,
+      "replay_sha256": "58611c15caf12d7e617c808a2fe187a13ccc0de9233e643c10e7d6fefdfb9c14",
+      "statistics_sha256": "2c395a8642402f612db4caa8e69776e3f0fba3868a6d4e5942420e797fdd5175"
+    },
+    {
+      "map": "01islands",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1005,
+      "scoreB": 680,
+      "rounds": 757,
+      "new": true,
+      "replay_sha256": "e142b787fd176015402bb432104ee9bdcc62361aba13d1184c5f081903b6466a",
+      "statistics_sha256": "1555083bfb8a11e9601fadb8e9001b849701f81fc999b17f6b67e2f693f1ae79"
+    },
+    {
+      "map": "01islands",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1022,
+      "scoreB": 592,
+      "rounds": 733,
+      "new": true,
+      "replay_sha256": "da0712f65c2a74141767cf703e1cfdec38f13ed316f2550c23b186ab23f0fcba",
+      "statistics_sha256": "8916611a3e4dd4b662bd58ac8ec6cd0784092fdfae503f3ddd76e5ea855bdecd"
+    },
+    {
+      "map": "01shortcut",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 96,
+      "scoreB": 1074,
+      "rounds": 1243,
+      "new": true,
+      "replay_sha256": "f56bdcdad83bd2a217fe64b7cbd33c01f87236ddadea933fd468aefa84df12df",
+      "statistics_sha256": "e3a8844d96115bccace46952fa6f8ddf9be4250cedf4c242054d819d329f9133"
+    },
+    {
+      "map": "01shortcut",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 157,
+      "scoreB": 1085,
+      "rounds": 1182,
+      "new": true,
+      "replay_sha256": "d5fd5a2bda25e2ad5eba6addf8aa4dae244a4e51c7044cc2bb92fb99dc79506c",
+      "statistics_sha256": "fb55bd9dd55f6b8b3c9ba6995413465fba3cd743e1b5cb930e3d48e268e0eedc"
+    },
+    {
+      "map": "01starfish",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1033,
+      "scoreB": 93,
+      "rounds": 898,
+      "new": true,
+      "replay_sha256": "8d87bc4de582180ea0d7edec8f2e56b71272d2e306b3348835a173e6a9e7b186",
+      "statistics_sha256": "11f92061e82d153b564475a806ecd33f5ad9d59abe9e9a90dc4fc17b6a80bd44"
+    },
+    {
+      "map": "01starfish",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 130,
+      "scoreB": 1058,
+      "rounds": 889,
+      "new": true,
+      "replay_sha256": "b1641c815bad554de94ceeedafe9c464c46672fae92b78cc5773a3f1267c1505",
+      "statistics_sha256": "ae3d58c7ffd46ea81180dcaa82c5ab12cf47caca3efbcac3cf310c82bacf8747"
+    },
+    {
+      "map": "01the-farm",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1616,
+      "scoreB": 796,
+      "rounds": 1088,
+      "new": true,
+      "replay_sha256": "031ae54a0cd123b7276d5128332c6b5f92477a2d682b26fb839d8e7f5c86ef27",
+      "statistics_sha256": "18380a005ffa890604b8faddd6cb54013179929a1f17191059ae26b478228cfa"
+    },
+    {
+      "map": "01the-farm",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 919,
+      "scoreB": 1328,
+      "rounds": 1030,
+      "new": true,
+      "replay_sha256": "0ddf0b66192f6d56887fb0046d7f21e39728bc0b29d4c72bbb0392ae872b048b",
+      "statistics_sha256": "5b04d8e6a96cea3658ad4f72c9cfa745e98a400a02613f0b73bb891b93120050"
+    },
+    {
+      "map": "01yellow-brick-road",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 857,
+      "scoreB": 1011,
+      "rounds": 889,
+      "new": true,
+      "replay_sha256": "cffb034a3d3376d8025194842fdad83b6b05b38e8cda762a55f54f68e9401f13",
+      "statistics_sha256": "d579560b57f407ec8c7eb25eff7e48b98800904ff8db5e3842da5e4a299b98b1"
+    },
+    {
+      "map": "01yellow-brick-road",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1000,
+      "scoreB": 671,
+      "rounds": 708,
+      "new": true,
+      "replay_sha256": "beeb3f2d7f9694aaf22081d6b3505ee87744dfae08b07eee619320ae9d6de65f",
+      "statistics_sha256": "f436ab7977b57fa81ac467158ebe668cae671de87c1f7d05162c9f9703bf436c"
+    },
+    {
+      "map": "00ambush",
+      "A": "f475",
+      "B": "v33",
+      "winner": "v33",
+      "scoreA": 724,
+      "scoreB": 1005,
+      "rounds": 1131,
+      "new": false,
+      "replay_sha256": "63adbbfa5802673226ceea034df1703e26c212d42ff9ea1fe71331746955e1b2",
+      "statistics_sha256": "b5c3261d7fd18de194ed7735a918432ee2d62c850c1edf6244f7a96244a08e5a"
+    },
+    {
+      "map": "00ambush",
+      "A": "v33",
+      "B": "f475",
+      "winner": "f475",
+      "scoreA": 260,
+      "scoreB": 1004,
+      "rounds": 1049,
+      "new": false,
+      "replay_sha256": "a137df99a614f822fceac8a27b4f43099123095e8a0ff52214325f477fa7dcc6",
+      "statistics_sha256": "c78616af969a2f34df8f24c828dbeede137cde6d8190cf121d7981fe24b3b5bb"
+    },
+    {
+      "map": "00eight",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1021,
+      "scoreB": 78,
+      "rounds": 1047,
+      "new": false,
+      "replay_sha256": "c801c41bbdde467a80cda7a548b97cf15b635e25bda7cda2042c64f0a43b8cb8",
+      "statistics_sha256": "ed4e0ccb18a2255c75b4968ccfdb40a36805c19db9e5a7845b7bfd0e758892b8"
+    },
+    {
+      "map": "00eight",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1004,
+      "scoreB": 279,
+      "rounds": 932,
+      "new": false,
+      "replay_sha256": "e75ed97884d4ec946255538ff47a2f97fb3eab4f88b8026682617766e55d4375",
+      "statistics_sha256": "6318d0196c011d598597762b3db61a6a43b3c50c4ea2555e84c08226701f9eb7"
+    },
+    {
+      "map": "00gem-fields",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 1040,
+      "scoreB": 592,
+      "rounds": 537,
+      "new": false,
+      "replay_sha256": "56fc2a6f2467bb7a626369309785bda116732e85ea983c565756edf4c20f10bb",
+      "statistics_sha256": "2638b0ad3efc1f5a42f7e004119e90aeee131a9d5bcc9f3aeff028c23bcabbb1"
+    },
+    {
+      "map": "01concentrated-wealth",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1017,
+      "scoreB": 181,
+      "rounds": 1030,
+      "new": false,
+      "replay_sha256": "bb27aadd659305b6666764f79570defa0f445edce96b0825d251453888996c84",
+      "statistics_sha256": "597f30e72d8256be61adda162d8850b95125dfdbd17765f9423bcdc6f9d33b00"
+    },
+    {
+      "map": "01fracture",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1030,
+      "scoreB": 221,
+      "rounds": 984,
+      "new": false,
+      "replay_sha256": "8c7a730bb03153d33c2553315bf5e67591007bba5854ade67de903a808595f01",
+      "statistics_sha256": "d683aa4e3e086bd6f9d5750dedc28d74ffde5633d41583f5733b0460097d5999"
+    },
+    {
+      "map": "01starvation",
+      "A": "f475",
+      "B": "v33",
+      "winner": "f475",
+      "scoreA": 796,
+      "scoreB": 448,
+      "rounds": 2000,
+      "new": false,
+      "replay_sha256": "acb7ac57ba19deb331baa11fa50a3e2cfaa551496e9408a428a87098263388c1",
+      "statistics_sha256": "23d3f7ff8c0671ddcb33399f8f02297c444d97c1ddf9b3f13ba0e79bbad1fe02"
+    },
+    {
+      "map": "01starvation",
+      "A": "v33",
+      "B": "f475",
+      "winner": "v33",
+      "scoreA": 1052,
+      "scoreB": 308,
+      "rounds": 1743,
+      "new": false,
+      "replay_sha256": "d40d76a98f1ab3815ef978d3632c9cdcbf8135398fa516200b8a097dd3b83797",
+      "statistics_sha256": "90cf3f784e17ce20b3a667dd9f8c878d61fe9ea7c2654755f152daaf1c628ec2"
+    }
+  ],
+  "counts": {
+    "total": 80,
+    "new": 71,
+    "reused": 9,
+    "winner_by_source": {
+      "f475": 45,
+      "v33": 35
+    },
+    "physical_side_wins": {
+      "A": 39,
+      "B": 41
+    },
+    "A_source_wins": 39,
+    "B_source_wins": 41,
+    "bot_faults": 0,
+    "f475_wins_by_physical_side": {
+      "A": 22,
+      "B": 23
+    },
+    "native_play_rollovers": {
+      "f475": 260,
+      "v33": 549
+    },
+    "native_bot_errors": {
+      "f475": 0,
+      "v33": 0
+    },
+    "native_draft_rollovers_or_errors": 0
+  },
+  "per_map_winner_counts": {
+    "00ambush": {
+      "v33": 1,
+      "f475": 1
+    },
+    "00collision": {
+      "f475": 1,
+      "v33": 1
+    },
+    "00contest": {
+      "v33": 1,
+      "f475": 1
+    },
+    "00corners": {
+      "f475": 1,
+      "v33": 1
+    },
+    "00eight": {
+      "f475": 1,
+      "v33": 1
+    },
+    "00elkring": {
+      "f475": 2
+    },
+    "00expanse": {
+      "v33": 1,
+      "f475": 1
+    },
+    "00fragment": {
+      "v33": 2
+    },
+    "00gem-fields": {
+      "v33": 1,
+      "f475": 1
+    },
+    "00gemfight": {
+      "v33": 1,
+      "f475": 1
+    },
+    "00great-wall": {
+      "f475": 1,
+      "v33": 1
+    },
+    "00interlock": {
+      "f475": 1,
+      "v33": 1
+    },
+    "00lanes": {
+      "v33": 1,
+      "f475": 1
+    },
+    "00lost-world": {
+      "v33": 1,
+      "f475": 1
+    },
+    "00monolith": {
+      "v33": 2
+    },
+    "00packs": {
+      "v33": 1,
+      "f475": 1
+    },
+    "00pilgrimage": {
+      "f475": 2
+    },
+    "00quadrants": {
+      "f475": 1,
+      "v33": 1
+    },
+    "00reverse-spiral": {
+      "f475": 1,
+      "v33": 1
+    },
+    "00road-of-riches": {
+      "v33": 1,
+      "f475": 1
+    },
+    "00rows": {
+      "v33": 1,
+      "f475": 1
+    },
+    "00rushbait-v2": {
+      "f475": 1,
+      "v33": 1
+    },
+    "00split": {
+      "v33": 1,
+      "f475": 1
+    },
+    "00stampede": {
+      "f475": 1,
+      "v33": 1
+    },
+    "00swirl": {
+      "f475": 2
+    },
+    "01big-world": {
+      "v33": 1,
+      "f475": 1
+    },
+    "01boss-battle": {
+      "v33": 1,
+      "f475": 1
+    },
+    "01broken-curve": {
+      "f475": 2
+    },
+    "01concentrated-wealth": {
+      "f475": 1,
+      "v33": 1
+    },
+    "01corridors": {
+      "f475": 2
+    },
+    "01elk-arena": {
+      "f475": 2
+    },
+    "01fracture": {
+      "f475": 1,
+      "v33": 1
+    },
+    "01gold-rush": {
+      "v33": 1,
+      "f475": 1
+    },
+    "01hooks": {
+      "v33": 1,
+      "f475": 1
+    },
+    "01islands": {
+      "f475": 1,
+      "v33": 1
+    },
+    "01shortcut": {
+      "v33": 1,
+      "f475": 1
+    },
+    "01starfish": {
+      "f475": 2
+    },
+    "01starvation": {
+      "f475": 1,
+      "v33": 1
+    },
+    "01the-farm": {
+      "f475": 2
+    },
+    "01yellow-brick-road": {
+      "v33": 2
+    }
+  },
+  "native_status_path": "native-audit/native-status.json"
+}

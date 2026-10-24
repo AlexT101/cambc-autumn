@@ -1,0 +1,1032 @@
+{
+  "schema": "actor-own-view-window/v3",
+  "label": "01fracture-Prism-actor0-r5-7",
+  "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01fracture__f475-A.repl26a",
+  "replay_file_sha256": "88c119b2564704aa20d175daeb0badb45e737dd1f5c3f32405b9d1852eed94d9",
+  "replay_payload_sha256": "4740c41904ea6012bf8a05c1cbe3cb5df3ba9fe7ce1e2eb68952b93b2758019c",
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "map": "f475-v33__01fracture__f475-A",
+  "map_path": "maps/01fracture.map26a",
+  "map_sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914",
+  "build_mode": "Release, fuel 100000",
+  "source_aggregates": {
+    "service-base-f7": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "source_attribution": {
+    "status": "exact_source_pins",
+    "provenance": "provenance/khaos-v34-ladder-intake-20261024-v1/own-view-firstfork-v1/hop-baseline/results.json:source_pins"
+  },
+  "actor": {
+    "id": 0,
+    "name": "Prism",
+    "team": 0,
+    "physical_side": "A"
+  },
+  "static_camp_layout": "Expanded stable id/coordinate/type/group rows from the observer snapshot; own-view dynamic camp state joins by native camp id.",
+  "selected_rounds": [
+    5,
+    7
+  ],
+  "exported_rounds": [
+    5,
+    6,
+    7
+  ],
+  "observation_limits": "Champion health/position/items/channel are included only for actors visible in this actor perspective; hidden enemy state is omitted. Static nearby map terrain and camps are included; dynamic camp state is included only when own-view known. Replay snapshot does not expose this actor shared-memory word or altar-usability evaluation.",
+  "alignment": "Turn observations are captured at the first phase-10 snapshot for this actor and round. For optional selected action steps, before uses timeline snapshot N-1 and after uses snapshot N; timeline snapshot N contains the state after the action recorded at step index N.",
+  "selected_action_step_indices": [],
+  "selected_action_step_snapshots": [],
+  "turns": [
+    {
+      "round": 5,
+      "turn": 6,
+      "snapshot_step_index": 973,
+      "observation": {
+        "self": {
+          "id": 0,
+          "type": "Prism",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              5,
+              5
+            ],
+            "own_frame": [
+              5,
+              5
+            ]
+          },
+          "health": 700,
+          "max_health": 700,
+          "strength": 35,
+          "cooldowns": [
+            0,
+            0
+          ],
+          "abilities": [
+            "CC",
+            "AoE damage"
+          ],
+          "focus": 80,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {},
+          "consumables": {},
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 1040,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                9,
+                5
+              ],
+              "own_frame": [
+                9,
+                5
+              ]
+            },
+            "health": 1000,
+            "max_health": 1000,
+            "strength": 55,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              3
+            ],
+            "abilities": [
+              "Attack reset",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                8,
+                6
+              ],
+              "own_frame": [
+                8,
+                6
+              ]
+            },
+            "health": 1200,
+            "max_health": 1200,
+            "strength": 45,
+            "focus": 60,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 3,
+            "type": "Willow",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                5,
+                2
+              ],
+              "own_frame": [
+                5,
+                2
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 55,
+            "focus": 120,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Heal",
+              "Attack reset"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 0,
+              "timer": 0
+            }
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                8,
+                3
+              ],
+              "own_frame": [
+                8,
+                3
+              ]
+            },
+            "health": 1000,
+            "max_health": 1000,
+            "strength": 30,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              3
+            ],
+            "abilities": [
+              "Shield",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 5,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Willow",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                8,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                10
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                7,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                7,
+                10
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "cancel_channel",
+          "step_index": 974
+        },
+        {
+          "kind": "move",
+          "step_index": 975,
+          "destination": [
+            6,
+            6
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 976
+        }
+      ]
+    },
+    {
+      "round": 6,
+      "turn": 7,
+      "snapshot_step_index": 1192,
+      "observation": {
+        "self": {
+          "id": 0,
+          "type": "Prism",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              6,
+              6
+            ],
+            "own_frame": [
+              6,
+              6
+            ]
+          },
+          "health": 700,
+          "max_health": 700,
+          "strength": 35,
+          "cooldowns": [
+            0,
+            0
+          ],
+          "abilities": [
+            "CC",
+            "AoE damage"
+          ],
+          "focus": 80,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {},
+          "consumables": {},
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 1040,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                10,
+                6
+              ],
+              "own_frame": [
+                10,
+                6
+              ]
+            },
+            "health": 1000,
+            "max_health": 1000,
+            "strength": 55,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              2
+            ],
+            "abilities": [
+              "Attack reset",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 3,
+            "type": "Willow",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                5,
+                2
+              ],
+              "own_frame": [
+                5,
+                2
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 55,
+            "focus": 120,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Heal",
+              "Attack reset"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 0,
+              "timer": 0
+            }
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                9,
+                4
+              ],
+              "own_frame": [
+                9,
+                4
+              ]
+            },
+            "health": 1000,
+            "max_health": 1000,
+            "strength": 30,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              2
+            ],
+            "abilities": [
+              "Shield",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 5,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Willow",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                11,
+                4
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                10
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                11
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                11,
+                5
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                7,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                7,
+                10
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                6,
+                11
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                7,
+                11
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "cancel_channel",
+          "step_index": 1193
+        },
+        {
+          "kind": "move",
+          "step_index": 1194,
+          "destination": [
+            7,
+            7
+          ]
+        },
+        {
+          "kind": "movement_blocked",
+          "step_index": 1195,
+          "destination": [
+            7,
+            9
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 1196
+        }
+      ]
+    },
+    {
+      "round": 7,
+      "turn": 6,
+      "snapshot_step_index": 1390,
+      "observation": {
+        "self": {
+          "id": 0,
+          "type": "Prism",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              7,
+              7
+            ],
+            "own_frame": [
+              7,
+              7
+            ]
+          },
+          "health": 700,
+          "max_health": 700,
+          "strength": 35,
+          "cooldowns": [
+            0,
+            0
+          ],
+          "abilities": [
+            "CC",
+            "AoE damage"
+          ],
+          "focus": 80,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {},
+          "consumables": {},
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 1040,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 3,
+            "type": "Willow",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                6,
+                3
+              ],
+              "own_frame": [
+                6,
+                3
+              ]
+            },
+            "health": 700,
+            "max_health": 700,
+            "strength": 55,
+            "focus": 120,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Heal",
+              "Attack reset"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                10,
+                5
+              ],
+              "own_frame": [
+                10,
+                5
+              ]
+            },
+            "health": 1000,
+            "max_health": 1000,
+            "strength": 30,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              1
+            ],
+            "abilities": [
+              "Shield",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 5,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Willow",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                11,
+                4
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                4
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                10
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                11
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                8,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                11,
+                5
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                5
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                7,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                7,
+                10
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                6,
+                11
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                7,
+                11
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                4,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                5,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                6,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                7,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "cancel_channel",
+          "step_index": 1391
+        },
+        {
+          "kind": "movement_blocked",
+          "step_index": 1392,
+          "destination": [
+            7,
+            9
+          ]
+        },
+        {
+          "kind": "move",
+          "step_index": 1393,
+          "destination": [
+            8,
+            6
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 1394
+        }
+      ]
+    }
+  ]
+}

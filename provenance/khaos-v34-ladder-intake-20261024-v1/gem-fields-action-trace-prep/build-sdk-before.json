@@ -1,0 +1,12 @@
+[
+  {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/sdk/cpp/cambc.h",
+    "sha256": "3443c4b5399feb8fa15f907ed5b71b88af57c1975445571398d32f20f51343ba",
+    "mtime_ns": 1792827662460807732
+  },
+  {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-pilgrimage-fuel-harness-v1/checkout-repo/replays/willow-pilgrimage-v47/ws/sdk/cpp/imports.h",
+    "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "mtime_ns": 1000000000
+  }
+]

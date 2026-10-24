@@ -1,0 +1,90 @@
+{
+  "schema": "edge-economy-pin-manifest/v1",
+  "research_sha256": "eb49ae4a288cdbfde400f277a7ea5d2bd91785d544f15aada5dd80134b14a24d",
+  "inventory_v2_sha256": "16b31ee66e5dd98bb12b8ac2bbd2d42dfccaade467a0f34a27fdfe4fbdd463eb",
+  "maps": {
+    "00contest": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00contest.map26a",
+      "sha256": "554240a5a793f8c1ac9c518cb6edbacab0129ec4dfd94b199331aaebd0bf418a"
+    },
+    "01boss-battle": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01boss-battle.map26a",
+      "sha256": "53086e249294aed6f427fe647d578303589a081e953c62a0ff8f20cade9993fa"
+    },
+    "00gem-fields": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+      "sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5"
+    },
+    "00quadrants": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00quadrants.map26a",
+      "sha256": "261fe6c133f076653bda84e88965dc35c5a59a70e7730082b4c6df9ca892df92"
+    }
+  },
+  "arms": {
+    "support-p": {
+      "candidate_source": "willow-v47-generalist-support-work",
+      "candidate_source_aggregate": "98470a7454a14a8aac2c501cdd702c5fc06b27862ba9948a3ed27d7bff1115c1",
+      "candidate_runtime_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-generalist-support",
+      "raw_wasm_sha256": "0cf24998e15fbef539edf6701e3341a787a2b7f441857bc6febe5dd9b3a4dfd4",
+      "injected_wasm_sha256": "85f40adcc7f7597256db2985d897991bc55902a201bd7c2ea55c4e34668fa466"
+    },
+    "support-s": {
+      "candidate_source": "willow-v47-stellar-five-support-work",
+      "candidate_source_aggregate": "f5daacb599a2d2e248f9cef82126e6ec4761647995c9b454a5d3c21b8b5ed86a",
+      "candidate_runtime_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-stellar-five-support",
+      "raw_wasm_sha256": "7ef379522ef5bc9ce4df69653bbfd3185511f27b0305d5151828da15d7f0b4a2",
+      "injected_wasm_sha256": "b025fa57a20f308df786656ff05431f0f515a6baab053f49da67fcf7f75dce19"
+    },
+    "support-c": {
+      "candidate_source": "willow-v47-cassi-five-support-work",
+      "candidate_source_aggregate": "ace0519e41ba5261d52955c2f17316de1099ad3ecc88d5c73f0a74b24b047421",
+      "candidate_runtime_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-cassi-five-support",
+      "raw_wasm_sha256": "7770be14370477a034fa0791d892825fb6812cdc27cd24851f5089ba6a39c941",
+      "injected_wasm_sha256": "4fe489057be8a252580ae12657b3bd6513a770f3b0778cc7b0ec668c54f93742"
+    }
+  },
+  "vendetta": {
+    "source_repo_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-vendetta-five-work",
+    "source_aggregate": "897529e6d30f8fca6cb3f3c732d3a90954c675c1e1e5259457f2309da0267871",
+    "runtime_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-vendetta-five",
+    "raw_wasm_sha256": "d1f1d620ba13b19130d0bd5156ac1c310c5ce6fc8bf5ce319b145615d3854afb",
+    "injected_wasm_sha256": "c95c6113846838419a24ec6256cf8334c4bfef55291c1b6f2340d5cfb64a0e7d"
+  },
+  "f475": {
+    "runtime_bot": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7",
+    "source_aggregate": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+    "raw_wasm_sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+    "injected_wasm_sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+  },
+  "v33": {
+    "source": "v33",
+    "aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+    "runtime_bot_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33",
+    "raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+    "injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+  },
+  "runtime_toolchain": {
+    "cambc_version": "cambc 3.0.5",
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "sdk_header_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "imports_header_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502"
+  },
+  "runner": {
+    "release": true,
+    "fuel_quantum": 100000,
+    "draft": "ordinary native draft",
+    "jobs": 8,
+    "runner_cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+    "cli": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "source": "reviewed by root; approved for execution",
+    "effective_jobs": 8
+  },
+  "support_runner": {
+    "release": true,
+    "fuel_quantum": 100000,
+    "native_draft": true,
+    "jobs": 8,
+    "map_sides": "Each arm on the same three maps, both physical sides versus frozen v33."
+  }
+}

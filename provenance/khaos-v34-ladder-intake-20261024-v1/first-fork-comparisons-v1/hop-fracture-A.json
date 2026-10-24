@@ -1,0 +1,129 @@
+{
+ "inputs": [
+  39587,
+  50411
+ ],
+ "firstInputDiff": {
+  "index": 218,
+  "round": 6,
+  "step": 1195,
+  "actor": 0,
+  "kind": "Movement blocked",
+  "rerunKind": "Recall",
+  "original": "s1195 r6 Movement blocked@10 actor1:0 (7,7)->(7,9) slot-1 pr0 x6,0",
+  "rerun": "s1195 r6 Recall@10 actor1:0 (0,0)->(0,0) slot-1 pr0 x0,0",
+  "originalRec": [
+   1195,
+   6,
+   218,
+   23,
+   10,
+   1,
+   0,
+   7,
+   7,
+   7,
+   9,
+   -1,
+   -1,
+   0,
+   6,
+   0
+  ],
+  "rerunRec": [
+   1195,
+   6,
+   218,
+   11,
+   10,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ },
+ "roundsMatched": 7,
+ "rounds": [
+  1089,
+  1401
+ ],
+ "firstRoundDiff": {
+  "round": 7,
+  "step": 1224,
+  "rerunStep": 1223
+ },
+ "result": [
+  {
+   "outcome": 1,
+   "round": 1088,
+   "gems": [
+    1171,
+    244
+   ]
+  },
+  {
+   "outcome": 2,
+   "round": 1400,
+   "gems": [
+    532,
+    1497
+   ]
+  }
+ ],
+ "resultMatch": false,
+ "exact": false,
+ "exactIgnoringRollovers": false,
+ "firstInputDiffIgnoringRollovers": {
+  "index": 218,
+  "round": 6,
+  "step": 1195,
+  "actor": 0,
+  "kind": "Movement blocked",
+  "rerunKind": "Recall",
+  "original": "s1195 r6 Movement blocked@10 actor1:0 (7,7)->(7,9) slot-1 pr0 x6,0",
+  "rerun": "s1195 r6 Recall@10 actor1:0 (0,0)->(0,0) slot-1 pr0 x0,0",
+  "originalRec": [
+   1195,
+   6,
+   218,
+   23,
+   10,
+   1,
+   0,
+   7,
+   7,
+   7,
+   9,
+   -1,
+   -1,
+   0,
+   6,
+   0
+  ],
+  "rerunRec": [
+   1195,
+   6,
+   218,
+   11,
+   10,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ }
+}

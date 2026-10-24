@@ -1,0 +1,2341 @@
+{
+  "schema": "v47-v48-80-local-comparison-summary/v1",
+  "status": "complete_native_audit_passed",
+  "scheduled": 80,
+  "completed": 80,
+  "failed": 0,
+  "wins_by_source": {
+    "v48": 44,
+    "f475": 36
+  },
+  "v48_wins_by_physical_side": {
+    "A": {
+      "wins": 25,
+      "losses": 15,
+      "games": 40
+    },
+    "B": {
+      "wins": 19,
+      "losses": 21,
+      "games": 40
+    }
+  },
+  "rounds_completed": {
+    "min": 457,
+    "median": 985.0,
+    "max": 2000
+  },
+  "native_status_totals_by_bot": {
+    "service-base-f7": {
+      "play_rollover": 241,
+      "play_bot_error": 0,
+      "draft_rollover": 0,
+      "draft_bot_error": 0,
+      "games": 80
+    },
+    "willow-finishing-recall-4d08241-work": {
+      "play_rollover": 275,
+      "play_bot_error": 0,
+      "draft_rollover": 0,
+      "draft_bot_error": 0,
+      "games": 80
+    }
+  },
+  "statistics_bot_faults_by_side": {
+    "teamA": 0,
+    "teamB": 0
+  },
+  "sdk_mtime_sha_unchanged": true,
+  "per_map": [
+    {
+      "map": "00ambush",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 353,
+          "score_B": 1000,
+          "rounds_completed": 871
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 818,
+          "score_B": 1009,
+          "rounds_completed": 1106
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00collision",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1283,
+          "score_B": 66,
+          "rounds_completed": 1133
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1283,
+          "score_B": 66,
+          "rounds_completed": 1133
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00contest",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 800,
+          "score_B": 600,
+          "rounds_completed": 2000
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1000,
+          "score_B": 200,
+          "rounds_completed": 1493
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00corners",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1013,
+          "score_B": 189,
+          "rounds_completed": 826
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1013,
+          "score_B": 189,
+          "rounds_completed": 826
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00eight",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1571,
+          "score_B": 298,
+          "rounds_completed": 1371
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 263,
+          "score_B": 993,
+          "rounds_completed": 2000
+        }
+      ],
+      "v48_wins": 0,
+      "v48_losses": 2
+    },
+    {
+      "map": "00elkring",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 374,
+          "score_B": 1001,
+          "rounds_completed": 670
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 374,
+          "score_B": 1001,
+          "rounds_completed": 670
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00expanse",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 453,
+          "score_B": 1009,
+          "rounds_completed": 895
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 597,
+          "score_B": 1016,
+          "rounds_completed": 992
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00fragment",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1018,
+          "score_B": 54,
+          "rounds_completed": 1271
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1018,
+          "score_B": 54,
+          "rounds_completed": 1271
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00gem-fields",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1000,
+          "score_B": 983,
+          "rounds_completed": 635
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1000,
+          "score_B": 983,
+          "rounds_completed": 635
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00gemfight",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1026,
+          "score_B": 82,
+          "rounds_completed": 842
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1060,
+          "score_B": 193,
+          "rounds_completed": 808
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00great-wall",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 748,
+          "score_B": 1014,
+          "rounds_completed": 985
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 588,
+          "score_B": 1036,
+          "rounds_completed": 968
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00interlock",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1033,
+          "score_B": 193,
+          "rounds_completed": 944
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1033,
+          "score_B": 193,
+          "rounds_completed": 944
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00lanes",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1000,
+          "score_B": 628,
+          "rounds_completed": 853
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1000,
+          "score_B": 628,
+          "rounds_completed": 853
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00lost-world",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 49,
+          "score_B": 1008,
+          "rounds_completed": 460
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1001,
+          "score_B": 724,
+          "rounds_completed": 985
+        }
+      ],
+      "v48_wins": 2,
+      "v48_losses": 0
+    },
+    {
+      "map": "00monolith",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1275,
+          "score_B": 635,
+          "rounds_completed": 1092
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1275,
+          "score_B": 635,
+          "rounds_completed": 1092
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00packs",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 204,
+          "score_B": 1006,
+          "rounds_completed": 817
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 204,
+          "score_B": 1006,
+          "rounds_completed": 817
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00pilgrimage",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1057,
+          "score_B": 540,
+          "rounds_completed": 1599
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1024,
+          "score_B": 585,
+          "rounds_completed": 1740
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00quadrants",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 562,
+          "score_B": 1053,
+          "rounds_completed": 498
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1032,
+          "score_B": 426,
+          "rounds_completed": 457
+        }
+      ],
+      "v48_wins": 2,
+      "v48_losses": 0
+    },
+    {
+      "map": "00reverse-spiral",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 282,
+          "score_B": 1003,
+          "rounds_completed": 1104
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1058,
+          "score_B": 407,
+          "rounds_completed": 1151
+        }
+      ],
+      "v48_wins": 2,
+      "v48_losses": 0
+    },
+    {
+      "map": "00road-of-riches",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1024,
+          "score_B": 274,
+          "rounds_completed": 757
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1024,
+          "score_B": 274,
+          "rounds_completed": 757
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00rows",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 382,
+          "score_B": 1000,
+          "rounds_completed": 1230
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 382,
+          "score_B": 1000,
+          "rounds_completed": 1230
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00rushbait-v2",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 386,
+          "score_B": 1022,
+          "rounds_completed": 1292
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1020,
+          "score_B": 464,
+          "rounds_completed": 1216
+        }
+      ],
+      "v48_wins": 2,
+      "v48_losses": 0
+    },
+    {
+      "map": "00split",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 990,
+          "score_B": 1007,
+          "rounds_completed": 732
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 990,
+          "score_B": 1007,
+          "rounds_completed": 732
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00stampede",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 506,
+          "score_B": 240,
+          "rounds_completed": 2000
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 506,
+          "score_B": 240,
+          "rounds_completed": 2000
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "00swirl",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 136,
+          "score_B": 1019,
+          "rounds_completed": 787
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 60,
+          "score_B": 1071,
+          "rounds_completed": 765
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01big-world",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 719,
+          "score_B": 1012,
+          "rounds_completed": 1017
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 554,
+          "score_B": 1000,
+          "rounds_completed": 888
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01boss-battle",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 0,
+          "score_B": 1161,
+          "rounds_completed": 1152
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 227,
+          "score_B": 2332,
+          "rounds_completed": 1249
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01broken-curve",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1000,
+          "score_B": 365,
+          "rounds_completed": 678
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1000,
+          "score_B": 365,
+          "rounds_completed": 678
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01concentrated-wealth",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1049,
+          "score_B": 78,
+          "rounds_completed": 973
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1020,
+          "score_B": 73,
+          "rounds_completed": 896
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01corridors",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1046,
+          "score_B": 436,
+          "rounds_completed": 1177
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1046,
+          "score_B": 436,
+          "rounds_completed": 1177
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01elk-arena",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 216,
+          "score_B": 1008,
+          "rounds_completed": 1443
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 108,
+          "score_B": 1008,
+          "rounds_completed": 1293
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01fracture",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1038,
+          "score_B": 375,
+          "rounds_completed": 1137
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1003,
+          "score_B": 326,
+          "rounds_completed": 1185
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01gold-rush",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1001,
+          "score_B": 374,
+          "rounds_completed": 1812
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1001,
+          "score_B": 374,
+          "rounds_completed": 1812
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01hooks",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 44,
+          "score_B": 1012,
+          "rounds_completed": 1011
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 44,
+          "score_B": 1012,
+          "rounds_completed": 1011
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01islands",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 971,
+          "score_B": 1037,
+          "rounds_completed": 867
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1025,
+          "score_B": 525,
+          "rounds_completed": 723
+        }
+      ],
+      "v48_wins": 2,
+      "v48_losses": 0
+    },
+    {
+      "map": "01shortcut",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1234,
+          "score_B": 128,
+          "rounds_completed": 1126
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1234,
+          "score_B": 128,
+          "rounds_completed": 1126
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01starfish",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1038,
+          "score_B": 44,
+          "rounds_completed": 939
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1038,
+          "score_B": 44,
+          "rounds_completed": 939
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01starvation",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "f475",
+          "score_A": 1002,
+          "score_B": 218,
+          "rounds_completed": 1440
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 252,
+          "score_B": 1000,
+          "rounds_completed": 1624
+        }
+      ],
+      "v48_wins": 0,
+      "v48_losses": 2
+    },
+    {
+      "map": "01the-farm",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 520,
+          "score_B": 1107,
+          "rounds_completed": 858
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "f475",
+          "score_A": 520,
+          "score_B": 1107,
+          "rounds_completed": 858
+        }
+      ],
+      "v48_wins": 1,
+      "v48_losses": 1
+    },
+    {
+      "map": "01yellow-brick-road",
+      "cells": [
+        {
+          "A": "f475",
+          "B": "v48",
+          "winner": "v48",
+          "score_A": 575,
+          "score_B": 1006,
+          "rounds_completed": 775
+        },
+        {
+          "A": "v48",
+          "B": "f475",
+          "winner": "v48",
+          "score_A": 1046,
+          "score_B": 704,
+          "rounds_completed": 683
+        }
+      ],
+      "v48_wins": 2,
+      "v48_losses": 0
+    }
+  ],
+  "pins": {
+    "plan_sha256": "dbb17a2aa62029ae9c2a15e44c3ee23f44c2e69331a217e6bd5a922f168f65c5",
+    "ordered_manifest_sha256": "21737656a3ecaaf37eb3b7e0c93b30e8756688201cb1d99bc745535b55af831e",
+    "stdout_sha256": "dcad3e46e4a98bd964d0a1c09760b54c0c0e0674e63137eb0da99286dbb17515",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "native_status_audit_sha256": "aa6d1e68e7da9cc2ff4f878ae428a1fd72c55a6ccd3ba70866b54d183b3b985d",
+    "postflight_sha256": "1dab284f45e9e2af1829cfa1aecb46e8cee2059099a3109f92d3aa9dc8c33722"
+  },
+  "games": [
+    {
+      "id": "00ambush__f475-A__v48-B",
+      "map": "00ambush",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 871,
+      "final_round_partial": true,
+      "score_A": 353,
+      "score_B": 1000,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00ambush__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00ambush__f475-A__v48-B.statistics.json",
+      "replay_sha256": "7348c69a83af9383fa31dd4a05c9fafbc4116186e8f03927d780bfb5314bc339",
+      "statistics_sha256": "34648e233f8837965137edb1073e14262f0bc6b8c24da27ce3452cc0ff9771b3"
+    },
+    {
+      "id": "00ambush__v48-A__f475-B",
+      "map": "00ambush",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 1106,
+      "final_round_partial": true,
+      "score_A": 818,
+      "score_B": 1009,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00ambush__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00ambush__v48-A__f475-B.statistics.json",
+      "replay_sha256": "3211a7e0645ee5a0c120c8f1911cc11ebb3cfad6fd4eaa9ef4a24ac5d6022193",
+      "statistics_sha256": "8f722a664713f254e392f29142b9a7b224f2377a08b0f6ec9e16249beb627c31"
+    },
+    {
+      "id": "00collision__f475-A__v48-B",
+      "map": "00collision",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 1133,
+      "final_round_partial": true,
+      "score_A": 1283,
+      "score_B": 66,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00collision__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00collision__f475-A__v48-B.statistics.json",
+      "replay_sha256": "340ab27e6fbbd9dc916525c17a81cebec464631fff4ec22c6f335f8d3a29f3f0",
+      "statistics_sha256": "d9994e5d7dd343ed9cf8289c3c469e6b31036db06a52a94a27831ccae58ea64c"
+    },
+    {
+      "id": "00collision__v48-A__f475-B",
+      "map": "00collision",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 1133,
+      "final_round_partial": true,
+      "score_A": 1283,
+      "score_B": 66,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00collision__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00collision__v48-A__f475-B.statistics.json",
+      "replay_sha256": "0da95906bf757f97698da3031b5115930870bb1925a40b797dcad4d6a8363192",
+      "statistics_sha256": "d9994e5d7dd343ed9cf8289c3c469e6b31036db06a52a94a27831ccae58ea64c"
+    },
+    {
+      "id": "00contest__f475-A__v48-B",
+      "map": "00contest",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 2000,
+      "final_round_partial": false,
+      "score_A": 800,
+      "score_B": 600,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00contest__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00contest__f475-A__v48-B.statistics.json",
+      "replay_sha256": "5febdf275d9d52335fd0ed350716d432997edfd3a481e574fc1a74f0baa21e36",
+      "statistics_sha256": "c3045c76eefa611faa740fd067eb4a62f22a76cf795aee1fbede7334f3c78fc7"
+    },
+    {
+      "id": "00contest__v48-A__f475-B",
+      "map": "00contest",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 1493,
+      "final_round_partial": true,
+      "score_A": 1000,
+      "score_B": 200,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00contest__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00contest__v48-A__f475-B.statistics.json",
+      "replay_sha256": "51646351d14f4eb5672a32d0af7764b890c614c3b3a4eadd639ce9d4e6eb14d6",
+      "statistics_sha256": "055c711f1acf2dd0d00da2ebc735addaf848435c98e5e96b22702102da593c6d"
+    },
+    {
+      "id": "00corners__f475-A__v48-B",
+      "map": "00corners",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 826,
+      "final_round_partial": true,
+      "score_A": 1013,
+      "score_B": 189,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00corners__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00corners__f475-A__v48-B.statistics.json",
+      "replay_sha256": "010fcba3199b10b76c953f975c8dcf33497950e72c926bb224c480d6cedc41c0",
+      "statistics_sha256": "03c9fd17a128d05530f1f926b94c71e2f22542dbc00a769d4ca1847e9d1c0792"
+    },
+    {
+      "id": "00corners__v48-A__f475-B",
+      "map": "00corners",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 826,
+      "final_round_partial": true,
+      "score_A": 1013,
+      "score_B": 189,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00corners__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00corners__v48-A__f475-B.statistics.json",
+      "replay_sha256": "8afa5d73dbf6a9525f3d6726a26143c7b57dfdbccf66a7926f33262806e989bc",
+      "statistics_sha256": "edb333cbbd947de2b04720dba5df29b9fdd0e9e5616833ff6d809d3d7c14c82c"
+    },
+    {
+      "id": "00eight__f475-A__v48-B",
+      "map": "00eight",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 1371,
+      "final_round_partial": true,
+      "score_A": 1571,
+      "score_B": 298,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00eight__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00eight__f475-A__v48-B.statistics.json",
+      "replay_sha256": "2a9865574e95f5270d7c22d4a25ead8a53d2e6648aa3c3bbbb5c139e1ce2b94f",
+      "statistics_sha256": "4d0a7e42999195c49ce62fc4c6d53e5b73eaf1d2912aa98fd759fac9ca05cb6a"
+    },
+    {
+      "id": "00eight__v48-A__f475-B",
+      "map": "00eight",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 2000,
+      "final_round_partial": false,
+      "score_A": 263,
+      "score_B": 993,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00eight__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00eight__v48-A__f475-B.statistics.json",
+      "replay_sha256": "854fc7d8ee4ecf09fec134c281eb4a01dd33a7b4c6615438aa1dbbd9e8b5a36c",
+      "statistics_sha256": "5afde2e4184ce1ed7947b3525fc2464c6e3e2fe5b609ea72289767613415fc40"
+    },
+    {
+      "id": "00elkring__f475-A__v48-B",
+      "map": "00elkring",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 670,
+      "final_round_partial": true,
+      "score_A": 374,
+      "score_B": 1001,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00elkring__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00elkring__f475-A__v48-B.statistics.json",
+      "replay_sha256": "05ccad510f5b8086ab762dfcfd03975e5f183eb013e5d4990363be1aca74f41f",
+      "statistics_sha256": "00fe20f14d27fe8debe41e07bb5c93a32cf1dce85eb8005a04f05c20a4373753"
+    },
+    {
+      "id": "00elkring__v48-A__f475-B",
+      "map": "00elkring",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 670,
+      "final_round_partial": true,
+      "score_A": 374,
+      "score_B": 1001,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00elkring__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00elkring__v48-A__f475-B.statistics.json",
+      "replay_sha256": "65c3b4e46f86ea282a5d3d976866d0a7b67b1600cdd796ae4d30bf371888435f",
+      "statistics_sha256": "00fe20f14d27fe8debe41e07bb5c93a32cf1dce85eb8005a04f05c20a4373753"
+    },
+    {
+      "id": "00expanse__f475-A__v48-B",
+      "map": "00expanse",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 895,
+      "final_round_partial": true,
+      "score_A": 453,
+      "score_B": 1009,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00expanse__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00expanse__f475-A__v48-B.statistics.json",
+      "replay_sha256": "c8f495efb6836d0692009ec0f057fa75e0ab0c8341cf043de2f5e8ec630e8793",
+      "statistics_sha256": "c9bb202cd39830fbb6084890feb18c620be353cd55c62b41663e48dfbb52b472"
+    },
+    {
+      "id": "00expanse__v48-A__f475-B",
+      "map": "00expanse",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 992,
+      "final_round_partial": true,
+      "score_A": 597,
+      "score_B": 1016,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00expanse__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00expanse__v48-A__f475-B.statistics.json",
+      "replay_sha256": "43c485ee00ca5efc03ac2cc3c137847bb3be95f80c39cc86bd3fa3027b73d94a",
+      "statistics_sha256": "7672640d40b51a01b58dd6f7fd50254ecc6a6dd61ac959722b95729ee3c68f22"
+    },
+    {
+      "id": "00fragment__f475-A__v48-B",
+      "map": "00fragment",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 1271,
+      "final_round_partial": true,
+      "score_A": 1018,
+      "score_B": 54,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00fragment__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00fragment__f475-A__v48-B.statistics.json",
+      "replay_sha256": "81877e148a4d6bceee36daca8e81c6a9a0d98ab5d9b4d226bc1006ffe6ff590d",
+      "statistics_sha256": "dacc0a01bbfb10af4c1167bdb0cb1ee69853a6fca0a834583293a5f5c1974f6d"
+    },
+    {
+      "id": "00fragment__v48-A__f475-B",
+      "map": "00fragment",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 1271,
+      "final_round_partial": true,
+      "score_A": 1018,
+      "score_B": 54,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00fragment__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00fragment__v48-A__f475-B.statistics.json",
+      "replay_sha256": "3cf817fda81fdfb93e7a7a4eacc8420a4c5c97819cfec2236080ab5a7719bc3b",
+      "statistics_sha256": "dacc0a01bbfb10af4c1167bdb0cb1ee69853a6fca0a834583293a5f5c1974f6d"
+    },
+    {
+      "id": "00gem-fields__f475-A__v48-B",
+      "map": "00gem-fields",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 635,
+      "final_round_partial": true,
+      "score_A": 1000,
+      "score_B": 983,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gem-fields__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gem-fields__f475-A__v48-B.statistics.json",
+      "replay_sha256": "bf887f149141c9941fe22ab45e3fc7fcb483d5f8da178906b2694ca779f6ff89",
+      "statistics_sha256": "252629ec84272ae939cc01f202453402d692ff464e4cc11b5db2044d1eacc8e2"
+    },
+    {
+      "id": "00gem-fields__v48-A__f475-B",
+      "map": "00gem-fields",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 635,
+      "final_round_partial": true,
+      "score_A": 1000,
+      "score_B": 983,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gem-fields__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gem-fields__v48-A__f475-B.statistics.json",
+      "replay_sha256": "1d03ef57e8f0b51cc87b7c5bea7d3a90d8dfaa382b90f30d5269793e59d59654",
+      "statistics_sha256": "252629ec84272ae939cc01f202453402d692ff464e4cc11b5db2044d1eacc8e2"
+    },
+    {
+      "id": "00gemfight__f475-A__v48-B",
+      "map": "00gemfight",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 842,
+      "final_round_partial": true,
+      "score_A": 1026,
+      "score_B": 82,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gemfight__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gemfight__f475-A__v48-B.statistics.json",
+      "replay_sha256": "cac0a3f204f2b4ba582b724e2bcfcde27f16dd06d3e5074fcca530a291e96c62",
+      "statistics_sha256": "6abf17e32ff57f9ed695ee987a36893c2e5e7669c2cb0d90cbe7d183a3b56d33"
+    },
+    {
+      "id": "00gemfight__v48-A__f475-B",
+      "map": "00gemfight",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 808,
+      "final_round_partial": true,
+      "score_A": 1060,
+      "score_B": 193,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gemfight__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gemfight__v48-A__f475-B.statistics.json",
+      "replay_sha256": "c9dffc9e4c73e6c5a9ff449c6cf9b2c9c7b6c98b815ac526dc86020e7db4a7dc",
+      "statistics_sha256": "edfc1cbc907e1bdd45be6b64689345174062130d1893c6f15c1c381d5e67a598"
+    },
+    {
+      "id": "00great-wall__f475-A__v48-B",
+      "map": "00great-wall",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 985,
+      "final_round_partial": true,
+      "score_A": 748,
+      "score_B": 1014,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00great-wall__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00great-wall__f475-A__v48-B.statistics.json",
+      "replay_sha256": "5294e1c73ba26ef887b28ed713a74bf8a30374907393054ff4f5bd03713ca364",
+      "statistics_sha256": "146f95136aeb26e014034028e7c724a753d2745decbc4aec3f9af0c682cc63b9"
+    },
+    {
+      "id": "00great-wall__v48-A__f475-B",
+      "map": "00great-wall",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 968,
+      "final_round_partial": true,
+      "score_A": 588,
+      "score_B": 1036,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00great-wall__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00great-wall__v48-A__f475-B.statistics.json",
+      "replay_sha256": "51fc2cc84630f0955a3aa274b422268d70cf1937e8ef18b52be53e91289157cf",
+      "statistics_sha256": "722e4eb7ba29c637d51beb28f935ae7791271cd3950c693992a9dbf77925111a"
+    },
+    {
+      "id": "00interlock__f475-A__v48-B",
+      "map": "00interlock",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 944,
+      "final_round_partial": true,
+      "score_A": 1033,
+      "score_B": 193,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00interlock__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00interlock__f475-A__v48-B.statistics.json",
+      "replay_sha256": "d11d5b4ec1c93903cdb4a6393b72e0a43965ebf338dcb702b605f220e7f1cee1",
+      "statistics_sha256": "176377f454932b1e64eab2d9d33359cb48a77c9aef2e9d68fd3d5c8673c3eef0"
+    },
+    {
+      "id": "00interlock__v48-A__f475-B",
+      "map": "00interlock",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 944,
+      "final_round_partial": true,
+      "score_A": 1033,
+      "score_B": 193,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00interlock__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00interlock__v48-A__f475-B.statistics.json",
+      "replay_sha256": "b1b5a7279145c004dab58c96e0293080454c967fd6a72ec91b5e52fcd468b5b7",
+      "statistics_sha256": "176377f454932b1e64eab2d9d33359cb48a77c9aef2e9d68fd3d5c8673c3eef0"
+    },
+    {
+      "id": "00lanes__f475-A__v48-B",
+      "map": "00lanes",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 853,
+      "final_round_partial": true,
+      "score_A": 1000,
+      "score_B": 628,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lanes__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lanes__f475-A__v48-B.statistics.json",
+      "replay_sha256": "1c5be34f82253b7cf273dff73323d897004d21e252f8a54bd05f13f80e51ab84",
+      "statistics_sha256": "198a6742e60ef0a036996c37d55ba02dd14b0be03d021a29cd21b9da1a80c2e9"
+    },
+    {
+      "id": "00lanes__v48-A__f475-B",
+      "map": "00lanes",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 853,
+      "final_round_partial": true,
+      "score_A": 1000,
+      "score_B": 628,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lanes__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lanes__v48-A__f475-B.statistics.json",
+      "replay_sha256": "a2158e8e0d6cba0ffcc0cdc50c13d540f8fd37855590f57f3ea2a1f4f57aa47d",
+      "statistics_sha256": "198a6742e60ef0a036996c37d55ba02dd14b0be03d021a29cd21b9da1a80c2e9"
+    },
+    {
+      "id": "00lost-world__f475-A__v48-B",
+      "map": "00lost-world",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 460,
+      "final_round_partial": true,
+      "score_A": 49,
+      "score_B": 1008,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lost-world__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lost-world__f475-A__v48-B.statistics.json",
+      "replay_sha256": "8af5d930cd85d56b02f9c41045fcd0fd0780da61b6137c5ff28c2cf074be0471",
+      "statistics_sha256": "4fd03352f5c799ab004cc8304e77ca64b7f50a799f997347e6bb8734bda36628"
+    },
+    {
+      "id": "00lost-world__v48-A__f475-B",
+      "map": "00lost-world",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 985,
+      "final_round_partial": true,
+      "score_A": 1001,
+      "score_B": 724,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lost-world__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lost-world__v48-A__f475-B.statistics.json",
+      "replay_sha256": "96a3e89d8fec218cec1e985e8faabaa96cc64f887389041cc202a7ef69dd713d",
+      "statistics_sha256": "88c8a1f09e17547465a2098d02536277f457abcdaf9bbea644a6eb2c042db4f0"
+    },
+    {
+      "id": "00monolith__f475-A__v48-B",
+      "map": "00monolith",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 1092,
+      "final_round_partial": true,
+      "score_A": 1275,
+      "score_B": 635,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00monolith__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00monolith__f475-A__v48-B.statistics.json",
+      "replay_sha256": "50af8498bc2981b83c7b391be1c41284dae7b2dfb4fdbfd50200758744ec53eb",
+      "statistics_sha256": "d39db16ad94bb68efef4b144a55d8c73815ec7a129ee04acd858007f6aa5d2ab"
+    },
+    {
+      "id": "00monolith__v48-A__f475-B",
+      "map": "00monolith",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 1092,
+      "final_round_partial": true,
+      "score_A": 1275,
+      "score_B": 635,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00monolith__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00monolith__v48-A__f475-B.statistics.json",
+      "replay_sha256": "c6757b6327f66ee14e661cdc3a06392625afa11938882825424e170605b3aac0",
+      "statistics_sha256": "d39db16ad94bb68efef4b144a55d8c73815ec7a129ee04acd858007f6aa5d2ab"
+    },
+    {
+      "id": "00packs__f475-A__v48-B",
+      "map": "00packs",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 817,
+      "final_round_partial": true,
+      "score_A": 204,
+      "score_B": 1006,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00packs__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00packs__f475-A__v48-B.statistics.json",
+      "replay_sha256": "91ecb5a7867cf530d00a2edc8d257eecd2126bd3da7e755006ed34dcf5234e07",
+      "statistics_sha256": "03cd54dbc9b2236d5979b5d78960755fa7cb9ffe71508784ff24ab0982ec69dc"
+    },
+    {
+      "id": "00packs__v48-A__f475-B",
+      "map": "00packs",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 817,
+      "final_round_partial": true,
+      "score_A": 204,
+      "score_B": 1006,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00packs__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00packs__v48-A__f475-B.statistics.json",
+      "replay_sha256": "70004bcccdc301d82d986f4fcaa3f097ba4ca2f5c1b2b3dc443f75a47fd50366",
+      "statistics_sha256": "03cd54dbc9b2236d5979b5d78960755fa7cb9ffe71508784ff24ab0982ec69dc"
+    },
+    {
+      "id": "00pilgrimage__f475-A__v48-B",
+      "map": "00pilgrimage",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 1599,
+      "final_round_partial": true,
+      "score_A": 1057,
+      "score_B": 540,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00pilgrimage__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00pilgrimage__f475-A__v48-B.statistics.json",
+      "replay_sha256": "ba35efefdccd41a32bf96e55cae8c1d0bf2d1eb0452cff438edd504cda302c91",
+      "statistics_sha256": "6f30ce9bad256c2730778813aaaaa5748fcad425186b7c0b34fc2f035258471c"
+    },
+    {
+      "id": "00pilgrimage__v48-A__f475-B",
+      "map": "00pilgrimage",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 1740,
+      "final_round_partial": true,
+      "score_A": 1024,
+      "score_B": 585,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00pilgrimage__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00pilgrimage__v48-A__f475-B.statistics.json",
+      "replay_sha256": "d0826a9666924ab8615ab704c45e6f141b9cf1247af1e38b7dd4424d13e6493a",
+      "statistics_sha256": "b9f07030f875292438c01e4f2df8d6af3d897a67cec3adde9367e7fc8d8d273e"
+    },
+    {
+      "id": "00quadrants__f475-A__v48-B",
+      "map": "00quadrants",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 498,
+      "final_round_partial": true,
+      "score_A": 562,
+      "score_B": 1053,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00quadrants__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00quadrants__f475-A__v48-B.statistics.json",
+      "replay_sha256": "3ec284692e5bc0c33448d230a269357ace6e3cba1fc5c2cc699ba4f0da764d36",
+      "statistics_sha256": "b9d3aced24209e78c22d77348c57fa93493620664107d9d79f3ce80b5874c053"
+    },
+    {
+      "id": "00quadrants__v48-A__f475-B",
+      "map": "00quadrants",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 457,
+      "final_round_partial": true,
+      "score_A": 1032,
+      "score_B": 426,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00quadrants__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00quadrants__v48-A__f475-B.statistics.json",
+      "replay_sha256": "1568e6f6f1d7def83f8d600708c5e41540ee299c92662b80e493b766bd4307bc",
+      "statistics_sha256": "a90276e01a6d970c8aa19f4fd9c6efc934af1d31faa9ef73521ab7db69d96a75"
+    },
+    {
+      "id": "00reverse-spiral__f475-A__v48-B",
+      "map": "00reverse-spiral",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 1104,
+      "final_round_partial": true,
+      "score_A": 282,
+      "score_B": 1003,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00reverse-spiral__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00reverse-spiral__f475-A__v48-B.statistics.json",
+      "replay_sha256": "91badfa9228b33e7b512bb8ae4b4676abc1a4087f0eae65be4ff7d527606bc40",
+      "statistics_sha256": "32633d9f71c585b91c49d9474d9415ae82d8cf2419bdedf51f287f93196d65c1"
+    },
+    {
+      "id": "00reverse-spiral__v48-A__f475-B",
+      "map": "00reverse-spiral",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 1151,
+      "final_round_partial": true,
+      "score_A": 1058,
+      "score_B": 407,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00reverse-spiral__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00reverse-spiral__v48-A__f475-B.statistics.json",
+      "replay_sha256": "ec8925e076baaa6c53ad49fd99eb7eacd9868b8f539d0ffadb665b1cd335267a",
+      "statistics_sha256": "529c7bb88ef8c23aad804adc7294ac38b9d779a6ebd72550ce23b0d3d3ec92cc"
+    },
+    {
+      "id": "00road-of-riches__f475-A__v48-B",
+      "map": "00road-of-riches",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 757,
+      "final_round_partial": true,
+      "score_A": 1024,
+      "score_B": 274,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00road-of-riches__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00road-of-riches__f475-A__v48-B.statistics.json",
+      "replay_sha256": "91e6e493ee3f3b24d98b52441756de54516210031db1a64a79d5c4ea6f76608a",
+      "statistics_sha256": "eb0bd8e795982ed15ab2abe35cdef767d39441fef1ae1b12b388764f98821824"
+    },
+    {
+      "id": "00road-of-riches__v48-A__f475-B",
+      "map": "00road-of-riches",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 757,
+      "final_round_partial": true,
+      "score_A": 1024,
+      "score_B": 274,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00road-of-riches__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00road-of-riches__v48-A__f475-B.statistics.json",
+      "replay_sha256": "3b1ad7e050329a2260898979952aafd3be553d1830afe9d86b15b81e8b1eda64",
+      "statistics_sha256": "eb0bd8e795982ed15ab2abe35cdef767d39441fef1ae1b12b388764f98821824"
+    },
+    {
+      "id": "00rows__f475-A__v48-B",
+      "map": "00rows",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 1230,
+      "final_round_partial": true,
+      "score_A": 382,
+      "score_B": 1000,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rows__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rows__f475-A__v48-B.statistics.json",
+      "replay_sha256": "4e98ee6327155872e5f46e66050d88ecba31a564a8dc24c5c2f023517c20afbe",
+      "statistics_sha256": "d4edd994cf704eb728947e6b88a7820056313c801689b3620d4a2a763ad3b985"
+    },
+    {
+      "id": "00rows__v48-A__f475-B",
+      "map": "00rows",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 1230,
+      "final_round_partial": true,
+      "score_A": 382,
+      "score_B": 1000,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rows__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rows__v48-A__f475-B.statistics.json",
+      "replay_sha256": "a4349f04a2175d2e4197a23359a9c3295d5169c5a06bc1590794d3e0d631320c",
+      "statistics_sha256": "d4edd994cf704eb728947e6b88a7820056313c801689b3620d4a2a763ad3b985"
+    },
+    {
+      "id": "00rushbait-v2__f475-A__v48-B",
+      "map": "00rushbait-v2",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 1292,
+      "final_round_partial": true,
+      "score_A": 386,
+      "score_B": 1022,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rushbait-v2__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rushbait-v2__f475-A__v48-B.statistics.json",
+      "replay_sha256": "2d1da96bc5de927c78990dc416af4d9d71d4f4859a96bfd17ea40f537b8753fd",
+      "statistics_sha256": "9047de5af1f7dbb7a1adfe88ed27ea87c13d74d8a1034aa3083c346f70c7eedb"
+    },
+    {
+      "id": "00rushbait-v2__v48-A__f475-B",
+      "map": "00rushbait-v2",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 1216,
+      "final_round_partial": true,
+      "score_A": 1020,
+      "score_B": 464,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rushbait-v2__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rushbait-v2__v48-A__f475-B.statistics.json",
+      "replay_sha256": "cafbb5f2e8ae0edc8bd5cd12f45237866b9f0f7a47562b7a5da352cb87b466fc",
+      "statistics_sha256": "4ef656b16337824c0a4450245beadedf4dbe35613bc598b77ad15749de943441"
+    },
+    {
+      "id": "00split__f475-A__v48-B",
+      "map": "00split",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 732,
+      "final_round_partial": true,
+      "score_A": 990,
+      "score_B": 1007,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00split__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00split__f475-A__v48-B.statistics.json",
+      "replay_sha256": "6dd0b895b38c76829195a9b0f6525bd3dfbde292c064d0aa254776c84b5f83df",
+      "statistics_sha256": "51e418db9c3a9e368a503c367d4f6ae9db9d2cf4f362ce534c77e789fe87a4a9"
+    },
+    {
+      "id": "00split__v48-A__f475-B",
+      "map": "00split",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 732,
+      "final_round_partial": true,
+      "score_A": 990,
+      "score_B": 1007,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00split__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00split__v48-A__f475-B.statistics.json",
+      "replay_sha256": "81fd2ed4242d19f1068a96ce84985a2f32464ca936cdd1467753331ee5816a23",
+      "statistics_sha256": "51e418db9c3a9e368a503c367d4f6ae9db9d2cf4f362ce534c77e789fe87a4a9"
+    },
+    {
+      "id": "00stampede__f475-A__v48-B",
+      "map": "00stampede",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 2000,
+      "final_round_partial": false,
+      "score_A": 506,
+      "score_B": 240,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00stampede__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00stampede__f475-A__v48-B.statistics.json",
+      "replay_sha256": "a4f0398f51e50fa3d354a5205b01a2566eaa32587aab506830d76935528cc09e",
+      "statistics_sha256": "46cdbffb9dd343f61aa7be118640d00877dad049e6ff3c036cf7d50cdcdb6de3"
+    },
+    {
+      "id": "00stampede__v48-A__f475-B",
+      "map": "00stampede",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 2000,
+      "final_round_partial": false,
+      "score_A": 506,
+      "score_B": 240,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00stampede__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00stampede__v48-A__f475-B.statistics.json",
+      "replay_sha256": "ce3b0366fdf29e4b013fceb508b84c3a4e7c76965f2022616865dfc1f66866f0",
+      "statistics_sha256": "46cdbffb9dd343f61aa7be118640d00877dad049e6ff3c036cf7d50cdcdb6de3"
+    },
+    {
+      "id": "00swirl__f475-A__v48-B",
+      "map": "00swirl",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 787,
+      "final_round_partial": true,
+      "score_A": 136,
+      "score_B": 1019,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00swirl__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00swirl__f475-A__v48-B.statistics.json",
+      "replay_sha256": "9b62af3d5c92486d1f8ccc4c2741c80ffb1e834450cf656b9f60a26cf5213d05",
+      "statistics_sha256": "3f20208ba4a7518bf2b672e1372171b833135328f113acc0e9e64d5439dd1135"
+    },
+    {
+      "id": "00swirl__v48-A__f475-B",
+      "map": "00swirl",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 765,
+      "final_round_partial": true,
+      "score_A": 60,
+      "score_B": 1071,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00swirl__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00swirl__v48-A__f475-B.statistics.json",
+      "replay_sha256": "30d90400ce4cd466b4be0692aea208abc3ebe603030c96f8dbb09b5bffa95762",
+      "statistics_sha256": "f6d6a6cb73a42862b2580a547191e5389e0281143410278340dfcb8f9ca7e8b4"
+    },
+    {
+      "id": "01big-world__f475-A__v48-B",
+      "map": "01big-world",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 1017,
+      "final_round_partial": true,
+      "score_A": 719,
+      "score_B": 1012,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01big-world__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01big-world__f475-A__v48-B.statistics.json",
+      "replay_sha256": "1ad6eda611b3bbf8bd89548bae8b6142506260bc01f8164f0bbd9c8c2df379b8",
+      "statistics_sha256": "e82ef1e2ce2888c155fe053df0c659cbadc5522d0d02bcb3b179708c5f763315"
+    },
+    {
+      "id": "01big-world__v48-A__f475-B",
+      "map": "01big-world",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 888,
+      "final_round_partial": true,
+      "score_A": 554,
+      "score_B": 1000,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01big-world__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01big-world__v48-A__f475-B.statistics.json",
+      "replay_sha256": "c6a78b4484d26db4e0208e5d92d1cacd571e43a226632c60365dc7e013277314",
+      "statistics_sha256": "84591cfada0b517c400c70f0a2e167d7400b723efad72f15ccca7df91194537e"
+    },
+    {
+      "id": "01boss-battle__f475-A__v48-B",
+      "map": "01boss-battle",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 1152,
+      "final_round_partial": true,
+      "score_A": 0,
+      "score_B": 1161,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01boss-battle__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01boss-battle__f475-A__v48-B.statistics.json",
+      "replay_sha256": "bb1e1fa01b55a5bbecae9060b806699c7c4943a0c70c85f8632466c513382a25",
+      "statistics_sha256": "b92133e8fca93bfcb7b65e4a2ba9a30097219a48f0530262a18f1ad245cd647f"
+    },
+    {
+      "id": "01boss-battle__v48-A__f475-B",
+      "map": "01boss-battle",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 1249,
+      "final_round_partial": true,
+      "score_A": 227,
+      "score_B": 2332,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01boss-battle__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01boss-battle__v48-A__f475-B.statistics.json",
+      "replay_sha256": "912822da88d228336e3a9906d3ee27f414c314c51b10b93d4b9f15f4bed51d0e",
+      "statistics_sha256": "3733e18b906cc756bc00df68535b650e2a26b71e43c00ad6c98b6204f3ed6230"
+    },
+    {
+      "id": "01broken-curve__f475-A__v48-B",
+      "map": "01broken-curve",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 678,
+      "final_round_partial": true,
+      "score_A": 1000,
+      "score_B": 365,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01broken-curve__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01broken-curve__f475-A__v48-B.statistics.json",
+      "replay_sha256": "29b757e933b39a0e7ec52d130debf9d4f97a573d069dcc51d1d86a7945951d9d",
+      "statistics_sha256": "be9209b1dc9afcc5adaa1614e4a0052ed9219fcce4f219ea4b4575ea55c1a3cb"
+    },
+    {
+      "id": "01broken-curve__v48-A__f475-B",
+      "map": "01broken-curve",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 678,
+      "final_round_partial": true,
+      "score_A": 1000,
+      "score_B": 365,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01broken-curve__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01broken-curve__v48-A__f475-B.statistics.json",
+      "replay_sha256": "cd82f1961e4b0674e732e3b4959c1cd541442f137dd2dd85a61051beea8995a6",
+      "statistics_sha256": "be9209b1dc9afcc5adaa1614e4a0052ed9219fcce4f219ea4b4575ea55c1a3cb"
+    },
+    {
+      "id": "01concentrated-wealth__f475-A__v48-B",
+      "map": "01concentrated-wealth",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 973,
+      "final_round_partial": true,
+      "score_A": 1049,
+      "score_B": 78,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01concentrated-wealth__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01concentrated-wealth__f475-A__v48-B.statistics.json",
+      "replay_sha256": "76a783c0e46fcce3ae4aa2cf9c8e04ccb70bbc1bafbd5501463f657b16ec282f",
+      "statistics_sha256": "bdcb4b7b8c48302f6f5de00de455bceb4dacde433caf5e0f9ba7a28d3c734d5b"
+    },
+    {
+      "id": "01concentrated-wealth__v48-A__f475-B",
+      "map": "01concentrated-wealth",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 896,
+      "final_round_partial": true,
+      "score_A": 1020,
+      "score_B": 73,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01concentrated-wealth__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01concentrated-wealth__v48-A__f475-B.statistics.json",
+      "replay_sha256": "8dd6381665489eeef6d324f16e4ee0416073187f06a236e2d53349b539671817",
+      "statistics_sha256": "7a8e4e601e14da4cdda2947da37ea4d5a846e06d5ecac0d762b206e27954e48b"
+    },
+    {
+      "id": "01corridors__f475-A__v48-B",
+      "map": "01corridors",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 1177,
+      "final_round_partial": true,
+      "score_A": 1046,
+      "score_B": 436,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01corridors__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01corridors__f475-A__v48-B.statistics.json",
+      "replay_sha256": "c9db539b31aef42e98a80db92154eaf7b61f40ac750bfc6fad1a73ce0683180d",
+      "statistics_sha256": "4ba69cc7154d412f916cdcc3f0f765409c53a3c2aa72e6768c39d5986ae5103e"
+    },
+    {
+      "id": "01corridors__v48-A__f475-B",
+      "map": "01corridors",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 1177,
+      "final_round_partial": true,
+      "score_A": 1046,
+      "score_B": 436,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01corridors__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01corridors__v48-A__f475-B.statistics.json",
+      "replay_sha256": "d2db112b38aaf485373f7eaee01ec181701064e8471bcff9577fc0df59c0b36c",
+      "statistics_sha256": "15803e8fca2958a34cc73fd2bb310085a1c0af45da3783616cb0f63f414d3987"
+    },
+    {
+      "id": "01elk-arena__f475-A__v48-B",
+      "map": "01elk-arena",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 1443,
+      "final_round_partial": true,
+      "score_A": 216,
+      "score_B": 1008,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01elk-arena__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01elk-arena__f475-A__v48-B.statistics.json",
+      "replay_sha256": "ec4ef7008a6d65650d6809fcca60be825891db4937cb9036e788e3c38d39ea74",
+      "statistics_sha256": "1f256ecc071f1920b258831fc6f03071d6b01dbfa5ac921dcc8350f64a8edd9f"
+    },
+    {
+      "id": "01elk-arena__v48-A__f475-B",
+      "map": "01elk-arena",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 1293,
+      "final_round_partial": true,
+      "score_A": 108,
+      "score_B": 1008,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01elk-arena__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01elk-arena__v48-A__f475-B.statistics.json",
+      "replay_sha256": "5bc135a6198ddf3c27c5414a4bb6c0d79f1d6eae48152757bdd548936ceff664",
+      "statistics_sha256": "6a551b683f6ebbad701f60b551b983b0ba4d4f3bf55d6eaa93f0daa72b437c7b"
+    },
+    {
+      "id": "01fracture__f475-A__v48-B",
+      "map": "01fracture",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 1137,
+      "final_round_partial": true,
+      "score_A": 1038,
+      "score_B": 375,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01fracture__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01fracture__f475-A__v48-B.statistics.json",
+      "replay_sha256": "9408a10bca86ba7a16785ec56300d3b3903cfc7ac7f3c549f1f802217c4af509",
+      "statistics_sha256": "e57eadb77c44bc0a906050742d564e1d17c3f45caf526d69ae487918698f1bc6"
+    },
+    {
+      "id": "01fracture__v48-A__f475-B",
+      "map": "01fracture",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 1185,
+      "final_round_partial": true,
+      "score_A": 1003,
+      "score_B": 326,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01fracture__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01fracture__v48-A__f475-B.statistics.json",
+      "replay_sha256": "e860297210d36b63367f5cd861d82dc8dd2e1edf5dab73ac72818566251a7fe2",
+      "statistics_sha256": "8e25dfbdb2d11b9c9b8d96c4a59f49f6456462496d128f86a9e1787f2388d943"
+    },
+    {
+      "id": "01gold-rush__f475-A__v48-B",
+      "map": "01gold-rush",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 1812,
+      "final_round_partial": true,
+      "score_A": 1001,
+      "score_B": 374,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01gold-rush__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01gold-rush__f475-A__v48-B.statistics.json",
+      "replay_sha256": "ae31e782cf75218d8ffde16cb53d5c5759176a8b5ec880cb2ea4077b85af3547",
+      "statistics_sha256": "9cc436f94ffde5f2511db91d49ce8ec3fe2d854179519f1b56b57f36ab88f80a"
+    },
+    {
+      "id": "01gold-rush__v48-A__f475-B",
+      "map": "01gold-rush",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 1812,
+      "final_round_partial": true,
+      "score_A": 1001,
+      "score_B": 374,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01gold-rush__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01gold-rush__v48-A__f475-B.statistics.json",
+      "replay_sha256": "3d4b3c82c69705d39dc66bab26c298c463c6605f64f72547122af0f10a453cfb",
+      "statistics_sha256": "9cc436f94ffde5f2511db91d49ce8ec3fe2d854179519f1b56b57f36ab88f80a"
+    },
+    {
+      "id": "01hooks__f475-A__v48-B",
+      "map": "01hooks",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 1011,
+      "final_round_partial": true,
+      "score_A": 44,
+      "score_B": 1012,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01hooks__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01hooks__f475-A__v48-B.statistics.json",
+      "replay_sha256": "e25900f28b8d12380f3d3b6eba8bcc17811f8ddb71993391d4056d965b397ef7",
+      "statistics_sha256": "447b163f240c8dd6bfce4a2632732ab4d86dd0909a533d485aca2225e01d31d5"
+    },
+    {
+      "id": "01hooks__v48-A__f475-B",
+      "map": "01hooks",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 1011,
+      "final_round_partial": true,
+      "score_A": 44,
+      "score_B": 1012,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01hooks__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01hooks__v48-A__f475-B.statistics.json",
+      "replay_sha256": "2c008c820de91548bb9883c50743dd11e8d2c52a2e66986b8b318fd44375f83f",
+      "statistics_sha256": "447b163f240c8dd6bfce4a2632732ab4d86dd0909a533d485aca2225e01d31d5"
+    },
+    {
+      "id": "01islands__f475-A__v48-B",
+      "map": "01islands",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 867,
+      "final_round_partial": true,
+      "score_A": 971,
+      "score_B": 1037,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01islands__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01islands__f475-A__v48-B.statistics.json",
+      "replay_sha256": "85dfc3a063ab71fa42a94e6643d4e980fd3c51fb5786e78b0c22bc2cd463f966",
+      "statistics_sha256": "5716c09e7eb5e17d217cef6f79ba4d7749e8e25480bd1a8841a8217c2c681219"
+    },
+    {
+      "id": "01islands__v48-A__f475-B",
+      "map": "01islands",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 723,
+      "final_round_partial": true,
+      "score_A": 1025,
+      "score_B": 525,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01islands__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01islands__v48-A__f475-B.statistics.json",
+      "replay_sha256": "412f9b40b6b29aa021a48376c1cb1cf886dc2138cee55e654ac5f054923f0e45",
+      "statistics_sha256": "5f864ce8703bc1c85a827c2b4848bf9503250c9992b5910497e23f8a1a44b46c"
+    },
+    {
+      "id": "01shortcut__f475-A__v48-B",
+      "map": "01shortcut",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 1126,
+      "final_round_partial": true,
+      "score_A": 1234,
+      "score_B": 128,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01shortcut__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01shortcut__f475-A__v48-B.statistics.json",
+      "replay_sha256": "5303ccfdba6e7523b4f6e6c027d1b31164bdb72eab257108475db24cd6a06b0d",
+      "statistics_sha256": "6a6b4bca47a5e001a54970ce69499e086f2449a17ff03fe070018cd7503d2e71"
+    },
+    {
+      "id": "01shortcut__v48-A__f475-B",
+      "map": "01shortcut",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 1126,
+      "final_round_partial": true,
+      "score_A": 1234,
+      "score_B": 128,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01shortcut__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01shortcut__v48-A__f475-B.statistics.json",
+      "replay_sha256": "776249c56a7f9aa49ad8fc5fd4ff705acaa3ceafce3e80afebc3a8ee42f1fc11",
+      "statistics_sha256": "6a6b4bca47a5e001a54970ce69499e086f2449a17ff03fe070018cd7503d2e71"
+    },
+    {
+      "id": "01starfish__f475-A__v48-B",
+      "map": "01starfish",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 939,
+      "final_round_partial": true,
+      "score_A": 1038,
+      "score_B": 44,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starfish__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starfish__f475-A__v48-B.statistics.json",
+      "replay_sha256": "cb1fd8a2032aa8361cf60c4b7ee4703da03c0daad3f1ff36ad138187b5a130da",
+      "statistics_sha256": "bf8f8d0866aa34ed71efdfef533db3b019b4fe8ed012eec132841bd5a0b0d2b8"
+    },
+    {
+      "id": "01starfish__v48-A__f475-B",
+      "map": "01starfish",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 939,
+      "final_round_partial": true,
+      "score_A": 1038,
+      "score_B": 44,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starfish__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starfish__v48-A__f475-B.statistics.json",
+      "replay_sha256": "f6f03663ea7c027acbf444feb56fb4404c324764493c8a88ebebb23e30e9a3c4",
+      "statistics_sha256": "bf8f8d0866aa34ed71efdfef533db3b019b4fe8ed012eec132841bd5a0b0d2b8"
+    },
+    {
+      "id": "01starvation__f475-A__v48-B",
+      "map": "01starvation",
+      "A": "f475",
+      "B": "v48",
+      "winner": "f475",
+      "rounds_completed": 1440,
+      "final_round_partial": true,
+      "score_A": 1002,
+      "score_B": 218,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starvation__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starvation__f475-A__v48-B.statistics.json",
+      "replay_sha256": "9f80458e2c3f62987e1f36a5b332d120058b81b3d851ade858d67586ab5a67a9",
+      "statistics_sha256": "fa9e62ccc74565bdb8823206e37000a9b0683c159af2a6b068680f10cab61368"
+    },
+    {
+      "id": "01starvation__v48-A__f475-B",
+      "map": "01starvation",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 1624,
+      "final_round_partial": true,
+      "score_A": 252,
+      "score_B": 1000,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starvation__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starvation__v48-A__f475-B.statistics.json",
+      "replay_sha256": "02b613ee21a19936ba5bdd94e84ccf75cde2c7cb82ccf243b4a6c1f29201aadf",
+      "statistics_sha256": "7db986ce128db55423d3ce3a9767da3b87d41b56bb4d79a25f7064b2bd5d67d7"
+    },
+    {
+      "id": "01the-farm__f475-A__v48-B",
+      "map": "01the-farm",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 858,
+      "final_round_partial": true,
+      "score_A": 520,
+      "score_B": 1107,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01the-farm__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01the-farm__f475-A__v48-B.statistics.json",
+      "replay_sha256": "d81bbdf82efc3d61910f3d6a9319f4cabac91a3400390cecf188c0da07e4579c",
+      "statistics_sha256": "87e2945eb961e7279450d9a0e9877aa8807835f886a823418b0165c02c6c5036"
+    },
+    {
+      "id": "01the-farm__v48-A__f475-B",
+      "map": "01the-farm",
+      "A": "v48",
+      "B": "f475",
+      "winner": "f475",
+      "rounds_completed": 858,
+      "final_round_partial": true,
+      "score_A": 520,
+      "score_B": 1107,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01the-farm__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01the-farm__v48-A__f475-B.statistics.json",
+      "replay_sha256": "b575f95ce83e14bbe1ccd504f615c5a08fc693ac7344e2ded64c7f9eed589d3c",
+      "statistics_sha256": "87e2945eb961e7279450d9a0e9877aa8807835f886a823418b0165c02c6c5036"
+    },
+    {
+      "id": "01yellow-brick-road__f475-A__v48-B",
+      "map": "01yellow-brick-road",
+      "A": "f475",
+      "B": "v48",
+      "winner": "v48",
+      "rounds_completed": 775,
+      "final_round_partial": true,
+      "score_A": 575,
+      "score_B": 1006,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01yellow-brick-road__f475-A__v48-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01yellow-brick-road__f475-A__v48-B.statistics.json",
+      "replay_sha256": "fa27e09d5cd31d6d40b17f62e7401ff48650ca1aa1c0c1aa400d08f2eeb6b178",
+      "statistics_sha256": "e639aac4409a26771f305817164ef6d5d950ab71c79e2d6e290c74aafa5120d6"
+    },
+    {
+      "id": "01yellow-brick-road__v48-A__f475-B",
+      "map": "01yellow-brick-road",
+      "A": "v48",
+      "B": "f475",
+      "winner": "v48",
+      "rounds_completed": 683,
+      "final_round_partial": true,
+      "score_A": 1046,
+      "score_B": 704,
+      "bot_faults_A": 0,
+      "bot_faults_B": 0,
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01yellow-brick-road__v48-A__f475-B.repl26a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01yellow-brick-road__v48-A__f475-B.statistics.json",
+      "replay_sha256": "bf4bb46028d120250676bdac87888427db8643d5c3165f97e48807208adf8354",
+      "statistics_sha256": "561ff07e6a28b2631d89bd47d951b541b5c1d79d6b97a641d65bf0304b2d14db"
+    }
+  ]
+}

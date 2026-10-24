@@ -1,0 +1,694 @@
+{
+  "schema": "native-turn-status-audit/v1",
+  "batch": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33",
+  "batch_results_sha256": "34b189491edc310ca006526b40bf6230daa9dc345001d8e4d3f1d434275457c3",
+  "release": true,
+  "games": 6,
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "snapshot_mode": "v1_0_3_compact_timeline",
+  "compact_timeline_pin": {
+    "version": "v1_0_3",
+    "wasmSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "officialDecoderSha256": "960affde6198366d2347bd21f43efec5bc06acc6cb0c53e5f7f96dbf87f027e6",
+    "visualizerBundleSha256": "b80358b2189444187c38880ee7218d84b4a013a1b379b93470659c4c6b2c4a24",
+    "snapshotSize": 40152
+  },
+  "source_pins": {
+    "candidate_aggregate": "897529e6d30f8fca6cb3f3c732d3a90954c675c1e1e5259457f2309da0267871",
+    "candidate_raw_wasm": "d1f1d620ba13b19130d0bd5156ac1c310c5ce6fc8bf5ce319b145615d3854afb",
+    "candidate_injected_wasm": "c95c6113846838419a24ec6256cf8334c4bfef55291c1b6f2340d5cfb64a0e7d",
+    "opponent_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "bots": [
+    {
+      "bot": "willow-v47-vendetta-five",
+      "bot_index": 0,
+      "games": 6,
+      "play": {
+        "rollover": 9,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    },
+    {
+      "bot": "v33",
+      "bot_index": 1,
+      "games": 6,
+      "play": {
+        "rollover": 29,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    }
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__00gem-fields__vendetta-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "632f798fb354413cba9abe35fcdc16a95a41599367a3279775ab54e94a2433f2",
+      "replay_engine": "v1_0_3",
+      "map": "maps/00gem-fields.map26a",
+      "map_format": "map26a",
+      "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-vendetta-five",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 3,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-vendetta-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 1,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__00gem-fields__vendetta-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "0cc9d7966799efc4d8736c77ff3efc163212bb0680a8a61ff700ea3513ac8b38",
+      "replay_engine": "v1_0_3",
+      "map": "maps/00gem-fields.map26a",
+      "map_format": "map26a",
+      "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-vendetta-five",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 2,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-vendetta-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__01fracture__vendetta-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "99a69f245f89deda810ecf9454038783aa9dfac14448a6cf7e4fd8628baa03e9",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01fracture.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-vendetta-five",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 4,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-vendetta-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 3,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__01fracture__vendetta-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "2d809894ff5d4f831abc217e1885c378095ed7f62db1c4abd4a1828cee0c9304",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01fracture.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-vendetta-five",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 9,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 8,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 8,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-vendetta-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 4,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__01big-world__vendetta-A.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "0741734c06413bcd111b4fd1fc69fa16276929a29145eeb546dbeaef1ecd680a",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01big-world.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "willow-v47-vendetta-five",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "v33",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 11,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "willow-v47-vendetta-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 7,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 5,
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__01big-world__vendetta-B.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "51212e68988bd9a73dbffca83eca08dec8a3e3e3500a9e50d79ccb8d04e19419",
+      "replay_engine": "v1_0_3",
+      "map": "maps/01big-world.map26a",
+      "map_format": "map26a",
+      "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "v33",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-v47-vendetta-five",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 9,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 1,
+            "play": {
+              "rollover": 7,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              },
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-v47-vendetta-five",
+            "bot_index": 0,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "notes": "Counts are native replay step kinds 26 (Turn rollover/fuel) and 27 (Bot error), classified by step.phase: 10 play, 12 draft, all remaining phases under other. For play statuses, physical team comes from the actor champion record in the same snapshot, not header.team; champion buckets use native actor kind/index. Snapshot mode is the pinned v1_0_3 compact timeline reader; the auditor does not extract events or metrics. Source pins are copied from results.json or adjacent economic-capture-summary.json when available."
+}

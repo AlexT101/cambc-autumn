@@ -1,0 +1,115 @@
+{
+  "schema": "gem-fields-recorder-prefix/v1",
+  "input_through_round": 7,
+  "round_hash_boundary": 8,
+  "original_input_count": 225,
+  "candidate_input_count": 225,
+  "input_first_diff": null,
+  "round_first_diff": null,
+  "matched_round_hash_count": 9,
+  "original_round_hashes": [
+    [
+      0,
+      20,
+      "931172ee04b56de9"
+    ],
+    [
+      1,
+      21,
+      "e9195cee2fea9b8d"
+    ],
+    [
+      2,
+      181,
+      "16426d3d62ff8e53"
+    ],
+    [
+      3,
+      336,
+      "9ef3186e46ddc4e8"
+    ],
+    [
+      4,
+      490,
+      "f13fb4176a59dedd"
+    ],
+    [
+      5,
+      648,
+      "97d2314fa0287b26"
+    ],
+    [
+      6,
+      805,
+      "3cfe554e9c8ea156"
+    ],
+    [
+      7,
+      962,
+      "50f012ba8bb75621"
+    ],
+    [
+      8,
+      1124,
+      "aecae1446b39bf9e"
+    ]
+  ],
+  "candidate_round_hashes": [
+    [
+      0,
+      20,
+      "931172ee04b56de9"
+    ],
+    [
+      1,
+      21,
+      "e9195cee2fea9b8d"
+    ],
+    [
+      2,
+      181,
+      "16426d3d62ff8e53"
+    ],
+    [
+      3,
+      336,
+      "9ef3186e46ddc4e8"
+    ],
+    [
+      4,
+      490,
+      "f13fb4176a59dedd"
+    ],
+    [
+      5,
+      648,
+      "97d2314fa0287b26"
+    ],
+    [
+      6,
+      805,
+      "3cfe554e9c8ea156"
+    ],
+    [
+      7,
+      962,
+      "50f012ba8bb75621"
+    ],
+    [
+      8,
+      1124,
+      "aecae1446b39bf9e"
+    ]
+  ],
+  "original_full_input_count": 15202,
+  "original_full_round_hash_count": 544,
+  "derived_full_original_decoder_exact": true,
+  "prefix_timeline_ended": true,
+  "prefix_termination": {
+    "code": 18,
+    "message": "engine error 18: replay next: End of timeline."
+  },
+  "prefix_last_completed_round": 9,
+  "prefix_last_completed_step": 1347,
+  "exact_through_requested_boundary": true
+}

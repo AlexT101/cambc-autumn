@@ -1,0 +1,25 @@
+{
+  "schema": "provenance-preservation-manifest-v1",
+  "artifacts": [
+    {
+      "path": "README.md",
+      "sha256": "d12c3573db08e8c985a7d4c8eb926ed334583feef7ad57dabbcc8535ddffa2a3",
+      "bytes": 555
+    },
+    {
+      "path": "RESULT.json",
+      "sha256": "146dfe993272ad5cf5eff2bffa1e19f43c32b728f1bd3e61a27dd3f6c200810e",
+      "bytes": 32980
+    },
+    {
+      "path": "RESULT.md",
+      "sha256": "a7692692ba48df522fbb11ad0a7995cc06063b3fc61e554324aff61b1a1524c7",
+      "bytes": 4162
+    },
+    {
+      "path": "inventory.mjs",
+      "sha256": "8b0dd80233702944aeb240ab20bc623e768842f29bb6f6fb5cbb44cd7775eade",
+      "bytes": 5121
+    }
+  ]
+}

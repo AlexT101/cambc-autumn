@@ -1,0 +1,296 @@
+{
+  "schema": "willow-v47-missing-factorial-160-result/v1",
+  "source": "willow-v47-escape-mixed-approach-work",
+  "source_aggregate": "e8d10ca2f5680692faa541d9b725849f0927580c61bd6f6e2d7711e3e0e603fc",
+  "candidate_binaries": {
+    "raw": {
+      "sha256": "81823d6439e2bdd934b70333ba9817e6b2b86167e7918799d107b301ce73ad7d"
+    },
+    "injected": {
+      "sha256": "8127c229500568d4a7bef3c13062595046d67e7facea94a2abfb1cd7fb0a9376"
+    }
+  },
+  "execution": {
+    "release": true,
+    "fuel_quantum": 100000,
+    "native_draft": true,
+    "jobs": 8,
+    "cli_exit_code": 0,
+    "saved": 160,
+    "failed": 0,
+    "native_status_audits": "4 per-opponent reports, 80 games each, pinned full actor/side attribution; see native-audit/*/status.json"
+  },
+  "panels": {
+    "service-base-f7": {
+      "opponent_source": "service-base-f7",
+      "games": 80,
+      "candidate_wins": 39,
+      "candidate_games": 80,
+      "candidate_wins_by_candidate_side": {
+        "A": 20,
+        "B": 19
+      },
+      "candidate_submitted_gems": 58808,
+      "opponent_submitted_gems": 60564,
+      "rows": [
+        "escape-mixed-f475-00collision-candA",
+        "escape-mixed-f475-00collision-candB",
+        "escape-mixed-f475-00contest-candA",
+        "escape-mixed-f475-00contest-candB",
+        "escape-mixed-f475-00corners-candA",
+        "escape-mixed-f475-00corners-candB",
+        "escape-mixed-f475-00elkring-candA",
+        "escape-mixed-f475-00elkring-candB",
+        "escape-mixed-f475-00expanse-candA",
+        "escape-mixed-f475-00expanse-candB",
+        "escape-mixed-f475-00fragment-candA",
+        "escape-mixed-f475-00fragment-candB",
+        "escape-mixed-f475-00gem-fields-candA",
+        "escape-mixed-f475-00gem-fields-candB",
+        "escape-mixed-f475-00gemfight-candA",
+        "escape-mixed-f475-00gemfight-candB",
+        "escape-mixed-f475-00great-wall-candA",
+        "escape-mixed-f475-00great-wall-candB",
+        "escape-mixed-f475-00interlock-candA",
+        "escape-mixed-f475-00interlock-candB",
+        "escape-mixed-f475-00lanes-candA",
+        "escape-mixed-f475-00lanes-candB",
+        "escape-mixed-f475-00lost-world-candA",
+        "escape-mixed-f475-00lost-world-candB",
+        "escape-mixed-f475-00monolith-candA",
+        "escape-mixed-f475-00monolith-candB",
+        "escape-mixed-f475-00packs-candA",
+        "escape-mixed-f475-00packs-candB",
+        "escape-mixed-f475-00pilgrimage-candA",
+        "escape-mixed-f475-00pilgrimage-candB",
+        "escape-mixed-f475-00quadrants-candA",
+        "escape-mixed-f475-00quadrants-candB",
+        "escape-mixed-f475-00reverse-spiral-candA",
+        "escape-mixed-f475-00reverse-spiral-candB",
+        "escape-mixed-f475-00road-of-riches-candA",
+        "escape-mixed-f475-00road-of-riches-candB",
+        "escape-mixed-f475-00rows-candA",
+        "escape-mixed-f475-00rows-candB",
+        "escape-mixed-f475-00rushbait-v2-candA",
+        "escape-mixed-f475-00rushbait-v2-candB",
+        "escape-mixed-f475-00split-candA",
+        "escape-mixed-f475-00split-candB",
+        "escape-mixed-f475-00stampede-candA",
+        "escape-mixed-f475-00stampede-candB",
+        "escape-mixed-f475-00swirl-candA",
+        "escape-mixed-f475-00swirl-candB",
+        "escape-mixed-f475-01big-world-candA",
+        "escape-mixed-f475-01big-world-candB",
+        "escape-mixed-f475-01boss-battle-candA",
+        "escape-mixed-f475-01boss-battle-candB",
+        "escape-mixed-f475-01broken-curve-candA",
+        "escape-mixed-f475-01broken-curve-candB",
+        "escape-mixed-f475-01concentrated-wealth-candA",
+        "escape-mixed-f475-01concentrated-wealth-candB",
+        "escape-mixed-f475-01corridors-candA",
+        "escape-mixed-f475-01corridors-candB",
+        "escape-mixed-f475-01elk-arena-candA",
+        "escape-mixed-f475-01elk-arena-candB",
+        "escape-mixed-f475-01fracture-candA",
+        "escape-mixed-f475-01fracture-candB",
+        "escape-mixed-f475-01gold-rush-candA",
+        "escape-mixed-f475-01gold-rush-candB",
+        "escape-mixed-f475-01hooks-candA",
+        "escape-mixed-f475-01hooks-candB",
+        "escape-mixed-f475-01islands-candA",
+        "escape-mixed-f475-01islands-candB",
+        "escape-mixed-f475-01shortcut-candA",
+        "escape-mixed-f475-01shortcut-candB",
+        "escape-mixed-f475-01starfish-candA",
+        "escape-mixed-f475-01starfish-candB",
+        "escape-mixed-f475-01the-farm-candA",
+        "escape-mixed-f475-01the-farm-candB",
+        "escape-mixed-f475-01yellow-brick-road-candA",
+        "escape-mixed-f475-01yellow-brick-road-candB",
+        "escape-mixed-f475-00ambush-candA",
+        "escape-mixed-f475-00ambush-candB",
+        "escape-mixed-f475-00eight-candA",
+        "escape-mixed-f475-00eight-candB",
+        "escape-mixed-f475-01starvation-candA",
+        "escape-mixed-f475-01starvation-candB"
+      ],
+      "native_status_by_bot": {
+        "willow-v47-escape-mixed-approach": {
+          "bot": "willow-v47-escape-mixed-approach",
+          "bot_index": 0,
+          "games": 80,
+          "play": {
+            "rollover": 255,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "service-base-f7": {
+          "bot": "service-base-f7",
+          "bot_index": 1,
+          "games": 80,
+          "play": {
+            "rollover": 219,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "status_audit_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/missing-factorial-pairs-v1/escape-mixed-published-160-v1/native-audit/service-base-f7/status.json",
+      "status_audit_sha256": "5710d2a13ba45054e96573d33267e3cfe78605316541874e0addec20bacd2193"
+    },
+    "v33": {
+      "opponent_source": "v33",
+      "games": 80,
+      "candidate_wins": 37,
+      "candidate_games": 80,
+      "candidate_wins_by_candidate_side": {
+        "A": 18,
+        "B": 19
+      },
+      "candidate_submitted_gems": 57284,
+      "opponent_submitted_gems": 58760,
+      "rows": [
+        "escape-mixed-v33-00collision-candA",
+        "escape-mixed-v33-00collision-candB",
+        "escape-mixed-v33-00contest-candA",
+        "escape-mixed-v33-00contest-candB",
+        "escape-mixed-v33-00corners-candA",
+        "escape-mixed-v33-00corners-candB",
+        "escape-mixed-v33-00elkring-candA",
+        "escape-mixed-v33-00elkring-candB",
+        "escape-mixed-v33-00expanse-candA",
+        "escape-mixed-v33-00expanse-candB",
+        "escape-mixed-v33-00fragment-candA",
+        "escape-mixed-v33-00fragment-candB",
+        "escape-mixed-v33-00gem-fields-candA",
+        "escape-mixed-v33-00gem-fields-candB",
+        "escape-mixed-v33-00gemfight-candA",
+        "escape-mixed-v33-00gemfight-candB",
+        "escape-mixed-v33-00great-wall-candA",
+        "escape-mixed-v33-00great-wall-candB",
+        "escape-mixed-v33-00interlock-candA",
+        "escape-mixed-v33-00interlock-candB",
+        "escape-mixed-v33-00lanes-candA",
+        "escape-mixed-v33-00lanes-candB",
+        "escape-mixed-v33-00lost-world-candA",
+        "escape-mixed-v33-00lost-world-candB",
+        "escape-mixed-v33-00monolith-candA",
+        "escape-mixed-v33-00monolith-candB",
+        "escape-mixed-v33-00packs-candA",
+        "escape-mixed-v33-00packs-candB",
+        "escape-mixed-v33-00pilgrimage-candA",
+        "escape-mixed-v33-00pilgrimage-candB",
+        "escape-mixed-v33-00quadrants-candA",
+        "escape-mixed-v33-00quadrants-candB",
+        "escape-mixed-v33-00reverse-spiral-candA",
+        "escape-mixed-v33-00reverse-spiral-candB",
+        "escape-mixed-v33-00road-of-riches-candA",
+        "escape-mixed-v33-00road-of-riches-candB",
+        "escape-mixed-v33-00rows-candA",
+        "escape-mixed-v33-00rows-candB",
+        "escape-mixed-v33-00rushbait-v2-candA",
+        "escape-mixed-v33-00rushbait-v2-candB",
+        "escape-mixed-v33-00split-candA",
+        "escape-mixed-v33-00split-candB",
+        "escape-mixed-v33-00stampede-candA",
+        "escape-mixed-v33-00stampede-candB",
+        "escape-mixed-v33-00swirl-candA",
+        "escape-mixed-v33-00swirl-candB",
+        "escape-mixed-v33-01big-world-candA",
+        "escape-mixed-v33-01big-world-candB",
+        "escape-mixed-v33-01boss-battle-candA",
+        "escape-mixed-v33-01boss-battle-candB",
+        "escape-mixed-v33-01broken-curve-candA",
+        "escape-mixed-v33-01broken-curve-candB",
+        "escape-mixed-v33-01concentrated-wealth-candA",
+        "escape-mixed-v33-01concentrated-wealth-candB",
+        "escape-mixed-v33-01corridors-candA",
+        "escape-mixed-v33-01corridors-candB",
+        "escape-mixed-v33-01elk-arena-candA",
+        "escape-mixed-v33-01elk-arena-candB",
+        "escape-mixed-v33-01fracture-candA",
+        "escape-mixed-v33-01fracture-candB",
+        "escape-mixed-v33-01gold-rush-candA",
+        "escape-mixed-v33-01gold-rush-candB",
+        "escape-mixed-v33-01hooks-candA",
+        "escape-mixed-v33-01hooks-candB",
+        "escape-mixed-v33-01islands-candA",
+        "escape-mixed-v33-01islands-candB",
+        "escape-mixed-v33-01shortcut-candA",
+        "escape-mixed-v33-01shortcut-candB",
+        "escape-mixed-v33-01starfish-candA",
+        "escape-mixed-v33-01starfish-candB",
+        "escape-mixed-v33-01the-farm-candA",
+        "escape-mixed-v33-01the-farm-candB",
+        "escape-mixed-v33-01yellow-brick-road-candA",
+        "escape-mixed-v33-01yellow-brick-road-candB",
+        "escape-mixed-v33-00ambush-candA",
+        "escape-mixed-v33-00ambush-candB",
+        "escape-mixed-v33-00eight-candA",
+        "escape-mixed-v33-00eight-candB",
+        "escape-mixed-v33-01starvation-candA",
+        "escape-mixed-v33-01starvation-candB"
+      ],
+      "native_status_by_bot": {
+        "willow-v47-escape-mixed-approach": {
+          "bot": "willow-v47-escape-mixed-approach",
+          "bot_index": 0,
+          "games": 80,
+          "play": {
+            "rollover": 269,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "v33": {
+          "bot": "v33",
+          "bot_index": 1,
+          "games": 80,
+          "play": {
+            "rollover": 566,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "status_audit_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/missing-factorial-pairs-v1/escape-mixed-published-160-v1/native-audit/v33/status.json",
+      "status_audit_sha256": "3984c3090c86fb2a50f14908e41ba26f796e44b2c2e4d930e43cfebf40895516"
+    }
+  },
+  "candidate_source_aggregation_fixture": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixtures/candidate-source-aggregation/aggregate.py",
+    "self_test": "passed"
+  },
+  "results_json_sha256": "db03687edfd14b9cddbeb2ad1574f47e4cac0a0a43e761d0eacd08781f3c5172",
+  "run_manifest_sha256": "43625a9b01fb152b3d179729930ce345f2c4f4a265c1ced3dc4e1ba01f176a38",
+  "stderr_bytes": 0
+}

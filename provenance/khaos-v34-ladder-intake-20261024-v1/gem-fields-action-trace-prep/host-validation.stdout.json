@@ -1,0 +1,45 @@
+{
+  "schema": "starvation-r1-trace-validation/v1",
+  "label": "action-realization",
+  "timeline": {
+    "recorderEndedAtTimeline": true,
+    "traceEndedAtTimeline": true,
+    "recorderLastRound": 9,
+    "traceLastRound": 9
+  },
+  "hostCallValidation": {
+    "recorderSegments": 45,
+    "traceSegments": 45,
+    "segmentComparison": {
+      "counts": [
+        45,
+        45
+      ],
+      "common": 45,
+      "diff": [],
+      "onlyA": [],
+      "onlyB": []
+    },
+    "recorderRolloverPoints": 0,
+    "traceReproducedRolloverPoints": 0,
+    "rolloverComparison": {
+      "counts": [
+        0,
+        0
+      ],
+      "common": 0,
+      "diff": [],
+      "onlyA": [],
+      "onlyB": []
+    },
+    "mismatchLines": [],
+    "hardMismatchLines": [],
+    "passed": true
+  },
+  "originalReplayNativeStatusThroughRound1": {},
+  "statusNote": "Counts are sourced from the matching original full replay but filtered to round <= 1; empty means no native rollover or Bot error in the target prefix.",
+  "traceFields": [],
+  "source_prefix_validation": "action-realization-recorder-prefix-validation.json",
+  "trace_replay_sha256": "836a4c116b6274e956d9014838be59926aeb723f1c2947ed6e8bfbb58c24339c",
+  "recorder_replay_sha256": "2bb108ecf73e963cab1958a38f45dcce1549e741d38291b5fed08d69d11cbc0f"
+}

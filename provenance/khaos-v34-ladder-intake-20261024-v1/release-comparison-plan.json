@@ -1,0 +1,1604 @@
+{
+  "schema": "local-release-map-comparison-plan/v1",
+  "status": "NOT_RUN_ROOT_REVIEW_REQUIRED",
+  "comparisons": {
+    "f475_vs_v48": {
+      "games": 80,
+      "maps": 40,
+      "both_sides": true,
+      "manifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/release-compare-v47-v48-80.pending.manifest",
+      "rows": [
+        {
+          "id": "00ambush__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00ambush.map26a",
+          "map_sha256": "81ac8b6689f275d24e57d586f2451a160484c15144f86afd0c4450e02c39e579",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00ambush__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00ambush__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00ambush__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00ambush.map26a",
+          "map_sha256": "81ac8b6689f275d24e57d586f2451a160484c15144f86afd0c4450e02c39e579",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00ambush__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00ambush__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00collision__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00collision.map26a",
+          "map_sha256": "6e3c67956080f8da5a0042e68ea481189cd6f61061a742a8be0354a9ea5c5620",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00collision__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00collision__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00collision__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00collision.map26a",
+          "map_sha256": "6e3c67956080f8da5a0042e68ea481189cd6f61061a742a8be0354a9ea5c5620",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00collision__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00collision__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00contest__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00contest.map26a",
+          "map_sha256": "554240a5a793f8c1ac9c518cb6edbacab0129ec4dfd94b199331aaebd0bf418a",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00contest__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00contest__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00contest__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00contest.map26a",
+          "map_sha256": "554240a5a793f8c1ac9c518cb6edbacab0129ec4dfd94b199331aaebd0bf418a",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00contest__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00contest__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00corners__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00corners.map26a",
+          "map_sha256": "97906cc38f503e027c041b681a877465519b3fcb19a410c316cf6efc40c909ea",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00corners__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00corners__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00corners__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00corners.map26a",
+          "map_sha256": "97906cc38f503e027c041b681a877465519b3fcb19a410c316cf6efc40c909ea",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00corners__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00corners__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00eight__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a",
+          "map_sha256": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00eight__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00eight__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00eight__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a",
+          "map_sha256": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00eight__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00eight__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00elkring__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00elkring.map26a",
+          "map_sha256": "4621e92590befe6b0438b7ecdd8fde5aa85945b27535f4968e701cf86934746e",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00elkring__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00elkring__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00elkring__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00elkring.map26a",
+          "map_sha256": "4621e92590befe6b0438b7ecdd8fde5aa85945b27535f4968e701cf86934746e",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00elkring__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00elkring__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00expanse__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00expanse.map26a",
+          "map_sha256": "af4236f408f8450f7da871731f08ef80295f07fac86b541f6547639a78dc2205",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00expanse__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00expanse__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00expanse__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00expanse.map26a",
+          "map_sha256": "af4236f408f8450f7da871731f08ef80295f07fac86b541f6547639a78dc2205",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00expanse__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00expanse__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00fragment__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00fragment.map26a",
+          "map_sha256": "46512bf4fe1fc57d1651b15d44c283cac69cfce1914a5000d19fab979f5b8bbb",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00fragment__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00fragment__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00fragment__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00fragment.map26a",
+          "map_sha256": "46512bf4fe1fc57d1651b15d44c283cac69cfce1914a5000d19fab979f5b8bbb",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00fragment__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00fragment__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00gem-fields__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+          "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gem-fields__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gem-fields__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00gem-fields__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+          "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gem-fields__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gem-fields__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00gemfight__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gemfight.map26a",
+          "map_sha256": "1dfe5669ebcdf39e7769b5abf933c707804ee4a216881f89178e75e3dbc27239",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gemfight__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gemfight__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00gemfight__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gemfight.map26a",
+          "map_sha256": "1dfe5669ebcdf39e7769b5abf933c707804ee4a216881f89178e75e3dbc27239",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gemfight__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00gemfight__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00great-wall__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00great-wall.map26a",
+          "map_sha256": "1b22e5c068175913889a1ff497d310de303a9b1ddf78672f26c0777fda9f5bf2",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00great-wall__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00great-wall__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00great-wall__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00great-wall.map26a",
+          "map_sha256": "1b22e5c068175913889a1ff497d310de303a9b1ddf78672f26c0777fda9f5bf2",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00great-wall__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00great-wall__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00interlock__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00interlock.map26a",
+          "map_sha256": "140e5bc3ac11c7f74dfc4ed99cc53739a34be8d3f71a7f4d0520dc4a3c197e19",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00interlock__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00interlock__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00interlock__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00interlock.map26a",
+          "map_sha256": "140e5bc3ac11c7f74dfc4ed99cc53739a34be8d3f71a7f4d0520dc4a3c197e19",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00interlock__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00interlock__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00lanes__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lanes.map26a",
+          "map_sha256": "8ca26ed2ea65c7d80ceb9604a7431ca1dc056922912b4e2f46cad06051e4886a",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lanes__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lanes__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00lanes__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lanes.map26a",
+          "map_sha256": "8ca26ed2ea65c7d80ceb9604a7431ca1dc056922912b4e2f46cad06051e4886a",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lanes__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lanes__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00lost-world__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lost-world.map26a",
+          "map_sha256": "566697c98eace1c84152f571e9e1fa0b54ec64e038e4695305c874bd3dc2bc6e",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lost-world__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lost-world__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00lost-world__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lost-world.map26a",
+          "map_sha256": "566697c98eace1c84152f571e9e1fa0b54ec64e038e4695305c874bd3dc2bc6e",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lost-world__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00lost-world__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00monolith__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00monolith.map26a",
+          "map_sha256": "ba5674bf2ab26336eb99df0c9e97c16b27bd231deffc023de1d873a05a558313",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00monolith__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00monolith__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00monolith__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00monolith.map26a",
+          "map_sha256": "ba5674bf2ab26336eb99df0c9e97c16b27bd231deffc023de1d873a05a558313",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00monolith__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00monolith__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00packs__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00packs.map26a",
+          "map_sha256": "60ee7a86ee377a04a77d11008b78aaed9e2c1cfcfc4302055974195e078c675a",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00packs__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00packs__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00packs__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00packs.map26a",
+          "map_sha256": "60ee7a86ee377a04a77d11008b78aaed9e2c1cfcfc4302055974195e078c675a",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00packs__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00packs__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00pilgrimage__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00pilgrimage.map26a",
+          "map_sha256": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00pilgrimage__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00pilgrimage__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00pilgrimage__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00pilgrimage.map26a",
+          "map_sha256": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00pilgrimage__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00pilgrimage__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00quadrants__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00quadrants.map26a",
+          "map_sha256": "261fe6c133f076653bda84e88965dc35c5a59a70e7730082b4c6df9ca892df92",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00quadrants__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00quadrants__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00quadrants__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00quadrants.map26a",
+          "map_sha256": "261fe6c133f076653bda84e88965dc35c5a59a70e7730082b4c6df9ca892df92",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00quadrants__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00quadrants__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00reverse-spiral__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00reverse-spiral.map26a",
+          "map_sha256": "f57669ffc98b76a5c2e4eccba41690dc193efc29f067ee960605617b2cfb48e5",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00reverse-spiral__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00reverse-spiral__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00reverse-spiral__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00reverse-spiral.map26a",
+          "map_sha256": "f57669ffc98b76a5c2e4eccba41690dc193efc29f067ee960605617b2cfb48e5",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00reverse-spiral__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00reverse-spiral__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00road-of-riches__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00road-of-riches.map26a",
+          "map_sha256": "8365e18788720a079a906c0430e809317236acecccf888b517a1de409689b049",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00road-of-riches__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00road-of-riches__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00road-of-riches__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00road-of-riches.map26a",
+          "map_sha256": "8365e18788720a079a906c0430e809317236acecccf888b517a1de409689b049",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00road-of-riches__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00road-of-riches__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00rows__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rows.map26a",
+          "map_sha256": "6a4203ae1bfe86ad0f6b083f390cfd8e2f5e45f7e4102f6a2f27205d5333e701",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rows__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rows__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00rows__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rows.map26a",
+          "map_sha256": "6a4203ae1bfe86ad0f6b083f390cfd8e2f5e45f7e4102f6a2f27205d5333e701",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rows__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rows__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00rushbait-v2__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rushbait-v2.map26a",
+          "map_sha256": "f4dcc30269aa7d0983e7d244f72c3d2a9a6d7ce918cd00495d465b78b2609157",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rushbait-v2__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rushbait-v2__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00rushbait-v2__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rushbait-v2.map26a",
+          "map_sha256": "f4dcc30269aa7d0983e7d244f72c3d2a9a6d7ce918cd00495d465b78b2609157",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rushbait-v2__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00rushbait-v2__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00split__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00split.map26a",
+          "map_sha256": "1db691b7def9cb585314c7c4139ef1b79df87fcdbfab9d86ef31666c4709a4c4",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00split__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00split__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00split__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00split.map26a",
+          "map_sha256": "1db691b7def9cb585314c7c4139ef1b79df87fcdbfab9d86ef31666c4709a4c4",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00split__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00split__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00stampede__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00stampede.map26a",
+          "map_sha256": "49807e4756ec1b2030ed2ca7ebdd8a07f1a6ed7f2d2bd751e6941f5c0c877cdc",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00stampede__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00stampede__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00stampede__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00stampede.map26a",
+          "map_sha256": "49807e4756ec1b2030ed2ca7ebdd8a07f1a6ed7f2d2bd751e6941f5c0c877cdc",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00stampede__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00stampede__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "00swirl__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00swirl.map26a",
+          "map_sha256": "e6f860670947b1326f34c86515db8ef6893c565eaa69e3f9a6464ec5744e1c93",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00swirl__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00swirl__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "00swirl__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00swirl.map26a",
+          "map_sha256": "e6f860670947b1326f34c86515db8ef6893c565eaa69e3f9a6464ec5744e1c93",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00swirl__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/00swirl__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01big-world__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01big-world.map26a",
+          "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01big-world__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01big-world__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01big-world__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01big-world.map26a",
+          "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01big-world__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01big-world__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01boss-battle__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01boss-battle.map26a",
+          "map_sha256": "53086e249294aed6f427fe647d578303589a081e953c62a0ff8f20cade9993fa",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01boss-battle__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01boss-battle__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01boss-battle__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01boss-battle.map26a",
+          "map_sha256": "53086e249294aed6f427fe647d578303589a081e953c62a0ff8f20cade9993fa",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01boss-battle__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01boss-battle__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01broken-curve__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01broken-curve.map26a",
+          "map_sha256": "1763423b171f3b61128b2a913a10f46ba550e7a2e79ae27dd89e915c952b5117",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01broken-curve__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01broken-curve__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01broken-curve__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01broken-curve.map26a",
+          "map_sha256": "1763423b171f3b61128b2a913a10f46ba550e7a2e79ae27dd89e915c952b5117",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01broken-curve__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01broken-curve__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01concentrated-wealth__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01concentrated-wealth.map26a",
+          "map_sha256": "dc09c386d5e9dec3cec8bc4575c19d43233e08790e138ccd02be4644f2808c65",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01concentrated-wealth__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01concentrated-wealth__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01concentrated-wealth__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01concentrated-wealth.map26a",
+          "map_sha256": "dc09c386d5e9dec3cec8bc4575c19d43233e08790e138ccd02be4644f2808c65",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01concentrated-wealth__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01concentrated-wealth__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01corridors__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01corridors.map26a",
+          "map_sha256": "794132d979b297de5a534da393af8932cd2d5cc9d831e79d2cefdb4617d4d5e8",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01corridors__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01corridors__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01corridors__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01corridors.map26a",
+          "map_sha256": "794132d979b297de5a534da393af8932cd2d5cc9d831e79d2cefdb4617d4d5e8",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01corridors__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01corridors__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01elk-arena__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01elk-arena.map26a",
+          "map_sha256": "72b8e03bc4378d5f988f9c1c07609848bfb42fd8a883cce01820d96212f21c0a",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01elk-arena__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01elk-arena__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01elk-arena__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01elk-arena.map26a",
+          "map_sha256": "72b8e03bc4378d5f988f9c1c07609848bfb42fd8a883cce01820d96212f21c0a",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01elk-arena__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01elk-arena__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01fracture__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a",
+          "map_sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01fracture__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01fracture__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01fracture__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a",
+          "map_sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01fracture__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01fracture__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01gold-rush__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a",
+          "map_sha256": "6e564fdf09fdf67a4182a909d6985737b488742e64f2c3e164204e78bc64c898",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01gold-rush__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01gold-rush__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01gold-rush__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a",
+          "map_sha256": "6e564fdf09fdf67a4182a909d6985737b488742e64f2c3e164204e78bc64c898",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01gold-rush__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01gold-rush__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01hooks__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01hooks.map26a",
+          "map_sha256": "23e58fe8f41ff66761ade251d3d10a9c3eead864f9ad74f12ad9e34f4bece378",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01hooks__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01hooks__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01hooks__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01hooks.map26a",
+          "map_sha256": "23e58fe8f41ff66761ade251d3d10a9c3eead864f9ad74f12ad9e34f4bece378",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01hooks__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01hooks__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01islands__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01islands.map26a",
+          "map_sha256": "d97cf04b738393812fb51024582e2a6cfba8a850b19ce031f2c1ad3d7b916acb",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01islands__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01islands__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01islands__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01islands.map26a",
+          "map_sha256": "d97cf04b738393812fb51024582e2a6cfba8a850b19ce031f2c1ad3d7b916acb",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01islands__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01islands__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01shortcut__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01shortcut.map26a",
+          "map_sha256": "f77db387292e66a8aad7e912c179787db0c41b6632ee841a21593dfc279ecb3a",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01shortcut__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01shortcut__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01shortcut__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01shortcut.map26a",
+          "map_sha256": "f77db387292e66a8aad7e912c179787db0c41b6632ee841a21593dfc279ecb3a",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01shortcut__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01shortcut__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01starfish__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starfish.map26a",
+          "map_sha256": "1edf115a0a788c010107148f975570961acc8e9fba4a013ad60f5ca2389cbb83",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starfish__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starfish__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01starfish__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starfish.map26a",
+          "map_sha256": "1edf115a0a788c010107148f975570961acc8e9fba4a013ad60f5ca2389cbb83",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starfish__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starfish__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01starvation__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starvation.map26a",
+          "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starvation__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starvation__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01starvation__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starvation.map26a",
+          "map_sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starvation__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01starvation__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01the-farm__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01the-farm.map26a",
+          "map_sha256": "5cca9ed6eaaf6ef15a170a4ea78488237fda7b256e182a2e3360a14b485e09c3",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01the-farm__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01the-farm__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01the-farm__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01the-farm.map26a",
+          "map_sha256": "5cca9ed6eaaf6ef15a170a4ea78488237fda7b256e182a2e3360a14b485e09c3",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01the-farm__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01the-farm__v48-A__f475-B.statistics.json"
+        },
+        {
+          "id": "01yellow-brick-road__f475-A__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01yellow-brick-road.map26a",
+          "map_sha256": "130453395278cdabb1ff80564357a99ca8394afaef006fdede8beb88924a8fa0",
+          "physical_order": [
+            "f475",
+            "v48"
+          ],
+          "A": "f475",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01yellow-brick-road__f475-A__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01yellow-brick-road__f475-A__v48-B.statistics.json"
+        },
+        {
+          "id": "01yellow-brick-road__v48-A__f475-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01yellow-brick-road.map26a",
+          "map_sha256": "130453395278cdabb1ff80564357a99ca8394afaef006fdede8beb88924a8fa0",
+          "physical_order": [
+            "v48",
+            "f475"
+          ],
+          "A": "v48",
+          "B": "f475",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01yellow-brick-road__v48-A__f475-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/01yellow-brick-road__v48-A__f475-B.statistics.json"
+        }
+      ]
+    },
+    "v48_vs_frozen_v33": {
+      "games": 5,
+      "manifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/release-compare-v48-v33-loss-maps-5.pending.manifest",
+      "rows": [
+        {
+          "id": "v48-v33__00gem-fields__v48-A",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+          "map_sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5",
+          "physical_order": [
+            "v48",
+            "v33"
+          ],
+          "A": "v48",
+          "B": "v33",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "target_reason": "recent ordinary five-pick loss map/side; controlled local v33 opponent",
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/v48-v33__00gem-fields__v48-A.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/v48-v33__00gem-fields__v48-A.statistics.json"
+        },
+        {
+          "id": "v48-v33__01fracture__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a",
+          "map_sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914",
+          "physical_order": [
+            "v33",
+            "v48"
+          ],
+          "A": "v33",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "target_reason": "recent ordinary five-pick loss map/side; controlled local v33 opponent",
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/v48-v33__01fracture__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/v48-v33__01fracture__v48-B.statistics.json"
+        },
+        {
+          "id": "v48-v33__00ambush__v48-A",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00ambush.map26a",
+          "map_sha256": "81ac8b6689f275d24e57d586f2451a160484c15144f86afd0c4450e02c39e579",
+          "physical_order": [
+            "v48",
+            "v33"
+          ],
+          "A": "v48",
+          "B": "v33",
+          "candidate_v48_side": "A",
+          "normal_native_draft": true,
+          "target_reason": "recent ordinary five-pick loss map/side; controlled local v33 opponent",
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/v48-v33__00ambush__v48-A.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/v48-v33__00ambush__v48-A.statistics.json"
+        },
+        {
+          "id": "v48-v33__00ambush__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00ambush.map26a",
+          "map_sha256": "81ac8b6689f275d24e57d586f2451a160484c15144f86afd0c4450e02c39e579",
+          "physical_order": [
+            "v33",
+            "v48"
+          ],
+          "A": "v33",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "target_reason": "recent ordinary five-pick loss map/side; controlled local v33 opponent",
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/v48-v33__00ambush__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/v48-v33__00ambush__v48-B.statistics.json"
+        },
+        {
+          "id": "v48-v33__01concentrated-wealth__v48-B",
+          "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01concentrated-wealth.map26a",
+          "map_sha256": "dc09c386d5e9dec3cec8bc4575c19d43233e08790e138ccd02be4644f2808c65",
+          "physical_order": [
+            "v33",
+            "v48"
+          ],
+          "A": "v33",
+          "B": "v48",
+          "candidate_v48_side": "B",
+          "normal_native_draft": true,
+          "target_reason": "recent ordinary five-pick loss map/side; controlled local v33 opponent",
+          "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/v48-v33__01concentrated-wealth__v48-B.repl26a",
+          "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-output/v48-v33__01concentrated-wealth__v48-B.statistics.json"
+        }
+      ]
+    }
+  },
+  "bots": {
+    "f475": {
+      "project": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7",
+      "aggregate": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "raw": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/.cambc/build-release/bot.wasm",
+        "sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6"
+      },
+      "injected": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7/.cambc/build-release/bot-injected.wasm",
+        "sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+      }
+    },
+    "v48": {
+      "project": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work",
+      "aggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+      "releaseSource": "bots/Khaos_v34",
+      "releaseAggregate": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+      "raw": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work/.cambc/build-release/bot.wasm",
+        "sha256": "9aab053367aa497e0691731134dbfe4a5865a81bbef2d41f489dd15c6cb4181b"
+      },
+      "injected": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-finishing-recall-4d08241-work/.cambc/build-release/bot-injected.wasm",
+        "sha256": "e7f63a9491efcda7f49773755f3d0ca8b29f27c9d32ddc4c987b7512ee5e5525"
+      }
+    },
+    "v33": {
+      "project": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33",
+      "aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "raw": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33/.cambc/build-release/bot.wasm",
+        "sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7"
+      },
+      "injected": {
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/v33/.cambc/build-release/bot-injected.wasm",
+        "sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+      }
+    }
+  },
+  "toolchain": {
+    "cli": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "cli_version": "cambc 3.0.5",
+    "engine": "tools/replay/engine/v1_0_3.wasm",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "map_directory": "maps/ (non-generated *.map26a only)",
+    "maps": [
+      {
+        "name": "00ambush",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00ambush.map26a",
+        "bytes": 23272,
+        "sha256": "81ac8b6689f275d24e57d586f2451a160484c15144f86afd0c4450e02c39e579"
+      },
+      {
+        "name": "00collision",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00collision.map26a",
+        "bytes": 1367,
+        "sha256": "6e3c67956080f8da5a0042e68ea481189cd6f61061a742a8be0354a9ea5c5620"
+      },
+      {
+        "name": "00contest",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00contest.map26a",
+        "bytes": 806,
+        "sha256": "554240a5a793f8c1ac9c518cb6edbacab0129ec4dfd94b199331aaebd0bf418a"
+      },
+      {
+        "name": "00corners",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00corners.map26a",
+        "bytes": 2642,
+        "sha256": "97906cc38f503e027c041b681a877465519b3fcb19a410c316cf6efc40c909ea"
+      },
+      {
+        "name": "00eight",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00eight.map26a",
+        "bytes": 1185,
+        "sha256": "76b5ce0895130f5f423f3ac6a630c5cf8e1202d4150e6ad4e287c75d21794765"
+      },
+      {
+        "name": "00elkring",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00elkring.map26a",
+        "bytes": 524,
+        "sha256": "4621e92590befe6b0438b7ecdd8fde5aa85945b27535f4968e701cf86934746e"
+      },
+      {
+        "name": "00expanse",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00expanse.map26a",
+        "bytes": 1358,
+        "sha256": "af4236f408f8450f7da871731f08ef80295f07fac86b541f6547639a78dc2205"
+      },
+      {
+        "name": "00fragment",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00fragment.map26a",
+        "bytes": 1071,
+        "sha256": "46512bf4fe1fc57d1651b15d44c283cac69cfce1914a5000d19fab979f5b8bbb"
+      },
+      {
+        "name": "00gem-fields",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gem-fields.map26a",
+        "bytes": 8014,
+        "sha256": "80af89f07723d23d822ddc858616a0156ae60f9d41ffd8bd9105f924379677b5"
+      },
+      {
+        "name": "00gemfight",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00gemfight.map26a",
+        "bytes": 533,
+        "sha256": "1dfe5669ebcdf39e7769b5abf933c707804ee4a216881f89178e75e3dbc27239"
+      },
+      {
+        "name": "00great-wall",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00great-wall.map26a",
+        "bytes": 5599,
+        "sha256": "1b22e5c068175913889a1ff497d310de303a9b1ddf78672f26c0777fda9f5bf2"
+      },
+      {
+        "name": "00interlock",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00interlock.map26a",
+        "bytes": 1614,
+        "sha256": "140e5bc3ac11c7f74dfc4ed99cc53739a34be8d3f71a7f4d0520dc4a3c197e19"
+      },
+      {
+        "name": "00lanes",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lanes.map26a",
+        "bytes": 807,
+        "sha256": "8ca26ed2ea65c7d80ceb9604a7431ca1dc056922912b4e2f46cad06051e4886a"
+      },
+      {
+        "name": "00lost-world",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00lost-world.map26a",
+        "bytes": 4210,
+        "sha256": "566697c98eace1c84152f571e9e1fa0b54ec64e038e4695305c874bd3dc2bc6e"
+      },
+      {
+        "name": "00monolith",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00monolith.map26a",
+        "bytes": 1623,
+        "sha256": "ba5674bf2ab26336eb99df0c9e97c16b27bd231deffc023de1d873a05a558313"
+      },
+      {
+        "name": "00packs",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00packs.map26a",
+        "bytes": 306,
+        "sha256": "60ee7a86ee377a04a77d11008b78aaed9e2c1cfcfc4302055974195e078c675a"
+      },
+      {
+        "name": "00pilgrimage",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00pilgrimage.map26a",
+        "bytes": 10274,
+        "sha256": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673"
+      },
+      {
+        "name": "00quadrants",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00quadrants.map26a",
+        "bytes": 7031,
+        "sha256": "261fe6c133f076653bda84e88965dc35c5a59a70e7730082b4c6df9ca892df92"
+      },
+      {
+        "name": "00reverse-spiral",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00reverse-spiral.map26a",
+        "bytes": 1556,
+        "sha256": "f57669ffc98b76a5c2e4eccba41690dc193efc29f067ee960605617b2cfb48e5"
+      },
+      {
+        "name": "00road-of-riches",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00road-of-riches.map26a",
+        "bytes": 5165,
+        "sha256": "8365e18788720a079a906c0430e809317236acecccf888b517a1de409689b049"
+      },
+      {
+        "name": "00rows",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rows.map26a",
+        "bytes": 5288,
+        "sha256": "6a4203ae1bfe86ad0f6b083f390cfd8e2f5e45f7e4102f6a2f27205d5333e701"
+      },
+      {
+        "name": "00rushbait-v2",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00rushbait-v2.map26a",
+        "bytes": 941,
+        "sha256": "f4dcc30269aa7d0983e7d244f72c3d2a9a6d7ce918cd00495d465b78b2609157"
+      },
+      {
+        "name": "00split",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00split.map26a",
+        "bytes": 2742,
+        "sha256": "1db691b7def9cb585314c7c4139ef1b79df87fcdbfab9d86ef31666c4709a4c4"
+      },
+      {
+        "name": "00stampede",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00stampede.map26a",
+        "bytes": 6805,
+        "sha256": "49807e4756ec1b2030ed2ca7ebdd8a07f1a6ed7f2d2bd751e6941f5c0c877cdc"
+      },
+      {
+        "name": "00swirl",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00swirl.map26a",
+        "bytes": 1112,
+        "sha256": "e6f860670947b1326f34c86515db8ef6893c565eaa69e3f9a6464ec5744e1c93"
+      },
+      {
+        "name": "01big-world",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01big-world.map26a",
+        "bytes": 20381,
+        "sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5"
+      },
+      {
+        "name": "01boss-battle",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01boss-battle.map26a",
+        "bytes": 591,
+        "sha256": "53086e249294aed6f427fe647d578303589a081e953c62a0ff8f20cade9993fa"
+      },
+      {
+        "name": "01broken-curve",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01broken-curve.map26a",
+        "bytes": 9973,
+        "sha256": "1763423b171f3b61128b2a913a10f46ba550e7a2e79ae27dd89e915c952b5117"
+      },
+      {
+        "name": "01concentrated-wealth",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01concentrated-wealth.map26a",
+        "bytes": 10236,
+        "sha256": "dc09c386d5e9dec3cec8bc4575c19d43233e08790e138ccd02be4644f2808c65"
+      },
+      {
+        "name": "01corridors",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01corridors.map26a",
+        "bytes": 69117,
+        "sha256": "794132d979b297de5a534da393af8932cd2d5cc9d831e79d2cefdb4617d4d5e8"
+      },
+      {
+        "name": "01elk-arena",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01elk-arena.map26a",
+        "bytes": 19804,
+        "sha256": "72b8e03bc4378d5f988f9c1c07609848bfb42fd8a883cce01820d96212f21c0a"
+      },
+      {
+        "name": "01fracture",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01fracture.map26a",
+        "bytes": 57292,
+        "sha256": "f82a1b99a7a70f8ab21f275dc8e22fbad6a71030f09fdd224d61977fe55dd914"
+      },
+      {
+        "name": "01gold-rush",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01gold-rush.map26a",
+        "bytes": 650,
+        "sha256": "6e564fdf09fdf67a4182a909d6985737b488742e64f2c3e164204e78bc64c898"
+      },
+      {
+        "name": "01hooks",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01hooks.map26a",
+        "bytes": 4165,
+        "sha256": "23e58fe8f41ff66761ade251d3d10a9c3eead864f9ad74f12ad9e34f4bece378"
+      },
+      {
+        "name": "01islands",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01islands.map26a",
+        "bytes": 22234,
+        "sha256": "d97cf04b738393812fb51024582e2a6cfba8a850b19ce031f2c1ad3d7b916acb"
+      },
+      {
+        "name": "01shortcut",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01shortcut.map26a",
+        "bytes": 4346,
+        "sha256": "f77db387292e66a8aad7e912c179787db0c41b6632ee841a21593dfc279ecb3a"
+      },
+      {
+        "name": "01starfish",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starfish.map26a",
+        "bytes": 8223,
+        "sha256": "1edf115a0a788c010107148f975570961acc8e9fba4a013ad60f5ca2389cbb83"
+      },
+      {
+        "name": "01starvation",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01starvation.map26a",
+        "bytes": 25161,
+        "sha256": "0b8e85603a85ca5778f92d2975c56da0e4b8df59264c42eef23108f8bbceec2a"
+      },
+      {
+        "name": "01the-farm",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01the-farm.map26a",
+        "bytes": 3244,
+        "sha256": "5cca9ed6eaaf6ef15a170a4ea78488237fda7b256e182a2e3360a14b485e09c3"
+      },
+      {
+        "name": "01yellow-brick-road",
+        "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/01yellow-brick-road.map26a",
+        "bytes": 15319,
+        "sha256": "130453395278cdabb1ff80564357a99ca8394afaef006fdede8beb88924a8fa0"
+      }
+    ]
+  },
+  "run_settings": {
+    "release": true,
+    "fuel_quantum": 100000,
+    "jobs": 1,
+    "nice": 19,
+    "normal_native_draft": true,
+    "no_build_or_sdk_refresh": true,
+    "proposed_invocation": "nice -n 19 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc run-batch <one-reviewed-manifest> --jobs 1 --release --fuel-quantum 100000 --json --color never"
+  },
+  "limits": [
+    "All games are local controlled diagnostics and do not identify the server source used in ladder replays.",
+    "Rows assign physical A/B explicitly; filenames are generated from the same ordered fields.",
+    "Do not execute until root reviews the rows and confirms the direct run-batch path uses these existing Release artifacts without rebuilding or changing the SDK."
+  ]
+}

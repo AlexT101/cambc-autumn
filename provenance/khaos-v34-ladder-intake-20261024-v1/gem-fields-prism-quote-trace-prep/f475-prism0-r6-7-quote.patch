@@ -1,0 +1,281 @@
+--- a/f475-bot.cpp
++++ b/f475-bot.cpp
+@@ -1737,7 +1737,10 @@
+ // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
+ [[gnu::flatten]] bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+-    if (pick_up(world, pathing, memory)) return true;
++    const bool trace_gq = world.round >= 6 && world.round <= 7 && static_cast<std::uint32_t>(world.me().handle) == 0;
++    debug_block({ if (trace_gq) std::printf("GQ_ENTRY r%d actor%d farm%d claim%d crew%d\n", world.round,
++        static_cast<std::uint32_t>(world.me().handle), memory.farm_group, memory.claim, memory.crew); });
++    if (pick_up(world, pathing, memory)) { debug_block({ if (trace_gq) std::printf("GQ_EXIT r%d pickup\n", world.round); }); return true; }
+     const auto& map = world.map();
+     const auto& groups = map.groups;
+     const int range = world.me().facts().attack_range();
+@@ -1890,8 +1893,8 @@
+         reset_and_attack_camp(world, hit);
+         return true;
+     };
+-    if (!banks_bag && attack_in_range()) return true;
+-    if (world.is_stale()) return true;
++    if (!banks_bag && attack_in_range()) { debug_block({ if (trace_gq) std::printf("GQ_EXIT r%d in-range-attack\n", world.round); }); return true; }
++    if (world.is_stale()) { debug_block({ if (trace_gq) std::printf("GQ_EXIT r%d stale-after-attack\n", world.round); }); return true; }
+ 
+     // Holders keep a capture going, and more only split the reward.
+     const auto ally_holding = [&](int g) __attribute__((always_inline)) {
+@@ -1899,7 +1902,7 @@
+     };
+ 
+     const vec2 here = my_position();
+-    if (holding_capture(world, pathing)) return true;
++    if (holding_capture(world, pathing)) { debug_block({ if (trace_gq) std::printf("GQ_EXIT r%d holding-capture\n", world.round); }); return true; }
+     // Carrying, whatever made us retreat stays out of bounds: we route around it or wait outside
+     // it rather than step in to be sent back out. Empty-handed, a step in risks nothing (the zone
+     // starts beyond any strike's reach) and keeps us at hand for when the pack moves on.
+@@ -1962,14 +1965,32 @@
+     // An ally in sight clearing its claimed damaging group gets help only if finishing it alone
+     // would take it below the recall line: one champion per camp otherwise.
+     const auto struggling = [&](int g) __attribute__((always_inline)) {
+-        if (g >= 256 || !(ally_claims[g >> 6] >> (g & 63) & 1)) return false;
++        if (g >= 256 || !(ally_claims[g >> 6] >> (g & 63) & 1)) {
++            debug_block({ if (trace_gq && g == 4) std::printf("GQ_HELP_RESULT r%d g%d result0 reason=no-claim-bit\n", world.round, g); });
++            return false;
++        }
++        bool matching_claim = false;
+         for (const auto& a : world.allies) {
+-            if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g || !test(groups[g].threat(), a.pos))
++            if (a.is_self || !a.alive || !a.visible) continue;
++            if (comms::claim_of(world, a.index) != g) {
++                debug_block({ if (trace_gq && g == 4) std::printf("GQ_HELP_SKIP r%d g%d ally%u reason=claim-mismatch\n", world.round, g, static_cast<unsigned>(a.handle)); });
+                 continue;
++            }
++            matching_claim = true;
++            const bool in_threat = test(groups[g].threat(), a.pos);
++            if (!in_threat) {
++                debug_block({ if (trace_gq && g == 4) std::printf("GQ_HELP_SKIP r%d g%d ally%u reason=outside-threat pos%d,%d\n", world.round, g, static_cast<unsigned>(a.handle), a.pos.x, a.pos.y); });
++                continue;
++            }
+             float rounds = 0;
+             const float damage = min_camp_damage(world, g, floored_output(a), &rounds, a.retaliation());
+-            if (a.health - damage < params::recall_health_fraction * a.max_health) return true;
++            const bool below = a.health - damage < params::recall_health_fraction * a.max_health;
++            debug_block({ if (trace_gq && g == 4) std::printf("GQ_HELP_CHECK r%d g%d ally%u hp%.3f max%.3f damage%.3f rounds%.3f recallfloor%.3f below%d\n",
++                world.round, g, static_cast<unsigned>(a.handle), static_cast<double>(a.health), static_cast<double>(a.max_health),
++                static_cast<double>(damage), static_cast<double>(rounds), static_cast<double>(params::recall_health_fraction * a.max_health), below); });
++            if (below) return true;
+         }
++        if (!matching_claim) debug_block({ if (trace_gq && g == 4) std::printf("GQ_HELP_RESULT r%d g%d result0 reason=no-visible-matching-claim\n", world.round, g); });
+         return false;
+     };
+     // Joining allies on a group, our part of its gems is our share of the damage still to deal
+@@ -2175,13 +2196,20 @@
+         const int g = (first + k) % n_groups;
+         const auto& group = group_data[g];
+         const auto& belief = camp_data[g];
+-        if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g)))
++        debug_block({ if (trace_gq && g == 4) std::printf("GQ_VISIT r%d g%d state%d gems%d gold%d monolith%d\n",
++            world.round, g, static_cast<int>(belief.state), group.gems, group.gold, group.has_monolith); });
++        if (group.has_monolith || group.gems + group.gold == 0 || (belief.state == CampState::cleared && ally_holding(g))) {
++            debug_block({ if (trace_gq && g == 4) std::printf("GQ_SKIP r%d g%d reason=empty-monolith-or-held-clear\n", world.round, g); });
+             continue;
++        }
+         const bool claimed = g < 256 && (claimed_bits[g >> 6] >> (g & 63) & 1);
+         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
+         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
+         // it. Gems past the win are worth nothing.
+         const bool wins = group.gems >= short_by;
++        debug_block({ if (trace_gq && g == 4) std::printf("GQ_EVAL r%d g%d k%d claimed%d wins%d state%d gems%d gold%d short%d farm%d claim%d crew%d\n",
++            world.round, g, k, claimed, wins, static_cast<int>(belief.state), group.gems, group.gold, short_by,
++            farm_group, memory.claim, memory.crew); });
+         auto& known = group_facts[g];
+         if (known.context != context || known.sticky != (g == farm_group)) {
+             if (known.tribute == 0) {
+@@ -2243,8 +2271,11 @@
+                         const float near_cycle = std::max(0.0f, static_cast<float>(near + near_wait) - bank_now + bank)
+                                                  + static_cast<float>(capture_rounds()) + known.fastest;
+                         if (!may_help && near_cycle > 0 && (known.gems + known.gold) / near_cycle <= best_value
+-                            && (!banks_bag || (known.gems + known.gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + known.fastest) <= from_altar_value))
++                            && (!banks_bag || (known.gems + known.gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + known.fastest) <= from_altar_value)) {
++                            debug_block({ if (trace_gq && g == 4) std::printf("GQ_REJECT r%d g%d reason=near-bound near%d nearwait%d mayhelp%d nearcycle%.4f best%d bestv%.6f\n",
++                                world.round, g, near, near_wait, may_help, static_cast<double>(near_cycle), best, static_cast<double>(best_value)); });
+                             continue;
++                        }
+                     }
+                     if (!fuel_ok(full_field_cost_estimate() + loop_floor + loop_reserve())) break;
+                     from_here = make_field(pathing.static_walls(), single(here));
+@@ -2254,13 +2285,16 @@
+             }
+         }
+         const int steps = steps_known;
+-        if (steps == unreachable) continue;
++        if (steps == unreachable) { debug_block({ if (trace_gq && g == 4) std::printf("GQ_REJECT r%d g%d reason=unreachable\n", world.round, g); }); continue; }
+         // A group still respawning when we would arrive costs the wait there.
+         const int wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - steps) : 0;
+-        if (wait > params::max_wait) continue;
++        if (wait > params::max_wait) { debug_block({ if (trace_gq && g == 4) std::printf("GQ_REJECT r%d g%d reason=wait wait%d\n", world.round, g, wait); }); continue; }
++        debug_block({ if (trace_gq && g == 4) std::printf("GQ_HELP_GATE r%d g%d bankbag%d strength%.3f state%d steps%d radius%d helpsteps%d\n",
++            world.round, g, banks_bag, static_cast<double>(group.strength), static_cast<int>(belief.state), steps, params::help_radius, help_steps); });
+         if (!banks_bag && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
+             && steps < help_steps && struggling(g))
+             help_group = g, help_steps = steps;
++        debug_block({ if (trace_gq && g == 4) std::printf("GQ_HELP_AFTER r%d g%d helpgroup%d helpsteps%d\n", world.round, g, help_group, help_steps); });
+         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
+         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
+         const float trip = std::max(0.0f, static_cast<float>(steps + wait) - bank_now + bank);
+@@ -2268,14 +2302,25 @@
+         // Risky groups matter only while no affordable one is found; skip the costly clearing
+         // estimate for groups that cannot beat it even with no clearing. A crew's share can.
+         if (!claimed && best >= 0 && (gems + gold) / (trip + static_cast<float>(capture_rounds()) + fastest) <= best_value
+-            && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + fastest) <= from_altar_value))
++            && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + fastest) <= from_altar_value)) {
++            debug_block({ if (trace_gq && g == 4) std::printf("GQ_REJECT r%d g%d reason=solo-value gems%.4f gold%.4f trip%.4f fastest%.4f best%d bestv%.6f fromaltar%.6f\n",
++                world.round, g, static_cast<double>(gems), static_cast<double>(gold), static_cast<double>(trip),
++                static_cast<double>(fastest), best, static_cast<double>(best_value), static_cast<double>(from_altar_value)); });
+             continue;
++        }
+         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
+         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
+             if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
+             const int last = known.to_altar;
+-            return last != unreachable
+-                   && static_cast<float>(steps + wait + capture_rounds() + last + tribute_turns(bag + group.gems)) + clear_rounds > static_cast<float>(left);
++            float deadline = 0.0f;
++            bool late = false;
++            if (last != unreachable) {
++                deadline = static_cast<float>(steps + wait + capture_rounds() + last + tribute_turns(bag + group.gems)) + clear_rounds;
++                late = deadline > static_cast<float>(left);
++            }
++            debug_block({ if (trace_gq && g == 4) std::printf("GQ_LATE r%d g%d clear%.3f steps%d wait%d last%d left%d deadline%.3f late%d\n",
++                world.round, g, static_cast<double>(clear_rounds), steps, wait, last, left, static_cast<double>(deadline), late); });
++            return late;
+         };
+         const float worth = gems + gold;
+         if (claimed) {
+@@ -2295,13 +2340,22 @@
+                                 world.round, my_handle(), g, group.handle, group.centre.x, group.centre.y, steps, working,
+                                 static_cast<double>(health), static_cast<double>(old_left), static_cast<double>(health_left));
+             });
+-            if (health <= 0 || health_left <= 0) continue;
++            if (health <= 0 || health_left <= 0) { debug_block({ if (trace_gq && g == 4) std::printf("GQ_REJECT r%d g%d reason=claim-health hp%.3f left%.3f working%d waiting%d crew%.3f delayed%.3f\n",
++                world.round, g, static_cast<double>(health), static_cast<double>(health_left), working, waiting,
++                static_cast<double>(others), static_cast<double>(crew.delayed_damage)); }); continue; }
+             // A capture that wins the game is the team's, not a share: what counts is how soon.
+             const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
+             // No capture rounds: the claimer holds it, and the crew moves on once it is cleared.
+             const float value = rate(world, worth * part, trip + rounds);
+             // Only a better share counts, and the final pick takes none an affordable group beats.
+-            if (value <= shared_value || (best >= 0 && value <= best_value) || too_late(rounds)) continue;
++            if (value <= shared_value || (best >= 0 && value <= best_value) || too_late(rounds)) {
++                debug_block({ if (trace_gq && g == 4) std::printf("GQ_REJECT r%d g%d reason=claim-value-or-late health%.3f left%.3f working%d waiting%d crew%.3f delayed%.3f rounds%.4f part%.4f value%.6f shared%.6f best%d bestv%.6f\n",
++                    world.round, g, static_cast<double>(health), static_cast<double>(health_left), working, waiting,
++                    static_cast<double>(others), static_cast<double>(crew.delayed_damage), static_cast<double>(rounds),
++                    static_cast<double>(part), static_cast<double>(value), static_cast<double>(shared_value), best,
++                    static_cast<double>(best_value)); });
++                continue;
++            }
+             float joint_rounds = 0;
+             // Unless we see the camp's health falling, our share is as if the claimer did nothing before
+             // we arrive: crediting work the camp does not show grows our share with every step closer,
+@@ -2309,7 +2363,12 @@
+             const bool worked = belief.last_damaged_round >= round - 1;
+             const float hits = soften * min_camp_damage(world, g, strength + others, &joint_rounds)
+                                * (worked ? strength * rounds / health : strength / (strength + others));
+-            if (hits > spare_health) continue;
++            if (hits > spare_health) { debug_block({ if (trace_gq && g == 4) std::printf("GQ_REJECT r%d g%d reason=claim-health-admission hits%.4f spare%.4f joint%.4f worked%d\n",
++                world.round, g, static_cast<double>(hits), static_cast<double>(spare_health), static_cast<double>(joint_rounds), worked); }); continue; }
++            debug_block({ if (trace_gq && g == 4) std::printf("GQ_CLAIM_ACCEPT r%d g%d steps%d wait%d hp%.3f left%.3f crew%.3f delayed%.3f rounds%.4f part%.4f value%.6f hits%.4f spare%.4f\n",
++                world.round, g, steps, wait, static_cast<double>(health), static_cast<double>(health_left), static_cast<double>(others),
++                static_cast<double>(crew.delayed_damage), static_cast<double>(rounds), static_cast<double>(part),
++                static_cast<double>(value), static_cast<double>(hits), static_cast<double>(spare_health)); });
+             shared = g, shared_value = value, shared_steps = steps;
+             continue;
+         }
+@@ -2323,6 +2382,10 @@
+         }
+         const float alone_damage = soften * known.damage, alone_rounds = known.rounds, kite = known.kite;
+         float partner_output = unclaimed_partner_output;
++        debug_block({ if (trace_gq && g == 4) std::printf("GQ_SOLO_BASE r%d g%d steps%d wait%d trip%.4f gems%.4f gold%.4f knownfast%.4f clear%.4f damage%.4f kite%.4f spare%.4f partner0%.4f\n",
++            world.round, g, steps, wait, static_cast<double>(trip), static_cast<double>(gems), static_cast<double>(gold),
++            static_cast<double>(fastest), static_cast<double>(alone_rounds), static_cast<double>(alone_damage),
++            static_cast<double>(kite), static_cast<double>(spare_health), static_cast<double>(unclaimed_partner_output)); });
+         if (alone_damage > spare_health && g == farm_group && memory.claim == g && !memory.crew && belief.state == CampState::alive) {
+             for (const auto& a : world.allies) {
+                 if (a.is_self || !a.alive || !a.visible || dist(here, a.pos) > params::partner_radius
+@@ -2345,8 +2408,12 @@
+         if (best >= 0 && (alone_damage <= spare_health || partner_output <= 0 || belief.state != CampState::alive)) {
+             const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
+             if (worth / (trip + quickest + capture_rounds()) <= best_value
+-                && (!banks_bag || worth / (static_cast<float>(walk) + cycle_bank + quickest + capture_rounds()) <= from_altar_value))
++                && (!banks_bag || worth / (static_cast<float>(walk) + cycle_bank + quickest + capture_rounds()) <= from_altar_value)) {
++                debug_block({ if (trace_gq && g == 4) std::printf("GQ_REJECT r%d g%d reason=quickest quickest%.4f best%d bestv%.6f worth%.4f trip%.4f banks%d\n",
++                    world.round, g, static_cast<double>(quickest), best, static_cast<double>(best_value), static_cast<double>(worth),
++                    static_cast<double>(trip), banks_bag); });
+                 continue;
++            }
+         }
+         float clear_rounds = alone_rounds, damage = alone_damage;
+         bool spell = false;
+@@ -2368,9 +2435,16 @@
+                 value = rate(world, worth * part, joint_cycle);
+             }
+         }
++        debug_block({ if (trace_gq && g == 4) std::printf("GQ_SOLO_VALUE r%d g%d partner%.4f spell%d clear%.4f damage%.4f value%.6f spare%.4f bankbag%d fromaltar%.6f\n",
++            world.round, g, static_cast<double>(partner_output), spell, static_cast<double>(clear_rounds), static_cast<double>(damage),
++            static_cast<double>(value), static_cast<double>(spare_health), banks_bag, static_cast<double>(from_altar_value)); });
+         if (damage > spare_health && !ally_engaged(world, g)) {
++            debug_block({ if (trace_gq && g == 4) std::printf("GQ_SOLO_CLASS r%d g%d class=risky damage%.4f spare%.4f value%.6f\n",
++                world.round, g, static_cast<double>(damage), static_cast<double>(spare_health), static_cast<double>(value)); });
+             if (value > risky_value) risky = g, risky_value = value, risky_steps = steps;
+         } else {
++            debug_block({ if (trace_gq && g == 4) std::printf("GQ_SOLO_CLASS r%d g%d class=affordable-or-engaged damage%.4f spare%.4f value%.6f\n",
++                world.round, g, static_cast<double>(damage), static_cast<double>(spare_health), static_cast<double>(value)); });
+             if (value > best_value) best = g, best_value = value, best_steps = steps, best_spell = spell;
+             if (banks_bag && walk != unreachable) {
+                 const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk) - bank_now) : 0.0f;
+@@ -2379,8 +2453,13 @@
+             }
+         }
+     }
++    debug_block({ if (trace_gq) std::printf("GQ_SCAN r%d actor%d first%d evaluated%d k%d farm%d claim%d crew%d best%d bestv%.6f shared%d sharedv%.6f help%d helpsteps%d risky%d riskyv%.6f bag%d banks%d\n",
++        world.round, static_cast<std::uint32_t>(world.me().handle), first, evaluated, k, memory.farm_group, memory.claim,
++        memory.crew, best, static_cast<double>(best_value), shared, static_cast<double>(shared_value), help_group, help_steps,
++        risky, static_cast<double>(risky_value), bag, banks_bag); });
+     if (k < evaluated) note_shortcut("farm-partial-evaluation");
+-    if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
++    if (banks_bag && (best < 0 || best_value <= from_altar_value)) { debug_block({ if (trace_gq) std::printf("GQ_EXIT r%d bank-instead best%d bestv%.6f fromaltar%.6f\n",
++        world.round, best, static_cast<double>(best_value), static_cast<double>(from_altar_value)); }); return false; }
+     if (banks_bag && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+     if (best < 0) best = risky, best_steps = risky_steps, best_value = risky_value;
+@@ -2391,11 +2470,15 @@
+         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false;
+     if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false;
+     if (best < 0) {
++        debug_block({ if (trace_gq) std::printf("GQ_EXIT r%d no-candidate k%d evaluated%d farm%d\n", world.round, k, evaluated, memory.farm_group); });
+         // Cut short before weighing even last turn's choice: walk on towards it.
+         if (k == 0 && memory.farm_group >= 0) memory.claim = memory.farm_group, walk_on(memory.farm_group);
+         return true;
+     }
+     memory.farm_group = best;
++    debug_block({ if (trace_gq) std::printf("GQ_FINAL r%d actor%d selected%d steps%d claim%d crew%d spell%d best%d bestv%.6f shared%d sharedv%.6f help%d risky%d\n",
++        world.round, static_cast<std::uint32_t>(world.me().handle), best, best_steps, memory.claim, memory.crew, spell, best,
++        static_cast<double>(best_value), shared, static_cast<double>(shared_value), help_group, risky); });
+     // Our fields price a dash over a hole line; live routes walk round it.
+     const bool dasher = world.me().facts().has_dash();
+     if (dasher && test(map.near_crossable, here))
+@@ -5097,13 +5180,13 @@
+     try {
+         act(world, pathing, safety, memory);
+     } catch (const std::exception& e) {
+-        std::printf("r%u act error: %s\n", cambc::round_number(), e.what());
++        std::printf("r%d act error: %s\n", cambc::round_number(), e.what());
+     }
+     // Not StaleTurn: a stale turn abandons the rest.
+     try {
+         set_turn_order(world, safety);
+     } catch (const std::exception& e) {
+-        std::printf("r%u turn order error: %s\n", cambc::round_number(), e.what());
++        std::printf("r%d turn order error: %s\n", cambc::round_number(), e.what());
+     }
+     if (!world.is_stale() && world.me().alive) {
+         bool intent = support_requested;

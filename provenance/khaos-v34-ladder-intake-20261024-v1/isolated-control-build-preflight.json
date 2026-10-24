@@ -1,0 +1,53 @@
+{
+  "schema": "isolated-control-build-preflight/v1",
+  "created_unix": 1792840117.080287,
+  "items": [
+    {
+      "label": "v47-recall-only",
+      "source_original": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v47-finishing-recall-work",
+      "source_aggregate": "64d9c8fd9d587d898139983138341b8346681fc2c32a0804c359ae25613c9cb5",
+      "workspace_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v47-recall-only-4d08241-work",
+      "workspace_source_aggregate": "64d9c8fd9d587d898139983138341b8346681fc2c32a0804c359ae25613c9cb5",
+      "source_file_count": 29,
+      "copied_only_src": true,
+      "build_status": "not_started"
+    },
+    {
+      "label": "v48-walk-altar-only",
+      "source_original": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-v48-walk-altar-control-work",
+      "source_aggregate": "c156da50c65ca11bf3da3ddec09a9cb285d02d5562dee1a72d45dfba8ab7bb4f",
+      "workspace_bot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-v48-walk-altar-control-4d08241-work",
+      "workspace_source_aggregate": "c156da50c65ca11bf3da3ddec09a9cb285d02d5562dee1a72d45dfba8ab7bb4f",
+      "source_file_count": 29,
+      "copied_only_src": true,
+      "build_status": "not_started"
+    }
+  ],
+  "runtime_workspace": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "shared_sdk_not_copied_or_refreshed": true,
+  "sdk_workspace": {
+    "sdk/cpp/cambc.h": {
+      "sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "mtime_ns": 1792774035481976768
+    },
+    "sdk/cpp/imports.h": {
+      "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "mtime_ns": 1792774035482489096
+    },
+    "cmake/CMakeLists.txt": {
+      "sha256": "a2f9978b9d948623b48ac4fca70692a604bc5cdac2c50c115558ba891a26b78c",
+      "mtime_ns": 1792774035408818847
+    },
+    "cambc.toml": {
+      "sha256": "a0e36b45e114dedb61b421a5f45d85127fe88a8474cffec6500bc9ec0b480a50",
+      "mtime_ns": 1792774035408710890
+    }
+  },
+  "build_settings": {
+    "release": true,
+    "nice": 19,
+    "CMAKE_BUILD_PARALLEL_LEVEL": 1,
+    "sequential": true
+  },
+  "no_games_authorized": true
+}

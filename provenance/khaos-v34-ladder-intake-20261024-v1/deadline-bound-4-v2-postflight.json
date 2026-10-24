@@ -1,0 +1,33 @@
+{
+  "schema": "deadline-bound-starvation-postflight/v1",
+  "run_exit_code": 0,
+  "stdout_sha256": "832f124f7a7f0fcec2554fc501530f9a972cc78a3a19c5d33a67868820d2e4ff",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "run_script_sha256": "d0e88f84d8375a37cb378b321e48927b7da2c5264cb842e3e7aae28742732cf8",
+  "corrected_manifest_sha256": "c959754ac823565f1a904686c9b057ada340652c3cc01754d88d359605eda6c4",
+  "source_aggregate_after_run": "46c5b5580f63e14d47c4cb3887ea7f626af6abed4a42eebfb0d635ec22d7703d",
+  "candidate_raw_wasm_sha256": "bb0410068590410d62d7193ac125382e09318661c33ef14f788dd5f63271e385",
+  "candidate_injected_wasm_sha256": "1342f2f098c48d5117d43e13789fc21934b0b544f1b6ba42bd1e315a84d32609",
+  "sdk_files_postrun": {
+    "sdk/cpp/cambc.h": {
+      "sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+      "mtime_ns": 1792774035481976768
+    },
+    "sdk/cpp/imports.h": {
+      "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+      "mtime_ns": 1792774035482489096
+    },
+    "cmake/CMakeLists.txt": {
+      "sha256": "a2f9978b9d948623b48ac4fca70692a604bc5cdac2c50c115558ba891a26b78c",
+      "mtime_ns": 1792774035408818847
+    },
+    "cambc.toml": {
+      "sha256": "a0e36b45e114dedb61b421a5f45d85127fe88a8474cffec6500bc9ec0b480a50",
+      "mtime_ns": 1792774035408710890
+    }
+  },
+  "sdk_bytes_and_mtimes_unchanged_from_preflight": true,
+  "runner_summary": "Finished: 4 replay bundles saved, 0 failed",
+  "stderr_empty": true,
+  "failed_attempt_reconstruction": "logs-deadline-bound-4-attempt1.json"
+}

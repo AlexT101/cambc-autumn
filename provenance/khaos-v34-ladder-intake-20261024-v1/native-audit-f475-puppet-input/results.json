@@ -1,0 +1,21 @@
+{
+  "release": true,
+  "scheduled": 1,
+  "completed": 1,
+  "errors": 0,
+  "bots": [
+    "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/service-base-f7",
+    "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/gem-fields-puppet-8cb125e6"
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/f475-A-puppet-B-output/f475-A__recorded-B-puppet.repl26a",
+      "map": "maps/00gem-fields.map26a"
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "schema": "fixed-role-screen-result/v1",
+  "variant": "vendetta",
+  "candidate_source": "willow-v47-vendetta-five-work",
+  "candidate_source_aggregate": "897529e6d30f8fca6cb3f3c732d3a90954c675c1e1e5259457f2309da0267871",
+  "games": 6,
+  "candidate_wins": 2,
+  "candidate_games": 6,
+  "candidate_wins_by_candidate_side": {
+    "A": 1,
+    "B": 1
+  },
+  "candidate_score_sum": 4535,
+  "opponent_score_sum": 6004,
+  "physical_score_sums": {
+    "A": 4873,
+    "B": 5666
+  },
+  "actor_count_distribution": {
+    "5": 6
+  },
+  "draft_selection_frequency": {
+    "Prism; Vendetta; Marcella; Willow; Heart of Ruin": 6
+  },
+  "per_map": {
+    "00gem-fields": [
+      {
+        "candidate_side": "A",
+        "winner_side": "B",
+        "candidate_win": false,
+        "scoreA": 658,
+        "scoreB": 1211,
+        "rounds": 574,
+        "candidate_actor_count": 5
+      },
+      {
+        "candidate_side": "B",
+        "winner_side": "B",
+        "candidate_win": true,
+        "scoreA": 701,
+        "scoreB": 1023,
+        "rounds": 553,
+        "candidate_actor_count": 5
+      }
+    ],
+    "01fracture": [
+      {
+        "candidate_side": "A",
+        "winner_side": "B",
+        "candidate_win": false,
+        "scoreA": 432,
+        "scoreB": 1032,
+        "rounds": 1232,
+        "candidate_actor_count": 5
+      },
+      {
+        "candidate_side": "B",
+        "winner_side": "A",
+        "candidate_win": false,
+        "scoreA": 1059,
+        "scoreB": 487,
+        "rounds": 1099,
+        "candidate_actor_count": 5
+      }
+    ],
+    "01big-world": [
+      {
+        "candidate_side": "A",
+        "winner_side": "A",
+        "candidate_win": true,
+        "scoreA": 1004,
+        "scoreB": 982,
+        "rounds": 973,
+        "candidate_actor_count": 5
+      },
+      {
+        "candidate_side": "B",
+        "winner_side": "A",
+        "candidate_win": false,
+        "scoreA": 1019,
+        "scoreB": 931,
+        "rounds": 965,
+        "candidate_actor_count": 5
+      }
+    ]
+  },
+  "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/native-audit/vendetta-vs-v33/status.json",
+  "native_status_by_bot": {
+    "willow-v47-vendetta-five": {
+      "games": 6,
+      "play": {
+        "rollover": 9,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    },
+    "v33": {
+      "games": 6,
+      "play": {
+        "rollover": 29,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    }
+  },
+  "execution": {
+    "release": true,
+    "fuel_quantum": 100000,
+    "native_draft": true,
+    "games": 6,
+    "build_pins": {
+      "source_aggregate": "897529e6d30f8fca6cb3f3c732d3a90954c675c1e1e5259457f2309da0267871"
+    }
+  }
+}

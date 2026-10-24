@@ -1,0 +1,32 @@
+{
+  "schema": "native-prefix-status-from-decoded-inputs/v1",
+  "note": "The full native auditor rejects timeline-truncated bundles with EngineError18. Statuses below are counted from decoder-recorded engine step headers through this intentionally capped prefix.",
+  "replay": "provenance/khaos-v34-ladder-intake-20261024-v1/gem-fields-prism-quote-trace-prep/trace-prefix.repl26a",
+  "source_aggregate_not_applicable": "native input events only",
+  "truncated": true,
+  "termination": {
+    "code": 18,
+    "message": "engine error 18: replay next: End of timeline."
+  },
+  "last_completed_round": 9,
+  "inputs": 257,
+  "round_hashes": 10,
+  "by_side": [
+    {
+      "physical_side": "A",
+      "play": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "by_actor": {}
+    },
+    {
+      "physical_side": "B",
+      "play": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "by_actor": {}
+    }
+  ]
+}

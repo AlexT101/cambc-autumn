@@ -1,0 +1,99 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T10:50:38.909212+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "nice",
+    "-n",
+    "19",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "matches",
+    "download",
+    "8cb125e6-d24b-4db2-be97-52211ba30f6a",
+    "--output",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/raw/8cb125e6-d24b-4db2-be97-52211ba30f6a.zip"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/logs/download-8cb125e6-attempt1.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/logs/download-8cb125e6-attempt1.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.041399375,
+      "run_end_monotonic": 0.145966791
+    },
+    {
+      "run_start_monotonic": 1.051187958,
+      "run_end_monotonic": 1.155624791
+    },
+    {
+      "run_start_monotonic": 2.058695291,
+      "run_end_monotonic": 2.162596375
+    },
+    {
+      "run_start_monotonic": 3.063156,
+      "run_end_monotonic": 3.167462208
+    },
+    {
+      "run_start_monotonic": 4.069139583,
+      "run_end_monotonic": 4.173805
+    },
+    {
+      "run_start_monotonic": 5.078941125,
+      "run_end_monotonic": 5.183719541
+    },
+    {
+      "run_start_monotonic": 6.085997583,
+      "run_end_monotonic": 6.190502125
+    },
+    {
+      "run_start_monotonic": 7.093209333,
+      "run_end_monotonic": 7.195981125
+    },
+    {
+      "run_start_monotonic": 8.09758325,
+      "run_end_monotonic": 8.200357833
+    },
+    {
+      "run_start_monotonic": 9.102119166,
+      "run_end_monotonic": 9.204528333
+    },
+    {
+      "run_start_monotonic": 10.109680541,
+      "run_end_monotonic": 10.21470975
+    },
+    {
+      "run_start_monotonic": 11.116113166,
+      "run_end_monotonic": 11.221159875
+    },
+    {
+      "run_start_monotonic": 12.123994416,
+      "run_end_monotonic": 12.229026458
+    },
+    {
+      "run_start_monotonic": 13.130673458,
+      "run_end_monotonic": 13.235694416
+    },
+    {
+      "run_start_monotonic": 14.140831458,
+      "run_end_monotonic": 14.242439625
+    },
+    {
+      "run_start_monotonic": 15.146466541,
+      "run_end_monotonic": 15.25149425
+    },
+    {
+      "run_start_monotonic": 16.155981708,
+      "run_end_monotonic": 16.257050333
+    }
+  ],
+  "pid": 43568,
+  "process_group_id": 43568,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T10:50:55.127031+00:00"
+}

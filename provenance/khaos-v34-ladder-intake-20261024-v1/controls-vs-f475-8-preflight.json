@@ -1,0 +1,27 @@
+{
+  "schema": "single-change-control-run-preflight/v1",
+  "time_unix": 1792840304.900828,
+  "plan_sha256": "422a95b9b32582059ec617ae381125fd57dd20c34feea119d60098c3cfd866a9",
+  "manifest_sha256": "2b75cfc7b71c2b9d9bbde584a34227f4b7c9aaa964e27ce8b20d44638dd068fb",
+  "source_aggregates": {
+    "v47_recall": "64d9c8fd9d587d898139983138341b8346681fc2c32a0804c359ae25613c9cb5",
+    "v48_walk_altar": "c156da50c65ca11bf3da3ddec09a9cb285d02d5562dee1a72d45dfba8ab7bb4f",
+    "f475": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824"
+  },
+  "raw_injected_hashes": {
+    "v47_recall": {
+      "raw": "8f633b0448aa5a8c83a9fee04000abd3bf86b05b922ae9076a3253c610fe79ab",
+      "injected": "3f12047d61c432c878d0625e7a187c9ca3ea143128fb898df7d5bd8ab2265aa8"
+    },
+    "v48_walk_altar": {
+      "raw": "2b8850d88448673f272effd26144f913e7056ccde93e19b8b913bf379f0da563",
+      "injected": "f5935677bfacf3cf059359907dd1e52e34c56d342121bb1b322ca17e5763dd0d"
+    },
+    "f475": {
+      "raw": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+      "injected": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+    }
+  },
+  "root_approved": true,
+  "outputs_absent": true
+}

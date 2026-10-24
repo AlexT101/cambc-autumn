@@ -1,0 +1,26 @@
+{
+  "schema": "live-ur-native-audit-input/v1",
+  "release": false,
+  "note": "public source is unverified; the replay metadata does not identify a submission/version ID, so exact source attribution is unavailable",
+  "cli": "cambc 3.0.5",
+  "bots": [
+    "ranked-ladder-side-A",
+    "opponent-side-B"
+  ],
+  "scheduled": 1,
+  "completed": 1,
+  "matches": [
+    {
+      "index": 0,
+      "label": "gem-fields-v48-provisional",
+      "match_id": "8cb125e6-d24b-4db2-be97-52211ba30f6a",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/raw/8cb125e6-d24b-4db2-be97-52211ba30f6a.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/extracted/maps/d22495f1f242da29.json",
+      "order": [
+        0,
+        1
+      ],
+      "our_physical_side": "A"
+    }
+  ]
+}

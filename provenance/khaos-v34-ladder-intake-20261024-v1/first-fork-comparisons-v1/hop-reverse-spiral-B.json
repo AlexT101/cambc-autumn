@@ -1,0 +1,129 @@
+{
+ "inputs": [
+  30343,
+  38350
+ ],
+ "firstInputDiff": {
+  "index": 113,
+  "round": 4,
+  "step": 532,
+  "actor": 7,
+  "kind": "Set priority",
+  "rerunKind": "End turn",
+  "original": "s532 r4 Set priority@10 actor1:7 (0,0)->(0,0) slot-1 pr14 x0,0",
+  "rerun": "s532 r4 End turn@10 actor1:7 (18,16)->(18,16) slot-1 pr0 x0,0",
+  "originalRec": [
+   532,
+   4,
+   113,
+   9,
+   10,
+   1,
+   7,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   -1,
+   14,
+   0,
+   0
+  ],
+  "rerunRec": [
+   532,
+   4,
+   113,
+   8,
+   10,
+   1,
+   7,
+   18,
+   16,
+   18,
+   16,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ },
+ "roundsMatched": 5,
+ "rounds": [
+  1112,
+  1403
+ ],
+ "firstRoundDiff": {
+  "round": 5,
+  "step": 552,
+  "rerunStep": 551
+ },
+ "result": [
+  {
+   "outcome": 1,
+   "round": 1111,
+   "gems": [
+    1000,
+    123
+   ]
+  },
+  {
+   "outcome": 2,
+   "round": 1402,
+   "gems": [
+    739,
+    1003
+   ]
+  }
+ ],
+ "resultMatch": false,
+ "exact": false,
+ "exactIgnoringRollovers": false,
+ "firstInputDiffIgnoringRollovers": {
+  "index": 113,
+  "round": 4,
+  "step": 532,
+  "actor": 7,
+  "kind": "Set priority",
+  "rerunKind": "End turn",
+  "original": "s532 r4 Set priority@10 actor1:7 (0,0)->(0,0) slot-1 pr14 x0,0",
+  "rerun": "s532 r4 End turn@10 actor1:7 (18,16)->(18,16) slot-1 pr0 x0,0",
+  "originalRec": [
+   532,
+   4,
+   113,
+   9,
+   10,
+   1,
+   7,
+   0,
+   0,
+   0,
+   0,
+   -1,
+   -1,
+   14,
+   0,
+   0
+  ],
+  "rerunRec": [
+   532,
+   4,
+   113,
+   8,
+   10,
+   1,
+   7,
+   18,
+   16,
+   18,
+   16,
+   -1,
+   -1,
+   0,
+   0,
+   0
+  ]
+ }
+}

@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import { decodeInputs } from '../starvation-r1-trace-prep/inputs-prefix.mjs';
+import { compareInputs } from '../../willow-pilgrimage-fuel-harness-v1/checkout-repo/tools/replay/harness/compare.mjs';
+const [recordedPath, tracedPath, outPath] = process.argv.slice(2);
+if (!recordedPath || !tracedPath || !outPath) throw new Error('usage: compare-two-prefixes.mjs REC TRACE OUTPUT.json');
+const a = await decodeInputs(fs.readFileSync(recordedPath)), b = await decodeInputs(fs.readFileSync(tracedPath));
+const inputRound=7,boundary=8;
+const ci=x=>({...x,inputs:x.inputs.filter(r=>r[1]<=inputRound),roundHashes:[],result:{outcome:0,round:0,gems:0},finalHash:'prefix-only'});
+const cr=x=>({...x,inputs:[],roundHashes:x.roundHashes.filter(r=>r[0]<=boundary),result:{outcome:0,round:0,gems:0},finalHash:'prefix-only'});
+const ic=compareInputs(ci(a),ci(b)), rc=compareInputs(cr(a),cr(b));
+const exact=a.timelineEnded&&b.timelineEnded&&a.termination?.code===18&&b.termination?.code===18&&!ic.firstInputDiff&&!rc.firstRoundDiff&&ci(a).inputs.length===ci(b).inputs.length&&rc.roundsMatched===boundary+1;
+const out={schema:'gem-fields-recorder-trace-prefix/v1',input_through_round:inputRound,round_hash_boundary:boundary,recorded_inputs:ci(a).inputs.length,traced_inputs:ci(b).inputs.length,first_input_diff:ic.firstInputDiff,first_round_diff:rc.firstRoundDiff,matched_round_hash_count:rc.roundsMatched,recorded_round_hashes:cr(a).roundHashes,traced_round_hashes:cr(b).roundHashes,recorded_timeline_ended:a.timelineEnded,traced_timeline_ended:b.timelineEnded,recorded_last_round:a.lastCompletedRound,traced_last_round:b.lastCompletedRound,exact_through_requested_boundary:exact};
+fs.writeFileSync(outPath,JSON.stringify(out,null,2)+'\n');console.log(JSON.stringify(out,null,2));

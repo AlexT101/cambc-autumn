@@ -1,0 +1,1559 @@
+{
+  "schema": "connected-escape-native-panel-result/v1",
+  "candidate_source": "willow-v47-connected-escape",
+  "candidate_aggregate": "4b5a71e6535bb7b0ccfec3ad26fa6a1c5cef066807576792384e9966efdc0343",
+  "panels": {
+    "escape-vs-f475": {
+      "opponent": "service-base-f7",
+      "games": 80,
+      "candidate_wins": 36,
+      "candidate_games": 80,
+      "candidate_wins_by_candidate_side": {
+        "A": 22,
+        "B": 14
+      },
+      "candidate_score_sum": 55844,
+      "opponent_score_sum": 60992,
+      "physical_score_sums": {
+        "A": 63443,
+        "B": 53393
+      },
+      "rounds_completed_sum": 88663,
+      "native_status": {
+        "willow-v47-connected-escape": {
+          "bot": "willow-v47-connected-escape",
+          "bot_index": 0,
+          "games": 80,
+          "play": {
+            "rollover": 220,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "service-base-f7": {
+          "bot": "service-base-f7",
+          "bot_index": 1,
+          "games": 80,
+          "play": {
+            "rollover": 253,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    },
+    "escape-vs-v33": {
+      "opponent": "v33",
+      "games": 80,
+      "candidate_wins": 37,
+      "candidate_games": 80,
+      "candidate_wins_by_candidate_side": {
+        "A": 16,
+        "B": 21
+      },
+      "candidate_score_sum": 57627,
+      "opponent_score_sum": 60908,
+      "physical_score_sums": {
+        "A": 55448,
+        "B": 63087
+      },
+      "rounds_completed_sum": 90377,
+      "native_status": {
+        "willow-v47-connected-escape": {
+          "bot": "willow-v47-connected-escape",
+          "bot_index": 0,
+          "games": 80,
+          "play": {
+            "rollover": 289,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "v33": {
+          "bot": "v33",
+          "bot_index": 1,
+          "games": 80,
+          "play": {
+            "rollover": 610,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      }
+    }
+  },
+  "per_map": {
+    "escape-vs-f475": {
+      "00ambush": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 990,
+          "scoreB": 1018,
+          "rounds": 1171
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 840,
+          "scoreB": 1013,
+          "rounds": 1263
+        }
+      ],
+      "00collision": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1003,
+          "scoreB": 263,
+          "rounds": 1091
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1007,
+          "scoreB": 99,
+          "rounds": 887
+        }
+      ],
+      "00contest": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 0,
+          "scoreB": 1000,
+          "rounds": 1477
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1000,
+          "scoreB": 0,
+          "rounds": 1560
+        }
+      ],
+      "00corners": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1003,
+          "scoreB": 981,
+          "rounds": 1126
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1001,
+          "scoreB": 201,
+          "rounds": 900
+        }
+      ],
+      "00eight": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1043,
+          "scoreB": 197,
+          "rounds": 958
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 471,
+          "scoreB": 1045,
+          "rounds": 1051
+        }
+      ],
+      "00elkring": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 286,
+          "scoreB": 1012,
+          "rounds": 811
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 968,
+          "scoreB": 1001,
+          "rounds": 853
+        }
+      ],
+      "00expanse": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 974,
+          "scoreB": 1041,
+          "rounds": 1125
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 783,
+          "scoreB": 1085,
+          "rounds": 1082
+        }
+      ],
+      "00fragment": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1002,
+          "scoreB": 62,
+          "rounds": 1487
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 40,
+          "scoreB": 1002,
+          "rounds": 1291
+        }
+      ],
+      "00gem-fields": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 498,
+          "scoreB": 1005,
+          "rounds": 535
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1092,
+          "scoreB": 990,
+          "rounds": 683
+        }
+      ],
+      "00gemfight": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 245,
+          "scoreB": 1002,
+          "rounds": 1011
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1153,
+          "scoreB": 18,
+          "rounds": 772
+        }
+      ],
+      "00great-wall": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1001,
+          "scoreB": 525,
+          "rounds": 1122
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1008,
+          "scoreB": 425,
+          "rounds": 1071
+        }
+      ],
+      "00interlock": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1026,
+          "scoreB": 460,
+          "rounds": 987
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1005,
+          "scoreB": 619,
+          "rounds": 1294
+        }
+      ],
+      "00lanes": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1004,
+          "scoreB": 591,
+          "rounds": 849
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1006,
+          "scoreB": 653,
+          "rounds": 860
+        }
+      ],
+      "00lost-world": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1001,
+          "scoreB": 724,
+          "rounds": 964
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 49,
+          "scoreB": 1008,
+          "rounds": 460
+        }
+      ],
+      "00monolith": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1275,
+          "scoreB": 635,
+          "rounds": 1092
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1275,
+          "scoreB": 635,
+          "rounds": 1092
+        }
+      ],
+      "00packs": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 204,
+          "scoreB": 1006,
+          "rounds": 817
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 204,
+          "scoreB": 1006,
+          "rounds": 817
+        }
+      ],
+      "00pilgrimage": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1012,
+          "scoreB": 198,
+          "rounds": 1349
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 228,
+          "scoreB": 1070,
+          "rounds": 1415
+        }
+      ],
+      "00quadrants": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 764,
+          "scoreB": 1012,
+          "rounds": 492
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 629,
+          "scoreB": 1001,
+          "rounds": 492
+        }
+      ],
+      "00reverse-spiral": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 208,
+          "scoreB": 1027,
+          "rounds": 1106
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1012,
+          "scoreB": 466,
+          "rounds": 1283
+        }
+      ],
+      "00road-of-riches": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1084,
+          "scoreB": 404,
+          "rounds": 871
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 835,
+          "scoreB": 421,
+          "rounds": 2000
+        }
+      ],
+      "00rows": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 365,
+          "scoreB": 1000,
+          "rounds": 1230
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 382,
+          "scoreB": 1000,
+          "rounds": 1230
+        }
+      ],
+      "00rushbait-v2": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1000,
+          "scoreB": 400,
+          "rounds": 1207
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1017,
+          "scoreB": 350,
+          "rounds": 1293
+        }
+      ],
+      "00split": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 784,
+          "scoreB": 1004,
+          "rounds": 753
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1024,
+          "scoreB": 812,
+          "rounds": 737
+        }
+      ],
+      "00stampede": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 0,
+          "scoreB": 1120,
+          "rounds": 1538
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 80,
+          "scoreB": 1040,
+          "rounds": 1454
+        }
+      ],
+      "00swirl": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 106,
+          "scoreB": 1000,
+          "rounds": 706
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1011,
+          "scoreB": 67,
+          "rounds": 811
+        }
+      ],
+      "01big-world": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 608,
+          "scoreB": 1002,
+          "rounds": 897
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 554,
+          "scoreB": 1008,
+          "rounds": 892
+        }
+      ],
+      "01boss-battle": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 688,
+          "scoreB": 658,
+          "rounds": 2000
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 934,
+          "scoreB": 332,
+          "rounds": 2000
+        }
+      ],
+      "01broken-curve": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1015,
+          "scoreB": 548,
+          "rounds": 828
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1260,
+          "scoreB": 638,
+          "rounds": 866
+        }
+      ],
+      "01concentrated-wealth": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 76,
+          "scoreB": 1004,
+          "rounds": 1008
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1394,
+          "scoreB": 167,
+          "rounds": 1356
+        }
+      ],
+      "01corridors": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1048,
+          "scoreB": 358,
+          "rounds": 1109
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1038,
+          "scoreB": 588,
+          "rounds": 1265
+        }
+      ],
+      "01elk-arena": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1020,
+          "scoreB": 96,
+          "rounds": 1328
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1026,
+          "scoreB": 54,
+          "rounds": 1236
+        }
+      ],
+      "01fracture": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1018,
+          "scoreB": 357,
+          "rounds": 1169
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1047,
+          "scoreB": 657,
+          "rounds": 1189
+        }
+      ],
+      "01gold-rush": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 946,
+          "scoreB": 616,
+          "rounds": 2000
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 803,
+          "scoreB": 770,
+          "rounds": 2000
+        }
+      ],
+      "01hooks": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 66,
+          "scoreB": 1012,
+          "rounds": 994
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1012,
+          "scoreB": 110,
+          "rounds": 1197
+        }
+      ],
+      "01islands": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1002,
+          "scoreB": 635,
+          "rounds": 739
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1000,
+          "scoreB": 214,
+          "rounds": 662
+        }
+      ],
+      "01shortcut": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1772,
+          "scoreB": 481,
+          "rounds": 1585
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1093,
+          "scoreB": 946,
+          "rounds": 1360
+        }
+      ],
+      "01starfish": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1020,
+          "scoreB": 32,
+          "rounds": 859
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1013,
+          "scoreB": 44,
+          "rounds": 1005
+        }
+      ],
+      "01starvation": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 152,
+          "scoreB": 1008,
+          "rounds": 1767
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 450,
+          "scoreB": 1014,
+          "rounds": 1711
+        }
+      ],
+      "01the-farm": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1005,
+          "scoreB": 167,
+          "rounds": 755
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 520,
+          "scoreB": 1107,
+          "rounds": 858
+        }
+      ],
+      "01yellow-brick-road": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 862,
+          "scoreB": 1064,
+          "rounds": 723
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1003,
+          "scoreB": 992,
+          "rounds": 779
+        }
+      ]
+    },
+    "escape-vs-v33": {
+      "00ambush": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 786,
+          "scoreB": 1033,
+          "rounds": 1113
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 460,
+          "scoreB": 1004,
+          "rounds": 1095
+        }
+      ],
+      "00collision": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1112,
+          "scoreB": 307,
+          "rounds": 1032
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1117,
+          "scoreB": 107,
+          "rounds": 900
+        }
+      ],
+      "00contest": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1000,
+          "scoreB": 600,
+          "rounds": 1807
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 800,
+          "scoreB": 600,
+          "rounds": 2000
+        }
+      ],
+      "00corners": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1175,
+          "scoreB": 564,
+          "rounds": 1137
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1034,
+          "scoreB": 630,
+          "rounds": 1060
+        }
+      ],
+      "00eight": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1020,
+          "scoreB": 211,
+          "rounds": 993
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1418,
+          "scoreB": 388,
+          "rounds": 1307
+        }
+      ],
+      "00elkring": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1001,
+          "scoreB": 429,
+          "rounds": 625
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1298,
+          "scoreB": 594,
+          "rounds": 885
+        }
+      ],
+      "00expanse": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 666,
+          "scoreB": 1044,
+          "rounds": 950
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 783,
+          "scoreB": 1085,
+          "rounds": 1082
+        }
+      ],
+      "00fragment": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 92,
+          "scoreB": 1004,
+          "rounds": 1642
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 96,
+          "scoreB": 1012,
+          "rounds": 1417
+        }
+      ],
+      "00gem-fields": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1046,
+          "scoreB": 745,
+          "rounds": 570
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 998,
+          "scoreB": 1026,
+          "rounds": 589
+        }
+      ],
+      "00gemfight": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 492,
+          "scoreB": 1005,
+          "rounds": 1331
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1046,
+          "scoreB": 128,
+          "rounds": 802
+        }
+      ],
+      "00great-wall": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1008,
+          "scoreB": 587,
+          "rounds": 1015
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1028,
+          "scoreB": 593,
+          "rounds": 1058
+        }
+      ],
+      "00interlock": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1015,
+          "scoreB": 214,
+          "rounds": 853
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1034,
+          "scoreB": 551,
+          "rounds": 1289
+        }
+      ],
+      "00lanes": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 782,
+          "scoreB": 1006,
+          "rounds": 907
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1004,
+          "scoreB": 646,
+          "rounds": 870
+        }
+      ],
+      "00lost-world": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 574,
+          "scoreB": 1015,
+          "rounds": 728
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 84,
+          "scoreB": 1001,
+          "rounds": 507
+        }
+      ],
+      "00monolith": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 519,
+          "scoreB": 1006,
+          "rounds": 930
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1011,
+          "scoreB": 543,
+          "rounds": 1081
+        }
+      ],
+      "00packs": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 204,
+          "scoreB": 1006,
+          "rounds": 818
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 208,
+          "scoreB": 1016,
+          "rounds": 860
+        }
+      ],
+      "00pilgrimage": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 361,
+          "scoreB": 1000,
+          "rounds": 1579
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 384,
+          "scoreB": 1044,
+          "rounds": 1661
+        }
+      ],
+      "00quadrants": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 613,
+          "scoreB": 1026,
+          "rounds": 522
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1071,
+          "scoreB": 973,
+          "rounds": 492
+        }
+      ],
+      "00reverse-spiral": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 195,
+          "scoreB": 1154,
+          "rounds": 1231
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1223,
+          "scoreB": 375,
+          "rounds": 1827
+        }
+      ],
+      "00road-of-riches": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 390,
+          "scoreB": 1007,
+          "rounds": 1066
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 636,
+          "scoreB": 795,
+          "rounds": 2000
+        }
+      ],
+      "00rows": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 365,
+          "scoreB": 1000,
+          "rounds": 1230
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 382,
+          "scoreB": 1000,
+          "rounds": 1230
+        }
+      ],
+      "00rushbait-v2": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 243,
+          "scoreB": 1013,
+          "rounds": 1154
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 470,
+          "scoreB": 1023,
+          "rounds": 1149
+        }
+      ],
+      "00split": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1032,
+          "scoreB": 658,
+          "rounds": 707
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 384,
+          "scoreB": 1039,
+          "rounds": 700
+        }
+      ],
+      "00stampede": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1120,
+          "scoreB": 160,
+          "rounds": 1588
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1040,
+          "scoreB": 0,
+          "rounds": 1256
+        }
+      ],
+      "00swirl": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 69,
+          "scoreB": 1018,
+          "rounds": 775
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 90,
+          "scoreB": 1055,
+          "rounds": 831
+        }
+      ],
+      "01big-world": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 693,
+          "scoreB": 1045,
+          "rounds": 1048
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1036,
+          "scoreB": 982,
+          "rounds": 925
+        }
+      ],
+      "01boss-battle": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 683,
+          "scoreB": 1337,
+          "rounds": 1666
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 23,
+          "scoreB": 1313,
+          "rounds": 1081
+        }
+      ],
+      "01broken-curve": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1015,
+          "scoreB": 548,
+          "rounds": 828
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1028,
+          "scoreB": 457,
+          "rounds": 699
+        }
+      ],
+      "01concentrated-wealth": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 270,
+          "scoreB": 1029,
+          "rounds": 1146
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 604,
+          "scoreB": 1165,
+          "rounds": 1602
+        }
+      ],
+      "01corridors": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 610,
+          "scoreB": 604,
+          "rounds": 2000
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1104,
+          "scoreB": 664,
+          "rounds": 1225
+        }
+      ],
+      "01elk-arena": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 144,
+          "scoreB": 1008,
+          "rounds": 1322
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 120,
+          "scoreB": 1032,
+          "rounds": 1429
+        }
+      ],
+      "01fracture": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1021,
+          "scoreB": 500,
+          "rounds": 1151
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1044,
+          "scoreB": 213,
+          "rounds": 1018
+        }
+      ],
+      "01gold-rush": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 385,
+          "scoreB": 1001,
+          "rounds": 1780
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 280,
+          "scoreB": 1007,
+          "rounds": 1706
+        }
+      ],
+      "01hooks": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1012,
+          "scoreB": 88,
+          "rounds": 1134
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 22,
+          "scoreB": 1012,
+          "rounds": 1066
+        }
+      ],
+      "01islands": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1019,
+          "scoreB": 680,
+          "rounds": 738
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 838,
+          "scoreB": 1038,
+          "rounds": 820
+        }
+      ],
+      "01shortcut": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 442,
+          "scoreB": 1034,
+          "rounds": 1110
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 441,
+          "scoreB": 1015,
+          "rounds": 1322
+        }
+      ],
+      "01starfish": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 455,
+          "scoreB": 1001,
+          "rounds": 1577
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1087,
+          "scoreB": 95,
+          "rounds": 942
+        }
+      ],
+      "01starvation": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 568,
+          "scoreB": 616,
+          "rounds": 2000
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 240,
+          "scoreB": 1016,
+          "rounds": 1568
+        }
+      ],
+      "01the-farm": [
+        {
+          "candidate_side": "A",
+          "winner_side": "B",
+          "candidate_win": false,
+          "scoreA": 343,
+          "scoreB": 1057,
+          "rounds": 828
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "B",
+          "candidate_win": true,
+          "scoreA": 919,
+          "scoreB": 1328,
+          "rounds": 1030
+        }
+      ],
+      "01yellow-brick-road": [
+        {
+          "candidate_side": "A",
+          "winner_side": "A",
+          "candidate_win": true,
+          "scoreA": 1019,
+          "scoreB": 659,
+          "rounds": 688
+        },
+        {
+          "candidate_side": "B",
+          "winner_side": "A",
+          "candidate_win": false,
+          "scoreA": 1004,
+          "scoreB": 503,
+          "rounds": 677
+        }
+      ]
+    }
+  }
+}

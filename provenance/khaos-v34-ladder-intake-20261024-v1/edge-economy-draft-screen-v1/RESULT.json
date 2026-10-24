@@ -1,0 +1,3017 @@
+{
+  "schema": "edge-economy-draft-screen-result/v1",
+  "plan_sha256": "7dff256b2ed188a0c8d53895f941dc7c62d63a0620d1a3101e950da7d4fb2cbb",
+  "rows_sha256": "b1783efca9e4bfd54c169608e0f7a950153da4620cf64b3cd5a6a664b302637d",
+  "pin_manifest_sha256": "42cafcfc443ef8eb886244e6edb397b144ccb9b04273db3958e7292b2d7cf7f3",
+  "run_manifest_sha256": "3c132a8257e4170624dde072e2479a0ff9086184daf4032235ac3b0d5792bc6f",
+  "run_plan_sha256": "9429b0fded7b2bb18028b87bab1bb2c1b7bf41f6cc9cd45ea967b4819858d776",
+  "execution": {
+    "release": true,
+    "fuel_quantum": 100000,
+    "native_draft": true,
+    "jobs": 8,
+    "new_games_saved": 14,
+    "new_games_failed": 0,
+    "reused_cells": 6
+  },
+  "native_audits": {
+    "support-p": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-p/native-status.json",
+      "sha256": "3d391a02a0e4565437c538c81f027958f123b995dce9f801e5af572cae6577c7",
+      "games": 4,
+      "native_error_events": 0
+    },
+    "support-s": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-s/native-status.json",
+      "sha256": "fa07761124f86c60cfdf2ab187a6e8980d2eeafef146919fd19fa345f5b22668",
+      "games": 4,
+      "native_error_events": 0
+    },
+    "support-c": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-c/native-status.json",
+      "sha256": "fef355f9dc5ceeaaa37f339b0c6f4c3bdbb90720bfab4bc117e57fc5c7889ab7",
+      "games": 4,
+      "native_error_events": 0
+    },
+    "Prism-Vendetta": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/Prism-Vendetta/native-status.json",
+      "sha256": "00cb25719a9873697326dca20cd7e980c0698ba09e5cc9fccf6072c3d4ca0297",
+      "games": 2,
+      "native_error_events": 0
+    }
+  },
+  "rows": [
+    {
+      "order": 1,
+      "block": "support-alternatives",
+      "arm": "support-p",
+      "map": "00contest",
+      "candidate_side": "A",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-p__00contest__support-p-A.repl26a",
+      "replay_sha256": "8f982c267594ed11b27d6f4e4addc88aabcde086d60324dff9028a8ab550b746",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-p__00contest__support-p-A.statistics.json",
+      "statistics_sha256": "c624c0b6baae9eeab40c3b34a01dc87d722c21325b1146796def4b34bc228c99",
+      "candidate_source": "willow-v47-generalist-support-work",
+      "candidate_score": 0,
+      "opponent_score": 1000,
+      "winner_side": "B",
+      "candidate_won": false,
+      "rounds_completed": 1553,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 8,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 14,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "8f982c267594ed11b27d6f4e4addc88aabcde086d60324dff9028a8ab550b746",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00contest__f475-A.statistics.json",
+        "stats_sha256": "c624c0b6baae9eeab40c3b34a01dc87d722c21325b1146796def4b34bc228c99",
+        "scoreA": 0,
+        "scoreB": 1000,
+        "winner_side": "B",
+        "candidate_side": "A",
+        "candidate_score": 0,
+        "opponent_score": 1000,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-p/native-status.json",
+      "native_status_audit_sha256": "3d391a02a0e4565437c538c81f027958f123b995dce9f801e5af572cae6577c7",
+      "native_status_match_sha256": "8f982c267594ed11b27d6f4e4addc88aabcde086d60324dff9028a8ab550b746",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 8,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 2,
+      "block": "support-alternatives",
+      "arm": "support-p",
+      "map": "00contest",
+      "candidate_side": "B",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-p__00contest__support-p-B.repl26a",
+      "replay_sha256": "9df1186e8d7eb4ff8eb6f7ef1094a6bfa5efde4ebe839acf7892c2336cdd12c8",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-p__00contest__support-p-B.statistics.json",
+      "statistics_sha256": "81cc86357c1fc5c48da54ae69277233ad4aeef5f9c716d6142714dab0968e952",
+      "candidate_source": "willow-v47-generalist-support-work",
+      "candidate_score": 1000,
+      "opponent_score": 0,
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1435,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 5,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 11,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "9df1186e8d7eb4ff8eb6f7ef1094a6bfa5efde4ebe839acf7892c2336cdd12c8",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00contest__f475-B.statistics.json",
+        "stats_sha256": "a2ecd43b07b8c34cac0fcbb788ae17809cadd5b7ba0577c9c552fbabd5d1b771",
+        "scoreA": 200,
+        "scoreB": 1000,
+        "winner_side": "B",
+        "candidate_side": "B",
+        "candidate_score": 1000,
+        "opponent_score": 200,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-p/native-status.json",
+      "native_status_audit_sha256": "3d391a02a0e4565437c538c81f027958f123b995dce9f801e5af572cae6577c7",
+      "native_status_match_sha256": "9df1186e8d7eb4ff8eb6f7ef1094a6bfa5efde4ebe839acf7892c2336cdd12c8",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 11,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 3,
+      "block": "support-alternatives",
+      "arm": "support-s",
+      "map": "00contest",
+      "candidate_side": "A",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-s__00contest__support-s-A.repl26a",
+      "replay_sha256": "7c417ade19af62b6835feb2c3185a6e78c04e9c9f9ef725006a4d50f66ac64cf",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-s__00contest__support-s-A.statistics.json",
+      "statistics_sha256": "d1c6c1b843d6da0be66622b694d97b745b0a7e1eccd3b71e579c66f4f645a2c5",
+      "candidate_source": "willow-v47-stellar-five-support-work",
+      "candidate_score": 400,
+      "opponent_score": 600,
+      "winner_side": "B",
+      "candidate_won": false,
+      "rounds_completed": 2000,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Stellar",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Stellar",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 13,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 21,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "7c417ade19af62b6835feb2c3185a6e78c04e9c9f9ef725006a4d50f66ac64cf",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00contest__f475-A.statistics.json",
+        "stats_sha256": "c624c0b6baae9eeab40c3b34a01dc87d722c21325b1146796def4b34bc228c99",
+        "scoreA": 0,
+        "scoreB": 1000,
+        "winner_side": "B",
+        "candidate_side": "A",
+        "candidate_score": 0,
+        "opponent_score": 1000,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-s/native-status.json",
+      "native_status_audit_sha256": "fa07761124f86c60cfdf2ab187a6e8980d2eeafef146919fd19fa345f5b22668",
+      "native_status_match_sha256": "7c417ade19af62b6835feb2c3185a6e78c04e9c9f9ef725006a4d50f66ac64cf",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 13,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 4,
+      "block": "support-alternatives",
+      "arm": "support-s",
+      "map": "00contest",
+      "candidate_side": "B",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-s__00contest__support-s-B.repl26a",
+      "replay_sha256": "a8bf1dda1fc4d4979a73de67363a25891bfb74c4398dc48b03f6c9f93f79f0d5",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-s__00contest__support-s-B.statistics.json",
+      "statistics_sha256": "7582a43c5dc063eb825994d7f75dc710534f2c40fb468e43ba6a6d15bd7a2896",
+      "candidate_source": "willow-v47-stellar-five-support-work",
+      "candidate_score": 0,
+      "opponent_score": 1000,
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 1678,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Stellar",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Stellar",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 21,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 16,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "a8bf1dda1fc4d4979a73de67363a25891bfb74c4398dc48b03f6c9f93f79f0d5",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00contest__f475-B.statistics.json",
+        "stats_sha256": "a2ecd43b07b8c34cac0fcbb788ae17809cadd5b7ba0577c9c552fbabd5d1b771",
+        "scoreA": 200,
+        "scoreB": 1000,
+        "winner_side": "B",
+        "candidate_side": "B",
+        "candidate_score": 1000,
+        "opponent_score": 200,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-s/native-status.json",
+      "native_status_audit_sha256": "fa07761124f86c60cfdf2ab187a6e8980d2eeafef146919fd19fa345f5b22668",
+      "native_status_match_sha256": "a8bf1dda1fc4d4979a73de67363a25891bfb74c4398dc48b03f6c9f93f79f0d5",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 16,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 5,
+      "block": "support-alternatives",
+      "arm": "support-c",
+      "map": "00contest",
+      "candidate_side": "A",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-c__00contest__support-c-A.repl26a",
+      "replay_sha256": "df2f3712988a5e6963376be879579e29b406463b950d7a1f6f5ec23d8cc57a1f",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-c__00contest__support-c-A.statistics.json",
+      "statistics_sha256": "d469473ca1ea149399df915498da3677152f9c5e2ccefe59d4f5650bcb81ccc3",
+      "candidate_source": "willow-v47-cassi-five-support-work",
+      "candidate_score": 400,
+      "opponent_score": 800,
+      "winner_side": "B",
+      "candidate_won": false,
+      "rounds_completed": 2000,
+      "draft_pick_count": 5,
+      "candidate_body_count": 6,
+      "candidate_bodies": [
+        "Cassi",
+        "Issac",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Cassi & Issac",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 15,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 41,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "df2f3712988a5e6963376be879579e29b406463b950d7a1f6f5ec23d8cc57a1f",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00contest__f475-A.statistics.json",
+        "stats_sha256": "c624c0b6baae9eeab40c3b34a01dc87d722c21325b1146796def4b34bc228c99",
+        "scoreA": 0,
+        "scoreB": 1000,
+        "winner_side": "B",
+        "candidate_side": "A",
+        "candidate_score": 0,
+        "opponent_score": 1000,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-c/native-status.json",
+      "native_status_audit_sha256": "fef355f9dc5ceeaaa37f339b0c6f4c3bdbb90720bfab4bc117e57fc5c7889ab7",
+      "native_status_match_sha256": "df2f3712988a5e6963376be879579e29b406463b950d7a1f6f5ec23d8cc57a1f",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 15,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 6,
+      "block": "support-alternatives",
+      "arm": "support-c",
+      "map": "00contest",
+      "candidate_side": "B",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-c__00contest__support-c-B.repl26a",
+      "replay_sha256": "fb1bd4d0d251007bf10d891dfe6ba2d35e946903a226c9488780651deb25677f",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-c__00contest__support-c-B.statistics.json",
+      "statistics_sha256": "966fbfa543456a60b839cddd93653f1217f51dd5fbd7bdc67e5cc3a274b155f9",
+      "candidate_source": "willow-v47-cassi-five-support-work",
+      "candidate_score": 1000,
+      "opponent_score": 0,
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1886,
+      "draft_pick_count": 5,
+      "candidate_body_count": 6,
+      "candidate_bodies": [
+        "Cassi",
+        "Issac",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Cassi & Issac",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 50,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 18,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "fb1bd4d0d251007bf10d891dfe6ba2d35e946903a226c9488780651deb25677f",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00contest__f475-B.statistics.json",
+        "stats_sha256": "a2ecd43b07b8c34cac0fcbb788ae17809cadd5b7ba0577c9c552fbabd5d1b771",
+        "scoreA": 200,
+        "scoreB": 1000,
+        "winner_side": "B",
+        "candidate_side": "B",
+        "candidate_score": 1000,
+        "opponent_score": 200,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-c/native-status.json",
+      "native_status_audit_sha256": "fef355f9dc5ceeaaa37f339b0c6f4c3bdbb90720bfab4bc117e57fc5c7889ab7",
+      "native_status_match_sha256": "fb1bd4d0d251007bf10d891dfe6ba2d35e946903a226c9488780651deb25677f",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 18,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 7,
+      "block": "support-alternatives",
+      "arm": "support-p",
+      "map": "01boss-battle",
+      "candidate_side": "A",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-p__01boss-battle__support-p-A.repl26a",
+      "replay_sha256": "ef551e97b6b5d827c8e8dd8de3c09266e8776f9458e69348c00f937a2494958a",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-p__01boss-battle__support-p-A.statistics.json",
+      "statistics_sha256": "50b279d140a69043f28d75b1a17b3c6ca7ba9724af4eb20e7c4a96469f90fac9",
+      "candidate_source": "willow-v47-generalist-support-work",
+      "candidate_score": 0,
+      "opponent_score": 1199,
+      "winner_side": "B",
+      "candidate_won": false,
+      "rounds_completed": 1551,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 2,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 7,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "ef551e97b6b5d827c8e8dd8de3c09266e8776f9458e69348c00f937a2494958a",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01boss-battle__f475-A.statistics.json",
+        "stats_sha256": "50b279d140a69043f28d75b1a17b3c6ca7ba9724af4eb20e7c4a96469f90fac9",
+        "scoreA": 0,
+        "scoreB": 1199,
+        "winner_side": "B",
+        "candidate_side": "A",
+        "candidate_score": 0,
+        "opponent_score": 1199,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-p/native-status.json",
+      "native_status_audit_sha256": "3d391a02a0e4565437c538c81f027958f123b995dce9f801e5af572cae6577c7",
+      "native_status_match_sha256": "ef551e97b6b5d827c8e8dd8de3c09266e8776f9458e69348c00f937a2494958a",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 2,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 8,
+      "block": "support-alternatives",
+      "arm": "support-p",
+      "map": "01boss-battle",
+      "candidate_side": "B",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-p__01boss-battle__support-p-B.repl26a",
+      "replay_sha256": "961aa249c92c14aa8726bd1a74493b21b45640cb8a16dc3dadd492dc1278853e",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-p__01boss-battle__support-p-B.statistics.json",
+      "statistics_sha256": "270b4a0af002a97058e23ad6420b4a410a8fdd5c91a68803feb21a463be491e2",
+      "candidate_source": "willow-v47-generalist-support-work",
+      "candidate_score": 1015,
+      "opponent_score": 0,
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 655,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 2,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 1,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "961aa249c92c14aa8726bd1a74493b21b45640cb8a16dc3dadd492dc1278853e",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01boss-battle__f475-B.statistics.json",
+        "stats_sha256": "270b4a0af002a97058e23ad6420b4a410a8fdd5c91a68803feb21a463be491e2",
+        "scoreA": 0,
+        "scoreB": 1015,
+        "winner_side": "B",
+        "candidate_side": "B",
+        "candidate_score": 1015,
+        "opponent_score": 0,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-p/native-status.json",
+      "native_status_audit_sha256": "3d391a02a0e4565437c538c81f027958f123b995dce9f801e5af572cae6577c7",
+      "native_status_match_sha256": "961aa249c92c14aa8726bd1a74493b21b45640cb8a16dc3dadd492dc1278853e",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 1,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 9,
+      "block": "support-alternatives",
+      "arm": "support-s",
+      "map": "01boss-battle",
+      "candidate_side": "A",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-s__01boss-battle__support-s-A.repl26a",
+      "replay_sha256": "e6a5c10ddd2fc8c4ba0c57bdd3204f73156761fa0e99ce4752778452181b8750",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-s__01boss-battle__support-s-A.statistics.json",
+      "statistics_sha256": "d0c2c068c3c68f7a2f7d6c17acb25aee36b21a20b5d3a055f354efca31cd5b23",
+      "candidate_source": "willow-v47-stellar-five-support-work",
+      "candidate_score": 1006,
+      "opponent_score": 788,
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 1587,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Stellar",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Stellar",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 4,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 2,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "e6a5c10ddd2fc8c4ba0c57bdd3204f73156761fa0e99ce4752778452181b8750",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01boss-battle__f475-A.statistics.json",
+        "stats_sha256": "50b279d140a69043f28d75b1a17b3c6ca7ba9724af4eb20e7c4a96469f90fac9",
+        "scoreA": 0,
+        "scoreB": 1199,
+        "winner_side": "B",
+        "candidate_side": "A",
+        "candidate_score": 0,
+        "opponent_score": 1199,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-s/native-status.json",
+      "native_status_audit_sha256": "fa07761124f86c60cfdf2ab187a6e8980d2eeafef146919fd19fa345f5b22668",
+      "native_status_match_sha256": "e6a5c10ddd2fc8c4ba0c57bdd3204f73156761fa0e99ce4752778452181b8750",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 4,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 10,
+      "block": "support-alternatives",
+      "arm": "support-s",
+      "map": "01boss-battle",
+      "candidate_side": "B",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-s__01boss-battle__support-s-B.repl26a",
+      "replay_sha256": "c8e396e5fd500336600c60ee5ad105c5c5416c30f24db211c8266a7d8f5d89b9",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-s__01boss-battle__support-s-B.statistics.json",
+      "statistics_sha256": "962b4176d5ea6e4a9dad97f3016fbd6309355930228258eae5a92419fac61552",
+      "candidate_source": "willow-v47-stellar-five-support-work",
+      "candidate_score": 1169,
+      "opponent_score": 23,
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 1414,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Stellar",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Stellar",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 1,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 3,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "c8e396e5fd500336600c60ee5ad105c5c5416c30f24db211c8266a7d8f5d89b9",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01boss-battle__f475-B.statistics.json",
+        "stats_sha256": "270b4a0af002a97058e23ad6420b4a410a8fdd5c91a68803feb21a463be491e2",
+        "scoreA": 0,
+        "scoreB": 1015,
+        "winner_side": "B",
+        "candidate_side": "B",
+        "candidate_score": 1015,
+        "opponent_score": 0,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-s/native-status.json",
+      "native_status_audit_sha256": "fa07761124f86c60cfdf2ab187a6e8980d2eeafef146919fd19fa345f5b22668",
+      "native_status_match_sha256": "c8e396e5fd500336600c60ee5ad105c5c5416c30f24db211c8266a7d8f5d89b9",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 3,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 11,
+      "block": "support-alternatives",
+      "arm": "support-c",
+      "map": "01boss-battle",
+      "candidate_side": "A",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-c__01boss-battle__support-c-A.repl26a",
+      "replay_sha256": "7b9b8c3ed68716b3deb00498402f5db41d39da2b2ba9b941e124f10ffb5b8486",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-c__01boss-battle__support-c-A.statistics.json",
+      "statistics_sha256": "b0f2175bb1b72639cfb1c4001b3e5c4eea45301e81375c688eb5c4ac88a246a6",
+      "candidate_source": "willow-v47-cassi-five-support-work",
+      "candidate_score": 0,
+      "opponent_score": 1194,
+      "winner_side": "B",
+      "candidate_won": false,
+      "rounds_completed": 1651,
+      "draft_pick_count": 5,
+      "candidate_body_count": 6,
+      "candidate_bodies": [
+        "Cassi",
+        "Issac",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Cassi & Issac",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 5,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 2,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "7b9b8c3ed68716b3deb00498402f5db41d39da2b2ba9b941e124f10ffb5b8486",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01boss-battle__f475-A.statistics.json",
+        "stats_sha256": "50b279d140a69043f28d75b1a17b3c6ca7ba9724af4eb20e7c4a96469f90fac9",
+        "scoreA": 0,
+        "scoreB": 1199,
+        "winner_side": "B",
+        "candidate_side": "A",
+        "candidate_score": 0,
+        "opponent_score": 1199,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-c/native-status.json",
+      "native_status_audit_sha256": "fef355f9dc5ceeaaa37f339b0c6f4c3bdbb90720bfab4bc117e57fc5c7889ab7",
+      "native_status_match_sha256": "7b9b8c3ed68716b3deb00498402f5db41d39da2b2ba9b941e124f10ffb5b8486",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 5,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 12,
+      "block": "support-alternatives",
+      "arm": "support-c",
+      "map": "01boss-battle",
+      "candidate_side": "B",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-c__01boss-battle__support-c-B.repl26a",
+      "replay_sha256": "6fffd004943d12c5a053920fa74997da0a4de4c8e0abdea6ac95d51c0f97c96c",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__support-c__01boss-battle__support-c-B.statistics.json",
+      "statistics_sha256": "ef86221008b5664de3682c115c804dc2a66392663a651df6fe6cc6bf5d057461",
+      "candidate_source": "willow-v47-cassi-five-support-work",
+      "candidate_score": 0,
+      "opponent_score": 702,
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 2000,
+      "draft_pick_count": 5,
+      "candidate_body_count": 6,
+      "candidate_bodies": [
+        "Cassi",
+        "Issac",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Cassi & Issac",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 13,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 4,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "6fffd004943d12c5a053920fa74997da0a4de4c8e0abdea6ac95d51c0f97c96c",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "f475 baseline Prism/Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__01boss-battle__f475-B.statistics.json",
+        "stats_sha256": "270b4a0af002a97058e23ad6420b4a410a8fdd5c91a68803feb21a463be491e2",
+        "scoreA": 0,
+        "scoreB": 1015,
+        "winner_side": "B",
+        "candidate_side": "B",
+        "candidate_score": 1015,
+        "opponent_score": 0,
+        "comparison": "same map and candidate side; score delta against frozen f475 P/V versus v33"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/support-c/native-status.json",
+      "native_status_audit_sha256": "fef355f9dc5ceeaaa37f339b0c6f4c3bdbb90720bfab4bc117e57fc5c7889ab7",
+      "native_status_match_sha256": "6fffd004943d12c5a053920fa74997da0a4de4c8e0abdea6ac95d51c0f97c96c",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 4,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 13,
+      "block": "economy-recipe-comparison",
+      "arm": "default-Prism-Vesper",
+      "map": "00gem-fields",
+      "candidate_side": "A",
+      "execution": "reuse",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-v33-output-v2/f475-v33__00gem-fields__f475-A.repl26a",
+      "replay_sha256": "56fc2a6f2467bb7a626369309785bda116732e85ea983c565756edf4c20f10bb",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-v33-output-v2/f475-v33__00gem-fields__f475-A.statistics.json",
+      "statistics_sha256": "2638b0ad3efc1f5a42f7e004119e90aeee131a9d5bcc9f3aeff028c23bcabbb1",
+      "candidate_source": "f475",
+      "candidate_score": 1040,
+      "opponent_score": 592,
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 537,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 4,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": null,
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "Prism-Vendetta",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__00gem-fields__vendetta-A.statistics.json",
+        "candidate_side": "A",
+        "candidate_score": 658,
+        "opponent_score": 1211,
+        "winner_side": "B",
+        "comparison": "paired recipe on same map and candidate side"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/native-audit/native-status.json",
+      "native_status_audit_sha256": "afdf614b21bf141d3383c09ecabc6ca57e712cff73914f45bffd94f862a340af",
+      "native_status_match_sha256": "56fc2a6f2467bb7a626369309785bda116732e85ea983c565756edf4c20f10bb",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 14,
+      "block": "economy-recipe-comparison",
+      "arm": "default-Prism-Vesper",
+      "map": "00gem-fields",
+      "candidate_side": "B",
+      "execution": "reuse",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00gem-fields__f475-B.repl26a",
+      "replay_sha256": "e057b11fa3c398986b26c2e80f755857b9d17cdb22581469782de9573ebe1e67",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00gem-fields__f475-B.statistics.json",
+      "statistics_sha256": "6f3915a2ad08c215a64ed9bbf169b16450e032e4a3b030f12bc44aa335b67495",
+      "candidate_source": "f475",
+      "candidate_score": 126,
+      "opponent_score": 1004,
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 427,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 5,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 3,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": null,
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "Prism-Vendetta",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__00gem-fields__vendetta-B.statistics.json",
+        "candidate_side": "B",
+        "candidate_score": 1023,
+        "opponent_score": 701,
+        "winner_side": "B",
+        "comparison": "paired recipe on same map and candidate side"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/native-audit/native-status.json",
+      "native_status_audit_sha256": "afdf614b21bf141d3383c09ecabc6ca57e712cff73914f45bffd94f862a340af",
+      "native_status_match_sha256": "e057b11fa3c398986b26c2e80f755857b9d17cdb22581469782de9573ebe1e67",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 3,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 15,
+      "block": "economy-recipe-comparison",
+      "arm": "default-Prism-Vesper",
+      "map": "00quadrants",
+      "candidate_side": "A",
+      "execution": "reuse",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00quadrants__f475-A.repl26a",
+      "replay_sha256": "1aba65aaa94edbcea2320532fd9ce859d0c3172d8e21dccd8f8137712f87b6de",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00quadrants__f475-A.statistics.json",
+      "statistics_sha256": "884ed22b4bcd5ed8eca98fc14c0c2482c75848ba44907c98f15a1f276feb4677",
+      "candidate_source": "f475",
+      "candidate_score": 1012,
+      "opponent_score": 625,
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 521,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 1,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": null,
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "Prism-Vendetta",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__Prism-Vendetta__00quadrants__Prism-Vendetta-A.statistics.json",
+        "candidate_side": "A",
+        "candidate_score": 1014,
+        "opponent_score": 601,
+        "winner_side": "A",
+        "comparison": "paired recipe on same map and candidate side"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/native-audit/native-status.json",
+      "native_status_audit_sha256": "afdf614b21bf141d3383c09ecabc6ca57e712cff73914f45bffd94f862a340af",
+      "native_status_match_sha256": "1aba65aaa94edbcea2320532fd9ce859d0c3172d8e21dccd8f8137712f87b6de",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 16,
+      "block": "economy-recipe-comparison",
+      "arm": "default-Prism-Vesper",
+      "map": "00quadrants",
+      "candidate_side": "B",
+      "execution": "reuse",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00quadrants__f475-B.repl26a",
+      "replay_sha256": "96f3e971b659a69b277b477a944adcf56db2700c39d02de85adc51374e3a0bd0",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00quadrants__f475-B.statistics.json",
+      "statistics_sha256": "5810e39b0b71f112e5d04820d4d3f8a282d70df34e79f177b5ce8ac5b4044f4c",
+      "candidate_source": "f475",
+      "candidate_score": 432,
+      "opponent_score": 1015,
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 429,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 2,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": null,
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "Prism-Vendetta",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__Prism-Vendetta__00quadrants__Prism-Vendetta-B.statistics.json",
+        "candidate_side": "B",
+        "candidate_score": 516,
+        "opponent_score": 1024,
+        "winner_side": "A",
+        "comparison": "paired recipe on same map and candidate side"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/native-audit/native-status.json",
+      "native_status_audit_sha256": "afdf614b21bf141d3383c09ecabc6ca57e712cff73914f45bffd94f862a340af",
+      "native_status_match_sha256": "96f3e971b659a69b277b477a944adcf56db2700c39d02de85adc51374e3a0bd0",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 17,
+      "block": "economy-recipe-comparison",
+      "arm": "Prism-Vendetta",
+      "map": "00gem-fields",
+      "candidate_side": "A",
+      "execution": "reuse",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__00gem-fields__vendetta-A.repl26a",
+      "replay_sha256": "632f798fb354413cba9abe35fcdc16a95a41599367a3279775ab54e94a2433f2",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__00gem-fields__vendetta-A.statistics.json",
+      "statistics_sha256": "7acaa2f0420b8c89cd1715d9f2676092022f169c086c5be4abdcf01029ebfbc6",
+      "candidate_source": "vendetta",
+      "candidate_score": 658,
+      "opponent_score": 1211,
+      "winner_side": "B",
+      "candidate_won": false,
+      "rounds_completed": 574,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vendetta",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vendetta",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 1,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 2,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": null,
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "default-Prism-Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/planned-v33-output-v2/f475-v33__00gem-fields__f475-A.statistics.json",
+        "candidate_side": "A",
+        "candidate_score": 1040,
+        "opponent_score": 592,
+        "winner_side": "A",
+        "comparison": "paired recipe on same map and candidate side"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/native-audit/vendetta-vs-v33/status.json",
+      "native_status_audit_sha256": "1494620a843dc6a8ebce08fefda008c2f3cb522b254ee3e4710b184f463d9540",
+      "native_status_match_sha256": "632f798fb354413cba9abe35fcdc16a95a41599367a3279775ab54e94a2433f2",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 1,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 18,
+      "block": "economy-recipe-comparison",
+      "arm": "Prism-Vendetta",
+      "map": "00gem-fields",
+      "candidate_side": "B",
+      "execution": "reuse",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__00gem-fields__vendetta-B.repl26a",
+      "replay_sha256": "0cc9d7966799efc4d8736c77ff3efc163212bb0680a8a61ff700ea3513ac8b38",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/vendetta-vs-v33/vendetta-vs-v33__00gem-fields__vendetta-B.statistics.json",
+      "statistics_sha256": "c99d87e224253063b9a4457108b118b4fbd1f9ffade9a43006b101d1b154fd10",
+      "candidate_source": "vendetta",
+      "candidate_score": 1023,
+      "opponent_score": 701,
+      "winner_side": "B",
+      "candidate_won": true,
+      "rounds_completed": 553,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vendetta",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vendetta",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 2,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": null,
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "default-Prism-Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00gem-fields__f475-B.statistics.json",
+        "candidate_side": "B",
+        "candidate_score": 126,
+        "opponent_score": 1004,
+        "winner_side": "A",
+        "comparison": "paired recipe on same map and candidate side"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/fixed-role-screen-v1/native-audit/vendetta-vs-v33/status.json",
+      "native_status_audit_sha256": "1494620a843dc6a8ebce08fefda008c2f3cb522b254ee3e4710b184f463d9540",
+      "native_status_match_sha256": "0cc9d7966799efc4d8736c77ff3efc163212bb0680a8a61ff700ea3513ac8b38",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 19,
+      "block": "economy-recipe-comparison",
+      "arm": "Prism-Vendetta",
+      "map": "00quadrants",
+      "candidate_side": "A",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__Prism-Vendetta__00quadrants__Prism-Vendetta-A.repl26a",
+      "replay_sha256": "04f01b4bdd0db5a7006875c6c33a1335744dc3d271d8ab32a98c6436a1246f5b",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__Prism-Vendetta__00quadrants__Prism-Vendetta-A.statistics.json",
+      "statistics_sha256": "269369517efa9aaf52b33b8992ce522238cd390771b645a924d80c8181c0a52c",
+      "candidate_source": "vendetta",
+      "candidate_score": 1014,
+      "opponent_score": 601,
+      "winner_side": "A",
+      "candidate_won": true,
+      "rounds_completed": 464,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vendetta",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vendetta",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 1,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "04f01b4bdd0db5a7006875c6c33a1335744dc3d271d8ab32a98c6436a1246f5b",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "default-Prism-Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00quadrants__f475-A.statistics.json",
+        "candidate_side": "A",
+        "candidate_score": 1012,
+        "opponent_score": 625,
+        "winner_side": "A",
+        "comparison": "paired recipe on same map and candidate side"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/Prism-Vendetta/native-status.json",
+      "native_status_audit_sha256": "00cb25719a9873697326dca20cd7e980c0698ba09e5cc9fccf6072c3d4ca0297",
+      "native_status_match_sha256": "04f01b4bdd0db5a7006875c6c33a1335744dc3d271d8ab32a98c6436a1246f5b",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    },
+    {
+      "order": 20,
+      "block": "economy-recipe-comparison",
+      "arm": "Prism-Vendetta",
+      "map": "00quadrants",
+      "candidate_side": "B",
+      "execution": "new",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__Prism-Vendetta__00quadrants__Prism-Vendetta-B.repl26a",
+      "replay_sha256": "074ea0ab5639fd516c40da9057d98674e1bd5881ed26a0d054491ef7e758ce24",
+      "statistics": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/edge-economy-v1__Prism-Vendetta__00quadrants__Prism-Vendetta-B.statistics.json",
+      "statistics_sha256": "59a631e3eb2cee7cf929b87e3a6fc418d437702247aba8b436509ffe0fa71134",
+      "candidate_source": "vendetta",
+      "candidate_score": 516,
+      "opponent_score": 1024,
+      "winner_side": "A",
+      "candidate_won": false,
+      "rounds_completed": 522,
+      "draft_pick_count": 5,
+      "candidate_body_count": 5,
+      "candidate_bodies": [
+        "Prism",
+        "Vendetta",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "opponent_body_count": 5,
+      "opponent_bodies": [
+        "Prism",
+        "Vesper Vale",
+        "Marcella",
+        "Willow",
+        "Heart of Ruin"
+      ],
+      "team_draft": [
+        {
+          "champion": "Prism",
+          "team": "teamA"
+        },
+        {
+          "champion": "Prism",
+          "team": "teamB"
+        },
+        {
+          "champion": "Vesper Vale",
+          "team": "teamA"
+        },
+        {
+          "champion": "Vendetta",
+          "team": "teamB"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamA"
+        },
+        {
+          "champion": "Marcella",
+          "team": "teamB"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamA"
+        },
+        {
+          "champion": "Willow",
+          "team": "teamB"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamA"
+        },
+        {
+          "champion": "Heart of Ruin",
+          "team": "teamB"
+        }
+      ],
+      "native_status_by_side": {
+        "A": {
+          "play": {
+            "rollover": 3,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        "B": {
+          "play": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      },
+      "native_status_match_hash": "074ea0ab5639fd516c40da9057d98674e1bd5881ed26a0d054491ef7e758ce24",
+      "native_diagnostics": {
+        "botFaults": {
+          "teamA": 0,
+          "teamB": 0
+        },
+        "codes": [],
+        "detailedCaptureComplete": true
+      },
+      "control_comparison": {
+        "source": "default-Prism-Vesper",
+        "stats_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/f475-v33-complete-output-v1/f475-v33__00quadrants__f475-B.statistics.json",
+        "candidate_side": "B",
+        "candidate_score": 432,
+        "opponent_score": 1015,
+        "winner_side": "A",
+        "comparison": "paired recipe on same map and candidate side"
+      },
+      "native_status_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/khaos-v34-ladder-intake-20261024-v1/edge-economy-draft-screen-v1/outputs/native-batches/Prism-Vendetta/native-status.json",
+      "native_status_audit_sha256": "00cb25719a9873697326dca20cd7e980c0698ba09e5cc9fccf6072c3d4ca0297",
+      "native_status_match_sha256": "074ea0ab5639fd516c40da9057d98674e1bd5881ed26a0d054491ef7e758ce24",
+      "native_status_candidate": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        }
+      }
+    }
+  ],
+  "by_arm_map": {
+    "Prism-Vendetta": {
+      "00gem-fields": {
+        "candidate_wins": 1,
+        "candidate_games": 2,
+        "candidate_wins_by_candidate_side": {
+          "A": 0,
+          "B": 1
+        }
+      },
+      "00quadrants": {
+        "candidate_wins": 1,
+        "candidate_games": 2,
+        "candidate_wins_by_candidate_side": {
+          "A": 1,
+          "B": 0
+        }
+      }
+    },
+    "default-Prism-Vesper": {
+      "00gem-fields": {
+        "candidate_wins": 1,
+        "candidate_games": 2,
+        "candidate_wins_by_candidate_side": {
+          "A": 1,
+          "B": 0
+        }
+      },
+      "00quadrants": {
+        "candidate_wins": 1,
+        "candidate_games": 2,
+        "candidate_wins_by_candidate_side": {
+          "A": 1,
+          "B": 0
+        }
+      }
+    },
+    "support-c": {
+      "00contest": {
+        "candidate_wins": 1,
+        "candidate_games": 2,
+        "candidate_wins_by_candidate_side": {
+          "A": 0,
+          "B": 1
+        }
+      },
+      "01boss-battle": {
+        "candidate_wins": 0,
+        "candidate_games": 2,
+        "candidate_wins_by_candidate_side": {
+          "A": 0,
+          "B": 0
+        }
+      }
+    },
+    "support-p": {
+      "00contest": {
+        "candidate_wins": 1,
+        "candidate_games": 2,
+        "candidate_wins_by_candidate_side": {
+          "A": 0,
+          "B": 1
+        }
+      },
+      "01boss-battle": {
+        "candidate_wins": 1,
+        "candidate_games": 2,
+        "candidate_wins_by_candidate_side": {
+          "A": 0,
+          "B": 1
+        }
+      }
+    },
+    "support-s": {
+      "00contest": {
+        "candidate_wins": 0,
+        "candidate_games": 2,
+        "candidate_wins_by_candidate_side": {
+          "A": 0,
+          "B": 0
+        }
+      },
+      "01boss-battle": {
+        "candidate_wins": 2,
+        "candidate_games": 2,
+        "candidate_wins_by_candidate_side": {
+          "A": 1,
+          "B": 1
+        }
+      }
+    }
+  }
+}

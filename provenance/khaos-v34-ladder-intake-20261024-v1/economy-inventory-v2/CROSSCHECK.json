@@ -1,0 +1,108 @@
+[
+  {
+    "map": "00gem-fields",
+    "existingExtractPath": "provenance/khaos-v34-ladder-intake-20261024-v1/extracted/maps/d22495f1f242da29.json",
+    "extractFileSha256": "e923dd93f1db74eeaf0cd96b42cb968e5dc4f369fd0e81efdfa5bba16394d5e7",
+    "extractCamps": 50,
+    "inventoryCampTotal": 50,
+    "extractGroups": 18,
+    "inventoryCounts": {
+      "wolf": 6,
+      "elk": 4,
+      "golem": 0,
+      "gem_cluster": 40,
+      "gold_cluster": 0,
+      "monolith": 0
+    },
+    "extractTypeCounts": {
+      "Gem cluster": 40,
+      "Elk": 4,
+      "Wolf": 6
+    },
+    "extractAllGroupRewards": {
+      "gems": 364,
+      "gold": 600
+    },
+    "inventoryOrdinaryRewards": {
+      "gems": 364,
+      "gold": 600
+    },
+    "extractOrdinaryGroups": 18,
+    "extractOrdinaryRewards": {
+      "gems": 364,
+      "gold": 600
+    }
+  },
+  {
+    "map": "01fracture",
+    "existingExtractPath": "provenance/khaos-v34-ladder-intake-20261024-v1/extracted/maps/8f17d2cbf1d64f77.json",
+    "extractFileSha256": "73ca7fc6b7f0332ce7e81805b43ed02e7fea1237cefdb522461e429836ebab7b",
+    "extractCamps": 86,
+    "inventoryCampTotal": 86,
+    "extractGroups": 28,
+    "inventoryCounts": {
+      "wolf": 16,
+      "elk": 16,
+      "golem": 0,
+      "gem_cluster": 20,
+      "gold_cluster": 32,
+      "monolith": 2
+    },
+    "extractTypeCounts": {
+      "Gem cluster": 20,
+      "Wolf": 16,
+      "Elk": 16,
+      "Gold cluster": 32,
+      "Monolith": 2
+    },
+    "extractAllGroupRewards": {
+      "gems": 844,
+      "gold": 3320
+    },
+    "inventoryOrdinaryRewards": {
+      "gems": 444,
+      "gold": 2720
+    },
+    "extractOrdinaryGroups": 26,
+    "extractOrdinaryRewards": {
+      "gems": 444,
+      "gold": 2720
+    }
+  },
+  {
+    "map": "01big-world",
+    "existingExtractPath": "provenance/willow-finishing-recall-bigworld-20261024-v1/extracted/maps/c890c7d4607bc45c.json",
+    "extractFileSha256": "9f21864a9e2e03469fb7d03b496960402ffbdfa6d09fd8f2da11e124472af4e8",
+    "extractCamps": 92,
+    "inventoryCampTotal": 92,
+    "extractGroups": 24,
+    "inventoryCounts": {
+      "wolf": 22,
+      "elk": 8,
+      "golem": 0,
+      "gem_cluster": 32,
+      "gold_cluster": 28,
+      "monolith": 2
+    },
+    "extractTypeCounts": {
+      "Gem cluster": 32,
+      "Gold cluster": 28,
+      "Wolf": 22,
+      "Elk": 8,
+      "Monolith": 2
+    },
+    "extractAllGroupRewards": {
+      "gems": 832,
+      "gold": 2760
+    },
+    "inventoryOrdinaryRewards": {
+      "gems": 376,
+      "gold": 2160
+    },
+    "extractOrdinaryGroups": 22,
+    "extractOrdinaryRewards": {
+      "gems": 376,
+      "gold": 2160
+    }
+  }
+]
