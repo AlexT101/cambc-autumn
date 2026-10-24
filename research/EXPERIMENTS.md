@@ -364,6 +364,30 @@ another harmless group was kept (CHANGES 91).
   Willow in the Ryth/Vendetta slot is level with hyperion's pick but costs ~30% more out-of-fuel turns; the reshaped
   Willow layer beats v44's slightly and uses far less fuel. (Equal 5-pick totals in both pairs are coincidence: the
   drafts differ and only ~10 of those 422 games matched.)
+- Willow for Marcella on 4-pick maps (2026-10-24; astraeus at c2f1350 copied to `bots/variants/astraeus-willow4`,
+  drafting Prism/Vesper/Willow/HoR; `replays/suites/4pick`, the 178 4-pick maps of ladder, gen and gen-s1, both
+  sides, own drafts): vs hyperion 40.2% of 356 (CI 35.2-45.3), out-of-fuel turns 654 vs 510; unchanged astraeus vs
+  hyperion on the same games 54.5% (49.3-59.6), 610 vs 520. Willow costs ~14 points as the 4th pick: lost. Asked
+  because the ladder's 5v5 maps (the only ones v47 drafts Willow on) read +11.5 ± 7.2 points over 3v3, which a
+  5th champion and the maps themselves explain as well as Willow.
+- Bag deadline at the enemy's win (2026-10-24; astraeus at 80e21f3 copied to `bots/variants/astraeus-enemyrace`):
+  `World::enemy_rate` (as `ally_rate`, over the later half of the game) and `bag_rounds_left` also capped by
+  (1000 - enemy score) / enemy rate, so `closing` banks a bag before the enemy is due to win. Motivated by v47's
+  low-contact ladder losses, where Prism's held bag was 73% of the tribute gap. All suites, both sides, own drafts,
+  against unchanged astraeus: 51.1% of 1104 (CI 48.1-54.0; ladder 55.0 of 80, gen 50.6, gen-s1 51.0), out-of-fuel
+  turns 2395 vs 2446. Level, and not ported: the new cap binds only when `race_left` (the rounds until score plus
+  every bag reaches the win at our rate) comes after the enemy's projected win, i.e. when we are projected to lose
+  the race, where banking gives up Prism's Focus and carriers' chases (`carry_bag` chases only while not `closing`)
+  for nothing. Projected to win, `race_left` already sets an earlier deadline. If our pace is underestimated
+  (`ally_rate` counts tributes, not Prism's growing bag), the fix is a collection-rate `race_left`, not an enemy cap.
+- Stuns priced in the strike search's end-tile danger (2026-10-24; astraeus at 80e21f3 copied to
+  `bots/variants/astraeus-stunprice`): a blow that stuns adds a turn of our output (`output()`'s formula; 0 for
+  Marcella) to its damage at `plan.cpp`'s four danger sites. Motivated by v47's Tavi games: half of Tavi's stuns on
+  us land from range 4, and 79% of victims saw it ready.
+  Against `bots/variants/astraeus-stundraft` (astraeus drafting Tavi for Vesper: Prism and Tavi at every pick count),
+  all suites, both sides, own drafts: 60.1% of 1104 (CI 57.2-63.0); unchanged astraeus against it 59.9% (57.0-62.7).
+  974 of the 1104 games changed, but stuns on us stayed 22.4 a game (Tavi's 7.23 vs 7.28), deaths 4.1 vs 4.1: the
+  term moves end tiles without keeping us out of stun range. Not ported.
 - Astraeus fuel, behaviour-preserving (2026-10-24, against the frozen `bots/baselines/astraeus-e72724a`):
   - Prism's recovery takes its cheap exits (`!ready`, `worth_healing`) before the mate's exposure and the formation view.
   - Tiles in `local_support`'s loop are judged safe after its other filters.
