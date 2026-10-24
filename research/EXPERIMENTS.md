@@ -1796,3 +1796,39 @@ must establish actual activation, conversion, fuel costs and reversals. This is 
 attribution or verified fix for the older Rows replay. Full snapshots, manifest, exact patch
 and checkpoint are in `provenance/willow-no-work-conversion-20261023-v1/`; see
 `willow-no-work-conversion-source-review.md`. Canonical remains4db; runtime is pending.
+
+### Current integration versus released v33: full native-draft outcomes
+
+Release/default100k `4db4eecb` versus frozen released `a00fff45`, both physical sides on
+40 published +256 gen(seed1023)+256 gen-s1(seed1024) maps:524–580/1104(47.46%). Published
+maps40–40, gen231–281, gen-s1253–259. Both draft sources are identical and test_draft=false.
+This does not demonstrate an improvement over release; the generated-map deficit requires
+diagnosis. Willow item, stationary-crew and no-work-conversion arms are not included.
+
+All1104 unique native CLI games completed and source/raw/injected/CLI/engine pins remain
+unchanged. The first13 completed outputs resolved beside the manifest rather than the run
+cwd; they were preserved and reused. One subsequently started game was interrupted without
+a completed output. The remaining1091 ran once with absolute output paths. Both attempts,
+the interrupted attempt, logs and combined authoritative outcome ledger are preserved in
+`replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/`; the first13 replays remain in the
+preflight provenance directory. No completed cell was rerun for the path correction.
+
+At this checkpoint, native step-header rollover/BotError and caught/turn-order audits are
+pending; CLI completion does not establish those counts. An initially started extraction
+pass was stopped after77 complete records because it did not supply the required full-phase
+native audit. Its outputs/logs remain available for loss analysis under
+`replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1/`; no finalized index exists.
+No release follows from these outcomes.
+
+### Combined Health and Focus item hypothesis
+
+Isolated `279ddbf4` combines exact3b first-protection/JungleHealth behavior with the exact1657
+one-BruiserFocus preference on canonical4db. Only best_emblem changes(+14/−1). Removing the
+Focus block leaves that full chooser byte-identical to3b; the Focus block matches1657.
+Existing partials, protection closure, Treasure priority and the completed-Focus inventory
+witness remain intact. The Health/Focus substitutions return their actual values; the
+inherited forced-Treasure proxy is unchanged. Source review passes; runtime is pending.
+This tests provider survival and healing together, alongside isolated Focus, without a
+new scalar healing utility. Full29-file snapshots/manifest/patch/checkpoint are in
+`provenance/willow-health-plus-focus-c71-20261023-v1/`; see
+`willow-health-plus-focus-c71-source-review.md`. No canonical promotion or gain claim.
