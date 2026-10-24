@@ -151,6 +151,7 @@ void buy_lock() {
 }
 
 bool carries_crystal() { return cambc::self().consumables()[cambc::consumable_type::tp_crystal].count() > 0; }
+bool can_buy_crystal() { return my_gold() >= cambc::consumable_type::tp_crystal.cost(); }
 
 // Once a hop to an altar only a crystal reaches (StaticMap::hops) would have beaten walking to bank.
 void buy_crystal(const Memory& memory) {
@@ -549,6 +550,13 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing) {
     if (a.version == 1) {
         clear_board(tributes);
         for (const auto& t : map.altars) tributes |= t.tribute_tiles();
+        // Off our walk, a tribute tile counts below as a crystal's: only if a hop reaches its altar.
+        copy_into(tributes, area);
+        drop(area, pathing.foot());
+        if (!board_empty(area)) {
+            for (const auto& h : map.hops()) drop(area, map.altars[h.altar].tribute_tiles());
+            drop(tributes, area);
+        }
     }
     copy_into(tributes, a.opened);
     if (!walked) {
@@ -655,7 +663,12 @@ bool altar_usable(const World& world, Pathing& pathing, int bag, float health) {
 // if empty-handed.
 int bankable_bag(const World& world, Pathing& pathing) {
     const int bag = static_cast<int>(my_gems());
-    return bag > 0 && altar_usable(world, pathing, bag, my_health()) ? bag : 0;
+    if (bag == 0 || !altar_usable(world, pathing, bag, my_health())) return 0;
+    // Only a crystal reaches an altar and we can neither use nor buy one: farm the gold first.
+    if (!world.map().hops().empty() && pathing.to_any_altar().at(my_position()) == unreachable && !carries_crystal()
+        && !can_buy_crystal())
+        return 0;
+    return bag;
 }
 
 // No altar is usable for the team's largest bag (an unseen ally's as posted).
@@ -3395,7 +3408,9 @@ bool recall_to_bank(const World& world, Pathing& pathing, Safety& safety, const 
     if (safety.threatened(here)) return false;
     // With no walk out (a crystal's pocket), the trip by way of spawn is the only one.
     const int walk = pathing.to_any_altar().at(here);
-    return home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk);
+    if (home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk)) return true;
+    // Nor from home on foot: the stop buys the crystal a hop needs.
+    return walk == unreachable && memory.wants_crystal && !carries_crystal() && can_buy_crystal();
 }
 
 // No enemy seen this round or last could walk into reach before the recall lands: standing
@@ -5080,14 +5095,31 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     return true;
 }
 
+// A camp member's reach covers a tile of our spawn (a rectangle), read once.
+bool camps_reach_spawn(const World& world) {
+    static int known = -1;
+    if (known >= 0) return known == 1;
+    known = 0;
+    const auto& map = world.map();
+    if (map.ally_spawn_tiles.empty()) return false;
+    vec2 lo = map.ally_spawn_tiles[0], hi = lo;
+    for (const vec2 t : map.ally_spawn_tiles)
+        lo = {std::min(lo.x, t.x), std::min(lo.y, t.y)}, hi = {std::max(hi.x, t.x), std::max(hi.y, t.y)};
+    for (const auto& g : map.groups)
+        for (const auto& m : g.members)
+            if (std::max({lo.x - m.pos.x, m.pos.x - hi.x, lo.y - m.pos.y, m.pos.y - hi.y, 0}) <= m.reach) known = 1;
+    return known == 1;
+}
+
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     auto& me = cambc::self();
     if (!world.me().alive || bankable_bag(world, pathing) == 0 || retaining_gems(world, pathing)) memory.banking = false;
     if (!world.me().alive) {
         memory.claim = -1;
+        // The crystal first: an altar only it reaches holds our bags, and shards could spend its gold.
+        buy_crystal(memory);
         buy_shards(world); // the dead can only shop
         buy_lock();
-        buy_crystal(memory);
         return;
     }
     // One state read covers the channels until one is cancelled; a channel excludes the others.
@@ -5106,8 +5138,9 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
 
     // Shopping, heals and shields do not move us.
     const bool on_spawn = test(world.map().ally_spawn, my_position());
+    if (on_spawn) buy_crystal(memory);
     if ((on_spawn || world.me().facts().passive == Passive::remote_shop) && buy_shards(world)) home.reset();
-    if (on_spawn) buy_lock(), buy_crystal(memory);
+    if (on_spawn) buy_lock();
     if (!world.me().can_act(world.round)) return;
     if (const auto* ender = game_ender(world)) {
         stop_game_ender(world, pathing, memory, *ender);
@@ -5116,7 +5149,8 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool willow = world.me().type == cambc::champion_type::willow;
     const bool prism = world.me().type == cambc::champion_type::prism;
     // Healing needs a turn end on spawn; a recall arrives at turn start.
-    const bool mend = on_spawn && my_health() < my_max_health();
+    // Not under an awake camp: it hits us every round, so we would mend forever while it stays awake.
+    const bool mend = on_spawn && my_health() < my_max_health() && !(camps_reach_spawn(world) && safety.camp_damage(my_position()) > 0);
     const bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory));
     // Willow at work heals first, and the work goes on without the strike search.
     const bool working = willow && !mend && !leave && support_work(world, pathing, safety, memory);
