@@ -1,0 +1,71 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T07:12:43.022976+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "node",
+    "tools/replay/audit_native_status.mjs",
+    "provenance/willow-contact-priority-f7-20261024-v1/diagnostic/4c4-status-inputs/candidate",
+    "--out",
+    "provenance/willow-contact-priority-f7-20261024-v1/diagnostic/4c4-candidate-native-status.json"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-contact-priority-f7-20261024-v1/diagnostic/4c4-status-audit.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-contact-priority-f7-20261024-v1/diagnostic/4c4-status-audit.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.067149708,
+      "run_end_monotonic": 0.168655791
+    },
+    {
+      "run_start_monotonic": 1.072027625,
+      "run_end_monotonic": 1.175380333
+    },
+    {
+      "run_start_monotonic": 2.076801833,
+      "run_end_monotonic": 2.180517333
+    },
+    {
+      "run_start_monotonic": 3.082947125,
+      "run_end_monotonic": 3.187976125
+    },
+    {
+      "run_start_monotonic": 4.092234791,
+      "run_end_monotonic": 4.193332083
+    },
+    {
+      "run_start_monotonic": 5.093830208,
+      "run_end_monotonic": 5.194836625
+    },
+    {
+      "run_start_monotonic": 6.097500583,
+      "run_end_monotonic": 6.201737
+    },
+    {
+      "run_start_monotonic": 7.106998875,
+      "run_end_monotonic": 7.208236875
+    },
+    {
+      "run_start_monotonic": 8.112533625,
+      "run_end_monotonic": 8.213986375
+    },
+    {
+      "run_start_monotonic": 9.119118291,
+      "run_end_monotonic": 9.224135541
+    },
+    {
+      "run_start_monotonic": 10.129246416,
+      "run_end_monotonic": 10.233039416
+    }
+  ],
+  "pid": 88480,
+  "process_group_id": 88480,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T07:12:53.192891+00:00"
+}

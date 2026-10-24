@@ -1,0 +1,15 @@
+Building /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/hyperion-upstream-4c4eacc
+hyperion-upstream-4c4eacc is up to date
+Building /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-contact-priority-f7-work
+willow-contact-priority-f7-work is up to date
+Building /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-contact-priority-f7-parent
+willow-contact-priority-f7-parent is up to date
+[|] STARTING  hyperion-upstream-4c4eacc vs willow-contact-priority-f7-work  00elkring
+    Replay: /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-contact-priority-f7-20261024-v1/outputs/candidate-elkring-B-vs-4c4.repl26a
+[+] TEAM B WIN (willow-contact-priority-f7-work)  hyperion-upstream-4c4eacc vs willow-contact-priority-f7-work  00elkring  Round 0798/2000
+    Replay: /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-contact-priority-f7-20261024-v1/outputs/candidate-elkring-B-vs-4c4.repl26a
+[|] STARTING  hyperion-upstream-4c4eacc vs willow-contact-priority-f7-parent  00elkring
+    Replay: /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-contact-priority-f7-20261024-v1/outputs/parent-elkring-B-vs-4c4.repl26a
+[+] TEAM B WIN (willow-contact-priority-f7-parent)  hyperion-upstream-4c4eacc vs willow-contact-priority-f7-parent  00elkring  Round 0798/2000
+    Replay: /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-contact-priority-f7-20261024-v1/outputs/parent-elkring-B-vs-4c4.repl26a
+Finished: 2 replay bundles saved, 0 failed

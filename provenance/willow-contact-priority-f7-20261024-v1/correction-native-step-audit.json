@@ -1,0 +1,200 @@
+{
+  "schema": "contact-priority-correction-audit/v2",
+  "replays": {
+    "candidate-elkring-B": {
+      "file": "provenance/willow-contact-priority-f7-20261024-v1/outputs/candidate-elkring-B.repl26a",
+      "inner_replay_length": 126821,
+      "inner_replay_sha256": "79dc2719b6b1f45625953b4d9da95bc417b99ee5fc8c4d005c002a5ae4f2652d",
+      "engine": "v1_0_3",
+      "priority_step_count": 858,
+      "willow_priority_steps": 132,
+      "willow_target13_steps": 2,
+      "willow_target13_alive_after_step": 0,
+      "willow_target13_dead_after_step": 2,
+      "willow_steps": [
+        {
+          "round": 483,
+          "step_round": 483,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        },
+        {
+          "round": 578,
+          "step_round": 578,
+          "team": 0,
+          "champion_id": 3,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        }
+      ],
+      "native_step_header_sha256": "f3897858763bbbdf30d8e0ec85ba7081d34c837b4b89f9be262f41983fa74fe2",
+      "native_step_count": 123456
+    },
+    "parent-elkring-B": {
+      "file": "provenance/willow-contact-priority-f7-20261024-v1/outputs/parent-elkring-B.repl26a",
+      "inner_replay_length": 126821,
+      "inner_replay_sha256": "79dc2719b6b1f45625953b4d9da95bc417b99ee5fc8c4d005c002a5ae4f2652d",
+      "engine": "v1_0_3",
+      "priority_step_count": 858,
+      "willow_priority_steps": 132,
+      "willow_target13_steps": 2,
+      "willow_target13_alive_after_step": 0,
+      "willow_target13_dead_after_step": 2,
+      "willow_steps": [
+        {
+          "round": 483,
+          "step_round": 483,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        },
+        {
+          "round": 578,
+          "step_round": 578,
+          "team": 0,
+          "champion_id": 3,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        }
+      ],
+      "native_step_header_sha256": "f3897858763bbbdf30d8e0ec85ba7081d34c837b4b89f9be262f41983fa74fe2",
+      "native_step_count": 123456
+    },
+    "candidate-pilgrimage-A": {
+      "file": "provenance/willow-contact-priority-f7-20261024-v1/outputs/candidate-pilgrimage-A.repl26a",
+      "inner_replay_length": 237879,
+      "inner_replay_sha256": "249bb463147f01a9a9aa8e8bded4b496151eeef20edadc042fdf28958da8a6a6",
+      "engine": "v1_0_3",
+      "priority_step_count": 780,
+      "willow_priority_steps": 61,
+      "willow_target13_steps": 2,
+      "willow_target13_alive_after_step": 0,
+      "willow_target13_dead_after_step": 2,
+      "willow_steps": [
+        {
+          "round": 1041,
+          "step_round": 1041,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        },
+        {
+          "round": 1240,
+          "step_round": 1240,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": -1,
+          "step_priority": 13
+        }
+      ],
+      "native_step_header_sha256": "f52e95cd1e67690e34cc587e781ec1bcd629e60b6e87652dc6ce3893ee94bda5",
+      "native_step_count": 271025
+    },
+    "parent-pilgrimage-A": {
+      "file": "provenance/willow-contact-priority-f7-20261024-v1/outputs/parent-pilgrimage-A.repl26a",
+      "inner_replay_length": 237879,
+      "inner_replay_sha256": "249bb463147f01a9a9aa8e8bded4b496151eeef20edadc042fdf28958da8a6a6",
+      "engine": "v1_0_3",
+      "priority_step_count": 780,
+      "willow_priority_steps": 61,
+      "willow_target13_steps": 2,
+      "willow_target13_alive_after_step": 0,
+      "willow_target13_dead_after_step": 2,
+      "willow_steps": [
+        {
+          "round": 1041,
+          "step_round": 1041,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        },
+        {
+          "round": 1240,
+          "step_round": 1240,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": -1,
+          "step_priority": 13
+        }
+      ],
+      "native_step_header_sha256": "f52e95cd1e67690e34cc587e781ec1bcd629e60b6e87652dc6ce3893ee94bda5",
+      "native_step_count": 271025
+    },
+    "candidate-gold-rush-A": {
+      "file": "provenance/willow-contact-priority-f7-20261024-v1/outputs/candidate-gold-rush-A.repl26a",
+      "inner_replay_length": 199043,
+      "inner_replay_sha256": "66b21789b557dc8c510376778df7a0a1342fb8914f7c60614c216e6646782914",
+      "engine": "v1_0_3",
+      "priority_step_count": 1279,
+      "willow_priority_steps": 0,
+      "willow_target13_steps": 0,
+      "willow_target13_alive_after_step": 0,
+      "willow_target13_dead_after_step": 0,
+      "willow_steps": [],
+      "native_step_header_sha256": "10cff227023b0909ed5c6f733d18f3bbf21b9b765e7195a11f022934bd3d5720",
+      "native_step_count": 242500
+    },
+    "parent-gold-rush-A": {
+      "file": "replays/willow-astraeus-service-activation-f7-20261024-run-v2/outputs/f7-base-gold-rush-A-A.repl26a",
+      "inner_replay_length": 199043,
+      "inner_replay_sha256": "66b21789b557dc8c510376778df7a0a1342fb8914f7c60614c216e6646782914",
+      "engine": "v1_0_3",
+      "priority_step_count": 1279,
+      "willow_priority_steps": 0,
+      "willow_target13_steps": 0,
+      "willow_target13_alive_after_step": 0,
+      "willow_target13_dead_after_step": 0,
+      "willow_steps": [],
+      "native_step_header_sha256": "10cff227023b0909ed5c6f733d18f3bbf21b9b765e7195a11f022934bd3d5720",
+      "native_step_count": 242500
+    }
+  },
+  "comparisons": {
+    "Elkring candidate-B vs parent-B": {
+      "inner_replay_bytes_equal": true,
+      "inner_replay_sha256": "79dc2719b6b1f45625953b4d9da95bc417b99ee5fc8c4d005c002a5ae4f2652d",
+      "inner_replay_length": 126821,
+      "native_step_headers_equal": true,
+      "native_step_header_sha256": "f3897858763bbbdf30d8e0ec85ba7081d34c837b4b89f9be262f41983fa74fe2",
+      "candidate_willow_priority_steps": 132,
+      "parent_willow_priority_steps": 132,
+      "candidate_willow_target13_steps": 2,
+      "parent_willow_target13_steps": 2
+    },
+    "Pilgrimage candidate-A vs parent-A": {
+      "inner_replay_bytes_equal": true,
+      "inner_replay_sha256": "249bb463147f01a9a9aa8e8bded4b496151eeef20edadc042fdf28958da8a6a6",
+      "inner_replay_length": 237879,
+      "native_step_headers_equal": true,
+      "native_step_header_sha256": "f52e95cd1e67690e34cc587e781ec1bcd629e60b6e87652dc6ce3893ee94bda5",
+      "candidate_willow_priority_steps": 61,
+      "parent_willow_priority_steps": 61,
+      "candidate_willow_target13_steps": 2,
+      "parent_willow_target13_steps": 2
+    },
+    "Gold Rush candidate-A vs existing parent-A control": {
+      "inner_replay_bytes_equal": true,
+      "inner_replay_sha256": "66b21789b557dc8c510376778df7a0a1342fb8914f7c60614c216e6646782914",
+      "inner_replay_length": 199043,
+      "native_step_headers_equal": true,
+      "native_step_header_sha256": "10cff227023b0909ed5c6f733d18f3bbf21b9b765e7195a11f022934bd3d5720",
+      "candidate_willow_priority_steps": 0,
+      "parent_willow_priority_steps": 0,
+      "candidate_willow_target13_steps": 0,
+      "parent_willow_target13_steps": 0
+    }
+  }
+}

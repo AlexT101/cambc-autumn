@@ -1,0 +1,25 @@
+# Phased solo boss: v2 correction review
+
+2026-10-24, source only. Frozen v2 aggregate/manifest: `ed58bc00c3436c9a1458c199ef693644538ebe95537fe7362a1596bfddd73b56`; parent patch SHA-256: `62609243c3f9c0bb3efbba56a5d830e75e64ef0400bff1a630583ea67253758e`. Both receipt hashes were read back. Parent remains canonical f7 `f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824`. No compilation, tests, game, decoder or source modification by this reviewer.
+
+**The v1 correction themes are resolved. One small movement-refresh correction remains before source readiness.** Sol independently found it while this review was in progress and owns the versioned fix: `boss_step_field` should return the first actual `try_move` result rather than trying another descending neighbor after a failed attempt. A hidden blocker can reveal a threat, so another step should not use the old safety snapshot. Already-known blocked/guarded neighbors may still be skipped. The existing outer failure path observes and retreats; no new framework is needed.
+
+Verified corrections:
+
+- `boss_enemy_safe` now uses enemy-only knowledge, leaving own-boss reserve arithmetic and other-camp exclusion intact. Immediate station, exit and return destinations receive that enemy check. No global Safety behavior changed.
+- Remote and corridor return cooldown projections use N − 1 elapsed activations for N moves ending in a joint Marcella entry/basic/reset activation. Unit Damage remains movement-exclusive. The stationary forecast and executor use one basic plus at most one legal cast, with reset after the spent basic.
+- An active `boss_work` reserves the generic pickup/passing path until the phased comparison. The tracked boss is also excluded from ordinary passing attacks, protecting the closed-cycle restriction. Ordinary work still wins on value, and the generic continuation path remains available after relinquishing the job.
+- Token reuse compares native champion state (including action/channel flags), current health/max health/Strength/Focus, cooldowns, relevant item-family bits, position, observation/camp-hit epochs, and installed/deferred guard identity. Recall cancellation changes state and therefore forces fresh certification. The restricted low-health path installs the normal guard before final farm selection. `World::observe` intentionally retains the current turn's self start-position, so comparing actual position with `world.me().pos` continues to detect a walking-exclusive cast restriction after local movement.
+- A fresh HP rise after the earliest possible reset releases the retained cycle; the local admission path now reconciles expiry rather than bypassing the remote cutoff. An expired but ambiguous live observation closes the job instead of assuming a new cycle. Captured state also releases it. This remains intentionally conservative: absence of a fresh reset witness is not proof that another healing trip is allowed.
+
+The below-35% exception remains tied to the fresh active-job token. It enters restricted farm; losing selection clears the restriction/job and reruns canonical `want_home` before ordinary work. Game-ending, enemy, bank and original siege priorities were not replaced with forced commitment. Current HP funds the first sortie; only the selected paid trip permits the second, and real arrival HP/local state are rechecked. The strict remote cutoff remains `last_live_round + capture_time + respawn`, without the extra capture-helper round.
+
+The shortest certified straight exit replaces the first arbitrary valid ray; it retains the same bounded eight-ray search and stops at the physical distance lower bound. It reduces needless conservative exposure without weakening visibility, blocked-tile, other-camp or enemy checks. Altar goal construction is now cold-key-only. Large candidate locals and token initialization are scoped away from unrelated champions. These are verified source paths, not measured fuel results.
+
+No additional source blocker was identified in the bounded review. Once the single hidden-blocker retry correction is pinned and checked, this is ready for the authorized build and focused mechanism qualification. That verdict does not establish activation, complete paid-return conversion, fuel affordability or competitive strength; those are the next runtime observations, not reasons to add another speculative policy requirement.
+
+## V3 final source verdict
+
+The frozen v3 manifest is `b4a7d993fa954e459b89e21e25fc52834ba6574f29d5ad60528c2fbc861a0f95`; full parent patch SHA-256 is `979267c3cc85dc12b6a2996508aaa92354528d2a768802d25fca20ad3ae30e9a`. Both hashes were read back. Comparing immutable v2/v3 patches confirms the only code change is `if (pathing.try_move(next)) return true;` → `return pathing.try_move(next);` in `boss_step_field`. This resolves the remaining retry-under-stale-safety concern through the existing caller refresh path.
+
+**V3 is source-ready for the authorized build and focused mechanism tests. No remaining source blocker was identified.** No build or runtime was performed by this reviewer, and no promotion or strength claim follows from source readiness.

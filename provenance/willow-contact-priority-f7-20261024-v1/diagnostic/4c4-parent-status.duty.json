@@ -1,0 +1,67 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T07:12:57.616207+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "node",
+    "tools/replay/audit_native_status.mjs",
+    "provenance/willow-contact-priority-f7-20261024-v1/diagnostic/4c4-status-inputs/parent",
+    "--out",
+    "provenance/willow-contact-priority-f7-20261024-v1/diagnostic/4c4-parent-native-status.json"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-contact-priority-f7-20261024-v1/diagnostic/4c4-parent-status.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-contact-priority-f7-20261024-v1/diagnostic/4c4-parent-status.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.082661583,
+      "run_end_monotonic": 0.185545666
+    },
+    {
+      "run_start_monotonic": 1.085962791,
+      "run_end_monotonic": 1.186692291
+    },
+    {
+      "run_start_monotonic": 2.091907708,
+      "run_end_monotonic": 2.19503825
+    },
+    {
+      "run_start_monotonic": 3.100162625,
+      "run_end_monotonic": 3.205180291
+    },
+    {
+      "run_start_monotonic": 4.109716666,
+      "run_end_monotonic": 4.214401625
+    },
+    {
+      "run_start_monotonic": 5.118008333,
+      "run_end_monotonic": 5.218377083
+    },
+    {
+      "run_start_monotonic": 6.119972541,
+      "run_end_monotonic": 6.224537833
+    },
+    {
+      "run_start_monotonic": 7.127199041,
+      "run_end_monotonic": 7.230857625
+    },
+    {
+      "run_start_monotonic": 8.13596225,
+      "run_end_monotonic": 8.238174541
+    },
+    {
+      "run_start_monotonic": 9.141645708,
+      "run_end_monotonic": 9.246549791
+    }
+  ],
+  "pid": 88529,
+  "process_group_id": 88529,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T07:13:06.784328+00:00"
+}

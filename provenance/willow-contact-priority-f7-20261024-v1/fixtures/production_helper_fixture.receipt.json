@@ -1,0 +1,38 @@
+{
+  "schema": "contact-priority-production-helper-fixture/v1",
+  "candidate_source_sha256": "8656e5fca5d858a3c404bcb12dd20a37a0c242e56887e37b940a783add888c60",
+  "source_file": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-contact-priority-f7-20261024-v1/source-after/src/turn_order.cpp",
+  "helpers": {
+    "contact_camps_clear": "5dd0d344cee43fca6a8e99aec596a7734dcb1c8f301ab1057bb90e2cd5346f54",
+    "recall_contact_priority": "a4836fc05f148848517fd2c42c390079910d2d1e9ea6ba42547e2fbe801ef0bb"
+  },
+  "generated_cpp": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-contact-priority-f7-20261024-v1/fixtures/production_helper_fixture.generated.cpp",
+  "mocked_dependencies": [
+    "World roster and map groups",
+    "Enemy beliefs and priority-start stun snapshot",
+    "we_start parity",
+    "dist Chebyshev geometry",
+    "strike reach2 at requested rounds"
+  ],
+  "scope": "Exact extracted candidate helper bodies compiled and called; no SDK observation/executor or outer set_turn_order integration.",
+  "dispatch_scope": "The live/off-spawn/recalling/no-Wish/fallback-below-13 dispatch is source-reviewed only; not separately reimplemented as a fixture.",
+  "fixture_cases": [
+    "positive legal-contact rank crossing",
+    "active camp rejection",
+    "known clear exemption",
+    "future respawn exemption",
+    "respawn exactly next round rejection",
+    "stale position/stats/priority",
+    "unacted enemy",
+    "enemy channel",
+    "missing priority-start snapshot",
+    "known stun",
+    "opposite parity",
+    "unchanged rank"
+  ],
+  "compile_and_run": {
+    "status": "passed",
+    "compiler": "c++ -std=c++17 -O0 -Wall -Wextra",
+    "binary_sha256": "ff745dbc1149719e302fc8a526302ae4ae24c3c62d4778fc12cb70cecabf084f"
+  }
+}

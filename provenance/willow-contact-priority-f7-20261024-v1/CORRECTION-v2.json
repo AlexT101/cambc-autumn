@@ -1,0 +1,219 @@
+{
+  "schema": "contact-priority-correction-receipt/v2",
+  "supersedes": "RUN-RESULTS.md paragraph 19 wording on activation and payload scope; original retained unchanged",
+  "inner_replay_repl26a": {
+    "candidate-elkring-B": {
+      "sha256": "79dc2719b6b1f45625953b4d9da95bc417b99ee5fc8c4d005c002a5ae4f2652d",
+      "bytes": 126821
+    },
+    "parent-elkring-B": {
+      "sha256": "79dc2719b6b1f45625953b4d9da95bc417b99ee5fc8c4d005c002a5ae4f2652d",
+      "bytes": 126821
+    },
+    "candidate-pilgrimage-A": {
+      "sha256": "249bb463147f01a9a9aa8e8bded4b496151eeef20edadc042fdf28958da8a6a6",
+      "bytes": 237879
+    },
+    "parent-pilgrimage-A": {
+      "sha256": "249bb463147f01a9a9aa8e8bded4b496151eeef20edadc042fdf28958da8a6a6",
+      "bytes": 237879
+    },
+    "candidate-gold-rush-A": {
+      "sha256": "66b21789b557dc8c510376778df7a0a1342fb8914f7c60614c216e6646782914",
+      "bytes": 199043
+    },
+    "parent-gold-rush-A": {
+      "sha256": "66b21789b557dc8c510376778df7a0a1342fb8914f7c60614c216e6646782914",
+      "bytes": 199043
+    }
+  },
+  "native_step_header_trace": {
+    "candidate-elkring-B": {
+      "sha256": "f3897858763bbbdf30d8e0ec85ba7081d34c837b4b89f9be262f41983fa74fe2",
+      "steps": 123456,
+      "willow_set_priority_step_count": 132,
+      "step_priority_13_count": 2,
+      "actor_alive_immediately_after_those_steps": 0,
+      "actor_dead_immediately_after_those_steps": 2,
+      "priority13_step_records": [
+        {
+          "round": 483,
+          "step_round": 483,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        },
+        {
+          "round": 578,
+          "step_round": 578,
+          "team": 0,
+          "champion_id": 3,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        }
+      ]
+    },
+    "parent-elkring-B": {
+      "sha256": "f3897858763bbbdf30d8e0ec85ba7081d34c837b4b89f9be262f41983fa74fe2",
+      "steps": 123456,
+      "willow_set_priority_step_count": 132,
+      "step_priority_13_count": 2,
+      "actor_alive_immediately_after_those_steps": 0,
+      "actor_dead_immediately_after_those_steps": 2,
+      "priority13_step_records": [
+        {
+          "round": 483,
+          "step_round": 483,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        },
+        {
+          "round": 578,
+          "step_round": 578,
+          "team": 0,
+          "champion_id": 3,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        }
+      ]
+    },
+    "candidate-pilgrimage-A": {
+      "sha256": "f52e95cd1e67690e34cc587e781ec1bcd629e60b6e87652dc6ce3893ee94bda5",
+      "steps": 271025,
+      "willow_set_priority_step_count": 61,
+      "step_priority_13_count": 2,
+      "actor_alive_immediately_after_those_steps": 0,
+      "actor_dead_immediately_after_those_steps": 2,
+      "priority13_step_records": [
+        {
+          "round": 1041,
+          "step_round": 1041,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        },
+        {
+          "round": 1240,
+          "step_round": 1240,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": -1,
+          "step_priority": 13
+        }
+      ]
+    },
+    "parent-pilgrimage-A": {
+      "sha256": "f52e95cd1e67690e34cc587e781ec1bcd629e60b6e87652dc6ce3893ee94bda5",
+      "steps": 271025,
+      "willow_set_priority_step_count": 61,
+      "step_priority_13_count": 2,
+      "actor_alive_immediately_after_those_steps": 0,
+      "actor_dead_immediately_after_those_steps": 2,
+      "priority13_step_records": [
+        {
+          "round": 1041,
+          "step_round": 1041,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": 7,
+          "step_priority": 13
+        },
+        {
+          "round": 1240,
+          "step_round": 1240,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": -1,
+          "step_priority": 13
+        }
+      ]
+    },
+    "candidate-gold-rush-A": {
+      "sha256": "10cff227023b0909ed5c6f733d18f3bbf21b9b765e7195a11f022934bd3d5720",
+      "steps": 242500,
+      "willow_set_priority_step_count": 0,
+      "step_priority_13_count": 0,
+      "actor_alive_immediately_after_those_steps": 0,
+      "actor_dead_immediately_after_those_steps": 0,
+      "priority13_step_records": []
+    },
+    "parent-gold-rush-A": {
+      "sha256": "10cff227023b0909ed5c6f733d18f3bbf21b9b765e7195a11f022934bd3d5720",
+      "steps": 242500,
+      "willow_set_priority_step_count": 0,
+      "step_priority_13_count": 0,
+      "actor_alive_immediately_after_those_steps": 0,
+      "actor_dead_immediately_after_those_steps": 0,
+      "priority13_step_records": []
+    }
+  },
+  "comparisons": {
+    "Elkring candidate-B vs parent-B": {
+      "inner_replay_bytes_equal": true,
+      "inner_replay_sha256": "79dc2719b6b1f45625953b4d9da95bc417b99ee5fc8c4d005c002a5ae4f2652d",
+      "inner_replay_bytes": 126821,
+      "native_step_header_trace_equal": true,
+      "native_step_header_sha256": "f3897858763bbbdf30d8e0ec85ba7081d34c837b4b89f9be262f41983fa74fe2"
+    },
+    "Pilgrimage candidate-A vs parent-A": {
+      "inner_replay_bytes_equal": true,
+      "inner_replay_sha256": "249bb463147f01a9a9aa8e8bded4b496151eeef20edadc042fdf28958da8a6a6",
+      "inner_replay_bytes": 237879,
+      "native_step_header_trace_equal": true,
+      "native_step_header_sha256": "f52e95cd1e67690e34cc587e781ec1bcd629e60b6e87652dc6ce3893ee94bda5"
+    },
+    "Gold Rush candidate-A vs existing parent-A control": {
+      "inner_replay_bytes_equal": true,
+      "inner_replay_sha256": "66b21789b557dc8c510376778df7a0a1342fb8914f7c60614c216e6646782914",
+      "inner_replay_bytes": 199043,
+      "native_step_header_trace_equal": true,
+      "native_step_header_sha256": "10cff227023b0909ed5c6f733d18f3bbf21b9b765e7195a11f022934bd3d5720"
+    }
+  },
+  "decoded_semantic_json": {
+    "Elkring candidate-B vs parent-B": {
+      "events_payload_equal": true,
+      "rounds_payload_equal": true,
+      "events_uncompressed_sha256": "9713ab0154bd3e4000e9e64de899172535dca0a5a4bb42ad9a52f32f265f14fa",
+      "rounds_uncompressed_sha256": "41a0271ea935be4e5bfe6d7b1d11fbb3521d23c1cfeb5bd685a62f3616b1f460"
+    },
+    "Pilgrimage candidate-A vs parent-A": {
+      "events_payload_equal": true,
+      "rounds_payload_equal": true,
+      "events_uncompressed_sha256": "9cbf433f53b2ada66fa867da9990c6ff76334d54f08dfb4732b21746735581a9",
+      "rounds_uncompressed_sha256": "4d780035824f212011f364115c47fd98ee695e1c101de0ae47b3395767ac65db"
+    },
+    "Gold Rush candidate-A vs existing parent-A control": {
+      "events_payload_equal": true,
+      "rounds_payload_equal": true,
+      "events_uncompressed_sha256": "38855a6f16a6840552cf463e41e8d57e7aea8429a7cd94681cf1e14854d096f6",
+      "rounds_uncompressed_sha256": "dab9283c1c23db1d9c90fd636f2a05e8091aa667d41666eaeab56ae896f3e017"
+    }
+  },
+  "interpretation": [
+    "The exact uncompressed replay.repl26a bytes are identical candidate versus parent for both selected matchups and candidate versus the existing parent Gold Rush control.",
+    "Decoded semantic events.jsonl and rounds.json equality is a separate result; the event extractor omits Set priority from its action selection.",
+    "All native step-header traces also match candidate versus parent. The two Willow-associated Set priority headers whose priority field is 13 in each selected replay are followed by snapshots where that actor is dead; this does not establish a living priority-13 activation or prove that no live setter occurred earlier within a step.",
+    "Therefore report no observed living end-round priority-13 activation, and treat this ordinary matchup panel as no observed candidate-specific trace difference. The replay evidence does not validate the intended positive admission state."
+  ],
+  "coverage_correction": {
+    "fixture": "fixtures/projected_order_fixture.py",
+    "status": "non-tautological explicit expected-output checks now pass for four independently simulated schedules",
+    "scope": "sorting/alternation oracle examples with 5v6 and 6v5, both starting sides, dead roster IDs and tied priorities",
+    "excludes": "production rank/slot helper, contact predicates, admission predicates and native set_turn_order integration"
+  },
+  "native_scan_receipt": "correction-native-v2.duty.json",
+  "native_scan_log": "correction-native-v2.stdout.log"
+}

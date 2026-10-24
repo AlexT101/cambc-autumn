@@ -1,0 +1,30 @@
+{
+  "schema": "willow-phased-solo-boss-f7-v3-build-receipt/v1",
+  "source": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-phased-solo-boss-f7-work",
+    "aggregate_recipe": "shasum -a 256 src/* | shasum -a 256",
+    "aggregate_sha256": "b4a7d993fa954e459b89e21e25fc52834ba6574f29d5ad60528c2fbc861a0f95",
+    "patch_sha256": "979267c3cc85dc12b6a2996508aaa92354528d2a768802d25fca20ad3ae30e9a",
+    "source_review": "research/willow-phased-solo-boss-f7-source-review-20261024-v2.md"
+  },
+  "build": {
+    "result": "success",
+    "mode": "Release",
+    "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+    "cli": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "raw_wasm": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-phased-solo-boss-f7-work/.cambc/build-release/bot.wasm",
+      "sha256": "be6f385b31ea75cfe8512e0d430c26a97049d6220c5a09a30438e1447e400dfa"
+    },
+    "injected_wasm": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-phased-solo-boss-f7-work/.cambc/build-release/bot-injected.wasm",
+      "sha256": "3aede28b85a52f0e489df91e1ad7de326c40ccf2fd0e1bc8a22557af16a37017"
+    },
+    "source_copy_aggregate_sha256": "b4a7d993fa954e459b89e21e25fc52834ba6574f29d5ad60528c2fbc861a0f95",
+    "duty_receipt": "provenance/willow-phased-solo-boss-f7-20261024-v1/build-release.duty.json",
+    "stdout": "provenance/willow-phased-solo-boss-f7-20261024-v1/build-release.stdout.log",
+    "stderr": "provenance/willow-phased-solo-boss-f7-20261024-v1/build-release.stderr.log"
+  },
+  "qualification_status": "build only; no boss runtime was run; await latest-base source port before selecting runtime witness"
+}

@@ -1,0 +1,13 @@
+# Correction audit v2
+
+This receipt corrects the activation and payload wording in `RUN-RESULTS.md` paragraph 19. The original run report is preserved. Machine-readable details and per-replay step records are in `CORRECTION-v2.json` and `correction-native-step-audit.json`.
+
+The comparison was performed at three distinct levels. First, the exact uncompressed `replay.repl26a` inner payload bytes match candidate and parent on Elkring and Pilgrimage, and candidate and the existing parent-A Gold Rush control. Second, the extracted `events.jsonl` and `rounds.json` payloads match separately; the event extractor omits `Set priority` from its selected action events. Third, the full sequence of decoded native step headers (including `Set priority` headers) has identical hashes between each candidate/parent pair.
+
+For both selected games, native trace iteration found two Willow-associated `Set priority` step headers with a priority field of 13, in both candidate and parent traces. In the snapshot immediately after each such step, the actor is dead; its decoded resulting priority is 7/7 in Elkring and 7/−1 in Pilgrimage. These records do not prove a living priority-13 activation, and they also do not establish that no living setter occurred earlier within a step. The appropriately narrow statement is: **no observed living end-round priority-13 activation**. Candidate and parent have no observed native-step trace difference in these matchups. The panel therefore provides no positive evidence that the new admission path activated.
+
+The prior round-snapshot scan is not by itself conclusive because an actor may die before an end-round snapshot. Native step-header inspection now narrows what is visible, but the replay step view does not expose a source-level reason for admission or a separate setter outcome value. Do not claim the policy is inactive solely from this evidence.
+
+The projected-order fixture was corrected: it now asserts a fixed expected result table instead of a tautology. It is an independent schedule-model check only. It does not execute the production helper, contact/admission predicates, or native `set_turn_order` integration. A separate compiled fixture now extracts and runs the exact unchanged production helper bodies against thin mocks and an independent scheduler; its receipt is `fixtures/production_helper_fixture.receipt.json`. One bounded debug gate trace on the existing Elkring B matchup is recorded in `diagnostic/gate-trace-summary.json`.
+
+The native scan ran on existing replay files only, through the same isolated `nice 19`, approximately 10% duty-cycle wrapper. No matches were run for this correction.

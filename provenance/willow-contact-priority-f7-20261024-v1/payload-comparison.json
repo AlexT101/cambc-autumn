@@ -1,0 +1,159 @@
+{
+  "schema": "contact-priority-payload-comparison/v1",
+  "comparisons": {
+    "Elkring candidate-B vs parent-B": {
+      "events_payload_equal": true,
+      "rounds_payload_equal": true,
+      "events_uncompressed_sha256": "9713ab0154bd3e4000e9e64de899172535dca0a5a4bb42ad9a52f32f265f14fa",
+      "rounds_uncompressed_sha256": "41a0271ea935be4e5bfe6d7b1d11fbb3521d23c1cfeb5bd685a62f3616b1f460",
+      "map_hashes": [
+        "6793e671494a0c28",
+        "6793e671494a0c28"
+      ],
+      "result": [
+        {
+          "winner": 1,
+          "outcome": 2,
+          "rounds": 786,
+          "gems": [
+            385,
+            1012
+          ],
+          "steps": 123456
+        },
+        {
+          "winner": 1,
+          "outcome": 2,
+          "rounds": 786,
+          "gems": [
+            385,
+            1012
+          ],
+          "steps": 123456
+        }
+      ]
+    },
+    "Pilgrimage candidate-A vs parent-A": {
+      "events_payload_equal": true,
+      "rounds_payload_equal": true,
+      "events_uncompressed_sha256": "9cbf433f53b2ada66fa867da9990c6ff76334d54f08dfb4732b21746735581a9",
+      "rounds_uncompressed_sha256": "4d780035824f212011f364115c47fd98ee695e1c101de0ae47b3395767ac65db",
+      "map_hashes": [
+        "8caf8eb913649931",
+        "8caf8eb913649931"
+      ],
+      "result": [
+        {
+          "winner": 0,
+          "outcome": 1,
+          "rounds": 1358,
+          "gems": [
+            1030,
+            210
+          ],
+          "steps": 271025
+        },
+        {
+          "winner": 0,
+          "outcome": 1,
+          "rounds": 1358,
+          "gems": [
+            1030,
+            210
+          ],
+          "steps": 271025
+        }
+      ]
+    },
+    "Gold Rush candidate-A vs existing parent-A control": {
+      "events_payload_equal": true,
+      "rounds_payload_equal": true,
+      "events_uncompressed_sha256": "38855a6f16a6840552cf463e41e8d57e7aea8429a7cd94681cf1e14854d096f6",
+      "rounds_uncompressed_sha256": "dab9283c1c23db1d9c90fd636f2a05e8091aa667d41666eaeab56ae896f3e017",
+      "map_hashes": [
+        "32d3738f8ee828ea",
+        "32d3738f8ee828ea"
+      ],
+      "result": [
+        {
+          "winner": 1,
+          "outcome": 2,
+          "rounds": 2000,
+          "gems": [
+            704,
+            913
+          ],
+          "steps": 242500
+        },
+        {
+          "winner": 1,
+          "outcome": 2,
+          "rounds": 2000,
+          "gems": [
+            704,
+            913
+          ],
+          "steps": 242500
+        }
+      ]
+    }
+  },
+  "willow": {
+    "candidate-elkring-B": [
+      {
+        "team": 0,
+        "alive_priority13_rounds": [],
+        "alive_recall_rounds": 598,
+        "alive_recall_priority13_rounds": []
+      },
+      {
+        "team": 1,
+        "alive_priority13_rounds": [],
+        "alive_recall_rounds": 588,
+        "alive_recall_priority13_rounds": []
+      }
+    ],
+    "candidate-pilgrimage-A": [
+      {
+        "team": 0,
+        "alive_priority13_rounds": [],
+        "alive_recall_rounds": 1202,
+        "alive_recall_priority13_rounds": []
+      },
+      {
+        "team": 1,
+        "alive_priority13_rounds": [],
+        "alive_recall_rounds": 1108,
+        "alive_recall_priority13_rounds": []
+      }
+    ],
+    "parent-elkring-B": [
+      {
+        "team": 0,
+        "alive_priority13_rounds": [],
+        "alive_recall_rounds": 598,
+        "alive_recall_priority13_rounds": []
+      },
+      {
+        "team": 1,
+        "alive_priority13_rounds": [],
+        "alive_recall_rounds": 588,
+        "alive_recall_priority13_rounds": []
+      }
+    ],
+    "parent-pilgrimage-A": [
+      {
+        "team": 0,
+        "alive_priority13_rounds": [],
+        "alive_recall_rounds": 1202,
+        "alive_recall_priority13_rounds": []
+      },
+      {
+        "team": 1,
+        "alive_priority13_rounds": [],
+        "alive_recall_rounds": 1108,
+        "alive_recall_priority13_rounds": []
+      }
+    ]
+  }
+}

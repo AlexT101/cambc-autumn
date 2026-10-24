@@ -1,0 +1,73 @@
+CP-CTX r1 alive1 wish0 recalling0 onspawn1 enemies0
+CP-FALLBACK r1 alive1 priority7 recallctx0
+CP-CTX r2 alive1 wish0 recalling1 onspawn0 enemies0
+CP-FALLBACK r2 alive1 priority7 recallctx0
+CP-CTX r3 alive1 wish0 recalling1 onspawn0 enemies0
+CP-FALLBACK r3 alive1 priority7 recallctx0
+CP-CTX r4 alive1 wish0 recalling1 onspawn0 enemies0
+CP-FALLBACK r4 alive1 priority7 recallctx0
+CP-CTX r5 alive1 wish0 recalling1 onspawn0 enemies0
+CP-FALLBACK r5 alive1 priority7 recallctx0
+CP-CTX r6 alive1 wish0 recalling1 onspawn0 enemies0
+CP-FALLBACK r6 alive1 priority7 recallctx0
+CP-CTX r7 alive1 wish0 recalling1 onspawn0 enemies0
+CP-FALLBACK r7 alive1 priority7 recallctx0
+CP-CTX r8 alive1 wish0 recalling1 onspawn0 enemies0
+CP-FALLBACK r8 alive1 priority7 recallctx0
+CP-CTX r9 alive1 wish0 recalling1 onspawn0 enemies0
+CP-FALLBACK r9 alive1 priority7 recallctx0
+CP-CTX r10 alive1 wish0 recalling1 onspawn0 enemies0
+CP-FALLBACK r10 alive1 priority7 recallctx0
+CP-CTX r11 alive1 wish0 recalling0 onspawn0 enemies0
+CP-FALLBACK r11 alive1 priority7 recallctx0
+CP-CTX r12 alive1 wish0 recalling0 onspawn0 enemies0
+CP-FALLBACK r12 alive1 priority7 recallctx0
+CP-CTX r13 alive1 wish0 recalling0 onspawn0 enemies0
+CP-FALLBACK r13 alive1 priority7 recallctx0
+CP-CTX r14 alive1 wish0 recalling0 onspawn0 enemies0
+CP-FALLBACK r14 alive1 priority7 recallctx0
+CP-CTX r15 alive1 wish0 recalling1 onspawn0 enemies0
+CP-FALLBACK r15 alive1 priority7 recallctx0
+CP-CTX r16 alive1 wish0 recalling1 onspawn0 enemies0
+CP-FALLBACK r16 alive1 priority7 recallctx0
+CP-ENTER r55 x12 y24 fallback-41 allies5 enemies5
+CP-REJECT r55 gate=fresh enemy2 acted1 posr55 statsr55 priorityr55 channel1
+CP-ENTER r56 x11 y23 fallback-41 allies5 enemies5
+CP-REJECT r56 gate=fresh enemy2 acted1 posr56 statsr56 priorityr56 channel1
+CP-ENTER r57 x10 y22 fallback-41 allies5 enemies5
+CP-REJECT r57 gate=cross enemy2 rank0 oldslot6 newslot2 enemyslot1
+CP-ENTER r59 x9 y21 fallback-41 allies5 enemies5
+CP-REJECT r59 gate=fresh enemy2 acted1 posr59 statsr59 priorityr59 channel1
+CP-ENTER r61 x9 y21 fallback-41 allies5 enemies5
+CP-REJECT r61 gate=fresh enemy0 acted1 posr61 statsr61 priorityr61 channel1
+CP-ENTER r62 x8 y21 fallback-41 allies5 enemies5
+CP-REJECT r62 gate=fresh enemy0 acted0 posr62 statsr62 priorityr62 channel1
+CP-REJECT r62 gate=fresh enemy2 acted0 posr62 statsr62 priorityr62 channel1
+CP-ENTER r63 x9 y22 fallback-41 allies5 enemies5
+CP-REJECT r63 gate=fresh enemy0 acted1 posr63 statsr63 priorityr63 channel1
+CP-REJECT r63 gate=fresh enemy2 acted0 posr63 statsr63 priorityr63 channel1
+CP-ENTER r64 x9 y23 fallback-41 allies5 enemies5
+CP-REJECT r64 gate=fresh enemy0 acted0 posr64 statsr64 priorityr64 channel1
+CP-REJECT r64 gate=fresh enemy2 acted0 posr64 statsr64 priorityr64 channel1
+CP-ENTER r65 x10 y24 fallback-41 allies5 enemies5
+CP-REJECT r65 gate=fresh enemy0 acted1 posr65 statsr65 priorityr65 channel1
+CP-REJECT r65 gate=fresh enemy2 acted0 posr65 statsr65 priorityr65 channel1
+CP-ENTER r66 x11 y23 fallback-41 allies5 enemies5
+CP-REJECT r66 gate=fresh enemy0 acted1 posr66 statsr66 priorityr66 channel1
+CP-ENTER r67 x11 y23 fallback-41 allies5 enemies5
+CP-REJECT r67 gate=fresh enemy0 acted1 posr67 statsr67 priorityr67 channel1
+CP-ENTER r68 x12 y22 fallback-41 allies5 enemies5
+CP-REJECT r68 gate=fresh enemy0 acted1 posr68 statsr68 priorityr68 channel1
+CP-REJECT r68 gate=fresh enemy4 acted1 posr68 statsr68 priorityr68 channel1
+CP-ENTER r69 x12 y22 fallback-41 allies5 enemies5
+CP-REJECT r69 gate=fresh enemy0 acted1 posr69 statsr69 priorityr69 channel1
+CP-REJECT r69 gate=contact enemy4 d8
+CP-ENTER r70 x12 y22 fallback-41 allies5 enemies5
+CP-REJECT r70 gate=fresh enemy0 acted0 posr70 statsr70 priorityr70 channel1
+CP-REJECT r70 gate=fresh enemy4 acted1 posr70 statsr70 priorityr70 channel1
+CP-ENTER r71 x12 y22 fallback-41 allies5 enemies5
+CP-REJECT r71 gate=fresh enemy0 acted0 posr71 statsr71 priorityr71 channel1
+CP-REJECT r71 gate=fresh enemy4 acted1 posr71 statsr71 priorityr71 channel1
+CP-ENTER r72 x12 y22 fallback-41 allies5 enemies5
+CP-REJECT r72 gate=fresh enemy0 acted0 posr72 statsr72 priorityr72 channel1
+CP-REJECT r72 gate=cross enemy4 rank0 oldslot7 newslot1 enemyslot0

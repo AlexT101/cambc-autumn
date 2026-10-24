@@ -1,0 +1,130 @@
+{
+  "schema": "native-turn-status-audit/v1",
+  "batch": "provenance/willow-contact-priority-f7-20261024-v1/diagnostic/4c4-status-inputs/parent",
+  "batch_results_sha256": "44dfcaa0c44371ddb750729056c86882a97c4e7e68c2de3dcb8bf88240d0299d",
+  "release": true,
+  "games": 1,
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "snapshot_mode": "full_state_default",
+  "source_pins": null,
+  "bots": [
+    {
+      "bot": "hyperion-upstream-4c4eacc",
+      "bot_index": 0,
+      "games": 1,
+      "play": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    },
+    {
+      "bot": "willow-contact-priority-f7-parent",
+      "bot_index": 1,
+      "games": 1,
+      "play": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    }
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "replay": "provenance/willow-contact-priority-f7-20261024-v1/outputs/parent-elkring-B-vs-4c4.repl26a",
+      "replay_format": "repl26a",
+      "replay_sha256": "704055678862ddcf4226e4425b06968bf33152b38ee5da3421456dbd57436cdd",
+      "replay_engine": "v1_0_3",
+      "map": "maps/00elkring.map26a",
+      "map_format": "map26a",
+      "map_sha256": "4621e92590befe6b0438b7ecdd8fde5aa85945b27535f4968e701cf86934746e",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "hyperion-upstream-4c4eacc",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "willow-contact-priority-f7-parent",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "hyperion-upstream-4c4eacc",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "willow-contact-priority-f7-parent",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    }
+  ],
+  "notes": "Counts are native replay step kinds 26 (Turn rollover/fuel) and 27 (Bot error), classified by step.phase: 10 play, 12 draft, all remaining phases under other. For play statuses, physical team comes from the actor champion record in the same snapshot, not header.team; champion buckets use native actor kind/index. Snapshot mode is full state (the default); the auditor does not extract events or metrics. Source pins are copied from results.json or adjacent economic-capture-summary.json when available."
+}

@@ -1,0 +1,36 @@
+{
+  "schema": "contact-priority-runtime-pins/v1",
+  "cli": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+  "maps": {
+    "00elkring": {
+      "source_sha256": "4621e92590befe6b0438b7ecdd8fde5aa85945b27535f4968e701cf86934746e"
+    },
+    "00pilgrimage": {
+      "source_sha256": "7d7ddb9c37c77cd8b3721423e155400d936eaa76fa3c62fe24b308d0fd5eb673"
+    },
+    "01gold-rush": {
+      "source_sha256": "6e564fdf09fdf67a4182a909d6985737b488742e64f2c3e164204e78bc64c898"
+    }
+  },
+  "bots": {
+    "candidate": {
+      "source_aggregate": "8e535de8da12fde3b5d2c0b03edb275790539b2a867f86cf985ed554ec44c2e7",
+      "raw_wasm_sha256": "769e16407eb3faafbbe1e02f67624c89905e6b7cef4c9cc3dbe8c40d7d2bd05c",
+      "injected_wasm_sha256": "6252772fd899f706fed9e91e87076024132518ebb4026901158c1840876d8631"
+    },
+    "parent": {
+      "source_aggregate": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "raw_wasm_sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+      "injected_wasm_sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+    },
+    "v33": {
+      "source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+      "raw_wasm_sha256": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+      "injected_wasm_sha256": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+    }
+  }
+}

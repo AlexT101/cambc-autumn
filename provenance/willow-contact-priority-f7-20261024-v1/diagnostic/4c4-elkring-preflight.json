@@ -1,0 +1,45 @@
+{
+  "schema": "contact-priority-4c4-elkring-pair-preflight/v1",
+  "map": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/00elkring.map26a",
+    "sha256": "4621e92590befe6b0438b7ecdd8fde5aa85945b27535f4968e701cf86934746e",
+    "internal_hash": "6793e671494a0c28"
+  },
+  "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+  "cli": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "bots": {
+    "candidate": {
+      "project": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-contact-priority-f7-work",
+      "source_aggregate": "8e535de8da12fde3b5d2c0b03edb275790539b2a867f86cf985ed554ec44c2e7",
+      "raw_wasm_sha256": "769e16407eb3faafbbe1e02f67624c89905e6b7cef4c9cc3dbe8c40d7d2bd05c",
+      "injected_wasm_sha256": "6252772fd899f706fed9e91e87076024132518ebb4026901158c1840876d8631"
+    },
+    "parent": {
+      "project": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-contact-priority-f7-parent",
+      "source_aggregate": "f475b8521cada611754076822402a266c43be8de76ce0f2b504b268ff3335824",
+      "raw_wasm_sha256": "92e6dfaeced4f3386a8062ef94844c227619d489caab7f4048372a0dfb9b0fc6",
+      "injected_wasm_sha256": "340ed5e6ae6b80ae6187545627e7be22159921ff5b7348af8e8c1e84b4e69804"
+    },
+    "opponent": {
+      "project": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/hyperion-upstream-4c4eacc",
+      "source_aggregate": "7f773ba81b8acc1b3d8912ca48ef98be007b4820ca83f5b7b89ff15b75c3f36f",
+      "raw_wasm_sha256": "1b1808d04a0c23e68557877ac0f303afd206add4d4c9eb10f6b6d758c0a910b8",
+      "injected_wasm_sha256": "adb0321043e422880810a662579de239f396e7b48aab0ede05aeb44d2b2de534"
+    }
+  },
+  "draft_check": {
+    "members": 30,
+    "groups": 10,
+    "test": "3*members > 10*groups",
+    "actual": "90 > 100 is false; chooses Ryth fourth then HoR",
+    "five_pick_stratum_evidence": "research/EXPERIMENTS.md reports exact4c4 31/52 overall and 28 teacher-Ryth cells"
+  },
+  "run": [
+    "exact candidate B vs 4c4 A",
+    "exact f7 parent B vs 4c4 A"
+  ],
+  "reuse_control": "No exact candidate/parent vs 4c4 Elkring-B control found; existing 4c4 Elkring cells are vs roster emulator, not this opponent matchup."
+}

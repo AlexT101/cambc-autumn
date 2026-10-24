@@ -2526,3 +2526,106 @@ engine identities under `../provenance/ladder-history-replays-20261024-v1/`.
 Use `bigworld-pair-macro-notes-v4.md`: earlier v3 incorrectly called971 the bank
 time and overcounted successive camp hits. Raw bundles and compressed extracts
 remain preserved separately. No candidate has been promoted or submitted.
+
+### Contact-priority diagnostic panel and phased-work implementation (2026-10-24)
+
+The contact candidate `8e535de8` builds in Release; reconstructed f7 parent and
+frozen v33 binaries match their previous raw/injected hashes. Both candidate and
+parent beat v33 on Elkring B at786 and Pilgrimage A at1358. Candidate Gold Rush A
+loses at2000, matching the existing exact f7 control, which was reused. All three
+comparisons have identical inner `replay.repl26a` bytes, as well as identical
+extracted event/round JSON. Selected-map candidate/parent native play rollovers
+are0/0, while v33 has6 across the two maps; Gold Rush has1 candidate and15 v33.
+Native BotErrors are zero. These are small diagnostic results, not evidence of
+strength or a release threshold.
+
+No living end-round Willow priority13 is observed in either selected map.
+Round-end sampling alone cannot exclude a write followed by death, so a follow-up
+native step-header audit and separate raw-payload equality check are retained.
+The identical complete replay payloads show no observable policy change in this
+panel. The initial Python order fixture checks independent schedule examples,
+not production admission; its first equivalent-expression assertion was
+identified and corrected. Next is an exact-source helper fixture with declared
+mocked dependencies and one bounded gate-rejection trace, rather than a larger
+win-rate panel. The broad group-range camp guard can conservatively overreject,
+but these results do not yet identify it as the binding condition. Evidence is
+in `../provenance/willow-contact-priority-f7-20261024-v1/` and
+`willow-contact-priority-nonactivation-diagnostic-20261024-v1.md`.
+
+The separate phased boss implementation is now a Marcella-only one-heal-trip
+prototype under source review. A fresh active-job escape certificate may override
+the generic35% health heuristic only while that job owns the work/exit action;
+ordinary work and enemy danger retain their original retreat policy. This permits
+testing the observed4100HP mechanism instead of requiring an artificial5200HP
+state. The plan review also fixes the remote HP expiry bound: another actor can
+kill and hold later in the observation round, so use `last_live_round +
+settings.capture_time + respawn`, without the ordinary cycle helper's extra turn.
+Source checks still need to settle cached action state, cleanup, return and cycle
+reset behavior before any build or performance claim.
+
+The contact follow-up now compiles and calls the unchanged production helper
+bodies against declared mock observations. Its positive case and negative cases
+pass; SDK observation acquisition and the outer dispatch remain outside that
+fixture. One bounded Elkring trace records channel, schedule and distance
+rejections, with no sampled camp rejection. Its full replay payload and native
+step-header sequence equal the Release replay, so no observable trace
+perturbation was found. The shared runtime source and Release binaries were
+restored and match their pins. A final two-game Elkring B comparison against
+frozen Hyperion `4c4eacc` is underway: its native draft includes Ryth, unlike
+the newer v33 opponent. This tests the motivating pursuer without altering
+the opponent or treating it as a model of Mite. See the fixture receipt and
+`diagnostic/DIAGNOSTIC-v1.md` under the contact provenance directory.
+
+Phased boss source v3 is independently approved for build and focused mechanism
+tests, aggregate `b4a7d993fa954e459b89e21e25fc52834ba6574f29d5ad60528c2fbc861a0f95`.
+Review corrected an own-camp threat veto, return cooldown timing, interference
+from generic passing attacks, incomplete certificate-cache inputs and cycle
+reconciliation. A failed return move now refreshes observation before any
+second attempt. Immutable v1/v2/v3 patches and manifests preserve each change.
+There is still no runtime evidence of a completed heal-return-capture cycle,
+affordable fuel or improved match results. The same sole throttled worker will
+build this candidate after the contact pair. See
+`willow-phased-solo-boss-f7-source-checkpoint.md` and the final pinned verdict in
+`willow-phased-solo-boss-f7-source-review-20261024-v2.md`.
+
+The user reconfirmed that Willow-first batches are ladder manipulation. They
+remain excluded from all active regression comparisons; no investigation of
+their implementation is needed. Canonical Astraeus and the deployed bot remain
+unchanged.
+
+### Contact arm closed; latest upstream intake (2026-10-24, 07:15 UTC)
+
+The final frozen `4c4eacc` Elkring B pair also produces identical candidate and
+f7-parent payloads: both win at round 798, with zero native rollovers or bot
+errors on either side. Its native Ryth draft therefore adds no observed match
+activation or benefit. Both traces include the same priority-write record
+targeting 13 with the actor already dead in the immediately following state;
+this must not be reported as a live contact-policy activation. The source-bound
+positive fixture is useful unit evidence, not a competitive result. Local bots'
+frequent end-turn recall stubs also limit these opponents' coverage of the
+public non-channeling pursuit situation. The arm is preserved without promotion.
+The closed 28-file compact artifact list is
+`../provenance/willow-contact-priority-f7-20261024-v1/diagnostic/contact-artifact-manifest.json`.
+
+Phased boss f7 v3 builds successfully in Release with the unchanged shared SDK
+and throttled worker. Raw/injected WASM hashes are
+`be6f385b31ea75cfe8512e0d430c26a97049d6220c5a09a30438e1447e400dfa` /
+`3aede28b85a52f0e489df91e1ad7de326c40ccf2fd0e1bc8a22557af16a37017`.
+No boss runtime game has yet run. The receipt is
+`../provenance/willow-phased-solo-boss-f7-20261024-v1/build-receipt.json`.
+
+Fetched upstream `4d08241123b88ad0365d4b0ad346cd65a329b699` after the earlier
+`dc9867a` inspection. Four small Astraeus fixes change shield/Durability spell
+pricing, dash-aware altar distance, capture-holder coordination for allies bound
+elsewhere, and mid-turn killed-enemy observations. Upstream reports sequential
+1,104-game results of 50.1%, 51.6%, 50.1% and 50.0%; these are Alex's recorded
+results, not reruns here. A separate source-only boss port is being prepared
+against this latest baseline. Frozen f7 candidates, canonical sources and the
+completed comparisons remain intact.
+
+The new upstream replay harness supports v47 and a versioned trace bot. Its
+reported exact reruns are not proof that our selected public losses use f7.
+One selected Pilgrimage loss may be rerun against its recorded opponent actions
+to establish the exact prefix, then traced only within that prefix. This would
+explain Willow's post-heal step using actual private beliefs and farm/support
+branches. No whole-manifest pipeline or browser rendering is planned.

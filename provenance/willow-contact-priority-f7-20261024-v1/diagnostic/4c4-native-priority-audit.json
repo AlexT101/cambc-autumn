@@ -1,0 +1,54 @@
+{
+  "schema": "contact-priority-correction-audit/v2",
+  "replays": {
+    "candidate-elkring-B-vs-4c4": {
+      "file": "provenance/willow-contact-priority-f7-20261024-v1/outputs/candidate-elkring-B-vs-4c4.repl26a",
+      "inner_replay_length": 132559,
+      "inner_replay_sha256": "e8151f82bd7fe74471ba39f68d67f018569efbc7addd6e2b1fe5c60da43de1ab",
+      "engine": "v1_0_3",
+      "priority_step_count": 1016,
+      "willow_priority_steps": 96,
+      "willow_target13_steps": 1,
+      "willow_target13_alive_after_step": 0,
+      "willow_target13_dead_after_step": 1,
+      "willow_steps": [
+        {
+          "round": 722,
+          "step_round": 722,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": 10300,
+          "step_priority": 13
+        }
+      ],
+      "native_step_header_sha256": "e798873dc90b65567d41bfce3ab837802f9639d86e78756f8e9e0825253e96c3",
+      "native_step_count": 125654
+    },
+    "parent-elkring-B-vs-4c4": {
+      "file": "provenance/willow-contact-priority-f7-20261024-v1/outputs/parent-elkring-B-vs-4c4.repl26a",
+      "inner_replay_length": 132559,
+      "inner_replay_sha256": "e8151f82bd7fe74471ba39f68d67f018569efbc7addd6e2b1fe5c60da43de1ab",
+      "engine": "v1_0_3",
+      "priority_step_count": 1016,
+      "willow_priority_steps": 96,
+      "willow_target13_steps": 1,
+      "willow_target13_alive_after_step": 0,
+      "willow_target13_dead_after_step": 1,
+      "willow_steps": [
+        {
+          "round": 722,
+          "step_round": 722,
+          "team": 1,
+          "champion_id": 8,
+          "alive_after_step": false,
+          "resulting_priority": 10300,
+          "step_priority": 13
+        }
+      ],
+      "native_step_header_sha256": "e798873dc90b65567d41bfce3ab837802f9639d86e78756f8e9e0825253e96c3",
+      "native_step_count": 125654
+    }
+  },
+  "comparisons": {}
+}
