@@ -75,17 +75,26 @@ support_mailbox::State support;
 int support_intent_round = -1;
 bool support_intent_value = false;
 
+// Prism and Willow, found once: the picks are fixed after the draft.
 std::array<const ChampionBelief*, 2> endpoints(const World& world) {
-    std::array<const ChampionBelief*, 2> pair{};
-    for (const auto& a : world.allies) {
-        if (a.type == cambc::champion_type::prism) pair[0] = &a;
-        if (a.type == cambc::champion_type::willow) pair[1] = &a;
+    static std::array<int, 2> index{-2, -2};
+    if (index[0] == -2) {
+        index = {-1, -1};
+        for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
+            if (world.allies[i].type == cambc::champion_type::prism) index[0] = i;
+            if (world.allies[i].type == cambc::champion_type::willow) index[1] = i;
+        }
     }
+    std::array<const ChampionBelief*, 2> pair{};
+    for (int i = 0; i < 2; ++i)
+        if (index[i] >= 0) pair[i] = &world.allies[index[i]];
     return pair;
 }
 
+// Only the pair reads the mailbox.
 void receive_support(const World& world, std::uint64_t bits) {
     const auto pair = endpoints(world);
+    if (!pair[0] || !pair[1] || (!pair[0]->is_self && !pair[1]->is_self)) return;
     std::array<support_mailbox::Endpoint, 2> endpoint{};
     for (int i = 0; i < 2; ++i)
         if (pair[i]) endpoint[i] = {true, pair[i]->alive, pair[i]->is_self, pair[i]->respawned_round};

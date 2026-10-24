@@ -67,6 +67,10 @@ struct Stations {
     vec2 origin{-1, -1};
     std::uint32_t observations = 0;
 };
+Stations& stations_cache() {
+    static Stations s;
+    return s;
+}
 const Stations& stations(const World& world, Safety& safety, vec2 here);
 void guard_steps(const World& world, Pathing& pathing, Safety& safety);
 
@@ -3075,10 +3079,15 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
 
 // step_guard from where we stand, worked out when a step or dash first needs it.
 void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
-    // Willow holds no fight: every tile want_home would leave is guarded.
+    // Willow holds no fight: every tile want_home would leave is guarded. With no enemy in reach of
+    // a step, an empty board, not null: see_again works out a held guard again.
     if (world.me().type == cambc::champion_type::willow) {
-        pathing.defer_guard([](const World& w, Safety& s, vec2 here, int) { return &stations(w, s, here).guard; }, safety,
-                            my_position(), 1);
+        pathing.defer_guard(
+            [](const World& w, Safety& s, vec2 here, int) {
+                static const bitboard none;
+                return s.credible_enemy_may_hit_within(here, 1) ? &stations(w, s, here).guard : &none;
+            },
+            safety, my_position(), 1);
         return;
     }
     const auto& self = world.me();
@@ -4328,10 +4337,11 @@ bool each_camp_striker(const World& world, vec2 p, F&& f) {
 // hit is unsafe. `enemies`: false when no enemy can hit p, which spares their search.
 SupportExposure exposure_at(const World& world, Safety& safety, vec2 p, bool enemies = true) {
     SupportExposure risk;
-    risk.damage = risk.imminent = safety.camp_damage(p, true, true);
     if (enemies) {
         const auto b = safety.bound(p);
         risk.damage = b.damage, risk.imminent = b.doubled, risk.enemy = b.threat, risk.stun = b.stuns;
+    } else {
+        risk.damage = risk.imminent = safety.camp_damage(p, true, true);
     }
     each_camp_striker(world, p, [&](int g, std::size_t i, const CampMember&) {
         const auto& c = world.camps[g];
@@ -4346,11 +4356,11 @@ SupportExposure exposure_at(const World& world, Safety& safety, vec2 p, bool ene
 // Worked out on first need after we move or see again. Its guard board stays at one address: a
 // guard Pathing holds reads the latest.
 const Stations& stations(const World& world, Safety& safety, vec2 here) {
-    static Stations s;
+    auto& s = stations_cache();
     if (s.observations == world.observations && s.origin == here) return s;
     world.throw_if_stale();
-    s.observations = world.observations;
-    s.origin = here;
+    // Keyed only once complete: a read that throws part-way leaves nothing to reuse.
+    s.origin = {-1, -1};
     clear_board(s.guard);
     const bool enemies = safety.credible_enemy_may_hit_within(here, 1);
     for (int k = 0; k < 9; ++k) {
@@ -4362,7 +4372,27 @@ const Stations& stations(const World& world, Safety& safety, vec2 here) {
         if (tile.risk.enemy) set_tile(s.guard, tile.p);
     }
     world.throw_if_stale();
+    s.observations = world.observations;
+    s.origin = here;
     return s;
+}
+
+// stations(here).tiles[0].risk alone, for when no step or guard read follows this turn: after
+// Willow's walk, or at the turn's end.
+SupportExposure exposure_here(const World& world, Safety& safety) {
+    const vec2 here = my_position();
+    if (const auto& s = stations_cache(); s.observations == world.observations && s.origin == here) return s.tiles[0].risk;
+    static struct {
+        std::uint32_t observations = 0;
+        vec2 p{-1, -1};
+        SupportExposure risk;
+    } memo;
+    if (memo.observations != world.observations || memo.p != here) {
+        const bool open = in_bounds(here) && test(world.map().open_for_us, here);
+        memo.risk = open ? exposure_at(world, safety, here, safety.credible_enemy_may_hit_within(here, 1)) : SupportExposure{};
+        memo.observations = world.observations, memo.p = here;
+    }
+    return memo.risk;
 }
 
 // Ours, or a free open tile a step reaches.
@@ -4411,7 +4441,6 @@ void close_recovery(Memory& memory, float health) {
         memory.recovery_reentry = health >= 0;
     }
     if (health < 0) memory.recovery_reentry = false, memory.recovery_closed_group = -1;
-    memory.recovery = Memory::Recovery::idle;
     memory.recovery_start = -1;
     memory.recovery_turns = 0;
     memory.recovery_closed_health = health;
@@ -4536,7 +4565,6 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     const auto quiet = [](const SupportExposure& risk) {
         return risk.safe() && !risk.stun && risk.imminent == 0;
     };
-    if (!quiet(stations(world, safety, here).tiles[0].risk)) return false;
     std::array<HealView, 8> views;
     int n = heal_views(world, here, amount, views);
     if (n == 0 || heal_lands_from(world, here, views, n)) return false;
@@ -4545,6 +4573,7 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     n = static_cast<int>(std::remove_if(views.begin(), views.begin() + n,
                                         [&](const HealView& v) { return !(v.target.gain > 3 * basic); }) - views.begin());
     if (n == 0 || immediate_camp_finish(world, here, basic)) return false;
+    if (!quiet(stations(world, safety, here).tiles[0].risk)) return false;
     const vec2 best = heal_station(world, pathing, safety, here, views, n, [&](const Station& tile) { return quiet(tile.risk); },
                                    [](const Station&) { return 0; });
     world.throw_if_stale();
@@ -4621,8 +4650,6 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         memory.formation_start = -1;
         return false;
     }
-    memory.support_observed = mate->pos;
-    memory.support_seen = world.round;
     const bool observed_channel = mate->channel == Channel::tribute || mate->channel == Channel::teleport
                                   || (mate->channel == Channel::recall
                                       && kept_recall(mate->handle, mate->fast_recall ? home_recall_time
@@ -4640,9 +4667,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     const auto& healer = willow ? world.me() : *mate;
     const bool ready = heal_ready(world, healer, amount);
     if (willow && ready) view_count = heal_views(world, here, amount, views);
-    const auto formation_view = attack_viewers(world, mate->pos, heal_range(healer));
-    const auto here_risk = support_exposure(world, safety, here);
-    const auto mate_risk = prism ? support_exposure(world, safety, mate->pos) : SupportExposure{};
+    Reach::Window formation_view;
     if (prism) {
         if (memory.recovery_start >= 0 && (health > memory.recovery_health || !ready)) {
             close_recovery(memory, health);
@@ -4650,8 +4675,10 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
             return false;
         }
         const float gain = std::min(amount, my_max_health() - health);
-        if (!ready || !mate_risk.safe() || !worth_healing(amount, gain, health / my_max_health())) return abandon_recovery();
+        if (!ready || !worth_healing(amount, gain, health / my_max_health()) || !support_exposure(world, safety, mate->pos).safe())
+            return abandon_recovery();
         if (memory.recovery_start < 0 && memory.recovery_closed_health >= 0 && health >= memory.recovery_closed_health) return false;
+        formation_view = attack_viewers(world, mate->pos, heal_range(healer));
         const float usable = my_max_health() * (1 - params::recall_health_fraction);
         const float out = world.map().from_ally_spawn_ready() ? world.map().from_ally_spawn().at(here)
                                                             : static_cast<float>(dist(here, world.map().ally_spawn_centre));
@@ -4664,9 +4691,11 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
             support_retreat = !recovered_for_work(world, safety, memory);
             return false;
         }
+    } else {
+        formation_view = attack_viewers(world, mate->pos, heal_range(healer));
     }
+    const auto here_risk = support_exposure(world, safety, here);
     const int work = willow ? comms::claim_of(world, mate->index) : memory.farm_group;
-    if (willow && work >= 0) memory.formation_group = work;
     if (willow && !ready && here_risk.safe() && stationary_support_output(world, work)) {
         support_owned = true;
         memory.claim = -1;
@@ -4697,7 +4726,6 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         if (!in_bounds(p) || (p != here && (!my_can_move() || !test(world.map().standable, p) || test(blocked, p)))) continue;
         const int camp = world.map().group_at(p);
         if (willow && p != here && camp >= 0 && world.camps[camp].state == CampState::cleared) continue;
-        if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
         const bool in_range = support_view(formation_view, mate->pos, p);
         const int gap = in_range ? 0 : dist(p, mate->pos);
         if (prism) {
@@ -4718,6 +4746,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
                 || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos))) continue;
         } else if (willow && gain <= 0 && (active_clear || formation_expired
                                           || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos)))) continue;
+        if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
         const int home = dist(p, world.map().ally_spawn_centre);
         if (!found || gain > best_gain || (gain == best_gain && gap < best_gap)
             || (gain == best_gain && gap == best_gap && (p == here || (best != here && home < best_home))))
@@ -4728,7 +4757,6 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         support_owned = true;
         if (prism) {
             if (memory.recovery_start < 0) memory.recovery_start = world.round, memory.recovery_group = memory.farm_group;
-            memory.recovery = best == here ? Memory::Recovery::recovering : Memory::Recovery::withdrawing;
             ++memory.recovery_turns;
             memory.recovery_health = health;
         } else {
@@ -4751,7 +4779,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         }
         commit_support();
         see_revealed(world, pathing, safety);
-        if (!support_exposure(world, safety, my_position()).safe()) {
+        if (!(willow ? exposure_here(world, safety) : support_exposure(world, safety, my_position())).safe()) {
             support_owned = true;
             memory.claim = -1;
             memory.crew = false;
@@ -4784,7 +4812,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
                                   && dist(best, world.map().groups[work].centre) < dist(here, world.map().groups[work].centre));
     if (productive || route_progress) memory.formation_start = -1, memory.formation_turns = 0;
     float offered = 0;
-    support_offered = heal_ready(world, world.me(), offered) && support_exposure(world, safety, my_position()).safe();
+    support_offered = heal_ready(world, world.me(), offered) && exposure_here(world, safety).safe();
     decision = 'h';
     return true;
 }
@@ -5043,7 +5071,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
             if (end_ward) {
                 see_again(world, pathing, safety);
                 float amount = 0;
-                intent = heal_ready(world, world.me(), amount) && support_exposure(world, safety, my_position()).safe();
+                intent = heal_ready(world, world.me(), amount) && exposure_here(world, safety).safe();
             }
         }
         world.throw_if_stale();

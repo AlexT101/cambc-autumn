@@ -303,6 +303,18 @@ another harmless group was kept (CHANGES 91).
   Willow in the Ryth/Vendetta slot is level with hyperion's pick but costs ~30% more out-of-fuel turns; the reshaped
   Willow layer beats v44's slightly and uses far less fuel. (Equal 5-pick totals in both pairs are coincidence: the
   drafts differ and only ~10 of those 422 games matched.)
+- Astraeus fuel, behaviour-preserving (2026-10-24, against the frozen `bots/baselines/astraeus-e72724a`):
+  - Prism's recovery takes its cheap exits (`!ready`, `worth_healing`) before the mate's exposure and the formation view.
+  - Tiles in `local_support`'s loop are judged safe after its other filters.
+  - The independent heal step judges its own tile after its target and camp-finish filters.
+  - Willow's guard is an empty board when no enemy may hit within a step: no 9-tile build for camps alone.
+  - After Willow's walk and at the turn's end, `exposure_here` prices our tile alone, not a fresh 9-tile build.
+  - `stations()` is keyed only once built, so a throw part-way through leaves nothing to reuse.
+  - Only Prism and Willow read the support mailbox; its endpoints are found once.
+  - Write-only state removed.
+
+  `bench.py` wide set, own drafts: 52/52 replays identical, fuel -1.54% (mean -1.6%, p99 -0.8%), turns over 100k
+  1233 -> 1164. Only 5-pick maps run this code.
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
 - `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
   2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next
