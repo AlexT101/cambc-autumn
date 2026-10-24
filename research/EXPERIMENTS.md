@@ -568,6 +568,11 @@ Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel
   unseen enemy can reach the grid, one `any_within` per enemy a search (2026-10-23, main c71be8c, wide bench, own
   drafts, 100M): identical replays, fuel -0.003% (dearer in 15,092 turns, cheaper in 716). Dropped; `flee_camps`'
   nine `damage_bound`s (one remembered `any_within` per unseen enemy a tile) would save less.
+- Out-of-fuel streaks (2026-10-24, batch 5 bug hunt; v47 harness with fuel-free probes in a RELEASE_CODE copy): a
+  resumed turn finishes its tail, then a fresh turn reruns the same path in an unchanged world. 9bce3341-2's 197-turn
+  Vesper streak (and its rematch 0688310e-2) was a failing route search out of a hole island, fixed by CHANGES 131.
+  4bd1a9ef-3's HoR r37-48 runs out in `plan_strikes` (~50k left at its start, after `want_home` ~18-28k), and
+  33ddfdef-1's early streaks are several champions in the opening farm turns: neither is a repeat of one bounded step.
 - Gate removals: every one so far was level at 100M but multiplied out-of-fuel turns, since a "skip when short" gate
   adds work exactly when fuel is short. Held branches: `fuel/no-gates-1` (23319 vs 6776), `-1b` (4.2x), `-1c` (5.1x;
   the culprit is pick_up's farm-loop gate, the ward gate a distant second); the turn-order gate (bb414db, +13%); step

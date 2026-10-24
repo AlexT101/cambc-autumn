@@ -708,3 +708,19 @@ that round); `start_recall` a second time in a round, after a turn that ran out 
 tail.
 
 - Against 298cff1: 50.5% of 1104 (47.5-53.4; ladder 52.5, gen 51.8, gen-s1 48.8), out-of-fuel turns 2389 vs 2544.
+
+## 131: a walk out of a closed pocket is not searched every turn (astraeus, 2026-10-24)
+
+A route search grows from the goals until it reaches us, so with no walking way out (a dasher's hole island, units) it
+fails only at its cap, after labelling the whole map. On the ladder (9bce3341-2, 01big_world) our Vesper on a 4-tile
+hole island ran out of fuel on 197 turns in a row, r488-712: `retreat_step`'s last `step_towards(home)` searched at
+cap 112 (22k) and at 192 (31k), both failing; the resumed tail finished the search and the fresh turn repeated it.
+After a search fails at its cap, `Pathing::enclosed` floods from us (radius 16 and 17, flat host calls, ~1.1k): a
+closed region with no goal and no ally beside us (`make_way`'s case) cannot reach one at any cap, so the search
+counts as exhausted (no wider retry) and that tile is tested first on later searches.
+
+- Against 298cff1: 49.6% of 1104 (46.7-52.6; ladder 50.0, gen 49.6, gen-s1 49.6), out-of-fuel turns 2400 vs 2404.
+- 100M bench: identical replays (wide set 52/52, fuel +0.09%; 01big_world, 00lost_world, 01islands 6/6, -0.2%).
+  Real budget on those three maps: 25 out-of-fuel turns vs 33.
+- v47 harness re-run of 9bce3341-2 with the fix live from r488 (free before, so the game matches the ladder until
+  then): 5 of our turns at the full budget vs 203.

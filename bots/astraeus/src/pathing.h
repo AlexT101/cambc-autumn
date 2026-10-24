@@ -137,6 +137,11 @@ private:
     // although it stopped short of its cap, so that no wider search finds one either.
     cambc::distance_field route_field_;
     bool route_exhausted_ = false;
+    // Where a failed search last found us enclosed (enclosed()).
+    vec2 pocket_at_{-1, -1};
+    static constexpr int pocket_radius = 16;
+    // No goal within the walkable region around us, which ends within pocket_radius, and no ally beside us.
+    bool enclosed(const bitboard& walls, const bitboard& goals, vec2 me);
     // The latest search that found a way, with its goals and walls: complete below `layer`, the
     // layer that reached us.
     struct KeptRoute {

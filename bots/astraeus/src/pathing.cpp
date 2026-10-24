@@ -452,6 +452,16 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
     auto& kept = kept_route_;
     int here = kept_steps(kept, goals, walls, me, cap);
     if (here == unreachable) {
+        // A search fails only at its cap, having labelled all the goals reach, so in a pocket (holes a
+        // dash crossed, units) it costs a whole map; a standoff repeats it every turn. Once a failed
+        // search finds us enclosed, that tile is tested first.
+        if (me == pocket_at_) {
+            if (enclosed(walls, goals, me)) {
+                route_exhausted_ = true;
+                return r;
+            }
+            pocket_at_ = {-1, -1};
+        }
         // Search outwards from the goals until it reaches us: every tile one layer nearer than ours
         // is then labelled, so each neighbour on a shortest route is known.
         FuelMeter meter{"route"};
@@ -464,6 +474,7 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
         here = steps_at(route_field_, me);
         if (here == unreachable) {
             route_exhausted_ = layers < cap;
+            if (!route_exhausted_ && enclosed(walls, goals, me)) route_exhausted_ = true, pocket_at_ = me;
             return r;
         }
         std::swap(route_field_, kept.field);
@@ -498,6 +509,21 @@ Pathing::Neighbours Pathing::closer_neighbours(const Field& field, const bitboar
         }
     }
     return r;
+}
+
+// make_way reads the failed search's labels, but only beside an ally next to us: with none there, no
+// cap reaches a goal from a closed walkable region that holds none.
+bool Pathing::enclosed(const bitboard& walls, const bitboard& goals, vec2 me) {
+    static bitboard region{cambc::uninitialized}, wider{cambc::uninitialized}, allies{cambc::uninitialized};
+    walls.reachable_tiles_into(me, pocket_radius, region);
+    walls.reachable_tiles_into(me, pocket_radius + 1, wider);
+    if (!boards_equal(region, wider)) return false;
+    and_into(region, goals, wider);
+    if (!board_empty(wider)) return false;
+    occupancy_into(team::ally, allies);
+    for (auto d : directions)
+        if (in_bounds(me + d) && test(allies, me + d)) return false;
+    return true;
 }
 
 // Removing a tile at or past our layer, or adding one whose neighbours all lie at or past the
