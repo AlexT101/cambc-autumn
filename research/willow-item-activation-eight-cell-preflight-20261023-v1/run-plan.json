@@ -1,0 +1,246 @@
+{
+  "schema": "willow-item-activation-eight-cell-runplan-v1",
+  "scope": "Eight selected activation diagnostics; no panel or win-rate inference.",
+  "controls_audit": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1",
+  "sources": {
+    "base_4db_aggregate": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd",
+    "arm_ae184_aggregate": "ae18438dcd2164bd81f27ade445b58ae36901b4bdf99f1fda2d2e53dbff86086",
+    "arm_279d_aggregate": "279ddbf4df8ac94ecebffd3363388e91f6aa582328594d67d868d7eabd30188d",
+    "opponent_v33_source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+    "opponent_v33_raw_wasm": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+    "opponent_v33_injected_wasm": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792",
+    "candidate_4db_raw_wasm": "2c9e89bef3b1fe38fdc6fe42d633cdb61f79839ef3778d8cd6d10a62abe142fb",
+    "candidate_4db_injected_wasm": "47ef6140ff6255ddd840f910dcd70e2920014d4c6a9dd9c9e680502530e00e4f"
+  },
+  "toolchain": {
+    "cambc_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "cambc_version": "cambc 3.0.5",
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/engine/v1_0_3.wasm",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "fuel_per_turn": 100000,
+    "run_jobs": 1,
+    "build_workers": "CMAKE_BUILD_PARALLEL_LEVEL=1",
+    "nice": "nice -n 19"
+  },
+  "workspace": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace",
+  "cells": [
+    {
+      "id": "cells-102306611-A",
+      "map_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-cells-102306611.map26a",
+      "map_file_sha256": "e5d1f71bc32244cae690bd67afa84889d49cde8d262e17f211d656de574e4cc8",
+      "map_engine_hash": "4d7a316caff5e385",
+      "map_size": [
+        55,
+        30
+      ],
+      "physical_candidate_side": "A",
+      "willow_actor_id": 3,
+      "control_rounds": 809,
+      "control_winner_team": 1,
+      "control_replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306611-candidate-A.repl26a",
+      "control_replay_sha256": "095d9a7a9afd91e077f525ce9bd5fc456f0f63e6a8e50b544c9b5891cc545faf",
+      "control_extract_dir": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1/095d9a7a9afd91e0",
+      "control_order": [
+        0,
+        1
+      ],
+      "draft": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "control_candidate_source": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd"
+    },
+    {
+      "id": "archipelago-102306009-A",
+      "map_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-archipelago-102306009.map26a",
+      "map_file_sha256": "f26a59c2a4db7511fb51aa1298b5a4965e59e02888481af8040870b4863e8ad2",
+      "map_engine_hash": "81241f2ea2977245",
+      "map_size": [
+        34,
+        43
+      ],
+      "physical_candidate_side": "A",
+      "willow_actor_id": 3,
+      "control_rounds": 899,
+      "control_winner_team": 1,
+      "control_replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-archipelago-102306009-candidate-A.repl26a",
+      "control_replay_sha256": "1e6c9a7818b72564ecaaf867e1431d3c32b8ed9234d7a093a605674a0bb53555",
+      "control_extract_dir": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1/1e6c9a7818b72564",
+      "control_order": [
+        0,
+        1
+      ],
+      "draft": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "control_candidate_source": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd"
+    },
+    {
+      "id": "archipelago-102306002-A",
+      "map_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-archipelago-102306002.map26a",
+      "map_file_sha256": "fd6d689422a79c930535cde619e7f33fe0b6074f172fe2184749ab35685b54c7",
+      "map_engine_hash": "dcb8a86d9d316438",
+      "map_size": [
+        77,
+        77
+      ],
+      "physical_candidate_side": "A",
+      "willow_actor_id": 3,
+      "control_rounds": 861,
+      "control_winner_team": 0,
+      "control_replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-archipelago-102306002-candidate-A.repl26a",
+      "control_replay_sha256": "47d03ffb196530b0c5a6607027edc2cec72eaea4c963c7236ffe76caae8f6080",
+      "control_extract_dir": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1/47d03ffb196530b0",
+      "control_order": [
+        0,
+        1
+      ],
+      "draft": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "control_candidate_source": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd"
+    },
+    {
+      "id": "archipelago-102306002-B",
+      "map_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-archipelago-102306002.map26a",
+      "map_file_sha256": "fd6d689422a79c930535cde619e7f33fe0b6074f172fe2184749ab35685b54c7",
+      "map_engine_hash": "dcb8a86d9d316438",
+      "map_size": [
+        77,
+        77
+      ],
+      "physical_candidate_side": "B",
+      "willow_actor_id": 8,
+      "control_rounds": 1015,
+      "control_winner_team": 0,
+      "control_replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-archipelago-102306002-candidate-B.repl26a",
+      "control_replay_sha256": "c037fe01004812ab897336876dca12a5073f6ffe9a26fc6fce9085559e073dab",
+      "control_extract_dir": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-native-audit-v1/c037fe01004812ab",
+      "control_order": [
+        1,
+        0
+      ],
+      "draft": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Marcella",
+          "Willow",
+          "Heart of Ruin"
+        ]
+      ],
+      "control_candidate_source": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd"
+    }
+  ],
+  "planned_commands": [
+    {
+      "arm": "ae184",
+      "variant_source_aggregate": "ae18438dcd2164bd81f27ade445b58ae36901b4bdf99f1fda2d2e53dbff86086",
+      "manifest_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/research/willow-item-activation-eight-cell-preflight-20261023-v1/manifests/ae184-run-batch.manifest.txt",
+      "manifest_rows": 4,
+      "command": "cd '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace' && nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc' run-batch '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/research/willow-item-activation-eight-cell-preflight-20261023-v1/manifests/ae184-run-batch.manifest.txt' --jobs 1 --color never --release > '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184-run-batch.stdout' 2> '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184-run-batch.stderr'",
+      "replay_outputs": [
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184/cells-102306611-A.repl26a",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184/archipelago-102306009-A.repl26a",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184/archipelago-102306002-A.repl26a",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184/archipelago-102306002-B.repl26a"
+      ],
+      "stdout_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184-run-batch.stdout",
+      "stderr_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184-run-batch.stderr",
+      "prepare_output_dirs": "mkdir -p '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184' '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d'"
+    },
+    {
+      "arm": "279d",
+      "variant_source_aggregate": "279ddbf4df8ac94ecebffd3363388e91f6aa582328594d67d868d7eabd30188d",
+      "manifest_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/research/willow-item-activation-eight-cell-preflight-20261023-v1/manifests/279d-run-batch.manifest.txt",
+      "manifest_rows": 4,
+      "command": "cd '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace' && nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc' run-batch '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/research/willow-item-activation-eight-cell-preflight-20261023-v1/manifests/279d-run-batch.manifest.txt' --jobs 1 --color never --release > '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d-run-batch.stdout' 2> '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d-run-batch.stderr'",
+      "replay_outputs": [
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d/cells-102306611-A.repl26a",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d/archipelago-102306009-A.repl26a",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d/archipelago-102306002-A.repl26a",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d/archipelago-102306002-B.repl26a"
+      ],
+      "stdout_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d-run-batch.stdout",
+      "stderr_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d-run-batch.stderr",
+      "prepare_output_dirs": "mkdir -p '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184' '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d'"
+    }
+  ],
+  "runtime_gates": [
+    "Before the first future build, create the workspace fresh with cambc init --yes; populate each project from only the packaged src/ snapshots; do not copy any .cambc, compile_commands.json, map cache, or engine cache.",
+    "Build v33 and both candidate arms in release mode sequentially (one worker); hash raw and injected WASM. Require v33 raw/injected hashes exactly match frozen release pins before any match; candidate build hashes are recorded as new run provenance.",
+    "Verify copied maps and saved-control replay SHA256s against this manifest before running.",
+    "Run the two 4-match manifests sequentially, --jobs 1, 100000 fuel default, --release. Keep each run stdout/stderr and each replay under the exclusive run directory.",
+    "After extraction, first inspect item events/states and qualifying purchase/partial progression for Willow actor 3 or 8. Compare each variant with its own same-map/same-side 4db control. Treat these as selected activation evidence only, not causal ROI or win-rate evidence."
+  ],
+  "setup_commands": [
+    "mkdir -p <fresh-workspace>/bots",
+    "cp -R <preflight>/source-snapshots/one-bruiser-focus-ae184/src <fresh-workspace>/bots/willow-ae184/src",
+    "cp -R <preflight>/source-snapshots/health-plus-focus-279d/src <fresh-workspace>/bots/willow-279d/src",
+    "cp -R <preflight>/source-snapshots/frozen-release-v33-a00fff/src <fresh-workspace>/bots/v33-release/src",
+    "Before building, verify each copied src/ directory against source-manifest.json; then build sequentially: nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 <pinned-cambc> build bots/willow-ae184 --release; same for bots/willow-279d; then bots/v33-release."
+  ],
+  "runtime_commands": [
+    "'/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc' init --yes '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace'",
+    "mkdir -p '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace/bots'",
+    "cp -R '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/research/willow-item-activation-eight-cell-preflight-20261023-v1/source-snapshots/one-bruiser-focus-ae184/src' '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace/bots/willow-ae184/src'",
+    "cp -R '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/research/willow-item-activation-eight-cell-preflight-20261023-v1/source-snapshots/health-plus-focus-279d/src' '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace/bots/willow-279d/src'",
+    "cp -R '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/research/willow-item-activation-eight-cell-preflight-20261023-v1/source-snapshots/frozen-release-v33-a00fff/src' '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace/bots/v33-release/src'",
+    "(cd '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace/bots/willow-ae184' && shasum -a 256 src/* | shasum -a 256)",
+    "(cd '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace/bots/willow-279d' && shasum -a 256 src/* | shasum -a 256)",
+    "(cd '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace/bots/v33-release' && shasum -a 256 src/* | shasum -a 256)",
+    "cd '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace' && nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc' build bots/willow-ae184 --release",
+    "cd '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace' && nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc' build bots/willow-279d --release",
+    "cd '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace' && nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc' build bots/v33-release --release",
+    "shasum -a 256 '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace/bots/v33-release/.cambc/build-release/bot.wasm' '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace/bots/v33-release/.cambc/build-release/bot-injected.wasm'",
+    "mkdir -p '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184' '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d'",
+    "cd '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace' && nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc' run-batch '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/research/willow-item-activation-eight-cell-preflight-20261023-v1/manifests/ae184-run-batch.manifest.txt' --jobs 1 --color never --release > '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184-run-batch.stdout' 2> '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/ae184-run-batch.stderr'",
+    "cd '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/workspace' && nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc' run-batch '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/research/willow-item-activation-eight-cell-preflight-20261023-v1/manifests/279d-run-batch.manifest.txt' --jobs 1 --color never --release > '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d-run-batch.stdout' 2> '/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-item-activation-eight-cell-20261023-v1/run01/279d-run-batch.stderr'"
+  ]
+}

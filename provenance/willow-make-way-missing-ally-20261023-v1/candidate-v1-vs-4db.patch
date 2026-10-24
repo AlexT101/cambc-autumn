@@ -1,0 +1,25 @@
+diff --git a/bots/hyperion/src/pathing.cpp b/bots/variants/willow-make-way-missing-ally-work/src/pathing.cpp
+index 3e97ea0..c515d44 100644
+--- a/bots/hyperion/src/pathing.cpp
++++ b/bots/variants/willow-make-way-missing-ally-work/src/pathing.cpp
+@@ -582,9 +582,17 @@ bool Pathing::make_way(const bitboard& goals, const bitboard* avoid, int max_ste
+         if (nearest + 2 > cap) continue;
+         route_exhausted_ = false;
+         auto& self = cambc::self();
+-        const auto ally = cambc::vision::champion_at(a);
+-        const auto mine = self.gem_count(), theirs = ally.gem_count();
+-        if (mine > theirs || (mine == theirs && self.champion_name() > ally.champion_name())) return false;
++        try {
++            const auto ally = cambc::vision::champion_at(a);
++            const auto mine = self.gem_count(), theirs = ally.gem_count();
++            if (mine > theirs || (mine == theirs && self.champion_name() > ally.champion_name())) return false;
++        } catch (const cambc::error& e) {
++            const auto code = e.code();
++            if (code != cambc::error_code::api_not_found && code != cambc::error_code::api_not_in_vision) throw;
++            world_.throw_if_stale();
++            invalidate();
++            return false;
++        }
+         const auto& walls = blocked();
+         std::optional<vec2> best;
+         int best_dist = 0;

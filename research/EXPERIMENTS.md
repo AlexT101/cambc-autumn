@@ -1864,3 +1864,71 @@ route outcomes without a new native/model/field query. Full29-file snapshots, ma
 patch and checkpoint are in `provenance/willow-band-hor-routing-trace-20261023-v1/`.
 It remains unbuilt: source review and a validated recorder/trace prefix are required before
 using its output to attribute the frozen game's branches. Canonical remains unchanged.
+
+### Current-upstream Willow item activation diagnostics
+
+Eight new Release/default100k games compare isolated ae184 Focus and279d Health+Focus to
+frozen releasedv33 on four preselected map/physical-side cells: Cells102306611 A,
+Archipelago102306009 A, and Archipelago102306002 A/B. Controls are the existing4db games;
+they were selected for completed Willow Bruiser Strength, not randomly sampled. Ae184 wins
+3/4,279d2/4,4db1/4. These are activation/behavior diagnostics, not general strength evidence.
+
+Ae184 starts a Bruiser Focus build in all four cells: first observed item deltas occur at
+rounds363,564,694 and668 respectively. The last is a completed emblem appearing within one
+inventory update; emblems cannot be bought directly. Source review establishes that the new
+override is Willow's only initial Bruiser Focus source: main_stat remains Strength, while
+begun-item logic only completes existing shards. The policy therefore activates, although
+the snapshots do not expose every evaluated quote or the exact API purchase sequence.
+
+At each pair's common horizon, ae184 Willow healing changes10602.6→12200.4,
+6480.6→4971.2,9357→9763 and4156→4338.9 HP. Cells adds one Willow death; healing capacity
+alone is not a survival result. Completed recalls are8→7,16→18,9→9 and11→10. The other
+hundreds of recall_start events include ordinary automatic stubs and are not completed trips.
+
+Health+Focus starts Focus only on009 A, where both arms have matching extracted event paths.
+Its other cells complete Jungle Health instead. On002 B it wins at806 while Willow's native
+earned gold falls220 versus control958 at that horizon. This is not itself an economic
+failure: candidate team score+held gems is1009 versus control887, and opponent capital is471
+versus570. Willow healing rises2596→4667 and recalls fall9→7. On002 A at861 the team's
+capital instead falls1011→813 while opposing capital rises653→858. Keep both outcomes to
+study allocation and service tradeoffs; do not select a map-specific item policy from them.
+
+Both arms have zero native BotError, caught action error and turn-order markers. Native
+candidate/reference play rollovers are2/7 forae184 and3/1 for279d. Eight actual manifests,
+physical orders, outputs, tool/map/source/build pins and post-run rehashes are under
+`replays/willow-item-activation-eight-cell-20261023-v1/run01/`. The final audit record is
+`selected-activation-final-audit-v1.json`(SHA256
+`cdb9d59b3fb5fbb3aafe5830bd7224cea357fbb580b1660d50457423d1b11125`);
+the corrected common-horizon report isv2. V1 and its helper remain preserved. Inventory
+deltas reconcile with native end-round state. No derived earned-gold validator is used.
+Canonical remains4db; no release or promotion follows from these selected cases.
+
+### Optional make-way ally lookup: isolated robustness source
+
+Source candidate03aaf746 wraps only make_way's existing ally lookup and yield-priority
+reads. Expected missing/hidden-ally errors98/97 check world staleness on the error path:
+StaleTurn propagates; a current-turn failure invalidates local caches and declines the yield.
+Unexpected errors propagate unchanged. Successful-path imports and short-circuit comparison
+are preserved, without new normal-path queries or a fuel gate. Exception layout may still
+change compiled fuel. Full29-file snapshots/manifest/patch/checkpoint are in
+`provenance/willow-make-way-missing-ally-20261023-v1/`. It is unbuilt and is not an attribution
+or verified fix for the Labyrinth caught error. See the corresponding source review.
+
+### Next compound candidate and support witness
+
+Unnumbered source9b405b0d combines only exactae184 Focus and exact03aaf make-way handling
+on4db. Both full29-file removal proofs reproduce the independent arms byte for byte.
+Its own full paired comparison againstv33 is being prepared; the eight Focus-only games
+cannot be reused for this new source. Full snapshots, manifests and patch are in
+`provenance/willow-focus-safe-yield-20261023-v1/`. It remains unbuilt and unsubmitted.
+
+Archipelago's post-clear analysis also finds that Willow stays near full-health Prism
+through139–145. Her heal only becomes ready139, and nearby injured Marcella has already
+committed to recall while capturing. This does not establish missing service from separation.
+Existing zero-gain formation can reset its four-turn limit on productive work or movement
+toward a matching claim; useful prepositioning must be distinguished from unjustified resets.
+Diagnostic06ea3ac2 logs this existing decision seam for WillowB/handle8/r139–146 without
+new native/model/route queries. Source-only snapshots/manifests/patch are under
+`provenance/willow-archipelago-service-trace-20261023-v1/`; it is unbuilt and unqualified as
+a witness. See `willow-archipelago-post-clear-service-review.md`. No formation policy change
+is selected from the current snapshots.

@@ -1,0 +1,176 @@
+diff --git a/bots/hyperion/src/bot.cpp b/bots/variants/willow-archipelago-service-trace-work/src/bot.cpp
+index c5e7e5d..9d60b32 100644
+--- a/bots/hyperion/src/bot.cpp
++++ b/bots/variants/willow-archipelago-service-trace-work/src/bot.cpp
+@@ -45,6 +45,17 @@ bool support_owned = false, support_requested = false, support_offered = false,
+ vec2 searched_at{};      // where the search's plan ended, and whether it had attacked by then
+ bool searched_hit = false;
+ 
++template <class... Args> void arch_trace(const World& world, const char* format, Args... args) {
++    debug_block({
++        if (!world.map().team_a && static_cast<std::uint32_t>(world.me().handle) == 8
++            && world.round >= 139 && world.round <= 146) {
++            std::printf("ARCH %d %c ", world.round, decision);
++            std::printf(format, args...);
++            std::printf("\n");
++        }
++    });
++}
++
+ struct SupportExposure {
+     float damage = 0, imminent = 0, camp_imminent = 0, camp_exit_burden = 0;
+     bool enemy = false, camp = false, stun = false;
+@@ -4851,6 +4862,11 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     const auto* mate = support_endpoint(world, willow ? cambc::champion_type::prism : cambc::champion_type::willow);
+     const vec2 here = my_position();
+     const float health = my_health();
++    arch_trace(world, "local-enter here %d %d hp %.9g leave %d protected %d farm %d claim %d crew %d formation %d %d mate %d visible %d seen %d stats %d channel %d",
++               here.x, here.y, static_cast<double>(health), static_cast<int>(leave), static_cast<int>(protected_work),
++               memory.farm_group, memory.claim, static_cast<int>(memory.crew), memory.formation_start, memory.formation_turns,
++               mate ? mate->index : -1, static_cast<int>(mate && mate->visible), mate ? mate->pos_round : -1,
++               mate ? mate->stats_round : -1, mate ? static_cast<int>(mate->channel) : -1);
+     const auto abandon_recovery = [&] {
+         if (prism && memory.recovery_start >= 0) {
+             close_recovery(memory, health);
+@@ -4879,6 +4895,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     }
+     if (prism && memory.farm_group != memory.recovery_closed_group) memory.recovery_closed_health = -1;
+     if (!mate || !mate->alive || !mate->visible || !mate->can_act(world.round) || !visible_record(mate->handle)) {
++        arch_trace(world, "local-decline mate-unavailable");
+         abandon_recovery();
+         memory.formation_start = -1;
+         return false;
+@@ -4890,6 +4907,8 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+                                       && kept_recall(mate->handle, mate->fast_recall ? home_recall_time
+                                                                                  : static_cast<int>(cambc::constants::recall_time)));
+     mate_eligible = !observed_channel;
++    arch_trace(world, "mate-channel observed-kept %d channel %d eligible %d support-seen %d", static_cast<int>(observed_channel),
++               static_cast<int>(mate->channel), static_cast<int>(mate_eligible), memory.support_seen);
+     if (observed_channel || protected_work || test(world.map().ally_spawn, here)) {
+         if (memory.recovery_start >= 0) close_recovery(memory, health);
+         if (prism && observed_channel && !protected_work) support_retreat = !recovered_for_work(world, safety, memory);
+@@ -4905,15 +4924,21 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     int target_count = 0;
+     float amount = 0;
+     const bool ready = willow ? support_ready(world, world.me(), amount) : support_ready(world, *mate, amount);
++    arch_trace(world, "healer-ready %d amount %.9g", static_cast<int>(ready), static_cast<double>(amount));
+     if (willow && ready) {
+         for (const auto& a : world.allies) {
+             if (a.is_self || !a.alive || !a.visible || dist(here, a.pos) > 5 || test(world.map().ally_spawn, a.pos)) continue;
+             const auto* live = visible_record(a.handle);
+             if (!live) continue;
+             const float hp = live->health, top = live->max_health;
+-            if (kept_recall(a.handle, a.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time))) continue;
++            const bool kept = kept_recall(a.handle, a.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
++            arch_trace(world, "heal-candidate ally %d hp %.9g top %.9g kept-recall %d", a.index,
++                       static_cast<double>(hp), static_cast<double>(top), static_cast<int>(kept));
++            if (kept) continue;
+             const float gain = std::min(amount, top - hp);
+-            if (!worth_healing(amount, gain, hp / top)) continue;
++            const bool worth = worth_healing(amount, gain, hp / top);
++            arch_trace(world, "heal-candidate ally %d gain %.9g worth %d", a.index, static_cast<double>(gain), static_cast<int>(worth));
++            if (!worth) continue;
+             targets[target_count++] = {&a, attack_viewers(world, a.pos, 4), gain, hp / top};
+         }
+     }
+@@ -4943,8 +4968,21 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+         }
+     }
+     const int work = willow ? comms::claim_of(world, mate->index) : memory.farm_group;
++    arch_trace(world, "work-source %d targets %d", work, target_count);
++    debug_block({
++        if (!world.map().team_a && static_cast<std::uint32_t>(world.me().handle) == 8
++            && world.round >= 139 && world.round <= 146 && work >= 0 && work < static_cast<int>(world.camps.size())) {
++            const auto& c = world.camps[work];
++            std::printf("ARCH %d work-belief group %d state %d state-round %d awake %d damaged %d respawn %d holder %d held-since %d members %zu hp0 %.9g hp-round0 %d\n",
++                        world.round, work, static_cast<int>(c.state), c.state_round, static_cast<int>(c.awake),
++                        c.last_damaged_round, c.respawn_round, static_cast<int>(c.holder), c.held_since,
++                        c.health.size(), static_cast<double>(c.health.empty() ? -1 : c.health[0]),
++                        c.health_round.empty() ? -1 : c.health_round[0]);
++        }
++    });
+     if (willow && work >= 0) memory.formation_group = work;
+     if (willow && !ready && here_risk.safe() && stationary_support_output(world, work)) {
++        arch_trace(world, "stationary-output formation-reset");
+         support_owned = true;
+         memory.claim = -1;
+         memory.crew = false;
+@@ -4964,6 +5002,9 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+                               && memory.claim < static_cast<int>(world.camps.size())
+                               && world.camps[memory.claim].state == CampState::alive
+                               && world.camps[memory.claim].awake != Awake::asleep;
++    arch_trace(world, "station-input ready %d active-clear %d expired %d work-route %d formation %d %d", static_cast<int>(ready),
++               static_cast<int>(active_clear), static_cast<int>(formation_expired), static_cast<int>(work_route != nullptr),
++               memory.formation_start, memory.formation_turns);
+     const auto& blocked = pathing.blocked();
+     vec2 best = here;
+     int best_gap = unreachable, best_home = unreachable;
+@@ -5009,6 +5050,8 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+             || (gain == best_gain && gap == best_gap && (p == here || (best != here && home < best_home))))
+             found = true, best = p, best_gain = gain, best_gap = gap, best_home = home, best_risk = risk;
+     }
++    arch_trace(world, "station found %d from %d %d selected %d %d gain %.9g gap %d safe %d", static_cast<int>(found),
++               here.x, here.y, best.x, best.y, static_cast<double>(best_gain), best_gap, static_cast<int>(best_risk.safe()));
+     if (!found) return abandon_recovery();
+     const auto commit_support = [&] {
+         support_owned = true;
+@@ -5061,19 +5104,29 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
+     memory.siege = false;
+     const bool healed = !leave && heal_ally(world);
+     bool productive = healed || healed_before;
++    arch_trace(world, "healing before %d after %d", static_cast<int>(healed_before), static_cast<int>(healed));
+     if (!leave && best == here && support_exposure(world, safety, my_position()).safe()) {
+-        productive |= attack_enemy(world);
+-        if (my_can_attack())
+-            productive |= attack_camp(world, [&](int g) {
++        const bool enemy_hit = attack_enemy(world);
++        productive |= enemy_hit;
++        arch_trace(world, "productive enemy-hit %d", static_cast<int>(enemy_hit));
++        if (my_can_attack()) {
++            const int camp_hit = attack_camp(world, [&](int g) {
+                 return world.map().groups[g].strength <= 0
+                        || (g == work && world.camps[g].awake != Awake::asleep);
+-            }) >= 0;
++            });
++            productive |= camp_hit >= 0;
++            arch_trace(world, "productive camp-hit %d", camp_hit);
++        }
+     }
+     const bool route_progress = best != here && (work_route ? work_route->at(best) < work_route->at(here)
+                                 : work >= 0 && work < static_cast<int>(world.map().groups.size())
+                                   && memory.farm_group == work
+                                   && dist(best, world.map().groups[work].centre) < dist(here, world.map().groups[work].centre));
++    arch_trace(world, "formation-reset productive %d progress %d progress-kind %s before %d %d", static_cast<int>(productive),
++               static_cast<int>(route_progress), best == here ? "none" : work_route ? "field" : "matching-centre",
++               memory.formation_start, memory.formation_turns);
+     if (productive || route_progress) memory.formation_start = -1, memory.formation_turns = 0;
++    arch_trace(world, "formation-after %d %d", memory.formation_start, memory.formation_turns);
+     float offered = 0;
+     support_offered = !leave && support_ready(world, world.me(), offered) && support_exposure(world, safety, my_position()).safe();
+     decision = leave ? 'R' : 'h';
+@@ -5129,7 +5182,14 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+                                     || (bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing))
+                                     || wants_shop(world, pathing, safety, memory);
+         const bool protect = protected_work && (!leave || world.me().type == cambc::champion_type::prism);
+-        if (local_support(world, pathing, safety, memory, leave, protect, mate_eligible)) return;
++        arch_trace(world, "local-call leave %d protected-work %d protect %d willow-protected %d strikes %d formation %d %d",
++                   static_cast<int>(leave), static_cast<int>(protected_work), static_cast<int>(protect), static_cast<int>(willow_protected),
++                   static_cast<int>(strikes), memory.formation_start, memory.formation_turns);
++        const bool supported = local_support(world, pathing, safety, memory, leave, protect, mate_eligible);
++        arch_trace(world, "local-result returned %d owned %d eligible %d retreat %d farm %d claim %d crew %d formation %d %d",
++                   static_cast<int>(supported), static_cast<int>(support_owned), static_cast<int>(mate_eligible), static_cast<int>(support_retreat),
++                   memory.farm_group, memory.claim, static_cast<int>(memory.crew), memory.formation_start, memory.formation_turns);
++        if (supported) return;
+         if (support_retreat) {
+             if (world.me().type == cambc::champion_type::willow) heal_ally(world);
+             retreat(world, pathing, safety, memory);
+@@ -5282,6 +5342,9 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     prepare_walk(world, pathing, memory, walk_first_floor);
+     const int claim = memory.claim;
+     decide(world, pathing, safety, memory);
++    arch_trace(world, "decide-done owned %d hp-belief %.9g farm %d claim %d crew %d formation %d %d", static_cast<int>(support_owned),
++               static_cast<double>(world.me().health), memory.farm_group, memory.claim, static_cast<int>(memory.crew),
++               memory.formation_start, memory.formation_turns);
+     if (decision != 'W') memory.wait_altar = -1;
+     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
+     // or a bag takes us away from it.
