@@ -139,13 +139,13 @@ def main():
     ap.add_argument("--rec-table", help="trace mode: the recorder's zz_harness.json")
     args = ap.parse_args()
     decls = parse_sdk(args.sdk)
-    costs = json.loads(Path(args.costs).read_text()) if args.costs else {}
+    costs = json.loads(Path(args.costs).read_text(encoding="utf-8")) if args.costs else {}
     excluded = set(filter(None, args.exclude.split(",")))
     if args.mode == "trace":
         excluded |= {"fuel_pause", "fuel_resume", "fuel_adjust"}
         if not args.rec_table:
             raise SystemExit("--mode trace needs --rec-table")
-        rec_ids = {e["import"]: e["id"] for e in json.loads(Path(args.rec_table).read_text())}
+        rec_ids = {e["import"]: e["id"] for e in json.loads(Path(args.rec_table).read_text(encoding="utf-8"))}
     if args.all:
         used = [f for f in decls if f not in excluded]
     elif args.wasm:

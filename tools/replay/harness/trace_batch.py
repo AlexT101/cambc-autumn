@@ -178,7 +178,7 @@ def trace_game(key, g, slot, args, lock):
     if not rec_stdout.exists() or not rec_replay.exists():
         return {"key": key, "status": "no-recording"}
     if out_json.exists() and not args.force and out_json.stat().st_mtime > rec_stdout.stat().st_mtime:
-        return json.loads(out_json.read_text())
+        return json.loads(out_json.read_text(encoding="utf-8"))
     puppet = WS / "bots" / args.puppet_for.get(key, f"p-{key}")
     if not (puppet / ".cambc/build/bot-injected.wasm").exists():
         return {"key": key, "status": "no-puppet"}
@@ -301,7 +301,7 @@ def main():
     for t in threads:
         t.join()
     summary_path = Path(args.batch) / "trace_validation.json"
-    summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}
+    summary = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.exists() else {}
     summary.update(results)
     summary_path.write_text(json.dumps(dict(sorted(summary.items())), indent=1))
     ok = [r for r in results.values() if r.get("status") == "ok"]

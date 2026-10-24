@@ -162,8 +162,8 @@ def main():
 
     ll = CFG.dir / "ladder-list.json"
     text = json.dumps([{"key": k, "replay": g["replay"]} for k, g in manifest()])
-    if not ll.exists() or ll.read_text() != text:
-        ll.write_text(text)
+    if not ll.exists() or ll.read_text(encoding="utf-8") != text:
+        ll.write_text(text, encoding="utf-8")
         log(f"wrote {ll.relative_to(REPO)}")
     for p in (rel_wasm, rec_wasm):
         if p.exists():

@@ -263,7 +263,7 @@ def parse_trace(path):
 
 def _read_json(p):
     try:
-        return json.loads(Path(p).read_text())
+        return json.loads(Path(p).read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         return None
 
@@ -497,14 +497,14 @@ class Game:
 
     @cached_property
     def meta(self):
-        return json.loads((self._need_extract() / "meta.json").read_text())
+        return json.loads((self._need_extract() / "meta.json").read_text(encoding="utf-8"))
 
     @cached_property
     def map(self):
         """Static map: walls, holes, bushes, altars (tile lists), camps, groups, spawn; plus `bush_set` and
         `wall_set` of (x, y)."""
         d = self._need_extract()
-        m = json.loads((d / self.meta["mapFile"]).resolve().read_text())
+        m = json.loads((d / self.meta["mapFile"]).resolve().read_text(encoding="utf-8"))
         m["bush_set"] = {tuple(t) for t in m["bushes"]}
         m["wall_set"] = {tuple(t) for t in m["walls"]}
         return m

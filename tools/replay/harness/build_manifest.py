@@ -39,7 +39,7 @@ def main():
     since = versions.VERSIONS[cfg.name].get("since")
     since = iso(since) if since else None
     cache_p = cfg.dir / "group-versions.json"
-    cache = json.loads(cache_p.read_text()) if cache_p.exists() else {}
+    cache = json.loads(cache_p.read_text(encoding="utf-8")) if cache_p.exists() else {}
     api = False
 
     def our_version(detail):

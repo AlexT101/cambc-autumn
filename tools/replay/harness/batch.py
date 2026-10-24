@@ -115,7 +115,7 @@ def stamp_for(k, mode):
 
 def read_stamp(k):
     p = OUT / k / "stamp.json"
-    return json.loads(p.read_text()) if p.exists() else {}
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
 
 
 def stage_run(keys, G, mode, jobs, force, log_limit):
@@ -141,7 +141,7 @@ def stage_run(keys, G, mode, jobs, force, log_limit):
             tmp.unlink()
         lines.append(f"{a} {b} {mp} {tmp}")
     manifest = OUT / f"_{mode}-manifest.txt"
-    manifest.write_text("\n".join(lines) + "\n")
+    manifest.write_text("\n".join(lines) + "\n", encoding="utf-8")
     cmd = ["cambc", "run-batch", str(manifest), "--jobs", str(jobs), "--color", "never"]
     if mode == "release":
         cmd.append("--release")
@@ -151,7 +151,7 @@ def stage_run(keys, G, mode, jobs, force, log_limit):
     t0 = time.time()
     r = run(cmd, check=False)
     dt = time.time() - t0
-    (OUT / f"_{mode}-run-batch.log").write_text(r.stdout + r.stderr)
+    (OUT / f"_{mode}-run-batch.log").write_text(r.stdout + r.stderr, encoding="utf-8")
     done = []
     for k in todo:
         tmp = OUT / k / f"{mode}.tmp.repl26a"
@@ -194,7 +194,7 @@ def stage_validate(keys, G, jobs, force, log_limit):
             "out": str(OUT / k / "validation.json"), "logLimit": log_limit,
             "extra": {"map": g["map"], "our_side": g["our_side"], "opponent": g["opponent"], "opp_rank": g["opp_rank"], "kind": g["kind"],
                       "ladder": {"result": g["result"], "rounds": g["rounds"], "our_score": g["our_score"], "opp_score": g["opp_score"]},
-                      "puppet": json.loads(info_p.read_text()) if info_p.exists() else None, "stamp": read_stamp(k)},
+                      "puppet": json.loads(info_p.read_text(encoding="utf-8")) if info_p.exists() else None, "stamp": read_stamp(k)},
         })
     jf = OUT / "_validate-jobs.json"
     jf.write_text(json.dumps(rows))
@@ -241,7 +241,7 @@ def stage_summary(G):
         p = OUT / k / "validation.json"
         if not p.exists():
             continue
-        v = json.loads(p.read_text())
+        v = json.loads(p.read_text(encoding="utf-8"))
         rel, rec = v.get("release"), v.get("rec")
         row = {
             "key": k, "map": v["map"], "our_side": v["our_side"], "opponent": v["opponent"], "rounds": v["ladder"]["rounds"],
@@ -292,7 +292,7 @@ def stage_summary(G):
         md.append(f"| {r['key']} | {r['map']} | {r['our_side']} | {r['opponent']} | {r['rounds']} | {r['score']} | {r['opp_rollovers']} | {mark(rel)} | {mark(rec)} | "
                   f"{fuel_cell({'diffs': rel['fuel_diffs'], 'firstTurnOnly': rel['fuel_first_turn_only']}) if rel else '-'} | "
                   f"{fuel_cell({'diffs': rec['fuel_diffs'], 'firstTurnOnly': rec['fuel_first_turn_only']}) if rec else '-'} | {rx(rec)} | {div} |")
-    (OUT / "VALIDATION.md").write_text("\n".join(md) + "\n")
+    (OUT / "VALIDATION.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     log(f"summary: {n} games, {ex} exact in both runs (release {rel_ex}, rec {rec_ex}); rec fuel differs in {len(rec_f)} ({len(rec_f_other)} beyond first turns)")
 
 
@@ -312,7 +312,7 @@ def main():
     if args.keys:
         keys = args.keys.split(",")
     elif args.keys_file:
-        keys = Path(args.keys_file).read_text().split()
+        keys = Path(args.keys_file).read_text(encoding="utf-8").split()
     missing = [k for k in keys if k not in G or not (V / "inputs" / "ladder" / f"{k}.json.gz").exists()]
     if missing:
         sys.exit(f"unknown keys or missing inputs: {missing[:10]}")

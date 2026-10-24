@@ -63,11 +63,11 @@ def run_kind(kind, keys, G, threads, force):
         r = subprocess.run(cmd, cwd=REPO)
         rc = rc or r.returncode
     keymap_p = out / "keys.json"
-    keymap = json.loads(keymap_p.read_text()) if keymap_p.exists() else {}
+    keymap = json.loads(keymap_p.read_text(encoding="utf-8")) if keymap_p.exists() else {}
     for k, p in files.items():
         d, full = sha16(p)
         keymap[k] = {"dir": d, "source": p.relative_to(REPO).as_posix(), "sha256": full,
-                     "ok": (out / d / "meta.json").exists() and json.loads((out / d / "meta.json").read_text())["validation"]["ok"]}
+                     "ok": (out / d / "meta.json").exists() and json.loads((out / d / "meta.json").read_text(encoding="utf-8"))["validation"]["ok"]}
     keymap_p.write_text(json.dumps(dict(sorted(keymap.items())), indent=1))
     dt = time.time() - t0
     bad = [k for k in files if not keymap[k]["ok"]]
