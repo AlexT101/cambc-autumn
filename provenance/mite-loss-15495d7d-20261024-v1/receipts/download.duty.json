@@ -1,0 +1,44 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T10:20:48.985029+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "matches",
+    "download",
+    "15495d7d-9c63-4c03-86a4-ada8a871d584",
+    "--output",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/mite-loss-15495d7d-20261024-v1/outputs/15495d7d-road_of_riches.repl26a"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/mite-loss-15495d7d-20261024-v1/logs/download.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/mite-loss-15495d7d-20261024-v1/logs/download.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.020093041,
+      "run_end_monotonic": 0.130135208
+    },
+    {
+      "run_start_monotonic": 1.040483291,
+      "run_end_monotonic": 1.150230375
+    },
+    {
+      "run_start_monotonic": 2.059276916,
+      "run_end_monotonic": 2.165945833
+    },
+    {
+      "run_start_monotonic": 3.074322541,
+      "run_end_monotonic": 3.179503416
+    }
+  ],
+  "pid": 36023,
+  "process_group_id": 36023,
+  "exit_code": 1,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T10:20:52.146028+00:00"
+}

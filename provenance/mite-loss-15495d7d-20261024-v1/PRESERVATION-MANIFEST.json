@@ -1,0 +1,59 @@
+{
+  "schema": "compact-preservation-manifest/v1",
+  "purpose": "Failed bounded replay retrieval evidence for the single requested Mite match; no replay was produced.",
+  "files": [
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/preflight.json",
+      "bytes": 2232,
+      "sha256": "8d0556d2a68c19be78e5419a05d1d3866a6d8bb0331e561267f11be94daacd0c"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/RESULT.json",
+      "bytes": 3422,
+      "sha256": "46e0697af2cf66cb19e42b99772137f48666570c547307eb700587e592217af4"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/RESULT.md",
+      "bytes": 800,
+      "sha256": "3f6f12af18c4da7042a20e71825e8ba7543f31496e5860d30edaa69e937d60e8"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/logs/download.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/logs/download.stderr.log",
+      "bytes": 75,
+      "sha256": "65bbe9d8efea3876ff8245b39c4c32f05f6e22c9b45ece687a8e1c7d3eca477a"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/logs/download-retry1.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/logs/download-retry1.stderr.log",
+      "bytes": 75,
+      "sha256": "65bbe9d8efea3876ff8245b39c4c32f05f6e22c9b45ece687a8e1c7d3eca477a"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/receipts/download.duty.json",
+      "bytes": 1628,
+      "sha256": "bec65cbf8da262344e74a94eeaca917b1d44a4f6fc140f0581bf9ff798da7a51"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/receipts/download-retry1.duty.json",
+      "bytes": 1641,
+      "sha256": "66b55c859d3d5257ccdf7e92055421cd57a39b93267f8932b736398c53ae7b22"
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "provenance/mite-ladder-freshness-20261024-v1/raw/latest-metadata.json",
+      "bytes": 20005,
+      "sha256": "18af8d26efafc7739009253407564b13e08eaa4b341196c2312a405df257811b",
+      "note": "Saved latest-30 metadata page containing the exact target match row; retained raw and excluded from compact staging."
+    }
+  ]
+}

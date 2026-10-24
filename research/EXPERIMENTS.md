@@ -2993,3 +2993,19 @@ rebuild was needed. The authenticated team UUID matches prior v33, now named
 willow best girl. The CLI confirms version 48 and upload size; remote source
 bytes were not retrieved. Canonical bot directories remain untouched, and
 the communications experiment is not included in this release.
+
+Fresh Mite metadata contains 25 finished games (21 wins, four losses) and five
+queued games, with the same three ordered draft profiles. These are live
+observations, not a pinned submission benchmark. Two downloads of the selected
+Road of Riches loss `15495d7d...` returned HTTP 429, so no replay or causal
+analysis is claimed for that match; its exact metadata row and failed requests
+are preserved.
+
+The next isolated source experiment considers a local teleport across terrain
+on an already-selected ordinary farming route. Current source only offers
+teleports for certain altar routes. The proposal charges the actual three-turn
+channel, crystal opportunity/replacement cost, adjusted camp waiting and local
+exposure; it preserves altar reservations and support priorities. The historical
+Mite loss supplies a useful example of productive teleports, not proof that
+this addition will improve our route. Implementation starts from released v34;
+no new runtime or further API request is authorized by the source design alone.

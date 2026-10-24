@@ -1,0 +1,105 @@
+{
+  "schema": "mite-replay-fetch-result/v1",
+  "status": "blocked_by_api_rate_limit",
+  "matchId": "15495d7d-9c63-4c03-86a4-ada8a871d584",
+  "requestedMatch": {
+    "map": "road_of_riches",
+    "miteSide": "A",
+    "opponent": ":3",
+    "metadataTimestamp": "2026-10-24T10:11:10.276Z",
+    "finishedAt": "2026-10-24T10:14:18.950Z",
+    "canonicalMapLabel": "00road_of_riches",
+    "position": 3,
+    "orderedDrafts": [
+      {
+        "team": "Mite",
+        "side": "a",
+        "teamId": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e",
+        "result": "loss",
+        "draftPicks": [
+          1,
+          2,
+          0,
+          10,
+          6
+        ],
+        "engineVersion": "1.0.3"
+      },
+      {
+        "team": ":3",
+        "side": "b",
+        "teamId": "bbe481a7-4575-4826-9a3e-f81c28205de8",
+        "result": "win",
+        "draftPicks": [
+          11,
+          2,
+          1,
+          6,
+          0
+        ],
+        "engineVersion": "1.0.3"
+      }
+    ]
+  },
+  "downloadAttempts": [
+    {
+      "attempt": 1,
+      "exitCode": 1,
+      "error": "Public API is busy; retry shortly (HTTP 429); retry after 2 seconds",
+      "receipt": "provenance/mite-loss-15495d7d-20261024-v1/receipts/download.duty.json"
+    },
+    {
+      "attempt": 2,
+      "exitCode": 1,
+      "error": "Public API is busy; retry shortly (HTTP 429); retry after 2 seconds",
+      "receipt": "provenance/mite-loss-15495d7d-20261024-v1/receipts/download-retry1.duty.json"
+    }
+  ],
+  "replayDownloaded": false,
+  "decoded": false,
+  "reason": "Both authorized CLI attempts returned HTTP 429; no output replay exists. Stopped without additional retries or other API calls.",
+  "submissionIdentityInferred": false,
+  "artifacts": [
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/logs/download-retry1.stderr.log",
+      "bytes": 75,
+      "sha256": "65bbe9d8efea3876ff8245b39c4c32f05f6e22c9b45ece687a8e1c7d3eca477a"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/logs/download-retry1.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/logs/download.stderr.log",
+      "bytes": 75,
+      "sha256": "65bbe9d8efea3876ff8245b39c4c32f05f6e22c9b45ece687a8e1c7d3eca477a"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/logs/download.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/receipts/download-retry1.duty.json",
+      "bytes": 1641,
+      "sha256": "66b55c859d3d5257ccdf7e92055421cd57a39b93267f8932b736398c53ae7b22"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/receipts/download.duty.json",
+      "bytes": 1628,
+      "sha256": "bec65cbf8da262344e74a94eeaca917b1d44a4f6fc140f0581bf9ff798da7a51"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/preflight.json",
+      "bytes": 2232,
+      "sha256": "8d0556d2a68c19be78e5419a05d1d3866a6d8bb0331e561267f11be94daacd0c"
+    },
+    {
+      "path": "provenance/mite-loss-15495d7d-20261024-v1/RESULT.md",
+      "bytes": 800,
+      "sha256": "3f6f12af18c4da7042a20e71825e8ba7543f31496e5860d30edaa69e937d60e8"
+    }
+  ],
+  "metadataSource": "provenance/mite-ladder-freshness-20261024-v1/raw/latest-metadata.json"
+}

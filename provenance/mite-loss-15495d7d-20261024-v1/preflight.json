@@ -1,0 +1,84 @@
+{
+  "schema": "mite-single-replay-preflight/v1",
+  "match": {
+    "matchId": "15495d7d-9c63-4c03-86a4-ada8a871d584",
+    "createdAt": "2026-10-24T10:11:10.276Z",
+    "map": "00road_of_riches",
+    "kind": "unranked",
+    "MiteSide": "A",
+    "opponent": ":3",
+    "source": "exact target row from saved latest-30 metadata page",
+    "finishedAt": "2026-10-24T10:14:18.950Z",
+    "status": "finished",
+    "position": 3,
+    "groupId": "4da79c08-6716-4a6e-a57a-c7c2928c0377",
+    "orderedTeams": [
+      {
+        "characters": [
+          "1",
+          "2",
+          "0",
+          "10",
+          "6"
+        ],
+        "draftPicks": [
+          1,
+          2,
+          0,
+          10,
+          6
+        ],
+        "engineVersion": "1.0.3",
+        "name": "Mite",
+        "result": "loss",
+        "side": "a",
+        "teamId": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e"
+      },
+      {
+        "characters": [
+          "11",
+          "2",
+          "1",
+          "6",
+          "0"
+        ],
+        "draftPicks": [
+          11,
+          2,
+          1,
+          6,
+          0
+        ],
+        "engineVersion": "1.0.3",
+        "name": ":3",
+        "result": "win",
+        "side": "b",
+        "teamId": "bbe481a7-4575-4826-9a3e-f81c28205de8"
+      }
+    ]
+  },
+  "identityCaveat": "No submission/source identity inferred.",
+  "metadataContext": {
+    "path": "provenance/mite-ladder-freshness-20261024-v1/raw/latest-metadata.json",
+    "sha256": "18af8d26efafc7739009253407564b13e08eaa4b341196c2312a405df257811b",
+    "note": "Target row verified in the saved latest-30 page; no additional metadata request was made."
+  },
+  "cli": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "version": "cambc 3.0.5",
+    "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "engine": {
+    "path": "tools/replay/engine/v1_0_3.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+  },
+  "limits": {
+    "downloads": 1,
+    "newMatches": 0,
+    "browser": false,
+    "ownView": false,
+    "fullTrace": false,
+    "parallelism": 1,
+    "duty": "nice 19; 0.1s run / 0.9s stop"
+  }
+}
