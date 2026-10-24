@@ -785,3 +785,16 @@ passive pays 2 gold per gem she tributes, with no gold bonus; farm worth now cou
 - Against 00fd51c: 50.7% of 592 (46.7-54.7; ladder 43.8 of 80, fresh suite seed 8821 51.8 of 512), out-of-fuel turns
   1471 vs 1619.
 
+## 137: Vendetta's Treasure in Health; a Vendetta ally's arrival (astraeus, 2026-10-24)
+
+Vendetta's first emblem, Treasure, goes in Health instead of the model's stat (always Strength for Vendetta, which has
+no Focus-scaled ability), as 74% of ladder Vendettas build it; `best_emblem` prices Health only by heal trips. Vendetta
+is drafted on every 3-pick map since CHANGES 134. A claimed camp's crew timing (`earliest_work_delay`) had a Vendetta
+ally dash every turn on its way, as if each turn made a kill: now one out of sight has its dash ready (an unseen kill
+may have readied it), then the usual cooldown; one in sight uses its known cooldown. Other Vendetta fixes tried with
+these lost ([EXPERIMENTS](../EXPERIMENTS.md#vendetta-2026-10-24-astraeus-on-its-3-pick-draft-marcella-vendetta-hor)).
+
+- Treasure in Health alone, against 72de514 on the 3-pick maps (own drafts; other pick counts play identically): 53.8%
+  of 364 (48.7-58.9; ladder 58.3 of 12, gen 53.6, gen-s1 53.8), fresh suite seed 9137 54.1% of 170; out-of-fuel turns
+  612 vs 643.
+- The arrival fix alone: 49.5% of 364, level; kept as a model correction. The two were not played together.

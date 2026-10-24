@@ -262,7 +262,7 @@ const DraftPlan* read_draft_plan() {
 void play_draft(DraftState& state) {
     // Write before picking: a pick ends the draft turn's actions (later writes fail with error 18),
     // and the draft bot may not run again after its last pick.
-    draft_order(); // cache the selection before the first turn's expensive analysis
+    draft_order(); // caches test_draft's selection before the first turn's expensive analysis
     try {
         analyse(state.plan);
     } catch (const std::exception&) {
