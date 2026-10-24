@@ -1776,3 +1776,23 @@ These observations motivate targeted Willow timing experiments, not removing Tre
 from all non-Vesper champions. The passive alone does not make Treasure uniquely efficient
 on Vesper. Full per-game records, source/replay/manifest pins and the Luna analysis script
 are in `research/willow-a67-treasure-exposure-20261023-v1/`.
+
+### Retained Prism no-work conversion: isolated source candidate
+
+`28d1311c` implements the bounded contract as a separate `4db4eecb` child. Only bot.cpp
+changes. An ephemeral farm outcome requires retained positive bankable Prism gems, an
+actually complete normal scan, no selected work tier, a positive evaluated deadline
+rejection, no unresolved positive wait/work, and a fresh live record with movement/basic/
+cast unspent. Early work returns and selected jobs retain their behavior. The ordinary
+farm caller clears the abandoned claim and invokes existing banking once with an explicit
+retention override; every submission site now requires tribute_ok for this invocation,
+including the original tile after failed movement. Ordinary banking callers are unchanged.
+
+No new scan or fuel gate is introduced. The terminal branch adds a self-record read and
+freshness checks; actual conversion has its normal routing cost. No persistent latch or
+global closing change is made. The source review passes, but conservative wait/claimed-work
+vetoes may suppress activation, and next-turn work selection may reverse the route. Runtime
+must establish actual activation, conversion, fuel costs and reversals. This is not an
+attribution or verified fix for the older Rows replay. Full snapshots, manifest, exact patch
+and checkpoint are in `provenance/willow-no-work-conversion-20261023-v1/`; see
+`willow-no-work-conversion-source-review.md`. Canonical remains4db; runtime is pending.

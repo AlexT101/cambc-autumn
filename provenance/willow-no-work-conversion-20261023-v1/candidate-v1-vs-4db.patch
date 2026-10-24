@@ -1,0 +1,204 @@
+diff --git a/bots/hyperion/src/bot.cpp b/bots/variants/willow-no-work-conversion-work/src/bot.cpp
+index c5e7e5d..368762c 100644
+--- a/bots/hyperion/src/bot.cpp
++++ b/bots/variants/willow-no-work-conversion-work/src/bot.cpp
+@@ -706,7 +706,7 @@ bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const
+ 
+ // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an
+ // altar carry_bag gave up waiting at, or at one believed locked (the caller skipped it), is judged again.
+-bool submit_here(const World& world, Safety& safety, Memory& memory) {
++bool submit_here(const World& world, Safety& safety, Memory& memory, bool require_safety = false) {
+     auto& me = cambc::self();
+     const vec2 here = my_position();
+     const auto& altars = world.map().altars;
+@@ -714,9 +714,10 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
+         if (dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
+         if (world.altars[a].enemy_lock && enemy_lock_live(altars[a].pos)) continue;
+         const bool avoided = a == memory.avoid_altar && world.round < memory.avoid_until;
+-        if ((avoided || world.altars[a].enemy_lock || here != world.me().pos)
++        if ((require_safety || avoided || world.altars[a].enemy_lock || here != world.me().pos)
+             && !tribute_ok(world, safety, memory, tribute_turns(my_gems())))
+             return false;
++        if (require_safety) world.throw_if_stale();
+         place_lock(world); // first: it cancels every tribute at its altar
+         place_ward(world, memory); // first: no ward goes down while channelling
+         try {
+@@ -773,10 +774,15 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
+     step_safely(pathing, pathing.to_hop(h), safety);
+ }
+ 
+-[[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step = true) {
+-    if (retaining_gems(world, pathing)) return;
++enum class BankReason { ordinary, no_work_deadline };
++
++[[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step = true,
++                               BankReason reason = BankReason::ordinary) {
++    const bool conversion = reason == BankReason::no_work_deadline;
++    if (!conversion && retaining_gems(world, pathing)) return;
+     world.throw_if_stale();
+-    if (submit_here(world, safety, memory)) return;
++    const auto submit = [&] { return submit_here(world, safety, memory, conversion); };
++    if (submit()) return;
+     const vec2 here = my_position();
+     const auto& altars = world.map().altars;
+     // One we gave up waiting at (carry_bag) counts as locked until we could reach another.
+@@ -806,7 +812,7 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
+     if (const auto* zone = pack_zone(world)) {
+         if (any_locked && world.altars[best].enemy_lock && break_lock(world, best) && !world.me().facts().walk_and_attack_independent())
+             return;
+-        if (pathing.step_towards(any_locked ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit_here(world, safety, memory);
++        if (pathing.step_towards(any_locked ? pathing.to_altar(best) : pathing.to_any_altar(), zone)) submit();
+         return;
+     }
+     const int walk_steps = any_locked ? best_steps : pathing.to_any_altar().at(here);
+@@ -818,15 +824,15 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
+         }
+     }
+     const Field& field = any_locked ? pathing.to_altar(best) : pathing.to_any_altar();
+-    if ((dash_across(world, pathing, field) || dash_towards(world, pathing, field)) && submit_here(world, safety, memory)) return;
++    if ((dash_across(world, pathing, field) || dash_towards(world, pathing, field)) && submit()) return;
+     if (any_locked && world.altars[best].enemy_lock && break_lock(world, best) && !world.me().facts().walk_and_attack_independent())
+         return;
+     if (heal_step && willow_bank_heal_step(world, pathing, safety, field)) {
+-        submit_here(world, safety, memory);
++        submit();
+         return;
+     }
+     step_safely(pathing, field, safety);
+-    submit_here(world, safety, memory);
++    submit();
+ }
+ 
+ // Damage a turn, spells (and dash landings) spread over their cooldown.
+@@ -1720,7 +1726,11 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+ // Carrying gems, farming on chains a capture onto the bag: it saves the walk to the altar and
+ // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
+ // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
+-[[gnu::flatten]] bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++enum class FarmOutcome { ordinary, no_work_before_conversion_deadline };
++
++[[gnu::flatten]] bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory,
++                          FarmOutcome* outcome = nullptr) {
++    if (outcome) *outcome = FarmOutcome::ordinary;
+     world.throw_if_stale();
+     if (pick_up(world, pathing, memory)) return true;
+     const auto& map = world.map();
+@@ -2155,6 +2165,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+     const CampBelief* const camp_data = world.camps.data();
+     int* const steps_data = centre_steps.data();
+     const int bag_tribute = bag > 0 ? tribute_turns(bag) : 0;
++    bool deadline_rejected = false, unresolved_work = false;
+     int k = 0;
+     for (; k < evaluated && (fuel_ok(ample) || fuel_ok(loop_floor + loop_reserve())); ++k) {
+         const int g = (first + k) % n_groups;
+@@ -2242,7 +2253,10 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         if (steps == unreachable) continue;
+         // A group still respawning when we would arrive costs the wait there.
+         const int wait = belief.state == CampState::respawning ? std::max(0, belief.respawn_round - round - steps) : 0;
+-        if (wait > params::max_wait) continue;
++        if (wait > params::max_wait) {
++            if (outcome && known.gems + known.gold > 0) unresolved_work = true;
++            continue;
++        }
+         if (!banks_bag && group.strength > 0 && belief.state == CampState::alive && steps <= params::help_radius
+             && steps < help_steps && struggling(g))
+             help_group = g, help_steps = steps;
+@@ -2256,13 +2270,21 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+             && (!banks_bag || (gems + gold) / (static_cast<float>(walk + capture_rounds()) + cycle_bank + fastest) <= from_altar_value))
+             continue;
+         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
++        const float worth = gems + gold;
++        if (outcome && !std::isfinite(worth)) unresolved_work = true;
+         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
+             if (known.to_altar < 0) known.to_altar = pathing.centre_to_altar(g);
+             const int last = known.to_altar;
+-            return last != unreachable
+-                   && static_cast<float>(steps + wait + capture_rounds() + last + tribute_turns(bag + group.gems)) + clear_rounds > static_cast<float>(left);
++            const bool late = last != unreachable
++                              && static_cast<float>(steps + wait + capture_rounds() + last + tribute_turns(bag + group.gems)) + clear_rounds > static_cast<float>(left);
++            if (outcome && worth > 0) {
++                if (!std::isfinite(worth) || !std::isfinite(clear_rounds) || clear_rounds < 0 || last < 0)
++                    unresolved_work = true;
++                else if (late)
++                    deadline_rejected = true;
++            }
++            return late;
+         };
+-        const float worth = gems + gold;
+         if (claimed) {
+             if (belief.state == CampState::cleared) continue;
+             const bool fresh = belief.state == CampState::respawning;
+@@ -2280,11 +2302,15 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+                                 world.round, my_handle(), g, group.handle, group.centre.x, group.centre.y, steps, working,
+                                 static_cast<double>(health), static_cast<double>(old_left), static_cast<double>(health_left));
+             });
+-            if (health <= 0 || health_left <= 0) continue;
++            if (health <= 0 || health_left <= 0) {
++                if (outcome && worth > 0) unresolved_work = true;
++                continue;
++            }
+             // A capture that wins the game is the team's, not a share: what counts is how soon.
+             const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
+             // No capture rounds: the claimer holds it, and the crew moves on once it is cleared.
+             const float value = rate(world, worth * part, trip + rounds);
++            if (outcome && worth > 0 && (!std::isfinite(rounds) || !std::isfinite(value))) unresolved_work = true;
+             // Only a better share counts, and the final pick takes none an affordable group beats.
+             if (value <= shared_value || (best >= 0 && value <= best_value) || too_late(rounds)) continue;
+             float joint_rounds = 0;
+@@ -2294,6 +2320,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+             const bool worked = belief.last_damaged_round >= round - 1;
+             const float hits = soften * min_camp_damage(world, g, strength + others, &joint_rounds)
+                                * (worked ? strength * rounds / health : strength / (strength + others));
++            if (outcome && worth > 0 && !std::isfinite(hits)) unresolved_work = true;
+             if (hits > spare_health) continue;
+             shared = g, shared_value = value, shared_steps = steps;
+             continue;
+@@ -2341,6 +2368,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+             damage = 0;
+             clear_rounds = kite;
+         }
++        if (outcome && worth > 0 && !std::isfinite(damage)) unresolved_work = true;
+         if (too_late(clear_rounds)) continue;
+         const float cycle = trip + clear_rounds + capture_rounds();
+         float value = rate(world, worth, cycle);
+@@ -2376,6 +2404,23 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
+         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false;
+     if (help_group >= 0) best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false;
+     if (best < 0) {
++        // A complete, time-limited no-choice can hand this otherwise unused turn to conversion.
++        if (outcome && decision == 'F' && world.me().type == cambc::champion_type::prism
++            && bag > 0 && !banks_bag && !memory.siege && siege_group() < 0 && !struck && !searched
++            && k == evaluated && evaluated == n_groups && deadline_rejected && !unresolved_work) {
++            const auto& record = my_record();
++            const auto state = cambc::champion_state::from_bits_retain(record.state);
++            const bool unused = state.contains(cambc::champion_state::alive)
++                                && state.contains(cambc::champion_state::can_move)
++                                && state.contains(cambc::champion_state::can_attack)
++                                && state.contains(cambc::champion_state::can_cast)
++                                && !state.contains(cambc::champion_state::recalling)
++                                && !state.contains(cambc::champion_state::submitting_gems)
++                                && !state.contains(cambc::champion_state::teleporting)
++                                && vec2{record.x, record.y} == world.me().pos;
++            world.throw_if_stale();
++            if (unused) *outcome = FarmOutcome::no_work_before_conversion_deadline;
++        }
+         // Cut short before weighing even last turn's choice: walk on towards it.
+         if (k == 0 && memory.farm_group >= 0) memory.claim = memory.farm_group, walk_on(memory.farm_group);
+         return true;
+@@ -5224,7 +5269,15 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+         decision = 'G';
+         return;
+     }
+-    farm(world, pathing, safety, memory);
++    FarmOutcome outcome = FarmOutcome::ordinary;
++    farm(world, pathing, safety, memory, world.me().type == cambc::champion_type::prism ? &outcome : nullptr);
++    if (outcome == FarmOutcome::no_work_before_conversion_deadline) {
++        memory.farm_group = memory.claim = -1;
++        memory.crew = false;
++        memory.banking = true;
++        decision = 'B';
++        bank_gems(world, pathing, safety, memory, false, BankReason::no_work_deadline);
++    }
+ }
+ 
+ // Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a
