@@ -2026,3 +2026,21 @@ uses solo attrition with a heal trip, then separately clears harmless members. O
 lower health/output and unknown local admission rule prevent copying that job directly.
 The prior single-station crew arm had zero admissions and first failed member coverage;
 it is not being rerun unchanged. See`claudus-monolith-allocation-review-20261024-v1.md`.
+
+### Next bounded runtime checks and source attribution
+
+The survival runtime preflight selects six existing 4db games with an actual own Prism
+death to a camp, then pairs both source arms against the same frozen v33, map and physical
+side. These twelve games are activation/progress diagnostics, not a strength sample.
+`provenance/willow-flee-survival-runtime-preflight-20261024-v4/` pins the full manifest,
+control replay hashes and normal SDK/toolchain. Its original execution addendum omitted
+`--release` on explicit builds; preserved v2 corrects both commands before any runtime.
+The run command also explicitly uses Release and 100000 fuel. Runtime remains queued
+behind the 9b full comparison and its audits; no source or artifact promotion has occurred.
+
+The separate read-only `willow-4db-v33-upstream-regression-seams-20261024-v1.md` identifies
+the actual eleven-file delta from released v33. Willow formation, draft, ordinary farm
+affordability and shopping are unchanged. It ranks queue/guard scheduling attribution,
+an exact demand-driven ward query, and unseen-threat geometry for later investigation.
+The panel's generated-map deficit is not evidence for a map-name selector or a blanket
+rollback. Existing failed optimizations and high-fuel equivalence limits remain recorded.

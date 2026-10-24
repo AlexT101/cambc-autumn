@@ -1,0 +1,167 @@
+{
+  "schema": "willow-flee-survival-runtime-preflight-v1",
+  "source_snapshots": [
+    {
+      "arm": "first",
+      "aggregate": "1a1ee8e788c80cd3d38b5531df9e203b253741f9ca1eda4960d22163d57d1764",
+      "snapshot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-20261023-v1/survival-first-src-v1",
+      "file_count": 29
+    },
+    {
+      "arm": "basic",
+      "aggregate": "3d18ab0a56f3646a2fc701b5d876324083ff6ba9c44b75df70daf6b4cf566b87",
+      "snapshot": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-20261023-v1/survival-basic-src-v1",
+      "file_count": 29
+    }
+  ],
+  "parent_4db": "4db4eecbda37e23dbce0b162d2cf7441a3d32a554d6534cf196e3ffbedcdf2fd",
+  "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+  "cli": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "version": "3.0.5",
+    "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+  "cases": [
+    {
+      "arm": "first",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-archipelago-102306012.map26a",
+      "map_sha256": "93a81652274ef200da6b06080124b9449947d895e52e16ea0bd1c1d33bb863a5",
+      "candidate_side": "B",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-first-work",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-archipelago-102306012-candidate-B.repl26a",
+      "control_sha256": "6e9406a2aa7f54a09f117f4674b50a2bdc752ff7178e65a6b94bacb6270772c8",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-archipelago-102306012-candidate-B-first.repl26a"
+    },
+    {
+      "arm": "basic",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-archipelago-102306012.map26a",
+      "map_sha256": "93a81652274ef200da6b06080124b9449947d895e52e16ea0bd1c1d33bb863a5",
+      "candidate_side": "B",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-basic-work",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-archipelago-102306012-candidate-B.repl26a",
+      "control_sha256": "6e9406a2aa7f54a09f117f4674b50a2bdc752ff7178e65a6b94bacb6270772c8",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-archipelago-102306012-candidate-B-basic.repl26a"
+    },
+    {
+      "arm": "first",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-chambers-102306112.map26a",
+      "map_sha256": "ac96a1c9d90dfefa86e59ad883723cd0fced98fcaf1e868c1da60fd4dd8c9152",
+      "candidate_side": "B",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-first-work",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-chambers-102306112-candidate-B.repl26a",
+      "control_sha256": "463260e7e612150ba18d11270fea616657180a2d76aed3f50d1e6b72495a034a",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-chambers-102306112-candidate-B-first.repl26a"
+    },
+    {
+      "arm": "basic",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-chambers-102306112.map26a",
+      "map_sha256": "ac96a1c9d90dfefa86e59ad883723cd0fced98fcaf1e868c1da60fd4dd8c9152",
+      "candidate_side": "B",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-basic-work",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-chambers-102306112-candidate-B.repl26a",
+      "control_sha256": "463260e7e612150ba18d11270fea616657180a2d76aed3f50d1e6b72495a034a",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-chambers-102306112-candidate-B-basic.repl26a"
+    },
+    {
+      "arm": "first",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-caves-102300400.map26a",
+      "map_sha256": "9080bd9c5a5e18cb29e972eb05f218c9f4ba5c66ba88ea4cb8fa701f53ca07ef",
+      "candidate_side": "B",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-first-work",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-caves-102300400-candidate-B.repl26a",
+      "control_sha256": "481532d4487974341bdf6c3ccf56c71bebeb4fb0bc0cec55a1a8cec87f8ca4b3",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-caves-102300400-candidate-B-first.repl26a"
+    },
+    {
+      "arm": "basic",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-caves-102300400.map26a",
+      "map_sha256": "9080bd9c5a5e18cb29e972eb05f218c9f4ba5c66ba88ea4cb8fa701f53ca07ef",
+      "candidate_side": "B",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-basic-work",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-caves-102300400-candidate-B.repl26a",
+      "control_sha256": "481532d4487974341bdf6c3ccf56c71bebeb4fb0bc0cec55a1a8cec87f8ca4b3",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-caves-102300400-candidate-B-basic.repl26a"
+    },
+    {
+      "arm": "first",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-cells-102306603.map26a",
+      "map_sha256": "340d2f58feecff672188fa656665f82d2d8e7c0d7f888924e308188ee805b71a",
+      "candidate_side": "A",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-first-work",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306603-candidate-A.repl26a",
+      "control_sha256": "3891d763490c7edc0f8448711facefb37ff871d8661608bfc1e893ebb34edd0a",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-cells-102306603-candidate-A-first.repl26a"
+    },
+    {
+      "arm": "basic",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-cells-102306603.map26a",
+      "map_sha256": "340d2f58feecff672188fa656665f82d2d8e7c0d7f888924e308188ee805b71a",
+      "candidate_side": "A",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-basic-work",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306603-candidate-A.repl26a",
+      "control_sha256": "3891d763490c7edc0f8448711facefb37ff871d8661608bfc1e893ebb34edd0a",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-cells-102306603-candidate-A-basic.repl26a"
+    },
+    {
+      "arm": "first",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-blob-102306200.map26a",
+      "map_sha256": "58a254e25dcead130af2d5edb39c21ad666b706abb15dcffa5c00a9fc6f92618",
+      "candidate_side": "A",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-first-work",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-blob-102306200-candidate-A.repl26a",
+      "control_sha256": "7636304ebb096090841a1c6ba71cd1ef4d944251e60f6ae49da557a7ed680c28",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-blob-102306200-candidate-A-first.repl26a"
+    },
+    {
+      "arm": "basic",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-blob-102306200.map26a",
+      "map_sha256": "58a254e25dcead130af2d5edb39c21ad666b706abb15dcffa5c00a9fc6f92618",
+      "candidate_side": "A",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-basic-work",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-blob-102306200-candidate-A.repl26a",
+      "control_sha256": "7636304ebb096090841a1c6ba71cd1ef4d944251e60f6ae49da557a7ed680c28",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-blob-102306200-candidate-A-basic.repl26a"
+    },
+    {
+      "arm": "first",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-cells-102306615.map26a",
+      "map_sha256": "1508f5f9be723a26bff814f059de926cc5da3c38af38fa8ae9b1a92015419ad7",
+      "candidate_side": "B",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-first-work",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306615-candidate-B.repl26a",
+      "control_sha256": "ccfd37b2b7e046a5e41781e567f7b68feb63cfc9f030c882fd8db72d3a365edd",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/first/gen-gen-cells-102306615-candidate-B-first.repl26a"
+    },
+    {
+      "arm": "basic",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/maps/gen/gen-cells-102306615.map26a",
+      "map_sha256": "1508f5f9be723a26bff814f059de926cc5da3c38af38fa8ae9b1a92015419ad7",
+      "candidate_side": "B",
+      "argv_bot_a": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/baselines/hyperion-deployed-v33-a00fff",
+      "argv_bot_b": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-basic-work",
+      "control_replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-hyperion4db-vs-v33-a00fff-full1104-run01/gen-gen-cells-102306615-candidate-B.repl26a",
+      "control_sha256": "ccfd37b2b7e046a5e41781e567f7b68feb63cfc9f030c882fd8db72d3a365edd",
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/outputs/basic/gen-gen-cells-102306615-candidate-B-basic.repl26a"
+    }
+  ],
+  "runtime_command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 cambc run-batch ABSOLUTE_ONE_GAME_MANIFEST --jobs 1 --color never --release",
+  "preconditions": [
+    "isolated initialized workspace; source-only bot copies; no .cambc or compile_commands",
+    "build candidates sequentially Release and preserve build logs",
+    "verify v33 raw/injected hashes against release pins before matches",
+    "audit native references/rollovers after 12 unique outputs"
+  ],
+  "limits": "Selected activation evidence only; witnesses are nominations, not proven activation; individual remaining camp HP may be unknown."
+}

@@ -1,0 +1,119 @@
+{
+  "schema": "willow-flee-survival-execution-addendum-v2",
+  "preserves": "execution-addendum.json (v1 is retained unchanged)",
+  "build_commands": [
+    {
+      "arm": "first",
+      "argv": [
+        "nice",
+        "-n",
+        "19",
+        "env",
+        "CMAKE_BUILD_PARALLEL_LEVEL=1",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "build",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-first-work",
+        "--release"
+      ],
+      "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+      "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-first.stdout.log",
+      "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-first.stderr.log",
+      "exitcode": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-first.exitcode"
+    },
+    {
+      "arm": "basic",
+      "argv": [
+        "nice",
+        "-n",
+        "19",
+        "env",
+        "CMAKE_BUILD_PARALLEL_LEVEL=1",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+        "build",
+        "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-basic-work",
+        "--release"
+      ],
+      "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+      "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-basic.stdout.log",
+      "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-basic.stderr.log",
+      "exitcode": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-basic.exitcode"
+    }
+  ],
+  "run_command": {
+    "argv": [
+      "nice",
+      "-n",
+      "19",
+      "env",
+      "CMAKE_BUILD_PARALLEL_LEVEL=1",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+      "run-batch",
+      "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/run-12-one-game-rows.txt",
+      "--jobs",
+      "1",
+      "--color",
+      "never",
+      "--release",
+      "--fuel-quantum",
+      "100000"
+    ],
+    "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+    "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/run-12.stdout.log",
+    "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/run-12.stderr.log",
+    "exitcode": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/run-12.exitcode"
+  },
+  "manifest": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/run-12-one-game-rows.txt",
+    "sha256": "0e3f2b970dbd46d98cabacf688e0d9f3b79aa85aacfd5aa99538b7cca9c10743",
+    "rows": 12
+  },
+  "normal_repository_sdk_cmake_pins": [
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/sdk/cpp/cambc.h",
+      "sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/sdk/cpp/imports.h",
+      "sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/cmake/CMakeLists.txt",
+      "sha256": "a2f9978b9d948623b48ac4fca70692a604bc5cdac2c50c115558ba891a26b78c"
+    },
+    {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/cambc.toml",
+      "sha256": "a0e36b45e114dedb61b421a5f45d85127fe88a8474cffec6500bc9ec0b480a50"
+    }
+  ],
+  "installed_toolchain_pins": [
+    {
+      "path": "/Users/yufan/Library/Caches/cambc/wasi-sdk-33/bin/clang++",
+      "sha256": "356b0fdc2006a584582b4958c4ed461813d7492ca412f21727ba7875af93433d"
+    },
+    {
+      "path": "/Users/yufan/Library/Caches/cambc/wasi-sdk-33/VERSION",
+      "sha256": "973b79c8f797edfede7db06753dddd2b8db3e85d4859fb8ef17e0929ca64470e"
+    },
+    {
+      "path": "/Users/yufan/Library/Caches/cambc/cmake-3.31.8-macos-universal/CMake.app/Contents/bin/cmake",
+      "sha256": "6e69dc22c6c3c6800f8889256e29a159f4776c38421e10c917e3b638a1df2764"
+    },
+    {
+      "path": "/Users/yufan/Library/Caches/cambc/ninja-1.12.1-macos-universal/ninja",
+      "sha256": "a46eca0aae6e8b7792dde0580b766f948fba5fb58fca8127078f7374573af6d5"
+    }
+  ],
+  "versions": {
+    "cli": "cambc 3.0.5",
+    "wasi_sdk": "33.0+m, clang22.1.0-wasi-sdk",
+    "cmake": "3.31.8",
+    "ninja": "1.12.1"
+  },
+  "pre_match_gates": [
+    "Raw/injected v33 exact released pins: f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7 / 4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792.",
+    "Record candidate raw/injected hashes and require source aggregates before build.",
+    "Source and SDK/CMake hashes before/after match; no cache/compileDB copied.",
+    "Run exactly the twelve manifest rows, one worker, explicit default fuel quantum 100000; preserve logs and exit codes."
+  ],
+  "runtime_authorized": false
+}

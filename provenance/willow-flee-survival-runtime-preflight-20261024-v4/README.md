@@ -1,0 +1,1 @@
+Source-only preflight. No builds or games executed. Exact 12 paired cases, map/control hashes, side ordering and unique output paths are in `run-plan.json`. Each preserved full source snapshot contains 29 files and matches its live source byte-for-byte. This is not a strength panel.

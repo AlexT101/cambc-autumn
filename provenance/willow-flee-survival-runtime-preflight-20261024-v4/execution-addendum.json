@@ -1,0 +1,34 @@
+{
+  "schema": "willow-flee-survival-execution-addendum-v1",
+  "supersedes_preflight_wording_only": true,
+  "workspace": "Use existing in-repo bot directories; no isolated workspace. Each variant currently has src-only, so its `.cambc` is fresh when build begins. Never copy caches or compile_commands.",
+  "build_commands": [
+    "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc build /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-first-work\nstdout=/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-first.stdout.log\nstderr=/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-first.stderr.log\nexit=/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-first.exitcode",
+    "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc build /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/bots/variants/willow-flee-survival-basic-work\nstdout=/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-basic.stdout.log\nstderr=/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-basic.stderr.log\nexit=/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/build-basic.exitcode"
+  ],
+  "run_command": "nice -n 19 env CMAKE_BUILD_PARALLEL_LEVEL=1 /Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc run-batch /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/run-12-one-game-rows.txt --jobs 1 --color never --release --fuel-quantum 100000",
+  "run_stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/run-12.stdout.log",
+  "run_stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/run-12.stderr.log",
+  "run_exitcode": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/run-12.exitcode",
+  "manifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/run-12-one-game-rows.txt",
+  "manifest_sha256": "0e3f2b970dbd46d98cabacf688e0d9f3b79aa85aacfd5aa99538b7cca9c10743",
+  "prepost_checks": [
+    "Capture all 29 source file hashes for both candidates and frozen v33 before/after, compare unchanged.",
+    "Record CLI version/hash, `cambc init` generated SDK/CMake/toolchain versions and SDK header/CMake hashes; use installed cambc 3.0.5.",
+    "Verify v33 reference raw/injected WASM hashes equal frozen release values before any run; stop on mismatch.",
+    "After each candidate Release build record raw and injected WASM path/hash; preserve build stdout/stderr/exit.",
+    "Require exactly 12 unique outputs and inspect native references=false, rollovers/BotError; do not rerun controls."
+  ],
+  "native_audit_command": "node /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/audit_native_status.mjs /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/native-audit-input --compact --out /Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-flee-survival-runtime-preflight-20261024-v4/native-status.json",
+  "runtime_authorized": false,
+  "existing_release_reference": {
+    "source_aggregate": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+    "raw": "f1e94a1e5c5c45c9907ef1e237c88e079157aa153fdbf116516627c31e85ebb7",
+    "injected": "4fcd9435b5f77abcc42576baa1533dbc8b681bd720632adae160df9792bf1792"
+  },
+  "cli": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "version": "cambc 3.0.5"
+  }
+}
