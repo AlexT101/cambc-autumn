@@ -55,22 +55,20 @@ struct SupportExposure {
     bool safe() const { return !enemy && !camp; }
 };
 
-struct WillowStation {
+// Willow's tile, or one a step away, with its exposure in the beliefs of our latest observe.
+struct Station {
     vec2 p;
     SupportExposure risk;
-    bool legal = false;
+    bool open = false;
 };
-
-struct WillowStations {
-    std::array<WillowStation, 9> tiles;
-    bitboard guard;
+struct Stations {
+    std::array<Station, 9> tiles; // ours first
+    bitboard guard;               // where an enemy may hit
     vec2 origin{-1, -1};
-    int round = -1, vision = -1;
+    std::uint32_t observations = 0;
 };
-std::optional<WillowStations> willow_stations;
-int support_vision = 0;
-SupportExposure support_exposure_raw(const World& world, Safety& safety, vec2 p, bool include_enemies = true);
-const bitboard* willow_step_guard(const World& world, Pathing& pathing, Safety& safety);
+const Stations& stations(const World& world, Safety& safety, vec2 here);
+void guard_steps(const World& world, Pathing& pathing, Safety& safety);
 
 // Read by tools/replay/fight_calibration.py.
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1) {
@@ -2700,13 +2698,13 @@ void forget_pack_zone(const World& world) { pack_zone_state(world).round = -1; }
 // What we see changed mid-turn. Safety's beliefs are fixed for its life, so it starts again.
 [[gnu::noinline]] void see_again(World& world, Pathing& pathing, Safety& safety) {
     world.observe();
-    ++support_vision;
     pathing.invalidate();
     std::destroy_at(&safety);
     std::construct_at(&safety, world);
     forget_pack_zone(world);
-    if (world.me().type == cambc::champion_type::willow && pathing.guard())
-        pathing.set_guard(willow_step_guard(world, pathing, safety));
+    // Willow's guard follows what we see; hyperion's keeps the tile it was worked out from.
+    if (const auto held = pathing.held_guard(); world.me().type == cambc::champion_type::willow && (held.guard || held.fn))
+        guard_steps(world, pathing, safety);
 }
 
 // Our walk or dash brought an enemy into sight that could strike us, or that we could strike,
@@ -3062,8 +3060,10 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
 
 // step_guard from where we stand, worked out when a step or dash first needs it.
 void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
+    // Willow holds no fight: every tile an enemy may hit is guarded.
     if (world.me().type == cambc::champion_type::willow) {
-        pathing.set_guard(willow_step_guard(world, pathing, safety));
+        pathing.defer_guard([](const World& w, Safety& s, vec2 here, int) { return &stations(w, s, here).guard; }, safety,
+                            my_position(), 1);
         return;
     }
     const auto& self = world.me();
@@ -4309,20 +4309,19 @@ bool each_camp_striker(const World& world, vec2 p, F&& f) {
     return true;
 }
 
-SupportExposure support_exposure_raw(const World& world, Safety& safety, vec2 p, bool include_enemies) {
+// `enemies`: false when no enemy can hit p, which skips their search.
+SupportExposure exposure_at(const World& world, Safety& safety, vec2 p, bool enemies = true) {
     SupportExposure risk;
-    if (include_enemies) {
-        std::array<Safety::ThreatAt, 16> threats;
-        const int n = safety.threats_at(p, threats);
-        for (int i = 0; i < n; ++i) {
-            const auto& b = threats[i].blow;
-            if (!b.hits) continue;
-            const auto& e = world.enemies[threats[i].enemy];
-            risk.enemy = true;
-            risk.stun |= b.stuns;
-            risk.damage += b.damage;
-            risk.imminent += b.damage * (e.visible && !e.acted ? 2.0f : 1.0f);
-        }
+    std::array<Safety::ThreatAt, 16> threats;
+    const int n = enemies ? safety.threats_at(p, threats) : 0;
+    for (int i = 0; i < n; ++i) {
+        const auto& b = threats[i].blow;
+        if (!b.hits) continue;
+        const auto& e = world.enemies[threats[i].enemy];
+        risk.enemy = true;
+        risk.stun |= b.stuns;
+        risk.damage += b.damage;
+        risk.imminent += b.damage * (e.visible && !e.acted ? 2.0f : 1.0f);
     }
     each_camp_striker(world, p, [&](int g, std::size_t i, const CampMember& m) {
         const auto& c = world.camps[g];
@@ -4341,38 +4340,38 @@ SupportExposure support_exposure_raw(const World& world, Safety& safety, vec2 p,
     return risk;
 }
 
-const bitboard* willow_step_guard(const World& world, Pathing& pathing, Safety& safety) {
+// Worked out on first need after we move or see again. Its guard board stays at one address: a
+// guard Pathing holds reads the latest.
+const Stations& stations(const World& world, Safety& safety, vec2 here) {
+    static Stations s;
+    if (s.observations == world.observations && s.origin == here) return s;
     world.throw_if_stale();
-    if (!willow_stations) willow_stations.emplace();
-    auto& stations = *willow_stations;
-    const vec2 here = my_position();
-    if (stations.round == world.round && stations.vision == support_vision && stations.origin == here) return &stations.guard;
-    stations.round = world.round;
-    stations.vision = support_vision;
-    stations.origin = here;
-    clear_board(stations.guard);
-    const auto& blocked = pathing.blocked();
-    const bool moves = my_can_move();
-    const bool enemy_may_reach = safety.credible_enemy_may_hit_within(here, 1);
+    s.observations = world.observations;
+    s.origin = here;
+    clear_board(s.guard);
+    const bool enemies = safety.credible_enemy_may_hit_within(here, 1);
     for (int k = 0; k < 9; ++k) {
-        auto& tile = stations.tiles[k];
+        auto& tile = s.tiles[k];
         tile.p = k == 0 ? here : here + directions[k - 1];
-        const bool open = in_bounds(tile.p) && test(world.map().open_for_us, tile.p);
-        tile.legal = open && (k == 0 || (moves && !test(blocked, tile.p)));
+        tile.open = in_bounds(tile.p) && test(world.map().open_for_us, tile.p);
         // Ranged threats shadowcast from the candidate; an opaque origin is invalid.
-        tile.risk = open ? support_exposure_raw(world, safety, tile.p, enemy_may_reach) : SupportExposure{};
-        if (in_bounds(tile.p) && tile.risk.enemy) set_tile(stations.guard, tile.p);
+        tile.risk = tile.open ? exposure_at(world, safety, tile.p, enemies) : SupportExposure{};
+        if (tile.risk.enemy) set_tile(s.guard, tile.p);
     }
     world.throw_if_stale();
-    return &stations.guard;
+    return s;
+}
+
+// Ours, or a free open tile a step reaches.
+bool station_legal(Pathing& pathing, const Station& tile, vec2 here) {
+    return tile.open && (tile.p == here || (my_can_move() && !test(pathing.blocked(), tile.p)));
 }
 
 SupportExposure support_exposure(const World& world, Safety& safety, vec2 p) {
-    if (world.me().type == cambc::champion_type::willow && willow_stations && willow_stations->round == world.round
-        && willow_stations->vision == support_vision)
-        for (const auto& tile : willow_stations->tiles)
+    if (const vec2 here = my_position(); world.me().type == cambc::champion_type::willow && dist(p, here) <= 1)
+        for (const auto& tile : stations(world, safety, here).tiles)
             if (tile.p == p) return tile.risk;
-    return support_exposure_raw(world, safety, p);
+    return exposure_at(world, safety, p);
 }
 
 bool stationary_support_output(const World& world, int work) {
@@ -4460,9 +4459,8 @@ bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Me
                               bool* protected_work = nullptr) {
     if (protected_work) *protected_work = true;
     if (stunned_turn) return false;
-    pathing.set_guard(willow_step_guard(world, pathing, safety));
-    const auto& stations = *willow_stations;
-    const auto here_risk = stations.tiles[0].risk;
+    guard_steps(world, pathing, safety);
+    const auto here_risk = stations(world, safety, my_position()).tiles[0].risk;
     const float health = my_health();
     const bool forced = leave || health <= here_risk.imminent;
     const bool capture = holding_capture(world, pathing) || contesting(world);
@@ -4501,7 +4499,7 @@ bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Me
         const vec2 here = my_position();
         const Field* economic = !forced && bank ? &pathing.to_any_altar()
                                                : !forced && shop ? &pathing.to_ally_spawn() : nullptr;
-        const auto better = [&](const WillowStation& a, const WillowStation& b) {
+        const auto better = [&](const Station& a, const Station& b) {
             if (a.risk.safe() != b.risk.safe()) return a.risk.safe();
             const bool a_dies = health <= a.risk.imminent, b_dies = health <= b.risk.imminent;
             if (a_dies != b_dies) return !a_dies;
@@ -4534,11 +4532,13 @@ bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Me
         heal_ally(world);
         std::array<bool, 9> tried{};
         for (int attempt = 0; attempt < 9; ++attempt) {
-            const auto& current = willow_stations->tiles;
+            const auto& current = stations(world, safety, here).tiles;
             const bool can_move = my_can_move();
+            std::array<bool, 9> legal;
+            for (int k = 0; k < 9; ++k) legal[k] = station_legal(pathing, current[k], here);
             int best = -1;
             for (int k = 0; k < 9; ++k)
-                if (!tried[k] && current[k].legal && (k == 0 || can_move)
+                if (!tried[k] && legal[k] && (k == 0 || can_move)
                     && (best < 0 || better(current[k], current[best]))) best = k;
             world.throw_if_stale();
             if (best < 0) break;
@@ -4553,7 +4553,7 @@ bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Me
                     int transit = -1;
                     for (int k = 1; k < 9; ++k) {
                         const auto& tile = current[k];
-                        if (tried[k] || !tile.legal || !tile.risk.camp || tile.risk.enemy || tile.risk.stun
+                        if (tried[k] || !legal[k] || !tile.risk.camp || tile.risk.enemy || tile.risk.stun
                             || tile.risk.imminent != 0 || tile.risk.damage != 0 || tile.risk.camp_imminent != 0
                             || world.map().group_at(tile.p) >= 0 || home.at(tile.p) >= here_steps) continue;
                         if (transit < 0 || better(tile, current[transit])) transit = k;
@@ -4580,14 +4580,14 @@ bool willow_economy_or_escape(World& world, Pathing& pathing, Safety& safety, Me
             tried[best] = true;
             world.throw_if_stale();
             // Only the owned escape may select a least-bad guarded station.
-            const auto* guard = pathing.guard();
+            const auto guard = pathing.held_guard();
             pathing.set_guard(nullptr);
             const bool moved = pathing.try_move(target);
             debug_block({
                 if (sleep_transit) std::printf("WT-MOVE %d %u %d,%d moved %d\n", world.round,
                     static_cast<std::uint32_t>(world.me().handle), target.x, target.y, moved);
             });
-            pathing.set_guard(guard);
+            pathing.restore_guard(guard);
             if (moved) {
                 see_again(world, pathing, safety);
                 if (!forced && bank && support_exposure(world, safety, my_position()).safe()
@@ -4687,13 +4687,14 @@ bool heal_lands_from(const World& world, vec2 p, const std::array<HealView, 8>& 
 // The neighbouring station `ok` accepts from which a heal lands best: the most restored, then on
 // the lowest ally, then the least `cost`. `here` if none.
 template <class Ok, class Cost>
-vec2 heal_station(const World& world, vec2 here, const std::array<HealView, 8>& views, int n, Ok&& ok, Cost&& cost) {
+vec2 heal_station(const World& world, Pathing& pathing, Safety& safety, vec2 here, const std::array<HealView, 8>& views,
+                  int n, Ok&& ok, Cost&& cost) {
     vec2 best = here;
     float best_gain = 0, best_fraction = 0;
     int best_cost = unreachable;
     for (int k = 1; k < 9; ++k) {
-        const auto& tile = willow_stations->tiles[k];
-        if (!tile.legal || !ok(tile)) continue;
+        const auto& tile = stations(world, safety, here).tiles[k];
+        if (!station_legal(pathing, tile, here) || !ok(tile)) continue;
         const int g = world.map().group_at(tile.p);
         if (g >= 0 && world.camps[g].state == CampState::cleared) continue;
         const int c = cost(tile);
@@ -4720,12 +4721,12 @@ bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const
     const int n = heal_views(world, here, amount, views);
     if (n == 0 || heal_lands_from(world, here, views, n)) return false;
     world.throw_if_stale();
-    pathing.set_guard(willow_step_guard(world, pathing, safety));
-    if (!willow_stations->tiles[0].risk.safe()) return false;
-    const vec2 best = heal_station(world, here, views, n, [&](const WillowStation& tile) {
+    guard_steps(world, pathing, safety);
+    if (!stations(world, safety, here).tiles[0].risk.safe()) return false;
+    const vec2 best = heal_station(world, pathing, safety, here, views, n, [&](const Station& tile) {
         const int steps = field.at(tile.p);
         return tile.risk.safe() && steps != unreachable && steps <= here_steps;
-    }, [&](const WillowStation& tile) { return field.at(tile.p); });
+    }, [&](const Station& tile) { return field.at(tile.p); });
     world.throw_if_stale();
     if (best == here) return false;
     // Equal-distance banking may spend one progress turn for a heal available after this step.
@@ -4759,11 +4760,11 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     if (test(world.map().ally_spawn, here)) return false;
     float amount = 0;
     if (!heal_ready(world, world.me(), amount)) return false;
-    pathing.set_guard(willow_step_guard(world, pathing, safety));
+    guard_steps(world, pathing, safety);
     const auto quiet = [](const SupportExposure& risk) {
         return risk.safe() && !risk.stun && risk.imminent == 0;
     };
-    if (!quiet(willow_stations->tiles[0].risk)) return false;
+    if (!quiet(stations(world, safety, here).tiles[0].risk)) return false;
     std::array<HealView, 8> views;
     int n = heal_views(world, here, amount, views);
     if (n == 0 || heal_lands_from(world, here, views, n)) return false;
@@ -4772,8 +4773,8 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     n = static_cast<int>(std::remove_if(views.begin(), views.begin() + n,
                                         [&](const HealView& v) { return !(v.target.gain > 3 * basic); }) - views.begin());
     if (n == 0 || immediate_camp_finish(world, here, basic)) return false;
-    const vec2 best = heal_station(world, here, views, n, [&](const WillowStation& tile) { return quiet(tile.risk); },
-                                   [](const WillowStation&) { return 0; });
+    const vec2 best = heal_station(world, pathing, safety, here, views, n, [&](const Station& tile) { return quiet(tile.risk); },
+                                   [](const Station&) { return 0; });
     world.throw_if_stale();
     if (best == here) return false;
     debug_block({

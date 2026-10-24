@@ -384,6 +384,7 @@ public:
     // Start of each play turn. The first call also builds the static map.
     void update();
     void observe();
+    std::uint32_t observations = 0; // update() and observe() calls: beliefs change only with one
     // Only update() reads camps: until an observe(), their beliefs show the vision we have.
     bool camps_current() const { return !observed_; }
     // A camp tile of group g was in view at update().

@@ -1015,6 +1015,7 @@ void World::update() {
     }
     FuelMeter meter{"update"};
     observed_ = false;
+    ++observations;
     read_vision();
     const auto tributing = tributing_enemies(); // before update_champions ends their channels
     guard("priorities", [&] { read_priorities(updated_round_ != round); });
@@ -1042,6 +1043,7 @@ void World::update() {
 [[gnu::flatten]] void World::observe() {
     FuelMeter meter{"observe"};
     observed_ = true;
+    ++observations;
     read_vision();
     update_champions(false);
     sight_pos_ = clear_pos_ = my_position();

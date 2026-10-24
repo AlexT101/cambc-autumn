@@ -254,6 +254,11 @@ another harmless group was kept (CHANGES 91).
   `bots/baselines/astraeus-8d240cc`: 52/52 replays identical, fuel -0.1%. Swapping Willow's post-move `see_again` for
   `see_revealed` is not behaviour-preserving (its camp, ally and Safety reads follow the full re-observe): left for the
   A/B'd steps.
+- Astraeus Willow step guard on hyperion's deferred guard (2026-10-23): stations memoised per World observation and
+  tile, legality read at use, the guard a `GuardFn` through `guard_steps`; `support_vision` and `willow_step_guard`
+  gone. Same bench: 52/52 identical, fuel -0.16% (p99 -1.1%). Dropping `credible_enemy_may_hit_within` cost +1.2% fuel
+  (p99 +3.7%): it spares `threats_at`'s per-tile searches for unseen enemies, and `avoid_within` is no exact substitute
+  (camps; a teleport's current tile, not its landing).
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
 - `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
   2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next

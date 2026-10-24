@@ -273,8 +273,8 @@ public:
         Blow blow;
     };
     int threats_at(vec2 p, std::array<ThreatAt, 16>& out);
-    // Whether an enemy may hit within `radius` of p, with blow()'s teleport origin; omits unseen
-    // enemies with zero credibility, as threats_at() does.
+    // Whether a threat threats_at() lists may hit within `radius` of p: false spares its searches
+    // for every tile that close.
     bool credible_enemy_may_hit_within(vec2 p, int radius);
 
     // Us and the allies we see within `fight_ally_radius`, against every credible threat that
