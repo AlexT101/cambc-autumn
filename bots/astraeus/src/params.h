@@ -65,7 +65,8 @@ inline constexpr int max_wait = 5;
 // Cassi's weight on gold in farm choice: it takes the gold-only groups the others pass up.
 inline constexpr float gold_farmer_weight = 4.0f;
 
-// Sieges (bot.cpp siege) of a Monolith on maps whose only gems are Monoliths, or of a group sealing
+// Sieges (bot.cpp siege) of a Monolith on maps whose only gems are Monoliths, of one the enemy is
+// sieging (no health-pool check while they are in its reach), or of a group sealing
 // the altars: the team goes once its output clears the group within this many rounds and the hits, by this share after stuns
 // and spells from out of reach, cost at most this share of the team's health; a siege under way
 // keeps going within the slack.

@@ -580,3 +580,15 @@ us"). A kill takes the whole bag, so a carrier of `brake_bag` or more (both bags
 
 - Against 118: 51.4% of 1104 (48.4-54.3; ladder 55.0, gen 51.2, gen-s1 51.0), out-of-fuel turns 2733 vs 2745.
   Against 116: 51.1%, gems lost on death -5.4%, tributed +1.4%.
+
+## 120: joining an enemy Monolith siege (astraeus, 2026-10-24)
+
+Off Monolith-only maps `siege_candidate` passed a live Monolith only when it sealed the altars. An awake Monolith
+with a visible enemy in its reach (or one that is already our siege claim, or an ally's) is now a candidate
+(`enemy_in_reach`). `siege_ready` judges it by its current health within `siege_rounds`, without the health-pool
+check while an enemy is in its reach, since the nearest champion takes its hits. The rest of `siege()` is unchanged.
+
+- Against a proxy that sieges Monoliths on every map (mixed-Monolith maps only): 58.6% of 268 vs REF's 55.2%; on a
+  fresh suite 54.4% of 272 vs 50.0%. Our Monolith captures there went from 11 to 33.
+- Against 4d08241 on the full suites: 49.9% of 1104 (47.0-52.9; ladder 50.0, gen 50.0, gen-s1 49.8), out-of-fuel
+  turns 2779 vs 2743. Against hyperion: 50.5%.

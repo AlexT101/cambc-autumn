@@ -3561,9 +3561,18 @@ SiegeLoad siege_load(const World& world, int g) {
     return load;
 }
 
+// A visible enemy stands in the group's reach: it, not we, takes the nearest-champion hits.
+bool enemy_in_reach(const World& world, int g) {
+    const auto& threat = world.map().groups[g].threat();
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && test(threat, e.pos)) return true;
+    return false;
+}
+
 // The Monolith or sealing group (seals()) to siege; one the enemy holds or that returns too late is
-// skipped. `sealing` tells which.
-int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, bool& sealing) {
+// skipped. `sealing` tells which; `joining`, a live Monolith off Monolith-only maps that the enemy
+// is sieging (in its reach, or our team already on it while it is awake).
+int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, bool& sealing, bool& joining) {
     const auto& map = world.map();
     static std::vector<int> monoliths; // in group order
     static bool listed = false;
@@ -3576,9 +3585,10 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
     float best_cost = 0;
     const auto consider = [&](int g, bool seal) {
         const auto& c = world.camps[g];
-        // siege_ready never passes a live Monolith off Monolith-only maps unless it seals: only a
-        // cleared one counts.
-        if (!map.monolith_only && !seal && c.state != CampState::cleared) return;
+        // Off Monolith-only maps a live Monolith counts only if it seals or the enemy is sieging it.
+        const bool join = !map.monolith_only && !seal && c.state == CampState::alive && c.awake != Awake::asleep
+                          && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g) || ally_claims(world, g));
+        if (!map.monolith_only && !seal && !join && c.state != CampState::cleared) return;
         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
         if (wait > params::siege_respawn_wait) return;
         if (c.state == CampState::cleared && c.holder == team::enemy) return;
@@ -3588,7 +3598,7 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
         // another is clearly sooner: switching turns everyone around.
         float cost = static_cast<float>(std::max(steps, wait));
         if (memory.siege && memory.claim == g) cost -= static_cast<float>(params::siege_stickiness);
-        if (best < 0 || cost < best_cost) best = g, best_cost = cost, sealing = seal;
+        if (best < 0 || cost < best_cost) best = g, best_cost = cost, sealing = seal, joining = join;
     };
     const bool sealed = altars_sealed(world, pathing);
     const auto& access = altar_access(world, pathing);
@@ -3607,12 +3617,14 @@ int siege_candidate(const World& world, Pathing& pathing, const Memory& memory, 
 }
 
 // The team's clear, at its current output, costs no more health than it can take in turns.
-bool siege_ready(const World& world, const SiegeLoad& load, bool committed, bool sealing) {
+bool siege_ready(const World& world, const SiegeLoad& load, bool committed, bool sealing, int joined) {
     if (load.health <= 0) return true;
     const float rounds = load.health / team_power(world);
     const float slack = committed ? params::siege_commit_slack : 1.0f;
-    const float limit = world.map().monolith_only || sealing ? params::siege_rounds : 0;
+    const float limit = world.map().monolith_only || sealing || joined >= 0 ? params::siege_rounds : 0;
     if (rounds > limit * slack) return false;
+    // While the enemy is in its reach, their bodies take the hits.
+    if (joined >= 0 && enemy_in_reach(world, joined)) return true;
     float pool = 0;
     for (const auto& a : world.allies)
         if (a.alive) pool += a.max_health;
@@ -3625,11 +3637,11 @@ bool siege(const World& world, Pathing& pathing, Memory& memory) {
     world.throw_if_stale();
     sieged = true;
     const auto& map = world.map();
-    bool sealing = false;
-    const int g = siege_candidate(world, pathing, memory, sealing);
+    bool sealing = false, joining = false;
+    const int g = siege_candidate(world, pathing, memory, sealing, joining);
     const bool ally_in = g >= 0 && ally_claims(world, g);
     const auto load = g >= 0 ? siege_load(world, g) : SiegeLoad{};
-    if (g < 0 || !siege_ready(world, load, (memory.siege && memory.claim == g) || ally_in, sealing)) {
+    if (g < 0 || !siege_ready(world, load, (memory.siege && memory.claim == g) || ally_in, sealing, joining ? g : -1)) {
         memory.siege = false;
         memory.staged_since = -1;
         return false;
