@@ -1756,3 +1756,23 @@ Runtime is pending and canonical remains unchanged. Check qualifying purchases b
 a broad comparison; native five-pick results must be reported alongside the whole panel.
 See `willow-demand-informed-focus-next-step.md`: current heal demand alone does not measure
 extra Focus benefit, and a higher heal cap also changes the existing cast threshold.
+
+### Treasure exposure by role in saved a67 controls
+
+A single sequential analysis of the existing fd99-vs-a67 published80 extracts selects only
+the a67 side by the original manifest order (40 physical A,40 B). It uses native cumulative
+earnedGold snapshots, not the event-derived earnedGold validator. Income after the first
+completed Treasure excludes its entire completion round. The estimate attributable to
+Treasure is `0.2/(1+passive+0.2)` times that later observed income: Vesper's denominator is
+1.53, others1.2, including Marcella's tribute income. This holds the observed farming and
+purchase schedule fixed, ignores displaced-item benefits, and is not causal ROI.
+
+Treasure completion counts and median estimated later bonuses: Vesper76/80 and183gold,
+HoR74/80 and172, Marcella64/68 and302.3, Willow39/52 and48; Prism0/80. Median completion
+rounds are161,210.5,166 and379 respectively. Of Willow's39 completions,15 earn under30gold
+of estimated bonus thereafter. Eight completed Treasure but never completed Jungle or
+Durability by game end;21/52 Willow appearances end without either protective emblem.
+These observations motivate targeted Willow timing experiments, not removing Treasure
+from all non-Vesper champions. The passive alone does not make Treasure uniquely efficient
+on Vesper. Full per-game records, source/replay/manifest pins and the Luna analysis script
+are in `research/willow-a67-treasure-exposure-20261023-v1/`.
