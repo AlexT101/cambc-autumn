@@ -289,19 +289,24 @@ public:
     // Without `falls` the fight may end once it cannot be lost, leaving self_falls unknown.
     Trade fight(vec2 p, bool falls = true);
     // Optional chase only: the same roster, with unavailable first activations delayed on copies.
-    Trade chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls = true);
+    // `late` as late() gives: enemies who walk into the fight.
+    Trade chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls = true,
+                      std::uint32_t late = 0);
     // Who would fight at p: bit i of the low half for allies[i], of the high half for enemies[i];
     // no_fight if no threat hits p.
     static constexpr std::uint32_t no_fight = ~0u;
     std::uint32_t fight_key(vec2 p);
     // fight_key(p) given `visible`: the bits of every visible threat that hits p, at least one.
     std::uint32_t fight_key_with(vec2 p, std::uint32_t visible);
-    // The fight of a key, memoised.
-    Trade fight_of(std::uint32_t key, bool falls = true);
-    // fight_of(key) if memoised, else null.
-    const Trade* known_fight_of(std::uint32_t key) const { return memo(key, true); }
-    // fight_of(key) when known_fight_of(key) is null.
-    Trade new_fight(std::uint32_t key, bool falls = true);
+    // The fight of a key, joined by the `late` enemies, memoised.
+    Trade fight_of(std::uint32_t key, bool falls = true, std::uint32_t late = 0);
+    // fight_of(key, late) if memoised, else null.
+    const Trade* known_fight_of(std::uint32_t key, std::uint32_t late = 0) const { return memo(key, late, true); }
+    // fight_of(key, late) when known_fight_of(key, late) is null.
+    Trade new_fight(std::uint32_t key, bool falls = true, std::uint32_t late = 0);
+    // The visible enemies outside `key` who walk into reach of p within pursuit_steps turns, off their
+    // spawn: 2 bits each by enemy index, their turns of walking (1-3), after which they join the fight.
+    std::uint32_t late(vec2 p, std::uint32_t key);
     // threat_strike(), kept for the turn.
     const Strike& strike_of(const ChampionBelief& e) { return struck(e).strike; }
     // What a visible enemy could do to p before our next turn (threat_strike placed on the map).
@@ -320,7 +325,8 @@ public:
     // now (the unseen ones only if a visible one can, or `unseen`), joined by every visible enemy
     // within `approach` steps of its reach once it has walked into reach, while the camps in reach
     // of p keep hitting us. `falls` as for fight(); without walkers or camps it is fight(p).
-    Trade stand(vec2 p, int approach, bool falls, bool unseen);
+    // Once a visible enemy hits p, those within `joined` steps join too.
+    Trade stand(vec2 p, int approach, bool falls, bool unseen, int joined = 0);
     // Their turns for the visible enemies and camps to kill us at p if we never act (channelling),
     // each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
     int turns_to_kill_idle(vec2 p, int horizon);
@@ -424,12 +430,12 @@ private:
     bool threatened_ = false;
     // By fight_key(). A memo: past `max_fights` the oldest is replaced.
     struct FightMemo {
-        std::uint32_t key;
+        std::uint32_t key, late;
         Trade trade;
     };
     static constexpr int max_fights = 32;
     // `falls`: only one whose self_falls is known.
-    const Trade* memo(std::uint32_t key, bool falls) const;
+    const Trade* memo(std::uint32_t key, std::uint32_t late, bool falls) const;
     int fight_count_ = 0;
     std::uint32_t unknown_falls_ = 0; // bit i: fights_[i] was asked without self_falls and does not know it
     union {

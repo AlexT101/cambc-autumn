@@ -1240,10 +1240,10 @@ struct Emblem {
     float saved;
     unsigned cost;
 };
-// `bought`: the stats of shards bought since the turn's start.
-Emblem best_emblem(const World& world, const Build& bought = {}) {
+// `bought`: the stats of shards bought since the turn's start; `items`: what we would then own.
+Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
     const auto& f = world.me().facts();
-    const auto& owned = my_items();
+    const auto& owned = items ? *items : my_items();
     const auto& self = world.me();
     const Build now{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
                     has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f,
@@ -1368,34 +1368,53 @@ struct PurchaseQuote {
     float gain = 0;
 };
 
+// Everything `gold_in` more gold buys, as buy_shards buys it, and the rounds it saves us over our
+// share of the gems still to farm. The saving is kept while our gold and stats hold.
 PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
     const unsigned budget = my_gold() + gold_in;
     if (budget < shard_price) return {};
-    PurchaseQuote quote{best_emblem(world)};
     const auto& self = world.me();
+    struct Key {
+        unsigned shards;
+        float strength, focus, max_health;
+        bool operator==(const Key&) const = default;
+    };
+    static Key last{~0u};
+    static PurchaseQuote kept;
+    const Key key{budget / shard_price, self.strength, self.focus, self.max_health};
+    const float rounds = gems_share(world) * rounds_per_gem;
+    if (key == last) return {kept.next, kept.count, kept.gain * rounds};
+    last = key;
     const auto& f = self.facts();
-    const auto& owned = my_items();
-    const unsigned left = 5 - owned[shard_of(quote.next.family, quote.next.stat)];
-    quote.count = std::min(left, budget / shard_price);
-    const Build now{self.strength, self.focus, self.max_health,
-                    has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f,
-                    has_family(owned, monster) ? 1.1f : 1.0f,
-                    has_family(owned, home) ? home_recall_time : recall_turns(world)};
-    Build bought = now;
-    const bool completes = quote.count == left;
-    add_shards(bought, f, quote.next.stat, static_cast<float>(quote.count));
-    if (completes) {
-        add_completion(bought, f, quote.next.family, quote.next.stat);
-        if (quote.next.family == jungle) bought.camp_taken = 0.7f;
-        if (quote.next.family == durability) bought.taken = 0.9f;
-        if (quote.next.family == monster) bought.camp_dealt = 1.1f;
-        if (quote.next.family == home) bought.recall = home_recall_time;
+    auto owned = my_items();
+    const auto build = [&](const Build& bought) {
+        return Build{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
+                     has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f,
+                     has_family(owned, monster) ? 1.1f : 1.0f,
+                     has_family(owned, home) ? home_recall_time : recall_turns(world)};
+    };
+    const Build now = build({});
+    PurchaseQuote quote{best_emblem(world)};
+    Build bought;
+    for (unsigned gold = budget; gold >= shard_price;) {
+        const auto e = quote.count == 0 ? quote.next : best_emblem(world, bought, &owned);
+        const unsigned have = owned[shard_of(e.family, e.stat)];
+        const unsigned count = std::min<unsigned>(5 - have, gold / shard_price);
+        gold -= shard_price * count;
+        quote.count += count;
+        add_shards(bought, f, e.stat, static_cast<float>(count));
+        owned[shard_of(e.family, e.stat)] += count;
+        if (have + count == 5) {
+            add_completion(bought, f, e.family, e.stat);
+            owned[shard_of(e.family, e.stat)] = 0;
+            owned[emblem_of(e.family, e.stat)] += 1;
+        }
     }
     float others = 0;
     const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
-    quote.gain = gems_share(world) * rounds_per_gem
-                 * (upkeep_cost(world, u, others, now, now) - upkeep_cost(world, u, others, now, bought));
-    return quote;
+    quote.gain = upkeep_cost(world, u, others, now, now) - upkeep_cost(world, u, others, now, build(bought));
+    kept = quote;
+    return {quote.next, quote.count, quote.gain * rounds};
 }
 
 // The way to an altar `walk` steps away, in rounds: walking, or a recall of `channel` turns
@@ -2874,7 +2893,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
                          && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health()
                               && bag_at_stake(world) < params::brake_bag);
     const bool linked = partner(world) != nullptr;
-    const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal);
+    const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal, params::pursuit_steps);
     return t.lost || ((lethal || linked) && t.self_falls);
 }
 
@@ -3237,7 +3256,7 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     // Chasing is optional: leave enough for the walk after it and the turn's end.
     const auto reserve = search_cost_estimate(2 * vision_radius) + end_reserve;
     // The fights already lost: chase_trade reads only these and the turn's state, not the target.
-    Unwritten<std::uint64_t, 8> lost_fights;
+    Unwritten<std::pair<std::uint64_t, std::uint32_t>, 8> lost_fights;
     auto& lost = lost_fights.a;
     int n_lost = 0;
     for (int i = 0; i < n; ++i) {
@@ -3268,9 +3287,11 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
                 }
                 if (!support) delayed |= 1u << j;
             }
-        const std::uint64_t fight = std::uint64_t{key} << 32 | delayed;
+        // Enemies who walk to the target in time join the fight.
+        const auto late = key == Safety::no_fight ? 0u : safety.late(target.pos, key);
+        const std::pair<std::uint64_t, std::uint32_t> fight{std::uint64_t{key} << 32 | delayed, late};
         if (std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
-        const auto t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked);
+        const auto t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked, late);
         debug_block({
             static int traced = 0;
             if (delayed && traced < 64) {
@@ -3412,7 +3433,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
         if (stop.short_gold > 0) return false;
         const int back = pathing.to_ally_spawn().at(here);
-        if (back != unreachable && stop.value(0) < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
+        if (back != unreachable && stop.heal + affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
     }
     bool awake = false;
     world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });

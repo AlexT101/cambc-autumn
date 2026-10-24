@@ -6,6 +6,7 @@
 #include <limits>
 #include <memory>
 #include <vector>
+#include "params.h"
 #include "world.h"
 
 namespace aph {
@@ -2178,11 +2179,44 @@ std::uint32_t Safety::fight_key_with(vec2 p, std::uint32_t visible) {
     return key | fighting_allies(world_, p);
 }
 
-const Trade* Safety::memo(std::uint32_t key, bool falls) const {
+const Trade* Safety::memo(std::uint32_t key, std::uint32_t late, bool falls) const {
     for (int i = 0; i < std::min(fight_count_, max_fights); ++i)
-        if (fights_[i].key == key && !(falls && unknown_falls_ >> i & 1)) return &fights_[i].trade;
+        if (fights_[i].key == key && fights_[i].late == late && !(falls && unknown_falls_ >> i & 1)) return &fights_[i].trade;
     return nullptr;
 }
+
+static_assert(params::pursuit_steps <= 3); // late(): 2 bits an enemy
+
+std::uint32_t Safety::late(vec2 p, std::uint32_t key) {
+    std::uint32_t out = 0;
+    const auto& spawn = world_.map().near_enemy_spawn;
+    for (auto left = seen_enemies() & ~(key == no_fight ? 0u : key >> 16); left; left &= left - 1) {
+        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (gone(e) || test(spawn, e.pos)) continue;
+        const int reach = struck(e).strike.reach;
+        if (reach < 0 || dist(p, e.pos) - reach > params::pursuit_steps) continue;
+        if (const int walk = approach(e, p); walk > 0 && walk <= params::pursuit_steps) out |= static_cast<std::uint32_t>(walk) << 2 * e.index;
+    }
+    return out;
+}
+
+namespace {
+
+// Bits of `late` (Safety::late) among `enemies`, which `them` was filled with: they join after walking.
+void join_late(Side& them, std::uint32_t enemies, std::uint32_t late) {
+    int k = 0;
+    for (auto left = enemies; left && k < them.count; left &= left - 1, ++k)
+        if (const int walk = late >> 2 * std::countr_zero(left) & 3) them.fighters[k].arrives_at = walk, them.plain = false;
+}
+
+std::uint32_t late_mask(std::uint32_t late) {
+    std::uint32_t out = 0;
+    for (int i = 0; late; ++i, late >>= 2)
+        if (late & 3) out |= 1u << i;
+    return out;
+}
+
+} // namespace
 
 Trade Safety::fight(vec2 p, bool falls) {
     world_.throw_if_stale();
@@ -2190,30 +2224,33 @@ Trade Safety::fight(vec2 p, bool falls) {
     return key == no_fight ? Trade{} : fight_of(key, falls);
 }
 
-Trade Safety::fight_of(std::uint32_t key, bool falls) {
-    if (const auto* t = memo(key, falls)) return *t;
-    return new_fight(key, falls);
+Trade Safety::fight_of(std::uint32_t key, bool falls, std::uint32_t late) {
+    if (const auto* t = memo(key, late, falls)) return *t;
+    return new_fight(key, falls, late);
 }
 
-Trade Safety::new_fight(std::uint32_t key, bool falls) {
+Trade Safety::new_fight(std::uint32_t key, bool falls, std::uint32_t late) {
     Side us, them;
     fill(us, world_, world_.allies, key & 0xFFFFu, made_);
     build();
-    fill(them, world_, world_.enemies, key >> 16 & threat_mask_, made_);
+    const auto enemies = (key >> 16 | late_mask(late)) & threat_mask_;
+    fill(them, world_, world_.enemies, enemies, made_);
+    if (late) join_late(them, enemies, late);
     const auto before = fuel();
     // Asked again with self_falls, a fight replaces the one without.
     int i = -1;
     for (auto left = unknown_falls_; left; left &= left - 1)
-        if (fights_[std::countr_zero(left)].key == key) i = std::countr_zero(left);
+        if (fights_[std::countr_zero(left)].key == key && fights_[std::countr_zero(left)].late == late) i = std::countr_zero(left);
     if (i < 0) i = fight_count_++ % max_fights;
     auto& slot = fights_[i];
-    slot = {key, trade(us, them, end_reserve, true, falls)};
+    slot = {key, late, trade(us, them, end_reserve, true, falls)};
     unknown_falls_ = slot.trade.falls_known ? unknown_falls_ & ~(1u << i) : unknown_falls_ | 1u << i;
     if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
     return slot.trade;
 }
 
-Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls) {
+Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls,
+                          std::uint32_t late) {
     world_.throw_if_stale();
     if (key == no_fight) return {};
     Side us, them;
@@ -2232,10 +2269,12 @@ Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::a
         }
         f.next_cast = next_cast(f);
     }
-    if (!changed) return fight_of(key, falls);
+    if (!changed) return fight_of(key, falls, late);
     us.plain = false;
     build();
-    fill(them, world_, world_.enemies, key >> 16 & threat_mask_, made_);
+    const auto enemies = (key >> 16 | late_mask(late)) & threat_mask_;
+    fill(them, world_, world_.enemies, enemies, made_);
+    if (late) join_late(them, enemies, late);
     world_.throw_if_stale();
     // No cross-target memo: roster alone omits the delayed mask and our live action state.
     const auto before = fuel();
@@ -2291,20 +2330,25 @@ std::uint64_t Safety::build_cost_estimate() {
     return cost;
 }
 
-Trade Safety::stand(vec2 p, int approach, bool falls, bool unseen) {
+Trade Safety::stand(vec2 p, int approach, bool falls, bool unseen, int joined) {
     world_.throw_if_stale();
     std::uint32_t hit = 0, walking = 0;
     std::array<int, 16> walks;
     const auto& spawn = world_.map().near_enemy_spawn;
+    const int farthest = std::max(approach, joined);
     for (auto left = seen_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;
         const auto& s = struck(e).strike;
-        if (s.reach < 0 || dist(p, e.pos) - s.reach > approach) continue;
+        if (s.reach < 0 || dist(p, e.pos) - s.reach > farthest) continue;
         const int walk = this->approach(e, p);
         if (walk == 0) hit |= 1u << e.index;
-        else if (walk <= approach && !test(spawn, e.pos)) walking |= 1u << e.index, walks[static_cast<std::size_t>(e.index)] = walk;
+        else if (walk <= farthest && !test(spawn, e.pos)) walking |= 1u << e.index, walks[static_cast<std::size_t>(e.index)] = walk;
     }
+    // Pursuit aside, an enemy who walks into a fight already on is part of it.
+    if (!hit)
+        for (auto left = walking; left; left &= left - 1)
+            if (const int i = std::countr_zero(left); walks[static_cast<std::size_t>(i)] > approach) walking &= ~(1u << i);
     if (!hit && !walking && !unseen) return {};
     const auto key = hit || unseen ? fight_key_with(p, hit << 16) : fighting_allies(world_, p);
     const std::uint32_t enemies = (key >> 16 & threat_mask_) | walking;

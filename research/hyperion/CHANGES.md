@@ -599,6 +599,21 @@ check while an enemy is in its reach, since the nearest champion takes its hits.
 fight"), so a chase walked it into that reach to leave the next turn (1,214 chases in a trace, 85% never landed a hit,
 0.9% of our kills). Willow is drafted only on 5-pick maps.
 
-- Against 5d43ecf's parent d3cc38f on the 190 five-pick maps of `maps/`, `maps/gen`, `maps/gen-s1`: 49.5% of 380
-  (44.5-54.5), out-of-fuel turns 1814 vs 1903. Bundled with idea "Vesper attacks then dashes" on the full suites,
-  5-pick maps read 50.0% of 380.
+- Against d3cc38f on the 190 five-pick maps of `maps/`, `maps/gen`, `maps/gen-s1`: 49.5% of 380 (44.5-54.5),
+  out-of-fuel turns 1814 vs 1903. Bundled with a Vesper retreat change on the full suites, the 5-pick maps read 50.0%
+  of 380.
+
+## 122: enemies who walk into a fight join its verdict (astraeus, 2026-10-24)
+
+The fight sim was calibrated when every enemy was already in reach (1.4% of "won" verdicts died), but when more
+enemies arrived than it counted, 9.3% died. `Safety::late(p, key)` lists the visible enemies outside a fight's key
+who walk into reach of p within `pursuit_steps` (off their spawn), joining at `arrives_at = approach()`; the fight
+memo is keyed by (key, late).
+- `want_home`: `stand()` takes them (`joined`) once a visible enemy hits us, even where pursuit is skipped (healthy,
+  no bag, on our own ground, or a capture paying soon): pursuit is a reason to come, but a fight already on draws them.
+- `prey`: `chase_trade` at the target's tile takes them.
+- Against d3cc38f: 50.9% of 1104 (48.0-53.8; ladder 50.0, gen 50.0, gen-s1 52.0), out-of-fuel turns 2573 vs 2778.
+  Fresh suite (seed 7321): 52.1% of 512 (47.8-56.4), 1240 vs 1208. Against hyperion: 53.4% of 1104 (50.5-56.4;
+  CHANGES 120's bot read 50.5%).
+- Also through `step_guard` (each tile's key with every late enemy at its earliest arrival over the guard, so a
+  larger key is still a worse fight): 50.2% of 1104, out-of-fuel turns 2813 vs 2596. Not kept.
