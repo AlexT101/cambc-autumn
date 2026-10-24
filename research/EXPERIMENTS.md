@@ -275,6 +275,20 @@ emblems, with camp kill tests counting its +10%; **D** with the reset cooling, a
   11% reset at once and 0.5% missed an adjacent member. So refreshes are rarely wasted, A's extra hits mostly happen
   (a turn late), and D's kill first adds a hit only in the few multi-member groups where one is in reach.
 
+## v50's all-map changes, CHANGES 135 and 136 (2026-10-24 audit)
+
+v50 (065f2631) differs from v49 (80e21f33, `bots/baselines/v49`) on 4- and 5-pick maps only by CHANGES 135 (a kill
+opens its tile in the strike search) and 136 (a spent stun is not pending; Marcella's tribute gold). Audited after v50
+went 11-19 against Intercontinental Fish on the ladder (v49 51-54; p ~0.25, likely an older Fish).
+
+- Code review against the rules: no bug. 135 opens only tiles of units killed in that branch, never the enemy spawn,
+  both bodies of a linked pair; Node +16 bytes, no fuel gate. 136: every former `has_stun` reader that meant "will lose
+  its next turn" now reads `stun_pending`; only `my_stunned` keeps `has_stun`, correctly. The stun reading is
+  engine-confirmed (`probe-stunread`, tools/probes/README.md). Marcella's gold uses gem-equivalents per gold, no bonus.
+- v50 code (72de514d) against v49, own drafts (identical on 4/5 picks), the 4- and 5-pick maps of ladder, gen and
+  gen-s1: 52.4% of 736 (48.8-56.0; 4-pick 48.9 of 356, 5-pick 55.8 of 380), out-of-fuel turns 2258 vs 2019 (a few
+  gen maps; ladder 255 vs 248).
+
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 
 Hecate vs hecate with only the draft changed, each pick on maps of its pick count ([hyperion/DRAFT.md](hyperion/DRAFT.md)).
