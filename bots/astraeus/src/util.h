@@ -155,13 +155,14 @@ inline bool stun_pending(cambc::handle_champion_t c) {
         if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return buffs[i].data.stun.duration > 0;
     return false;
 }
-// A camp in sight is stunned: it skips its next attack. False out of sight, without a throw.
+// A camp in sight skips its next attack. A stun's buff stays listed at timer 0 after the camp phase it
+// skipped, until the next one (probe-campstun). False out of sight, without a throw.
 inline bool camp_stunned(std::uint32_t camp) {
     static std::array<cambc::detail::camp_buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
     std::uint32_t n = 0;
     if (cambc::detail::sdk_camp_buffs(camp, buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n) != 0) return false;
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
-        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return buffs[i].timer > 0;
     return false;
 }
 // The active shield's value, 0 if none.

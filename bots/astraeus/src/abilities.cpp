@@ -70,12 +70,13 @@ float damage_to(int slot, cambc::handle_champion_t target, float raw) {
     }
 }
 
+// Timer 0: spent on this round's camp phase; a new stun still skips the next (probe-campstun).
 bool camp_stunned(std::uint32_t camp) {
     static std::array<cambc::detail::camp_buff_data, static_cast<std::size_t>(cambc::buff_types::count)> buffs;
     std::uint32_t n = 0;
     ok(cambc::detail::sdk_camp_buffs(camp, buffs.data(), static_cast<std::uint32_t>(buffs.size()), &n));
     for (std::uint32_t i = 0; i < n && i < buffs.size(); ++i)
-        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return true;
+        if (buffs[i].type == static_cast<std::uint32_t>(cambc::buff_types::stun)) return buffs[i].timer > 0;
     return false;
 }
 

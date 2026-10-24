@@ -696,3 +696,15 @@ now flags a refused move (`take_bump`), and `revealed` then checks for enemies e
 
 - Against 2b34c2f: 49.6% of 1104 (46.7-52.6; ladder 50.0, gen 49.2, gen-s1 50.0), out-of-fuel turns 2377 vs 2428.
   Rare: one reveal in two debug games.
+
+## 130: camp stuns read by their timer; three thrown errors avoided (astraeus, 2026-10-24)
+
+A camp's stun buff stays listed at timer 0 after the camp phase it skipped, until the next (`probe-campstun`), so at
+our turn start `camp_stunned` dropped a member that would hit us (12 of 12 such turns in the batch 5 bug hunt). Both
+copies now need timer > 0; a stun cast on a timer-0 camp still skips its next attack, so `camp_cast`'s stun value
+counts it. Errors no longer thrown (~3.9k fuel each): `submit_here` while stunned; `place_lock` at an altar our team
+already locks out of sight (`own_lock_round`: from a placement or the engine's refusal, until the altar is seen after
+that round); `start_recall` a second time in a round, after a turn that ran out of fuel started one in its resumed
+tail.
+
+- Against 298cff1: 50.5% of 1104 (47.5-53.4; ladder 52.5, gen 51.8, gen-s1 48.8), out-of-fuel turns 2389 vs 2544.

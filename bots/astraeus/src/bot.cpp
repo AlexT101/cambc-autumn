@@ -169,6 +169,10 @@ bool channelling() {
            || state.contains(champion_state::teleporting);
 }
 
+// By altar, the round we learned our team locks it (placed, or refused as already locked): update_altars
+// sees only locks in sight. Its belief is trusted again once the altar is seen after that round.
+std::vector<int> own_lock_round;
+
 [[gnu::flatten]] void place_lock(const World& world) {
     auto& me = cambc::self();
     if (stunned_turn || !world.me().alive) return;
@@ -181,6 +185,9 @@ bool channelling() {
         for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
             const vec2 p = map.altars[a].pos;
             if (dist(here, p) > 2 || world.altars[a].ally_lock) continue;
+            if (a < static_cast<int>(own_lock_round.size()) && own_lock_round[a] >= 0
+                && own_lock_round[a] >= world.altars[a].seen_round)
+                continue;
             // Placing one also cancels an enemy's tribute there: its bag stays out of the score.
             bool enemy_tribute = false, winning = false;
             for (const auto& e : world.enemies)
@@ -195,9 +202,14 @@ bool channelling() {
                     tributing = true,
                     ours_wins |= world.score.ally + ally.gems >= static_cast<int>(cambc::constants::winning_gems);
             if (tributing && (!winning || ours_wins)) continue;
+            const auto known = [&] {
+                if (own_lock_round.size() < map.altars.size()) own_lock_round.resize(map.altars.size(), -1);
+                own_lock_round[a] = world.round;
+            };
             try {
-                if (lock.use(p)) return;
-            } catch (const cambc::error&) {
+                if (lock.use(p)) return known();
+            } catch (const cambc::error& e) {
+                if (e.code() == cambc::error_code::invalid_action_altar_lock_already_locked) known();
             }
         }
 }
@@ -722,6 +734,7 @@ bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const
 // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an
 // altar carry_bag gave up waiting at, or at one believed locked (the caller skipped it), is judged again.
 bool submit_here(const World& world, Safety& safety, Memory& memory) {
+    if (stunned_turn) return false; // the engine refuses it, and the thrown error costs ~3.9k fuel
     auto& me = cambc::self();
     const vec2 here = my_position();
     const auto& altars = world.map().altars;
@@ -5177,15 +5190,20 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
 
 // Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a
 // turn shorter. Damage before then cancels it at no cost. A stunned champion cannot start one:
-// the engine refuses it, and the thrown error costs ~3.9k fuel.
+// the engine refuses it, and the thrown error costs ~3.9k fuel. Nor can one start a second in a round:
+// a turn that ran out of fuel and resumed in the next round may have started it before this turn.
 void start_recall(const World& world) {
+    static std::uint32_t started = 0;
     auto& me = cambc::self();
     if (stunned_turn || !world.me().alive || channelling()) return;
     // Ren's reflected damage can kill us in our own turn: dead, we read as off the map.
     const vec2 here = my_position();
     if (here.x < 0 || test(world.map().ally_spawn, here)) return;
+    const auto round = round_now();
+    if (round == started) return;
     try {
         me.recall();
+        started = round;
     } catch (const cambc::error&) {
     }
 }

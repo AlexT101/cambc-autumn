@@ -534,6 +534,13 @@ another harmless group was kept (CHANGES 91).
 - An enemy revealed by a refused step while we stay on the tile vision was read from (`b8-bump`, same REF; TODO bug
   1): `see_revealed` checks for it after a bump. 49.6% of 1104 (46.7-52.6; ladder 50.0, gen 49.2, gen-s1 50.0),
   out-of-fuel turns 2377 vs 2428. Kept, level (CHANGES 129).
+- Stale camp stuns and thrown errors (`b10-fix`, 2026-10-24, against 298cff1; batch 5 bug hunt findings 3 and 5): a
+  camp's stun buff counts only at timer > 0 (timer 0 is spent; `probe-campstun`); no tribute start while stunned, no
+  lock retry at an altar our team locks out of sight, no second recall start in a round. 50.5% of 1104 (47.5-53.4;
+  ladder 52.5, gen 51.8, gen-s1 48.8), out-of-fuel turns 2389 vs 2544. Kept, level (CHANGES 130). Not fixed: an
+  exclusive cast after a walk in a strike plan (2 errors) comes from a resumed out-of-fuel tail that walked in the new
+  round; an enemy respawning before our next turn is still no threat (finding 4, 17 hits in 563 games: needs a belief
+  at its spawn through Safety, not small).
 
 ## Fuel
 
