@@ -89,7 +89,8 @@ int Pathing::hop_landing_steps(int hop) {
 
 int Pathing::centre_to_altar(int group) {
     auto& steps = entry(centre_to_altar_, map().groups.size(), group);
-    if (!steps) steps = map().drafted_altar_steps(group);
+    // Draft steps use walking walls; a dasher keeps its own field's graph, as for spawn steps.
+    if (!steps && (!world_.me().facts().has_dash() || map().crossable.is_empty())) steps = map().drafted_altar_steps(group);
     if (!steps) steps = to_any_altar().at(map().groups[group].centre);
     return *steps;
 }

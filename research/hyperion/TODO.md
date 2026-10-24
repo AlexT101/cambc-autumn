@@ -45,16 +45,14 @@ keep if level.
    - kills leave walls: `live_camps()` keeps killed members until a full update, and `blocked_` survives attacks;
    - fighters keep turn-start health, shields and cooldowns (`made_` survives `refresh`/`invalidate`);
    - an enemy revealed by a refused step onto its tile: `revealed()` skips our own tile (CHANGES 89).
-2. Dashers' altar distances: `centre_to_altar` takes `drafted_altar_steps` (walking) unconditionally; guard it as
-   `draft_spawn_graph` guards spawn steps (bot.cpp).
-3. Enemy stun status in Safety's threats and fights (the planner reads it only for `stunnable`). Conservative: costs
+2. Enemy stun status in Safety's threats and fights (the planner reads it only for `stunnable`). Conservative: costs
    tributes and fights, not deaths.
-4. `capture_taken` counts allies bound elsewhere (tributing, recalling, claimed another group).
-5. The strike search never opens tiles of units it kills (`free_`/`pass_` fixed in `read_geometry`): a kill can open
+3. `capture_taken` counts allies bound elsewhere (tributing, recalling, claimed another group).
+4. The strike search never opens tiles of units it kills (`free_`/`pass_` fixed in `read_geometry`): a kill can open
    a walk or dash path (a blocker in a corridor; Vendetta's refreshed dash through a cleared camp).
-6. Varg's fallback attacks (`camp_attack_targets`, champion splash) wake neighbouring sleeping groups, unpriced
+5. Varg's fallback attacks (`camp_attack_targets`, champion splash) wake neighbouring sleeping groups, unpriced
    (test drafts only).
-7. Our winning bag blocks interception: `game_ender` returns null and `continue_tribute` never cancels while
+6. Our winning bag blocks interception: `game_ender` returns null and `continue_tribute` never cancels while
    `winning_bag`, with no comparison of the two channels' ends. Outside a channel `stun_worth` still prices the stun;
    the loss is mid-tribute and the `stop_game_ender` pursuit. Rare (both teams near 1000) but game-deciding. Fix
    held: `p2/intercept-first-main` (EXPERIMENTS).

@@ -531,3 +531,10 @@ shield drains by the reduced damage, so it is now `min(raw * taken, shield)`. Th
 counts the shield and Durability too.
 
 - Against v47: 50.1% of 1104 (47.1-53.0; ladder 51.2, gen 50.4, gen-s1 49.6), out-of-fuel turns 2475 vs 2473.
+
+## 114: dashers' altar distances by their own graph (astraeus, 2026-10-24)
+
+`Pathing::centre_to_altar` took the draft's walking steps for every champion; a dasher on a map with crossable tiles
+now reads its own `to_any_altar()` field, as farm's spawn steps already did (`draft_spawn_graph`).
+
+- Against 113: 51.6% of 1104 (48.7-54.6; ladder 55.0, gen 51.0, gen-s1 51.8), out-of-fuel turns 2569 vs 2497.
