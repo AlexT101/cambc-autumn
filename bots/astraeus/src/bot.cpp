@@ -2846,13 +2846,21 @@ bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, b
 }
 
 // An enemy that could kill us before our next turn overrides finishing a camp or a capture.
-bool want_home(const World& world, Pathing& pathing, Safety& safety, bool sieging) {
+bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     world.throw_if_stale();
     const vec2 here = my_position();
     if (test(world.map().ally_spawn, here)) return false;
     const float health = my_health();
-    const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world, pathing);
-    if (low || outmatched(world, pathing) || camp_trapped(world, safety, here, health, sieging)) return true;
+    // A hold keeps us only while last round's loss, repeated to the payout, leaves us alive: camps
+    // hit from out of sight and bush attackers stay unseen.
+    const auto hold_lasts = [&] {
+        if (!holding_capture(world, pathing)) return false;
+        const auto& c = world.camps[world.map().group_at(here)];
+        const int rounds = c.held_since >= 0 ? std::max(0, c.payout_round() - world.round) : capture_rounds();
+        return memory.damage * static_cast<float>(rounds + 1) < health;
+    };
+    const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !hold_lasts();
+    if (low || outmatched(world, pathing) || camp_trapped(world, safety, here, health, memory.siege)) return true;
     // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
     // bar on a capture, which pays without one.
     if (world.me().type == cambc::champion_type::willow && !holding_capture(world, pathing) && !contesting(world)
@@ -4136,7 +4144,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
     }
     if (tribute_ok(world, safety, memory, my_channel_time())) return true;
     // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
-    if (memory.damage <= 0 && !*(home = want_home(world, pathing, safety, memory.siege)) && !attack_target(world)
+    if (memory.damage <= 0 && !*(home = want_home(world, pathing, safety, memory)) && !attack_target(world)
         && (winning_bag(world) || !prey(world, safety)))
         return true;
     decision = 't';
@@ -4162,7 +4170,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         }
         return false;
     }
-    home = want_home(world, pathing, safety, memory.siege);
+    home = want_home(world, pathing, safety, memory);
     if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
         return true;
     decision = 'k';
@@ -4910,7 +4918,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool prism = world.me().type == cambc::champion_type::prism;
     // Healing needs a turn end on spawn; a recall arrives at turn start.
     const bool mend = on_spawn && my_health() < my_max_health();
-    const bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory.siege));
+    const bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory));
     // Willow at work heals first, and the work goes on without the strike search.
     const bool working = willow && !mend && !leave && support_work(world, pathing, safety, memory);
     const bool strikes = !working && strike_possible(world);

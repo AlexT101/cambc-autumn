@@ -554,3 +554,12 @@ around its last tile. `observe()` now reads `engine::alive` for an enemy seen th
 marks a dead one as the full update does (respawn from this round).
 
 - Against 115: 50.0% of 1104 (47.1-52.9; ladder 50.0, gen 49.8, gen-s1 50.2), out-of-fuel turns 2783 vs 2789.
+
+## 117: a hold yields to the damage it takes; respawning tiles left free (astraeus, 2026-10-24)
+
+`want_home`'s low-health exemption for a capture hold now lasts only while the health we lost last round, repeated
+to the payout (+1), stays below our health: camps hit from out of sight and bush attackers are unseen, so the
+fight sim never saw them. The approach to a respawning group (`search_approach`, no live member) drops the group's
+own tiles from its goals, since a group returns only once its tiles are empty.
+
+- Against 116: 50.8% of 1104 (47.9-53.8; ladder 47.5, gen 50.0, gen-s1 52.1), out-of-fuel turns 2823 vs 2804.

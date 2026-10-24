@@ -208,6 +208,8 @@ const Field* Pathing::search_approach(int group, int range, int steps) {
         const bool any_live = std::any_of(members.begin(), members.end(), [&](const auto& m) { return test(made.camps, m.pos); });
         for (const auto& m : members)
             if (!any_live || test(made.camps, m.pos)) draw_square(goals, m.pos, static_cast<float>(range));
+        // A respawning group waits for its tiles to empty before it returns.
+        if (!any_live) drop(goals, s.groups[group].tiles());
         // Not static_walls(): a dasher cannot stand on the tiles it jumps.
         or_into(s.blocked_for_us, made.camps, open);
         not_into(open, open);

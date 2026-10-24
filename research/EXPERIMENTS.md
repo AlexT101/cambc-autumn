@@ -343,6 +343,12 @@ another harmless group was kept (CHANGES 91).
   - An enemy we killed mid-turn marked dead by `observe()` instead of becoming an unseen threat (TODO #1, first
     item): 50.0% (CI 47.1-52.9; ladder 50.0, gen 49.8, gen-s1 50.2), out-of-fuel turns 2783 vs 2789. Kept (CHANGES
     116). #1's other items need restructuring and were left.
+- Astraeus batch-1 fixes from replay evidence (2026-10-24, each against `bots/variants/b1a-ref` = 4d08241; full
+  A/B, 1104 games, each bot on its own draft):
+  - A capture hold under `recall_health_fraction` stays only while last round's damage (`Memory::damage`) times the
+    rounds to payout + 1 is below our health (camps behind walls and bush attackers hit unseen), and the approach to a
+    respawning group leaves its camp tiles out of the goals (an occupied group returns late): 50.8% (CI 47.9-53.8;
+    ladder 47.5, gen 50.0, gen-s1 52.1), out-of-fuel turns 2823 vs 2804. Kept (CHANGES 117).
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
 - `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
   2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next
