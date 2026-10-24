@@ -1706,3 +1706,40 @@ Snapshots and exact deltas are preserved in
   Singleton unseen threats as direct Chebyshev distance instead of a field: 41981/114160/1555.
   No real-budget OOF gain claimed; no Hyperion changes. Details, artifacts, and untested structural
   ideas: [FUEL-IDEAS-2026-10-23.md](hyperion/FUEL-IDEAS-2026-10-23.md).
+
+### Willow first-Jungle Health: bounded purchase diagnostic
+
+The isolated `3b815902` Health sibling completed three Release/default-100k games against
+fixed `fd99`, with matching `2ae444fa` first-protection controls. Both arms win BigWorld A
+and lose Corners B and Expanse A. This selected three-cell diagnostic is not a strength test.
+Expanse's complete native payload is identical to its control and has no qualifying Health
+purchase. On BigWorld, the first action difference is Willow's round102 move, before the
+first Health purchase at506; no logged branch identifies why the pricing change first
+altered the route. Later differences cannot be attributed solely to acquired HP.
+
+On Corners, Health buys two Jungle shards at52, two more at355, and completes at384.
+Through the common round950 horizon it delivers7737 healing/25casts, completes12 recalls
+and dies twice, versus12285.5/37casts,8recalls and one death for2ae. On BigWorld through
+round1001, the corresponding healing is3058.8/10casts versus6478/20casts, recalls10versus11,
+and deaths0for both. These diverged histories establish neither a survival benefit nor that
+Health is intrinsically worse; item quotes also affect farm and shopping decisions.
+Health/native opponent rollovers are9/25; native BotError, caught act-error, turn-order
+markers and runner failures are zero. The authoritative common-horizon report is
+`replays/willow-first-jungle-health-smoke-20261023-v1/RESULTS-v2.md` with filtered audit
+`audit/health-vs-2ae-v2.json`. Its superseded v1 mixed full-game event totals with common-round
+state snapshots and remains preserved. All sources, builds, actual sides and replay hashes
+are pinned in the run's postflight; the arm remains isolated.
+
+### Stationary crew: direct-parent smoke, opponent mismatch
+
+Eight Release/default-100k cells for `10310292` ran against parent `fd99`, although the
+planned opponent was the fixed `10e5` roster emulator. Preserve these as direct-parent
+diagnostics only; they cannot be compared with fd99's earlier emulator results. No reruns
+or emulator qualification are implied. The correct physical A/B orders and eight unique
+outputs are preserved under `replays/willow-stationary-crew-smoke-20261023-v1/`.
+Candidate wins4/8: BigWorld A, Boss A, Expanse B and Gemfight B. Both bots have31 native
+play rollovers, with zero native BotError, caught act-error, turn-order markers and runner
+failures. Gemfight has four picks and no Willow; the other maps have five picks. The added
+stationary tier is not instrumented, so outcomes do not establish activation. Extractor v2
+reports one remaining derived-earnedGold soft note on Boss A; outcomes and native round
+states do not depend on that derived total. No canonical promotion or release claim.
