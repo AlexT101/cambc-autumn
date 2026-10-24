@@ -2027,11 +2027,20 @@ float Safety::damage_bound(vec2 p, bool double_unacted) {
 Safety::Bound Safety::bound(vec2 p) {
     Bound out;
     out.damage = out.doubled = camp_damage(p, true, true);
+    float safe = 1;
     each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
         out.damage += b.damage;
         out.doubled += b.damage * (e.visible && !e.acted ? 2.0f : 1.0f);
         out.hits |= b.hits;
         out.stuns |= b.hits && b.stuns;
+        if (!b.hits || out.threat) return;
+        if (e.visible) {
+            out.threat = true;
+            return;
+        }
+        const auto& x = foe(e);
+        const float chance = std::min(1.0f, static_cast<float>(count_within(e.possible, p, x.strike.reach)) / static_cast<float>(x.tiles));
+        out.threat = 1 - (safe *= 1 - chance * hit_given_reach) >= recall_risk;
     });
     return out;
 }

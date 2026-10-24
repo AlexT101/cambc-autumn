@@ -2839,10 +2839,10 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, bool siegin
     const float health = my_health();
     const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world, pathing);
     if (low || outmatched(world, pathing) || camp_trapped(world, safety, here, health, sieging)) return true;
-    // Willow holds no fight: any enemy that may hit it, seen or not, sends it home, bar on a capture,
-    // which pays without one.
+    // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
+    // bar on a capture, which pays without one.
     if (world.me().type == cambc::champion_type::willow && !holding_capture(world, pathing) && !contesting(world)
-        && safety.credible_enemy_may_hit_within(here, 0) && safety.bound(here).hits)
+        && safety.credible_enemy_may_hit_within(here, 0) && safety.bound(here).threat)
         return true;
     // Out of sight and not lethal, nobody can win a fight here or pursue us.
     const bool lethal = safety.lethal(here);
@@ -3065,7 +3065,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
 
 // step_guard from where we stand, worked out when a step or dash first needs it.
 void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
-    // Willow holds no fight: every tile an enemy may hit is guarded.
+    // Willow holds no fight: every tile want_home would leave is guarded.
     if (world.me().type == cambc::champion_type::willow) {
         pathing.defer_guard([](const World& w, Safety& s, vec2 here, int) { return &stations(w, s, here).guard; }, safety,
                             my_position(), 1);
@@ -4314,14 +4314,14 @@ bool each_camp_striker(const World& world, vec2 p, F&& f) {
     return true;
 }
 
-// Willow holds no fight: a tile any enemy or camp member may hit is unsafe. `enemies`: false when
-// no enemy can hit p, which spares their search.
+// Willow holds no fight: a tile an enemy is likely to hit (want_home's test) or any camp member may
+// hit is unsafe. `enemies`: false when no enemy can hit p, which spares their search.
 SupportExposure exposure_at(const World& world, Safety& safety, vec2 p, bool enemies = true) {
     SupportExposure risk;
     risk.damage = risk.imminent = safety.camp_damage(p, true, true);
     if (enemies) {
         const auto b = safety.bound(p);
-        risk.damage = b.damage, risk.imminent = b.doubled, risk.enemy = b.hits, risk.stun = b.stuns;
+        risk.damage = b.damage, risk.imminent = b.doubled, risk.enemy = b.threat, risk.stun = b.stuns;
     }
     each_camp_striker(world, p, [&](int g, std::size_t i, const CampMember&) {
         const auto& c = world.camps[g];
