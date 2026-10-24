@@ -295,6 +295,7 @@ bool reset_and_attack_camp(const World& world, int group) {
     const bool refunded = f.passive == Passive::reset_on_kill && best_health <= my_strength();
     if (!refunded && enemy_within(world, here, range + reset_hold_margin)) return false;
     if (!cast(reset)) return false;
+    throw_if_stale();
     try {
         me.attack(*best);
     } catch (const cambc::error&) {

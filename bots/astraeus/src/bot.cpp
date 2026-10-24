@@ -132,6 +132,7 @@ int main_stat(const World& world) {
 bool buy(cambc::item_type shard, unsigned count) {
     auto& me = cambc::self();
     if (!count || !me.can_buy(shard, count)) return false;
+    throw_if_stale();
     try {
         me.buy(shard, count);
         return true;
@@ -144,7 +145,7 @@ bool buy(cambc::item_type shard, unsigned count) {
 void buy_lock() {
     auto& me = cambc::self();
     try {
-        if (me.can_buy(cambc::consumable_type::altar_lock)) me.buy(cambc::consumable_type::altar_lock);
+        if (me.can_buy(cambc::consumable_type::altar_lock)) throw_if_stale(), me.buy(cambc::consumable_type::altar_lock);
     } catch (const cambc::error&) {
     }
 }
@@ -156,7 +157,7 @@ void buy_crystal(const Memory& memory) {
     if (!memory.wants_crystal) return;
     auto& me = cambc::self();
     try {
-        if (me.can_buy(cambc::consumable_type::tp_crystal)) me.buy(cambc::consumable_type::tp_crystal);
+        if (me.can_buy(cambc::consumable_type::tp_crystal)) throw_if_stale(), me.buy(cambc::consumable_type::tp_crystal);
     } catch (const cambc::error&) {
     }
 }
@@ -206,6 +207,7 @@ std::vector<int> own_lock_round;
                 if (own_lock_round.size() < map.altars.size()) own_lock_round.resize(map.altars.size(), -1);
                 own_lock_round[a] = world.round;
             };
+            throw_if_stale();
             try {
                 if (lock.use(p)) return known();
             } catch (const cambc::error& e) {
@@ -277,6 +279,7 @@ template <class Allowed> CampAttackTargets camp_attack_targets(const World& worl
 }
 
 bool attack_camp_target(const World& world, const CampAttackTarget& target) {
+    throw_if_stale();
     try {
         cambc::self().attack(world.map().groups[target.group].camp(target.member));
         ++camp_hits();
@@ -403,6 +406,7 @@ bool break_lock(const World& world, int altar) {
     if (!my_can_attack() || dist(my_position(), p) > world.me().facts().attack_range()) return false;
     for (const auto& lock : cambc::vision::altar_locks())
         if (lock.is_enemy() && lock.position() == p) {
+            throw_if_stale();
             try {
                 me.attack(lock);
                 return true;
@@ -747,6 +751,7 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
             return false;
         place_lock(world); // first: it cancels every tribute at its altar
         place_ward(world, memory); // first: no ward goes down while channelling
+        throw_if_stale();
         try {
             me.submit_gems(altars[a].pos);
             return true;
@@ -792,6 +797,7 @@ void take_hop(const World& world, Pathing& pathing, Safety& safety, int h) {
         for (const vec2 l : targets.positions())
             if (const int s = field.at(l); s < best_steps) best = l, best_steps = s;
         if (best.x >= 0) {
+            throw_if_stale();
             try {
                 if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return;
             } catch (const cambc::error&) {
@@ -2500,6 +2506,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
 }
 
 bool try_ward(vec2 p, Memory& memory) {
+    throw_if_stale();
     try {
         if (!cambc::self().place_ward(p)) return false;
     } catch (const cambc::error&) {
@@ -4254,6 +4261,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
     const auto* ender = game_ender(world);
     const auto* stop = ender && ender->channel == Channel::tribute ? ender : stoppable_winning_tribute(world);
     if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
+        throw_if_stale();
         try {
             me.cancel_submit_gems();
         } catch (const std::exception&) {
@@ -4266,6 +4274,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
         && (winning_bag(world) || !prey(world, safety)))
         return true;
     decision = 't';
+    throw_if_stale();
     try {
         me.cancel_submit_gems();
     } catch (const std::exception&) {
@@ -4281,6 +4290,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
     auto& me = cambc::self();
     decision = 'K';
     if (game_ender(world)) {
+        throw_if_stale();
         try {
             me.cancel_recall();
         } catch (const std::exception&) {
@@ -4308,6 +4318,7 @@ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memor
         // No walk leaves a pocket a crystal took us into.
         if (!test(pathing.foot(), my_position()) && (my_gems() == 0 || retaining_gems(world, pathing))) return true;
     }
+    throw_if_stale();
     try {
         me.cancel_recall();
     } catch (const std::exception&) {
@@ -5190,20 +5201,16 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
 
 // Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a
 // turn shorter. Damage before then cancels it at no cost. A stunned champion cannot start one:
-// the engine refuses it, and the thrown error costs ~3.9k fuel. Nor can one start a second in a round:
-// a turn that ran out of fuel and resumed in the next round may have started it before this turn.
+// the engine refuses it, and the thrown error costs ~3.9k fuel.
 void start_recall(const World& world) {
-    static std::uint32_t started = 0;
     auto& me = cambc::self();
     if (stunned_turn || !world.me().alive || channelling()) return;
     // Ren's reflected damage can kill us in our own turn: dead, we read as off the map.
     const vec2 here = my_position();
     if (here.x < 0 || test(world.map().ally_spawn, here)) return;
-    const auto round = round_now();
-    if (round == started) return;
+    throw_if_stale();
     try {
         me.recall();
-        started = round;
     } catch (const cambc::error&) {
     }
 }

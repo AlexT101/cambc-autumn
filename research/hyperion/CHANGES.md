@@ -724,3 +724,16 @@ counts as exhausted (no wider retry) and that tile is tested first on later sear
   Real budget on those three maps: 25 out-of-fuel turns vs 33.
 - v47 harness re-run of 9bce3341-2 with the fix live from r488 (free before, so the game matches the ladder until
   then): 5 of our turns at the full budget vs 203.
+
+## 132: a turn that ran out of fuel does not act in the next round (astraeus, 2026-10-24)
+
+A turn that runs out of fuel resumes as the next round's turn and was abandoned only at the next costly step
+(`throw_if_stale`), so its tail could still walk, attack, cast or start a recall in the new round before the fresh
+turn planned without knowing: a second recall start (rc 113, which CHANGES 130's same-round guard in `start_recall`
+only saved the throw of) or an exclusive cast after a walk (rc 126). Every action (walk, attack, cast, recall start
+and cancel, tribute start and cancel, ward, lock, crystal, shop, priority) now calls `throw_if_stale` first (~18 fuel),
+so the fresh turn is the only one that acts; CHANGES 130's recall guard is removed as redundant. Debug REF on the
+ladder maps (80 games): 61 actions in 47 of 230 out-of-fuel turns (39 walks, 9 attacks, 9 recall starts, 4 casts).
+
+- Against e2deee3: 49.5% of 1104 (46.5-52.4; ladder 48.8, gen 49.8, gen-s1 49.2), out-of-fuel turns 2502 vs 2537.
+- 100M bench: identical replays (wide set 52/52, fuel +0.01%).

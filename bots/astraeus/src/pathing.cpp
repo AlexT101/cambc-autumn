@@ -555,6 +555,7 @@ int Pathing::kept_steps(const KeptRoute& k, const bitboard& goals, const bitboar
 [[gnu::flatten]] bool Pathing::try_move(vec2 tile, bool* refused) {
     if (refused) *refused = true;
     if (guard() && test(*guard(), tile)) return false;
+    throw_if_stale();
     try {
         if (cambc::self().move_absolute(tile)) {
             invalidate();

@@ -336,7 +336,7 @@ void set_turn_order(const World& world, Safety& safety) {
     try {
         static std::int32_t next;
         ok(cambc::detail::sdk_bc_champion_priority(my_handle(), 1, &next));
-        if (priority != next) me.set_priority(priority);
+        if (priority != next) throw_if_stale(), me.set_priority(priority);
     } catch (const cambc::error&) {
     }
 }

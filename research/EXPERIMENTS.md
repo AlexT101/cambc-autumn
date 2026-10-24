@@ -544,6 +544,11 @@ another harmless group was kept (CHANGES 91).
   exclusive cast after a walk in a strike plan (2 errors) comes from a resumed out-of-fuel tail that walked in the new
   round; an enemy respawning before our next turn is still no threat (finding 4, 17 hits in 563 games: needs a belief
   at its spawn through Safety, not small).
+- No action in a turn's resumed out-of-fuel tail (`b11-stale-act`, 2026-10-24, against e2deee3): every action host
+  call checks the round first (`throw_if_stale`), so the tail that ran out of fuel no longer walks, attacks, casts or
+  starts a recall in the next round ahead of the fresh turn (61 such actions in 47 of 230 out-of-fuel turns in 80 ladder
+  games before; the source of the rc 113 and rc 126 errors). 49.5% of 1104 (46.5-52.4; ladder 48.8, gen 49.8, gen-s1
+  49.2), out-of-fuel turns 2502 vs 2537; 100M bench 52/52 identical. Kept, level (CHANGES 132).
 
 ## Fuel
 

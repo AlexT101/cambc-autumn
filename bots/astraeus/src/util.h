@@ -220,19 +220,41 @@ inline int my_cooldown(int slot) {
     ok(cambc::detail::sdk_champion_cooldown(my_handle(), static_cast<std::uint32_t>(slot), &value));
     return value;
 }
+inline std::uint32_t round_now() {
+    static std::uint32_t round;
+    round = 0;
+    (void)cambc::detail::sdk_bc_round_number(&round);
+    return round;
+}
+// A turn that ran out of fuel resumes in the next round, a round old: it is abandoned at the next
+// check, so that the round's own turn, played next on what fuel is left, does not run out in turn.
+struct StaleTurn {};
+inline std::uint32_t& turn_round() { // the round the turn began in (World::update)
+    static std::uint32_t round = 0;
+    return round;
+}
+// ~18 fuel: worth it in a loop whose pass costs a few hundred or more. Every action calls it first:
+// the resumed tail runs on last round's beliefs, and the fresh turn after it plans as if nothing
+// had acted (a second recall start or an exclusive cast after a walk is an engine error).
+inline void throw_if_stale() {
+    if (round_now() != turn_round()) throw StaleTurn{};
+}
 // ability.use(): at `tile`, or {-1, -1} for none. False for a newly revealed hidden blocker.
 inline bool cast_slot(int slot, vec2 tile = {-1, -1}) {
+    throw_if_stale();
     static std::int32_t cast;
     ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), 0, 0, tile.x, tile.y, &cast));
     return cast != 0;
 }
 inline bool cast_slot_on(int slot, cambc::handle_champion_t target) {
+    throw_if_stale();
     static std::int32_t cast;
     ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), static_cast<std::uint32_t>(cambc::detail::entity_kind::champion),
                                static_cast<std::uint32_t>(target), -1, -1, &cast));
     return cast != 0;
 }
 inline bool cast_slot_on(int slot, cambc::handle_camp_t target) {
+    throw_if_stale();
     static std::int32_t cast;
     ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), static_cast<std::uint32_t>(cambc::detail::entity_kind::camp),
                                static_cast<std::uint32_t>(target), -1, -1, &cast));
@@ -240,6 +262,7 @@ inline bool cast_slot_on(int slot, cambc::handle_camp_t target) {
 }
 // cambc::self().attack(c), without building c.
 inline void attack_champion(cambc::handle_champion_t target) {
+    throw_if_stale();
     ok(cambc::detail::sdk_attack(static_cast<std::uint32_t>(cambc::detail::entity_kind::champion), static_cast<std::uint32_t>(target)));
 }
 // Turn ends left of our channel.
@@ -459,23 +482,6 @@ inline std::uint32_t checked_round() {
     static std::uint32_t round;
     ok(cambc::detail::sdk_bc_round_number(&round));
     return round;
-}
-inline std::uint32_t round_now() {
-    static std::uint32_t round;
-    round = 0;
-    (void)cambc::detail::sdk_bc_round_number(&round);
-    return round;
-}
-// A turn that ran out of fuel resumes in the next round, a round old: it is abandoned at the next
-// check, so that the round's own turn, played next on what fuel is left, does not run out in turn.
-struct StaleTurn {};
-inline std::uint32_t& turn_round() { // the round the turn began in (World::update)
-    static std::uint32_t round = 0;
-    return round;
-}
-// ~18 fuel: worth it in a loop whose pass costs a few hundred or more.
-inline void throw_if_stale() {
-    if (round_now() != turn_round()) throw StaleTurn{};
 }
 
 inline std::uint64_t search_cost_estimate(int layers) {

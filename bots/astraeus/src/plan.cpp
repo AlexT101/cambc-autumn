@@ -1943,7 +1943,7 @@ bool strike_possible(const World& world) {
             try {
                 const auto& x = S.u[a.unit];
                 if (x.foe) attack_champion(x.belief->handle);
-                else cambc::self().attack(world.map().groups[x.group].camp(x.member));
+                else throw_if_stale(), cambc::self().attack(world.map().groups[x.group].camp(x.member));
                 ok = true;
                 out.attacked = true;
                 out.moved |= !S.melee;
