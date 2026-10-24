@@ -4220,6 +4220,42 @@ bool only_threat(Safety& safety, vec2 p, int enemy) {
     return true;
 }
 
+// A sure kill from a tile a step away (melee: the walk keeps the attack) or a ready dash away,
+// where nothing but the victim reaches us: the victim's tile, else {-1, -1}.
+vec2 step_to_kill(const World& world, Pathing& pathing, Safety& safety, int range, bool melee) {
+    const vec2 here = my_position();
+    const bool walk = melee && my_can_move();
+    const bool dash = world.me().facts().has_dash() && my_can_cast();
+    if ((!walk && !dash) || !sure_kill(world, here, range + (dash ? 2 : 1))) return {-1, -1};
+    const auto strike = [&](const ChampionBelief& kill) {
+        try {
+            attack_champion(kill.handle);
+            return true;
+        } catch (const cambc::error&) {
+            return false;
+        }
+    };
+    if (walk) {
+        const auto& blocked = pathing.blocked();
+        for (const auto d : directions) {
+            const vec2 p = here + d;
+            if (!in_bounds(p) || test(blocked, p)) continue;
+            if (const auto* kill = sure_kill(world, p, range); kill && only_threat(safety, p, kill->index) && pathing.try_move(p))
+                return strike(*kill) ? kill->pos : vec2{-1, -1};
+        }
+    }
+    if (dash) {
+        static bitboard tiles{cambc::uninitialized};
+        clear_board(tiles);
+        const ChampionBelief* victim = nullptr;
+        for (auto p : Tiles<5 * 5>{pathing.dash_landings()})
+            if (const auto* kill = sure_kill(world, p, range); kill && (!victim || kill == victim) && only_threat(safety, p, kill->index))
+                victim = kill, tiles.set(p);
+        if (victim && dash_onto(world, pathing, tiles) && strike(*victim)) return victim->pos;
+    }
+    return {-1, -1};
+}
+
 void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     world.throw_if_stale();
     auto& me = cambc::self();
@@ -4240,6 +4276,8 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         } catch (const cambc::error&) {
         }
     }
+    // A kill a step or a dash off, where only the victim reaches us; else the homeward step may still land beside it.
+    if (dead.x < 0 && my_can_attack()) dead = step_to_kill(world, pathing, safety, range, melee);
     // A melee kill one step off waits for the step, which may land beside it.
     const bool held = melee && my_can_attack() && sure_kill(world, here, range + 1);
     if (melee && !held) attack_enemy(world);

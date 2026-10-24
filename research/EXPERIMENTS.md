@@ -349,6 +349,11 @@ another harmless group was kept (CHANGES 91).
     rounds to payout + 1 is below our health (camps behind walls and bush attackers hit unseen), and the approach to a
     respawning group leaves its camp tiles out of the goals (an occupied group returns late): 50.8% (CI 47.9-53.8;
     ladder 47.5, gen 50.0, gen-s1 52.1), out-of-fuel turns 2823 vs 2804. Kept (CHANGES 117).
+  - `retreat` takes a sure kill one step off (melee, whose walk keeps the attack) or a dash off, from a tile where
+    `only_threat` finds nothing but the victim reaching us (MATCH_GROUP_REVIEW Finding 2: a low Heart of Ruin walked
+    away from a 23-health Ryth two tiles off): 50.2% (CI 47.2-53.1; ladder 50.0, gen 50.0, gen-s1 50.4), out-of-fuel
+    turns 2810 vs 2802. It fired 8 times in 80 ladder games. Kept (CHANGES 118). Not done: `retreat_step` still
+    counts an enemy just killed as a threat, and a leave turn's shield takes Heart of Ruin's and Varg's one cast first.
 - Untried: count a Heart of Ruin landing as a cast only when it hits something.
 - `tribute_safe` refusing a channel a ready visible stun can cancel (REPLAY-FOLLOW-UPS R1-11; branch `fu/tribute-stun`,
   2026-10-23): a stun ready on any enemy turn before the channel ends 49.8%, only one that lands on the enemy's next

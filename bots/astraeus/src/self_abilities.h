@@ -43,6 +43,8 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
 bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dead = {-1, -1});
 // A ready dash could land out of every visible enemy's and awake camp's reach, `dead` aside.
 bool dash_clears(const World& world, Pathing& pathing, vec2 dead);
+// Onto one of `tiles` (landings the caller accepts), nearest our spawn.
+bool dash_onto(const World& world, Pathing& pathing, const bitboard& tiles);
 
 // Willow: the ally the heal restores most, if it restores enough or the ally is low.
 bool heal_ally(const World& world);

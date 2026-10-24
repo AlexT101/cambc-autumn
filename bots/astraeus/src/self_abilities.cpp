@@ -416,6 +416,17 @@ bool dash_clears(const World& world, Pathing& pathing, vec2 dead) {
     return false;
 }
 
+bool dash_onto(const World& world, Pathing& pathing, const bitboard& tiles) {
+    if (!world.me().facts().has_dash()) return false;
+    const int dash = ready(world, AbilityKind::dash);
+    if (dash < 0) return false;
+    const auto& spawn = world.map().from_ally_spawn();
+    const auto landings = ranked(
+        tiles, [&](vec2 p) { return std::min<int>(spawn.at(p), 999); },
+        [&](vec2 p, int) { return !wakes_camp(world, p) && !landing_suicidal(world, p); });
+    return dash_to_first(dash, pathing, landings);
+}
+
 bool worth_healing(float amount, float gain, float fraction) {
     return gain > 0 && (gain >= heal_min_share * amount || fraction < heal_low_health);
 }

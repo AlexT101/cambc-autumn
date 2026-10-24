@@ -563,3 +563,11 @@ fight sim never saw them. The approach to a respawning group (`search_approach`,
 own tiles from its goals, since a group returns only once its tiles are empty.
 
 - Against 116: 50.8% of 1104 (47.9-53.8; ladder 47.5, gen 50.0, gen-s1 52.1), out-of-fuel turns 2823 vs 2804.
+
+## 118: a retreat steps or dashes to a sure kill (astraeus, 2026-10-24)
+
+A leave turn (`want_home`) never runs the strike search, and `retreat` took a sure kill only from where we stood. It
+now also takes one from a tile a step away (melee only: a ranged walk spends the attack) or a ready dash away, when
+nothing but the victim reaches that tile (`only_threat`); the dash lands nearest our spawn (`dash_onto`).
+
+- Against 116: 50.2% of 1104 (47.2-53.1; ladder 50.0, gen 50.0, gen-s1 50.4), out-of-fuel turns 2810 vs 2802.
