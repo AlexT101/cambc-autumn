@@ -2784,3 +2784,23 @@ whole-map exit field as a plausible expensive path when alternate quotes fail;
 this is a source-supported hypothesis, not yet a measured profile attribution.
 The proposed optimization preserves live prices and eligibility while reusing
 immutable static-wall/exit fields. No further boss game has run.
+
+Sighting v3's Release build succeeds with the frozen source aggregate and
+unchanged SDK hash and timestamp. Its first host fixture passes its assertions,
+but independent review finds that three assertions do not yet establish the
+claimed cases: the Vesper mock overstates real reach, missed-reader coverage
+never calls the publication path, and the repeated send is independently blocked
+by unchanged payload equality. A narrow fixture revision is queued; this is a
+test-evidence correction, not a new production-source defect. The first native
+comparison uses the entire new-protocol team on Pilgrimage A against frozen v33,
+paired with the exact latest parent rather than the older f7 baseline.
+
+The successful 08:29 UTC Mite metadata refresh is 19–11 in 30 ranked games and
+13–8 in 21 five-pick games. Its three ordered drafts match the prior sample;
+the four exact repeated opponent/map/side/draft cells preserve their earlier
+outcomes. These changing schedules and unavailable submission IDs do not prove
+adaptation or regression. Only Big World B loss
+`67f9d74a-673e-4b9a-936a-688c75632a0b` against :3 is nominated and downloaded for
+later decoding. It reverses Mite's side and changes the opponent relative to the
+earlier boss-loss witness, so it will be a mechanism comparison. No Willow-first
+ladder-manipulation batch is included.
