@@ -911,10 +911,10 @@ void Search::read_spells() {
             try {
                 lost = raw > 0 ? my_damage_to(s, e.handle) : 0.0f;
             } catch (const cambc::error&) {
-                lost = std::min(raw, x.health - x.shield);
+                lost = std::clamp(raw * x.taken - x.shield, 0.0f, x.health - x.shield);
             }
-            // Health lost after the shield, which x.health counts.
-            x.spell[s] = x.shield <= 0 ? lost : lost > 0 ? lost + x.shield : std::min(raw, x.shield);
+            // Health lost after the shield, which x.health counts; the shield drains by the reduced damage.
+            x.spell[s] = x.shield <= 0 ? lost : lost > 0 ? lost + x.shield : std::min(raw * x.taken, x.shield);
             x.spell_stun[s] = a.stuns && x.stunnable ? stun_worth(world, e, raw > 0) : 0.0f;
             x.suicidal[s] = raw > 0 && x.retaliation >= health;
             if (sp.unit && x.cast_legal == 0) x.cast_legal = viewers(x.pos, ability_range);
@@ -1147,7 +1147,7 @@ bool Search::read() {
                 auto& x = u[i];
                 if (dist(here, x.pos) > grid_r + land_radius) continue;
                 const float lost = raw > 0 ? my_damage_to(dash, x.belief->handle) : 0.0f, sh = x.shield;
-                x.land = sh <= 0 ? lost : lost > 0 ? lost + sh : std::min(raw, sh);
+                x.land = sh <= 0 ? lost : lost > 0 ? lost + sh : std::min(raw * x.taken, sh);
                 x.land_stun = a.stuns && x.stunnable ? stun_worth(world, *x.belief, raw > 0) : 0.0f;
             }
         } catch (const cambc::error&) {

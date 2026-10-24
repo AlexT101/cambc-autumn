@@ -52,11 +52,9 @@ keep if level.
 4. `capture_taken` counts allies bound elsewhere (tributing, recalling, claimed another group).
 5. The strike search never opens tiles of units it kills (`free_`/`pass_` fixed in `read_geometry`): a kill can open
    a walk or dash path (a blocker in a corridor; Vendetta's refreshed dash through a cleared camp).
-6. A fully shield-absorbed spell ignores Durability in the planner: `min(raw, shield)` should be
-   `min(raw * taken, shield)` (plan.cpp `x.spell`, `x.land`).
-7. Varg's fallback attacks (`camp_attack_targets`, champion splash) wake neighbouring sleeping groups, unpriced
+6. Varg's fallback attacks (`camp_attack_targets`, champion splash) wake neighbouring sleeping groups, unpriced
    (test drafts only).
-8. Our winning bag blocks interception: `game_ender` returns null and `continue_tribute` never cancels while
+7. Our winning bag blocks interception: `game_ender` returns null and `continue_tribute` never cancels while
    `winning_bag`, with no comparison of the two channels' ends. Outside a channel `stun_worth` still prices the stun;
    the loss is mid-tribute and the `stop_game_ender` pursuit. Rare (both teams near 1000) but game-deciding. Fix
    held: `p2/intercept-first-main` (EXPERIMENTS).

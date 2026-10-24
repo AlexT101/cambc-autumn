@@ -523,3 +523,11 @@ also takes one that lengthens it and does. A step that only lowers the exposure 
 back (`fu/retreat`).
 
 - Against main c71be8c: 49.7% of 1104 (46.8-52.7; ladder 48.8, gen 49.4, gen-s1 50.2), out-of-fuel turns 3813 vs 3956.
+
+## 113: a shield-absorbed hit priced with Durability (astraeus, 2026-10-24)
+
+The strike search priced a spell or Heart of Ruin landing that a shield fully absorbs at `min(raw, shield)`; the
+shield drains by the reduced damage, so it is now `min(raw * taken, shield)`. The fallback for an unreadable target
+counts the shield and Durability too.
+
+- Against v47: 50.1% of 1104 (47.1-53.0; ladder 51.2, gen 50.4, gen-s1 49.6), out-of-fuel turns 2475 vs 2473.
