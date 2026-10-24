@@ -264,7 +264,16 @@ emblems, with camp kill tests counting its +10%; **D** with the reset cooling, a
 - B alone 49.5% of 364. A+B+C1+D (no Monster): 48.4% of the 364, fresh 53.5% (50.0% of 534).
 - **C1 alone: 53.8% of 364 (48.7-58.9), fresh 54.1% of 170**; 53.9% of 534. Shipped with B (level, a model
   correction; not played together) as CHANGES 137.
-- So C2 costs ~3 points and A or D (not separated) ~5 on top of C1. Untested alone: A, C2, D.
+- Each on top of CHANGES 137 (065f2631, `bots/variants/vm-ref`), fresh suites seeds 5171 and 6203, their 3-pick
+  maps (312 games): A 49.0%, D 49.4% (both level); **C2 54.5% (48.9-59.9)**, confirmed on the 364 above: 54.1%
+  (49.0-59.2); 54.3% of 676, out-of-fuel turns level. Shipped as CHANGES 138. The bundle's readings against C1 (C2 "-3", A or D "-5") were
+  differences between candidates on the same games, within noise; only the single-piece runs above attribute.
+  The bundle's 45.6% stays unexplained (the parts sum to ~55): A and D together, maybe with C2, is untested on
+  CHANGES 137; both were dropped.
+- Why A and D are level: on the unmodified side (364 games), of camp kills made with the reset cooling and the cast
+  free, 66% cleared the group (nothing left to hit), 22% left the rest out of melee reach (the reset waits a turn),
+  11% reset at once and 0.5% missed an adjacent member. So refreshes are rarely wasted, A's extra hits mostly happen
+  (a turn late), and D's kill first adds a hit only in the few multi-member groups where one is in reach.
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 

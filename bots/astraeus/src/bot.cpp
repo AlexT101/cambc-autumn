@@ -889,6 +889,8 @@ float camp_hit_factor() {
     return (has_family(owned, jungle) ? 0.7f : 1.0f) * (has_family(owned, durability) ? 0.9f : 1.0f);
 }
 
+float camp_dealt_factor() { return has_family(my_items(), monster) ? 1.1f : 1.0f; }
+
 namespace {
 
 // A farm cycle's worth a round, falling faster than 1 / rounds for long cycles: gems taken sooner
@@ -1160,12 +1162,13 @@ void note_upkeep(const World& world, Safety& safety, float damage) {
         if (const int s = map.from_ally_spawn().at(here); s != unreachable) upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
 }
 
-// A Treasure, Jungle, Power, Durability or Bruiser shard short of its emblem.
+// A Treasure, Jungle, Power, Durability or Bruiser shard short of its emblem (Vendetta's Monster too).
 bool emblem_begun(const World& world) {
     const auto& owned = my_items();
     for (const int family : {treasure, jungle, power, durability, bruiser})
         for (int stat = strength_stat; stat <= health_stat; ++stat)
             if (owned[shard_of(family, stat)] > 0) return true;
+    if (world.me().facts().passive == Passive::reset_on_kill && owned[shard_of(monster, strength_stat)] > 0) return true;
     return world.me().facts().passive == Passive::gem_focus
         && (owned[shard_of(home, health_stat)] > 0 || owned[shard_of(monster, health_stat)] > 0
             || owned[shard_of(monster, focus_stat)] > 0);
@@ -1284,6 +1287,7 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     };
     if (f.passive == Passive::gem_focus && owned[shard_of(monster, health_stat)] > 0) return value(monster, health_stat);
     if (f.passive == Passive::gem_focus && owned[shard_of(monster, focus_stat)] > 0) return value(monster, focus_stat);
+    if (f.passive == Passive::reset_on_kill && owned[shard_of(monster, strength_stat)] > 0) return value(monster, strength_stat);
     // In the stat it was begun in: the main stat follows our use and can change.
     const int begun[8][2] = {{jungle, strength_stat}, {jungle, focus_stat}, {power, strength_stat}, {power, focus_stat}, {durability, health_stat},
                              {bruiser, strength_stat}, {bruiser, focus_stat}, {bruiser, health_stat}};
@@ -1316,6 +1320,9 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
     if (self.type == cambc::champion_type::willow && !has_family(owned, jungle))
         if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
+    // Vendetta's high base Strength makes +10% on camps worth more than a sixth shard.
+    if (f.passive == Passive::reset_on_kill && !has_family(owned, monster))
+        if (const auto e = value(monster, strength_stat); e.saved > best.saved) best = e;
     // Treasure first, in the stat the model picks and priced as the emblem it delays: +20% gold
     // from round ~200 buys 5-8 more shards a champion (ladder), more than any first passive saves.
     // Vendetta's in Health, as 74% of ladder Vendettas: the model prices Health only by heal trips.
@@ -4000,7 +4007,7 @@ bool kite_productive_action(const World& world, Pathing& pathing, int g, bool in
                     for (std::size_t i = 0; i < targets.size(); ++i)
                         if (remaining[i] > 0 && (targets[i].visible & (std::uint16_t{1} << k)) && dist(p, targets[i].pos) <= f.attack_range()
                             && (at < 0 || remaining[i] < remaining[at])) at = static_cast<int>(i);
-                    const bool refunded = at >= 0 && f.passive == Passive::reset_on_kill && remaining[at] <= strength;
+                    const bool refunded = at >= 0 && f.passive == Passive::reset_on_kill && remaining[at] <= basic_damage;
                     if (at >= 0 && (!reset_held || refunded)) {
                         const float hit = std::min(basic_damage, remaining[at]);
                         remaining[at] -= hit;

@@ -798,3 +798,15 @@ these lost ([EXPERIMENTS](../EXPERIMENTS.md#vendetta-2026-10-24-astraeus-on-its-
   of 364 (48.7-58.9; ladder 58.3 of 12, gen 53.6, gen-s1 53.8), fresh suite seed 9137 54.1% of 170; out-of-fuel turns
   612 vs 643.
 - The arrival fix alone: 49.5% of 364, level; kept as a model correction. The two were not played together.
+
+## 138: Vendetta's Monster emblem (astraeus, 2026-10-24)
+
+`best_emblem` offers Vendetta a Monster emblem in Strength (+10% damage to camps), priced by the model like the others:
+with its base Strength of 70, +10% on camps outweighs Power's sixth shard. A begun Monster emblem is finished first
+and counts in `emblem_begun`. Camp kill tests count the bonus (`camp_dealt_factor`): the strike search's camp targets,
+the reset kept for a camp kill, and the station simulation. In the earlier Vendetta bundle it looked like a loss; on
+its own it wins ([EXPERIMENTS](../EXPERIMENTS.md#vendetta-2026-10-24-astraeus-on-its-3-pick-draft-marcella-vendetta-hor)).
+
+- Against 065f2631 on the 3-pick maps (own drafts; other pick counts play identically): fresh suites seeds 5171 and
+  6203, 54.5% of 312 (48.9-59.9); ladder, gen and gen-s1, 54.1% of 364 (49.0-59.2); 54.3% of 676, out-of-fuel turns
+  level (1070 vs 1072).

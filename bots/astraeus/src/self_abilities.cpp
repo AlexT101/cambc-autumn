@@ -292,7 +292,7 @@ bool reset_and_attack_camp(const World& world, int group) {
     }
     if (!best) return false;
     // A Vendetta kill readies the reset again, so it need not be held.
-    const bool refunded = f.passive == Passive::reset_on_kill && best_health <= my_strength();
+    const bool refunded = f.passive == Passive::reset_on_kill && best_health <= my_strength() * camp_dealt_factor();
     if (!refunded && enemy_within(world, here, range + reset_hold_margin)) return false;
     if (!cast(reset)) return false;
     throw_if_stale();
