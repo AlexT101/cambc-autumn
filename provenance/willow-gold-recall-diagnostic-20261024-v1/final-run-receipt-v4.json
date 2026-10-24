@@ -1,0 +1,510 @@
+{
+  "schema": "gold-recall-diagnostic-final-receipt-v4/v1",
+  "classification": "Two-game instrumented mechanism diagnostics; not a competitive or strength comparison. Gold-v2 diagnostic replay ends at 2000 versus its original loss at 1830.",
+  "source_and_artifact_preflight": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-gold-recall-diagnostic-20261024-v1/build-gate-v4.json",
+    "sha256": "7ef108e01d587cef55885c2d4c056fd1d06c5b6fbabd2074b4e37a28c3fbf8df",
+    "status": "PASS_READY_TO_RUN",
+    "postflight_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-gold-recall-diagnostic-20261024-v1/postflight-v4.json",
+    "postflight_sha256": "fc3840f696b64654f8ded4a69a6e68565ed69e5b29a34328d16c1770d7a92e63",
+    "postflight_status": "PASS",
+    "checks": 101
+  },
+  "source_snapshot_clone": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-gold-recall-diagnostic-20261024-v1/v33-source-clone-preflight-v4.json",
+    "sha256": "be401a0f7bb4fc3a03aaaae65fb86f19daf9bab7dd3831685437453db12ea5b1",
+    "manifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-gold-recall-diagnostic-20261024-v1/source-file-manifest-v3.json",
+    "manifest_sha256": "afd399b211a1b90af2ff976632d3667285f1cebb22d8a6ab5e7708bfb2dfb288"
+  },
+  "run": {
+    "manifest": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-gold-recall-diagnostic-20261024-v1/planned-diagnostic-run-v4.manifest.txt",
+    "manifest_sha256": "b419c348c42826eb35178c595d1e24b1d55260179846f4ac4cf4b40e5205fdce",
+    "command": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-gold-recall-diagnostic-20261024-v1/logs-v3/run-v3-attempt05.command.txt",
+    "command_sha256": "5623311a910c9ef03c8e0de610550a8a4f4f2d6eded50a3b5f389b1a61d7663a",
+    "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-gold-recall-diagnostic-20261024-v1/logs-v3/run-v3-attempt05.stdout.log",
+    "stdout_sha256": "09be170c63417e5d3699c728a4ca94f186381f666c0a9e5966ee2ba4f1e0ca82",
+    "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-gold-recall-diagnostic-20261024-v1/logs-v3/run-v3-attempt05.stderr.log",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "exitcode": 0,
+    "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-gold-recall-diagnostic-20261024-v1/prepared-workspace-v4"
+  },
+  "failed_attempts_preserved": [
+    "logs-v3/run-v3-launch-failure.txt",
+    "logs-v3/run-v3-attempt02-precheck-processes.txt",
+    "logs-v3/run-v3-attempt03.stderr.log",
+    "logs-v3/run-v3-attempt04-prelaunch-failure.txt"
+  ],
+  "games": [
+    {
+      "candidate": "cb61-base",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/outputs/01-cb61-base-gold-B-diagnostic.repl26a",
+      "sha256": "3f963451dcc93c5db609e24b85e91e9397c713523e8dc2b30f56d1de42d3e41a",
+      "bytes": 58445,
+      "rounds": 1707,
+      "winner_team": 1,
+      "gems_by_team": [
+        280,
+        1007
+      ],
+      "picks": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ]
+      ],
+      "faults_by_team": [
+        1,
+        0
+      ],
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      }
+    },
+    {
+      "candidate": "gold-v2",
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/outputs/02-gold-v2-gold-B-diagnostic.repl26a",
+      "sha256": "69bb85078713bda87f4b90bd9cdb8ed97818c07d1527ce7ffceecfaf40f8e020",
+      "bytes": 66590,
+      "rounds": 2000,
+      "winner_team": 1,
+      "gems_by_team": [
+        814,
+        935
+      ],
+      "picks": [
+        [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ],
+        [
+          "Prism",
+          "Vesper Vale",
+          "Heart of Ruin"
+        ]
+      ],
+      "faults_by_team": [
+        1,
+        0
+      ],
+      "extract_validation": {
+        "ok": true,
+        "hard": [],
+        "soft": []
+      }
+    }
+  ],
+  "extraction": {
+    "index": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/analysis-v1/index.json",
+    "index_sha256": "7afe5d12807988d1553cd9e07d1adb854855fc704bce865b7f922f59e4a45a03",
+    "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-gold-recall-diagnostic-20261024-v1/logs-v3/extract-v1/stdout.log",
+    "stdout_sha256": "2b91f98bc4e667905312befc31776f5f8348a6200a0478f9a7a2fa1821b2168f",
+    "status": "2/2 extracted; 0 soft validation notes",
+    "engine": {
+      "version": "v1_0_3",
+      "cambc": "cambc 3.0.5",
+      "asset": "v1_0_3-DRqNt1t2.wasm",
+      "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+      "bytes": 638472,
+      "snapshotSize": 184760
+    }
+  },
+  "diagnostic_trace": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/analysis-v1/diagnostic-trace-lines-v1.json",
+    "sha256": "b71c07ffea98cb4f43ecb390930526726c3538db6a325c19b90b0edb4202327e",
+    "prefix_comparison_v1": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/analysis-v1/diagnostic-prefix-comparison-v1.json",
+      "sha256": "44b959b2e162b1d1de6f95540f9c8d83b5037a303e5b26f40dbc5074e8ce08a8"
+    },
+    "prefix_comparison_v2": {
+      "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/analysis-v1/diagnostic-prefix-comparison-v2.json",
+      "sha256": "903f43319e89aedeefde197606993633cb9818a4375e4daa4fe817401d15f909"
+    },
+    "interpretation": "Base matches original action/status through r40 and trace window r41\u201343. Gold-v2 matches through r28 and r29; at r30 actor4 status diverges end_turn to fuel_rollover and first accepted-action difference occurs. The r30 cancellation log does not imply an accepted action."
+  },
+  "rule_turn_order_audit": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/analysis-v1/native-turn-order-check-v1.json",
+    "sha256": "4bc341db7d25e1a069292006fea830435f20ec14894a933a52904e3a48cf6499",
+    "games": [
+      {
+        "replay": "replays/willow-gold-recall-diagnostic-20261024-v1/outputs/01-cb61-base-gold-B-diagnostic.repl26a",
+        "replay_sha256": "3f963451dcc93c5db609e24b85e91e9397c713523e8dc2b30f56d1de42d3e41a",
+        "rounds": 1707,
+        "observed_own_turn_events_checked": 25636,
+        "turn_order_disagreements": 0,
+        "first_disagreements": [],
+        "extract_validation": {
+          "ok": true,
+          "hard": [],
+          "soft": []
+        }
+      },
+      {
+        "replay": "replays/willow-gold-recall-diagnostic-20261024-v1/outputs/02-gold-v2-gold-B-diagnostic.repl26a",
+        "replay_sha256": "69bb85078713bda87f4b90bd9cdb8ed97818c07d1527ce7ffceecfaf40f8e020",
+        "rounds": 2000,
+        "observed_own_turn_events_checked": 29624,
+        "turn_order_disagreements": 0,
+        "first_disagreements": [],
+        "extract_validation": {
+          "ok": true,
+          "hard": [],
+          "soft": []
+        }
+      }
+    ]
+  },
+  "native_caught_and_marker_audits": [
+    {
+      "candidate": "cb61-base",
+      "audit_input_results_sha256": "b791505f83714e6d89a0e14562c9302dd64dfa2f0e1d5ae31b0e48e48f13c2e3",
+      "native_status_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/audit-inputs/cb61-base/native-status-compact.json",
+      "native_status_sha256": "356bd588eaf16590cfa95ebaf3f112e53ae0557c26b648a5b284449fad4b7bd5",
+      "native_bots": [
+        {
+          "bot": "v33",
+          "bot_index": 0,
+          "games": 1,
+          "play": {
+            "rollover": 4,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "cb61-base",
+          "bot_index": 1,
+          "games": 1,
+          "play": {
+            "rollover": 3,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "native_game_counts": {
+        "play": {
+          "rollover": 7,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 0,
+            "play": {
+              "rollover": 4,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 4,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "cb61-base",
+            "bot_index": 1,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 3,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "caught_action_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/audit-inputs/cb61-base/caught-act-errors.json",
+      "caught_action_sha256": "17ac1b5689cb494d4596c2929242f6eccd213c3e2545480adf42ddafcfaa076a",
+      "caught_action_bots": {
+        "v33": {
+          "bot_index": 0,
+          "matches_with_errors": 0,
+          "error_lines": 0,
+          "match_round_instances": 0,
+          "physical_side_lines": {
+            "A": 0,
+            "B": 0
+          },
+          "error_code_counts": {}
+        },
+        "cb61-base": {
+          "bot_index": 1,
+          "matches_with_errors": 0,
+          "error_lines": 0,
+          "match_round_instances": 0,
+          "physical_side_lines": {
+            "A": 0,
+            "B": 0
+          },
+          "error_code_counts": {}
+        }
+      },
+      "turn_order_marker_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/audit-inputs/cb61-base/turn-order-markers.json",
+      "turn_order_marker_sha256": "073c2adf6492aa7e3f8182a62164884ba71fa3ec7e72a0f788131ba3434f1e40",
+      "turn_order_marker_validation": {
+        "ok": true,
+        "scanned_matches": 1,
+        "issues": 0
+      },
+      "turn_order_marker_bots": [
+        {
+          "bot_index": 0,
+          "bot": "v33",
+          "lines": 0,
+          "matches_with_markers": 0,
+          "rounds": {},
+          "texts": {}
+        },
+        {
+          "bot_index": 1,
+          "bot": "cb61-base",
+          "lines": 0,
+          "matches_with_markers": 0,
+          "rounds": {},
+          "texts": {}
+        }
+      ]
+    },
+    {
+      "candidate": "gold-v2",
+      "audit_input_results_sha256": "e614c3e68b32382165cd7428b9049bb11dd4d0a504d1941a58b14e7a2207605c",
+      "native_status_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/audit-inputs/gold-v2/native-status-compact.json",
+      "native_status_sha256": "c79d9999700f015c3ecf7b9ddaaa49c7deaf1ffd653e5ebd70ed4f884e037f7b",
+      "native_bots": [
+        {
+          "bot": "v33",
+          "bot_index": 0,
+          "games": 1,
+          "play": {
+            "rollover": 1,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        },
+        {
+          "bot": "gold-v2",
+          "bot_index": 1,
+          "games": 1,
+          "play": {
+            "rollover": 3,
+            "bot_error": 0
+          },
+          "draft": {
+            "rollover": 0,
+            "bot_error": 0
+          },
+          "other": {
+            "rollover": 0,
+            "bot_error": 0
+          }
+        }
+      ],
+      "native_game_counts": {
+        "play": {
+          "rollover": 4,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "v33",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "2": {
+                "actor_kind": 1,
+                "actor_index": 2,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "gold-v2",
+            "bot_index": 1,
+            "play": {
+              "rollover": 3,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "caught_action_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/audit-inputs/gold-v2/caught-act-errors.json",
+      "caught_action_sha256": "b000dc106a98419272788b66f66a3feeef00b0cfb77af0eae765964fa60d4a1c",
+      "caught_action_bots": {
+        "v33": {
+          "bot_index": 0,
+          "matches_with_errors": 0,
+          "error_lines": 0,
+          "match_round_instances": 0,
+          "physical_side_lines": {
+            "A": 0,
+            "B": 0
+          },
+          "error_code_counts": {}
+        },
+        "gold-v2": {
+          "bot_index": 1,
+          "matches_with_errors": 0,
+          "error_lines": 0,
+          "match_round_instances": 0,
+          "physical_side_lines": {
+            "A": 0,
+            "B": 0
+          },
+          "error_code_counts": {}
+        }
+      },
+      "turn_order_marker_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/replays/willow-gold-recall-diagnostic-20261024-v1/audit-inputs/gold-v2/turn-order-markers.json",
+      "turn_order_marker_sha256": "a8f6712a4f65f4c331a59caec3e4c32ed073b6df9e4542fe27c246e07f2783f6",
+      "turn_order_marker_validation": {
+        "ok": true,
+        "scanned_matches": 1,
+        "issues": 0
+      },
+      "turn_order_marker_bots": [
+        {
+          "bot_index": 0,
+          "bot": "v33",
+          "lines": 0,
+          "matches_with_markers": 0,
+          "rounds": {},
+          "texts": {}
+        },
+        {
+          "bot_index": 1,
+          "bot": "gold-v2",
+          "lines": 0,
+          "matches_with_markers": 0,
+          "rounds": {},
+          "texts": {}
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Engine final faults counter is [1,0] (teams A,B) in both replay summaries; it is reported separately from zero native Bot Error status events and zero caught act-error lines.",
+    "No claim that these instrumented runs preserve outcomes after a trace-window divergence."
+  ]
+}

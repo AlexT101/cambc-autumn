@@ -2377,3 +2377,53 @@ preserves the first Treasure policy and prices later full and partial purchases
 consistently. The current 60% heal-efficiency threshold is replayed, including cases
 where more Focus suppresses a previously worthwhile heal. See
 `willow-cb61-service-shopper-design-20261024-v2.md`. No new release was submitted.
+
+The three selected route pairs now have bounded actor-view review. Band B's first
+changed route avoids a reversal and reaches the same 28-gem payout at145 instead
+of153, despite the later loss. On Starvation A, the route variant's Vesper has no
+accepted first-turn action and a native fuel rollover, while control moves from
+(2,48) to(3,49) with the same known starting state. This precedes the subsequent
+formation difference; it does not establish which computation exhausted fuel or
+prove the eventual loss's cause. Yellow Brick Road A delegates the remaining wolf
+damage to visible allies and moves a round earlier, with the camp still dying that
+round; the bounded window does not establish additional production or win causality.
+See `willow-route-panel-review-20261024-v1.md`.
+
+Source review finds no safe small cache substitution for the route's fresh occupancy
+and vision reads. A separate two-line child replaces SDK `bitboard::set` wrappers
+inside the existing live-camp board update with the identical `sdk_Bitboard_Set`
+call through the existing inline `set_tile` helper. Inputs, error handling and camp
+tracking remain unchanged. Child aggregate `1b4928c91330e2ddfa615cc70cbb52f9879124a5b62f66085e4c93af56eb2f6f`
+is preserved with all29 files before/after; no saving is claimed before measurement.
+
+Independent source review passes for the service-aware Willow shopper prototype
+`effae506` and its mechanically ported f7 child `730051ef`. Only the upstream four
+Prism lines differ between those candidate identities. The first runtime panel pairs
+the f7 child with exact f7 baseline `f475b852` against frozen v33 on four previously
+selected service cells plus Gold Rush A/B no-Willow controls: twelve new games.
+Both sides of that comparison include the same upstream Prism change. Source review
+does not establish activation, improved team conversion or fuel equivalence.
+
+The twelve f7 service-panel games completed before the user's compute pause; no
+games were repeated. A subsequent low-duty bundle/stdout audit reports base3/6
+versus service2/6. Cells102306611 A changes from a base win at875 to a service
+loss at891. The other five cells retain winner and duration. Four pairs have
+identical inner replay payloads (Archipelago102306009 A, Archipelago102306002 B,
+and Gold Rush A/B); Archipelago102306002 A also changes payload while retaining
+its loss at830. All twelve stdout audits have zero caught-action and turn-order
+markers. These are not native phase-status audits, and aggregate fuel summaries
+are not a causal cost comparison once play differs. No purchase activation or
+healing benefit is claimed yet. Evidence:
+`../provenance/willow-service-lowcpu-audit-20261024-v1/service-panel-light-audit.json`.
+Only the two differing pairs are selected for further extraction, with one worker,
+low priority and deliberate process duty cycling under the user's CPU constraint.
+
+The source-known Gold Rush base diagnostic faithfully reproduces Vesper's farm /
+retreat reversal through round43. However, the first proposed initiative explanation
+used an incorrect melee reach formula for ranged Vesper. Her ready dash plus basic
+already reaches distance5 in one activation, so the farm destination at distance5
+was already within the current scalar strike bound. The proposed4-to5 admission
+boundary is retracted; no projected-timing gameplay change is justified by that
+argument. Terrain-aware reach, guard short-circuits, fuel admission and fight results
+remain to be distinguished using existing computed values. Gold v2's round30 trace
+is perturbed by a fuel rollover and cannot identify the original continuation branch.

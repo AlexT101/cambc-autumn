@@ -1,0 +1,11 @@
+# Remembered-camp route mask cost review
+
+2026-10-24. Source-only review of `bots/variants/willow-astraeus-remembered-camp-route-work`, pinned parent aggregate `2a475721c8985cfcbd189e683ffac90ac05cdbf06280289899d21d9be851204e`, based on cb61 parent `369742e3f54259c675c0d4b508a02c0c4517eef6e1cb3ef6f42fa776194180ea` and frozen `cb61base369742e3`. Read `cambc-rules.yaml`, `docs/api/cpp.md`, `sdk/cpp/cambc.h`, `tools/README.md`, and the route helper/callers. No builds or tests.
+
+No small exact-preserving optimization to the farm mask was identified. Its camp policy is `native occupancy N OR (BelievedLiveCamp B AND NOT current native vision V)`. Farm routes need both N and V read at route time: movement and dashes change the current vision, and attacks/casts can kill camps while World beliefs are stale. `blocked_` invalidation does not cover every camp action; `world.visible` is an earlier observation snapshot. Fresh native camp occupancy also keeps a respawned camp blocked when belief says it was cleared. The SDK exposes occupancy and vision as separate host calls, with no fused call for this expression.
+
+Each farm-mask construction adds one `sdk_vision` host call and three whole-board operations (NOT, intersection, union), plus fresh occupancy construction. Reusing a mask would require tracking every relevant move, dash, attack, cast, reset, and observation mutation; this is too broad to recommend without measured benefit.
+
+There are duplicate `World::throw_if_stale()` checks at route entry and at farm-mask entry/exit. Removing one may save wrapper work, but the inner checks bracket native occupancy/vision calls: a fuel rollover or turn change around those calls must not let a partial or old-turn mask be consumed. Keep the checks unless that rollover behavior is established and the saving is measured.
+
+For a future cache experiment, compare masks bit-for-bit over bounded replay windows covering same-turn camp kills/casts, moves and dashes, visible empty and partially visible groups, respawn on occupied spawn, unit and teleport blockers, bumped blockers, and guard/through/self/make-way handling. Compare fuel on identical replays with `tools/fuel/bench.py compare`. No equivalence or fuel claim is made here.
