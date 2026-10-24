@@ -1,0 +1,75 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T09:27:53.676090+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-prism-recall-parent-f599-harness-20261024-v1/trace-workspace",
+  "argv": [
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "run-batch",
+    "manifest-prism-trace.txt",
+    "--jobs",
+    "1",
+    "--rounds",
+    "738",
+    "--fuel-quantum",
+    "100000",
+    "--log-limit",
+    "1073741824",
+    "--color",
+    "never"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-prism-recall-parent-f599-harness-20261024-v1/logs/trace-run2.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-prism-recall-parent-f599-harness-20261024-v1/logs/trace-run2.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.026253916,
+      "run_end_monotonic": 0.133032541
+    },
+    {
+      "run_start_monotonic": 1.038357083,
+      "run_end_monotonic": 1.141980458
+    },
+    {
+      "run_start_monotonic": 2.044252458,
+      "run_end_monotonic": 2.148815541
+    },
+    {
+      "run_start_monotonic": 3.05402275,
+      "run_end_monotonic": 3.157587125
+    },
+    {
+      "run_start_monotonic": 4.059213333,
+      "run_end_monotonic": 4.164223833
+    },
+    {
+      "run_start_monotonic": 5.065706083,
+      "run_end_monotonic": 5.170727958
+    },
+    {
+      "run_start_monotonic": 6.0759185,
+      "run_end_monotonic": 6.179338458
+    },
+    {
+      "run_start_monotonic": 7.084262375,
+      "run_end_monotonic": 7.188855291
+    },
+    {
+      "run_start_monotonic": 8.094039583,
+      "run_end_monotonic": 8.198922125
+    },
+    {
+      "run_start_monotonic": 9.104218,
+      "run_end_monotonic": 9.206797666
+    }
+  ],
+  "pid": 17618,
+  "process_group_id": 17618,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T09:28:02.859041+00:00"
+}

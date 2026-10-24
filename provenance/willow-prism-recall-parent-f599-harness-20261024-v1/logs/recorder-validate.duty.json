@@ -1,0 +1,486 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T09:17:41.493153+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "node",
+    "tools/replay/harness/compare.mjs",
+    "provenance/willow-prism-recall-parent-f599-harness-20261024-v1/input/local-parent-bigworld-f599-original.repl26a",
+    "provenance/willow-prism-recall-parent-f599-harness-20261024-v1/outputs/local-parent-bigworld-f599-recorder.repl26a",
+    "--fuel",
+    "provenance/willow-prism-recall-parent-f599-harness-20261024-v1/input/original-team-b.fuel",
+    "--team",
+    "b"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-prism-recall-parent-f599-harness-20261024-v1/logs/recorder-validate.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-prism-recall-parent-f599-harness-20261024-v1/logs/recorder-validate.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.029128958,
+      "run_end_monotonic": 0.129346083
+    },
+    {
+      "run_start_monotonic": 1.032388875,
+      "run_end_monotonic": 1.132823291
+    },
+    {
+      "run_start_monotonic": 2.037947625,
+      "run_end_monotonic": 2.141195791
+    },
+    {
+      "run_start_monotonic": 3.046321666,
+      "run_end_monotonic": 3.146977458
+    },
+    {
+      "run_start_monotonic": 4.052154791,
+      "run_end_monotonic": 4.157174041
+    },
+    {
+      "run_start_monotonic": 5.060994791,
+      "run_end_monotonic": 5.166016666
+    },
+    {
+      "run_start_monotonic": 6.07112325,
+      "run_end_monotonic": 6.175286041
+    },
+    {
+      "run_start_monotonic": 7.07920925,
+      "run_end_monotonic": 7.184226666
+    },
+    {
+      "run_start_monotonic": 8.086351541,
+      "run_end_monotonic": 8.187283791
+    },
+    {
+      "run_start_monotonic": 9.092411625,
+      "run_end_monotonic": 9.194511958
+    },
+    {
+      "run_start_monotonic": 10.099608708,
+      "run_end_monotonic": 10.203200041
+    },
+    {
+      "run_start_monotonic": 11.108323416,
+      "run_end_monotonic": 11.210308583
+    },
+    {
+      "run_start_monotonic": 12.112663416,
+      "run_end_monotonic": 12.215373125
+    },
+    {
+      "run_start_monotonic": 13.117793041,
+      "run_end_monotonic": 13.219947625
+    },
+    {
+      "run_start_monotonic": 14.123458083,
+      "run_end_monotonic": 14.25283575
+    },
+    {
+      "run_start_monotonic": 15.163332666,
+      "run_end_monotonic": 15.266184333
+    },
+    {
+      "run_start_monotonic": 16.171482791,
+      "run_end_monotonic": 16.273706583
+    },
+    {
+      "run_start_monotonic": 17.176896375,
+      "run_end_monotonic": 17.28192025
+    },
+    {
+      "run_start_monotonic": 18.183311791,
+      "run_end_monotonic": 18.285468208
+    },
+    {
+      "run_start_monotonic": 19.190650166,
+      "run_end_monotonic": 19.2956685
+    },
+    {
+      "run_start_monotonic": 20.199980916,
+      "run_end_monotonic": 20.300511375
+    },
+    {
+      "run_start_monotonic": 21.203613916,
+      "run_end_monotonic": 21.3070215
+    },
+    {
+      "run_start_monotonic": 22.212178666,
+      "run_end_monotonic": 22.316827583
+    },
+    {
+      "run_start_monotonic": 23.217737125,
+      "run_end_monotonic": 23.322062875
+    },
+    {
+      "run_start_monotonic": 24.223262041,
+      "run_end_monotonic": 24.32594725
+    },
+    {
+      "run_start_monotonic": 25.231236291,
+      "run_end_monotonic": 25.334332
+    },
+    {
+      "run_start_monotonic": 26.237167833,
+      "run_end_monotonic": 26.342212666
+    },
+    {
+      "run_start_monotonic": 27.243264041,
+      "run_end_monotonic": 27.344570541
+    },
+    {
+      "run_start_monotonic": 28.24503425,
+      "run_end_monotonic": 28.348851083
+    },
+    {
+      "run_start_monotonic": 29.24998525,
+      "run_end_monotonic": 29.352530666
+    },
+    {
+      "run_start_monotonic": 30.257823041,
+      "run_end_monotonic": 30.361592041
+    },
+    {
+      "run_start_monotonic": 31.266625833,
+      "run_end_monotonic": 31.368801458
+    },
+    {
+      "run_start_monotonic": 32.272640916,
+      "run_end_monotonic": 32.373792625
+    },
+    {
+      "run_start_monotonic": 33.277412625,
+      "run_end_monotonic": 33.378285083
+    },
+    {
+      "run_start_monotonic": 34.283443666,
+      "run_end_monotonic": 34.385077833
+    },
+    {
+      "run_start_monotonic": 35.287906916,
+      "run_end_monotonic": 35.388923208
+    },
+    {
+      "run_start_monotonic": 36.292183833,
+      "run_end_monotonic": 36.394826541
+    },
+    {
+      "run_start_monotonic": 37.299898583,
+      "run_end_monotonic": 37.401167125
+    },
+    {
+      "run_start_monotonic": 38.306331333,
+      "run_end_monotonic": 38.411357083
+    },
+    {
+      "run_start_monotonic": 39.316526541,
+      "run_end_monotonic": 39.421549791
+    },
+    {
+      "run_start_monotonic": 40.326684166,
+      "run_end_monotonic": 40.430736541
+    },
+    {
+      "run_start_monotonic": 41.335371625,
+      "run_end_monotonic": 41.439280083
+    },
+    {
+      "run_start_monotonic": 42.340576708,
+      "run_end_monotonic": 42.441576625
+    },
+    {
+      "run_start_monotonic": 43.342977666,
+      "run_end_monotonic": 43.446802208
+    },
+    {
+      "run_start_monotonic": 44.3520055,
+      "run_end_monotonic": 44.45702675
+    },
+    {
+      "run_start_monotonic": 45.36219025,
+      "run_end_monotonic": 45.463413958
+    },
+    {
+      "run_start_monotonic": 46.366481083,
+      "run_end_monotonic": 46.469036375
+    },
+    {
+      "run_start_monotonic": 47.374214666,
+      "run_end_monotonic": 47.479251666
+    },
+    {
+      "run_start_monotonic": 48.379507625,
+      "run_end_monotonic": 48.481093583
+    },
+    {
+      "run_start_monotonic": 49.383155,
+      "run_end_monotonic": 49.488527083
+    },
+    {
+      "run_start_monotonic": 50.393844541,
+      "run_end_monotonic": 50.498632166
+    },
+    {
+      "run_start_monotonic": 51.399803333,
+      "run_end_monotonic": 51.501600708
+    },
+    {
+      "run_start_monotonic": 52.402072583,
+      "run_end_monotonic": 52.507124458
+    },
+    {
+      "run_start_monotonic": 53.41249,
+      "run_end_monotonic": 53.51553575
+    },
+    {
+      "run_start_monotonic": 54.415843083,
+      "run_end_monotonic": 54.521527333
+    },
+    {
+      "run_start_monotonic": 55.426435375,
+      "run_end_monotonic": 55.528074958
+    },
+    {
+      "run_start_monotonic": 56.43321475,
+      "run_end_monotonic": 56.538241
+    },
+    {
+      "run_start_monotonic": 57.443195916,
+      "run_end_monotonic": 57.547554583
+    },
+    {
+      "run_start_monotonic": 58.452726666,
+      "run_end_monotonic": 58.554042833
+    },
+    {
+      "run_start_monotonic": 59.456137583,
+      "run_end_monotonic": 59.559760875
+    },
+    {
+      "run_start_monotonic": 60.464630208,
+      "run_end_monotonic": 60.569650208
+    },
+    {
+      "run_start_monotonic": 61.472790541,
+      "run_end_monotonic": 61.5741835
+    },
+    {
+      "run_start_monotonic": 62.47547025,
+      "run_end_monotonic": 62.578499
+    },
+    {
+      "run_start_monotonic": 63.482204375,
+      "run_end_monotonic": 63.585580083
+    },
+    {
+      "run_start_monotonic": 64.488443416,
+      "run_end_monotonic": 64.589804791
+    },
+    {
+      "run_start_monotonic": 65.490626791,
+      "run_end_monotonic": 65.595680958
+    },
+    {
+      "run_start_monotonic": 66.496250375,
+      "run_end_monotonic": 66.599865
+    },
+    {
+      "run_start_monotonic": 67.50161925,
+      "run_end_monotonic": 67.602419125
+    },
+    {
+      "run_start_monotonic": 68.507127541,
+      "run_end_monotonic": 68.608887375
+    },
+    {
+      "run_start_monotonic": 69.514179416,
+      "run_end_monotonic": 69.619239583
+    },
+    {
+      "run_start_monotonic": 70.524462333,
+      "run_end_monotonic": 70.62877625
+    },
+    {
+      "run_start_monotonic": 71.532874375,
+      "run_end_monotonic": 71.636089041
+    },
+    {
+      "run_start_monotonic": 72.539609,
+      "run_end_monotonic": 72.644139791
+    },
+    {
+      "run_start_monotonic": 73.54932425,
+      "run_end_monotonic": 73.653386666
+    },
+    {
+      "run_start_monotonic": 74.557843166,
+      "run_end_monotonic": 74.662879666
+    },
+    {
+      "run_start_monotonic": 75.564775958,
+      "run_end_monotonic": 75.665538416
+    },
+    {
+      "run_start_monotonic": 76.566342375,
+      "run_end_monotonic": 76.668195083
+    },
+    {
+      "run_start_monotonic": 77.571031541,
+      "run_end_monotonic": 77.675327125
+    },
+    {
+      "run_start_monotonic": 78.580496125,
+      "run_end_monotonic": 78.684065583
+    },
+    {
+      "run_start_monotonic": 79.589217166,
+      "run_end_monotonic": 79.691715625
+    },
+    {
+      "run_start_monotonic": 80.596891666,
+      "run_end_monotonic": 80.701912333
+    },
+    {
+      "run_start_monotonic": 81.607055708,
+      "run_end_monotonic": 81.711109666
+    },
+    {
+      "run_start_monotonic": 82.615291166,
+      "run_end_monotonic": 82.71811075
+    },
+    {
+      "run_start_monotonic": 83.621692541,
+      "run_end_monotonic": 83.724062458
+    },
+    {
+      "run_start_monotonic": 84.628136333,
+      "run_end_monotonic": 84.732923083
+    },
+    {
+      "run_start_monotonic": 85.637967083,
+      "run_end_monotonic": 85.743273125
+    },
+    {
+      "run_start_monotonic": 86.647697791,
+      "run_end_monotonic": 86.750426666
+    },
+    {
+      "run_start_monotonic": 87.655916166,
+      "run_end_monotonic": 87.758617708
+    },
+    {
+      "run_start_monotonic": 88.660180708,
+      "run_end_monotonic": 88.763242875
+    },
+    {
+      "run_start_monotonic": 89.668544541,
+      "run_end_monotonic": 89.7694435
+    },
+    {
+      "run_start_monotonic": 90.674622041,
+      "run_end_monotonic": 90.779281958
+    },
+    {
+      "run_start_monotonic": 91.682381208,
+      "run_end_monotonic": 91.788428625
+    },
+    {
+      "run_start_monotonic": 92.69358975,
+      "run_end_monotonic": 92.79865225
+    },
+    {
+      "run_start_monotonic": 93.700572083,
+      "run_end_monotonic": 93.80370125
+    },
+    {
+      "run_start_monotonic": 94.704608083,
+      "run_end_monotonic": 94.807263333
+    },
+    {
+      "run_start_monotonic": 95.71241425,
+      "run_end_monotonic": 95.817433416
+    },
+    {
+      "run_start_monotonic": 96.722537291,
+      "run_end_monotonic": 96.825608
+    },
+    {
+      "run_start_monotonic": 97.729052416,
+      "run_end_monotonic": 97.832841916
+    },
+    {
+      "run_start_monotonic": 98.736934375,
+      "run_end_monotonic": 98.837689375
+    },
+    {
+      "run_start_monotonic": 99.742790666,
+      "run_end_monotonic": 99.8459285
+    },
+    {
+      "run_start_monotonic": 100.751052666,
+      "run_end_monotonic": 100.851547291
+    },
+    {
+      "run_start_monotonic": 101.756735833,
+      "run_end_monotonic": 101.856837
+    },
+    {
+      "run_start_monotonic": 102.757409583,
+      "run_end_monotonic": 102.857663041
+    },
+    {
+      "run_start_monotonic": 103.762848416,
+      "run_end_monotonic": 103.862903375
+    },
+    {
+      "run_start_monotonic": 104.763736291,
+      "run_end_monotonic": 104.8686865
+    },
+    {
+      "run_start_monotonic": 105.773947875,
+      "run_end_monotonic": 105.876828125
+    },
+    {
+      "run_start_monotonic": 106.781958416,
+      "run_end_monotonic": 106.886984541
+    },
+    {
+      "run_start_monotonic": 107.792149833,
+      "run_end_monotonic": 107.897168375
+    },
+    {
+      "run_start_monotonic": 108.802205708,
+      "run_end_monotonic": 108.90368575
+    },
+    {
+      "run_start_monotonic": 109.80615225,
+      "run_end_monotonic": 109.911172375
+    },
+    {
+      "run_start_monotonic": 110.816267208,
+      "run_end_monotonic": 110.91995825
+    },
+    {
+      "run_start_monotonic": 111.824573,
+      "run_end_monotonic": 111.928933333
+    },
+    {
+      "run_start_monotonic": 112.834022041,
+      "run_end_monotonic": 112.939042916
+    },
+    {
+      "run_start_monotonic": 113.844176708,
+      "run_end_monotonic": 113.944241666
+    }
+  ],
+  "pid": 14294,
+  "process_group_id": 14294,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T09:19:35.410875+00:00"
+}

@@ -1,0 +1,133 @@
+--- a/src/bot.cpp
++++ b/src/bot.cpp
+@@ -8,6 +8,7 @@
+ #include <array>
+ #include <bit>
+ #include <cmath>
++#include <cstdio>
+ #include <limits>
+ #include <memory>
+ #include <optional>
+@@ -2817,7 +2818,22 @@
+     return nearest > 3 && c.held_since >= 0 && c.payout_round() <= world.round + 2;
+ }
+ 
+-bool outmatched(const World& world, Pathing& pathing) { return in_pack_zone(world, world.me().pos) && !paying_soon(world, pathing); }
++bool trace_prism_recall(const World& world) {
++    return world.me().type == cambc::champion_type::prism && static_cast<std::uint32_t>(world.me().handle) == 5u
++           && world.round >= 737 && world.round <= 738;
++}
++
++bool outmatched(const World& world, Pathing& pathing) {
++    const bool pack = in_pack_zone(world, world.me().pos);
++    if (!pack) {
++        debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=outmatched pack=0 paying=skipped result=0\n", world.round); });
++        return false;
++    }
++    const bool soon = paying_soon(world, pathing);
++    const bool result = !soon;
++    debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=outmatched pack=1 paying=%d result=%d\n", world.round, soon, result); });
++    return result;
++}
+ 
+ // Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
+ int camp_exit_rounds(const World& world, Safety& safety, vec2 here) {
+@@ -2852,20 +2868,43 @@
+     if (test(world.map().ally_spawn, here)) return false;
+     const float health = my_health();
+     const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world, pathing);
+-    if (low || outmatched(world, pathing) || camp_trapped(world, safety, here, health, sieging)) return true;
++    if (low) {
++        debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=home low=1 outmatched=skipped camp_trapped=skipped result=1\n", world.round); });
++        return true;
++    }
++    const bool matched = outmatched(world, pathing);
++    if (matched) {
++        debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=home low=0 outmatched=1 camp_trapped=skipped result=1\n", world.round); });
++        return true;
++    }
++    const bool trapped = camp_trapped(world, safety, here, health, sieging);
++    if (trapped) {
++        debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=home low=0 outmatched=0 camp_trapped=1 result=1\n", world.round); });
++        return true;
++    }
++    debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=home low=0 outmatched=0 camp_trapped=0\n", world.round); });
+     // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
+     // bar on a capture, which pays without one.
+     if (world.me().type == cambc::champion_type::willow && !holding_capture(world, pathing) && !contesting(world)
+-        && safety.credible_enemy_may_hit_within(here, 0) && safety.bound(here).threat)
++        && safety.credible_enemy_may_hit_within(here, 0) && safety.bound(here).threat) {
++        debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=home willow_override=1\n", world.round); });
+         return true;
++    }
+     // Out of sight and not lethal, nobody can win a fight here or pursue us.
+     const bool lethal = safety.lethal(here);
+-    if (!lethal && !enemy_seen(world)) return false;
++    const bool seen = lethal ? false : enemy_seen(world);
++    debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=home lethal=%d enemy_seen=%s\n", world.round, lethal, lethal ? "skipped" : (seen ? "1" : "0")); });
++    if (!lethal && !seen) return false;
+     // Healthy on our own ground, they have no reason to come for us.
+-    const bool pursued = !paying_soon(world, pathing) && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health());
++    const bool soon = paying_soon(world, pathing);
++    const bool ground = !soon && own_ground(world, here);
++    const bool healthy_ground = ground && health >= params::hurt_health_fraction * my_max_health();
++    const bool pursued = !soon && !healthy_ground;
+     const bool linked = partner(world) != nullptr;
+     const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal);
+-    return t.lost || ((lethal || linked) && t.self_falls);
++    const bool result = t.lost || ((lethal || linked) && t.self_falls);
++    debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=stand paying=%d own_ground=%s healthy_ground=%s pursued=%d linked=%d lost=%d self_falls=%d result=%d\n", world.round, soon, soon ? "skipped" : (ground ? "1" : "0"), ground ? (healthy_ground ? "1" : "0") : "skipped", pursued, linked, t.lost, t.self_falls, result); });
++    return result;
+ }
+ 
+ // open_for_us as packed row-major bits, read without host calls; null if the export's layout is
+@@ -3339,13 +3378,22 @@
+ // skip the walk when an altar is nearer by way of home, and the stop heals and shops.
+ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     const vec2 here = my_position();
+-    if (safety.threatened(here)) return false;
++    const bool threatened_here = safety.threatened(here);
++    if (threatened_here) {
++        debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=capture_recall reject=threatened\n", world.round); });
++        return false;
++    }
+     const int g = world.map().group_at(here);
+     const auto& c = world.camps[g];
+-    if (c.holder != team::ally || c.held_since < 0) return false;
++    if (c.holder != team::ally || c.held_since < 0) {
++        debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=capture_recall group=%d holder_ally=%d held_since=%d payout=skipped channel=skipped reject=invalid_hold\n", world.round, g, c.holder == team::ally, c.held_since); });
++        return false;
++    }
+     const int payout = c.payout_round();
+     const int channel = my_channel_time();
+-    if (world.round + channel < payout) return false;
++    const bool early_arrival = world.round + channel < payout;
++    debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=capture_recall group=%d holder_ally=1 held_since=%d payout=%d channel=%d early_arrival=%d\n", world.round, g, c.held_since, payout, channel, early_arrival); });
++    if (early_arrival) return false;
+     const auto& G = world.map().groups[g];
+     const bool wins = capture_share(world, g) >= gems_short(world);
+     const auto* prism = prism_capture_holder(world, G);
+@@ -4163,10 +4211,20 @@
+         return false;
+     }
+     home = want_home(world, pathing, safety, memory.siege);
+-    if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
+-        return true;
++    bool recall_threatened = false, safe_tribute = false, outruns_home = false;
++    if (*home) {
++        recall_threatened = safety.threatened(my_position());
++        if (!recall_threatened) {
++            safe_tribute = can_tribute_safely(world, pathing, safety, memory);
++            if (!safe_tribute) outruns_home = recall_outruns(world, safety);
++        }
++    }
++    debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=continue_home home=%d threatened=%s safe_tribute=%s outruns=%s kept=%d\n", world.round, *home, *home ? (recall_threatened ? "1" : "0") : "skipped", *home && !recall_threatened ? (safe_tribute ? "1" : "0") : "skipped", *home && !recall_threatened && !safe_tribute ? (outruns_home ? "1" : "0") : "skipped", *home && !recall_threatened && !safe_tribute && outruns_home); });
++    if (*home && !recall_threatened && !safe_tribute && outruns_home) return true;
+     decision = 'k';
+-    if (holding_capture(world, pathing)) {
++    const bool held_capture = holding_capture(world, pathing);
++    debug_block({ if (trace_prism_recall(world)) std::printf("PRISM-RECALL r=%u stage=continue_capture held=%d\n", world.round, held_capture); });
++    if (held_capture) {
+         if (capture_recall(world, pathing, safety, memory)) {
+             decision = 'Q';
+             return true;

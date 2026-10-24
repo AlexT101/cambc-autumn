@@ -1,0 +1,58 @@
+{
+  "schema": "trace-wrapper-and-native-status-audit/v1",
+  "recorder_b_protocol_counts": {
+    "at_r": 3,
+    "at_x": 1,
+    "at_r_rows": [
+      [
+        8,
+        2,
+        401
+      ],
+      [
+        9,
+        9,
+        357
+      ],
+      [
+        9,
+        22,
+        312
+      ]
+    ],
+    "at_x_rows": [
+      [
+        9,
+        22,
+        312
+      ]
+    ]
+  },
+  "trace_prefix_b_protocol_counts": {
+    "forced_rollovers_at_o": 3,
+    "at_o_rows": [
+      [
+        8,
+        2,
+        401,
+        4
+      ],
+      [
+        9,
+        9,
+        357,
+        11
+      ],
+      [
+        9,
+        22,
+        312,
+        25
+      ]
+    ],
+    "actor5_yield_checks": 738,
+    "at_bang_mismatches": 0,
+    "at_bang_rows": []
+  },
+  "scope": "B-side only; trace prefix stopped after round 738. Native Turn rollover status is independently counted from decoded replay inputs in trace-prefix-validation-v2.json."
+}

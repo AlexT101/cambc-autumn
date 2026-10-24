@@ -1,0 +1,48 @@
+{
+  "schema": "prism-recall-parent-exact-reproduction-preflight/v1",
+  "local_key": "local-parent-bigworld-f599",
+  "original_bundle": "provenance/willow-prism-recall-parent-f599-harness-20261024-v1/input/local-parent-bigworld-f599-original.repl26a",
+  "original_bundle_sha256": "15a703f86fd6cbf7ca9b14fddc9136f2100bc5afce87520905b274c82cbe670c",
+  "original_inner_replay_sha256": "0022ca3c4d26d95df367ba021ef4d2b435f2eaccb9e3c76708ba5821619f14dc",
+  "original_fuel_files": {
+    "team-a.fuel": {
+      "path": "provenance/willow-prism-recall-parent-f599-harness-20261024-v1/input/original-team-a.fuel",
+      "sha256": "e458e10008c3543264836de87f61d3213be0d33ae28e33aebe7376b4186a8aa2",
+      "bytes": 31309
+    },
+    "team-b.fuel": {
+      "path": "provenance/willow-prism-recall-parent-f599-harness-20261024-v1/input/original-team-b.fuel",
+      "sha256": "574a4d85f968aa0dd5f7cceebfa82841d7a4b735734ad0681f45fb49c1573ef7",
+      "bytes": 31317
+    }
+  },
+  "own_side": "B",
+  "own_fuel_side": "team-b.fuel",
+  "opponent": "frozen v33 recorded-input puppet; source version not inferred",
+  "source_pins": {
+    "parent4d08241": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "runtime_workspace": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace",
+  "parent_runtime_copy": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/astraeus-4d08241",
+  "parent_runtime_aggregate": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c",
+  "map": {
+    "path": "maps/01big-world.map26a",
+    "sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5"
+  },
+  "engine": {
+    "path": "tools/replay/engine/v1_0_3.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+  },
+  "cambc": {
+    "path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+    "version": "3.0.5",
+    "sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "sdk": {
+    "cambc_h_sha256": "894229e17d886358719abb70cac9ab5993263a0c05bf7df14fc48fa04a8336d3",
+    "imports_h_sha256": "888992693268c34659bd72058e214d90c09a0024c2ab1f651cee00c6d3dea502",
+    "mtime_epoch_seconds": 1792774035
+  },
+  "policy": "Use generic input decode/puppet/validation machinery only; parent production code must be exact f599 aggregate; Release reproduction only before any recorder/trace work."
+}

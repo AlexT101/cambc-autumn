@@ -1,0 +1,121 @@
+{
+  "schema": "prism-recall-bounded-trace-result/v1",
+  "local_key": "local-parent-bigworld-f599",
+  "production_source": {
+    "identity": "frozen Astraeus 4d08241 parent",
+    "aggregate_sha256": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c"
+  },
+  "original": {
+    "bundle_sha256": "15a703f86fd6cbf7ca9b14fddc9136f2100bc5afce87520905b274c82cbe670c",
+    "inner_replay_sha256": "0022ca3c4d26d95df367ba021ef4d2b435f2eaccb9e3c76708ba5821619f14dc",
+    "own_side": "B",
+    "actor_id": 5
+  },
+  "trace": {
+    "bundle_sha256": "e14028f6235fa1090561d79b0e0ee8e81dc13587564236677bc0fb92f6aac097",
+    "inner_partial_replay_sha256": "da9a82c09a04fdbf2f045c9d14217dce074307d3f8167efb5b84494c04aedcc0",
+    "stdout_sha256": "340d75f16e2fe62cbb213b82b3084a27a4ff7b992945d9955d27b3c5a96b676b",
+    "prefix_validation": "receipts/trace-prefix-validation-v2.json",
+    "prefix_validation_sha256": "bfa9b3bc5d43cda7d107d4ab499bbae6dba8a954e019c4561b2b7242a3166cc2",
+    "exact_actions_and_round_start_hashes_through_inclusive_round": 738,
+    "final_result_compared": false,
+    "source_tree_aggregate_sha256": "a7ba37a79160b5d7f9967ea844dff49ef5f9383ec527ef306251ebb94c309202",
+    "source_tree_aggregate_recipe": "cd trace-workspace/bots/local-parent-bigworld-f599-trace && shasum -a 256 src/* | shasum -a 256",
+    "instrumented_bot_cpp_sha256": "6d2ea35cd5ad1b8764b8184772633d0ac478ec5bc76b54e17c2d90847bd683c5",
+    "generated_wrapper_sha256": "b62e7546d3928034c1dee59d2990aa234cd39ab3176e15674d624f6f24c47881",
+    "generated_trace_data_sha256": "978a2e771ad6e40f7a6b5296264844a18546bd5f7d88251f47f315329a7fe605",
+    "source_patch_sha256": "b32f4f7217fa1a0c29b652156f2acedcb58a92b6995177155230c6dd592c3b57",
+    "raw_wasm_sha256": "65b567dc64b38cc1090d57a0eeda12583d5dc4f1458ac0a6391613e3ce9f2692",
+    "injected_wasm_sha256": "db41621d4d59ccec35ec4de7f98a7b9acbda40eff011a1bb21951cb957d594bd"
+  },
+  "interpretation": {
+    "r737": "outmatched evaluated pack=true and paying_soon=false; result=true. The general home keep evaluated threatened=false, safe_tribute=false, outruns=true and kept the recall.",
+    "r738": "outmatched evaluated pack=true and paying_soon=true; result=false. This directly records payout suppression of the pack result. The later home decision was false.",
+    "r738_home_keep": "Because home=false, continue_home explicitly skipped its general threatened, safe-tribute, and recall-outruns keep predicates. Their values are unknown in this trace and are not evidence that the channel was generally safe.",
+    "r738_capture_gate": "The held-capture path then entered capture_recall. Its separate local threatened-here check occurs before the logged group/holder/payout line; reaching that line means this specific check returned false. Do not conflate it with the skipped general home-keep threat check.",
+    "limits": "Trace logs only already-evaluated values and short-circuit locations; it adds no native observations or Safety calls. Prefix is exact through round 738, but the partial rerun intentionally has no final result comparison."
+  },
+  "native_status": {
+    "through_round": 738,
+    "original_rollovers": 7,
+    "trace_rollovers": 7,
+    "actor5_rollovers": 0,
+    "protocol_marker_counts": "See receipts/trace-wrapper-status.json; recorder original B @r=3/@x=1 are wrapper protocol counts, distinct from native Turn rollovers."
+  },
+  "pins": {
+    "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+    "engine_wasm_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "cambc_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "duty_receipt": "logs/trace-run2.duty.json",
+    "duty_receipt_sha256": "4234075a4f0a8607a48dabcfda48fe3e2ca9f89a0c93ffcc203b2c608bea6d8e"
+  },
+  "excluded_artifacts": [
+    {
+      "path": "outputs/trace-prism-737-738-replay.repl26a",
+      "reason": "wrong-side trial; tracer was physical A, so it does not contain the intended B-side Prism trace"
+    },
+    {
+      "path": "logs/trace-run.stdout.log",
+      "reason": "failed initial run attempt; no interpretable trace output"
+    },
+    {
+      "path": "receipts/release-validation.json",
+      "reason": "zero-byte provisional artifact; not evidence for the successful Release comparison"
+    }
+  ],
+  "release_reproduction": {
+    "validator_output": "logs/release-validate.stdout.log",
+    "validator_output_sha256": "800070d58db1333d810a78a52424e3dbd0de4317eb96781b7002d3a11514f87f",
+    "duty_receipt": "logs/release-validate.duty.json",
+    "duty_receipt_sha256": "19beab6894034459ad1767f52752ff0536e6ebc19b0c4f418a88e519d3999ab8",
+    "exact_inputs": [
+      28990,
+      28990
+    ],
+    "rounds_matched": 781,
+    "first_input_difference": null,
+    "first_round_difference": null,
+    "result_match": true,
+    "outcome": 1,
+    "end_round": 780,
+    "gems": [
+      1110,
+      474
+    ],
+    "fuel_differences": 0,
+    "fuel_max_absolute_difference": 0,
+    "provisional_empty_receipt": "receipts/release-validation.json",
+    "provisional_empty_receipt_bytes": 0
+  },
+  "recorder_reproduction": {
+    "inputs": [
+      28990,
+      28990
+    ],
+    "rounds_matched": 781,
+    "first_input_difference": null,
+    "first_round_difference": null,
+    "result_match": true,
+    "outcome": 1,
+    "end_round": 780,
+    "gems": [
+      1110,
+      474
+    ],
+    "fuel_difference_count": 1,
+    "fuel_difference": {
+      "actor_id": 9,
+      "round": 25,
+      "delta": 719,
+      "own_side": "team B"
+    },
+    "validation_output": "logs/recorder-validate.stdout.log",
+    "validation_output_sha256": "cc43ddaf45b69b679bea6038bdef76844e13de095e4e2896c8ce3b53dcc61ed1",
+    "validation_duty": "logs/recorder-validate.duty.json",
+    "validation_duty_sha256": "fbb905b5239aa04826b7e5bf1909b29d1090a6aaafb9c526213d47248e0aad15",
+    "input_preflight": "receipts/preflight.json",
+    "input_preflight_sha256": "76b7e88437ae33865709732a02c40897e85f5d040249c1fd6fdb3dafeac44778",
+    "prepared_input_sha256": "eaa882f48d63758e0d73c08d6fc91d63458ca843540310ccdd48960610f205ec",
+    "run_batch_manifest_sha256": "2bde0abbc52a76eabee8d6c72bb1d9abcc20f78ae20ae1b72bd43b84f1d07c36"
+  }
+}

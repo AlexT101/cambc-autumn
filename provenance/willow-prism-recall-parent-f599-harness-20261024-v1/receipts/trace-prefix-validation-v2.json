@@ -1,0 +1,96 @@
+{
+  "schema": "bounded-replay-prefix-validation/v2",
+  "max_round_inclusive": 738,
+  "original_inputs_total": 28990,
+  "rerun_inputs_total": 27690,
+  "inputs_through_round": [
+    27690,
+    27690
+  ],
+  "first_input_difference": null,
+  "original_round_hashes_total": 781,
+  "rerun_round_hashes_total": 740,
+  "round_hashes_through_round": [
+    739,
+    739
+  ],
+  "first_round_hash_difference": null,
+  "roster": [
+    {
+      "id": 0,
+      "team": 0,
+      "type": 6
+    },
+    {
+      "id": 1,
+      "team": 0,
+      "type": 1
+    },
+    {
+      "id": 2,
+      "team": 0,
+      "type": 7
+    },
+    {
+      "id": 3,
+      "team": 0,
+      "type": 8
+    },
+    {
+      "id": 4,
+      "team": 0,
+      "type": 12
+    },
+    {
+      "id": 5,
+      "team": 1,
+      "type": 6
+    },
+    {
+      "id": 6,
+      "team": 1,
+      "type": 1
+    },
+    {
+      "id": 7,
+      "team": 1,
+      "type": 7
+    },
+    {
+      "id": 8,
+      "team": 1,
+      "type": 8
+    },
+    {
+      "id": 9,
+      "team": 1,
+      "type": 12
+    }
+  ],
+  "rerun_truncated": true,
+  "native_turn_rollovers_through_round": {
+    "original": {
+      "total": 7,
+      "by_actor_id": {
+        "0": 1,
+        "3": 2,
+        "4": 1,
+        "8": 1,
+        "9": 2
+      }
+    },
+    "rerun": {
+      "total": 7,
+      "by_actor_id": {
+        "0": 1,
+        "3": 2,
+        "4": 1,
+        "8": 1,
+        "9": 2
+      }
+    }
+  },
+  "exact_prefix": true,
+  "final_result_compared": false,
+  "note": "Partial replay reader catches engine End of timeline only when allowTruncated is set; compare covers action records and round-start observer hashes through the inclusive cap."
+}

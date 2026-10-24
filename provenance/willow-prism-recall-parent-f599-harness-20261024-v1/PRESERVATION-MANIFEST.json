@@ -1,0 +1,118 @@
+{
+  "schema": "compact-trace-preservation-manifest/v1",
+  "files": [
+    {
+      "path": "receipts/TRACE-RESULT.md",
+      "sha256": "55caee18adcb02e07d80984ff3a96b81a6f130e14ae5a09c7029022185751696",
+      "bytes": 4388
+    },
+    {
+      "path": "receipts/TRACE-RESULT.json",
+      "sha256": "392713c5cdd64bad2ac84c9843774cc64d60a56e809da32229d4b65dcea97a51",
+      "bytes": 6223
+    },
+    {
+      "path": "receipts/trace-prefix-validation-v2.json",
+      "sha256": "bfa9b3bc5d43cda7d107d4ab499bbae6dba8a954e019c4561b2b7242a3166cc2",
+      "bytes": 1658
+    },
+    {
+      "path": "receipts/trace-wrapper-status.json",
+      "sha256": "760b7060c1c4bf674ed01f24facefffd0e582ecab8151b20ad0e7a5b604d399d",
+      "bytes": 937
+    },
+    {
+      "path": "receipts/prism-recall-trace-source.patch",
+      "sha256": "b32f4f7217fa1a0c29b652156f2acedcb58a92b6995177155230c6dd592c3b57",
+      "bytes": 8364
+    },
+    {
+      "path": "logs/trace-run2.duty.json",
+      "sha256": "4234075a4f0a8607a48dabcfda48fe3e2ca9f89a0c93ffcc203b2c608bea6d8e",
+      "bytes": 2246
+    },
+    {
+      "path": "logs/release-validate.stdout.log",
+      "sha256": "800070d58db1333d810a78a52424e3dbd0de4317eb96781b7002d3a11514f87f",
+      "bytes": 609
+    },
+    {
+      "path": "logs/release-validate.duty.json",
+      "sha256": "19beab6894034459ad1767f52752ff0536e6ebc19b0c4f418a88e519d3999ab8",
+      "bytes": 7622
+    },
+    {
+      "path": "receipts/preflight.json",
+      "sha256": "76b7e88437ae33865709732a02c40897e85f5d040249c1fd6fdb3dafeac44778",
+      "bytes": 2532
+    },
+    {
+      "path": "input/recorder.manifest",
+      "sha256": "2bde0abbc52a76eabee8d6c72bb1d9abcc20f78ae20ae1b72bd43b84f1d07c36",
+      "bytes": 795
+    },
+    {
+      "path": "logs/recorder-validate.stdout.log",
+      "sha256": "cc43ddaf45b69b679bea6038bdef76844e13de095e4e2896c8ce3b53dcc61ed1",
+      "bytes": 955
+    },
+    {
+      "path": "logs/recorder-validate.duty.json",
+      "sha256": "fbb905b5239aa04826b7e5bf1909b29d1090a6aaafb9c526213d47248e0aad15",
+      "bytes": 12248
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "outputs/trace-prism-737-738-replay.repl26a",
+      "reason": "wrong-side trial; tracer was physical A, so it does not contain the intended B-side Prism trace"
+    },
+    {
+      "path": "logs/trace-run.stdout.log",
+      "reason": "failed initial run attempt; no interpretable trace output"
+    },
+    {
+      "path": "receipts/release-validation.json",
+      "reason": "zero-byte provisional artifact; not evidence for the successful Release comparison"
+    },
+    {
+      "path": "outputs/trace-prism-737-738-b-vs-puppet-a.repl26a",
+      "sha256": "e14028f6235fa1090561d79b0e0ee8e81dc13587564236677bc0fb92f6aac097",
+      "reason": "raw trace bundle retained locally; compact manifest excludes replay payload"
+    },
+    {
+      "path": "outputs/raw/trace-prefix-inner.repl26a",
+      "sha256": "da9a82c09a04fdbf2f045c9d14217dce074307d3f8167efb5b84494c04aedcc0",
+      "reason": "raw replay prefix extract retained locally"
+    },
+    {
+      "path": "outputs/raw/trace-prefix-team-b.stdout",
+      "sha256": "340d75f16e2fe62cbb213b82b3084a27a4ff7b992945d9955d27b3c5a96b676b",
+      "reason": "raw instrumented stdout retained locally; summarized in result"
+    },
+    {
+      "path": "outputs/raw/trace-prefix-team-b.fuel",
+      "reason": "raw fuel stream retained locally"
+    },
+    {
+      "path": "logs/trace-run2.stdout.log",
+      "sha256": "ffa3a090c186cd678d85545e313c7768e08b4f42beb5ce62ab7528e716fc4848",
+      "reason": "raw CLI stdout retained locally"
+    },
+    {
+      "path": "logs/trace-run2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "empty stderr; retained locally"
+    },
+    {
+      "path": "trace-workspace",
+      "reason": "isolated source/build workspace retained locally; full source and binaries excluded from compact staging"
+    },
+    {
+      "path": "input/local-parent-bigworld-f599-inputs.json",
+      "sha256": "eaa882f48d63758e0d73c08d6fc91d63458ca843540310ccdd48960610f205ec",
+      "bytes": 1451865,
+      "reason": "prepared input record contains full replay input stream; retained locally, excluded from compact staging"
+    }
+  ]
+}

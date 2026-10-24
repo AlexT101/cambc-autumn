@@ -1,0 +1,48 @@
+{
+ "inputs": [
+  28990,
+  28990
+ ],
+ "firstInputDiff": null,
+ "roundsMatched": 781,
+ "rounds": [
+  781,
+  781
+ ],
+ "firstRoundDiff": null,
+ "result": [
+  {
+   "outcome": 1,
+   "round": 780,
+   "gems": [
+    1110,
+    474
+   ]
+  },
+  {
+   "outcome": 1,
+   "round": 780,
+   "gems": [
+    1110,
+    474
+   ]
+  }
+ ],
+ "resultMatch": true,
+ "exact": true,
+ "exactIgnoringRollovers": true,
+ "firstInputDiffIgnoringRollovers": null,
+ "fuel": {
+  "lengths": [
+   3913,
+   3913
+  ],
+  "draftTurns": 5,
+  "diffs": 0,
+  "firstTurnDiffs": 0,
+  "maxAbs": 0,
+  "firstTurnOnly": null,
+  "firstDiff": null,
+  "list": []
+ }
+}

@@ -2881,3 +2881,31 @@ v33 has four play rollovers. No boss is attacked or captured. The payloads
 differ, and the cache has no demonstrated rollover benefit. It remains isolated
 while the concrete Prism recall failure takes priority; no additional boss
 run is authorized by these results.
+
+The isolated `local-parent-bigworld-f599` Release reproduction now matches all
+28,990 inputs, 781 round hashes and the round-780 1,110–474 result. Physical-B
+fuel matches all 3,913 original measurements, including the nominated Prism
+turns. Both original fuel streams are preserved; this local key has no inferred
+official submission identity. Recorder and narrow branch-trace validation are
+the next separate steps.
+
+The recorder subsequently reproduces all inputs, round hashes and the result;
+one physical-B fuel measurement differs by 719 for actor9 at round25. Its
+`@r=3`/`@x=1` instrumentation counts are separate from native turn rollovers.
+The corrected puppet-A/tracer-B prefix is exact through round738: 27,690 input
+records and 739 round-start hashes, with zero wrapper mismatch reports and
+738 actor5 yield checks. Seven native rollovers (three B, none Prism5) match.
+The successful trace used the one-job batch runner with a recorded 10% duty
+cycle. An earlier wrong-side trace and its process-control failure are retained
+but excluded; that failed invocation has no valid throttling receipt.
+
+The private branch confirms the proposed cause: round737 has pack=true and
+paying_soon=false, so home=true and the existing safe-channel checks keep the
+recall. At738 pack remains true but paying_soon becomes true; home becomes
+false after the zero-pursuit stand evaluation. Its home-keep safety checks are
+skipped. The capture helper then finds an unthreatened square, held_since734,
+payout740 and channel1, and rejects arrival739 before payout740. An isolated
+gameplay correction is now being implemented: carry the already-evaluated
+suppressed-pack fact into a contextual recall keep, preserving interception
+checks, cached normal home, game-ending intervention and the existing winning
+capture-share classification. No additional combat simulation is proposed.
