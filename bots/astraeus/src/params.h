@@ -42,7 +42,7 @@ inline constexpr int partner_radius = 12;
 inline constexpr int help_radius = 8;
 
 // Chain another capture onto a bag (Cassi's and Issac's together) only below this.
-inline constexpr int chain_bag_limit = 30;
+inline constexpr int chain_bag_limit = 45;
 
 // Early retreat (outmatched): enemies within two steps of their reach against allies this near;
 // leave when their health times damage beats ours by this ratio. Above half health and carrying

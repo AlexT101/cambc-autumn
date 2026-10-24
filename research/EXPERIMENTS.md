@@ -114,7 +114,8 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   same split). In its A/B games, CAND vs REF a game (ladder / gen / gen-s1): tributes 22.4/29.7/29.9 vs 25.4/32.7/33.4,
   non-Prism mean bag 26.7/21.9/21.1 vs 24.1/19.0/18.8, alive turns carrying a bag 43/41/42% vs 38/37/38%, turns
   walking a bag toward an altar or tributing level (16.6/16.4/16.8% vs 15.6/15.9/16.5%), gems lost on death
-  193/80/97 vs 147/76/79, gems tributed 746/807/764 vs 707/760/789. Level; not merged, the variant is kept.
+  193/80/97 vs 147/76/79, gems tributed 746/807/764 vs 707/760/789. Level; kept by the user's call on the ladder
+  argument (CHANGES 133).
 - Worst ladder maps against the top 20 (`strat/maps`, 2026-10-23; 624 games, 57% overall). Adjusted for opponent
   strength: 00interlock 21%, 00swirl 23%, 00rushbait_v2 25%, 00stampede 27%, 00corners 28%, 00great_wall 30%. In
   general, losses come from groups about equally far from both spawns: the opponents take 405 gems a game there in our

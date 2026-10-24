@@ -737,3 +737,14 @@ ladder maps (80 games): 61 actions in 47 of 230 out-of-fuel turns (39 walks, 9 a
 
 - Against e2deee3: 49.5% of 1104 (46.5-52.4; ladder 48.8, gen 49.8, gen-s1 49.2), out-of-fuel turns 2502 vs 2537.
 - 100M bench: identical replays (wide set 52/52, fuel +0.01%).
+
+## 133: a small bag chains past distant enemies, up to 45 gems (astraeus, 2026-10-24)
+
+`may_chain` sent a bag home whenever any credible enemy was anywhere on the map (`any_threat`); on the ladder that
+started 44% of our bank trips, and our non-Prism tribute bags were about half the top teams'. It now refuses only for
+a credible enemy within `pursuit_steps` of our reach (`credible_enemy_may_hit_within`), and `chain_bag_limit` is 45
+(was 30). CHANGES 119's carrier pursuit check covers chained bags from `brake_bag` (11). Kept on the ladder argument:
+locally fewer, bigger tributes but more gems lost on death, and banking time level (chained bags start home farther).
+
+- Against c2f1350: 51.4% of 1104 (48.5-54.4; ladder 53.8, gen 55.1, gen-s1 47.5), out-of-fuel turns 2367 vs 2446;
+  fresh suite (seed 7511) 49.2% of 512. Against hyperion 54.7% of 1104 (REF 53.1%).

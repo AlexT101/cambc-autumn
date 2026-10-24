@@ -3366,10 +3366,11 @@ bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, co
 }
 
 // Only a small bag, out of every credible enemy's reach, and never the gems that would win.
-// Cassi's and Issac's bags fall together.
+// Cassi's and Issac's bags fall together. A credible enemy elsewhere on the map is no reason to
+// walk a small bag home: on the ladder that started 44% of our bank trips.
 bool may_chain(const World& world, Safety& safety) {
     if (bag_at_stake(world) >= params::chain_bag_limit || winning_bag(world)) return false;
-    return !safety.any_threat(); // all credible
+    return !safety.credible_enemy_may_hit_within(my_position(), params::pursuit_steps);
 }
 
 // A bag bound for an altar rides the recall home when that reaches an altar sooner than walking;
