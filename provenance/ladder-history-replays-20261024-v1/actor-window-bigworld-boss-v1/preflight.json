@@ -1,0 +1,39 @@
+{
+  "schema": "one-actor-window-preflight/v1",
+  "scope": "one previously extracted Big World loss replay; opponent Marcella actor6/teamB; rounds850-859; no engine rerun",
+  "source_attribution": "public-source-unverified; submission ID/version unavailable",
+  "match_id": "cf39cebf-e598-4540-afaa-b470321fe98a",
+  "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/mite/cf39cebf-e598-4540-afaa-b470321fe98a/big-world-new-team-4-loss.repl26a",
+  "replay_archive_sha256": "1648fee7392c97b1a18545993fc23d5b00625caf21e033bf931f3d09c09e9bd5",
+  "replay_payload_sha256": "1648fee7392c97b1a18545993fc23d5b00625caf21e033bf931f3d09c09e9bd5",
+  "extract_meta_sha256": "d571d86001c81ff98190e2b15e9f3427319c51cad0cf41bbc36a8fccb997a7cf",
+  "map_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/extract/mite/maps/c890c7d4607bc45c.json",
+  "map_sha256": "9f21864a9e2e03469fb7d03b496960402ffbdfa6d09fd8f2da11e124472af4e8",
+  "actor": {
+    "id": 6,
+    "name": "Marcella",
+    "team": 1,
+    "physical_side": "B"
+  },
+  "rounds": [
+    850,
+    859
+  ],
+  "output_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/big-world-loss-marcella6-r850-859.json",
+  "output_absent_preflight": true,
+  "batch_results_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-batch/mite/results.json",
+  "batch_results_sha256": "70fe8372e041b26198eacd413d45d76d5f10224abb6fb87eaea23a93956f3f5d",
+  "exporter_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/export_actor_own_view_window_v3_local.mjs",
+  "exporter_sha256": "4d578b4642ec9c16ee25fada9272fd71da28b8fe4e3f00f38b649205ce9b9052",
+  "compat_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/engine_own_view_v3_compat.mjs",
+  "compat_sha256": "f8a338b2aa3338cf421d1ef167a260b6ed90f4932bfd56f83852ee272a537778",
+  "duty_wrapper_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/duty_run.py",
+  "duty_wrapper_sha256": "e9c7b85c19dc2034f6ba95e030d9ed5ac1e45ee8bd965e75edc343c7942cab63",
+  "duty": {
+    "run_seconds": 0.1,
+    "stop_seconds": 0.9,
+    "approximate_active_fraction": 0.1,
+    "nice": 19,
+    "workers": 1
+  }
+}

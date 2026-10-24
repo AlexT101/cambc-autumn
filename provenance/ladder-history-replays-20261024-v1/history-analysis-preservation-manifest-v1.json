@@ -1,0 +1,1134 @@
+{
+  "schema": "replay-history-analysis-preservation-manifest/v1",
+  "created_utc": "2026-10-24",
+  "scope": "Existing ten-replay Astraeus regression and Mite counter analysis; no new games were run during this manifest preparation.",
+  "source_attribution": "Public-source-unverified for replay submissions; exact submitted source/version identities are unavailable from the replay metadata.",
+  "replay_count": 10,
+  "replays": [
+    {
+      "cohort": "astraeus",
+      "label": "fish-elkring-old-win",
+      "match_id": "67fc71af-7d66-40e8-8c82-a0d400cbea6f",
+      "map_name": "00elkring",
+      "our_side": "b",
+      "opponent": "Intercontinental Fish",
+      "result_from_intake": "win",
+      "replay_payload_sha256": "bbb81e199d59829f1a9c87e472e866a09ddd4078bf2446af97f8c4e4b4999466",
+      "bundle_sha256": "ec77aa6744647b085aa066aaa9520d24d698096d61438013b704c02a5db98880",
+      "replay_path": "provenance/ladder-history-replays-20261024-v1/inputs/astraeus/67fc71af-7d66-40e8-8c82-a0d400cbea6f/fish-elkring-old-win.repl26a",
+      "bundle_path": "provenance/ladder-history-replays-20261024-v1/bundles/astraeus/fish-elkring-old-win-67fc71af-7d66-40e8-8c82-a0d400cbea6f.zip"
+    },
+    {
+      "cohort": "astraeus",
+      "label": "fish-elkring-new-loss",
+      "match_id": "deb4ae94-edc6-480f-a0e9-03fd944841bd",
+      "map_name": "00elkring",
+      "our_side": "b",
+      "opponent": "Intercontinental Fish",
+      "result_from_intake": "loss",
+      "replay_payload_sha256": "56be01a6e30d3a984a147c379491f796ee658147925ef3aafc650f2382c1faee",
+      "bundle_sha256": "9cf1229f1d232f55eb9696d8559399a86c663d415e92df30d83b6b4f1992ed86",
+      "replay_path": "provenance/ladder-history-replays-20261024-v1/inputs/astraeus/deb4ae94-edc6-480f-a0e9-03fd944841bd/fish-elkring-new-loss.repl26a",
+      "bundle_path": "provenance/ladder-history-replays-20261024-v1/bundles/astraeus/fish-elkring-new-loss-deb4ae94-edc6-480f-a0e9-03fd944841bd.zip"
+    },
+    {
+      "cohort": "astraeus",
+      "label": "three-pilgrimage-old-win",
+      "match_id": "9da66955-6268-428c-a955-1549cd080c33",
+      "map_name": "00pilgrimage",
+      "our_side": "a",
+      "opponent": ":3",
+      "result_from_intake": "win",
+      "replay_payload_sha256": "4ca5aa1e2eeecd1d3f25c1fe4d38d6476c8554111ca570944f93b181549d3512",
+      "bundle_sha256": "f5c2e071751d1f624630097b8d7f0be12dfd09f93589f5d8dd93324c11e55b7d",
+      "replay_path": "provenance/ladder-history-replays-20261024-v1/inputs/astraeus/9da66955-6268-428c-a955-1549cd080c33/three-pilgrimage-old-win.repl26a",
+      "bundle_path": "provenance/ladder-history-replays-20261024-v1/bundles/astraeus/three-pilgrimage-old-win-9da66955-6268-428c-a955-1549cd080c33.zip"
+    },
+    {
+      "cohort": "astraeus",
+      "label": "three-pilgrimage-new-loss",
+      "match_id": "62589f4b-d504-4bf7-b641-f3e9de95ce9c",
+      "map_name": "00pilgrimage",
+      "our_side": "a",
+      "opponent": ":3",
+      "result_from_intake": "loss",
+      "replay_payload_sha256": "e546793a8c82d0bbc32eb725a0217e21b6518b72ec0818c944a04560f394a96d",
+      "bundle_sha256": "8a50ad523a0833b846a43b21a81f3f2ba46da45cc5eae195670ce0bc731460a6",
+      "replay_path": "provenance/ladder-history-replays-20261024-v1/inputs/astraeus/62589f4b-d504-4bf7-b641-f3e9de95ce9c/three-pilgrimage-new-loss.repl26a",
+      "bundle_path": "provenance/ladder-history-replays-20261024-v1/bundles/astraeus/three-pilgrimage-new-loss-62589f4b-d504-4bf7-b641-f3e9de95ce9c.zip"
+    },
+    {
+      "cohort": "mite",
+      "label": "elkring-print-dont-int-loss",
+      "match_id": "df12b67d-e471-49e4-baad-8ad7026d4dbc",
+      "map_name": "00elkring",
+      "our_side": "a",
+      "opponent": "print dont int",
+      "result_from_intake": "loss",
+      "replay_payload_sha256": "4a1010f022dfa8efa678017bb740223fd3b699c194fccf7941e8ed2d6f6d5eba",
+      "bundle_sha256": "911c921e81eede61787c015edcdc11c6a5febedc6d818edf1a18738b235b65bb",
+      "replay_path": "provenance/ladder-history-replays-20261024-v1/inputs/mite/df12b67d-e471-49e4-baad-8ad7026d4dbc/elkring-print-dont-int-loss.repl26a",
+      "bundle_path": "provenance/ladder-history-replays-20261024-v1/bundles/mite/elkring-print-dont-int-loss-df12b67d-e471-49e4-baad-8ad7026d4dbc.zip"
+    },
+    {
+      "cohort": "mite",
+      "label": "big-world-print-dont-int-win",
+      "match_id": "9c04eaa5-42af-47a1-babb-5bcf4fb0b523",
+      "map_name": "01big_world",
+      "our_side": "a",
+      "opponent": "print dont int",
+      "result_from_intake": "win",
+      "replay_payload_sha256": "c7599efc0e34683c5ee64ddf001c28d0842de37ef0df37d35cc7e8f1a51fc0d5",
+      "bundle_sha256": "af7676a9a3413df836a988a5158314b409f09a1fb827abc7f24205600fc96552",
+      "replay_path": "provenance/ladder-history-replays-20261024-v1/inputs/mite/9c04eaa5-42af-47a1-babb-5bcf4fb0b523/big-world-print-dont-int-win.repl26a",
+      "bundle_path": "provenance/ladder-history-replays-20261024-v1/bundles/mite/big-world-print-dont-int-win-9c04eaa5-42af-47a1-babb-5bcf4fb0b523.zip"
+    },
+    {
+      "cohort": "mite",
+      "label": "corridors-print-dont-int-win",
+      "match_id": "48390a5f-8a3c-47ab-91e1-c72de7cfa3a9",
+      "map_name": "01corridors",
+      "our_side": "a",
+      "opponent": "print dont int",
+      "result_from_intake": "win",
+      "replay_payload_sha256": "83249520f35ae5a73ee34b6e81462c3ca315adfeb240b3ccd4af38bfea15822f",
+      "bundle_sha256": "5dea5a99111e8573885e1acbfe717e282f2f29bea671a4a4a93329c2e7ea4093",
+      "replay_path": "provenance/ladder-history-replays-20261024-v1/inputs/mite/48390a5f-8a3c-47ab-91e1-c72de7cfa3a9/corridors-print-dont-int-win.repl26a",
+      "bundle_path": "provenance/ladder-history-replays-20261024-v1/bundles/mite/corridors-print-dont-int-win-48390a5f-8a3c-47ab-91e1-c72de7cfa3a9.zip"
+    },
+    {
+      "cohort": "mite",
+      "label": "big-world-new-team-4-loss",
+      "match_id": "cf39cebf-e598-4540-afaa-b470321fe98a",
+      "map_name": "01big_world",
+      "our_side": "a",
+      "opponent": "new team(4)",
+      "result_from_intake": "loss",
+      "replay_payload_sha256": "1648fee7392c97b1a18545993fc23d5b00625caf21e033bf931f3d09c09e9bd5",
+      "bundle_sha256": "705a58957476a9d52b13a39e10ad28a01541dacc41214bd1bca6918fed31e1e3",
+      "replay_path": "provenance/ladder-history-replays-20261024-v1/inputs/mite/cf39cebf-e598-4540-afaa-b470321fe98a/big-world-new-team-4-loss.repl26a",
+      "bundle_path": "provenance/ladder-history-replays-20261024-v1/bundles/mite/big-world-new-team-4-loss-cf39cebf-e598-4540-afaa-b470321fe98a.zip"
+    },
+    {
+      "cohort": "mite",
+      "label": "lanes-new-team-4-win",
+      "match_id": "71abf3a0-2da3-4ff4-9e8e-e0034d875c39",
+      "map_name": "00lanes",
+      "our_side": "a",
+      "opponent": "new team(4)",
+      "result_from_intake": "win",
+      "replay_payload_sha256": "ce58e07436ad37a0822486eddfa00099e241dbaf2545123b6471fbbec9fec683",
+      "bundle_sha256": "85f9aefb77fdb23060981eb2dfeb073c85bf9c2e45dd65c8afb4f39f93e109d9",
+      "replay_path": "provenance/ladder-history-replays-20261024-v1/inputs/mite/71abf3a0-2da3-4ff4-9e8e-e0034d875c39/lanes-new-team-4-win.repl26a",
+      "bundle_path": "provenance/ladder-history-replays-20261024-v1/bundles/mite/lanes-new-team-4-win-71abf3a0-2da3-4ff4-9e8e-e0034d875c39.zip"
+    },
+    {
+      "cohort": "mite",
+      "label": "corridors-procless-loss",
+      "match_id": "ee6fc21f-6adf-48f8-8849-1e6772b5b8e8",
+      "map_name": "01corridors",
+      "our_side": "b",
+      "opponent": "procless",
+      "result_from_intake": "loss",
+      "replay_payload_sha256": "6564d2a1689e76c8ee0e16049c6244648889e1a8873caeebb6f252831619ff14",
+      "bundle_sha256": "c0879421104ccf42b5c6cb936632f51cd889fd9be8b04ca9366d70dd9f9d2c30",
+      "replay_path": "provenance/ladder-history-replays-20261024-v1/inputs/mite/ee6fc21f-6adf-48f8-8849-1e6772b5b8e8/corridors-procless-loss.repl26a",
+      "bundle_path": "provenance/ladder-history-replays-20261024-v1/bundles/mite/corridors-procless-loss-ee6fc21f-6adf-48f8-8849-1e6772b5b8e8.zip"
+    }
+  ],
+  "tools": {
+    "extractor_version": 2,
+    "cli": "cambc 3.0.5 (recorded by extractor receipts; public replay source attribution remains unverified)",
+    "engine": {
+      "version": "v1_0_3",
+      "cambc": "cambc 3.0.5",
+      "asset": "v1_0_3-DRqNt1t2.wasm",
+      "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+      "bytes": 638472,
+      "snapshotSize": 184760
+    },
+    "extractor_source_path": "tools/replay/extract.mjs",
+    "extractor_source_sha256": "2f1704991077bed0bac08dc3319ecd54ab88e42e2a23516d81974ead37fc180f"
+  },
+  "preservation_policy": {
+    "raw_replays_and_bundles": "Preserved in existing locations; no copies or moves. Their archive/payload hashes are recorded above.",
+    "compressed_extracts": "Preserved in existing locations; .gz files are omitted from this selective file inventory.",
+    "git": "No files were staged or committed. This manifest is a compact review index; large replay bundles, raw replays, and compressed extractor outputs are explicitly excluded from the inventory."
+  },
+  "excluded_large_files": [
+    {
+      "path": "bundles/astraeus/fish-elkring-new-loss-deb4ae94-edc6-480f-a0e9-03fd944841bd.zip",
+      "reason": "large replay bundle; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "bundles/astraeus/fish-elkring-old-win-67fc71af-7d66-40e8-8c82-a0d400cbea6f.zip",
+      "reason": "large replay bundle; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "bundles/astraeus/three-pilgrimage-new-loss-62589f4b-d504-4bf7-b641-f3e9de95ce9c.zip",
+      "reason": "large replay bundle; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "bundles/astraeus/three-pilgrimage-old-win-9da66955-6268-428c-a955-1549cd080c33.zip",
+      "reason": "large replay bundle; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "bundles/mite/big-world-new-team-4-loss-cf39cebf-e598-4540-afaa-b470321fe98a.zip",
+      "reason": "large replay bundle; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "bundles/mite/big-world-print-dont-int-win-9c04eaa5-42af-47a1-babb-5bcf4fb0b523.zip",
+      "reason": "large replay bundle; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "bundles/mite/corridors-print-dont-int-win-48390a5f-8a3c-47ab-91e1-c72de7cfa3a9.zip",
+      "reason": "large replay bundle; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "bundles/mite/corridors-procless-loss-ee6fc21f-6adf-48f8-8849-1e6772b5b8e8.zip",
+      "reason": "large replay bundle; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "bundles/mite/elkring-print-dont-int-loss-df12b67d-e471-49e4-baad-8ad7026d4dbc.zip",
+      "reason": "large replay bundle; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "bundles/mite/lanes-new-team-4-win-71abf3a0-2da3-4ff4-9e8e-e0034d875c39.zip",
+      "reason": "large replay bundle; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "extract/astraeus/4ca5aa1e2eeecd1d/events.jsonl.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/astraeus/4ca5aa1e2eeecd1d/rounds.json.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/astraeus/56be01a6e30d3a98/events.jsonl.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/astraeus/56be01a6e30d3a98/rounds.json.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/astraeus/bbb81e199d59829f/events.jsonl.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/astraeus/bbb81e199d59829f/rounds.json.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/astraeus/e546793a8c82d0bb/events.jsonl.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/astraeus/e546793a8c82d0bb/rounds.json.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/1648fee7392c97b1/events.jsonl.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/1648fee7392c97b1/rounds.json.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/4a1010f022dfa8ef/events.jsonl.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/4a1010f022dfa8ef/rounds.json.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/6564d2a1689e76c8/events.jsonl.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/6564d2a1689e76c8/rounds.json.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/83249520f35ae5a7/events.jsonl.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/83249520f35ae5a7/rounds.json.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/c7599efc0e34683c/events.jsonl.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/c7599efc0e34683c/rounds.json.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/ce58e07436ad37a0/events.jsonl.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "extract/mite/ce58e07436ad37a0/rounds.json.gz",
+      "reason": "large compressed extractor output; retained on disk and excluded from selective Git inventory"
+    },
+    {
+      "path": "inputs/astraeus/62589f4b-d504-4bf7-b641-f3e9de95ce9c/three-pilgrimage-new-loss.repl26a",
+      "reason": "raw replay; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "inputs/astraeus/67fc71af-7d66-40e8-8c82-a0d400cbea6f/fish-elkring-old-win.repl26a",
+      "reason": "raw replay; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "inputs/astraeus/9da66955-6268-428c-a955-1549cd080c33/three-pilgrimage-old-win.repl26a",
+      "reason": "raw replay; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "inputs/astraeus/deb4ae94-edc6-480f-a0e9-03fd944841bd/fish-elkring-new-loss.repl26a",
+      "reason": "raw replay; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "inputs/mite/48390a5f-8a3c-47ab-91e1-c72de7cfa3a9/corridors-print-dont-int-win.repl26a",
+      "reason": "raw replay; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "inputs/mite/71abf3a0-2da3-4ff4-9e8e-e0034d875c39/lanes-new-team-4-win.repl26a",
+      "reason": "raw replay; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "inputs/mite/9c04eaa5-42af-47a1-babb-5bcf4fb0b523/big-world-print-dont-int-win.repl26a",
+      "reason": "raw replay; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "inputs/mite/cf39cebf-e598-4540-afaa-b470321fe98a/big-world-new-team-4-loss.repl26a",
+      "reason": "raw replay; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "inputs/mite/df12b67d-e471-49e4-baad-8ad7026d4dbc/elkring-print-dont-int-loss.repl26a",
+      "reason": "raw replay; retained on disk, hash recorded in prepared-input records"
+    },
+    {
+      "path": "inputs/mite/ee6fc21f-6adf-48f8-8849-1e6772b5b8e8/corridors-procless-loss.repl26a",
+      "reason": "raw replay; retained on disk, hash recorded in prepared-input records"
+    }
+  ],
+  "review_files": [
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-batch/astraeus/results.json",
+      "bytes": 4056,
+      "sha256": "a6af1b621c65346b208ac92a9f8d7b7915b4906d49593aa85b56b8211a5485b7"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-batch/mite/results.json",
+      "bytes": 1828,
+      "sha256": "70fe8372e041b26198eacd413d45d76d5f10224abb6fb87eaea23a93956f3f5d"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-big-world-new-team4-loss-ryth2.duty.json",
+      "bytes": 3753,
+      "sha256": "158352d65913ebc90bf477ce891d29525340b730690f72affa8378516a9afada"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-big-world-new-team4-loss-ryth2.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-big-world-new-team4-loss-ryth2.stdout.log",
+      "bytes": 139,
+      "sha256": "79266d6897e6d4cb351a45de2521fe2c29b87cc3b1ec2911d17a3e72c4727f6d"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/big-world-loss-marcella6-r850-859.json",
+      "bytes": 90885,
+      "sha256": "2a15454b696c68e02713b018436b57ffb708e801ee80c3f82587edc1e3ceb5fe"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/duty-receipt.json",
+      "bytes": 3746,
+      "sha256": "95c78b413384944bb81127626f203e9e1eb1408c18881494681235b6895b2242"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/preflight.json",
+      "bytes": 2673,
+      "sha256": "8ebb16bb1102ab7df7a04dc2b464eaacb65f9ea7ab3a2c512ec6aafa1f0616ac"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/run-receipt.json",
+      "bytes": 2816,
+      "sha256": "c6ebec6e99c7edc75abd0f48558c10e707edfc5f83d852074d29f480440d7875"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/run.stdout.log",
+      "bytes": 148,
+      "sha256": "925edfe87d8948cbd3a61d02b334d3bf0b02005f39b7609fa78da61f44b24b6b"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/summary.md",
+      "bytes": 1342,
+      "sha256": "feb0de91c06091cbd9ce6d411e636590d33a651fcefb026853d153b58d46350c"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-corridors-procless-loss-vendetta6.duty.json",
+      "bytes": 3079,
+      "sha256": "df55fdb9cdf7d5882f972024e35ca3194e0454c785b62611f130cb6fee70377d"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-corridors-procless-loss-vendetta6.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-corridors-procless-loss-vendetta6.stdout.log",
+      "bytes": 142,
+      "sha256": "c476a84a5e26875471267155bc0745fe552453d6905defbc75c30e5d069fa7b9"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/big-world-new-team4-loss-ryth2.json",
+      "bytes": 65709,
+      "sha256": "8cf41d10a0a323c923cf507016b8db6014dee36db25ab6ac7c58a01b2c20c0bb"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/corridors-procless-loss-vendetta6.json",
+      "bytes": 146148,
+      "sha256": "37c31755430382933b799ecb4818e9a8dcd3b9e4de5021920c758e2085e98a90"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/fish-elkring-new-willow9.json",
+      "bytes": 57532,
+      "sha256": "7f6d51efd1ea64940a4a178e9ec4e781c305dbeda61026c1aad104b0b5cd389a"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/fish-elkring-old-willow9.json",
+      "bytes": 62212,
+      "sha256": "1c6ca95b5c0e80a5000da161d2804505cc70b1da76806e59e18862b2c5154f40"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/three-pilgrimage-new-vesper1.json",
+      "bytes": 181284,
+      "sha256": "664a883cd72058da2f6c8f3d2165bff7a2c16895184a6d6ef87ba67b447db5dd"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/three-pilgrimage-new-willow3.json",
+      "bytes": 92356,
+      "sha256": "929e50da3cc0c66fb8043271148fe6102f4437174bb7c4f9eb709b835b2605bf"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/three-pilgrimage-old-vesper1.json",
+      "bytes": 171054,
+      "sha256": "f937e70850528f20c8f7be967373f8e40a5a4580b937b0b65d88fd658e4093db"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-new-willow9.duty.json",
+      "bytes": 2314,
+      "sha256": "5784d465f05ab51bf96c1a04132a0ddf9999d9fb0d83eb86428ec5352b838f15"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-new-willow9.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-new-willow9.stdout.log",
+      "bytes": 133,
+      "sha256": "727375d95b0a0fe60576893b1e8da7c4ed586784e23a19607aa1937e6ce8524c"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-old-willow9.duty.json",
+      "bytes": 2404,
+      "sha256": "1be360e54880e0bf6d217e0ac08a3a1828240bcda2043b87b9e68b49299a2766"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-old-willow9.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-old-willow9.stdout.log",
+      "bytes": 133,
+      "sha256": "e1de02698974b4a78a2aca19a322a097a0bae58e041f022728c04dd8941765c7"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-plan.json",
+      "bytes": 4141,
+      "sha256": "f38ecd503ec1dba476568ff1af81e80491784ade96b37c4c24bcd84c8aa7fdec"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-run-progress.json",
+      "bytes": 8487,
+      "sha256": "4b0efe7fda5adeb0561bd057880c4e3cffbe77b62a835ecbe26a56b64e030701"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-run-receipt.json",
+      "bytes": 8487,
+      "sha256": "4b0efe7fda5adeb0561bd057880c4e3cffbe77b62a835ecbe26a56b64e030701"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/corridors-vendetta6-r18-step3189.json",
+      "bytes": 59138,
+      "sha256": "733a31009a7ea74856dbe11dabb63bc763052d67ddd949ced79c61a5487bbf53"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/duty-receipt.json",
+      "bytes": 3180,
+      "sha256": "04d0f9325b9ffc4e3825f7950fff3c9da6aad7193439dee9a0d9d2122b4a393b"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/preflight.json",
+      "bytes": 2801,
+      "sha256": "9645f01a79509ae2ed5018ffe032460a3183f10a32e7c3cf3b782816b49283dc"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/run-receipt.json",
+      "bytes": 3320,
+      "sha256": "4456e04e363ed181a2edf21b7ec884c802a644cd588c993e287f494a3ca16bce"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/run.stdout.log",
+      "bytes": 146,
+      "sha256": "f690a143f4018ab4c0964a72b359975ddc67b3b0b89075afa8df5c9647cbd964"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-vesper1.duty.json",
+      "bytes": 3742,
+      "sha256": "7ccb3f957b526bb249b7bcd9655fc1cb7aa325283b496ac60e8d0028a3b111c1"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-vesper1.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-vesper1.stdout.log",
+      "bytes": 137,
+      "sha256": "784c8372758b3ee6ee6e688d48b5d621762f89b8ffa67ffba9a2d0e0c7ff39bb"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-willow3.duty.json",
+      "bytes": 3855,
+      "sha256": "a7c4e0989640e27943704fa20d4c8b968a1663feb7689f63352e981ca3195d12"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-willow3.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-willow3.stdout.log",
+      "bytes": 137,
+      "sha256": "e0a9895fbb8257d5692dbb08fe6b9b5bd12d532b98522b23226321560bdeda5d"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-old-vesper1.duty.json",
+      "bytes": 3847,
+      "sha256": "53edc9d839a433c8dd12a2a9c1f899bc2398a55e980e50144aa04477bade1e75"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-old-vesper1.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-old-vesper1.stdout.log",
+      "bytes": 137,
+      "sha256": "f85ac83aec58171e70eb3b2ab801ece048203cdf5944a97ddb9510e5b2913e4f"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/adapt_caught_streams.py",
+      "bytes": 2786,
+      "sha256": "2927f416ca78104377e17eac3d3e57ddaa21631db13e71bad26b59777df1a926"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit/astraeus/native-status-compact.json",
+      "bytes": 13787,
+      "sha256": "059c9db50f0ac1ff871775e1db96f8db6d00db3ab34749377c69034a1e6056d8"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit/astraeus/results.json",
+      "bytes": 3396,
+      "sha256": "0c396d45103806855aa1c9f861aecb37ed5919f8f9e9fb9abdcf1504dc5ac257"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit/mite/results.json",
+      "bytes": 4868,
+      "sha256": "61f4d03ce3b2c4f5760e003718690d561bbb75590506d48ebdad3985bdfa26e6"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/astraeus/00-67fc71af-7d66-40e8-8c82-a0d400cbea6f.zip",
+      "bytes": 37330,
+      "sha256": "60262dcc730eacc0ed1600adab4f84e6f41c715b8cd8745590ac96810fef1129"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/astraeus/01-deb4ae94-edc6-480f-a0e9-03fd944841bd.zip",
+      "bytes": 34495,
+      "sha256": "e241e4644a86e8d4a6b8388168a745baff6d2fab3d8eacffd61e4efc9bae8040"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/astraeus/02-9da66955-6268-428c-a955-1549cd080c33.zip",
+      "bytes": 70091,
+      "sha256": "473e6a24f84a71aaeecbd2e2fc8d0527c645a3160ef55167d0a2edfb44a66f78"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/astraeus/03-62589f4b-d504-4bf7-b641-f3e9de95ce9c.zip",
+      "bytes": 69234,
+      "sha256": "82f63a5b6184798f37bea78b8e848140cd655880afa08daf206e1ef8a1987fe3"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/astraeus/adapter-manifest.json",
+      "bytes": 3212,
+      "sha256": "04a7d0d74e0b24319a0b08a13f20233e57e80edea589945eea70b339cdd93d0f"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/astraeus/results.json",
+      "bytes": 5610,
+      "sha256": "ca8844ed6d5d33331c0fd5a77de99476920dcd7b8d2c3a65160a957b28be58f3"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/mite/00-df12b67d-e471-49e4-baad-8ad7026d4dbc.zip",
+      "bytes": 23126,
+      "sha256": "f239bfc93110311ace57ab8ed8e0dba36c46dc0e9cee73deb80b51740af4b605"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/mite/01-9c04eaa5-42af-47a1-babb-5bcf4fb0b523.zip",
+      "bytes": 35349,
+      "sha256": "8d3110452c06233c0df0cfce963738bad4be730d69aa05064898b489e2552a8d"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/mite/02-48390a5f-8a3c-47ab-91e1-c72de7cfa3a9.zip",
+      "bytes": 27872,
+      "sha256": "b0dc8823e756421be793a546616e8e453ad98ed557ad5cda57ab96e3f1753f1b"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/mite/03-cf39cebf-e598-4540-afaa-b470321fe98a.zip",
+      "bytes": 31752,
+      "sha256": "db828d60675cc26e40d8e23b18a562f0c4c7e04f6ba9040cfc5d45224c3d948f"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/mite/04-71abf3a0-2da3-4ff4-9e8e-e0034d875c39.zip",
+      "bytes": 23050,
+      "sha256": "76c41f9650a47c5b4671217bc91de35c712473b6cbfb11714556d2010e5226bc"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/mite/05-ee6fc21f-6adf-48f8-8849-1e6772b5b8e8.zip",
+      "bytes": 28727,
+      "sha256": "905fdb006ddd4507522ebfbff40e6ef1b05fac228a69bbbf8e536700615081a1"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/mite/adapter-manifest.json",
+      "bytes": 4889,
+      "sha256": "a36c7154d6a0d7e02238368d22585ca294e9b01d02227726dde47730baf76431"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-adapted/mite/results.json",
+      "bytes": 8192,
+      "sha256": "fa6a7b5b724db5ec109b6652eb7333a1e7b9fda2c441cc0615b6ba19d3e98928"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-astraeus-caught-v2.duty.json",
+      "bytes": 1194,
+      "sha256": "cc6a48c599c701b3f23af2c333d7cbc9895be126b5159d28d70f93c26d2fe720"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-astraeus-caught-v2.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-astraeus-caught-v2.stdout.log",
+      "bytes": 792,
+      "sha256": "e71963e2dad156498f7c6cb514713a48e060edcfb37c0229d10141ccf8f7219f"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-astraeus-caught.duty.json",
+      "bytes": 1177,
+      "sha256": "a2e844f46d6775403d0d41ae6cfcd85ee7585af9379ca94591026408e9bbb7f5"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-astraeus-caught.stderr.log",
+      "bytes": 238,
+      "sha256": "2b4280c2a714f7944c7b5884559727cab6c92474d01d847e87e250b7891d80fe"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-astraeus-caught.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-astraeus-native.duty.json",
+      "bytes": 2463,
+      "sha256": "fdf5daadeab576e7fb0d78a6af8d18999c09fe19e2069a4d94e9b25eb5f1bac1"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-astraeus-native.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-astraeus-native.stdout.log",
+      "bytes": 202,
+      "sha256": "b63d2964aff1cf56915452e6ec16a62b52e839ffc702edeb4e2cf134ec540d27"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-mite-caught.duty.json",
+      "bytes": 1173,
+      "sha256": "b22524e6bd89fbac68f91f5b9616fa1243b475b58bfd048e38cafb8d5eca2213"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-mite-caught.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/audit-mite-caught.stdout.log",
+      "bytes": 780,
+      "sha256": "c7985efbc9045f72ee85fffed40f597a3399eb294a2c2b2279dde23ba863ffa4"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/bigworld-pair-macro-notes-v2.md",
+      "bytes": 3707,
+      "sha256": "b556823d8683a672d7dfb2a6b6cfa33a0c026a1f489db3bc2a6ed7f7bce5e806"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/bigworld-pair-macro-notes-v3.md",
+      "bytes": 4881,
+      "sha256": "6ee3f7df520631326efa4e65b9d201ebb3d4064759456fa444e11fa4e604d499"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/bigworld-pair-macro-notes-v4.md",
+      "bytes": 5278,
+      "sha256": "218c80473623bda4398d83948a6bb956cc21e7107f4baefd1a76f81b54be458b"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/bigworld-pair-macro-v1.json",
+      "bytes": 509069,
+      "sha256": "4cf89e91f990285f108189d01216a9cf20c06d7fb332863a55ddd9a4b9c28d62"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/bigworld-pair-macro-v2.json",
+      "bytes": 154182,
+      "sha256": "fc81639bbc834290870d32c260a51c247a963e31afbd2227028be509a7cbae90"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/4ca5aa1e2eeecd1d/meta.json",
+      "bytes": 7111,
+      "sha256": "bf6578ba626cc5d39e78f995c7bae1af6307cd747b962d35d79b63d83324bc3a"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/56be01a6e30d3a98/meta.json",
+      "bytes": 7048,
+      "sha256": "6b28fd1eb6b672700050c7c8a97b794438fa221efee04c0ba94ac71ef05833c0"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/bbb81e199d59829f/meta.json",
+      "bytes": 7177,
+      "sha256": "6b2628f2d626db3cad2cad87e69bc8a1921e17e85bee9319e834314bdcec9525"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/e546793a8c82d0bb/meta.json",
+      "bytes": 7112,
+      "sha256": "1febf0bf9248692a1279546cdd9808b57c6df0b116f123da7c6ebb07989cbffc"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/enums.json",
+      "bytes": 2248,
+      "sha256": "121ad1348a6b42b89372dd758b870f95f7d5c1c08a3f3ca921015350ed4fc5b8"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/index.json",
+      "bytes": 1315,
+      "sha256": "ce55077fd114d44c0c79b96130d24ab7f6eaaeb320d260fdf45d17723c2a790d"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/maps/6793e671494a0c28.json",
+      "bytes": 4216,
+      "sha256": "c68b9c4fb9b392596cf4fcea3b3b0657e1e919acc9e24fd241605e89a5f0a63e"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/maps/8caf8eb913649931.json",
+      "bytes": 14824,
+      "sha256": "89da30717c31c0722194a8d04bd60337a4e7718ba41d11ae55f5252e9a1edead"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/1648fee7392c97b1/meta.json",
+      "bytes": 6757,
+      "sha256": "d571d86001c81ff98190e2b15e9f3427319c51cad0cf41bbc36a8fccb997a7cf"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/4a1010f022dfa8ef/meta.json",
+      "bytes": 6790,
+      "sha256": "8200f50b09639af35bf88607bb5165b4e1bdf1f99bfcfbb3a2b076a4bdaf4b6c"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/6564d2a1689e76c8/meta.json",
+      "bytes": 6899,
+      "sha256": "2ed0f998c5fa33d0f897178d285a0946f7bb62f2552e86fd1e87ce08c70fd8f3"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/83249520f35ae5a7/meta.json",
+      "bytes": 6679,
+      "sha256": "fe8100bdeddf0553a58c5f89795af822b4af1b111ec946d63732284d780e3338"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/c7599efc0e34683c/meta.json",
+      "bytes": 6708,
+      "sha256": "078e087ec7b37b07e00033b24804008b8f0448d69b07705e8570524ac5b6642a"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/ce58e07436ad37a0/meta.json",
+      "bytes": 6864,
+      "sha256": "bd800cd2943bc0f32f2b7159419fa8e4267ce1947a723a3e9dc90db4a8533238"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/enums.json",
+      "bytes": 2248,
+      "sha256": "121ad1348a6b42b89372dd758b870f95f7d5c1c08a3f3ca921015350ed4fc5b8"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/index.json",
+      "bytes": 1972,
+      "sha256": "f4e03b162c6b592eb4b58bc005392abf01e0da5c0ff8e27fab6419c0ad1b0057"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/maps/1be20f795dd494af.json",
+      "bytes": 13010,
+      "sha256": "b6f1a2bb09b95b42c40556eef365a23cc860af950ee54259eb7fc5fdbc15bb8d"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/maps/6793e671494a0c28.json",
+      "bytes": 4216,
+      "sha256": "c68b9c4fb9b392596cf4fcea3b3b0657e1e919acc9e24fd241605e89a5f0a63e"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/maps/93678adca5cab962.json",
+      "bytes": 11174,
+      "sha256": "9516677351ff9b91980a6b9e085a47694345d5abdd567da983a86980bb6b3263"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract/mite/maps/c890c7d4607bc45c.json",
+      "bytes": 22027,
+      "sha256": "9f21864a9e2e03469fb7d03b496960402ffbdfa6d09fd8f2da11e124472af4e8"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract-astraeus.duty.json",
+      "bytes": 12414,
+      "sha256": "ba080db179058895302a8cec555ffe04999f4da18af747426aab657ddae7e492"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract-astraeus.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract-astraeus.stdout.log",
+      "bytes": 276,
+      "sha256": "a96ebabbd62b265e5d32dbb70b233f3301c21e98c6e967aa0c24f5a79a37a51f"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract-mite.duty.json",
+      "bytes": 17333,
+      "sha256": "2aee8d2bbd0fdf70268d515b586b9f78565ee70cceac026e8219c7a5081130b7"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract-mite.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/extract-mite.stdout.log",
+      "bytes": 270,
+      "sha256": "25fad90ce23a1aaac5fdedc687799e08a01b81cc6a7471ee7472b2837691b477"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/fetch-progress-astraeus.json",
+      "bytes": 10538,
+      "sha256": "672cfb972d43785b9bdbe00a422efaffff5669168c8cbad7dac042aa76e218ef"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/fetch-progress-mite.json",
+      "bytes": 15605,
+      "sha256": "72019e098c98a26a47a5cb04471da69c976ec42701b70b967643c7dde7aff568"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/fetch-receipt-astraeus.json",
+      "bytes": 10538,
+      "sha256": "672cfb972d43785b9bdbe00a422efaffff5669168c8cbad7dac042aa76e218ef"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/fetch-receipt-mite.json",
+      "bytes": 15605,
+      "sha256": "72019e098c98a26a47a5cb04471da69c976ec42701b70b967643c7dde7aff568"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/fetch_selected.py",
+      "bytes": 3664,
+      "sha256": "64ddd23b36b73418ff870bfa539322566c52774d7ef0fc290cef7ea17e69213a"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/fish-elkring-new-loss.duty.json",
+      "bytes": 2287,
+      "sha256": "b546bcb7704376ba9821884df7563de5860e03263b43fb86c79d512c9c9ef296"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/fish-elkring-new-loss.stderr.log",
+      "bytes": 22,
+      "sha256": "52b10bd99b57dad51564c68d245482c51c9b5ca1455c7fa987ac12af0b1a67f3"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/fish-elkring-new-loss.stdout.log",
+      "bytes": 217,
+      "sha256": "80afa799a178396d6b62eb2100b917fa2764907bad7a4ed5cb5d43cb0c0b2465"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/fish-elkring-old-win.duty.json",
+      "bytes": 2272,
+      "sha256": "d1e9e290f47f8f5c031fe685e386627f5d5ffc01b5e90a9069a8c5d5bdf13d2a"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/fish-elkring-old-win.stderr.log",
+      "bytes": 22,
+      "sha256": "52b10bd99b57dad51564c68d245482c51c9b5ca1455c7fa987ac12af0b1a67f3"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/fish-elkring-old-win.stdout.log",
+      "bytes": 216,
+      "sha256": "da3182e109a80a8b1256c785396387ff5e96c2441a24650c03ef3e558dbf0fec"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/three-pilgrimage-new-loss.duty.json",
+      "bytes": 1734,
+      "sha256": "fe093020147e660d4581564e8166c4a744b711bd348fb555dde490d04c369e2a"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/three-pilgrimage-new-loss.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/three-pilgrimage-new-loss.stdout.log",
+      "bytes": 221,
+      "sha256": "d138c63bfa3141d47c454dd7bc5d4d4fa4648d979990969d3026dc7017c66114"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/three-pilgrimage-old-win.duty.json",
+      "bytes": 2289,
+      "sha256": "0bcbc928b22a7ec77737c5cd65d74bd157ac148f37a81231e0b9e5ce10e1f905"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/three-pilgrimage-old-win.stderr.log",
+      "bytes": 22,
+      "sha256": "52b10bd99b57dad51564c68d245482c51c9b5ca1455c7fa987ac12af0b1a67f3"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/astraeus/three-pilgrimage-old-win.stdout.log",
+      "bytes": 220,
+      "sha256": "a304f5b032cf252884b8701e1840fe8ecfeb812105dc663558acbfe5ccb756b8"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/big-world-new-team-4-loss.duty.json",
+      "bytes": 2375,
+      "sha256": "77011512c05fcb397b84c7966efa99027b1610dfcdbe5d9e469c27783ca04163"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/big-world-new-team-4-loss.stderr.log",
+      "bytes": 22,
+      "sha256": "52b10bd99b57dad51564c68d245482c51c9b5ca1455c7fa987ac12af0b1a67f3"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/big-world-new-team-4-loss.stdout.log",
+      "bytes": 217,
+      "sha256": "4b71542b2f4692fa267bb339e24ea5788124507f27bf441cffb9958d7201211e"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/big-world-print-dont-int-win.duty.json",
+      "bytes": 1731,
+      "sha256": "cfaab22a3d5eab8c7b0c2cedda487ac545875922d08db17074c98e5d69fb2382"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/big-world-print-dont-int-win.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/big-world-print-dont-int-win.stdout.log",
+      "bytes": 220,
+      "sha256": "933b0ed20893dc42f3b4da0a26f6a5b61342f364875303a3bc7ede60e639130b"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/corridors-print-dont-int-win.duty.json",
+      "bytes": 1732,
+      "sha256": "2b26315829421e78a96003088253cf33f165064560362b399cd91ac93eccf02b"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/corridors-print-dont-int-win.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/corridors-print-dont-int-win.stdout.log",
+      "bytes": 220,
+      "sha256": "7f62142bfb1b0568024dfee4e5066b78f984ebabac46218f4c4767c33cdf4816"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/corridors-procless-loss.duty.json",
+      "bytes": 1902,
+      "sha256": "108cd421cc27044207d7d01bbb24b5424e8ba08b8d4d75c1d6b32bc3c7acd33d"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/corridors-procless-loss.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/corridors-procless-loss.stdout.log",
+      "bytes": 215,
+      "sha256": "27c4f986d3c6d2c0150b030b0909cf0c9f9c3d62f585cedad18e4dd007714283"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/elkring-print-dont-int-loss.duty.json",
+      "bytes": 1729,
+      "sha256": "379182cad808a2e073cf8a857e43f029355d6c0d0b3e5ff9d077a592bbbeee58"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/elkring-print-dont-int-loss.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/elkring-print-dont-int-loss.stdout.log",
+      "bytes": 219,
+      "sha256": "f10442974b9b8f803eec26b97555fe3bdc67b8b768e9564209e77f94555e1172"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/lanes-new-team-4-win.duty.json",
+      "bytes": 1989,
+      "sha256": "d538be16a7682a1632be3e3e3b2b278de7e434a8dae0bc6a585d3090f94e831f"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/lanes-new-team-4-win.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/logs/mite/lanes-new-team-4-win.stdout.log",
+      "bytes": 212,
+      "sha256": "15a5570a02d96efb66c75d2167d31cade35986feae8a1c48cf0b157698825a78"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/mite-actor-window-plan.json",
+      "bytes": 1905,
+      "sha256": "b2c5265fd5eaf3f0d0359354e5cedbd1d0132f6f5f38119dacc71ca5612f4182"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/mite-first-pass-v2.json",
+      "bytes": 140270,
+      "sha256": "010a948d437c04603f5e14a763a5482b374136d3c6a0d066d08d95d59f128221"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/mite-first-pass.json",
+      "bytes": 3609727,
+      "sha256": "54957c6873edb6fcc28b732f187bfa5f25858e5941f2c014cdbeec192fccde83"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/prepare_astraeus_actor_windows.py",
+      "bytes": 2981,
+      "sha256": "0b03faaf3caef2bf24ca1d83584ba5620860258a490ba6b0f9944be4277e8cc8"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/prepare_audit_batches.py",
+      "bytes": 2417,
+      "sha256": "1002f6907fef7737a08675192d42f83350327a3026125fcdd249d0682b794c70"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/prepare_inputs.py",
+      "bytes": 3338,
+      "sha256": "7d54d340ee33dec98f15cc1dd79b33cd9c89d92d3e9f5a743f429fe65c37567b"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/prepare_mite_actor_windows.py",
+      "bytes": 2680,
+      "sha256": "308b6e9b959b611d1e9cb98f0be6793c0782db518af7414540b09a30fe627ef5"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/prepared-inputs-astraeus.json",
+      "bytes": 3607,
+      "sha256": "867e95e003981a409cce2177f10ef1ce1027dadc9bce0cc0c92875f13e39170f"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/prepared-inputs-mite.json",
+      "bytes": 5395,
+      "sha256": "2c13e59d07bcd225d44928c2026afcdd9d64bc4db2a12db63c500053a1240fc8"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/prepared-inputs.json",
+      "bytes": 3607,
+      "sha256": "867e95e003981a409cce2177f10ef1ce1027dadc9bce0cc0c92875f13e39170f"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/run_actor_windows.py",
+      "bytes": 2927,
+      "sha256": "80f25c8437a619447ef13e82a1a4ed5abcc187d05495ca528b1783c358933803"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/summarize-mite-v2.duty.json",
+      "bytes": 1737,
+      "sha256": "c57b600e81b54e9d5953dd10a95bc3ece4f6bb135e3ac738fee155da3f0dc6c3"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/summarize-mite-v2.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/summarize-mite-v2.stdout.log",
+      "bytes": 155,
+      "sha256": "8326e9c44ab8163732f752aa0ab3b9a8c724fe5068af69239a49da28b7708c3b"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/summarize-mite.duty.json",
+      "bytes": 1917,
+      "sha256": "7354106dda43fe70e6b51b121eb679b05423f254459adc56e92a722b1ba345db"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/summarize-mite.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/summarize-mite.stdout.log",
+      "bytes": 152,
+      "sha256": "7603ecfb7a425aeb36a6c7003f44db52c361f2301f1500ec7cb58d7cd55c8569"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/summarize_bigworld_pair.py",
+      "bytes": 6637,
+      "sha256": "de8e4ac4317dfa38d44ad77ea8722e2a7d72e55724fe8e331e729a0c6f6b5c9e"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/summarize_bigworld_pair_v2.py",
+      "bytes": 7272,
+      "sha256": "5e374dc8660868c87f497335ae1111982c666236bce5fab31202a4834307cc1f"
+    },
+    {
+      "path": "provenance/ladder-history-replays-20261024-v1/summarize_mite_history.py",
+      "bytes": 10642,
+      "sha256": "b8bb515f3511c8c1d599c5059a0eee058ef9f41a67a85aed3ab28689f4ce1154"
+    }
+  ],
+  "latest_bigworld_macro_note": "bigworld-pair-macro-notes-v4.md; v3 preserved unchanged.",
+  "bigworld_final_actor_window": "actor-window-bigworld-boss-v1/big-world-loss-marcella6-r850-859.json"
+}

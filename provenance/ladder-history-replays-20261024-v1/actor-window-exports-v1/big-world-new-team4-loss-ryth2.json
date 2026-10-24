@@ -1,0 +1,2767 @@
+{
+  "schema": "actor-own-view-window/v3",
+  "label": "c890c7d4607bc45c.json-Ryth-actor2-r165-174",
+  "replay": "provenance/ladder-history-replays-20261024-v1/inputs/mite/cf39cebf-e598-4540-afaa-b470321fe98a/big-world-new-team-4-loss.repl26a",
+  "replay_file_sha256": "1648fee7392c97b1a18545993fc23d5b00625caf21e033bf931f3d09c09e9bd5",
+  "replay_payload_sha256": "1648fee7392c97b1a18545993fc23d5b00625caf21e033bf931f3d09c09e9bd5",
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "map": "big-world-new-team-4-loss",
+  "map_path": "provenance/ladder-history-replays-20261024-v1/extract/mite/maps/c890c7d4607bc45c.json",
+  "map_sha256": "9f21864a9e2e03469fb7d03b496960402ffbdfa6d09fd8f2da11e124472af4e8",
+  "build_mode": "unknown (public replay does not identify build mode or fuel)",
+  "cli": "cambc 3.0.5",
+  "source_attribution": {
+    "status": "unverified_public_replay",
+    "statement": "public source is unverified; the replay metadata does not identify a submission/version ID, so exact source attribution is unavailable",
+    "submission_version": null,
+    "source_aggregates": null,
+    "context": "The replay metadata does not identify the submission or source version used."
+  },
+  "actor": {
+    "id": 2,
+    "name": "Ryth",
+    "team": 0,
+    "physical_side": "A"
+  },
+  "static_camp_layout": "Expanded stable id/coordinate/type/group rows from the observer snapshot; own-view dynamic camp state joins by native camp id.",
+  "selected_rounds": [
+    165,
+    174
+  ],
+  "exported_rounds": [
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    171,
+    172,
+    173,
+    174
+  ],
+  "observation_limits": "Champion health/position/items/channel are included only for actors visible in this actor perspective; hidden enemy state is omitted. Static nearby map terrain and camps are included; dynamic camp state is included only when own-view known. Replay snapshot does not expose this actor shared-memory word or altar-usability evaluation.",
+  "alignment": "Turn observations are captured at the first phase-10 snapshot for this actor and round. For optional selected action steps, before uses timeline snapshot N-1 and after uses snapshot N; timeline snapshot N contains the state after the action recorded at step index N.",
+  "selected_action_step_indices": [],
+  "selected_action_step_snapshots": [],
+  "turns": [
+    {
+      "round": 165,
+      "turn": 4,
+      "snapshot_step_index": 33487,
+      "observation": {
+        "self": {
+          "id": 2,
+          "type": "Ryth",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              62,
+              10
+            ],
+            "own_frame": [
+              62,
+              10
+            ]
+          },
+          "health": 1120,
+          "max_health": 1600,
+          "strength": 49,
+          "cooldowns": [
+            7,
+            6
+          ],
+          "abilities": [
+            "AoE damage",
+            "Attack reset"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {
+            "Treasure Shard of Health": 4
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 1040,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vendetta",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                65,
+                6
+              ],
+              "own_frame": [
+                65,
+                6
+              ]
+            },
+            "health": 360,
+            "max_health": 1000,
+            "strength": 70,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              3
+            ],
+            "abilities": [
+              "Attack reset",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 1
+            }
+          },
+          {
+            "id": 3,
+            "type": "Tavi",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Vendetta",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                67,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                57,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                57,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                60,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": [
+          {
+            "id": 16,
+            "type": "Gold cluster",
+            "position": [
+              61,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 40,
+            "type": "Elk",
+            "position": [
+              60,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 2000,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 42,
+            "type": "Elk",
+            "position": [
+              61,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 922,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 44,
+            "type": "Wolf",
+            "position": [
+              60,
+              10
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 530,
+            "max_health": 1350,
+            "awake": true
+          },
+          {
+            "id": 76,
+            "type": "Gold cluster",
+            "position": [
+              59,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 78,
+            "type": "Gem cluster",
+            "position": [
+              59,
+              11
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "cancel_channel",
+          "step_index": 33488
+        },
+        {
+          "kind": "attack",
+          "step_index": 33489
+        },
+        {
+          "kind": "recall",
+          "step_index": 33490
+        }
+      ]
+    },
+    {
+      "round": 166,
+      "turn": 5,
+      "snapshot_step_index": 33708,
+      "observation": {
+        "self": {
+          "id": 2,
+          "type": "Ryth",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              62,
+              10
+            ],
+            "own_frame": [
+              62,
+              10
+            ]
+          },
+          "health": 980,
+          "max_health": 1600,
+          "strength": 49,
+          "cooldowns": [
+            6,
+            5
+          ],
+          "abilities": [
+            "AoE damage",
+            "Attack reset"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {
+            "Treasure Shard of Health": 4
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": true,
+            "movement_used": false,
+            "raw": 1043,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vendetta",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                65,
+                6
+              ],
+              "own_frame": [
+                65,
+                6
+              ]
+            },
+            "health": 360,
+            "max_health": 1000,
+            "strength": 70,
+            "focus": 100,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              2
+            ],
+            "abilities": [
+              "Attack reset",
+              "Dash"
+            ],
+            "consumables": {},
+            "items": {},
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 0
+            }
+          },
+          {
+            "id": 3,
+            "type": "Tavi",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Vendetta",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                67,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                57,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                57,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                60,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": [
+          {
+            "id": 16,
+            "type": "Gold cluster",
+            "position": [
+              61,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 40,
+            "type": "Elk",
+            "position": [
+              60,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 2000,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 42,
+            "type": "Elk",
+            "position": [
+              61,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 873,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 44,
+            "type": "Wolf",
+            "position": [
+              60,
+              10
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 530,
+            "max_health": 1350,
+            "awake": true
+          },
+          {
+            "id": 76,
+            "type": "Gold cluster",
+            "position": [
+              59,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 78,
+            "type": "Gem cluster",
+            "position": [
+              59,
+              11
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "attack",
+          "step_index": 33709
+        },
+        {
+          "kind": "recall",
+          "step_index": 33710
+        }
+      ]
+    },
+    {
+      "round": 167,
+      "turn": 4,
+      "snapshot_step_index": 33905,
+      "observation": {
+        "self": {
+          "id": 2,
+          "type": "Ryth",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              62,
+              10
+            ],
+            "own_frame": [
+              62,
+              10
+            ]
+          },
+          "health": 840,
+          "max_health": 1600,
+          "strength": 49,
+          "cooldowns": [
+            5,
+            4
+          ],
+          "abilities": [
+            "AoE damage",
+            "Attack reset"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {
+            "Treasure Shard of Health": 4
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": true,
+            "movement_used": false,
+            "raw": 1043,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vendetta",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 3,
+            "type": "Tavi",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Vendetta",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                67,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                57,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                57,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                60,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": [
+          {
+            "id": 16,
+            "type": "Gold cluster",
+            "position": [
+              61,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 40,
+            "type": "Elk",
+            "position": [
+              60,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 2000,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 42,
+            "type": "Elk",
+            "position": [
+              61,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 824,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 44,
+            "type": "Wolf",
+            "position": [
+              60,
+              10
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 530,
+            "max_health": 1350,
+            "awake": true
+          },
+          {
+            "id": 76,
+            "type": "Gold cluster",
+            "position": [
+              59,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 78,
+            "type": "Gem cluster",
+            "position": [
+              59,
+              11
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "attack",
+          "step_index": 33906
+        },
+        {
+          "kind": "recall",
+          "step_index": 33907
+        }
+      ]
+    },
+    {
+      "round": 168,
+      "turn": 5,
+      "snapshot_step_index": 34121,
+      "observation": {
+        "self": {
+          "id": 2,
+          "type": "Ryth",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              62,
+              10
+            ],
+            "own_frame": [
+              62,
+              10
+            ]
+          },
+          "health": 700,
+          "max_health": 1600,
+          "strength": 49,
+          "cooldowns": [
+            4,
+            3
+          ],
+          "abilities": [
+            "AoE damage",
+            "Attack reset"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {
+            "Treasure Shard of Health": 4
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": true,
+            "movement_used": false,
+            "raw": 1043,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vendetta",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 3,
+            "type": "Tavi",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Vendetta",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                67,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                57,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                57,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                60,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": [
+          {
+            "id": 16,
+            "type": "Gold cluster",
+            "position": [
+              61,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 40,
+            "type": "Elk",
+            "position": [
+              60,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 2000,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 42,
+            "type": "Elk",
+            "position": [
+              61,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 775,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 44,
+            "type": "Wolf",
+            "position": [
+              60,
+              10
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 530,
+            "max_health": 1350,
+            "awake": true
+          },
+          {
+            "id": 76,
+            "type": "Gold cluster",
+            "position": [
+              59,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 78,
+            "type": "Gem cluster",
+            "position": [
+              59,
+              11
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "attack",
+          "step_index": 34122
+        },
+        {
+          "kind": "recall",
+          "step_index": 34123
+        }
+      ]
+    },
+    {
+      "round": 169,
+      "turn": 4,
+      "snapshot_step_index": 34317,
+      "observation": {
+        "self": {
+          "id": 2,
+          "type": "Ryth",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              62,
+              10
+            ],
+            "own_frame": [
+              62,
+              10
+            ]
+          },
+          "health": 560,
+          "max_health": 1600,
+          "strength": 49,
+          "cooldowns": [
+            3,
+            2
+          ],
+          "abilities": [
+            "AoE damage",
+            "Attack reset"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {
+            "Treasure Shard of Health": 4
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": true,
+            "movement_used": false,
+            "raw": 1043,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vendetta",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 3,
+            "type": "Tavi",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Vendetta",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                67,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                57,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                57,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                60,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": [
+          {
+            "id": 16,
+            "type": "Gold cluster",
+            "position": [
+              61,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 40,
+            "type": "Elk",
+            "position": [
+              60,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 2000,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 42,
+            "type": "Elk",
+            "position": [
+              61,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 726,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 44,
+            "type": "Wolf",
+            "position": [
+              60,
+              10
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 530,
+            "max_health": 1350,
+            "awake": true
+          },
+          {
+            "id": 76,
+            "type": "Gold cluster",
+            "position": [
+              59,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 78,
+            "type": "Gem cluster",
+            "position": [
+              59,
+              11
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "attack",
+          "step_index": 34318
+        },
+        {
+          "kind": "recall",
+          "step_index": 34319
+        }
+      ]
+    },
+    {
+      "round": 170,
+      "turn": 5,
+      "snapshot_step_index": 34531,
+      "observation": {
+        "self": {
+          "id": 2,
+          "type": "Ryth",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              62,
+              10
+            ],
+            "own_frame": [
+              62,
+              10
+            ]
+          },
+          "health": 420,
+          "max_health": 1600,
+          "strength": 49,
+          "cooldowns": [
+            2,
+            1
+          ],
+          "abilities": [
+            "AoE damage",
+            "Attack reset"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {
+            "Treasure Shard of Health": 4
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": true,
+            "movement_used": false,
+            "raw": 1043,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vendetta",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 3,
+            "type": "Tavi",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Vendetta",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                67,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                57,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                57,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                60,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": [
+          {
+            "id": 16,
+            "type": "Gold cluster",
+            "position": [
+              61,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 40,
+            "type": "Elk",
+            "position": [
+              60,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 2000,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 42,
+            "type": "Elk",
+            "position": [
+              61,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 677,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 44,
+            "type": "Wolf",
+            "position": [
+              60,
+              10
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 530,
+            "max_health": 1350,
+            "awake": true
+          },
+          {
+            "id": 76,
+            "type": "Gold cluster",
+            "position": [
+              59,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 78,
+            "type": "Gem cluster",
+            "position": [
+              59,
+              11
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "attack",
+          "step_index": 34532
+        },
+        {
+          "kind": "recall",
+          "step_index": 34533
+        }
+      ]
+    },
+    {
+      "round": 171,
+      "turn": 4,
+      "snapshot_step_index": 34725,
+      "observation": {
+        "self": {
+          "id": 2,
+          "type": "Ryth",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              62,
+              10
+            ],
+            "own_frame": [
+              62,
+              10
+            ]
+          },
+          "health": 280,
+          "max_health": 1600,
+          "strength": 49,
+          "cooldowns": [
+            1,
+            0
+          ],
+          "abilities": [
+            "AoE damage",
+            "Attack reset"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {
+            "Treasure Shard of Health": 4
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": true,
+            "movement_used": false,
+            "raw": 1043,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vendetta",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 3,
+            "type": "Tavi",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Vendetta",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                67,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                57,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                57,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                60,
+                15
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": [
+          {
+            "id": 16,
+            "type": "Gold cluster",
+            "position": [
+              61,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 40,
+            "type": "Elk",
+            "position": [
+              60,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 2000,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 42,
+            "type": "Elk",
+            "position": [
+              61,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 628,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 44,
+            "type": "Wolf",
+            "position": [
+              60,
+              10
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 530,
+            "max_health": 1350,
+            "awake": true
+          },
+          {
+            "id": 76,
+            "type": "Gold cluster",
+            "position": [
+              59,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 78,
+            "type": "Gem cluster",
+            "position": [
+              59,
+              11
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "move",
+          "step_index": 34726,
+          "destination": [
+            63,
+            9
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 34727
+        }
+      ]
+    },
+    {
+      "round": 172,
+      "turn": 5,
+      "snapshot_step_index": 34938,
+      "observation": {
+        "self": {
+          "id": 2,
+          "type": "Ryth",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              63,
+              9
+            ],
+            "own_frame": [
+              63,
+              9
+            ]
+          },
+          "health": 140,
+          "max_health": 1600,
+          "strength": 49,
+          "cooldowns": [
+            0,
+            0
+          ],
+          "abilities": [
+            "AoE damage",
+            "Attack reset"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {
+            "Treasure Shard of Health": 4
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": true,
+            "movement_used": false,
+            "raw": 1043,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vendetta",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 3,
+            "type": "Tavi",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Vendetta",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                67,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                68,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                68,
+                10
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                68,
+                11
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [
+            {
+              "position": [
+                58,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                58,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                59,
+                14
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": [
+          {
+            "id": 16,
+            "type": "Gold cluster",
+            "position": [
+              61,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 40,
+            "type": "Elk",
+            "position": [
+              60,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 2000,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 42,
+            "type": "Elk",
+            "position": [
+              61,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 628,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 44,
+            "type": "Wolf",
+            "position": [
+              60,
+              10
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 530,
+            "max_health": 1350,
+            "awake": true
+          },
+          {
+            "id": 76,
+            "type": "Gold cluster",
+            "position": [
+              59,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 78,
+            "type": "Gem cluster",
+            "position": [
+              59,
+              11
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "move",
+          "step_index": 34939,
+          "destination": [
+            64,
+            8
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 34940
+        }
+      ]
+    },
+    {
+      "round": 173,
+      "turn": 4,
+      "snapshot_step_index": 35133,
+      "observation": {
+        "self": {
+          "id": 2,
+          "type": "Ryth",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              64,
+              8
+            ],
+            "own_frame": [
+              64,
+              8
+            ]
+          },
+          "health": 20,
+          "max_health": 1600,
+          "strength": 49,
+          "cooldowns": [
+            0,
+            0
+          ],
+          "abilities": [
+            "AoE damage",
+            "Attack reset"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {
+            "Treasure Shard of Health": 4
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": true,
+            "movement_used": false,
+            "raw": 1043,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vendetta",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 3,
+            "type": "Tavi",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Vendetta",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [
+            {
+              "position": [
+                67,
+                7
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                8
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                67,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                68,
+                9
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                68,
+                10
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                68,
+                11
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                69,
+                11
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                69,
+                12
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                69,
+                13
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "holes": [],
+          "bushes": [],
+          "altars": []
+        },
+        "local_camps": [
+          {
+            "id": 16,
+            "type": "Gold cluster",
+            "position": [
+              61,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 40,
+            "type": "Elk",
+            "position": [
+              60,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 2000,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 42,
+            "type": "Elk",
+            "position": [
+              61,
+              11
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 628,
+            "max_health": 2400,
+            "awake": true
+          },
+          {
+            "id": 44,
+            "type": "Wolf",
+            "position": [
+              60,
+              10
+            ],
+            "group": 6,
+            "visibility": "own_view_known",
+            "health": 530,
+            "max_health": 1350,
+            "awake": true
+          },
+          {
+            "id": 76,
+            "type": "Gold cluster",
+            "position": [
+              59,
+              10
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 78,
+            "type": "Gem cluster",
+            "position": [
+              59,
+              11
+            ],
+            "group": 6,
+            "visibility": "static_map_only"
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "move",
+          "step_index": 35134,
+          "destination": [
+            65,
+            7
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 35135
+        }
+      ]
+    },
+    {
+      "round": 174,
+      "turn": 5,
+      "snapshot_step_index": 35351,
+      "observation": {
+        "self": {
+          "id": 2,
+          "type": "Ryth",
+          "team": 0,
+          "alive": false,
+          "position": null,
+          "health": 0,
+          "max_health": 1600,
+          "strength": 49,
+          "cooldowns": [
+            0,
+            0
+          ],
+          "abilities": [
+            "AoE damage",
+            "Attack reset"
+          ],
+          "focus": 100,
+          "buffs": [],
+          "gems": 0,
+          "gold": 0,
+          "items": {
+            "Treasure Shard of Health": 4
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": false,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 16,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vendetta",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 3,
+            "type": "Tavi",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Vendetta",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [],
+          "holes": [],
+          "bushes": [],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": []
+    }
+  ]
+}

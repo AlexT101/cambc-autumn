@@ -1,0 +1,3788 @@
+{
+  "schema": "actor-own-view-window/v3",
+  "label": "8caf8eb913649931.json-Willow-actor3-r763-772",
+  "replay": "provenance/ladder-history-replays-20261024-v1/inputs/astraeus/62589f4b-d504-4bf7-b641-f3e9de95ce9c/three-pilgrimage-new-loss.repl26a",
+  "replay_file_sha256": "e546793a8c82d0bbc32eb725a0217e21b6518b72ec0818c944a04560f394a96d",
+  "replay_payload_sha256": "e546793a8c82d0bbc32eb725a0217e21b6518b72ec0818c944a04560f394a96d",
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "map": "three-pilgrimage-new-loss",
+  "map_path": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/maps/8caf8eb913649931.json",
+  "map_sha256": "89da30717c31c0722194a8d04bd60337a4e7718ba41d11ae55f5252e9a1edead",
+  "build_mode": "unknown (public replay does not identify build mode or fuel)",
+  "cli": "cambc 3.0.5",
+  "source_attribution": {
+    "status": "unverified_public_replay",
+    "statement": "public source is unverified; the replay metadata does not identify a submission/version ID, so exact source attribution is unavailable",
+    "submission_version": null,
+    "source_aggregates": null,
+    "context": "The replay metadata does not identify the submission or source version used."
+  },
+  "actor": {
+    "id": 3,
+    "name": "Willow",
+    "team": 0,
+    "physical_side": "A"
+  },
+  "static_camp_layout": "Expanded stable id/coordinate/type/group rows from the observer snapshot; own-view dynamic camp state joins by native camp id.",
+  "selected_rounds": [
+    763,
+    772
+  ],
+  "exported_rounds": [
+    763,
+    764,
+    765,
+    766,
+    767,
+    768,
+    769,
+    770,
+    771,
+    772
+  ],
+  "observation_limits": "Champion health/position/items/channel are included only for actors visible in this actor perspective; hidden enemy state is omitted. Static nearby map terrain and camps are included; dynamic camp state is included only when own-view known. Replay snapshot does not expose this actor shared-memory word or altar-usability evaluation.",
+  "alignment": "Turn observations are captured at the first phase-10 snapshot for this actor and round. For optional selected action steps, before uses timeline snapshot N-1 and after uses snapshot N; timeline snapshot N contains the state after the action recorded at step index N.",
+  "selected_action_step_indices": [],
+  "selected_action_step_snapshots": [],
+  "turns": [
+    {
+      "round": 763,
+      "turn": 4,
+      "snapshot_step_index": 154644,
+      "observation": {
+        "self": {
+          "id": 3,
+          "type": "Willow",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              12,
+              52
+            ],
+            "own_frame": [
+              12,
+              52
+            ]
+          },
+          "health": 700,
+          "max_health": 700,
+          "strength": 85,
+          "cooldowns": [
+            5,
+            0
+          ],
+          "abilities": [
+            "Heal",
+            "Attack reset"
+          ],
+          "focus": 120,
+          "buffs": [],
+          "gems": 0,
+          "gold": 110,
+          "items": {
+            "Treasure Emblem of Strength": 1,
+            "Jungle Emblem of Strength": 1
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 1040,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                20,
+                57
+              ],
+              "own_frame": [
+                20,
+                57
+              ]
+            },
+            "health": 1500,
+            "max_health": 1500,
+            "strength": 45,
+            "focus": 210,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {
+              "Altar lock": 1
+            },
+            "items": {
+              "Treasure Emblem of Focus": 1,
+              "Jungle Emblem of Focus": 1,
+              "Bruiser Shard of Health": 3
+            },
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [],
+          "holes": [
+            {
+              "position": [
+                10,
+                47
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                47
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                47
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                10,
+                48
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                48
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                48
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                10,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ],
+          "bushes": [
+            {
+              "position": [
+                13,
+                47
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                48
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                53
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                9,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                10,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "cancel_channel",
+          "step_index": 154645
+        },
+        {
+          "kind": "move",
+          "step_index": 154646,
+          "destination": [
+            13,
+            53
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 154647
+        }
+      ]
+    },
+    {
+      "round": 764,
+      "turn": 5,
+      "snapshot_step_index": 154859,
+      "observation": {
+        "self": {
+          "id": 3,
+          "type": "Willow",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              13,
+              53
+            ],
+            "own_frame": [
+              13,
+              53
+            ]
+          },
+          "health": 700,
+          "max_health": 700,
+          "strength": 85,
+          "cooldowns": [
+            4,
+            0
+          ],
+          "abilities": [
+            "Heal",
+            "Attack reset"
+          ],
+          "focus": 120,
+          "buffs": [],
+          "gems": 0,
+          "gold": 110,
+          "items": {
+            "Treasure Emblem of Strength": 1,
+            "Jungle Emblem of Strength": 1
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 1040,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                19,
+                56
+              ],
+              "own_frame": [
+                19,
+                56
+              ]
+            },
+            "health": 1500,
+            "max_health": 1500,
+            "strength": 45,
+            "focus": 210,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {
+              "Altar lock": 1
+            },
+            "items": {
+              "Treasure Emblem of Focus": 1,
+              "Jungle Emblem of Focus": 1,
+              "Bruiser Shard of Health": 3
+            },
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [],
+          "holes": [
+            {
+              "position": [
+                10,
+                48
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                48
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                48
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                10,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ],
+          "bushes": [
+            {
+              "position": [
+                13,
+                48
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                48
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                53
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                9,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                10,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "cancel_channel",
+          "step_index": 154860
+        },
+        {
+          "kind": "move",
+          "step_index": 154861,
+          "destination": [
+            14,
+            54
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 154862
+        }
+      ]
+    },
+    {
+      "round": 765,
+      "turn": 4,
+      "snapshot_step_index": 155056,
+      "observation": {
+        "self": {
+          "id": 3,
+          "type": "Willow",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              14,
+              54
+            ],
+            "own_frame": [
+              14,
+              54
+            ]
+          },
+          "health": 700,
+          "max_health": 700,
+          "strength": 85,
+          "cooldowns": [
+            3,
+            0
+          ],
+          "abilities": [
+            "Heal",
+            "Attack reset"
+          ],
+          "focus": 120,
+          "buffs": [],
+          "gems": 0,
+          "gold": 110,
+          "items": {
+            "Treasure Emblem of Strength": 1,
+            "Jungle Emblem of Strength": 1
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 1040,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                19,
+                57
+              ],
+              "own_frame": [
+                19,
+                57
+              ]
+            },
+            "health": 1500,
+            "max_health": 1500,
+            "strength": 45,
+            "focus": 210,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {
+              "Altar lock": 1
+            },
+            "items": {
+              "Treasure Emblem of Focus": 1,
+              "Jungle Emblem of Focus": 1,
+              "Bruiser Shard of Health": 3
+            },
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [],
+          "holes": [
+            {
+              "position": [
+                10,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                49
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ],
+          "bushes": [
+            {
+              "position": [
+                14,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                49
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                53
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                9,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                10,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                59
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "cancel_channel",
+          "step_index": 155057
+        },
+        {
+          "kind": "move",
+          "step_index": 155058,
+          "destination": [
+            15,
+            55
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 155059
+        }
+      ]
+    },
+    {
+      "round": 766,
+      "turn": 5,
+      "snapshot_step_index": 155269,
+      "observation": {
+        "self": {
+          "id": 3,
+          "type": "Willow",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              15,
+              55
+            ],
+            "own_frame": [
+              15,
+              55
+            ]
+          },
+          "health": 700,
+          "max_health": 700,
+          "strength": 85,
+          "cooldowns": [
+            2,
+            0
+          ],
+          "abilities": [
+            "Heal",
+            "Attack reset"
+          ],
+          "focus": 120,
+          "buffs": [],
+          "gems": 0,
+          "gold": 110,
+          "items": {
+            "Treasure Emblem of Strength": 1,
+            "Jungle Emblem of Strength": 1
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 1040,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                18,
+                56
+              ],
+              "own_frame": [
+                18,
+                56
+              ]
+            },
+            "health": 1500,
+            "max_health": 1500,
+            "strength": 45,
+            "focus": 210,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {
+              "Altar lock": 1
+            },
+            "items": {
+              "Treasure Emblem of Focus": 1,
+              "Jungle Emblem of Focus": 1,
+              "Bruiser Shard of Health": 3
+            },
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [],
+          "holes": [
+            {
+              "position": [
+                11,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                50
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ],
+          "bushes": [
+            {
+              "position": [
+                12,
+                53
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                10,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                59
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "cancel_channel",
+          "step_index": 155270
+        },
+        {
+          "kind": "move",
+          "step_index": 155271,
+          "destination": [
+            16,
+            56
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 155272
+        }
+      ]
+    },
+    {
+      "round": 767,
+      "turn": 2,
+      "snapshot_step_index": 155443,
+      "observation": {
+        "self": {
+          "id": 3,
+          "type": "Willow",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              16,
+              56
+            ],
+            "own_frame": [
+              16,
+              56
+            ]
+          },
+          "health": 700,
+          "max_health": 700,
+          "strength": 85,
+          "cooldowns": [
+            1,
+            0
+          ],
+          "abilities": [
+            "Heal",
+            "Attack reset"
+          ],
+          "focus": 120,
+          "buffs": [],
+          "gems": 0,
+          "gold": 110,
+          "items": {
+            "Treasure Emblem of Strength": 1,
+            "Jungle Emblem of Strength": 1
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 1040,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                19,
+                57
+              ],
+              "own_frame": [
+                19,
+                57
+              ]
+            },
+            "health": 1500,
+            "max_health": 1500,
+            "strength": 45,
+            "focus": 210,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {
+              "Altar lock": 1
+            },
+            "items": {
+              "Treasure Emblem of Focus": 1,
+              "Jungle Emblem of Focus": 1,
+              "Bruiser Shard of Health": 3
+            },
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [],
+          "holes": [
+            {
+              "position": [
+                12,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                20,
+                51
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ],
+          "bushes": [
+            {
+              "position": [
+                12,
+                53
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                11,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                59
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "cancel_channel",
+          "step_index": 155444
+        },
+        {
+          "kind": "move",
+          "step_index": 155445,
+          "destination": [
+            17,
+            57
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 155446
+        }
+      ]
+    },
+    {
+      "round": 768,
+      "turn": 3,
+      "snapshot_step_index": 155659,
+      "observation": {
+        "self": {
+          "id": 3,
+          "type": "Willow",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              17,
+              57
+            ],
+            "own_frame": [
+              17,
+              57
+            ]
+          },
+          "health": 700,
+          "max_health": 700,
+          "strength": 85,
+          "cooldowns": [
+            0,
+            0
+          ],
+          "abilities": [
+            "Heal",
+            "Attack reset"
+          ],
+          "focus": 120,
+          "buffs": [],
+          "gems": 0,
+          "gold": 110,
+          "items": {
+            "Treasure Emblem of Strength": 1,
+            "Jungle Emblem of Strength": 1
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 1040,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                20,
+                57
+              ],
+              "own_frame": [
+                20,
+                57
+              ]
+            },
+            "health": 1500,
+            "max_health": 1500,
+            "strength": 45,
+            "focus": 210,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {
+              "Altar lock": 1
+            },
+            "items": {
+              "Treasure Emblem of Focus": 1,
+              "Jungle Emblem of Focus": 1,
+              "Bruiser Shard of Health": 3
+            },
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [],
+          "holes": [
+            {
+              "position": [
+                13,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ],
+          "bushes": [
+            {
+              "position": [
+                12,
+                53
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                54
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                22,
+                54
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                12,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                59
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "cancel_channel",
+          "step_index": 155660
+        },
+        {
+          "kind": "move",
+          "step_index": 155661,
+          "destination": [
+            18,
+            57
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 155662
+        }
+      ]
+    },
+    {
+      "round": 769,
+      "turn": 2,
+      "snapshot_step_index": 155851,
+      "observation": {
+        "self": {
+          "id": 3,
+          "type": "Willow",
+          "team": 0,
+          "alive": true,
+          "position": {
+            "raw": [
+              18,
+              57
+            ],
+            "own_frame": [
+              18,
+              57
+            ]
+          },
+          "health": 700,
+          "max_health": 700,
+          "strength": 85,
+          "cooldowns": [
+            0,
+            0
+          ],
+          "abilities": [
+            "Heal",
+            "Attack reset"
+          ],
+          "focus": 120,
+          "buffs": [],
+          "gems": 0,
+          "gold": 110,
+          "items": {
+            "Treasure Emblem of Strength": 1,
+            "Jungle Emblem of Strength": 1
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 1,
+            "timer": 4
+          },
+          "round_flags": {
+            "cast_ready": true,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 1040,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "visible",
+            "alive": true,
+            "position": {
+              "raw": [
+                21,
+                57
+              ],
+              "own_frame": [
+                21,
+                57
+              ]
+            },
+            "health": 1163,
+            "max_health": 1500,
+            "strength": 45,
+            "focus": 210,
+            "buffs": [],
+            "cooldowns": [
+              0,
+              0
+            ],
+            "abilities": [
+              "Attack reset",
+              "Damage"
+            ],
+            "consumables": {
+              "Altar lock": 1
+            },
+            "items": {
+              "Treasure Emblem of Focus": 1,
+              "Jungle Emblem of Focus": 1,
+              "Bruiser Shard of Health": 3
+            },
+            "gems": 0,
+            "channel": {
+              "type": 1,
+              "timer": 4
+            }
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [],
+          "holes": [
+            {
+              "position": [
+                13,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                52
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            }
+          ],
+          "bushes": [
+            {
+              "position": [
+                23,
+                53
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                22,
+                54
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                23,
+                54
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                55
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                13,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                56
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                14,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                57
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                15,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                58
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                16,
+                59
+              ],
+              "currently_visible": true,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                17,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                18,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            },
+            {
+              "position": [
+                19,
+                59
+              ],
+              "currently_visible": false,
+              "publicly_known_static": true
+            }
+          ],
+          "altars": []
+        },
+        "local_camps": [
+          {
+            "id": 24,
+            "type": "Gold cluster",
+            "position": [
+              23,
+              58
+            ],
+            "group": 12,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 44,
+            "type": "Gold cluster",
+            "position": [
+              23,
+              57
+            ],
+            "group": 12,
+            "visibility": "static_map_only"
+          },
+          {
+            "id": 64,
+            "type": "Gem cluster",
+            "position": [
+              23,
+              59
+            ],
+            "group": 12,
+            "visibility": "own_view_known",
+            "health": 120,
+            "max_health": 120,
+            "awake": false
+          },
+          {
+            "id": 66,
+            "type": "Gem cluster",
+            "position": [
+              23,
+              56
+            ],
+            "group": 12,
+            "visibility": "static_map_only"
+          }
+        ]
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "cancel_channel",
+          "step_index": 155852
+        },
+        {
+          "kind": "cast_ability",
+          "step_index": 155853,
+          "ability_slot": 0,
+          "ability": "Heal",
+          "target": [
+            21,
+            57
+          ]
+        },
+        {
+          "kind": "move",
+          "step_index": 155854,
+          "destination": [
+            19,
+            57
+          ]
+        },
+        {
+          "kind": "recall",
+          "step_index": 155855
+        }
+      ]
+    },
+    {
+      "round": 770,
+      "turn": 1,
+      "snapshot_step_index": 156046,
+      "observation": {
+        "self": {
+          "id": 3,
+          "type": "Willow",
+          "team": 0,
+          "alive": false,
+          "position": null,
+          "health": 0,
+          "max_health": 700,
+          "strength": 85,
+          "cooldowns": [
+            0,
+            0
+          ],
+          "abilities": [
+            "Heal",
+            "Attack reset"
+          ],
+          "focus": 120,
+          "buffs": [],
+          "gems": 0,
+          "gold": 110,
+          "items": {
+            "Treasure Emblem of Strength": 1,
+            "Jungle Emblem of Strength": 1
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": false,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 16,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [],
+          "holes": [],
+          "bushes": [],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": [
+        {
+          "kind": "shop",
+          "step_index": 156047,
+          "item": null
+        },
+        {
+          "kind": "set_priority",
+          "step_index": 156048,
+          "priority": 13
+        }
+      ]
+    },
+    {
+      "round": 771,
+      "turn": 0,
+      "snapshot_step_index": 156241,
+      "observation": {
+        "self": {
+          "id": 3,
+          "type": "Willow",
+          "team": 0,
+          "alive": false,
+          "position": null,
+          "health": 0,
+          "max_health": 850,
+          "strength": 85,
+          "cooldowns": [
+            0,
+            0
+          ],
+          "abilities": [
+            "Heal",
+            "Attack reset"
+          ],
+          "focus": 120,
+          "buffs": [],
+          "gems": 0,
+          "gold": 20,
+          "items": {
+            "Durability Shard of Health": 3,
+            "Treasure Emblem of Strength": 1,
+            "Jungle Emblem of Strength": 1
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": false,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 16,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [],
+          "holes": [],
+          "bushes": [],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": []
+    },
+    {
+      "round": 772,
+      "turn": 1,
+      "snapshot_step_index": 156452,
+      "observation": {
+        "self": {
+          "id": 3,
+          "type": "Willow",
+          "team": 0,
+          "alive": false,
+          "position": null,
+          "health": 0,
+          "max_health": 850,
+          "strength": 85,
+          "cooldowns": [
+            0,
+            0
+          ],
+          "abilities": [
+            "Heal",
+            "Attack reset"
+          ],
+          "focus": 120,
+          "buffs": [],
+          "gems": 0,
+          "gold": 20,
+          "items": {
+            "Durability Shard of Health": 3,
+            "Treasure Emblem of Strength": 1,
+            "Jungle Emblem of Strength": 1
+          },
+          "consumables": {
+            "Altar lock": 1
+          },
+          "channel": {
+            "type": 0,
+            "timer": 0
+          },
+          "round_flags": {
+            "cast_ready": false,
+            "attack_ready": false,
+            "movement_used": false,
+            "raw": 16,
+            "movement_ready": null,
+            "movement_ready_note": "The replay snapshot does not expose champion_state::can_move."
+          }
+        },
+        "other_champions": [
+          {
+            "id": 0,
+            "type": "Prism",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 1,
+            "type": "Vesper Vale",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 2,
+            "type": "Marcella",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 4,
+            "type": "Heart of Ruin",
+            "team": 0,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 5,
+            "type": "Heart of Ruin",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 6,
+            "type": "Prism",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 7,
+            "type": "Ryth",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 8,
+            "type": "Vesper Vale",
+            "team": 1,
+            "visibility": "identity_only"
+          },
+          {
+            "id": 9,
+            "type": "Marcella",
+            "team": 1,
+            "visibility": "identity_only"
+          }
+        ],
+        "local_terrain": {
+          "walls": [],
+          "holes": [],
+          "bushes": [],
+          "altars": []
+        },
+        "local_camps": []
+      },
+      "turn_end": "end_turn",
+      "actions": []
+    }
+  ]
+}

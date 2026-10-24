@@ -1,0 +1,492 @@
+{
+  "schema": "native-turn-status-audit/v1",
+  "batch": "provenance/ladder-history-replays-20261024-v1/audit/astraeus",
+  "batch_results_sha256": "0c396d45103806855aa1c9f861aecb37ed5919f8f9e9fb9abdcf1504dc5ac257",
+  "release": true,
+  "games": 4,
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "snapshot_mode": "v1_0_3_compact_timeline",
+  "compact_timeline_pin": {
+    "version": "v1_0_3",
+    "wasmSha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "officialDecoderSha256": "960affde6198366d2347bd21f43efec5bc06acc6cb0c53e5f7f96dbf87f027e6",
+    "visualizerBundleSha256": "b80358b2189444187c38880ee7218d84b4a013a1b379b93470659c4c6b2c4a24",
+    "snapshotSize": 40152
+  },
+  "source_pins": {
+    "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171"
+  },
+  "bots": [
+    {
+      "bot": "astraeus-ranked-history",
+      "bot_index": 0,
+      "games": 4,
+      "play": {
+        "rollover": 5,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    },
+    {
+      "bot": "opponent-team",
+      "bot_index": 1,
+      "games": 4,
+      "play": {
+        "rollover": 409,
+        "bot_error": 0
+      },
+      "draft": {
+        "rollover": 0,
+        "bot_error": 0
+      },
+      "other": {
+        "rollover": 0,
+        "bot_error": 0
+      }
+    }
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "replay": "provenance/ladder-history-replays-20261024-v1/bundles/astraeus/fish-elkring-old-win-67fc71af-7d66-40e8-8c82-a0d400cbea6f.zip",
+      "replay_format": "zip",
+      "replay_sha256": "ec77aa6744647b085aa066aaa9520d24d698096d61438013b704c02a5db98880",
+      "replay_engine": "v1_0_3",
+      "map": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/maps/6793e671494a0c28.json",
+      "map_format": "json",
+      "map_sha256": "c68b9c4fb9b392596cf4fcea3b3b0657e1e919acc9e24fd241605e89a5f0a63e",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "opponent-team",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "astraeus-ranked-history",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 2,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "opponent-team",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "astraeus-ranked-history",
+            "bot_index": 0,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "10": {
+                "actor_kind": 1,
+                "actor_index": 10,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 2,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 1,
+      "replay": "provenance/ladder-history-replays-20261024-v1/bundles/astraeus/fish-elkring-new-loss-deb4ae94-edc6-480f-a0e9-03fd944841bd.zip",
+      "replay_format": "zip",
+      "replay_sha256": "9cf1229f1d232f55eb9696d8559399a86c663d415e92df30d83b6b4f1992ed86",
+      "replay_engine": "v1_0_3",
+      "map": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/maps/6793e671494a0c28.json",
+      "map_format": "json",
+      "map_sha256": "c68b9c4fb9b392596cf4fcea3b3b0657e1e919acc9e24fd241605e89a5f0a63e",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "opponent-team",
+          "bot_index": 1
+        },
+        {
+          "physical_side": "B",
+          "bot": "astraeus-ranked-history",
+          "bot_index": 0
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "opponent-team",
+            "bot_index": 1,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          },
+          {
+            "physical_side": "B",
+            "bot": "astraeus-ranked-history",
+            "bot_index": 0,
+            "play": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {}
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "replay": "provenance/ladder-history-replays-20261024-v1/bundles/astraeus/three-pilgrimage-old-win-9da66955-6268-428c-a955-1549cd080c33.zip",
+      "replay_format": "zip",
+      "replay_sha256": "f5c2e071751d1f624630097b8d7f0be12dfd09f93589f5d8dd93324c11e55b7d",
+      "replay_engine": "v1_0_3",
+      "map": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/maps/8caf8eb913649931.json",
+      "map_format": "json",
+      "map_sha256": "89da30717c31c0722194a8d04bd60337a4e7718ba41d11ae55f5252e9a1edead",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "astraeus-ranked-history",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "opponent-team",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 204,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "astraeus-ranked-history",
+            "bot_index": 0,
+            "play": {
+              "rollover": 2,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "0": {
+                "actor_kind": 1,
+                "actor_index": 0,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              },
+              "3": {
+                "actor_kind": 1,
+                "actor_index": 3,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "opponent-team",
+            "bot_index": 1,
+            "play": {
+              "rollover": 202,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 44,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 39,
+                  "bot_error": 0
+                }
+              },
+              "7": {
+                "actor_kind": 1,
+                "actor_index": 7,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 41,
+                  "bot_error": 0
+                }
+              },
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 36,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 42,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "index": 3,
+      "replay": "provenance/ladder-history-replays-20261024-v1/bundles/astraeus/three-pilgrimage-new-loss-62589f4b-d504-4bf7-b641-f3e9de95ce9c.zip",
+      "replay_format": "zip",
+      "replay_sha256": "8a50ad523a0833b846a43b21a81f3f2ba46da45cc5eae195670ce0bc731460a6",
+      "replay_engine": "v1_0_3",
+      "map": "provenance/ladder-history-replays-20261024-v1/extract/astraeus/maps/8caf8eb913649931.json",
+      "map_format": "json",
+      "map_sha256": "89da30717c31c0722194a8d04bd60337a4e7718ba41d11ae55f5252e9a1edead",
+      "physical_order": [
+        {
+          "physical_side": "A",
+          "bot": "astraeus-ranked-history",
+          "bot_index": 0
+        },
+        {
+          "physical_side": "B",
+          "bot": "opponent-team",
+          "bot_index": 1
+        }
+      ],
+      "counts": {
+        "play": {
+          "rollover": 208,
+          "bot_error": 0
+        },
+        "draft": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "other": {
+          "rollover": 0,
+          "bot_error": 0
+        },
+        "by_side": [
+          {
+            "physical_side": "A",
+            "bot": "astraeus-ranked-history",
+            "bot_index": 0,
+            "play": {
+              "rollover": 1,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "4": {
+                "actor_kind": 1,
+                "actor_index": 4,
+                "champion_team": 0,
+                "play": {
+                  "rollover": 1,
+                  "bot_error": 0
+                }
+              }
+            }
+          },
+          {
+            "physical_side": "B",
+            "bot": "opponent-team",
+            "bot_index": 1,
+            "play": {
+              "rollover": 207,
+              "bot_error": 0
+            },
+            "draft": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "other": {
+              "rollover": 0,
+              "bot_error": 0
+            },
+            "champions": {
+              "5": {
+                "actor_kind": 1,
+                "actor_index": 5,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 40,
+                  "bot_error": 0
+                }
+              },
+              "6": {
+                "actor_kind": 1,
+                "actor_index": 6,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 43,
+                  "bot_error": 0
+                }
+              },
+              "7": {
+                "actor_kind": 1,
+                "actor_index": 7,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 43,
+                  "bot_error": 0
+                }
+              },
+              "8": {
+                "actor_kind": 1,
+                "actor_index": 8,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 38,
+                  "bot_error": 0
+                }
+              },
+              "9": {
+                "actor_kind": 1,
+                "actor_index": 9,
+                "champion_team": 1,
+                "play": {
+                  "rollover": 43,
+                  "bot_error": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "notes": "Counts are native replay step kinds 26 (Turn rollover/fuel) and 27 (Bot error), classified by step.phase: 10 play, 12 draft, all remaining phases under other. For play statuses, physical team comes from the actor champion record in the same snapshot, not header.team; champion buckets use native actor kind/index. Snapshot mode is the pinned v1_0_3 compact timeline reader; the auditor does not extract events or metrics. Source pins are copied from results.json or adjacent economic-capture-summary.json when available."
+}

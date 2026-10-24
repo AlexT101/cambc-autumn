@@ -1,0 +1,107 @@
+diff -ru source-before/src/turn_order.cpp source-after/src/turn_order.cpp
+--- source-before/src/turn_order.cpp	2026-10-24 02:23:56
++++ source-after/src/turn_order.cpp	2026-10-24 02:29:03
+@@ -280,12 +280,76 @@
+     }
+ }
+ 
++bool contact_camps_clear(const World& world, vec2 p) {
++    const auto& map = world.map();
++    for (const int g : map.groups_near(p, map.max_camp_reach)) {
++        const auto& group = map.groups[static_cast<std::size_t>(g)];
++        if (group.strength <= 0) continue;
++        const auto& camp = world.camps[static_cast<std::size_t>(g)];
++        if (camp.state == CampState::respawning && camp.respawn_round > world.round + 1) continue;
++        if (camp.state == CampState::cleared && camp.state_round > 0
++            && camp.state_round + group.respawn > world.round + 1)
++            continue;
++        // Safety's camp reaches already include the old priority's nearest-target tie winner.
++        return false;
++    }
++    return true;
++}
++
++bool recall_contact_priority(const World& world, vec2 p, int fallback, const std::vector<Enemy>& enemies) {
++    constexpr int floor = 13;
++    int old_rank = 0, new_rank = 0;
++    const auto handle = world.me().handle;
++    for (const auto& ally : world.allies) {
++        if (ally.is_self) continue;
++        const bool tie_first = ally.handle < handle;
++        old_rank += ally.next_priority > fallback || (ally.next_priority == fallback && tie_first);
++        new_rank += ally.next_priority > floor || (ally.next_priority == floor && tie_first);
++    }
++    if (old_rank == new_rank) return false;
++    const auto slot = [](int rank, int others, bool first) {
++        return rank < others ? 2 * rank + (first ? 0 : 1) : others + rank;
++    };
++    const bool first = we_start(world, world.round + 1);
++    const int old_slot = slot(old_rank, static_cast<int>(world.enemies.size()), first);
++    const int new_slot = slot(new_rank, static_cast<int>(world.enemies.size()), first);
++    for (const auto& enemy : enemies) {
++        const auto& e = *enemy.belief;
++        if (!e.acted || e.pos_round != world.round || e.stats_round != world.round
++            || e.priority_round != world.round || e.channel != Channel::none)
++            continue;
++        int rank = 0;
++        for (const auto& other : world.enemies)
++            rank += other.next_priority > e.next_priority
++                    || (other.next_priority == e.next_priority && other.handle < e.handle);
++        const int enemy_slot = slot(rank, static_cast<int>(world.allies.size()), !first);
++        if (new_slot >= enemy_slot || old_slot < enemy_slot) continue;
++        const int distance = dist(p, e.pos);
++        // The later strike allows one prior approach walk; it is not next-activation damage.
++        if (strike(e, world.round + 1).hits(distance)
++            || strike(e, world.round + 2).hits(std::max(0, distance - 1))) {
++            // Start snapshots carry known stuns; action flags after an enemy acted do not.
++            bool unstunned = false;
++            for (int i = 0; i < world.priority_start_enemies.count; ++i)
++                if (world.priority_start_handles[static_cast<std::size_t>(i)] == e.handle) {
++                    unstunned = !world.priority_start_enemies.units[static_cast<std::size_t>(i)].stunned;
++                    break;
++                }
++            if (!unstunned) continue;
++            return contact_camps_clear(world, p);
++        }
++    }
++    return false;
++}
++
+ } // namespace
+ 
+ void set_turn_order(const World& world, Safety& safety) {
+     world.throw_if_stale();
+     auto& me = cambc::self();
+     Wish wish;
++    const std::vector<Enemy>* recall_enemies = nullptr;
++    vec2 recall_position;
+     if (world.me().alive && !fuel_ok(end_reserve)) {
+         note_shortcut("turn-order");
+         return;
+@@ -319,10 +383,15 @@
+                 refresh();
+                 offer_channel(self, state, safety, wish);
+             }
+-            if (!test(world.map().ally_spawn, self.pos) && may_escape(world, self, safety, seen)) {
++            const bool on_spawn = test(world.map().ally_spawn, self.pos);
++            if (!on_spawn && may_escape(world, self, safety, seen)) {
+                 refresh();
+                 offer_escape(world, self, safety, wish);
+             }
++            // An opportunistic recall also qualifies; this is channel intent, not a retreat branch.
++            if (wish.band == none && self.type == cambc::champion_type::willow
++                && state.contains(cambc::champion_state::recalling) && !on_spawn && !enemies.empty())
++                recall_enemies = &enemies, recall_position = self.pos;
+         }
+     }
+     int priority;
+@@ -331,6 +400,9 @@
+     } else {
+         const auto self = priority_self(world);
+         priority = teacher_priority::priority(self, live_start_enemies(world), self.alive ? static_cast<int>(my_gems()) : 0);
++        if (self.alive && priority < 13 && recall_enemies
++            && recall_contact_priority(world, recall_position, priority, *recall_enemies))
++            priority = 13;
+         world.throw_if_stale();
+     }
+     try {

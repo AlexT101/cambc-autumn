@@ -1,0 +1,7035 @@
+{
+  "schema": "bigworld-mite-pair-macro/v2",
+  "source_attribution": "public-source-unverified; submission ID/version unknown",
+  "method": "Existing extractor-v2 meta, rounds, and events only; no replay engine pass. Both games clipped to round 1109.",
+  "notes": [
+    "Capture cycles are successive capture-event rounds for each static group; gap is elapsed rounds between captures, not a claim that every respawn was successfully captured.",
+    "submitted_gems_score is the native team score column; carried_gems sums champion bags at round end.",
+    "Marcella timeline includes her capture contribution shares and tribute/shop/death/respawn events; repeated recall-start markers are excluded."
+  ],
+  "games": [
+    {
+      "match_id": "cf39cebf-e598-4540-afaa-b470321fe98a",
+      "label": "loss",
+      "source_replay": "provenance/ladder-history-replays-20261024-v1/inputs/mite/cf39cebf-e598-4540-afaa-b470321fe98a/big-world-new-team-4-loss.repl26a",
+      "replay_payload_sha256": "1648fee7392c97b1a18545993fc23d5b00625caf21e033bf931f3d09c09e9bd5",
+      "rounds_file_sha256": "7c3d6bac10a33243a293423fb46ebff6b5e923ba3773b05a19bc76106d4dd1a6",
+      "events_file_sha256": "ab278796f9c043b0fcd18c0516410c2bdb9b5a786c1fe15ef23a7c672de16c85",
+      "map": {
+        "name": "big-world-new-team-4-loss",
+        "hash": "c890c7d4607bc45c",
+        "width": 100,
+        "height": 100,
+        "symmetry": "rotational"
+      },
+      "result": {
+        "winner": 1,
+        "outcome": 2,
+        "rounds": 1109,
+        "gems": [
+          835,
+          1017
+        ],
+        "steps": 229757
+      },
+      "common_horizon": 1109,
+      "teams": [
+        "A",
+        "B"
+      ],
+      "roster": [
+        {
+          "id": 0,
+          "name": "Vesper Vale",
+          "team": "A",
+          "stats": {
+            "kills": 1,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 1078,
+            "spentGold": 1070,
+            "collectedGems": 101,
+            "submittedGems": 101,
+            "championDamageDone": 1008,
+            "championDamageTaken": 180,
+            "monsterDamageDone": 28188,
+            "monsterDamageTaken": 6921.59995174408,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              6,
+              5,
+              7,
+              1,
+              16,
+              5,
+              17,
+              1,
+              18,
+              5,
+              19,
+              1,
+              28,
+              5,
+              29,
+              1,
+              36,
+              5,
+              37,
+              1,
+              40,
+              5,
+              41,
+              1
+            ],
+            "consumablesBought": [
+              1,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 1,
+          "name": "Vendetta",
+          "team": "A",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 1566,
+            "spentGold": 1550,
+            "collectedGems": 204,
+            "submittedGems": 142,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 29755.00114440918,
+            "monsterDamageTaken": 10351.999938964844,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              12,
+              5,
+              13,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1,
+              36,
+              16,
+              37,
+              3,
+              40,
+              15,
+              41,
+              3
+            ],
+            "consumablesBought": [
+              1,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 2,
+          "name": "Ryth",
+          "team": "A",
+          "stats": {
+            "kills": 0,
+            "deaths": 2,
+            "assists": 0,
+            "earnedGold": 1922,
+            "spentGold": 1670,
+            "collectedGems": 261,
+            "submittedGems": 209,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 28132.499786376953,
+            "monsterDamageTaken": 9302.599954605103,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              16,
+              5,
+              17,
+              1,
+              22,
+              5,
+              23,
+              1,
+              24,
+              5,
+              25,
+              1,
+              36,
+              15,
+              37,
+              3,
+              40,
+              20,
+              41,
+              4
+            ],
+            "consumablesBought": [
+              1,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 3,
+          "name": "Tavi",
+          "team": "A",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 1320,
+            "spentGold": 1310,
+            "collectedGems": 137,
+            "submittedGems": 122,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 38534.099670410156,
+            "monsterDamageTaken": 5424,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              16,
+              5,
+              17,
+              1,
+              36,
+              28,
+              37,
+              5,
+              40,
+              5,
+              41,
+              1
+            ],
+            "consumablesBought": [
+              1,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 4,
+          "name": "Marcella",
+          "team": "A",
+          "stats": {
+            "kills": 1,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 2608,
+            "spentGold": 2510,
+            "collectedGems": 261,
+            "submittedGems": 261,
+            "championDamageDone": 1220,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 38047.399993896484,
+            "monsterDamageTaken": 7327.199878692627,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              16,
+              5,
+              17,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1,
+              36,
+              5,
+              37,
+              1,
+              38,
+              30,
+              39,
+              6,
+              40,
+              28,
+              41,
+              5
+            ],
+            "consumablesBought": [
+              1,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 5,
+          "name": "Heart of Ruin",
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 1268,
+            "spentGold": 1250,
+            "collectedGems": 199,
+            "submittedGems": 178,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 28650.055145263672,
+            "monsterDamageTaken": 9475.599918365479,
+            "healingDone": 0,
+            "shieldingDone": 14022,
+            "itemsBought": [
+              2,
+              5,
+              3,
+              1,
+              8,
+              10,
+              9,
+              2,
+              16,
+              5,
+              17,
+              1,
+              20,
+              5,
+              21,
+              1,
+              26,
+              5,
+              27,
+              1,
+              34,
+              5,
+              35,
+              1,
+              40,
+              5,
+              41,
+              1
+            ],
+            "consumablesBought": [
+              2,
+              0,
+              3,
+              0
+            ]
+          }
+        },
+        {
+          "id": 6,
+          "name": "Marcella",
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 3358,
+            "spentGold": 3340,
+            "collectedGems": 485,
+            "submittedGems": 455,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 56660.936349868774,
+            "monsterDamageTaken": 12575.999856948853,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              6,
+              45,
+              7,
+              9,
+              16,
+              5,
+              17,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1,
+              40,
+              45,
+              41,
+              9
+            ],
+            "consumablesBought": [
+              3,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 7,
+          "name": "Vesper Vale",
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 541,
+            "spentGold": 370,
+            "collectedGems": 189,
+            "submittedGems": 189,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 12579,
+            "monsterDamageTaken": 2340,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              6,
+              2,
+              16,
+              5,
+              17,
+              1,
+              18,
+              5,
+              19,
+              1
+            ],
+            "consumablesBought": [
+              0,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 8,
+          "name": "Ryth",
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 2,
+            "assists": 0,
+            "earnedGold": 1188,
+            "spentGold": 950,
+            "collectedGems": 131,
+            "submittedGems": 98,
+            "championDamageDone": 180,
+            "championDamageTaken": 1008,
+            "monsterDamageDone": 30563.007884979248,
+            "monsterDamageTaken": 5254.79992389679,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              6,
+              5,
+              7,
+              1,
+              16,
+              5,
+              17,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1,
+              40,
+              5,
+              41,
+              1
+            ],
+            "consumablesBought": [
+              4,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 9,
+          "name": "Vendetta",
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 0,
+            "earnedGold": 506,
+            "spentGold": 410,
+            "collectedGems": 125,
+            "submittedGems": 97,
+            "championDamageDone": 0,
+            "championDamageTaken": 1220,
+            "monsterDamageDone": 9990,
+            "monsterDamageTaken": 3600,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              16,
+              5,
+              17,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              2
+            ],
+            "consumablesBought": [
+              4,
+              0,
+              1,
+              0
+            ]
+          }
+        }
+      ],
+      "capture_events_by_team": {
+        "A": 48,
+        "B": 56
+      },
+      "capture_events_by_group_and_team": {
+        "A": {
+          "22": 13,
+          "10": 4,
+          "18": 10,
+          "6": 10,
+          "5": 3,
+          "8": 6,
+          "4": 2
+        },
+        "B": {
+          "23": 10,
+          "19": 9,
+          "11": 6,
+          "3": 11,
+          "7": 1,
+          "2": 2,
+          "1": 2,
+          "9": 6,
+          "15": 3,
+          "5": 3,
+          "4": 2,
+          "16": 1
+        }
+      },
+      "capture_share_totals_by_actor": {
+        "2": {
+          "name": "Ryth",
+          "team": "A",
+          "capture_shares": 10,
+          "gems": 261,
+          "gold": 1922
+        },
+        "9": {
+          "name": "Vendetta",
+          "team": "B",
+          "capture_shares": 11,
+          "gems": 125,
+          "gold": 506
+        },
+        "4": {
+          "name": "Marcella",
+          "team": "A",
+          "capture_shares": 12,
+          "gems": 254,
+          "gold": 1884
+        },
+        "3": {
+          "name": "Tavi",
+          "team": "A",
+          "capture_shares": 14,
+          "gems": 137,
+          "gold": 1320
+        },
+        "7": {
+          "name": "Vesper Vale",
+          "team": "B",
+          "capture_shares": 13,
+          "gems": 189,
+          "gold": 541
+        },
+        "0": {
+          "name": "Vesper Vale",
+          "team": "A",
+          "capture_shares": 7,
+          "gems": 86,
+          "gold": 945
+        },
+        "6": {
+          "name": "Marcella",
+          "team": "B",
+          "capture_shares": 11,
+          "gems": 485,
+          "gold": 2266
+        },
+        "5": {
+          "name": "Heart of Ruin",
+          "team": "B",
+          "capture_shares": 11,
+          "gems": 199,
+          "gold": 1268
+        },
+        "8": {
+          "name": "Ryth",
+          "team": "B",
+          "capture_shares": 11,
+          "gems": 131,
+          "gold": 1188
+        },
+        "1": {
+          "name": "Vendetta",
+          "team": "A",
+          "capture_shares": 8,
+          "gems": 204,
+          "gold": 1566
+        }
+      },
+      "groups": [
+        {
+          "group": 0,
+          "gems": 7,
+          "gold": 40,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 1,
+          "gems": 7,
+          "gold": 40,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 356,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                7,
+                7,
+                54
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 356,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  7,
+                  7,
+                  54
+                ]
+              ]
+            },
+            {
+              "round": 724,
+              "team": "B",
+              "gap_from_previous": 368,
+              "shares": [
+                [
+                  9,
+                  7,
+                  48
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 2,
+          "gems": 21,
+          "gold": 0,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 302,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                5,
+                21,
+                0
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 302,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  5,
+                  21,
+                  0
+                ]
+              ]
+            },
+            {
+              "round": 1095,
+              "team": "B",
+              "gap_from_previous": 793,
+              "shares": [
+                [
+                  5,
+                  21,
+                  0
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 3,
+          "gems": 21,
+          "gold": 0,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 135,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                9,
+                21,
+                0
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 135,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  9,
+                  21,
+                  0
+                ]
+              ]
+            },
+            {
+              "round": 216,
+              "team": "B",
+              "gap_from_previous": 81,
+              "shares": [
+                [
+                  7,
+                  21,
+                  0
+                ]
+              ]
+            },
+            {
+              "round": 286,
+              "team": "B",
+              "gap_from_previous": 70,
+              "shares": [
+                [
+                  7,
+                  21,
+                  0
+                ]
+              ]
+            },
+            {
+              "round": 388,
+              "team": "B",
+              "gap_from_previous": 102,
+              "shares": [
+                [
+                  9,
+                  21,
+                  0
+                ]
+              ]
+            },
+            {
+              "round": 507,
+              "team": "B",
+              "gap_from_previous": 119,
+              "shares": [
+                [
+                  9,
+                  21,
+                  0
+                ]
+              ]
+            },
+            {
+              "round": 675,
+              "team": "B",
+              "gap_from_previous": 168,
+              "shares": [
+                [
+                  7,
+                  21,
+                  0
+                ]
+              ]
+            },
+            {
+              "round": 776,
+              "team": "B",
+              "gap_from_previous": 101,
+              "shares": [
+                [
+                  7,
+                  21,
+                  0
+                ]
+              ]
+            },
+            {
+              "round": 878,
+              "team": "B",
+              "gap_from_previous": 102,
+              "shares": [
+                [
+                  7,
+                  21,
+                  0
+                ]
+              ]
+            },
+            {
+              "round": 947,
+              "team": "B",
+              "gap_from_previous": 69,
+              "shares": [
+                [
+                  7,
+                  21,
+                  0
+                ]
+              ]
+            },
+            {
+              "round": 1015,
+              "team": "B",
+              "gap_from_previous": 68,
+              "shares": [
+                [
+                  7,
+                  21,
+                  0
+                ]
+              ]
+            },
+            {
+              "round": 1109,
+              "team": "B",
+              "gap_from_previous": 94,
+              "shares": [
+                [
+                  9,
+                  21,
+                  0
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 4,
+          "gems": 15,
+          "gold": 100,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 603,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                1,
+                15,
+                120
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 603,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  1,
+                  15,
+                  120
+                ]
+              ]
+            },
+            {
+              "round": 684,
+              "team": "B",
+              "gap_from_previous": 81,
+              "shares": [
+                [
+                  5,
+                  15,
+                  120
+                ]
+              ]
+            },
+            {
+              "round": 755,
+              "team": "A",
+              "gap_from_previous": 71,
+              "shares": [
+                [
+                  1,
+                  15,
+                  120
+                ]
+              ]
+            },
+            {
+              "round": 1029,
+              "team": "B",
+              "gap_from_previous": 274,
+              "shares": [
+                [
+                  8,
+                  15,
+                  120
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 5,
+          "gems": 15,
+          "gold": 100,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 344,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                4,
+                15,
+                100
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 344,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  4,
+                  15,
+                  100
+                ]
+              ]
+            },
+            {
+              "round": 539,
+              "team": "B",
+              "gap_from_previous": 195,
+              "shares": [
+                [
+                  8,
+                  15,
+                  100
+                ]
+              ]
+            },
+            {
+              "round": 695,
+              "team": "B",
+              "gap_from_previous": 156,
+              "shares": [
+                [
+                  8,
+                  15,
+                  120
+                ]
+              ]
+            },
+            {
+              "round": 873,
+              "team": "A",
+              "gap_from_previous": 178,
+              "shares": [
+                [
+                  4,
+                  15,
+                  120
+                ]
+              ]
+            },
+            {
+              "round": 1004,
+              "team": "B",
+              "gap_from_previous": 131,
+              "shares": [
+                [
+                  9,
+                  15,
+                  120
+                ]
+              ]
+            },
+            {
+              "round": 1079,
+              "team": "A",
+              "gap_from_previous": 75,
+              "shares": [
+                [
+                  0,
+                  15,
+                  153
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 6,
+          "gems": 41,
+          "gold": 260,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 229,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                4,
+                41,
+                260
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 229,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  4,
+                  41,
+                  260
+                ]
+              ]
+            },
+            {
+              "round": 382,
+              "team": "A",
+              "gap_from_previous": 153,
+              "shares": [
+                [
+                  4,
+                  41,
+                  312
+                ]
+              ]
+            },
+            {
+              "round": 478,
+              "team": "A",
+              "gap_from_previous": 96,
+              "shares": [
+                [
+                  1,
+                  41,
+                  260
+                ]
+              ]
+            },
+            {
+              "round": 574,
+              "team": "A",
+              "gap_from_previous": 96,
+              "shares": [
+                [
+                  2,
+                  41,
+                  312
+                ]
+              ]
+            },
+            {
+              "round": 668,
+              "team": "A",
+              "gap_from_previous": 94,
+              "shares": [
+                [
+                  2,
+                  41,
+                  312
+                ]
+              ]
+            },
+            {
+              "round": 747,
+              "team": "A",
+              "gap_from_previous": 79,
+              "shares": [
+                [
+                  2,
+                  21,
+                  156
+                ],
+                [
+                  4,
+                  20,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 834,
+              "team": "A",
+              "gap_from_previous": 87,
+              "shares": [
+                [
+                  3,
+                  41,
+                  260
+                ]
+              ]
+            },
+            {
+              "round": 924,
+              "team": "A",
+              "gap_from_previous": 90,
+              "shares": [
+                [
+                  1,
+                  41,
+                  312
+                ]
+              ]
+            },
+            {
+              "round": 999,
+              "team": "A",
+              "gap_from_previous": 75,
+              "shares": [
+                [
+                  1,
+                  21,
+                  156
+                ],
+                [
+                  2,
+                  20,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 1085,
+              "team": "A",
+              "gap_from_previous": 86,
+              "shares": [
+                [
+                  1,
+                  41,
+                  312
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 7,
+          "gems": 41,
+          "gold": 260,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 186,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                6,
+                41,
+                260
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 186,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  6,
+                  41,
+                  260
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 8,
+          "gems": 37,
+          "gold": 190,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 531,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                0,
+                37,
+                253
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 531,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  0,
+                  37,
+                  253
+                ]
+              ]
+            },
+            {
+              "round": 655,
+              "team": "A",
+              "gap_from_previous": 124,
+              "shares": [
+                [
+                  4,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 837,
+              "team": "A",
+              "gap_from_previous": 182,
+              "shares": [
+                [
+                  2,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 920,
+              "team": "A",
+              "gap_from_previous": 83,
+              "shares": [
+                [
+                  2,
+                  19,
+                  114
+                ],
+                [
+                  4,
+                  18,
+                  114
+                ]
+              ]
+            },
+            {
+              "round": 1013,
+              "team": "A",
+              "gap_from_previous": 93,
+              "shares": [
+                [
+                  4,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 1096,
+              "team": "A",
+              "gap_from_previous": 83,
+              "shares": [
+                [
+                  2,
+                  37,
+                  228
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 9,
+          "gems": 37,
+          "gold": 190,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 436,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                6,
+                37,
+                228
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 436,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  6,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 615,
+              "team": "B",
+              "gap_from_previous": 179,
+              "shares": [
+                [
+                  6,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 739,
+              "team": "B",
+              "gap_from_previous": 124,
+              "shares": [
+                [
+                  6,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 850,
+              "team": "B",
+              "gap_from_previous": 111,
+              "shares": [
+                [
+                  5,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 996,
+              "team": "B",
+              "gap_from_previous": 146,
+              "shares": [
+                [
+                  5,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 1096,
+              "team": "B",
+              "gap_from_previous": 100,
+              "shares": [
+                [
+                  7,
+                  19,
+                  145
+                ],
+                [
+                  8,
+                  18,
+                  114
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 10,
+          "gems": 0,
+          "gold": 40,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 88,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                4,
+                0,
+                40
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 88,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  4,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 286,
+              "team": "A",
+              "gap_from_previous": 198,
+              "shares": [
+                [
+                  4,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 616,
+              "team": "A",
+              "gap_from_previous": 330,
+              "shares": [
+                [
+                  0,
+                  0,
+                  53
+                ]
+              ]
+            },
+            {
+              "round": 1035,
+              "team": "A",
+              "gap_from_previous": 419,
+              "shares": [
+                [
+                  0,
+                  0,
+                  61
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 11,
+          "gems": 0,
+          "gold": 40,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 125,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                6,
+                0,
+                40
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 125,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  6,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 240,
+              "team": "B",
+              "gap_from_previous": 115,
+              "shares": [
+                [
+                  9,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 340,
+              "team": "B",
+              "gap_from_previous": 100,
+              "shares": [
+                [
+                  9,
+                  0,
+                  48
+                ]
+              ]
+            },
+            {
+              "round": 412,
+              "team": "B",
+              "gap_from_previous": 72,
+              "shares": [
+                [
+                  8,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 644,
+              "team": "B",
+              "gap_from_previous": 232,
+              "shares": [
+                [
+                  8,
+                  0,
+                  48
+                ]
+              ]
+            },
+            {
+              "round": 785,
+              "team": "B",
+              "gap_from_previous": 141,
+              "shares": [
+                [
+                  9,
+                  0,
+                  48
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 12,
+          "gems": 14,
+          "gold": 0,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 13,
+          "gems": 14,
+          "gold": 0,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 14,
+          "gems": 30,
+          "gold": 200,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 15,
+          "gems": 30,
+          "gold": 200,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 516,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                6,
+                30,
+                240
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 516,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  6,
+                  30,
+                  240
+                ]
+              ]
+            },
+            {
+              "round": 906,
+              "team": "B",
+              "gap_from_previous": 390,
+              "shares": [
+                [
+                  8,
+                  30,
+                  240
+                ]
+              ]
+            },
+            {
+              "round": 1067,
+              "team": "B",
+              "gap_from_previous": 161,
+              "shares": [
+                [
+                  6,
+                  30,
+                  240
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 16,
+          "gems": 228,
+          "gold": 300,
+          "respawn_rounds": 150,
+          "first_capture": {
+            "round": 971,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                6,
+                228,
+                360
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 971,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  6,
+                  228,
+                  360
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 17,
+          "gems": 228,
+          "gold": 300,
+          "respawn_rounds": 150,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 18,
+          "gems": 4,
+          "gold": 60,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 95,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                3,
+                4,
+                60
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 95,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 171,
+              "team": "A",
+              "gap_from_previous": 76,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 253,
+              "team": "A",
+              "gap_from_previous": 82,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 323,
+              "team": "A",
+              "gap_from_previous": 70,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 419,
+              "team": "A",
+              "gap_from_previous": 96,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 487,
+              "team": "A",
+              "gap_from_previous": 68,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 600,
+              "team": "A",
+              "gap_from_previous": 113,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 782,
+              "team": "A",
+              "gap_from_previous": 182,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 868,
+              "team": "A",
+              "gap_from_previous": 86,
+              "shares": [
+                [
+                  0,
+                  4,
+                  80
+                ]
+              ]
+            },
+            {
+              "round": 1029,
+              "team": "A",
+              "gap_from_previous": 161,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 19,
+          "gems": 4,
+          "gold": 60,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 98,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                7,
+                4,
+                79
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 98,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  7,
+                  4,
+                  79
+                ]
+              ]
+            },
+            {
+              "round": 220,
+              "team": "B",
+              "gap_from_previous": 122,
+              "shares": [
+                [
+                  8,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 303,
+              "team": "B",
+              "gap_from_previous": 83,
+              "shares": [
+                [
+                  8,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 393,
+              "team": "B",
+              "gap_from_previous": 90,
+              "shares": [
+                [
+                  5,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 482,
+              "team": "B",
+              "gap_from_previous": 89,
+              "shares": [
+                [
+                  5,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 621,
+              "team": "B",
+              "gap_from_previous": 139,
+              "shares": [
+                [
+                  7,
+                  4,
+                  79
+                ]
+              ]
+            },
+            {
+              "round": 726,
+              "team": "B",
+              "gap_from_previous": 105,
+              "shares": [
+                [
+                  7,
+                  4,
+                  92
+                ]
+              ]
+            },
+            {
+              "round": 828,
+              "team": "B",
+              "gap_from_previous": 102,
+              "shares": [
+                [
+                  7,
+                  4,
+                  92
+                ]
+              ]
+            },
+            {
+              "round": 1046,
+              "team": "B",
+              "gap_from_previous": 218,
+              "shares": [
+                [
+                  9,
+                  4,
+                  72
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 20,
+          "gems": 4,
+          "gold": 60,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 21,
+          "gems": 4,
+          "gold": 60,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 22,
+          "gems": 15,
+          "gold": 130,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 39,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                2,
+                15,
+                130
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 39,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  2,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 120,
+              "team": "A",
+              "gap_from_previous": 81,
+              "shares": [
+                [
+                  0,
+                  15,
+                  172
+                ]
+              ]
+            },
+            {
+              "round": 202,
+              "team": "A",
+              "gap_from_previous": 82,
+              "shares": [
+                [
+                  4,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 275,
+              "team": "A",
+              "gap_from_previous": 73,
+              "shares": [
+                [
+                  2,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 371,
+              "team": "A",
+              "gap_from_previous": 96,
+              "shares": [
+                [
+                  1,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 453,
+              "team": "A",
+              "gap_from_previous": 82,
+              "shares": [
+                [
+                  2,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 557,
+              "team": "A",
+              "gap_from_previous": 104,
+              "shares": [
+                [
+                  4,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 645,
+              "team": "A",
+              "gap_from_previous": 88,
+              "shares": [
+                [
+                  3,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 732,
+              "team": "A",
+              "gap_from_previous": 87,
+              "shares": [
+                [
+                  3,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 821,
+              "team": "A",
+              "gap_from_previous": 89,
+              "shares": [
+                [
+                  0,
+                  15,
+                  173
+                ]
+              ]
+            },
+            {
+              "round": 898,
+              "team": "A",
+              "gap_from_previous": 77,
+              "shares": [
+                [
+                  1,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 979,
+              "team": "A",
+              "gap_from_previous": 81,
+              "shares": [
+                [
+                  3,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 1089,
+              "team": "A",
+              "gap_from_previous": 110,
+              "shares": [
+                [
+                  3,
+                  15,
+                  130
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 23,
+          "gems": 15,
+          "gold": 130,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 45,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                9,
+                15,
+                130
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 45,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  9,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 149,
+              "team": "B",
+              "gap_from_previous": 104,
+              "shares": [
+                [
+                  5,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 238,
+              "team": "B",
+              "gap_from_previous": 89,
+              "shares": [
+                [
+                  6,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 323,
+              "team": "B",
+              "gap_from_previous": 85,
+              "shares": [
+                [
+                  6,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 433,
+              "team": "B",
+              "gap_from_previous": 110,
+              "shares": [
+                [
+                  8,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 532,
+              "team": "B",
+              "gap_from_previous": 99,
+              "shares": [
+                [
+                  5,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 639,
+              "team": "B",
+              "gap_from_previous": 107,
+              "shares": [
+                [
+                  6,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 737,
+              "team": "B",
+              "gap_from_previous": 98,
+              "shares": [
+                [
+                  5,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 821,
+              "team": "B",
+              "gap_from_previous": 84,
+              "shares": [
+                [
+                  8,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 912,
+              "team": "B",
+              "gap_from_previous": 91,
+              "shares": [
+                [
+                  5,
+                  15,
+                  156
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "marcella_actor_ids": [
+        4,
+        6
+      ],
+      "marcella_timeline": [
+        {
+          "r": 88,
+          "k": "capture",
+          "g": 10,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 125,
+          "k": "capture",
+          "g": 11,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 128,
+          "k": "shop",
+          "a": 4,
+          "gold": -30,
+          "items": {
+            "Jungle Shard of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 128,
+          "k": "shop",
+          "a": 4,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 186,
+          "k": "capture",
+          "g": 7,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              41,
+              260
+            ]
+          ]
+        },
+        {
+          "r": 186,
+          "k": "shop",
+          "a": 6,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 186,
+          "k": "shop",
+          "a": 6,
+          "gold": -150,
+          "items": {
+            "Jungle Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 186,
+          "k": "shop",
+          "a": 6,
+          "gold": -120,
+          "items": {
+            "Treasure Shard of Strength": 4
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 186,
+          "k": "shop",
+          "a": 6,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 202,
+          "k": "capture",
+          "g": 22,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              15,
+              130
+            ]
+          ]
+        },
+        {
+          "r": 206,
+          "k": "shop",
+          "a": 4,
+          "gold": -120,
+          "items": {
+            "Jungle Shard of Strength": -1,
+            "Jungle Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 229,
+          "k": "capture",
+          "g": 6,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              41,
+              260
+            ]
+          ]
+        },
+        {
+          "r": 238,
+          "k": "capture",
+          "g": 23,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              15,
+              130
+            ]
+          ]
+        },
+        {
+          "r": 238,
+          "k": "shop",
+          "a": 6,
+          "gold": -30,
+          "items": {
+            "Treasure Shard of Strength": -4,
+            "Treasure Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 238,
+          "k": "shop",
+          "a": 6,
+          "gold": -90,
+          "items": {
+            "Durability Shard of Health": 3
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 251,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 56,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 257,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 56,
+          "total": 86,
+          "earnedGold": 112,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 277,
+          "k": "tribute_start",
+          "a": 6,
+          "gems": 56,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 283,
+          "k": "tribute_end",
+          "a": 6,
+          "gems": 56,
+          "total": 132,
+          "earnedGold": 134,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 286,
+          "k": "capture",
+          "g": 10,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 288,
+          "k": "shop",
+          "a": 6,
+          "gold": -60,
+          "items": {
+            "Durability Shard of Health": -3,
+            "Durability Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 288,
+          "k": "shop",
+          "a": 6,
+          "gold": -90,
+          "items": {
+            "Power Shard of Strength": 3
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 323,
+          "k": "capture",
+          "g": 23,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              15,
+              156
+            ]
+          ]
+        },
+        {
+          "r": 323,
+          "k": "shop",
+          "a": 6,
+          "gold": -60,
+          "items": {
+            "Power Shard of Strength": -3,
+            "Power Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 323,
+          "k": "shop",
+          "a": 6,
+          "gold": -90,
+          "items": {
+            "Monster Shard of Strength": 3
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 344,
+          "k": "capture",
+          "g": 5,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              15,
+              100
+            ]
+          ]
+        },
+        {
+          "r": 345,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Treasure Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 345,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Monster Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 345,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Durability Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 345,
+          "k": "shop",
+          "a": 4,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Strength": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 346,
+          "k": "shop",
+          "a": 4,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 362,
+          "k": "tribute_start",
+          "a": 6,
+          "gems": 15,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 364,
+          "k": "tribute_end",
+          "a": 6,
+          "gems": 15,
+          "total": 168,
+          "earnedGold": 36,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 382,
+          "k": "capture",
+          "g": 6,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              41,
+              312
+            ]
+          ]
+        },
+        {
+          "r": 383,
+          "k": "shop",
+          "a": 4,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Strength": -2,
+            "Bruiser Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 383,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 383,
+          "k": "shop",
+          "a": 4,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Health": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 422,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 56,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 428,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 56,
+          "total": 157,
+          "earnedGold": 134,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 436,
+          "k": "capture",
+          "g": 9,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              37,
+              228
+            ]
+          ]
+        },
+        {
+          "r": 436,
+          "k": "shop",
+          "a": 6,
+          "gold": -60,
+          "items": {
+            "Monster Shard of Strength": -3,
+            "Monster Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 436,
+          "k": "shop",
+          "a": 6,
+          "gold": -150,
+          "items": {
+            "Power Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 436,
+          "k": "shop",
+          "a": 6,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Health": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 477,
+          "k": "shop",
+          "a": 4,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Health": -2,
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 477,
+          "k": "shop",
+          "a": 4,
+          "gold": -30,
+          "items": {
+            "Bruiser Shard of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 516,
+          "k": "capture",
+          "g": 15,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              30,
+              240
+            ]
+          ]
+        },
+        {
+          "r": 516,
+          "k": "shop",
+          "a": 6,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 516,
+          "k": "shop",
+          "a": 6,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Health": -2,
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 516,
+          "k": "shop",
+          "a": 6,
+          "gold": -120,
+          "items": {
+            "Bruiser Shard of Health": 4
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 556,
+          "k": "tribute_start",
+          "a": 6,
+          "gems": 67,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 557,
+          "k": "capture",
+          "g": 22,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              15,
+              156
+            ]
+          ]
+        },
+        {
+          "r": 563,
+          "k": "tribute_end",
+          "a": 6,
+          "gems": 67,
+          "total": 279,
+          "earnedGold": 161,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 565,
+          "k": "shop",
+          "a": 4,
+          "gold": -120,
+          "items": {
+            "Bruiser Shard of Focus": -1,
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 565,
+          "k": "shop",
+          "a": 4,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Health": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 604,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 15,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 606,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 15,
+          "total": 265,
+          "earnedGold": 36,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 615,
+          "k": "capture",
+          "g": 9,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              37,
+              228
+            ]
+          ]
+        },
+        {
+          "r": 615,
+          "k": "shop",
+          "a": 6,
+          "gold": -30,
+          "items": {
+            "Bruiser Shard of Health": -4,
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 615,
+          "k": "shop",
+          "a": 6,
+          "gold": -150,
+          "items": {
+            "Power Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 615,
+          "k": "shop",
+          "a": 6,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 615,
+          "k": "shop",
+          "a": 6,
+          "gold": -60,
+          "items": {
+            "Power Shard of Strength": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 639,
+          "k": "capture",
+          "g": 23,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              15,
+              156
+            ]
+          ]
+        },
+        {
+          "r": 639,
+          "k": "shop",
+          "a": 6,
+          "gold": -90,
+          "items": {
+            "Power Shard of Strength": -2,
+            "Power Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 639,
+          "k": "shop",
+          "a": 6,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Health": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 655,
+          "k": "capture",
+          "g": 8,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              37,
+              228
+            ]
+          ]
+        },
+        {
+          "r": 656,
+          "k": "shop",
+          "a": 4,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Health": -2,
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 656,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 680,
+          "k": "tribute_start",
+          "a": 6,
+          "gems": 52,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 686,
+          "k": "tribute_end",
+          "a": 6,
+          "gems": 52,
+          "total": 422,
+          "earnedGold": 125,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 695,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 37,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 699,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 37,
+          "total": 358,
+          "earnedGold": 89,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 739,
+          "k": "capture",
+          "g": 9,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              37,
+              228
+            ]
+          ]
+        },
+        {
+          "r": 744,
+          "k": "shop",
+          "a": 6,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Health": -2,
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 744,
+          "k": "shop",
+          "a": 6,
+          "gold": -150,
+          "items": {
+            "Power Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 744,
+          "k": "shop",
+          "a": 6,
+          "gold": -120,
+          "items": {
+            "Bruiser Shard of Health": 4
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 747,
+          "k": "capture",
+          "g": 6,
+          "team": 0,
+          "shares": [
+            [
+              2,
+              21,
+              156
+            ],
+            [
+              4,
+              20,
+              156
+            ]
+          ]
+        },
+        {
+          "r": 747,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 747,
+          "k": "shop",
+          "a": 4,
+          "gold": -120,
+          "items": {
+            "Bruiser Shard of Focus": 4
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 787,
+          "k": "tribute_start",
+          "a": 6,
+          "gems": 37,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 791,
+          "k": "tribute_end",
+          "a": 6,
+          "gems": 37,
+          "total": 514,
+          "earnedGold": 88,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 792,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 20,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 794,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 20,
+          "total": 470,
+          "earnedGold": 48,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 863,
+          "k": "shop",
+          "a": 6,
+          "gold": -30,
+          "items": {
+            "Bruiser Shard of Health": -4,
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 863,
+          "k": "shop",
+          "a": 6,
+          "gold": -60,
+          "items": {
+            "Power Shard of Strength": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 873,
+          "k": "capture",
+          "g": 5,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              15,
+              120
+            ]
+          ]
+        },
+        {
+          "r": 885,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 22,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 888,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 22,
+          "total": 632,
+          "earnedGold": 53,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 920,
+          "k": "capture",
+          "g": 8,
+          "team": 0,
+          "shares": [
+            [
+              2,
+              19,
+              114
+            ],
+            [
+              4,
+              18,
+              114
+            ]
+          ]
+        },
+        {
+          "r": 920,
+          "k": "shop",
+          "a": 4,
+          "gold": -30,
+          "items": {
+            "Bruiser Shard of Focus": -4,
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 920,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 920,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 920,
+          "k": "shop",
+          "a": 4,
+          "gold": -120,
+          "items": {
+            "Bruiser Shard of Health": 4
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 959,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 18,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 961,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 18,
+          "total": 669,
+          "earnedGold": 43,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 971,
+          "k": "capture",
+          "g": 16,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              228,
+              360
+            ]
+          ]
+        },
+        {
+          "r": 971,
+          "k": "shop",
+          "a": 6,
+          "gold": -90,
+          "items": {
+            "Power Shard of Strength": -2,
+            "Power Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 971,
+          "k": "shop",
+          "a": 6,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 971,
+          "k": "shop",
+          "a": 6,
+          "gold": -120,
+          "items": {
+            "Power Shard of Strength": 4
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1010,
+          "k": "tribute_start",
+          "a": 6,
+          "gems": 228,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1013,
+          "k": "capture",
+          "g": 8,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              37,
+              228
+            ]
+          ]
+        },
+        {
+          "r": 1017,
+          "k": "shop",
+          "a": 4,
+          "gold": -30,
+          "items": {
+            "Bruiser Shard of Health": -4,
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 1017,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 1017,
+          "k": "shop",
+          "a": 4,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Health": 3
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 1033,
+          "k": "tribute_end",
+          "a": 6,
+          "gems": 228,
+          "total": 943,
+          "earnedGold": 548,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1056,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 37,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 1060,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 37,
+          "total": 820,
+          "earnedGold": 89,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 1067,
+          "k": "capture",
+          "g": 15,
+          "team": 1,
+          "shares": [
+            [
+              6,
+              30,
+              240
+            ]
+          ]
+        },
+        {
+          "r": 1072,
+          "k": "shop",
+          "a": 6,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1072,
+          "k": "shop",
+          "a": 6,
+          "gold": -30,
+          "items": {
+            "Power Shard of Strength": -4,
+            "Power Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1072,
+          "k": "shop",
+          "a": 6,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1072,
+          "k": "shop",
+          "a": 6,
+          "gold": -150,
+          "items": {
+            "Power Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1072,
+          "k": "shop",
+          "a": 6,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1072,
+          "k": "shop",
+          "a": 6,
+          "gold": -150,
+          "items": {
+            "Power Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1072,
+          "k": "shop",
+          "a": 6,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        }
+      ],
+      "team_checkpoints": {
+        "400": {
+          "A": {
+            "earned_gold_cumulative": 1796,
+            "shop_spend_cumulative": 1760,
+            "bank_gold_inventory": 36,
+            "submitted_gems_score": 86,
+            "carried_gems": 87
+          },
+          "B": {
+            "earned_gold_cumulative": 1417,
+            "shop_spend_cumulative": 1260,
+            "bank_gold_inventory": 157,
+            "submitted_gems_score": 168,
+            "carried_gems": 61
+          }
+        },
+        "600": {
+          "A": {
+            "earned_gold_cumulative": 3247,
+            "shop_spend_cumulative": 3130,
+            "bank_gold_inventory": 117,
+            "submitted_gems_score": 250,
+            "carried_gems": 84
+          },
+          "B": {
+            "earned_gold_cumulative": 2506,
+            "shop_spend_cumulative": 2270,
+            "bank_gold_inventory": 236,
+            "submitted_gems_score": 323,
+            "carried_gems": 43
+          }
+        },
+        "800": {
+          "A": {
+            "earned_gold_cumulative": 5018,
+            "shop_spend_cumulative": 4930,
+            "bank_gold_inventory": 88,
+            "submitted_gems_score": 470,
+            "carried_gems": 62
+          },
+          "B": {
+            "earned_gold_cumulative": 4042,
+            "shop_spend_cumulative": 3860,
+            "bank_gold_inventory": 182,
+            "submitted_gems_score": 514,
+            "carried_gems": 28
+          }
+        },
+        "1109": {
+          "A": {
+            "earned_gold_cumulative": 8494,
+            "shop_spend_cumulative": 8110,
+            "bank_gold_inventory": 384,
+            "submitted_gems_score": 835,
+            "carried_gems": 114
+          },
+          "B": {
+            "earned_gold_cumulative": 6861,
+            "shop_spend_cumulative": 6320,
+            "bank_gold_inventory": 541,
+            "submitted_gems_score": 1017,
+            "carried_gems": 90
+          }
+        }
+      }
+    },
+    {
+      "match_id": "9c04eaa5-42af-47a1-babb-5bcf4fb0b523",
+      "label": "win",
+      "source_replay": "provenance/ladder-history-replays-20261024-v1/inputs/mite/9c04eaa5-42af-47a1-babb-5bcf4fb0b523/big-world-print-dont-int-win.repl26a",
+      "replay_payload_sha256": "c7599efc0e34683c5ee64ddf001c28d0842de37ef0df37d35cc7e8f1a51fc0d5",
+      "rounds_file_sha256": "951b61e4102e740ac5d0a59019cfe704b2f23e52a37ebf53f21d745be2ced1c5",
+      "events_file_sha256": "b705bff1f86f0a5a6ddc011a971ea73a609b1ce5a4f09a07368579b9c8db9f4d",
+      "map": {
+        "name": "big-world-print-dont-int-win",
+        "hash": "c890c7d4607bc45c",
+        "width": 100,
+        "height": 100,
+        "symmetry": "rotational"
+      },
+      "result": {
+        "winner": 0,
+        "outcome": 1,
+        "rounds": 1151,
+        "gems": [
+          1004,
+          796
+        ],
+        "steps": 239522
+      },
+      "common_horizon": 1109,
+      "teams": [
+        "A",
+        "B"
+      ],
+      "roster": [
+        {
+          "id": 0,
+          "name": "Vesper Vale",
+          "team": "A",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 1369,
+            "spentGold": 1340,
+            "collectedGems": 131,
+            "submittedGems": 131,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 34518.500061035156,
+            "monsterDamageTaken": 5981.9999532699585,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              6,
+              5,
+              7,
+              1,
+              16,
+              5,
+              17,
+              1,
+              18,
+              5,
+              19,
+              1,
+              28,
+              5,
+              29,
+              1,
+              36,
+              14,
+              37,
+              2,
+              40,
+              5,
+              41,
+              1
+            ],
+            "consumablesBought": [
+              1,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 1,
+          "name": "Vendetta",
+          "team": "A",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 2058,
+            "spentGold": 1880,
+            "collectedGems": 278,
+            "submittedGems": 278,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 40370.000427246094,
+            "monsterDamageTaken": 11018.399907112122,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              12,
+              5,
+              13,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1,
+              36,
+              22,
+              37,
+              4,
+              40,
+              20,
+              41,
+              4
+            ],
+            "consumablesBought": [
+              1,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 2,
+          "name": "Ryth",
+          "team": "A",
+          "stats": {
+            "kills": 0,
+            "deaths": 2,
+            "assists": 0,
+            "earnedGold": 2120,
+            "spentGold": 1940,
+            "collectedGems": 278,
+            "submittedGems": 243,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 31977.500274658203,
+            "monsterDamageTaken": 10292.399950027466,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              16,
+              5,
+              17,
+              1,
+              22,
+              5,
+              23,
+              1,
+              24,
+              5,
+              25,
+              1,
+              36,
+              20,
+              37,
+              4,
+              40,
+              24,
+              41,
+              4
+            ],
+            "consumablesBought": [
+              1,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 3,
+          "name": "Tavi",
+          "team": "A",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 890,
+            "spentGold": 890,
+            "collectedGems": 88,
+            "submittedGems": 88,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 36612.999908447266,
+            "monsterDamageTaken": 4506,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              16,
+              5,
+              17,
+              1,
+              36,
+              15,
+              37,
+              3,
+              40,
+              4
+            ],
+            "consumablesBought": [
+              1,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 4,
+          "name": "Marcella",
+          "team": "A",
+          "stats": {
+            "kills": 1,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 2813,
+            "spentGold": 2420,
+            "collectedGems": 264,
+            "submittedGems": 264,
+            "championDamageDone": 2700,
+            "championDamageTaken": 1962,
+            "monsterDamageDone": 44261.00018310547,
+            "monsterDamageTaken": 7175.999887466431,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              0,
+              5,
+              1,
+              1,
+              16,
+              5,
+              17,
+              1,
+              18,
+              5,
+              19,
+              1,
+              24,
+              5,
+              25,
+              1,
+              36,
+              5,
+              37,
+              1,
+              38,
+              30,
+              39,
+              6,
+              40,
+              25,
+              41,
+              5
+            ],
+            "consumablesBought": [
+              1,
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "id": 5,
+          "name": "Vesper Vale",
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 0,
+            "earnedGold": 3909,
+            "spentGold": 3220,
+            "collectedGems": 399,
+            "submittedGems": 362,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 51836.05091094971,
+            "monsterDamageTaken": 10366,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              6,
+              5,
+              7,
+              1,
+              16,
+              5,
+              17,
+              1,
+              18,
+              5,
+              19,
+              1,
+              36,
+              68,
+              37,
+              13,
+              40,
+              23,
+              41,
+              4
+            ],
+            "consumablesBought": [
+              4,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "id": 6,
+          "name": "Heart of Ruin",
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 0,
+            "earnedGold": 938,
+            "spentGold": 930,
+            "collectedGems": 121,
+            "submittedGems": 100,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 32981.74133491516,
+            "monsterDamageTaken": 14232,
+            "healingDone": 0,
+            "shieldingDone": 14718,
+            "itemsBought": [
+              8,
+              5,
+              9,
+              1,
+              16,
+              5,
+              17,
+              1,
+              20,
+              5,
+              21,
+              1,
+              34,
+              5,
+              35,
+              1,
+              38,
+              7,
+              39,
+              1,
+              40,
+              3
+            ],
+            "consumablesBought": [
+              3,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "id": 7,
+          "name": "Vendetta",
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 0,
+            "earnedGold": 1128,
+            "spentGold": 1100,
+            "collectedGems": 124,
+            "submittedGems": 124,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 37086.80099105835,
+            "monsterDamageTaken": 13622,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              18,
+              5,
+              19,
+              1,
+              28,
+              5,
+              29,
+              1,
+              36,
+              19,
+              37,
+              3,
+              40,
+              7,
+              41,
+              1
+            ],
+            "consumablesBought": [
+              2,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "id": 8,
+          "name": "Ryth",
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 0,
+            "assists": 0,
+            "earnedGold": 316,
+            "spentGold": 310,
+            "collectedGems": 19,
+            "submittedGems": 4,
+            "championDamageDone": 0,
+            "championDamageTaken": 0,
+            "monsterDamageDone": 21609.550048828125,
+            "monsterDamageTaken": 10420,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              22,
+              5,
+              23,
+              1,
+              28,
+              5,
+              29,
+              1
+            ],
+            "consumablesBought": [
+              1,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "id": 9,
+          "name": "Marcella",
+          "team": "B",
+          "stats": {
+            "kills": 0,
+            "deaths": 1,
+            "assists": 0,
+            "earnedGold": 2202,
+            "spentGold": 2200,
+            "collectedGems": 206,
+            "submittedGems": 206,
+            "championDamageDone": 1962,
+            "championDamageTaken": 2700,
+            "monsterDamageDone": 20519.856414794922,
+            "monsterDamageTaken": 6874,
+            "healingDone": 0,
+            "shieldingDone": 0,
+            "itemsBought": [
+              16,
+              5,
+              17,
+              1,
+              20,
+              5,
+              21,
+              1,
+              38,
+              62,
+              39,
+              12
+            ],
+            "consumablesBought": [
+              4,
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "capture_events_by_team": {
+        "A": 50,
+        "B": 48
+      },
+      "capture_events_by_group_and_team": {
+        "A": {
+          "22": 13,
+          "10": 4,
+          "18": 9,
+          "6": 10,
+          "5": 7,
+          "8": 6,
+          "14": 1
+        },
+        "B": {
+          "23": 9,
+          "19": 9,
+          "7": 7,
+          "11": 9,
+          "4": 5,
+          "9": 6,
+          "13": 1,
+          "21": 1,
+          "15": 1
+        }
+      },
+      "capture_share_totals_by_actor": {
+        "5": {
+          "name": "Vesper Vale",
+          "team": "B",
+          "capture_shares": 18,
+          "gems": 362,
+          "gold": 3618
+        },
+        "2": {
+          "name": "Ryth",
+          "team": "A",
+          "capture_shares": 10,
+          "gems": 258,
+          "gold": 1964
+        },
+        "4": {
+          "name": "Marcella",
+          "team": "A",
+          "capture_shares": 13,
+          "gems": 264,
+          "gold": 2082
+        },
+        "3": {
+          "name": "Tavi",
+          "team": "A",
+          "capture_shares": 12,
+          "gems": 88,
+          "gold": 890
+        },
+        "0": {
+          "name": "Vesper Vale",
+          "team": "A",
+          "capture_shares": 8,
+          "gems": 131,
+          "gold": 1369
+        },
+        "9": {
+          "name": "Marcella",
+          "team": "B",
+          "capture_shares": 13,
+          "gems": 206,
+          "gold": 1708
+        },
+        "6": {
+          "name": "Heart of Ruin",
+          "team": "B",
+          "capture_shares": 11,
+          "gems": 107,
+          "gold": 938
+        },
+        "7": {
+          "name": "Vendetta",
+          "team": "B",
+          "capture_shares": 10,
+          "gems": 124,
+          "gold": 1128
+        },
+        "1": {
+          "name": "Vendetta",
+          "team": "A",
+          "capture_shares": 9,
+          "gems": 257,
+          "gold": 1902
+        },
+        "8": {
+          "name": "Ryth",
+          "team": "B",
+          "capture_shares": 4,
+          "gems": 4,
+          "gold": 160
+        }
+      },
+      "groups": [
+        {
+          "group": 0,
+          "gems": 7,
+          "gold": 40,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 1,
+          "gems": 7,
+          "gold": 40,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 2,
+          "gems": 21,
+          "gold": 0,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 3,
+          "gems": 21,
+          "gold": 0,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 4,
+          "gems": 15,
+          "gold": 100,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 174,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                5,
+                8,
+                77
+              ],
+              [
+                6,
+                7,
+                50
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 174,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  5,
+                  8,
+                  77
+                ],
+                [
+                  6,
+                  7,
+                  50
+                ]
+              ]
+            },
+            {
+              "round": 461,
+              "team": "B",
+              "gap_from_previous": 287,
+              "shares": [
+                [
+                  6,
+                  15,
+                  100
+                ]
+              ]
+            },
+            {
+              "round": 598,
+              "team": "B",
+              "gap_from_previous": 137,
+              "shares": [
+                [
+                  7,
+                  8,
+                  50
+                ],
+                [
+                  9,
+                  7,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 731,
+              "team": "B",
+              "gap_from_previous": 133,
+              "shares": [
+                [
+                  5,
+                  15,
+                  153
+                ]
+              ]
+            },
+            {
+              "round": 1079,
+              "team": "B",
+              "gap_from_previous": 348,
+              "shares": [
+                [
+                  9,
+                  15,
+                  120
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 5,
+          "gems": 15,
+          "gold": 100,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 344,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                4,
+                15,
+                100
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 344,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  4,
+                  15,
+                  100
+                ]
+              ]
+            },
+            {
+              "round": 575,
+              "team": "A",
+              "gap_from_previous": 231,
+              "shares": [
+                [
+                  1,
+                  15,
+                  120
+                ]
+              ]
+            },
+            {
+              "round": 666,
+              "team": "A",
+              "gap_from_previous": 91,
+              "shares": [
+                [
+                  0,
+                  15,
+                  133
+                ]
+              ]
+            },
+            {
+              "round": 812,
+              "team": "A",
+              "gap_from_previous": 146,
+              "shares": [
+                [
+                  3,
+                  15,
+                  100
+                ]
+              ]
+            },
+            {
+              "round": 934,
+              "team": "A",
+              "gap_from_previous": 122,
+              "shares": [
+                [
+                  3,
+                  15,
+                  100
+                ]
+              ]
+            },
+            {
+              "round": 1016,
+              "team": "A",
+              "gap_from_previous": 82,
+              "shares": [
+                [
+                  3,
+                  15,
+                  100
+                ]
+              ]
+            },
+            {
+              "round": 1085,
+              "team": "A",
+              "gap_from_previous": 69,
+              "shares": [
+                [
+                  4,
+                  15,
+                  120
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 6,
+          "gems": 41,
+          "gold": 260,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 229,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                4,
+                41,
+                260
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 229,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  4,
+                  41,
+                  260
+                ]
+              ]
+            },
+            {
+              "round": 382,
+              "team": "A",
+              "gap_from_previous": 153,
+              "shares": [
+                [
+                  4,
+                  41,
+                  312
+                ]
+              ]
+            },
+            {
+              "round": 478,
+              "team": "A",
+              "gap_from_previous": 96,
+              "shares": [
+                [
+                  1,
+                  41,
+                  260
+                ]
+              ]
+            },
+            {
+              "round": 574,
+              "team": "A",
+              "gap_from_previous": 96,
+              "shares": [
+                [
+                  2,
+                  41,
+                  312
+                ]
+              ]
+            },
+            {
+              "round": 654,
+              "team": "A",
+              "gap_from_previous": 80,
+              "shares": [
+                [
+                  1,
+                  41,
+                  312
+                ]
+              ]
+            },
+            {
+              "round": 733,
+              "team": "A",
+              "gap_from_previous": 79,
+              "shares": [
+                [
+                  1,
+                  41,
+                  312
+                ]
+              ]
+            },
+            {
+              "round": 807,
+              "team": "A",
+              "gap_from_previous": 74,
+              "shares": [
+                [
+                  2,
+                  21,
+                  156
+                ],
+                [
+                  4,
+                  20,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 883,
+              "team": "A",
+              "gap_from_previous": 76,
+              "shares": [
+                [
+                  2,
+                  21,
+                  156
+                ],
+                [
+                  4,
+                  20,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 959,
+              "team": "A",
+              "gap_from_previous": 76,
+              "shares": [
+                [
+                  4,
+                  41,
+                  312
+                ]
+              ]
+            },
+            {
+              "round": 1057,
+              "team": "A",
+              "gap_from_previous": 98,
+              "shares": [
+                [
+                  2,
+                  41,
+                  312
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 7,
+          "gems": 41,
+          "gold": 260,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 94,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                5,
+                41,
+                398
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 94,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  5,
+                  41,
+                  398
+                ]
+              ]
+            },
+            {
+              "round": 319,
+              "team": "B",
+              "gap_from_previous": 225,
+              "shares": [
+                [
+                  5,
+                  41,
+                  398
+                ]
+              ]
+            },
+            {
+              "round": 484,
+              "team": "B",
+              "gap_from_previous": 165,
+              "shares": [
+                [
+                  5,
+                  21,
+                  199
+                ],
+                [
+                  6,
+                  20,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 629,
+              "team": "B",
+              "gap_from_previous": 145,
+              "shares": [
+                [
+                  5,
+                  21,
+                  198
+                ],
+                [
+                  9,
+                  20,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 783,
+              "team": "B",
+              "gap_from_previous": 154,
+              "shares": [
+                [
+                  5,
+                  21,
+                  199
+                ],
+                [
+                  7,
+                  20,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 963,
+              "team": "B",
+              "gap_from_previous": 180,
+              "shares": [
+                [
+                  7,
+                  41,
+                  312
+                ]
+              ]
+            },
+            {
+              "round": 1090,
+              "team": "B",
+              "gap_from_previous": 127,
+              "shares": [
+                [
+                  5,
+                  41,
+                  398
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 8,
+          "gems": 37,
+          "gold": 190,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 531,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                0,
+                37,
+                253
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 531,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  0,
+                  37,
+                  253
+                ]
+              ]
+            },
+            {
+              "round": 685,
+              "team": "A",
+              "gap_from_previous": 154,
+              "shares": [
+                [
+                  2,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 772,
+              "team": "A",
+              "gap_from_previous": 87,
+              "shares": [
+                [
+                  4,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 864,
+              "team": "A",
+              "gap_from_previous": 92,
+              "shares": [
+                [
+                  1,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 973,
+              "team": "A",
+              "gap_from_previous": 109,
+              "shares": [
+                [
+                  2,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 1057,
+              "team": "A",
+              "gap_from_previous": 84,
+              "shares": [
+                [
+                  1,
+                  37,
+                  228
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 9,
+          "gems": 37,
+          "gold": 190,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 255,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                5,
+                37,
+                290
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 255,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  5,
+                  37,
+                  290
+                ]
+              ]
+            },
+            {
+              "round": 411,
+              "team": "B",
+              "gap_from_previous": 156,
+              "shares": [
+                [
+                  5,
+                  37,
+                  291
+                ]
+              ]
+            },
+            {
+              "round": 564,
+              "team": "B",
+              "gap_from_previous": 153,
+              "shares": [
+                [
+                  5,
+                  37,
+                  291
+                ]
+              ]
+            },
+            {
+              "round": 712,
+              "team": "B",
+              "gap_from_previous": 148,
+              "shares": [
+                [
+                  9,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 902,
+              "team": "B",
+              "gap_from_previous": 190,
+              "shares": [
+                [
+                  9,
+                  37,
+                  228
+                ]
+              ]
+            },
+            {
+              "round": 1052,
+              "team": "B",
+              "gap_from_previous": 150,
+              "shares": [
+                [
+                  7,
+                  19,
+                  114
+                ],
+                [
+                  9,
+                  18,
+                  114
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 10,
+          "gems": 0,
+          "gold": 40,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 88,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                4,
+                0,
+                40
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 88,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  4,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 286,
+              "team": "A",
+              "gap_from_previous": 198,
+              "shares": [
+                [
+                  4,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 616,
+              "team": "A",
+              "gap_from_previous": 330,
+              "shares": [
+                [
+                  0,
+                  0,
+                  53
+                ]
+              ]
+            },
+            {
+              "round": 887,
+              "team": "A",
+              "gap_from_previous": 271,
+              "shares": [
+                [
+                  3,
+                  0,
+                  40
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 11,
+          "gems": 0,
+          "gold": 40,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 130,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                6,
+                0,
+                40
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 130,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  6,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 198,
+              "team": "B",
+              "gap_from_previous": 68,
+              "shares": [
+                [
+                  5,
+                  0,
+                  61
+                ]
+              ]
+            },
+            {
+              "round": 420,
+              "team": "B",
+              "gap_from_previous": 222,
+              "shares": [
+                [
+                  6,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 485,
+              "team": "B",
+              "gap_from_previous": 65,
+              "shares": [
+                [
+                  8,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 558,
+              "team": "B",
+              "gap_from_previous": 73,
+              "shares": [
+                [
+                  7,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 673,
+              "team": "B",
+              "gap_from_previous": 115,
+              "shares": [
+                [
+                  8,
+                  0,
+                  40
+                ]
+              ]
+            },
+            {
+              "round": 751,
+              "team": "B",
+              "gap_from_previous": 78,
+              "shares": [
+                [
+                  5,
+                  0,
+                  31
+                ],
+                [
+                  8,
+                  0,
+                  20
+                ]
+              ]
+            },
+            {
+              "round": 834,
+              "team": "B",
+              "gap_from_previous": 83,
+              "shares": [
+                [
+                  7,
+                  0,
+                  48
+                ]
+              ]
+            },
+            {
+              "round": 1033,
+              "team": "B",
+              "gap_from_previous": 199,
+              "shares": [
+                [
+                  6,
+                  0,
+                  48
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 12,
+          "gems": 14,
+          "gold": 0,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 13,
+          "gems": 14,
+          "gold": 0,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 784,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                6,
+                14,
+                0
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 784,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  6,
+                  14,
+                  0
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 14,
+          "gems": 30,
+          "gold": 200,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 987,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                0,
+                30,
+                306
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 987,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  0,
+                  30,
+                  306
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 15,
+          "gems": 30,
+          "gold": 200,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 885,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                6,
+                30,
+                240
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 885,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  6,
+                  30,
+                  240
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 16,
+          "gems": 228,
+          "gold": 300,
+          "respawn_rounds": 150,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 17,
+          "gems": 228,
+          "gold": 300,
+          "respawn_rounds": 150,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 18,
+          "gems": 4,
+          "gold": 60,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 95,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                3,
+                4,
+                60
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 95,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 171,
+              "team": "A",
+              "gap_from_previous": 76,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 253,
+              "team": "A",
+              "gap_from_previous": 82,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 323,
+              "team": "A",
+              "gap_from_previous": 70,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 419,
+              "team": "A",
+              "gap_from_previous": 96,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 487,
+              "team": "A",
+              "gap_from_previous": 68,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 600,
+              "team": "A",
+              "gap_from_previous": 113,
+              "shares": [
+                [
+                  3,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 669,
+              "team": "A",
+              "gap_from_previous": 69,
+              "shares": [
+                [
+                  4,
+                  4,
+                  72
+                ]
+              ]
+            },
+            {
+              "round": 755,
+              "team": "A",
+              "gap_from_previous": 86,
+              "shares": [
+                [
+                  0,
+                  4,
+                  80
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 19,
+          "gems": 4,
+          "gold": 60,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 58,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                5,
+                4,
+                80
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 58,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  5,
+                  4,
+                  80
+                ]
+              ]
+            },
+            {
+              "round": 159,
+              "team": "B",
+              "gap_from_previous": 101,
+              "shares": [
+                [
+                  9,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 285,
+              "team": "B",
+              "gap_from_previous": 126,
+              "shares": [
+                [
+                  7,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 376,
+              "team": "B",
+              "gap_from_previous": 91,
+              "shares": [
+                [
+                  9,
+                  4,
+                  72
+                ]
+              ]
+            },
+            {
+              "round": 498,
+              "team": "B",
+              "gap_from_previous": 122,
+              "shares": [
+                [
+                  9,
+                  4,
+                  72
+                ]
+              ]
+            },
+            {
+              "round": 639,
+              "team": "B",
+              "gap_from_previous": 141,
+              "shares": [
+                [
+                  6,
+                  2,
+                  36
+                ],
+                [
+                  7,
+                  2,
+                  36
+                ]
+              ]
+            },
+            {
+              "round": 798,
+              "team": "B",
+              "gap_from_previous": 159,
+              "shares": [
+                [
+                  5,
+                  4,
+                  92
+                ]
+              ]
+            },
+            {
+              "round": 951,
+              "team": "B",
+              "gap_from_previous": 153,
+              "shares": [
+                [
+                  8,
+                  4,
+                  60
+                ]
+              ]
+            },
+            {
+              "round": 1021,
+              "team": "B",
+              "gap_from_previous": 70,
+              "shares": [
+                [
+                  5,
+                  4,
+                  91
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 20,
+          "gems": 4,
+          "gold": 60,
+          "respawn_rounds": 50,
+          "first_capture": null,
+          "capture_cycles": []
+        },
+        {
+          "group": 21,
+          "gems": 4,
+          "gold": 60,
+          "respawn_rounds": 50,
+          "first_capture": {
+            "round": 820,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                6,
+                4,
+                72
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 820,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  6,
+                  4,
+                  72
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 22,
+          "gems": 15,
+          "gold": 130,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 39,
+            "team": 0,
+            "team_name": "A",
+            "shares": [
+              [
+                2,
+                15,
+                130
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 39,
+              "team": "A",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  2,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 120,
+              "team": "A",
+              "gap_from_previous": 81,
+              "shares": [
+                [
+                  0,
+                  15,
+                  172
+                ]
+              ]
+            },
+            {
+              "round": 202,
+              "team": "A",
+              "gap_from_previous": 82,
+              "shares": [
+                [
+                  4,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 275,
+              "team": "A",
+              "gap_from_previous": 73,
+              "shares": [
+                [
+                  2,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 371,
+              "team": "A",
+              "gap_from_previous": 96,
+              "shares": [
+                [
+                  1,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 453,
+              "team": "A",
+              "gap_from_previous": 82,
+              "shares": [
+                [
+                  2,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 557,
+              "team": "A",
+              "gap_from_previous": 104,
+              "shares": [
+                [
+                  4,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 645,
+              "team": "A",
+              "gap_from_previous": 88,
+              "shares": [
+                [
+                  3,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 723,
+              "team": "A",
+              "gap_from_previous": 78,
+              "shares": [
+                [
+                  2,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 811,
+              "team": "A",
+              "gap_from_previous": 88,
+              "shares": [
+                [
+                  0,
+                  15,
+                  173
+                ]
+              ]
+            },
+            {
+              "round": 886,
+              "team": "A",
+              "gap_from_previous": 75,
+              "shares": [
+                [
+                  1,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 976,
+              "team": "A",
+              "gap_from_previous": 90,
+              "shares": [
+                [
+                  1,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 1081,
+              "team": "A",
+              "gap_from_previous": 105,
+              "shares": [
+                [
+                  0,
+                  15,
+                  199
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "group": 23,
+          "gems": 15,
+          "gold": 130,
+          "respawn_rounds": 60,
+          "first_capture": {
+            "round": 23,
+            "team": 1,
+            "team_name": "B",
+            "shares": [
+              [
+                5,
+                15,
+                172
+              ]
+            ]
+          },
+          "capture_cycles": [
+            {
+              "round": 23,
+              "team": "B",
+              "gap_from_previous": null,
+              "shares": [
+                [
+                  5,
+                  15,
+                  172
+                ]
+              ]
+            },
+            {
+              "round": 122,
+              "team": "B",
+              "gap_from_previous": 99,
+              "shares": [
+                [
+                  9,
+                  15,
+                  130
+                ]
+              ]
+            },
+            {
+              "round": 242,
+              "team": "B",
+              "gap_from_previous": 120,
+              "shares": [
+                [
+                  9,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 340,
+              "team": "B",
+              "gap_from_previous": 98,
+              "shares": [
+                [
+                  9,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 467,
+              "team": "B",
+              "gap_from_previous": 127,
+              "shares": [
+                [
+                  9,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 591,
+              "team": "B",
+              "gap_from_previous": 124,
+              "shares": [
+                [
+                  6,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 749,
+              "team": "B",
+              "gap_from_previous": 158,
+              "shares": [
+                [
+                  7,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 901,
+              "team": "B",
+              "gap_from_previous": 152,
+              "shares": [
+                [
+                  7,
+                  15,
+                  156
+                ]
+              ]
+            },
+            {
+              "round": 986,
+              "team": "B",
+              "gap_from_previous": 85,
+              "shares": [
+                [
+                  5,
+                  15,
+                  199
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "marcella_actor_ids": [
+        4,
+        9
+      ],
+      "marcella_timeline": [
+        {
+          "r": 88,
+          "k": "capture",
+          "g": 10,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 122,
+          "k": "capture",
+          "g": 23,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              15,
+              130
+            ]
+          ]
+        },
+        {
+          "r": 125,
+          "k": "shop",
+          "a": 9,
+          "gold": -120,
+          "items": {
+            "Treasure Shard of Focus": 4
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 128,
+          "k": "shop",
+          "a": 4,
+          "gold": -30,
+          "items": {
+            "Jungle Shard of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 128,
+          "k": "shop",
+          "a": 4,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 159,
+          "k": "capture",
+          "g": 19,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              4,
+              60
+            ]
+          ]
+        },
+        {
+          "r": 183,
+          "k": "shop",
+          "a": 9,
+          "gold": -30,
+          "items": {
+            "Treasure Shard of Focus": -4,
+            "Treasure Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 183,
+          "k": "shop",
+          "a": 9,
+          "gold": -30,
+          "items": {
+            "Durability Shard of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 183,
+          "k": "shop",
+          "a": 9,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 202,
+          "k": "capture",
+          "g": 22,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              15,
+              130
+            ]
+          ]
+        },
+        {
+          "r": 206,
+          "k": "shop",
+          "a": 4,
+          "gold": -120,
+          "items": {
+            "Jungle Shard of Strength": -1,
+            "Jungle Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 229,
+          "k": "capture",
+          "g": 6,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              41,
+              260
+            ]
+          ]
+        },
+        {
+          "r": 242,
+          "k": "capture",
+          "g": 23,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              15,
+              156
+            ]
+          ]
+        },
+        {
+          "r": 242,
+          "k": "shop",
+          "a": 9,
+          "gold": -120,
+          "items": {
+            "Durability Shard of Health": -1,
+            "Durability Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 242,
+          "k": "shop",
+          "a": 9,
+          "gold": -30,
+          "items": {
+            "Bruiser Shard of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 251,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 56,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 257,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 56,
+          "total": 86,
+          "earnedGold": 112,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 281,
+          "k": "tribute_start",
+          "a": 9,
+          "gems": 34,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 285,
+          "k": "tribute_end",
+          "a": 9,
+          "gems": 34,
+          "total": 102,
+          "earnedGold": 81,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 286,
+          "k": "capture",
+          "g": 10,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              0,
+              40
+            ]
+          ]
+        },
+        {
+          "r": 324,
+          "k": "shop",
+          "a": 9,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Focus": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 340,
+          "k": "capture",
+          "g": 23,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              15,
+              156
+            ]
+          ]
+        },
+        {
+          "r": 344,
+          "k": "capture",
+          "g": 5,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              15,
+              100
+            ]
+          ]
+        },
+        {
+          "r": 345,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Treasure Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 345,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Monster Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 345,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Durability Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 345,
+          "k": "shop",
+          "a": 4,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Strength": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 346,
+          "k": "shop",
+          "a": 4,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 376,
+          "k": "capture",
+          "g": 19,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              4,
+              72
+            ]
+          ]
+        },
+        {
+          "r": 378,
+          "k": "shop",
+          "a": 9,
+          "gold": -240,
+          "items": {
+            "Bruiser Shard of Focus": -2,
+            "Bruiser Emblem of Focus": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 382,
+          "k": "capture",
+          "g": 6,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              41,
+              312
+            ]
+          ]
+        },
+        {
+          "r": 383,
+          "k": "shop",
+          "a": 4,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Strength": -2,
+            "Bruiser Emblem of Strength": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 383,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 383,
+          "k": "shop",
+          "a": 4,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Health": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 422,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 56,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 428,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 56,
+          "total": 157,
+          "earnedGold": 134,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 444,
+          "k": "shop",
+          "a": 9,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 467,
+          "k": "capture",
+          "g": 23,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              15,
+              156
+            ]
+          ]
+        },
+        {
+          "r": 477,
+          "k": "shop",
+          "a": 4,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Health": -2,
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 477,
+          "k": "shop",
+          "a": 4,
+          "gold": -30,
+          "items": {
+            "Bruiser Shard of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 498,
+          "k": "capture",
+          "g": 19,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              4,
+              72
+            ]
+          ]
+        },
+        {
+          "r": 498,
+          "k": "shop",
+          "a": 9,
+          "gold": -210,
+          "items": {
+            "Bruiser Shard of Focus": 2,
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 498,
+          "k": "shop",
+          "a": 9,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 537,
+          "k": "tribute_start",
+          "a": 9,
+          "gems": 38,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 541,
+          "k": "tribute_end",
+          "a": 9,
+          "gems": 38,
+          "total": 315,
+          "earnedGold": 91,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 557,
+          "k": "capture",
+          "g": 22,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              15,
+              156
+            ]
+          ]
+        },
+        {
+          "r": 565,
+          "k": "shop",
+          "a": 4,
+          "gold": -120,
+          "items": {
+            "Bruiser Shard of Focus": -1,
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 565,
+          "k": "shop",
+          "a": 4,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Health": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 598,
+          "k": "capture",
+          "g": 4,
+          "team": 1,
+          "shares": [
+            [
+              7,
+              8,
+              50
+            ],
+            [
+              9,
+              7,
+              60
+            ]
+          ]
+        },
+        {
+          "r": 599,
+          "k": "shop",
+          "a": 9,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 599,
+          "k": "shop",
+          "a": 9,
+          "gold": -10,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 604,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 15,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 606,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 15,
+          "total": 265,
+          "earnedGold": 36,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 611,
+          "k": "shop",
+          "a": 4,
+          "gold": -30,
+          "items": {
+            "Bruiser Shard of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 629,
+          "k": "capture",
+          "g": 7,
+          "team": 1,
+          "shares": [
+            [
+              5,
+              21,
+              198
+            ],
+            [
+              9,
+              20,
+              156
+            ]
+          ]
+        },
+        {
+          "r": 629,
+          "k": "shop",
+          "a": 9,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 668,
+          "k": "tribute_start",
+          "a": 9,
+          "gems": 27,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 669,
+          "k": "capture",
+          "g": 18,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              4,
+              72
+            ]
+          ]
+        },
+        {
+          "r": 670,
+          "k": "shop",
+          "a": 4,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Health": -3,
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 671,
+          "k": "tribute_end",
+          "a": 9,
+          "gems": 27,
+          "total": 389,
+          "earnedGold": 65,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 712,
+          "k": "capture",
+          "g": 9,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              37,
+              228
+            ]
+          ]
+        },
+        {
+          "r": 712,
+          "k": "shop",
+          "a": 9,
+          "gold": -300,
+          "items": {
+            "Bruiser Emblem of Focus": 2
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 750,
+          "k": "tribute_start",
+          "a": 9,
+          "gems": 37,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 754,
+          "k": "tribute_end",
+          "a": 9,
+          "gems": 37,
+          "total": 479,
+          "earnedGold": 89,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 772,
+          "k": "capture",
+          "g": 8,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              37,
+              228
+            ]
+          ]
+        },
+        {
+          "r": 773,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 773,
+          "k": "shop",
+          "a": 4,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Health": 3
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 802,
+          "k": "shop",
+          "a": 9,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Focus": -2,
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 807,
+          "k": "capture",
+          "g": 6,
+          "team": 0,
+          "shares": [
+            [
+              2,
+              21,
+              156
+            ],
+            [
+              4,
+              20,
+              156
+            ]
+          ]
+        },
+        {
+          "r": 808,
+          "k": "shop",
+          "a": 4,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Health": -3,
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 808,
+          "k": "shop",
+          "a": 4,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Focus": 3
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 849,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 61,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 856,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 61,
+          "total": 593,
+          "earnedGold": 146,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 883,
+          "k": "capture",
+          "g": 6,
+          "team": 0,
+          "shares": [
+            [
+              2,
+              21,
+              156
+            ],
+            [
+              4,
+              20,
+              156
+            ]
+          ]
+        },
+        {
+          "r": 883,
+          "k": "shop",
+          "a": 4,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Focus": -3,
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 883,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 883,
+          "k": "shop",
+          "a": 4,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Focus": 3
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 902,
+          "k": "capture",
+          "g": 9,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              37,
+              228
+            ]
+          ]
+        },
+        {
+          "r": 902,
+          "k": "shop",
+          "a": 9,
+          "gold": -210,
+          "items": {
+            "Bruiser Shard of Focus": 2,
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 924,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 20,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 926,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 20,
+          "total": 628,
+          "earnedGold": 48,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 941,
+          "k": "tribute_start",
+          "a": 9,
+          "gems": 37,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 945,
+          "k": "tribute_end",
+          "a": 9,
+          "gems": 37,
+          "total": 624,
+          "earnedGold": 89,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 959,
+          "k": "capture",
+          "g": 6,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              41,
+              312
+            ]
+          ]
+        },
+        {
+          "r": 960,
+          "k": "shop",
+          "a": 4,
+          "gold": -60,
+          "items": {
+            "Bruiser Shard of Focus": -3,
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 960,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Health": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 960,
+          "k": "shop",
+          "a": 4,
+          "gold": -150,
+          "items": {
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 977,
+          "k": "shop",
+          "a": 9,
+          "gold": -90,
+          "items": {
+            "Bruiser Shard of Focus": -2,
+            "Bruiser Emblem of Focus": 1
+          },
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1017,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 41,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 1022,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 41,
+          "total": 860,
+          "earnedGold": 99,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 1052,
+          "k": "capture",
+          "g": 9,
+          "team": 1,
+          "shares": [
+            [
+              7,
+              19,
+              114
+            ],
+            [
+              9,
+              18,
+              114
+            ]
+          ]
+        },
+        {
+          "r": 1063,
+          "k": "tribute_start",
+          "a": 9,
+          "gems": 18,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1065,
+          "k": "tribute_end",
+          "a": 9,
+          "gems": 18,
+          "total": 721,
+          "earnedGold": 43,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1079,
+          "k": "capture",
+          "g": 4,
+          "team": 1,
+          "shares": [
+            [
+              9,
+              15,
+              120
+            ]
+          ]
+        },
+        {
+          "r": 1085,
+          "k": "capture",
+          "g": 5,
+          "team": 0,
+          "shares": [
+            [
+              4,
+              15,
+              120
+            ]
+          ]
+        },
+        {
+          "r": 1091,
+          "k": "tribute_start",
+          "a": 9,
+          "gems": 15,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1093,
+          "k": "tribute_end",
+          "a": 9,
+          "gems": 15,
+          "total": 755,
+          "earnedGold": 36,
+          "actor_name": "Marcella",
+          "actor_team": "B"
+        },
+        {
+          "r": 1098,
+          "k": "tribute_start",
+          "a": 4,
+          "gems": 15,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        },
+        {
+          "r": 1100,
+          "k": "tribute_end",
+          "a": 4,
+          "gems": 15,
+          "total": 927,
+          "earnedGold": 36,
+          "actor_name": "Marcella",
+          "actor_team": "A"
+        }
+      ],
+      "team_checkpoints": {
+        "400": {
+          "A": {
+            "earned_gold_cumulative": 1796,
+            "shop_spend_cumulative": 1760,
+            "bank_gold_inventory": 36,
+            "submitted_gems_score": 86,
+            "carried_gems": 87
+          },
+          "B": {
+            "earned_gold_cumulative": 2281,
+            "shop_spend_cumulative": 2240,
+            "bank_gold_inventory": 41,
+            "submitted_gems_score": 184,
+            "carried_gems": 19
+          }
+        },
+        "600": {
+          "A": {
+            "earned_gold_cumulative": 3367,
+            "shop_spend_cumulative": 3250,
+            "bank_gold_inventory": 117,
+            "submitted_gems_score": 250,
+            "carried_gems": 99
+          },
+          "B": {
+            "earned_gold_cumulative": 4023,
+            "shop_spend_cumulative": 3980,
+            "bank_gold_inventory": 43,
+            "submitted_gems_score": 352,
+            "carried_gems": 30
+          }
+        },
+        "800": {
+          "A": {
+            "earned_gold_cumulative": 5107,
+            "shop_spend_cumulative": 5050,
+            "bank_gold_inventory": 57,
+            "submitted_gems_score": 513,
+            "carried_gems": 45
+          },
+          "B": {
+            "earned_gold_cumulative": 5678,
+            "shop_spend_cumulative": 5440,
+            "bank_gold_inventory": 238,
+            "submitted_gems_score": 479,
+            "carried_gems": 74
+          }
+        },
+        "1109": {
+          "A": {
+            "earned_gold_cumulative": 8818,
+            "shop_spend_cumulative": 8470,
+            "bank_gold_inventory": 348,
+            "submitted_gems_score": 968,
+            "carried_gems": 15
+          },
+          "B": {
+            "earned_gold_cumulative": 8046,
+            "shop_spend_cumulative": 7240,
+            "bank_gold_inventory": 806,
+            "submitted_gems_score": 755,
+            "carried_gems": 41
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "schema": "one-actor-window-run-receipt/v1",
+  "preflight_sha256": "8ebb16bb1102ab7df7a04dc2b464eaacb65f9ea7ab3a2c512ec6aafa1f0616ac",
+  "output": "provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/big-world-loss-marcella6-r850-859.json",
+  "output_sha256": "2a15454b696c68e02713b018436b57ffb708e801ee80c3f82587edc1e3ceb5fe",
+  "stdout": "provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/run.stdout.log",
+  "stdout_sha256": "925edfe87d8948cbd3a61d02b334d3bf0b02005f39b7609fa78da61f44b24b6b",
+  "stderr": "provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/run.stderr.log",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "duty_receipt": "provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/duty-receipt.json",
+  "duty_receipt_sha256": "95c78b413384944bb81127626f203e9e1eb1408c18881494681235b6895b2242",
+  "argv": [
+    "node",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/export_actor_own_view_window_v3_local.mjs",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/mite/cf39cebf-e598-4540-afaa-b470321fe98a/big-world-new-team-4-loss.repl26a",
+    "6",
+    "850",
+    "859",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/big-world-loss-marcella6-r850-859.json",
+    "--batch",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-batch/mite",
+    "--public-source-unverified"
+  ],
+  "exit_code": 0,
+  "duty": {
+    "approximate_active_fraction": 0.1,
+    "run_seconds": 0.1,
+    "stop_seconds": 0.9,
+    "nice": 19
+  },
+  "actor": {
+    "id": 6,
+    "name": "Marcella",
+    "team": 1,
+    "physical_side": "B"
+  },
+  "selected_rounds": [
+    850,
+    859
+  ],
+  "exported_rounds": [
+    850,
+    851,
+    852,
+    853,
+    854,
+    855,
+    856,
+    857,
+    858,
+    859
+  ],
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "source_attribution": {
+    "status": "unverified_public_replay",
+    "statement": "public source is unverified; the replay metadata does not identify a submission/version ID, so exact source attribution is unavailable",
+    "submission_version": null,
+    "source_aggregates": null,
+    "context": "The replay metadata does not identify the submission or source version used."
+  }
+}

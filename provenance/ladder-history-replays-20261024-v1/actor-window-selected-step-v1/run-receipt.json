@@ -1,0 +1,90 @@
+{
+  "schema": "one-actor-selected-action-window-run-receipt/v1",
+  "preflight_sha256": "9645f01a79509ae2ed5018ffe032460a3183f10a32e7c3cf3b782816b49283dc",
+  "planned_scope": "one extracted public replay; actor6 Vendetta on physical B; round18; selected timeline action step3189 only",
+  "output": "provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/corridors-vendetta6-r18-step3189.json",
+  "output_sha256": "733a31009a7ea74856dbe11dabb63bc763052d67ddd949ced79c61a5487bbf53",
+  "stdout": "provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/run.stdout.log",
+  "stdout_sha256": "f690a143f4018ab4c0964a72b359975ddc67b3b0b89075afa8df5c9647cbd964",
+  "stderr": "provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/run.stderr.log",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "duty_receipt": "provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/duty-receipt.json",
+  "duty_receipt_sha256": "04d0f9325b9ffc4e3825f7950fff3c9da6aad7193439dee9a0d9d2122b4a393b",
+  "actual_argv": [
+    "node",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/export_actor_own_view_window_v3_local.mjs",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/mite/ee6fc21f-6adf-48f8-8849-1e6772b5b8e8/corridors-procless-loss.repl26a",
+    "6",
+    "18",
+    "18",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/corridors-vendetta6-r18-step3189.json",
+    "--batch",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-batch/mite",
+    "--public-source-unverified",
+    "--at-step",
+    "3189"
+  ],
+  "exit_code": 0,
+  "approximate_active_fraction": 0.1,
+  "actor": {
+    "id": 6,
+    "name": "Vendetta",
+    "team": 1,
+    "physical_side": "B"
+  },
+  "selected_rounds": [
+    18,
+    18
+  ],
+  "selected_action_step_indices": [
+    3189
+  ],
+  "selected_action": {
+    "step_index": 3189,
+    "round": 18,
+    "action": {
+      "kind": "move",
+      "step_index": 3189,
+      "destination": [
+        21,
+        21
+      ]
+    },
+    "before_position": {
+      "raw": [
+        20,
+        22
+      ],
+      "own_frame": [
+        20,
+        17
+      ]
+    },
+    "after_position": {
+      "raw": [
+        21,
+        21
+      ],
+      "own_frame": [
+        21,
+        18
+      ]
+    }
+  },
+  "engine": {
+    "version": "v1_0_3",
+    "cambc": "cambc 3.0.5",
+    "asset": "v1_0_3-DRqNt1t2.wasm",
+    "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "bytes": 638472,
+    "snapshotSize": 184760
+  },
+  "source_attribution": {
+    "status": "unverified_public_replay",
+    "statement": "public source is unverified; the replay metadata does not identify a submission/version ID, so exact source attribution is unavailable",
+    "submission_version": null,
+    "source_aggregates": null,
+    "context": "The replay metadata does not identify the submission or source version used."
+  },
+  "output_written": true
+}

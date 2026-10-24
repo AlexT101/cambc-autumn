@@ -1,0 +1,43 @@
+{
+  "schema": "one-actor-selected-action-window-preflight/v1",
+  "scope": "one extracted public replay; actor6 Vendetta on physical B; round18; selected timeline action step3189 only",
+  "source_attribution": "public-source-unverified; do not attribute bot source/version",
+  "match_id": "ee6fc21f-6adf-48f8-8849-1e6772b5b8e8",
+  "replay_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/mite/ee6fc21f-6adf-48f8-8849-1e6772b5b8e8/corridors-procless-loss.repl26a",
+  "replay_archive_sha256": "6564d2a1689e76c8ee0e16049c6244648889e1a8873caeebb6f252831619ff14",
+  "replay_payload_sha256": "6564d2a1689e76c8ee0e16049c6244648889e1a8873caeebb6f252831619ff14",
+  "extractor_dir": "provenance/ladder-history-replays-20261024-v1/inputs/mite/ee6fc21f-6adf-48f8-8849-1e6772b5b8e8/corridors-procless-loss.repl26a",
+  "extracted_map_hash": "93678adca5cab962",
+  "actor": {
+    "id": 6,
+    "name": "Vendetta",
+    "team": 1,
+    "physical_side": "B"
+  },
+  "rounds": [
+    18,
+    18
+  ],
+  "selected_action_steps": [
+    3189
+  ],
+  "selected_step_semantics": "Exporter requires the selected step to be actor6 phase-10 action and records timeline snapshots immediately before/after it.",
+  "map_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/extract/mite/maps/93678adca5cab962.json",
+  "map_file_sha256": "9516677351ff9b91980a6b9e085a47694345d5abdd567da983a86980bb6b3263",
+  "exporter_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/export_actor_own_view_window_v3_local.mjs",
+  "exporter_sha256": "4d578b4642ec9c16ee25fada9272fd71da28b8fe4e3f00f38b649205ce9b9052",
+  "compat_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/engine_own_view_v3_compat.mjs",
+  "compat_sha256": "f8a338b2aa3338cf421d1ef167a260b6ed90f4932bfd56f83852ee272a537778",
+  "batch_results_sha256": "70fe8372e041b26198eacd413d45d76d5f10224abb6fb87eaea23a93956f3f5d",
+  "output_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-selected-step-v1/corridors-vendetta6-r18-step3189.json",
+  "output_absent_preflight": true,
+  "duty_wrapper_path": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-service-bounded-extract-20261024-v1/duty_run.py",
+  "duty_wrapper_sha256": "e9c7b85c19dc2034f6ba95e030d9ed5ac1e45ee8bd965e75edc343c7942cab63",
+  "planned_duty": {
+    "run_seconds": 0.1,
+    "stop_seconds": 0.9,
+    "approximate_active_fraction": 0.1,
+    "nice": 19,
+    "workers": 1
+  }
+}

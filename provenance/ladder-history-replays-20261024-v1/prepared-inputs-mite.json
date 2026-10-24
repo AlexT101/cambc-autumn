@@ -1,0 +1,76 @@
+{
+  "mite": [
+    {
+      "label": "elkring-print-dont-int-loss",
+      "match_id": "df12b67d-e471-49e4-baad-8ad7026d4dbc",
+      "map_name": "00elkring",
+      "our_side": "a",
+      "opponent": "print dont int",
+      "our_result_from_intake": "loss",
+      "bundle": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/bundles/mite/elkring-print-dont-int-loss-df12b67d-e471-49e4-baad-8ad7026d4dbc.zip",
+      "bundle_sha256": "911c921e81eede61787c015edcdc11c6a5febedc6d818edf1a18738b235b65bb",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/mite/df12b67d-e471-49e4-baad-8ad7026d4dbc/elkring-print-dont-int-loss.repl26a",
+      "replay_payload_sha256": "4a1010f022dfa8efa678017bb740223fd3b699c194fccf7941e8ed2d6f6d5eba"
+    },
+    {
+      "label": "big-world-print-dont-int-win",
+      "match_id": "9c04eaa5-42af-47a1-babb-5bcf4fb0b523",
+      "map_name": "01big_world",
+      "our_side": "a",
+      "opponent": "print dont int",
+      "our_result_from_intake": "win",
+      "bundle": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/bundles/mite/big-world-print-dont-int-win-9c04eaa5-42af-47a1-babb-5bcf4fb0b523.zip",
+      "bundle_sha256": "af7676a9a3413df836a988a5158314b409f09a1fb827abc7f24205600fc96552",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/mite/9c04eaa5-42af-47a1-babb-5bcf4fb0b523/big-world-print-dont-int-win.repl26a",
+      "replay_payload_sha256": "c7599efc0e34683c5ee64ddf001c28d0842de37ef0df37d35cc7e8f1a51fc0d5"
+    },
+    {
+      "label": "corridors-print-dont-int-win",
+      "match_id": "48390a5f-8a3c-47ab-91e1-c72de7cfa3a9",
+      "map_name": "01corridors",
+      "our_side": "a",
+      "opponent": "print dont int",
+      "our_result_from_intake": "win",
+      "bundle": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/bundles/mite/corridors-print-dont-int-win-48390a5f-8a3c-47ab-91e1-c72de7cfa3a9.zip",
+      "bundle_sha256": "5dea5a99111e8573885e1acbfe717e282f2f29bea671a4a4a93329c2e7ea4093",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/mite/48390a5f-8a3c-47ab-91e1-c72de7cfa3a9/corridors-print-dont-int-win.repl26a",
+      "replay_payload_sha256": "83249520f35ae5a73ee34b6e81462c3ca315adfeb240b3ccd4af38bfea15822f"
+    },
+    {
+      "label": "big-world-new-team-4-loss",
+      "match_id": "cf39cebf-e598-4540-afaa-b470321fe98a",
+      "map_name": "01big_world",
+      "our_side": "a",
+      "opponent": "new team(4)",
+      "our_result_from_intake": "loss",
+      "bundle": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/bundles/mite/big-world-new-team-4-loss-cf39cebf-e598-4540-afaa-b470321fe98a.zip",
+      "bundle_sha256": "705a58957476a9d52b13a39e10ad28a01541dacc41214bd1bca6918fed31e1e3",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/mite/cf39cebf-e598-4540-afaa-b470321fe98a/big-world-new-team-4-loss.repl26a",
+      "replay_payload_sha256": "1648fee7392c97b1a18545993fc23d5b00625caf21e033bf931f3d09c09e9bd5"
+    },
+    {
+      "label": "lanes-new-team-4-win",
+      "match_id": "71abf3a0-2da3-4ff4-9e8e-e0034d875c39",
+      "map_name": "00lanes",
+      "our_side": "a",
+      "opponent": "new team(4)",
+      "our_result_from_intake": "win",
+      "bundle": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/bundles/mite/lanes-new-team-4-win-71abf3a0-2da3-4ff4-9e8e-e0034d875c39.zip",
+      "bundle_sha256": "85f9aefb77fdb23060981eb2dfeb073c85bf9c2e45dd65c8afb4f39f93e109d9",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/mite/71abf3a0-2da3-4ff4-9e8e-e0034d875c39/lanes-new-team-4-win.repl26a",
+      "replay_payload_sha256": "ce58e07436ad37a0822486eddfa00099e241dbaf2545123b6471fbbec9fec683"
+    },
+    {
+      "label": "corridors-procless-loss",
+      "match_id": "ee6fc21f-6adf-48f8-8849-1e6772b5b8e8",
+      "map_name": "01corridors",
+      "our_side": "b",
+      "opponent": "procless",
+      "our_result_from_intake": "loss",
+      "bundle": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/bundles/mite/corridors-procless-loss-ee6fc21f-6adf-48f8-8849-1e6772b5b8e8.zip",
+      "bundle_sha256": "c0879421104ccf42b5c6cb936632f51cd889fd9be8b04ca9366d70dd9f9d2c30",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/mite/ee6fc21f-6adf-48f8-8849-1e6772b5b8e8/corridors-procless-loss.repl26a",
+      "replay_payload_sha256": "6564d2a1689e76c8ee0e16049c6244648889e1a8873caeebb6f252831619ff14"
+    }
+  ]
+}

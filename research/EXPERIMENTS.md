@@ -2427,3 +2427,102 @@ boundary is retracted; no projected-timing gameplay change is justified by that
 argument. Terrain-aware reach, guard short-circuits, fuel admission and fight results
 remain to be distinguished using existing computed values. Gold v2's round30 trace
 is perturbed by a fuel rollover and cannot identify the original continuation branch.
+
+### Bounded service and wrapper follow-up (2026-10-24)
+
+The service-panel audit now has native and actor-aligned evidence; use
+`willow-service-panel-activation-review-20261024-v1.md` and the corrected
+`service-panel-light-audit-v2.json`, not the initial per-row winner placeholders.
+The six paired cells remain base3/6 versus service2/6. In Cells A, Willow's first
+accepted-action difference is the round411 recall approach; both builds have
+identical items through round405 and no Focus purchase is observed. Prospective
+shop values can affect decisions before a purchase, so this does not establish
+non-activation. Archipelago002 A first differs at Willow's round5 ward placement.
+These are candidates for decision/fuel attribution, not proof that more healing
+or a different item stat would repair the losses. The shopper remains isolated.
+
+The live-camp board-write wrapper child `1b4928c9` completed its four authorized
+games under one worker with a 10% active-duty schedule. At 100M fuel its Starvation
+A replay payload is identical to the route parent (`8b4e15938a7d553e…6743e7`);
+both lose at round1771. Each first champion turn costs54 additional fuel, and
+later play differs by only1086 total fuel over8850 turns. The child's normal100k
+Starvation A and Band A payloads also equal the preserved parent controls.
+All four native, caught-action and turn-order audits pass. This wrapper offers
+no demonstrated strength or fuel benefit and is not promoted. Receipts are in
+`../provenance/willow-astraeus-livecamp-write-child-runtime-20261024-v1/`.
+
+### Latest Astraeus and Mite investigation (2026-10-24)
+
+Fetched upstream `dc9867a` explicitly labels frozen v47 as live Astraeus f7d54e9.
+Its source tree is identical to f7; the intervening changes regenerate map suites
+and update tooling. The normal five-pick roster remains Prism, Vesper, Marcella,
+Willow, Heart of Ruin, also the effective v44 roster. Local v44 is source-identical
+to released Khaos_v33/a00fff. Upstream's latest f7-versus-cb61 report is49.5%/600,
+which does not establish a regression or gain. See
+`astraeus-v47-upstream-regression-review-20261024-v1.md`.
+
+Fresh authenticated history at05:50:47Z exposes no submission version IDs. The
+user subsequently identified the unusual Willow-first batches as ladder
+manipulation and instructed us to ignore them. They are excluded from the
+regression analysis, and the pooled100-game result is not an Astraeus estimate.
+Normal Prism-first drafts in the60 newer rows are17–13. Restricting to normal
+five-pick drafts, newest25 are14–11 versus18–8 in the earlier26 of this100-game
+window; their schedules differ. This warrants replay inspection, not a
+version-attributed rollback. Two exact map/side/both-draft win-to-loss pairs are
+selected: Fish Elkring B and :3 Pilgrimage A. Historical generated map names must
+not be pooled across the newly changed seeds1025/1026.
+
+Mite's separately frozen latest50 ranked rows are36–14, predominantly drafting
+Vesper, Vendetta, Ryth, Tavi and Marcella. Its uploaded revision is likewise
+unknown. Six wins/losses were selected across Elkring, Big World, Corridors and
+Lanes for economic and actor-visible decision analysis. Both investigations use
+existing CLI/replay tooling, one decoder with low active duty, and no browser,
+new games or submission. Raw metadata and selection context are preserved in
+`../provenance/astraeus-regression-history-intake-20261024-v1/` and
+`../provenance/mite-ladder-history-intake-20261024-v1/`.
+
+Ten replay extracts and nine bounded actor/action windows now complete this
+investigation. Both normal-draft matched cells first diverge on our accepted
+actions, but identical exported observations do not establish identical private
+state or uploaded source. Own native rollovers fall2→0 on Elkring and2→1 on
+Pilgrimage; both pairs have zero native BotErrors and caught-action errors. These
+losses do not show a new whole-game fuel collapse. On Pilgrimage, the shared
+88-gem group12 accounts for the dominant economic reversal at common horizon1403:
+own capture gems440→88 and opponent176→704. More total Willow healing did not
+preserve that objective. Her death770 follows damage from a bush-hidden Vesper;
+her inspected turns763–769 contain no visible enemy, so this is not evidence
+that she ignored a visible ready attacker. See
+`astraeus-normal-five-pick-matched-review-20261024-v1.md`.
+
+Elkring supplies a narrower source experiment. At161 Willow makes the same move
+in both games, but the newer game spends reset for55 damage. Current priority
+arithmetic then drops her from14 to−41, losing useful even-round escape slots.
+The observed Ryth cannot hit immediately from distance3; the concern is pursuit
+and subsequent contact. Candidate `willow-contact-priority-f7-work`, aggregate
+`8e535de8da12fde3b5d2c0b03edb275790539b2a867f86cf985ed554ec44c2e7`,
+adds a recall-only floor13 when it actually improves the projected alternating
+schedule against an already-acted, fresh, visible, known-unstunned enemy. Higher
+Wish priorities remain unchanged. Conservative camp lifecycle checks avoid
+stealing aggro through a priority tie. Independent final source review passes;
+the prototype has not yet been built or measured, and its admission in the
+public replay's unavailable private state is unknown. A small paired normal-fuel
+panel against frozen v33 is assigned to the sole low-duty runtime worker.
+
+Mite's Big World loss retains a gold lead (8494 versus6861 final) and contains
+no champion deaths on Mite's side. The opponent's Marcella captures a mixed
+Monolith group for228 gems at971 and banks them at1033, following a damaged-boss
+sortie, paid recall/heal trip, return, and separate harmless cleanup. Mite does
+not take that group in either the matched-map win or loss. Canonical Astraeus
+also excludes live non-sealing mixed Monoliths from ordinary farm/siege admission.
+This supports an isolated phased-work experiment, not a generic aggression or
+counterdraft change. Source planning must use current actor stats, legal spell
+and basic schedules, a safe exit, the complete paid healing/return cycle, and
+normal alternative farm values. No private Mite source or repeatable counter
+win rate is claimed. See `mite-observable-counter-review-20261024-v1.md` and
+`mite-phased-boss-source-design-20261024-v1.md`.
+
+The nine actor windows and compact manifests retain exact match, payload and
+engine identities under `../provenance/ladder-history-replays-20261024-v1/`.
+Use `bigworld-pair-macro-notes-v4.md`: earlier v3 incorrectly called971 the bank
+time and overcounted successive camp hits. Raw bundles and compressed extracts
+remain preserved separately. No candidate has been promoted or submitted.

@@ -1,0 +1,130 @@
+{
+  "schema": "authorized-actor-window-runs/v1",
+  "duty_cycle": {
+    "run_seconds": 0.1,
+    "stop_seconds": 0.9,
+    "approximate_active_fraction": 0.1,
+    "nice": 19
+  },
+  "runs": [
+    {
+      "label": "fish-elkring-old-willow9",
+      "match_id": "67fc71af-7d66-40e8-8c82-a0d400cbea6f",
+      "actor_id": 9,
+      "actor_name": "Willow",
+      "physical_side": "B",
+      "rounds": [
+        158,
+        167
+      ],
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/fish-elkring-old-willow9.json",
+      "output_sha256": "1c6ca95b5c0e80a5000da161d2804505cc70b1da76806e59e18862b2c5154f40",
+      "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-old-willow9.stdout.log",
+      "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-old-willow9.stderr.log",
+      "duty_receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-old-willow9.duty.json",
+      "runner_exit": 0
+    },
+    {
+      "label": "fish-elkring-new-willow9",
+      "match_id": "deb4ae94-edc6-480f-a0e9-03fd944841bd",
+      "actor_id": 9,
+      "actor_name": "Willow",
+      "physical_side": "B",
+      "rounds": [
+        158,
+        167
+      ],
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/fish-elkring-new-willow9.json",
+      "output_sha256": "7f6d51efd1ea64940a4a178e9ec4e781c305dbeda61026c1aad104b0b5cd389a",
+      "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-new-willow9.stdout.log",
+      "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-new-willow9.stderr.log",
+      "duty_receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-fish-elkring-new-willow9.duty.json",
+      "runner_exit": 0
+    },
+    {
+      "label": "three-pilgrimage-old-vesper1",
+      "match_id": "9da66955-6268-428c-a955-1549cd080c33",
+      "actor_id": 1,
+      "actor_name": "Vesper Vale",
+      "physical_side": "A",
+      "rounds": [
+        77,
+        86
+      ],
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/three-pilgrimage-old-vesper1.json",
+      "output_sha256": "f937e70850528f20c8f7be967373f8e40a5a4580b937b0b65d88fd658e4093db",
+      "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-old-vesper1.stdout.log",
+      "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-old-vesper1.stderr.log",
+      "duty_receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-old-vesper1.duty.json",
+      "runner_exit": 0
+    },
+    {
+      "label": "three-pilgrimage-new-vesper1",
+      "match_id": "62589f4b-d504-4bf7-b641-f3e9de95ce9c",
+      "actor_id": 1,
+      "actor_name": "Vesper Vale",
+      "physical_side": "A",
+      "rounds": [
+        77,
+        86
+      ],
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/three-pilgrimage-new-vesper1.json",
+      "output_sha256": "664a883cd72058da2f6c8f3d2165bff7a2c16895184a6d6ef87ba67b447db5dd",
+      "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-vesper1.stdout.log",
+      "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-vesper1.stderr.log",
+      "duty_receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-vesper1.duty.json",
+      "runner_exit": 0
+    },
+    {
+      "label": "three-pilgrimage-new-willow3",
+      "match_id": "62589f4b-d504-4bf7-b641-f3e9de95ce9c",
+      "actor_id": 3,
+      "actor_name": "Willow",
+      "physical_side": "A",
+      "rounds": [
+        763,
+        772
+      ],
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/three-pilgrimage-new-willow3.json",
+      "output_sha256": "929e50da3cc0c66fb8043271148fe6102f4437174bb7c4f9eb709b835b2605bf",
+      "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-willow3.stdout.log",
+      "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-willow3.stderr.log",
+      "duty_receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-three-pilgrimage-new-willow3.duty.json",
+      "runner_exit": 0
+    },
+    {
+      "label": "corridors-procless-loss-vendetta6",
+      "match_id": "ee6fc21f-6adf-48f8-8849-1e6772b5b8e8",
+      "actor_id": 6,
+      "actor_name": "Vendetta",
+      "physical_side": "B",
+      "rounds": [
+        13,
+        22
+      ],
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/corridors-procless-loss-vendetta6.json",
+      "output_sha256": "37c31755430382933b799ecb4818e9a8dcd3b9e4de5021920c758e2085e98a90",
+      "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-corridors-procless-loss-vendetta6.stdout.log",
+      "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-corridors-procless-loss-vendetta6.stderr.log",
+      "duty_receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-corridors-procless-loss-vendetta6.duty.json",
+      "runner_exit": 0
+    },
+    {
+      "label": "big-world-new-team4-loss-ryth2",
+      "match_id": "cf39cebf-e598-4540-afaa-b470321fe98a",
+      "actor_id": 2,
+      "actor_name": "Ryth",
+      "physical_side": "A",
+      "rounds": [
+        165,
+        174
+      ],
+      "output": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-exports-v1/big-world-new-team4-loss-ryth2.json",
+      "output_sha256": "8cf41d10a0a323c923cf507016b8db6014dee36db25ab6ac7c58a01b2c20c0bb",
+      "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-big-world-new-team4-loss-ryth2.stdout.log",
+      "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-big-world-new-team4-loss-ryth2.stderr.log",
+      "duty_receipt": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-big-world-new-team4-loss-ryth2.duty.json",
+      "runner_exit": 0
+    }
+  ]
+}

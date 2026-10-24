@@ -1,0 +1,116 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T06:15:57.053046+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "node",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/tools/replay/export_actor_own_view_window_v3_local.mjs",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/mite/cf39cebf-e598-4540-afaa-b470321fe98a/big-world-new-team-4-loss.repl26a",
+    "6",
+    "850",
+    "859",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/big-world-loss-marcella6-r850-859.json",
+    "--batch",
+    "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-batch/mite",
+    "--public-source-unverified"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/run.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/actor-window-bigworld-boss-v1/run.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.035934541,
+      "run_end_monotonic": 0.140961083
+    },
+    {
+      "run_start_monotonic": 1.045469541,
+      "run_end_monotonic": 1.148759958
+    },
+    {
+      "run_start_monotonic": 2.053963875,
+      "run_end_monotonic": 2.158984333
+    },
+    {
+      "run_start_monotonic": 3.064223916,
+      "run_end_monotonic": 3.167213
+    },
+    {
+      "run_start_monotonic": 4.071026166,
+      "run_end_monotonic": 4.176048125
+    },
+    {
+      "run_start_monotonic": 5.081176833,
+      "run_end_monotonic": 5.183028666
+    },
+    {
+      "run_start_monotonic": 6.085145916,
+      "run_end_monotonic": 6.187598625
+    },
+    {
+      "run_start_monotonic": 7.092726375,
+      "run_end_monotonic": 7.197389083
+    },
+    {
+      "run_start_monotonic": 8.098616125,
+      "run_end_monotonic": 8.201638291
+    },
+    {
+      "run_start_monotonic": 9.104717625,
+      "run_end_monotonic": 9.209735916
+    },
+    {
+      "run_start_monotonic": 10.112554666,
+      "run_end_monotonic": 10.212689416
+    },
+    {
+      "run_start_monotonic": 11.117874041,
+      "run_end_monotonic": 11.220131333
+    },
+    {
+      "run_start_monotonic": 12.125220458,
+      "run_end_monotonic": 12.229137125
+    },
+    {
+      "run_start_monotonic": 13.134310416,
+      "run_end_monotonic": 13.236497708
+    },
+    {
+      "run_start_monotonic": 14.141686916,
+      "run_end_monotonic": 14.243784458
+    },
+    {
+      "run_start_monotonic": 15.146005916,
+      "run_end_monotonic": 15.249552208
+    },
+    {
+      "run_start_monotonic": 16.154765333,
+      "run_end_monotonic": 16.255086125
+    },
+    {
+      "run_start_monotonic": 17.160367291,
+      "run_end_monotonic": 17.261347166
+    },
+    {
+      "run_start_monotonic": 18.164170833,
+      "run_end_monotonic": 18.264738291
+    },
+    {
+      "run_start_monotonic": 19.170273833,
+      "run_end_monotonic": 19.270845625
+    },
+    {
+      "run_start_monotonic": 20.176043125,
+      "run_end_monotonic": 20.281097541
+    }
+  ],
+  "pid": 77335,
+  "process_group_id": 77335,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T06:16:17.301430+00:00"
+}

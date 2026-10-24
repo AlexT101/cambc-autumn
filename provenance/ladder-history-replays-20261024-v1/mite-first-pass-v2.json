@@ -1,0 +1,6158 @@
+{
+  "schema": "mite-six-replay-first-pass/v1",
+  "source_attribution": "public-source-unverified; submission ID/version unknown",
+  "engine_policy": "Engine identity is read from each replay meta; no engine extraction beyond these six source files.",
+  "item_name_enum_sha256": "121ad1348a6b42b89372dd758b870f95f7d5c1c08a3f3ca921015350ed4fc5b8",
+  "games": [
+    {
+      "match_id": "df12b67d-e471-49e4-baad-8ad7026d4dbc",
+      "map_from_intake": "00elkring",
+      "opponent": "print dont int",
+      "our_side": "a",
+      "result_from_intake": "loss",
+      "replay_payload_sha256": "4a1010f022dfa8efa678017bb740223fd3b699c194fccf7941e8ed2d6f6d5eba",
+      "bundle_sha256": "911c921e81eede61787c015edcdc11c6a5febedc6d818edf1a18738b235b65bb",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      },
+      "rounds": 821,
+      "score_a_b": [
+        473,
+        1001
+      ],
+      "winner_team_index": 1,
+      "roster": [
+        {
+          "id": 0,
+          "name": "Vesper Vale",
+          "draft_order": 0,
+          "final": {
+            "kills": 0,
+            "deaths": 1,
+            "earned_gold": 899,
+            "spent_gold": 880,
+            "camp_damage_done": 15097.300003051758,
+            "camp_damage_taken": 5171.399990081787,
+            "collected_gems": 132,
+            "submitted_gems": 22,
+            "ending_bag": 88
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 22
+        },
+        {
+          "id": 1,
+          "name": "Vendetta",
+          "draft_order": 1,
+          "final": {
+            "kills": 2,
+            "deaths": 0,
+            "earned_gold": 2110,
+            "spent_gold": 2110,
+            "camp_damage_done": 28568,
+            "camp_damage_taken": 6604.799942016602,
+            "collected_gems": 341,
+            "submitted_gems": 275,
+            "ending_bag": 66
+          },
+          "opening_first_shop": {
+            "round": 36,
+            "actor": 1,
+            "items": [
+              {
+                "name": "Treasure Emblem of Strength",
+                "delta": 1
+              }
+            ],
+            "gold_delta": -150
+          },
+          "death_gems_lost": 0
+        },
+        {
+          "id": 2,
+          "name": "Ryth",
+          "draft_order": 2,
+          "final": {
+            "kills": 0,
+            "deaths": 2,
+            "earned_gold": 924,
+            "spent_gold": 910,
+            "camp_damage_done": 17910,
+            "camp_damage_taken": 5564.999942779541,
+            "collected_gems": 165,
+            "submitted_gems": 88,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 53,
+            "actor": 2,
+            "items": [
+              {
+                "name": "Treasure Shard of Health",
+                "delta": 3
+              }
+            ],
+            "gold_delta": -90
+          },
+          "death_gems_lost": 77
+        },
+        {
+          "id": 3,
+          "name": "Tavi",
+          "draft_order": 3,
+          "final": {
+            "kills": 0,
+            "deaths": 3,
+            "earned_gold": 110,
+            "spent_gold": 100,
+            "camp_damage_done": 16144,
+            "camp_damage_taken": 1905,
+            "collected_gems": 22,
+            "submitted_gems": 0,
+            "ending_bag": 0
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 22
+        },
+        {
+          "id": 4,
+          "name": "Marcella",
+          "draft_order": 4,
+          "final": {
+            "kills": 1,
+            "deaths": 2,
+            "earned_gold": 927,
+            "spent_gold": 910,
+            "camp_damage_done": 14039.054443359375,
+            "camp_damage_taken": 5410.19998550415,
+            "collected_gems": 110,
+            "submitted_gems": 88,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 99,
+            "actor": 4,
+            "items": [
+              {
+                "name": "Jungle Shard of Strength",
+                "delta": 3
+              }
+            ],
+            "gold_delta": -90
+          },
+          "death_gems_lost": 22
+        }
+      ],
+      "native_round_turn_markers": {
+        "rollover": [
+          {
+            "round": 698,
+            "actor": 3
+          }
+        ],
+        "bot_error": []
+      },
+      "team_milestones": {
+        "50": {
+          "team_earned_gold": 330,
+          "team_spent_gold_shop_transactions": 220,
+          "team_bank_gold": 110,
+          "team_submitted_gems": 0,
+          "team_carried_gems": 66
+        },
+        "100": {
+          "team_earned_gold": 430,
+          "team_spent_gold_shop_transactions": 420,
+          "team_bank_gold": 10,
+          "team_submitted_gems": 44,
+          "team_carried_gems": 22
+        },
+        "200": {
+          "team_earned_gold": 1060,
+          "team_spent_gold_shop_transactions": 1000,
+          "team_bank_gold": 60,
+          "team_submitted_gems": 44,
+          "team_carried_gems": 55
+        },
+        "400": {
+          "team_earned_gold": 2311,
+          "team_spent_gold_shop_transactions": 2260,
+          "team_bank_gold": 51,
+          "team_submitted_gems": 187,
+          "team_carried_gems": 66
+        }
+      },
+      "opening_capture_holds_first150": [
+        {
+          "round": 12,
+          "group": 0,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 30,
+          "group": 4,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 35,
+          "group": 2,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 116,
+          "group": 0,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 120,
+          "group": 9,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 131,
+          "group": 2,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 147,
+          "group": 4,
+          "timer": 5,
+          "actor": null
+        }
+      ],
+      "opening_captures_first150": [
+        {
+          "round": 17,
+          "group": 0,
+          "shares": [
+            {
+              "actor": 1,
+              "gems": 22,
+              "gold": 110
+            }
+          ]
+        },
+        {
+          "round": 35,
+          "group": 4,
+          "shares": [
+            {
+              "actor": 1,
+              "gems": 22,
+              "gold": 110
+            }
+          ]
+        },
+        {
+          "round": 40,
+          "group": 2,
+          "shares": [
+            {
+              "actor": 2,
+              "gems": 22,
+              "gold": 110
+            }
+          ]
+        },
+        {
+          "round": 121,
+          "group": 0,
+          "shares": [
+            {
+              "actor": 2,
+              "gems": 22,
+              "gold": 110
+            }
+          ]
+        },
+        {
+          "round": 125,
+          "group": 9,
+          "shares": [
+            {
+              "actor": 1,
+              "gems": 22,
+              "gold": 132
+            }
+          ]
+        },
+        {
+          "round": 136,
+          "group": 2,
+          "shares": [
+            {
+              "actor": 2,
+              "gems": 22,
+              "gold": 110
+            }
+          ]
+        }
+      ],
+      "first_shop_events_first150": [
+        {
+          "round": 36,
+          "actor": 1,
+          "items": [
+            {
+              "name": "Treasure Emblem of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -150
+        },
+        {
+          "round": 36,
+          "actor": 1,
+          "items": [
+            {
+              "name": "Jungle Shard of Strength",
+              "delta": 2
+            }
+          ],
+          "gold_delta": -60
+        },
+        {
+          "round": 36,
+          "actor": 1,
+          "items": [],
+          "gold_delta": -10
+        },
+        {
+          "round": 53,
+          "actor": 2,
+          "items": [
+            {
+              "name": "Treasure Shard of Health",
+              "delta": 3
+            }
+          ],
+          "gold_delta": -90
+        },
+        {
+          "round": 53,
+          "actor": 2,
+          "items": [],
+          "gold_delta": -10
+        },
+        {
+          "round": 99,
+          "actor": 4,
+          "items": [
+            {
+              "name": "Jungle Shard of Strength",
+              "delta": 3
+            }
+          ],
+          "gold_delta": -90
+        },
+        {
+          "round": 99,
+          "actor": 4,
+          "items": [],
+          "gold_delta": -10
+        },
+        {
+          "round": 126,
+          "actor": 1,
+          "items": [
+            {
+              "name": "Jungle Shard of Strength",
+              "delta": -2
+            },
+            {
+              "name": "Jungle Emblem of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -90
+        },
+        {
+          "round": 126,
+          "actor": 1,
+          "items": [
+            {
+              "name": "Durability Shard of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -30
+        },
+        {
+          "round": 143,
+          "actor": 2,
+          "items": [
+            {
+              "name": "Treasure Shard of Health",
+              "delta": -3
+            },
+            {
+              "name": "Treasure Emblem of Health",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -60
+        },
+        {
+          "round": 143,
+          "actor": 2,
+          "items": [
+            {
+              "name": "Jungle Emblem of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -150
+        }
+      ],
+      "death_events": [
+        {
+          "round": 63,
+          "actor": 3,
+          "actor_name": "Tavi",
+          "gems_lost": 0,
+          "hp_before": 45,
+          "by": null,
+          "camp": 12,
+          "cause": "Attack"
+        },
+        {
+          "round": 198,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 77,
+          "hp_before": 30,
+          "by": 5,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 202,
+          "actor": 0,
+          "actor_name": "Vesper Vale",
+          "gems_lost": 22,
+          "hp_before": 30,
+          "by": 9,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 299,
+          "actor": 4,
+          "actor_name": "Marcella",
+          "gems_lost": 0,
+          "hp_before": 36,
+          "by": null,
+          "camp": 17,
+          "cause": "Attack"
+        },
+        {
+          "round": 391,
+          "actor": 3,
+          "actor_name": "Tavi",
+          "gems_lost": 0,
+          "hp_before": 120,
+          "by": 6,
+          "camp": null,
+          "cause": "Cast ability"
+        },
+        {
+          "round": 592,
+          "actor": 3,
+          "actor_name": "Tavi",
+          "gems_lost": 22,
+          "hp_before": 900,
+          "by": 9,
+          "camp": null,
+          "cause": "Cast ability"
+        },
+        {
+          "round": 725,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 883.5,
+          "by": 9,
+          "camp": null,
+          "cause": "Cast ability"
+        },
+        {
+          "round": 733,
+          "actor": 4,
+          "actor_name": "Marcella",
+          "gems_lost": 22,
+          "hp_before": 991,
+          "by": 9,
+          "camp": null,
+          "cause": "Cast ability"
+        }
+      ],
+      "max_bag_deaths": [
+        {
+          "round": 198,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 77,
+          "hp_before": 30,
+          "by": 5,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 202,
+          "actor": 0,
+          "actor_name": "Vesper Vale",
+          "gems_lost": 22,
+          "hp_before": 30,
+          "by": 9,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 592,
+          "actor": 3,
+          "actor_name": "Tavi",
+          "gems_lost": 22,
+          "hp_before": 900,
+          "by": 9,
+          "camp": null,
+          "cause": "Cast ability"
+        },
+        {
+          "round": 733,
+          "actor": 4,
+          "actor_name": "Marcella",
+          "gems_lost": 22,
+          "hp_before": 991,
+          "by": 9,
+          "camp": null,
+          "cause": "Cast ability"
+        },
+        {
+          "round": 63,
+          "actor": 3,
+          "actor_name": "Tavi",
+          "gems_lost": 0,
+          "hp_before": 45,
+          "by": null,
+          "camp": 12,
+          "cause": "Attack"
+        }
+      ],
+      "team_capture_resets": [
+        {
+          "round": 582,
+          "group": 2,
+          "left": 5,
+          "contested": false
+        },
+        {
+          "round": 592,
+          "group": 2,
+          "left": 4,
+          "contested": false
+        }
+      ],
+      "team_capture_flips": [],
+      "team_capture_steals_and_losses": [],
+      "team_recall_cancel_summary": {
+        "manual": {
+          "count": 2518,
+          "bag_carrying_count": 1213,
+          "sample": [
+            {
+              "round": 2,
+              "actor": 0,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 2,
+              "actor": 1,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 0,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 2,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 4,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 4,
+              "actor": 0,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 4,
+              "actor": 2,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 4,
+              "actor": 3,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 17,
+              "actor": 1,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 18,
+              "actor": 1,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 19,
+              "actor": 1,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 25,
+              "actor": 1,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 29,
+              "actor": 1,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 30,
+              "actor": 1,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 31,
+              "actor": 1,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 38,
+              "actor": 1,
+              "gems": 44,
+              "cause": "manual",
+              "left": 4
+            }
+          ]
+        },
+        "damage": {
+          "count": 623,
+          "bag_carrying_count": 303,
+          "sample": [
+            {
+              "round": 3,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 4,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 6,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 8,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 9,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 10,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 15,
+              "actor": 4,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 16,
+              "actor": 2,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 20,
+              "actor": 1,
+              "gems": 22,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 21,
+              "actor": 1,
+              "gems": 22,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 22,
+              "actor": 1,
+              "gems": 22,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 23,
+              "actor": 1,
+              "gems": 22,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 24,
+              "actor": 1,
+              "gems": 22,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 26,
+              "actor": 1,
+              "gems": 22,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 27,
+              "actor": 1,
+              "gems": 22,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 28,
+              "actor": 1,
+              "gems": 22,
+              "cause": "damage",
+              "left": 4
+            }
+          ]
+        },
+        "stun": {
+          "count": 40,
+          "bag_carrying_count": 27,
+          "sample": [
+            {
+              "round": 61,
+              "actor": 0,
+              "gems": 0,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 61,
+              "actor": 3,
+              "gems": 0,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 71,
+              "actor": 0,
+              "gems": 0,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 71,
+              "actor": 2,
+              "gems": 22,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 79,
+              "actor": 0,
+              "gems": 0,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 173,
+              "actor": 0,
+              "gems": 22,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 173,
+              "actor": 2,
+              "gems": 77,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 181,
+              "actor": 0,
+              "gems": 22,
+              "cause": "stun",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 71,
+              "actor": 2,
+              "gems": 22,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 173,
+              "actor": 0,
+              "gems": 22,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 173,
+              "actor": 2,
+              "gems": 77,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 181,
+              "actor": 0,
+              "gems": 22,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 181,
+              "actor": 2,
+              "gems": 77,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 193,
+              "actor": 1,
+              "gems": 33,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 258,
+              "actor": 1,
+              "gems": 55,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 366,
+              "actor": 1,
+              "gems": 66,
+              "cause": "stun",
+              "left": 4
+            }
+          ]
+        },
+        "death": {
+          "count": 4,
+          "bag_carrying_count": 4,
+          "sample": [
+            {
+              "round": 198,
+              "actor": 2,
+              "gems": 77,
+              "cause": "death",
+              "left": 4
+            },
+            {
+              "round": 202,
+              "actor": 0,
+              "gems": 22,
+              "cause": "death",
+              "left": 4
+            },
+            {
+              "round": 592,
+              "actor": 3,
+              "gems": 22,
+              "cause": "death",
+              "left": 4
+            },
+            {
+              "round": 733,
+              "actor": 4,
+              "gems": 22,
+              "cause": "death",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 198,
+              "actor": 2,
+              "gems": 77,
+              "cause": "death",
+              "left": 4
+            },
+            {
+              "round": 202,
+              "actor": 0,
+              "gems": 22,
+              "cause": "death",
+              "left": 4
+            },
+            {
+              "round": 592,
+              "actor": 3,
+              "gems": 22,
+              "cause": "death",
+              "left": 4
+            },
+            {
+              "round": 733,
+              "actor": 4,
+              "gems": 22,
+              "cause": "death",
+              "left": 4
+            }
+          ]
+        }
+      },
+      "team_tribute_cancels": [],
+      "key_champion_contacts_round_end_priorities": [
+        {
+          "round": 56,
+          "kind": "cast",
+          "actor": 4,
+          "target": 8,
+          "damage": [
+            [
+              8,
+              120
+            ]
+          ],
+          "actor_priority_round_end": 96,
+          "target_priority_round_end": 97
+        },
+        {
+          "round": 59,
+          "kind": "attack",
+          "actor": 0,
+          "target": 6,
+          "damage": [
+            [
+              6,
+              55
+            ]
+          ],
+          "actor_priority_round_end": 97,
+          "target_priority_round_end": 99
+        },
+        {
+          "round": 59,
+          "kind": "attack",
+          "actor": 3,
+          "target": 6,
+          "damage": [
+            [
+              6,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 97,
+          "target_priority_round_end": 99
+        },
+        {
+          "round": 64,
+          "kind": "attack",
+          "actor": 0,
+          "target": 8,
+          "damage": [
+            [
+              8,
+              55
+            ]
+          ],
+          "actor_priority_round_end": 97,
+          "target_priority_round_end": 97
+        },
+        {
+          "round": 69,
+          "kind": "cast",
+          "actor": 2,
+          "target": 8,
+          "damage": [
+            [
+              5,
+              100
+            ],
+            [
+              8,
+              100
+            ]
+          ],
+          "actor_priority_round_end": 2096,
+          "target_priority_round_end": 97
+        },
+        {
+          "round": 95,
+          "kind": "attack",
+          "actor": 1,
+          "target": 6,
+          "damage": [
+            [
+              6,
+              112
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 99
+        },
+        {
+          "round": 196,
+          "kind": "attack",
+          "actor": 1,
+          "target": 6,
+          "damage": [
+            [
+              6,
+              148
+            ]
+          ],
+          "actor_priority_round_end": 2098,
+          "target_priority_round_end": 99
+        },
+        {
+          "round": 197,
+          "kind": "attack",
+          "actor": 0,
+          "target": 9,
+          "damage": [
+            [
+              9,
+              49.5
+            ]
+          ],
+          "actor_priority_round_end": 2097,
+          "target_priority_round_end": 96
+        },
+        {
+          "round": 199,
+          "kind": "attack",
+          "actor": 0,
+          "target": 5,
+          "damage": [
+            [
+              5,
+              55
+            ]
+          ],
+          "actor_priority_round_end": 2098,
+          "target_priority_round_end": 100
+        },
+        {
+          "round": 199,
+          "kind": "attack",
+          "actor": 3,
+          "target": 5,
+          "damage": [
+            [
+              5,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 97,
+          "target_priority_round_end": 100
+        },
+        {
+          "round": 199,
+          "kind": "cast",
+          "actor": 3,
+          "target": 5,
+          "damage": [
+            [
+              5,
+              154
+            ]
+          ],
+          "actor_priority_round_end": 97,
+          "target_priority_round_end": 100
+        },
+        {
+          "round": 200,
+          "kind": "attack",
+          "actor": 3,
+          "target": 5,
+          "damage": [
+            [
+              5,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 97,
+          "target_priority_round_end": 100
+        },
+        {
+          "round": 201,
+          "kind": "attack",
+          "actor": 0,
+          "target": 5,
+          "damage": [
+            [
+              5,
+              55
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 100
+        },
+        {
+          "round": 202,
+          "kind": "attack",
+          "actor": 0,
+          "target": 5,
+          "damage": [
+            [
+              5,
+              55
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 100
+        },
+        {
+          "round": 297,
+          "kind": "attack",
+          "actor": 4,
+          "target": 7,
+          "damage": [
+            [
+              7,
+              85.5
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 98
+        },
+        {
+          "round": 298,
+          "kind": "attack",
+          "actor": 4,
+          "target": 7,
+          "damage": [
+            [
+              7,
+              85.5
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 98
+        },
+        {
+          "round": 298,
+          "kind": "cast",
+          "actor": 4,
+          "target": 7,
+          "damage": [
+            [
+              7,
+              108
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 98
+        },
+        {
+          "round": 392,
+          "kind": "attack",
+          "actor": 4,
+          "target": 7,
+          "damage": [
+            [
+              7,
+              85.5
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 98
+        },
+        {
+          "round": 393,
+          "kind": "attack",
+          "actor": 4,
+          "target": 7,
+          "damage": [
+            [
+              7,
+              85.5
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 98
+        },
+        {
+          "round": 592,
+          "kind": "cast",
+          "actor": 3,
+          "target": 9,
+          "damage": [
+            [
+              9,
+              138.6
+            ]
+          ],
+          "actor_priority_round_end": 96,
+          "target_priority_round_end": 96
+        },
+        {
+          "round": 724,
+          "kind": "cast",
+          "actor": 3,
+          "target": 6,
+          "damage": [
+            [
+              6,
+              138.6
+            ]
+          ],
+          "actor_priority_round_end": 96,
+          "target_priority_round_end": 99
+        }
+      ]
+    },
+    {
+      "match_id": "9c04eaa5-42af-47a1-babb-5bcf4fb0b523",
+      "map_from_intake": "01big_world",
+      "opponent": "print dont int",
+      "our_side": "a",
+      "result_from_intake": "win",
+      "replay_payload_sha256": "c7599efc0e34683c5ee64ddf001c28d0842de37ef0df37d35cc7e8f1a51fc0d5",
+      "bundle_sha256": "af7676a9a3413df836a988a5158314b409f09a1fb827abc7f24205600fc96552",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      },
+      "rounds": 1151,
+      "score_a_b": [
+        1004,
+        796
+      ],
+      "winner_team_index": 0,
+      "roster": [
+        {
+          "id": 0,
+          "name": "Vesper Vale",
+          "draft_order": 0,
+          "final": {
+            "kills": 0,
+            "deaths": 0,
+            "earned_gold": 1369,
+            "spent_gold": 1340,
+            "camp_damage_done": 34518.500061035156,
+            "camp_damage_taken": 5981.9999532699585,
+            "collected_gems": 131,
+            "submitted_gems": 131,
+            "ending_bag": 0
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 0
+        },
+        {
+          "id": 1,
+          "name": "Vendetta",
+          "draft_order": 1,
+          "final": {
+            "kills": 0,
+            "deaths": 0,
+            "earned_gold": 2058,
+            "spent_gold": 1880,
+            "camp_damage_done": 40370.000427246094,
+            "camp_damage_taken": 11018.399907112122,
+            "collected_gems": 278,
+            "submitted_gems": 278,
+            "ending_bag": 0
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 0
+        },
+        {
+          "id": 2,
+          "name": "Ryth",
+          "draft_order": 2,
+          "final": {
+            "kills": 0,
+            "deaths": 2,
+            "earned_gold": 2120,
+            "spent_gold": 1940,
+            "camp_damage_done": 31977.500274658203,
+            "camp_damage_taken": 10292.399950027466,
+            "collected_gems": 278,
+            "submitted_gems": 243,
+            "ending_bag": 20
+          },
+          "opening_first_shop": {
+            "round": 97,
+            "actor": 2,
+            "items": [
+              {
+                "name": "Treasure Shard of Health",
+                "delta": 4
+              }
+            ],
+            "gold_delta": -120
+          },
+          "death_gems_lost": 15
+        },
+        {
+          "id": 3,
+          "name": "Tavi",
+          "draft_order": 3,
+          "final": {
+            "kills": 0,
+            "deaths": 0,
+            "earned_gold": 890,
+            "spent_gold": 890,
+            "camp_damage_done": 36612.999908447266,
+            "camp_damage_taken": 4506,
+            "collected_gems": 88,
+            "submitted_gems": 88,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 96,
+            "actor": 3,
+            "items": [
+              {
+                "name": "Monster Shard of Strength",
+                "delta": 2
+              }
+            ],
+            "gold_delta": -60
+          },
+          "death_gems_lost": 0
+        },
+        {
+          "id": 4,
+          "name": "Marcella",
+          "draft_order": 4,
+          "final": {
+            "kills": 1,
+            "deaths": 0,
+            "earned_gold": 2813,
+            "spent_gold": 2420,
+            "camp_damage_done": 44261.00018310547,
+            "camp_damage_taken": 7175.999887466431,
+            "collected_gems": 264,
+            "submitted_gems": 264,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 128,
+            "actor": 4,
+            "items": [
+              {
+                "name": "Jungle Shard of Strength",
+                "delta": 1
+              }
+            ],
+            "gold_delta": -30
+          },
+          "death_gems_lost": 0
+        }
+      ],
+      "native_round_turn_markers": {
+        "rollover": [
+          {
+            "round": 1,
+            "actor": 0
+          },
+          {
+            "round": 11,
+            "actor": 0
+          },
+          {
+            "round": 15,
+            "actor": 0
+          },
+          {
+            "round": 29,
+            "actor": 0
+          },
+          {
+            "round": 30,
+            "actor": 0
+          },
+          {
+            "round": 169,
+            "actor": 0
+          },
+          {
+            "round": 200,
+            "actor": 0
+          },
+          {
+            "round": 240,
+            "actor": 0
+          },
+          {
+            "round": 609,
+            "actor": 0
+          },
+          {
+            "round": 737,
+            "actor": 0
+          },
+          {
+            "round": 758,
+            "actor": 0
+          },
+          {
+            "round": 759,
+            "actor": 0
+          },
+          {
+            "round": 760,
+            "actor": 0
+          },
+          {
+            "round": 879,
+            "actor": 0
+          },
+          {
+            "round": 1023,
+            "actor": 0
+          },
+          {
+            "round": 1024,
+            "actor": 0
+          },
+          {
+            "round": 1127,
+            "actor": 0
+          },
+          {
+            "round": 1,
+            "actor": 1
+          },
+          {
+            "round": 25,
+            "actor": 1
+          },
+          {
+            "round": 26,
+            "actor": 1
+          },
+          {
+            "round": 27,
+            "actor": 1
+          },
+          {
+            "round": 38,
+            "actor": 1
+          },
+          {
+            "round": 144,
+            "actor": 1
+          },
+          {
+            "round": 224,
+            "actor": 1
+          },
+          {
+            "round": 342,
+            "actor": 1
+          },
+          {
+            "round": 378,
+            "actor": 1
+          },
+          {
+            "round": 438,
+            "actor": 1
+          },
+          {
+            "round": 439,
+            "actor": 1
+          },
+          {
+            "round": 440,
+            "actor": 1
+          },
+          {
+            "round": 509,
+            "actor": 1
+          },
+          {
+            "round": 510,
+            "actor": 1
+          },
+          {
+            "round": 531,
+            "actor": 1
+          },
+          {
+            "round": 532,
+            "actor": 1
+          },
+          {
+            "round": 981,
+            "actor": 1
+          },
+          {
+            "round": 1,
+            "actor": 2
+          },
+          {
+            "round": 4,
+            "actor": 2
+          },
+          {
+            "round": 11,
+            "actor": 2
+          },
+          {
+            "round": 26,
+            "actor": 2
+          },
+          {
+            "round": 27,
+            "actor": 2
+          },
+          {
+            "round": 28,
+            "actor": 2
+          },
+          {
+            "round": 81,
+            "actor": 2
+          },
+          {
+            "round": 82,
+            "actor": 2
+          },
+          {
+            "round": 83,
+            "actor": 2
+          },
+          {
+            "round": 84,
+            "actor": 2
+          },
+          {
+            "round": 139,
+            "actor": 2
+          },
+          {
+            "round": 235,
+            "actor": 2
+          },
+          {
+            "round": 236,
+            "actor": 2
+          },
+          {
+            "round": 381,
+            "actor": 2
+          },
+          {
+            "round": 809,
+            "actor": 2
+          },
+          {
+            "round": 1074,
+            "actor": 2
+          },
+          {
+            "round": 1,
+            "actor": 3
+          },
+          {
+            "round": 11,
+            "actor": 3
+          },
+          {
+            "round": 23,
+            "actor": 3
+          },
+          {
+            "round": 24,
+            "actor": 3
+          },
+          {
+            "round": 98,
+            "actor": 3
+          },
+          {
+            "round": 327,
+            "actor": 3
+          },
+          {
+            "round": 569,
+            "actor": 3
+          },
+          {
+            "round": 641,
+            "actor": 3
+          },
+          {
+            "round": 642,
+            "actor": 3
+          },
+          {
+            "round": 643,
+            "actor": 3
+          },
+          {
+            "round": 735,
+            "actor": 3
+          },
+          {
+            "round": 767,
+            "actor": 3
+          },
+          {
+            "round": 837,
+            "actor": 3
+          },
+          {
+            "round": 838,
+            "actor": 3
+          },
+          {
+            "round": 839,
+            "actor": 3
+          },
+          {
+            "round": 844,
+            "actor": 3
+          },
+          {
+            "round": 993,
+            "actor": 3
+          },
+          {
+            "round": 994,
+            "actor": 3
+          },
+          {
+            "round": 1060,
+            "actor": 3
+          },
+          {
+            "round": 1,
+            "actor": 4
+          },
+          {
+            "round": 11,
+            "actor": 4
+          },
+          {
+            "round": 85,
+            "actor": 4
+          },
+          {
+            "round": 133,
+            "actor": 4
+          },
+          {
+            "round": 230,
+            "actor": 4
+          },
+          {
+            "round": 257,
+            "actor": 4
+          },
+          {
+            "round": 287,
+            "actor": 4
+          },
+          {
+            "round": 346,
+            "actor": 4
+          },
+          {
+            "round": 478,
+            "actor": 4
+          },
+          {
+            "round": 886,
+            "actor": 4
+          },
+          {
+            "round": 887,
+            "actor": 4
+          },
+          {
+            "round": 888,
+            "actor": 4
+          }
+        ],
+        "bot_error": []
+      },
+      "team_milestones": {
+        "50": {
+          "team_earned_gold": 130,
+          "team_spent_gold_shop_transactions": 0,
+          "team_bank_gold": 130,
+          "team_submitted_gems": 0,
+          "team_carried_gems": 15
+        },
+        "100": {
+          "team_earned_gold": 230,
+          "team_spent_gold_shop_transactions": 190,
+          "team_bank_gold": 40,
+          "team_submitted_gems": 15,
+          "team_carried_gems": 4
+        },
+        "200": {
+          "team_earned_gold": 462,
+          "team_spent_gold_shop_transactions": 450,
+          "team_bank_gold": 12,
+          "team_submitted_gems": 30,
+          "team_carried_gems": 8
+        },
+        "400": {
+          "team_earned_gold": 1796,
+          "team_spent_gold_shop_transactions": 1760,
+          "team_bank_gold": 36,
+          "team_submitted_gems": 86,
+          "team_carried_gems": 87
+        }
+      },
+      "opening_capture_holds_first150": [
+        {
+          "round": 34,
+          "group": 22,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 83,
+          "group": 10,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 90,
+          "group": 18,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 115,
+          "group": 22,
+          "timer": 5,
+          "actor": null
+        }
+      ],
+      "opening_captures_first150": [
+        {
+          "round": 39,
+          "group": 22,
+          "shares": [
+            {
+              "actor": 2,
+              "gems": 15,
+              "gold": 130
+            }
+          ]
+        },
+        {
+          "round": 88,
+          "group": 10,
+          "shares": [
+            {
+              "actor": 4,
+              "gems": 0,
+              "gold": 40
+            }
+          ]
+        },
+        {
+          "round": 95,
+          "group": 18,
+          "shares": [
+            {
+              "actor": 3,
+              "gems": 4,
+              "gold": 60
+            }
+          ]
+        },
+        {
+          "round": 120,
+          "group": 22,
+          "shares": [
+            {
+              "actor": 0,
+              "gems": 15,
+              "gold": 172
+            }
+          ]
+        }
+      ],
+      "first_shop_events_first150": [
+        {
+          "round": 96,
+          "actor": 3,
+          "items": [
+            {
+              "name": "Monster Shard of Strength",
+              "delta": 2
+            }
+          ],
+          "gold_delta": -60
+        },
+        {
+          "round": 97,
+          "actor": 2,
+          "items": [
+            {
+              "name": "Treasure Shard of Health",
+              "delta": 4
+            }
+          ],
+          "gold_delta": -120
+        },
+        {
+          "round": 97,
+          "actor": 2,
+          "items": [],
+          "gold_delta": -10
+        },
+        {
+          "round": 128,
+          "actor": 4,
+          "items": [
+            {
+              "name": "Jungle Shard of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -30
+        },
+        {
+          "round": 128,
+          "actor": 4,
+          "items": [],
+          "gold_delta": -10
+        }
+      ],
+      "death_events": [
+        {
+          "round": 174,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 20,
+          "by": null,
+          "camp": 42,
+          "cause": "Attack"
+        },
+        {
+          "round": 311,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 15,
+          "hp_before": 20,
+          "by": null,
+          "camp": 40,
+          "cause": "Attack"
+        }
+      ],
+      "max_bag_deaths": [
+        {
+          "round": 311,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 15,
+          "hp_before": 20,
+          "by": null,
+          "camp": 40,
+          "cause": "Attack"
+        },
+        {
+          "round": 174,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 20,
+          "by": null,
+          "camp": 42,
+          "cause": "Attack"
+        }
+      ],
+      "team_capture_resets": [
+        {
+          "round": 1136,
+          "group": 8,
+          "left": 2,
+          "contested": false
+        }
+      ],
+      "team_capture_flips": [],
+      "team_capture_steals_and_losses": [],
+      "team_recall_cancel_summary": {
+        "manual": {
+          "count": 4182,
+          "bag_carrying_count": 1878,
+          "sample": [
+            {
+              "round": 13,
+              "actor": 1,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 13,
+              "actor": 2,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 13,
+              "actor": 3,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 14,
+              "actor": 0,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 14,
+              "actor": 1,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 14,
+              "actor": 2,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 14,
+              "actor": 3,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 14,
+              "actor": 4,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 39,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 40,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 41,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 42,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 43,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 44,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 45,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 46,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            }
+          ]
+        },
+        "damage": {
+          "count": 770,
+          "bag_carrying_count": 181,
+          "sample": [
+            {
+              "round": 21,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 22,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 23,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 24,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 25,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 30,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 31,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 32,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 147,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 148,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 149,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 150,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 151,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 152,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 153,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 155,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            }
+          ]
+        },
+        "death": {
+          "count": 2,
+          "bag_carrying_count": 1,
+          "sample": [
+            {
+              "round": 174,
+              "actor": 2,
+              "gems": 0,
+              "cause": "death",
+              "left": 4
+            },
+            {
+              "round": 311,
+              "actor": 2,
+              "gems": 15,
+              "cause": "death",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 311,
+              "actor": 2,
+              "gems": 15,
+              "cause": "death",
+              "left": 4
+            }
+          ]
+        }
+      },
+      "team_tribute_cancels": [],
+      "key_champion_contacts_round_end_priorities": [
+        {
+          "round": 1138,
+          "kind": "cast",
+          "actor": 4,
+          "target": 9,
+          "damage": [
+            [
+              9,
+              1080
+            ]
+          ],
+          "actor_priority_round_end": 97,
+          "target_priority_round_end": 96
+        }
+      ]
+    },
+    {
+      "match_id": "48390a5f-8a3c-47ab-91e1-c72de7cfa3a9",
+      "map_from_intake": "01corridors",
+      "opponent": "print dont int",
+      "our_side": "a",
+      "result_from_intake": "win",
+      "replay_payload_sha256": "83249520f35ae5a73ee34b6e81462c3ca315adfeb240b3ccd4af38bfea15822f",
+      "bundle_sha256": "5dea5a99111e8573885e1acbfe717e282f2f29bea671a4a4a93329c2e7ea4093",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      },
+      "rounds": 975,
+      "score_a_b": [
+        1002,
+        426
+      ],
+      "winner_team_index": 0,
+      "roster": [
+        {
+          "id": 0,
+          "name": "Vesper Vale",
+          "draft_order": 0,
+          "final": {
+            "kills": 2,
+            "deaths": 1,
+            "earned_gold": 3372,
+            "spent_gold": 3370,
+            "camp_damage_done": 37559.050048828125,
+            "camp_damage_taken": 7033.199878692627,
+            "collected_gems": 350,
+            "submitted_gems": 292,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 60,
+            "actor": 0,
+            "items": [
+              {
+                "name": "Treasure Emblem of Strength",
+                "delta": 1
+              }
+            ],
+            "gold_delta": -150
+          },
+          "death_gems_lost": 58
+        },
+        {
+          "id": 1,
+          "name": "Vendetta",
+          "draft_order": 1,
+          "final": {
+            "kills": 1,
+            "deaths": 0,
+            "earned_gold": 1808,
+            "spent_gold": 1780,
+            "camp_damage_done": 29366,
+            "camp_damage_taken": 12045.19980430603,
+            "collected_gems": 204,
+            "submitted_gems": 204,
+            "ending_bag": 0
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 0
+        },
+        {
+          "id": 2,
+          "name": "Ryth",
+          "draft_order": 2,
+          "final": {
+            "kills": 0,
+            "deaths": 5,
+            "earned_gold": 324,
+            "spent_gold": 310,
+            "camp_damage_done": 8045,
+            "camp_damage_taken": 8364,
+            "collected_gems": 66,
+            "submitted_gems": 58,
+            "ending_bag": 8
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 0
+        },
+        {
+          "id": 3,
+          "name": "Tavi",
+          "draft_order": 3,
+          "final": {
+            "kills": 0,
+            "deaths": 1,
+            "earned_gold": 420,
+            "spent_gold": 420,
+            "camp_damage_done": 15880,
+            "camp_damage_taken": 5460,
+            "collected_gems": 60,
+            "submitted_gems": 44,
+            "ending_bag": 0
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 16
+        },
+        {
+          "id": 4,
+          "name": "Marcella",
+          "draft_order": 4,
+          "final": {
+            "kills": 1,
+            "deaths": 0,
+            "earned_gold": 3813,
+            "spent_gold": 3790,
+            "camp_damage_done": 56105,
+            "camp_damage_taken": 14954.999724388123,
+            "collected_gems": 404,
+            "submitted_gems": 404,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 63,
+            "actor": 4,
+            "items": [
+              {
+                "name": "Treasure Emblem of Strength",
+                "delta": 1
+              }
+            ],
+            "gold_delta": -150
+          },
+          "death_gems_lost": 0
+        }
+      ],
+      "native_round_turn_markers": {
+        "rollover": [],
+        "bot_error": []
+      },
+      "team_milestones": {
+        "50": {
+          "team_earned_gold": 180,
+          "team_spent_gold_shop_transactions": 0,
+          "team_bank_gold": 180,
+          "team_submitted_gems": 0,
+          "team_carried_gems": 58
+        },
+        "100": {
+          "team_earned_gold": 339,
+          "team_spent_gold_shop_transactions": 330,
+          "team_bank_gold": 9,
+          "team_submitted_gems": 0,
+          "team_carried_gems": 66
+        },
+        "200": {
+          "team_earned_gold": 939,
+          "team_spent_gold_shop_transactions": 920,
+          "team_bank_gold": 19,
+          "team_submitted_gems": 0,
+          "team_carried_gems": 148
+        },
+        "400": {
+          "team_earned_gold": 2354,
+          "team_spent_gold_shop_transactions": 2310,
+          "team_bank_gold": 44,
+          "team_submitted_gems": 116,
+          "team_carried_gems": 124
+        }
+      },
+      "opening_capture_holds_first150": [
+        {
+          "round": 41,
+          "group": 1,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 54,
+          "group": 5,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 141,
+          "group": 5,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 150,
+          "group": 6,
+          "timer": 5,
+          "actor": null
+        }
+      ],
+      "opening_captures_first150": [
+        {
+          "round": 46,
+          "group": 1,
+          "shares": [
+            {
+              "actor": 4,
+              "gems": 58,
+              "gold": 180
+            }
+          ]
+        },
+        {
+          "round": 59,
+          "group": 5,
+          "shares": [
+            {
+              "actor": 0,
+              "gems": 8,
+              "gold": 159
+            }
+          ]
+        },
+        {
+          "round": 146,
+          "group": 5,
+          "shares": [
+            {
+              "actor": 0,
+              "gems": 8,
+              "gold": 184
+            }
+          ]
+        }
+      ],
+      "first_shop_events_first150": [
+        {
+          "round": 60,
+          "actor": 0,
+          "items": [
+            {
+              "name": "Treasure Emblem of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -150
+        },
+        {
+          "round": 63,
+          "actor": 4,
+          "items": [
+            {
+              "name": "Treasure Emblem of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -150
+        },
+        {
+          "round": 63,
+          "actor": 4,
+          "items": [
+            {
+              "name": "Jungle Shard of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -30
+        },
+        {
+          "round": 147,
+          "actor": 0,
+          "items": [
+            {
+              "name": "Durability Emblem of Health",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -150
+        },
+        {
+          "round": 147,
+          "actor": 0,
+          "items": [
+            {
+              "name": "Power Shard of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -30
+        },
+        {
+          "round": 147,
+          "actor": 0,
+          "items": [],
+          "gold_delta": -10
+        }
+      ],
+      "death_events": [
+        {
+          "round": 106,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 60,
+          "by": null,
+          "camp": 11,
+          "cause": "Attack"
+        },
+        {
+          "round": 241,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 60,
+          "by": null,
+          "camp": 11,
+          "cause": "Attack"
+        },
+        {
+          "round": 379,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 60,
+          "by": null,
+          "camp": 45,
+          "cause": "Attack"
+        },
+        {
+          "round": 482,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 60,
+          "by": null,
+          "camp": 45,
+          "cause": "Attack"
+        },
+        {
+          "round": 583,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 60,
+          "by": null,
+          "camp": 45,
+          "cause": "Attack"
+        },
+        {
+          "round": 742,
+          "actor": 3,
+          "actor_name": "Tavi",
+          "gems_lost": 16,
+          "hp_before": 34,
+          "by": 8,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 922,
+          "actor": 0,
+          "actor_name": "Vesper Vale",
+          "gems_lost": 58,
+          "hp_before": 74.3,
+          "by": 5,
+          "camp": null,
+          "cause": "Attack"
+        }
+      ],
+      "max_bag_deaths": [
+        {
+          "round": 922,
+          "actor": 0,
+          "actor_name": "Vesper Vale",
+          "gems_lost": 58,
+          "hp_before": 74.3,
+          "by": 5,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 742,
+          "actor": 3,
+          "actor_name": "Tavi",
+          "gems_lost": 16,
+          "hp_before": 34,
+          "by": 8,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 106,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 60,
+          "by": null,
+          "camp": 11,
+          "cause": "Attack"
+        },
+        {
+          "round": 241,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 60,
+          "by": null,
+          "camp": 11,
+          "cause": "Attack"
+        },
+        {
+          "round": 379,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 60,
+          "by": null,
+          "camp": 45,
+          "cause": "Attack"
+        }
+      ],
+      "team_capture_resets": [
+        {
+          "round": 414,
+          "group": 1,
+          "left": 3,
+          "contested": true
+        },
+        {
+          "round": 417,
+          "group": 1,
+          "left": 5,
+          "contested": false
+        },
+        {
+          "round": 612,
+          "group": 1,
+          "left": 3,
+          "contested": false
+        }
+      ],
+      "team_capture_flips": [],
+      "team_capture_steals_and_losses": [],
+      "team_recall_cancel_summary": {
+        "manual": {
+          "count": 3073,
+          "bag_carrying_count": 1557,
+          "sample": [
+            {
+              "round": 2,
+              "actor": 0,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 2,
+              "actor": 3,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 0,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 1,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 3,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 4,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 4,
+              "actor": 0,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 4,
+              "actor": 1,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 49,
+              "actor": 4,
+              "gems": 58,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 52,
+              "actor": 4,
+              "gems": 58,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 53,
+              "actor": 4,
+              "gems": 58,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 54,
+              "actor": 4,
+              "gems": 58,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 55,
+              "actor": 4,
+              "gems": 58,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 56,
+              "actor": 4,
+              "gems": 58,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 57,
+              "actor": 4,
+              "gems": 58,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 58,
+              "actor": 4,
+              "gems": 58,
+              "cause": "manual",
+              "left": 4
+            }
+          ]
+        },
+        "damage": {
+          "count": 827,
+          "bag_carrying_count": 404,
+          "sample": [
+            {
+              "round": 20,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 21,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 22,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 23,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 24,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 25,
+              "actor": 4,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 26,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 27,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 46,
+              "actor": 4,
+              "gems": 58,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 48,
+              "actor": 4,
+              "gems": 58,
+              "cause": "damage",
+              "left": 3
+            },
+            {
+              "round": 50,
+              "actor": 4,
+              "gems": 58,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 51,
+              "actor": 4,
+              "gems": 58,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 85,
+              "actor": 4,
+              "gems": 58,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 86,
+              "actor": 4,
+              "gems": 58,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 87,
+              "actor": 4,
+              "gems": 58,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 88,
+              "actor": 4,
+              "gems": 58,
+              "cause": "damage",
+              "left": 4
+            }
+          ]
+        },
+        "stun": {
+          "count": 5,
+          "bag_carrying_count": 4,
+          "sample": [
+            {
+              "round": 320,
+              "actor": 1,
+              "gems": 32,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 609,
+              "actor": 1,
+              "gems": 40,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 728,
+              "actor": 3,
+              "gems": 16,
+              "cause": "stun",
+              "left": 0
+            },
+            {
+              "round": 736,
+              "actor": 3,
+              "gems": 16,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 766,
+              "actor": 1,
+              "gems": 0,
+              "cause": "stun",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 320,
+              "actor": 1,
+              "gems": 32,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 609,
+              "actor": 1,
+              "gems": 40,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 728,
+              "actor": 3,
+              "gems": 16,
+              "cause": "stun",
+              "left": 0
+            },
+            {
+              "round": 736,
+              "actor": 3,
+              "gems": 16,
+              "cause": "stun",
+              "left": 4
+            }
+          ]
+        },
+        "death": {
+          "count": 1,
+          "bag_carrying_count": 1,
+          "sample": [
+            {
+              "round": 742,
+              "actor": 3,
+              "gems": 16,
+              "cause": "death",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 742,
+              "actor": 3,
+              "gems": 16,
+              "cause": "death",
+              "left": 4
+            }
+          ]
+        }
+      },
+      "team_tribute_cancels": [],
+      "key_champion_contacts_round_end_priorities": [
+        {
+          "round": 18,
+          "kind": "cast",
+          "actor": 4,
+          "target": 6,
+          "damage": [
+            [
+              6,
+              120
+            ]
+          ],
+          "actor_priority_round_end": 96,
+          "target_priority_round_end": 99
+        },
+        {
+          "round": 20,
+          "kind": "cast",
+          "actor": 2,
+          "target": 6,
+          "damage": [
+            [
+              6,
+              100
+            ],
+            [
+              8,
+              100
+            ]
+          ],
+          "actor_priority_round_end": 96,
+          "target_priority_round_end": 99
+        },
+        {
+          "round": 274,
+          "kind": "attack",
+          "actor": 1,
+          "target": 8,
+          "damage": [
+            [
+              8,
+              106
+            ]
+          ],
+          "actor_priority_round_end": 98,
+          "target_priority_round_end": 97
+        },
+        {
+          "round": 314,
+          "kind": "attack",
+          "actor": 0,
+          "target": 6,
+          "damage": [
+            [
+              6,
+              110
+            ]
+          ],
+          "actor_priority_round_end": 2097,
+          "target_priority_round_end": 99
+        },
+        {
+          "round": 504,
+          "kind": "attack",
+          "actor": 3,
+          "target": 9,
+          "damage": [
+            [
+              9,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 97,
+          "target_priority_round_end": 96
+        },
+        {
+          "round": 741,
+          "kind": "attack",
+          "actor": 3,
+          "target": 8,
+          "damage": [
+            [
+              8,
+              70
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 97
+        },
+        {
+          "round": 742,
+          "kind": "attack",
+          "actor": 3,
+          "target": 8,
+          "damage": [
+            [
+              8,
+              70
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 97
+        }
+      ]
+    },
+    {
+      "match_id": "cf39cebf-e598-4540-afaa-b470321fe98a",
+      "map_from_intake": "01big_world",
+      "opponent": "new team(4)",
+      "our_side": "a",
+      "result_from_intake": "loss",
+      "replay_payload_sha256": "1648fee7392c97b1a18545993fc23d5b00625caf21e033bf931f3d09c09e9bd5",
+      "bundle_sha256": "705a58957476a9d52b13a39e10ad28a01541dacc41214bd1bca6918fed31e1e3",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      },
+      "rounds": 1109,
+      "score_a_b": [
+        835,
+        1017
+      ],
+      "winner_team_index": 1,
+      "roster": [
+        {
+          "id": 0,
+          "name": "Vesper Vale",
+          "draft_order": 0,
+          "final": {
+            "kills": 1,
+            "deaths": 0,
+            "earned_gold": 1078,
+            "spent_gold": 1070,
+            "camp_damage_done": 28188,
+            "camp_damage_taken": 6921.59995174408,
+            "collected_gems": 101,
+            "submitted_gems": 101,
+            "ending_bag": 0
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 0
+        },
+        {
+          "id": 1,
+          "name": "Vendetta",
+          "draft_order": 1,
+          "final": {
+            "kills": 0,
+            "deaths": 0,
+            "earned_gold": 1566,
+            "spent_gold": 1550,
+            "camp_damage_done": 29755.00114440918,
+            "camp_damage_taken": 10351.999938964844,
+            "collected_gems": 204,
+            "submitted_gems": 142,
+            "ending_bag": 62
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 0
+        },
+        {
+          "id": 2,
+          "name": "Ryth",
+          "draft_order": 2,
+          "final": {
+            "kills": 0,
+            "deaths": 2,
+            "earned_gold": 1922,
+            "spent_gold": 1670,
+            "camp_damage_done": 28132.499786376953,
+            "camp_damage_taken": 9302.599954605103,
+            "collected_gems": 261,
+            "submitted_gems": 209,
+            "ending_bag": 37
+          },
+          "opening_first_shop": {
+            "round": 97,
+            "actor": 2,
+            "items": [
+              {
+                "name": "Treasure Shard of Health",
+                "delta": 4
+              }
+            ],
+            "gold_delta": -120
+          },
+          "death_gems_lost": 15
+        },
+        {
+          "id": 3,
+          "name": "Tavi",
+          "draft_order": 3,
+          "final": {
+            "kills": 0,
+            "deaths": 0,
+            "earned_gold": 1320,
+            "spent_gold": 1310,
+            "camp_damage_done": 38534.099670410156,
+            "camp_damage_taken": 5424,
+            "collected_gems": 137,
+            "submitted_gems": 122,
+            "ending_bag": 15
+          },
+          "opening_first_shop": {
+            "round": 96,
+            "actor": 3,
+            "items": [
+              {
+                "name": "Monster Shard of Strength",
+                "delta": 2
+              }
+            ],
+            "gold_delta": -60
+          },
+          "death_gems_lost": 0
+        },
+        {
+          "id": 4,
+          "name": "Marcella",
+          "draft_order": 4,
+          "final": {
+            "kills": 1,
+            "deaths": 0,
+            "earned_gold": 2608,
+            "spent_gold": 2510,
+            "camp_damage_done": 38047.399993896484,
+            "camp_damage_taken": 7327.199878692627,
+            "collected_gems": 261,
+            "submitted_gems": 261,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 128,
+            "actor": 4,
+            "items": [
+              {
+                "name": "Jungle Shard of Strength",
+                "delta": 1
+              }
+            ],
+            "gold_delta": -30
+          },
+          "death_gems_lost": 0
+        }
+      ],
+      "native_round_turn_markers": {
+        "rollover": [
+          {
+            "round": 1,
+            "actor": 0
+          },
+          {
+            "round": 11,
+            "actor": 0
+          },
+          {
+            "round": 15,
+            "actor": 0
+          },
+          {
+            "round": 29,
+            "actor": 0
+          },
+          {
+            "round": 30,
+            "actor": 0
+          },
+          {
+            "round": 169,
+            "actor": 0
+          },
+          {
+            "round": 200,
+            "actor": 0
+          },
+          {
+            "round": 240,
+            "actor": 0
+          },
+          {
+            "round": 609,
+            "actor": 0
+          },
+          {
+            "round": 651,
+            "actor": 0
+          },
+          {
+            "round": 797,
+            "actor": 0
+          },
+          {
+            "round": 798,
+            "actor": 0
+          },
+          {
+            "round": 835,
+            "actor": 0
+          },
+          {
+            "round": 913,
+            "actor": 0
+          },
+          {
+            "round": 914,
+            "actor": 0
+          },
+          {
+            "round": 915,
+            "actor": 0
+          },
+          {
+            "round": 1,
+            "actor": 1
+          },
+          {
+            "round": 25,
+            "actor": 1
+          },
+          {
+            "round": 26,
+            "actor": 1
+          },
+          {
+            "round": 27,
+            "actor": 1
+          },
+          {
+            "round": 38,
+            "actor": 1
+          },
+          {
+            "round": 144,
+            "actor": 1
+          },
+          {
+            "round": 224,
+            "actor": 1
+          },
+          {
+            "round": 342,
+            "actor": 1
+          },
+          {
+            "round": 378,
+            "actor": 1
+          },
+          {
+            "round": 438,
+            "actor": 1
+          },
+          {
+            "round": 439,
+            "actor": 1
+          },
+          {
+            "round": 440,
+            "actor": 1
+          },
+          {
+            "round": 509,
+            "actor": 1
+          },
+          {
+            "round": 510,
+            "actor": 1
+          },
+          {
+            "round": 531,
+            "actor": 1
+          },
+          {
+            "round": 532,
+            "actor": 1
+          },
+          {
+            "round": 544,
+            "actor": 1
+          },
+          {
+            "round": 545,
+            "actor": 1
+          },
+          {
+            "round": 546,
+            "actor": 1
+          },
+          {
+            "round": 1,
+            "actor": 2
+          },
+          {
+            "round": 4,
+            "actor": 2
+          },
+          {
+            "round": 11,
+            "actor": 2
+          },
+          {
+            "round": 26,
+            "actor": 2
+          },
+          {
+            "round": 27,
+            "actor": 2
+          },
+          {
+            "round": 28,
+            "actor": 2
+          },
+          {
+            "round": 81,
+            "actor": 2
+          },
+          {
+            "round": 82,
+            "actor": 2
+          },
+          {
+            "round": 83,
+            "actor": 2
+          },
+          {
+            "round": 84,
+            "actor": 2
+          },
+          {
+            "round": 139,
+            "actor": 2
+          },
+          {
+            "round": 234,
+            "actor": 2
+          },
+          {
+            "round": 235,
+            "actor": 2
+          },
+          {
+            "round": 237,
+            "actor": 2
+          },
+          {
+            "round": 238,
+            "actor": 2
+          },
+          {
+            "round": 239,
+            "actor": 2
+          },
+          {
+            "round": 381,
+            "actor": 2
+          },
+          {
+            "round": 999,
+            "actor": 2
+          },
+          {
+            "round": 1,
+            "actor": 3
+          },
+          {
+            "round": 11,
+            "actor": 3
+          },
+          {
+            "round": 23,
+            "actor": 3
+          },
+          {
+            "round": 24,
+            "actor": 3
+          },
+          {
+            "round": 98,
+            "actor": 3
+          },
+          {
+            "round": 327,
+            "actor": 3
+          },
+          {
+            "round": 569,
+            "actor": 3
+          },
+          {
+            "round": 641,
+            "actor": 3
+          },
+          {
+            "round": 642,
+            "actor": 3
+          },
+          {
+            "round": 643,
+            "actor": 3
+          },
+          {
+            "round": 965,
+            "actor": 3
+          },
+          {
+            "round": 1,
+            "actor": 4
+          },
+          {
+            "round": 11,
+            "actor": 4
+          },
+          {
+            "round": 85,
+            "actor": 4
+          },
+          {
+            "round": 133,
+            "actor": 4
+          },
+          {
+            "round": 230,
+            "actor": 4
+          },
+          {
+            "round": 257,
+            "actor": 4
+          },
+          {
+            "round": 287,
+            "actor": 4
+          },
+          {
+            "round": 346,
+            "actor": 4
+          },
+          {
+            "round": 478,
+            "actor": 4
+          },
+          {
+            "round": 782,
+            "actor": 4
+          },
+          {
+            "round": 783,
+            "actor": 4
+          },
+          {
+            "round": 786,
+            "actor": 4
+          },
+          {
+            "round": 787,
+            "actor": 4
+          },
+          {
+            "round": 789,
+            "actor": 4
+          },
+          {
+            "round": 854,
+            "actor": 4
+          },
+          {
+            "round": 855,
+            "actor": 4
+          },
+          {
+            "round": 856,
+            "actor": 4
+          },
+          {
+            "round": 1024,
+            "actor": 4
+          }
+        ],
+        "bot_error": []
+      },
+      "team_milestones": {
+        "50": {
+          "team_earned_gold": 130,
+          "team_spent_gold_shop_transactions": 0,
+          "team_bank_gold": 130,
+          "team_submitted_gems": 0,
+          "team_carried_gems": 15
+        },
+        "100": {
+          "team_earned_gold": 230,
+          "team_spent_gold_shop_transactions": 190,
+          "team_bank_gold": 40,
+          "team_submitted_gems": 15,
+          "team_carried_gems": 4
+        },
+        "200": {
+          "team_earned_gold": 462,
+          "team_spent_gold_shop_transactions": 450,
+          "team_bank_gold": 12,
+          "team_submitted_gems": 30,
+          "team_carried_gems": 8
+        },
+        "400": {
+          "team_earned_gold": 1796,
+          "team_spent_gold_shop_transactions": 1760,
+          "team_bank_gold": 36,
+          "team_submitted_gems": 86,
+          "team_carried_gems": 87
+        }
+      },
+      "opening_capture_holds_first150": [
+        {
+          "round": 34,
+          "group": 22,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 83,
+          "group": 10,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 90,
+          "group": 18,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 115,
+          "group": 22,
+          "timer": 5,
+          "actor": null
+        }
+      ],
+      "opening_captures_first150": [
+        {
+          "round": 39,
+          "group": 22,
+          "shares": [
+            {
+              "actor": 2,
+              "gems": 15,
+              "gold": 130
+            }
+          ]
+        },
+        {
+          "round": 88,
+          "group": 10,
+          "shares": [
+            {
+              "actor": 4,
+              "gems": 0,
+              "gold": 40
+            }
+          ]
+        },
+        {
+          "round": 95,
+          "group": 18,
+          "shares": [
+            {
+              "actor": 3,
+              "gems": 4,
+              "gold": 60
+            }
+          ]
+        },
+        {
+          "round": 120,
+          "group": 22,
+          "shares": [
+            {
+              "actor": 0,
+              "gems": 15,
+              "gold": 172
+            }
+          ]
+        }
+      ],
+      "first_shop_events_first150": [
+        {
+          "round": 96,
+          "actor": 3,
+          "items": [
+            {
+              "name": "Monster Shard of Strength",
+              "delta": 2
+            }
+          ],
+          "gold_delta": -60
+        },
+        {
+          "round": 97,
+          "actor": 2,
+          "items": [
+            {
+              "name": "Treasure Shard of Health",
+              "delta": 4
+            }
+          ],
+          "gold_delta": -120
+        },
+        {
+          "round": 97,
+          "actor": 2,
+          "items": [],
+          "gold_delta": -10
+        },
+        {
+          "round": 128,
+          "actor": 4,
+          "items": [
+            {
+              "name": "Jungle Shard of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -30
+        },
+        {
+          "round": 128,
+          "actor": 4,
+          "items": [],
+          "gold_delta": -10
+        }
+      ],
+      "death_events": [
+        {
+          "round": 174,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 20,
+          "by": null,
+          "camp": 42,
+          "cause": "Attack"
+        },
+        {
+          "round": 311,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 15,
+          "hp_before": 20,
+          "by": null,
+          "camp": 40,
+          "cause": "Attack"
+        }
+      ],
+      "max_bag_deaths": [
+        {
+          "round": 311,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 15,
+          "hp_before": 20,
+          "by": null,
+          "camp": 40,
+          "cause": "Attack"
+        },
+        {
+          "round": 174,
+          "actor": 2,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 20,
+          "by": null,
+          "camp": 42,
+          "cause": "Attack"
+        }
+      ],
+      "team_capture_resets": [],
+      "team_capture_flips": [],
+      "team_capture_steals_and_losses": [],
+      "team_recall_cancel_summary": {
+        "manual": {
+          "count": 4068,
+          "bag_carrying_count": 1814,
+          "sample": [
+            {
+              "round": 13,
+              "actor": 1,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 13,
+              "actor": 2,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 13,
+              "actor": 3,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 14,
+              "actor": 0,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 14,
+              "actor": 1,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 14,
+              "actor": 2,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 14,
+              "actor": 3,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 14,
+              "actor": 4,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 39,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 40,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 41,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 42,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 43,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 44,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 45,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 46,
+              "actor": 2,
+              "gems": 15,
+              "cause": "manual",
+              "left": 4
+            }
+          ]
+        },
+        "damage": {
+          "count": 688,
+          "bag_carrying_count": 203,
+          "sample": [
+            {
+              "round": 21,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 22,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 23,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 24,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 25,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 30,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 31,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 32,
+              "actor": 1,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 147,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 148,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 149,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 150,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 151,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 152,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 153,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 155,
+              "actor": 3,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            }
+          ]
+        },
+        "death": {
+          "count": 2,
+          "bag_carrying_count": 1,
+          "sample": [
+            {
+              "round": 174,
+              "actor": 2,
+              "gems": 0,
+              "cause": "death",
+              "left": 4
+            },
+            {
+              "round": 311,
+              "actor": 2,
+              "gems": 15,
+              "cause": "death",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 311,
+              "actor": 2,
+              "gems": 15,
+              "cause": "death",
+              "left": 4
+            }
+          ]
+        },
+        "stun": {
+          "count": 2,
+          "bag_carrying_count": 0,
+          "sample": [
+            {
+              "round": 694,
+              "actor": 0,
+              "gems": 0,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 702,
+              "actor": 0,
+              "gems": 0,
+              "cause": "stun",
+              "left": 4
+            }
+          ],
+          "bag_samples": []
+        }
+      },
+      "team_tribute_cancels": [],
+      "key_champion_contacts_round_end_priorities": [
+        {
+          "round": 692,
+          "kind": "attack",
+          "actor": 0,
+          "target": 8,
+          "damage": [
+            [
+              8,
+              95
+            ]
+          ],
+          "actor_priority_round_end": 97,
+          "target_priority_round_end": 0
+        },
+        {
+          "round": 849,
+          "kind": "cast",
+          "actor": 4,
+          "target": 9,
+          "damage": [
+            [
+              9,
+              810
+            ]
+          ],
+          "actor_priority_round_end": 96,
+          "target_priority_round_end": 0
+        }
+      ]
+    },
+    {
+      "match_id": "71abf3a0-2da3-4ff4-9e8e-e0034d875c39",
+      "map_from_intake": "00lanes",
+      "opponent": "new team(4)",
+      "our_side": "a",
+      "result_from_intake": "win",
+      "replay_payload_sha256": "ce58e07436ad37a0822486eddfa00099e241dbaf2545123b6471fbbec9fec683",
+      "bundle_sha256": "85f9aefb77fdb23060981eb2dfeb073c85bf9c2e45dd65c8afb4f39f93e109d9",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      },
+      "rounds": 796,
+      "score_a_b": [
+        1024,
+        778
+      ],
+      "winner_team_index": 0,
+      "roster": [
+        {
+          "id": 0,
+          "name": "Vesper Vale",
+          "draft_order": 0,
+          "final": {
+            "kills": 0,
+            "deaths": 0,
+            "earned_gold": 2038,
+            "spent_gold": 1870,
+            "camp_damage_done": 41067.99989318848,
+            "camp_damage_taken": 3321.599941253662,
+            "collected_gems": 212,
+            "submitted_gems": 197,
+            "ending_bag": 15
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 0
+        },
+        {
+          "id": 1,
+          "name": "Vendetta",
+          "draft_order": 1,
+          "final": {
+            "kills": 1,
+            "deaths": 0,
+            "earned_gold": 1972,
+            "spent_gold": 1840,
+            "camp_damage_done": 37199.18005371094,
+            "camp_damage_taken": 4629.799925804138,
+            "collected_gems": 276,
+            "submitted_gems": 276,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 87,
+            "actor": 1,
+            "items": [
+              {
+                "name": "Treasure Shard of Strength",
+                "delta": 3
+              }
+            ],
+            "gold_delta": -90
+          },
+          "death_gems_lost": 0
+        },
+        {
+          "id": 2,
+          "name": "Ryth",
+          "draft_order": 2,
+          "final": {
+            "kills": 0,
+            "deaths": 0,
+            "earned_gold": 1866,
+            "spent_gold": 1660,
+            "camp_damage_done": 38854.34585571289,
+            "camp_damage_taken": 4720.199939727783,
+            "collected_gems": 211,
+            "submitted_gems": 211,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 61,
+            "actor": 2,
+            "items": [
+              {
+                "name": "Treasure Shard of Health",
+                "delta": 3
+              }
+            ],
+            "gold_delta": -90
+          },
+          "death_gems_lost": 0
+        },
+        {
+          "id": 3,
+          "name": "Tavi",
+          "draft_order": 3,
+          "final": {
+            "kills": 0,
+            "deaths": 0,
+            "earned_gold": 790,
+            "spent_gold": 780,
+            "camp_damage_done": 29069.39971923828,
+            "camp_damage_taken": 4424,
+            "collected_gems": 127,
+            "submitted_gems": 127,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 80,
+            "actor": 3,
+            "items": [
+              {
+                "name": "Monster Shard of Strength",
+                "delta": 1
+              }
+            ],
+            "gold_delta": -30
+          },
+          "death_gems_lost": 0
+        },
+        {
+          "id": 4,
+          "name": "Marcella",
+          "draft_order": 4,
+          "final": {
+            "kills": 0,
+            "deaths": 0,
+            "earned_gold": 2182,
+            "spent_gold": 1870,
+            "camp_damage_done": 35542.90002441406,
+            "camp_damage_taken": 3539.7999591827393,
+            "collected_gems": 213,
+            "submitted_gems": 213,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 78,
+            "actor": 4,
+            "items": [
+              {
+                "name": "Jungle Shard of Strength",
+                "delta": 3
+              }
+            ],
+            "gold_delta": -90
+          },
+          "death_gems_lost": 0
+        }
+      ],
+      "native_round_turn_markers": {
+        "rollover": [],
+        "bot_error": []
+      },
+      "team_milestones": {
+        "50": {
+          "team_earned_gold": 133,
+          "team_spent_gold_shop_transactions": 0,
+          "team_bank_gold": 133,
+          "team_submitted_gems": 0,
+          "team_carried_gems": 0
+        },
+        "100": {
+          "team_earned_gold": 463,
+          "team_spent_gold_shop_transactions": 320,
+          "team_bank_gold": 143,
+          "team_submitted_gems": 33,
+          "team_carried_gems": 12
+        },
+        "200": {
+          "team_earned_gold": 1256,
+          "team_spent_gold_shop_transactions": 1110,
+          "team_bank_gold": 146,
+          "team_submitted_gems": 109,
+          "team_carried_gems": 15
+        },
+        "400": {
+          "team_earned_gold": 3364,
+          "team_spent_gold_shop_transactions": 3310,
+          "team_bank_gold": 54,
+          "team_submitted_gems": 347,
+          "team_carried_gems": 46
+        }
+      },
+      "opening_capture_holds_first150": [
+        {
+          "round": 37,
+          "group": 14,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 38,
+          "group": 18,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 42,
+          "group": 16,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 55,
+          "group": 8,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 69,
+          "group": 22,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 75,
+          "group": 30,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 76,
+          "group": 24,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 81,
+          "group": 38,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 99,
+          "group": 14,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 106,
+          "group": 16,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 113,
+          "group": 18,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 116,
+          "group": 36,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 127,
+          "group": 20,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 140,
+          "group": 40,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 142,
+          "group": 32,
+          "timer": 5,
+          "actor": null
+        },
+        {
+          "round": 144,
+          "group": 22,
+          "timer": 5,
+          "actor": null
+        }
+      ],
+      "opening_captures_first150": [
+        {
+          "round": 42,
+          "group": 14,
+          "shares": [
+            {
+              "actor": 4,
+              "gems": 0,
+              "gold": 40
+            }
+          ]
+        },
+        {
+          "round": 43,
+          "group": 18,
+          "shares": [
+            {
+              "actor": 1,
+              "gems": 0,
+              "gold": 40
+            }
+          ]
+        },
+        {
+          "round": 47,
+          "group": 16,
+          "shares": [
+            {
+              "actor": 0,
+              "gems": 0,
+              "gold": 53
+            }
+          ]
+        },
+        {
+          "round": 60,
+          "group": 8,
+          "shares": [
+            {
+              "actor": 2,
+              "gems": 22,
+              "gold": 90
+            }
+          ]
+        },
+        {
+          "round": 74,
+          "group": 22,
+          "shares": [
+            {
+              "actor": 4,
+              "gems": 4,
+              "gold": 60
+            }
+          ]
+        },
+        {
+          "round": 80,
+          "group": 30,
+          "shares": [
+            {
+              "actor": 3,
+              "gems": 11,
+              "gold": 40
+            }
+          ]
+        },
+        {
+          "round": 81,
+          "group": 24,
+          "shares": [
+            {
+              "actor": 0,
+              "gems": 4,
+              "gold": 80
+            }
+          ]
+        },
+        {
+          "round": 86,
+          "group": 38,
+          "shares": [
+            {
+              "actor": 1,
+              "gems": 4,
+              "gold": 60
+            }
+          ]
+        },
+        {
+          "round": 104,
+          "group": 14,
+          "shares": [
+            {
+              "actor": 0,
+              "gems": 0,
+              "gold": 53
+            }
+          ]
+        },
+        {
+          "round": 111,
+          "group": 16,
+          "shares": [
+            {
+              "actor": 0,
+              "gems": 0,
+              "gold": 53
+            }
+          ]
+        },
+        {
+          "round": 118,
+          "group": 18,
+          "shares": [
+            {
+              "actor": 0,
+              "gems": 0,
+              "gold": 53
+            }
+          ]
+        },
+        {
+          "round": 121,
+          "group": 36,
+          "shares": [
+            {
+              "actor": 2,
+              "gems": 4,
+              "gold": 60
+            }
+          ]
+        },
+        {
+          "round": 132,
+          "group": 20,
+          "shares": [
+            {
+              "actor": 1,
+              "gems": 22,
+              "gold": 90
+            }
+          ]
+        },
+        {
+          "round": 145,
+          "group": 40,
+          "shares": [
+            {
+              "actor": 2,
+              "gems": 4,
+              "gold": 60
+            }
+          ]
+        },
+        {
+          "round": 147,
+          "group": 32,
+          "shares": [
+            {
+              "actor": 3,
+              "gems": 11,
+              "gold": 40
+            }
+          ]
+        },
+        {
+          "round": 149,
+          "group": 22,
+          "shares": [
+            {
+              "actor": 4,
+              "gems": 4,
+              "gold": 60
+            }
+          ]
+        }
+      ],
+      "first_shop_events_first150": [
+        {
+          "round": 61,
+          "actor": 2,
+          "items": [
+            {
+              "name": "Treasure Shard of Health",
+              "delta": 3
+            }
+          ],
+          "gold_delta": -90
+        },
+        {
+          "round": 78,
+          "actor": 4,
+          "items": [
+            {
+              "name": "Jungle Shard of Strength",
+              "delta": 3
+            }
+          ],
+          "gold_delta": -90
+        },
+        {
+          "round": 78,
+          "actor": 4,
+          "items": [],
+          "gold_delta": -10
+        },
+        {
+          "round": 80,
+          "actor": 3,
+          "items": [
+            {
+              "name": "Monster Shard of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -30
+        },
+        {
+          "round": 87,
+          "actor": 1,
+          "items": [
+            {
+              "name": "Treasure Shard of Strength",
+              "delta": 3
+            }
+          ],
+          "gold_delta": -90
+        },
+        {
+          "round": 87,
+          "actor": 1,
+          "items": [],
+          "gold_delta": -10
+        },
+        {
+          "round": 146,
+          "actor": 1,
+          "items": [
+            {
+              "name": "Treasure Shard of Strength",
+              "delta": -3
+            },
+            {
+              "name": "Treasure Emblem of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -60
+        },
+        {
+          "round": 146,
+          "actor": 1,
+          "items": [
+            {
+              "name": "Jungle Shard of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -30
+        },
+        {
+          "round": 146,
+          "actor": 2,
+          "items": [
+            {
+              "name": "Treasure Shard of Health",
+              "delta": -3
+            },
+            {
+              "name": "Treasure Emblem of Health",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -60
+        },
+        {
+          "round": 146,
+          "actor": 2,
+          "items": [
+            {
+              "name": "Jungle Shard of Strength",
+              "delta": 2
+            }
+          ],
+          "gold_delta": -60
+        },
+        {
+          "round": 147,
+          "actor": 3,
+          "items": [
+            {
+              "name": "Monster Shard of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -30
+        }
+      ],
+      "death_events": [],
+      "max_bag_deaths": [],
+      "team_capture_resets": [
+        {
+          "round": 550,
+          "group": 4,
+          "left": 1,
+          "contested": false
+        },
+        {
+          "round": 764,
+          "group": 20,
+          "left": 3,
+          "contested": false
+        }
+      ],
+      "team_capture_flips": [],
+      "team_capture_steals_and_losses": [],
+      "team_recall_cancel_summary": {
+        "manual": {
+          "count": 2728,
+          "bag_carrying_count": 1260,
+          "sample": [
+            {
+              "round": 3,
+              "actor": 0,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 1,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 2,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 4,
+              "actor": 0,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 4,
+              "actor": 1,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 4,
+              "actor": 2,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 5,
+              "actor": 0,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 5,
+              "actor": 1,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 63,
+              "actor": 2,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 64,
+              "actor": 2,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 65,
+              "actor": 2,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 66,
+              "actor": 2,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 67,
+              "actor": 2,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 68,
+              "actor": 2,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 69,
+              "actor": 2,
+              "gems": 22,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 81,
+              "actor": 0,
+              "gems": 4,
+              "cause": "manual",
+              "left": 4
+            }
+          ]
+        },
+        "damage": {
+          "count": 847,
+          "bag_carrying_count": 469,
+          "sample": [
+            {
+              "round": 38,
+              "actor": 2,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 40,
+              "actor": 2,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 41,
+              "actor": 2,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 42,
+              "actor": 2,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 43,
+              "actor": 2,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 44,
+              "actor": 2,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 46,
+              "actor": 2,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 48,
+              "actor": 2,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 80,
+              "actor": 3,
+              "gems": 11,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 81,
+              "actor": 3,
+              "gems": 11,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 82,
+              "actor": 0,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 83,
+              "actor": 0,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 83,
+              "actor": 3,
+              "gems": 11,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 84,
+              "actor": 0,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 84,
+              "actor": 3,
+              "gems": 11,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 85,
+              "actor": 0,
+              "gems": 4,
+              "cause": "damage",
+              "left": 4
+            }
+          ]
+        },
+        "stun": {
+          "count": 4,
+          "bag_carrying_count": 4,
+          "sample": [
+            {
+              "round": 257,
+              "actor": 0,
+              "gems": 26,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 689,
+              "actor": 1,
+              "gems": 26,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 697,
+              "actor": 0,
+              "gems": 26,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 697,
+              "actor": 1,
+              "gems": 26,
+              "cause": "stun",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 257,
+              "actor": 0,
+              "gems": 26,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 689,
+              "actor": 1,
+              "gems": 26,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 697,
+              "actor": 0,
+              "gems": 26,
+              "cause": "stun",
+              "left": 4
+            },
+            {
+              "round": 697,
+              "actor": 1,
+              "gems": 26,
+              "cause": "stun",
+              "left": 4
+            }
+          ]
+        }
+      },
+      "team_tribute_cancels": [],
+      "key_champion_contacts_round_end_priorities": [
+        {
+          "round": 249,
+          "kind": "attack",
+          "actor": 0,
+          "target": 9,
+          "damage": [
+            [
+              9,
+              90
+            ]
+          ],
+          "actor_priority_round_end": 2097,
+          "target_priority_round_end": 0
+        },
+        {
+          "round": 372,
+          "kind": "attack",
+          "actor": 1,
+          "target": 5,
+          "damage": [
+            [
+              5,
+              160
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 0
+        },
+        {
+          "round": 647,
+          "kind": "cast",
+          "actor": 4,
+          "target": 7,
+          "damage": [
+            [
+              7,
+              432
+            ]
+          ],
+          "actor_priority_round_end": 2096,
+          "target_priority_round_end": 0
+        }
+      ]
+    },
+    {
+      "match_id": "ee6fc21f-6adf-48f8-8849-1e6772b5b8e8",
+      "map_from_intake": "01corridors",
+      "opponent": "procless",
+      "our_side": "b",
+      "result_from_intake": "loss",
+      "replay_payload_sha256": "6564d2a1689e76c8ee0e16049c6244648889e1a8873caeebb6f252831619ff14",
+      "bundle_sha256": "c0879421104ccf42b5c6cb936632f51cd889fd9be8b04ca9366d70dd9f9d2c30",
+      "engine": {
+        "version": "v1_0_3",
+        "cambc": "cambc 3.0.5",
+        "asset": "v1_0_3-DRqNt1t2.wasm",
+        "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+        "bytes": 638472,
+        "snapshotSize": 184760
+      },
+      "rounds": 1016,
+      "score_a_b": [
+        1087,
+        289
+      ],
+      "winner_team_index": 0,
+      "roster": [
+        {
+          "id": 5,
+          "name": "Vesper Vale",
+          "draft_order": 0,
+          "final": {
+            "kills": 1,
+            "deaths": 1,
+            "earned_gold": 1659,
+            "spent_gold": 1630,
+            "camp_damage_done": 28931.541259765625,
+            "camp_damage_taken": 8622.999861717224,
+            "collected_gems": 144,
+            "submitted_gems": 98,
+            "ending_bag": 46
+          },
+          "opening_first_shop": {
+            "round": 60,
+            "actor": 5,
+            "items": [
+              {
+                "name": "Treasure Emblem of Strength",
+                "delta": 1
+              }
+            ],
+            "gold_delta": -150
+          },
+          "death_gems_lost": 0
+        },
+        {
+          "id": 6,
+          "name": "Vendetta",
+          "draft_order": 1,
+          "final": {
+            "kills": 1,
+            "deaths": 2,
+            "earned_gold": 548,
+            "spent_gold": 520,
+            "camp_damage_done": 12360.211639404297,
+            "camp_damage_taken": 7904.799957275391,
+            "collected_gems": 53,
+            "submitted_gems": 0,
+            "ending_bag": 0
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 53
+        },
+        {
+          "id": 7,
+          "name": "Ryth",
+          "draft_order": 2,
+          "final": {
+            "kills": 1,
+            "deaths": 3,
+            "earned_gold": 1616,
+            "spent_gold": 1600,
+            "camp_damage_done": 23080,
+            "camp_damage_taken": 9597.799956321716,
+            "collected_gems": 216,
+            "submitted_gems": 88,
+            "ending_bag": 0
+          },
+          "opening_first_shop": {
+            "round": 45,
+            "actor": 7,
+            "items": [
+              {
+                "name": "Treasure Shard of Health",
+                "delta": 3
+              }
+            ],
+            "gold_delta": -90
+          },
+          "death_gems_lost": 128
+        },
+        {
+          "id": 8,
+          "name": "Tavi",
+          "draft_order": 3,
+          "final": {
+            "kills": 0,
+            "deaths": 1,
+            "earned_gold": 460,
+            "spent_gold": 460,
+            "camp_damage_done": 17195.300003051758,
+            "camp_damage_taken": 6920,
+            "collected_gems": 60,
+            "submitted_gems": 0,
+            "ending_bag": 0
+          },
+          "opening_first_shop": null,
+          "death_gems_lost": 60
+        },
+        {
+          "id": 9,
+          "name": "Marcella",
+          "draft_order": 4,
+          "final": {
+            "kills": 3,
+            "deaths": 3,
+            "earned_gold": 1731,
+            "spent_gold": 1720,
+            "camp_damage_done": 35161,
+            "camp_damage_taken": 10378.999821662903,
+            "collected_gems": 143,
+            "submitted_gems": 103,
+            "ending_bag": 16
+          },
+          "opening_first_shop": {
+            "round": 44,
+            "actor": 9,
+            "items": [
+              {
+                "name": "Jungle Emblem of Strength",
+                "delta": 1
+              }
+            ],
+            "gold_delta": -150
+          },
+          "death_gems_lost": 24
+        }
+      ],
+      "native_round_turn_markers": {
+        "rollover": [],
+        "bot_error": []
+      },
+      "team_milestones": {
+        "50": {
+          "team_earned_gold": 300,
+          "team_spent_gold_shop_transactions": 290,
+          "team_bank_gold": 10,
+          "team_submitted_gems": 0,
+          "team_carried_gems": 0
+        },
+        "100": {
+          "team_earned_gold": 459,
+          "team_spent_gold_shop_transactions": 440,
+          "team_bank_gold": 19,
+          "team_submitted_gems": 0,
+          "team_carried_gems": 8
+        },
+        "200": {
+          "team_earned_gold": 643,
+          "team_spent_gold_shop_transactions": 630,
+          "team_bank_gold": 13,
+          "team_submitted_gems": 0,
+          "team_carried_gems": 16
+        },
+        "400": {
+          "team_earned_gold": 1223,
+          "team_spent_gold_shop_transactions": 1200,
+          "team_bank_gold": 23,
+          "team_submitted_gems": 0,
+          "team_carried_gems": 68
+        }
+      },
+      "opening_capture_holds_first150": [
+        {
+          "round": 54,
+          "group": 5,
+          "timer": 5,
+          "actor": null
+        }
+      ],
+      "opening_captures_first150": [
+        {
+          "round": 59,
+          "group": 5,
+          "shares": [
+            {
+              "actor": 5,
+              "gems": 8,
+              "gold": 159
+            }
+          ]
+        }
+      ],
+      "first_shop_events_first150": [
+        {
+          "round": 44,
+          "actor": 9,
+          "items": [
+            {
+              "name": "Jungle Emblem of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -150
+        },
+        {
+          "round": 44,
+          "actor": 9,
+          "items": [
+            {
+              "name": "Treasure Shard of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -30
+        },
+        {
+          "round": 44,
+          "actor": 9,
+          "items": [],
+          "gold_delta": -10
+        },
+        {
+          "round": 45,
+          "actor": 7,
+          "items": [
+            {
+              "name": "Treasure Shard of Health",
+              "delta": 3
+            }
+          ],
+          "gold_delta": -90
+        },
+        {
+          "round": 45,
+          "actor": 7,
+          "items": [],
+          "gold_delta": -10
+        },
+        {
+          "round": 60,
+          "actor": 5,
+          "items": [
+            {
+              "name": "Treasure Emblem of Strength",
+              "delta": 1
+            }
+          ],
+          "gold_delta": -150
+        }
+      ],
+      "death_events": [
+        {
+          "round": 22,
+          "actor": 6,
+          "actor_name": "Vendetta",
+          "gems_lost": 0,
+          "hp_before": 4.9,
+          "by": 0,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 44,
+          "actor": 9,
+          "actor_name": "Marcella",
+          "gems_lost": 0,
+          "hp_before": 5,
+          "by": null,
+          "camp": 6,
+          "cause": "Attack"
+        },
+        {
+          "round": 44,
+          "actor": 7,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 97.5,
+          "by": 3,
+          "camp": null,
+          "cause": "Cast ability"
+        },
+        {
+          "round": 165,
+          "actor": 7,
+          "actor_name": "Ryth",
+          "gems_lost": 0,
+          "hp_before": 60,
+          "by": null,
+          "camp": 11,
+          "cause": "Attack"
+        },
+        {
+          "round": 360,
+          "actor": 9,
+          "actor_name": "Marcella",
+          "gems_lost": 8,
+          "hp_before": 24,
+          "by": 1,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 555,
+          "actor": 6,
+          "actor_name": "Vendetta",
+          "gems_lost": 53,
+          "hp_before": 80.2,
+          "by": 4,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 742,
+          "actor": 5,
+          "actor_name": "Vesper Vale",
+          "gems_lost": 0,
+          "hp_before": 264.1,
+          "by": 1,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 848,
+          "actor": 9,
+          "actor_name": "Marcella",
+          "gems_lost": 16,
+          "hp_before": 589.8,
+          "by": 1,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 879,
+          "actor": 8,
+          "actor_name": "Tavi",
+          "gems_lost": 60,
+          "hp_before": 117,
+          "by": 1,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 1002,
+          "actor": 7,
+          "actor_name": "Ryth",
+          "gems_lost": 128,
+          "hp_before": 238.5,
+          "by": 1,
+          "camp": null,
+          "cause": "Attack"
+        }
+      ],
+      "max_bag_deaths": [
+        {
+          "round": 1002,
+          "actor": 7,
+          "actor_name": "Ryth",
+          "gems_lost": 128,
+          "hp_before": 238.5,
+          "by": 1,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 879,
+          "actor": 8,
+          "actor_name": "Tavi",
+          "gems_lost": 60,
+          "hp_before": 117,
+          "by": 1,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 555,
+          "actor": 6,
+          "actor_name": "Vendetta",
+          "gems_lost": 53,
+          "hp_before": 80.2,
+          "by": 4,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 848,
+          "actor": 9,
+          "actor_name": "Marcella",
+          "gems_lost": 16,
+          "hp_before": 589.8,
+          "by": 1,
+          "camp": null,
+          "cause": "Attack"
+        },
+        {
+          "round": 360,
+          "actor": 9,
+          "actor_name": "Marcella",
+          "gems_lost": 8,
+          "hp_before": 24,
+          "by": 1,
+          "camp": null,
+          "cause": "Attack"
+        }
+      ],
+      "team_capture_resets": [
+        {
+          "round": 360,
+          "group": 1,
+          "left": 2,
+          "contested": false
+        },
+        {
+          "round": 742,
+          "group": 1,
+          "left": 4,
+          "contested": false
+        }
+      ],
+      "team_capture_flips": [],
+      "team_capture_steals_and_losses": [],
+      "team_recall_cancel_summary": {
+        "manual": {
+          "count": 3171,
+          "bag_carrying_count": 1594,
+          "sample": [
+            {
+              "round": 2,
+              "actor": 5,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 2,
+              "actor": 8,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 5,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 6,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 8,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 3,
+              "actor": 9,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 4,
+              "actor": 5,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 4,
+              "actor": 6,
+              "gems": 0,
+              "cause": "manual",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 62,
+              "actor": 5,
+              "gems": 8,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 63,
+              "actor": 5,
+              "gems": 8,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 64,
+              "actor": 5,
+              "gems": 8,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 65,
+              "actor": 5,
+              "gems": 8,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 66,
+              "actor": 5,
+              "gems": 8,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 67,
+              "actor": 5,
+              "gems": 8,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 68,
+              "actor": 5,
+              "gems": 8,
+              "cause": "manual",
+              "left": 4
+            },
+            {
+              "round": 69,
+              "actor": 5,
+              "gems": 8,
+              "cause": "manual",
+              "left": 4
+            }
+          ]
+        },
+        "stun": {
+          "count": 1,
+          "bag_carrying_count": 0,
+          "sample": [
+            {
+              "round": 18,
+              "actor": 6,
+              "gems": 0,
+              "cause": "stun",
+              "left": 4
+            }
+          ],
+          "bag_samples": []
+        },
+        "damage": {
+          "count": 854,
+          "bag_carrying_count": 383,
+          "sample": [
+            {
+              "round": 21,
+              "actor": 6,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 22,
+              "actor": 6,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 23,
+              "actor": 7,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 26,
+              "actor": 7,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 27,
+              "actor": 9,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 28,
+              "actor": 5,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 29,
+              "actor": 5,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 29,
+              "actor": 7,
+              "gems": 0,
+              "cause": "damage",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 75,
+              "actor": 5,
+              "gems": 8,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 76,
+              "actor": 5,
+              "gems": 8,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 77,
+              "actor": 5,
+              "gems": 8,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 148,
+              "actor": 5,
+              "gems": 8,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 149,
+              "actor": 5,
+              "gems": 8,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 150,
+              "actor": 5,
+              "gems": 8,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 151,
+              "actor": 5,
+              "gems": 8,
+              "cause": "damage",
+              "left": 4
+            },
+            {
+              "round": 152,
+              "actor": 5,
+              "gems": 8,
+              "cause": "damage",
+              "left": 4
+            }
+          ]
+        },
+        "death": {
+          "count": 4,
+          "bag_carrying_count": 1,
+          "sample": [
+            {
+              "round": 44,
+              "actor": 9,
+              "gems": 0,
+              "cause": "death",
+              "left": 4
+            },
+            {
+              "round": 44,
+              "actor": 7,
+              "gems": 0,
+              "cause": "death",
+              "left": 4
+            },
+            {
+              "round": 165,
+              "actor": 7,
+              "gems": 0,
+              "cause": "death",
+              "left": 4
+            },
+            {
+              "round": 360,
+              "actor": 9,
+              "gems": 8,
+              "cause": "death",
+              "left": 4
+            }
+          ],
+          "bag_samples": [
+            {
+              "round": 360,
+              "actor": 9,
+              "gems": 8,
+              "cause": "death",
+              "left": 4
+            }
+          ]
+        }
+      },
+      "team_tribute_cancels": [
+        {
+          "round": 978,
+          "actor": 7,
+          "gems": 128,
+          "cause": "manual",
+          "left": 7
+        },
+        {
+          "round": 1001,
+          "actor": 7,
+          "gems": 128,
+          "cause": "manual",
+          "left": 9
+        },
+        {
+          "round": 1002,
+          "actor": 7,
+          "gems": 128,
+          "cause": "death",
+          "left": 12
+        }
+      ],
+      "key_champion_contacts_round_end_priorities": [
+        {
+          "round": 19,
+          "kind": "attack",
+          "actor": 9,
+          "target": 0,
+          "damage": [
+            [
+              0,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 40
+        },
+        {
+          "round": 20,
+          "kind": "attack",
+          "actor": 9,
+          "target": 0,
+          "damage": [
+            [
+              0,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 98,
+          "target_priority_round_end": 40
+        },
+        {
+          "round": 21,
+          "kind": "attack",
+          "actor": 9,
+          "target": 0,
+          "damage": [
+            [
+              0,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 40
+        },
+        {
+          "round": 21,
+          "kind": "cast",
+          "actor": 9,
+          "target": 0,
+          "damage": [
+            [
+              0,
+              120
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 40
+        },
+        {
+          "round": 22,
+          "kind": "attack",
+          "actor": 6,
+          "target": 4,
+          "damage": [
+            [
+              4,
+              70
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 80
+        },
+        {
+          "round": 22,
+          "kind": "attack",
+          "actor": 7,
+          "target": 0,
+          "damage": [
+            [
+              0,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 40
+        },
+        {
+          "round": 22,
+          "kind": "attack",
+          "actor": 9,
+          "target": 0,
+          "damage": [
+            [
+              0,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 40
+        },
+        {
+          "round": 23,
+          "kind": "attack",
+          "actor": 7,
+          "target": 0,
+          "damage": [
+            [
+              0,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 40
+        },
+        {
+          "round": 24,
+          "kind": "attack",
+          "actor": 7,
+          "target": 0,
+          "damage": [
+            [
+              0,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 40
+        },
+        {
+          "round": 42,
+          "kind": "attack",
+          "actor": 7,
+          "target": 3,
+          "damage": [
+            [
+              3,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 2098,
+          "target_priority_round_end": 55
+        },
+        {
+          "round": 43,
+          "kind": "attack",
+          "actor": 7,
+          "target": 3,
+          "damage": [
+            [
+              3,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 2098,
+          "target_priority_round_end": 55
+        },
+        {
+          "round": 44,
+          "kind": "attack",
+          "actor": 7,
+          "target": 3,
+          "damage": [
+            [
+              3,
+              45
+            ]
+          ],
+          "actor_priority_round_end": 2098,
+          "target_priority_round_end": 55
+        },
+        {
+          "round": 350,
+          "kind": "attack",
+          "actor": 5,
+          "target": 4,
+          "damage": [
+            [
+              4,
+              85
+            ]
+          ],
+          "actor_priority_round_end": 97,
+          "target_priority_round_end": 1000
+        },
+        {
+          "round": 473,
+          "kind": "attack",
+          "actor": 8,
+          "target": 1,
+          "damage": [
+            [
+              1,
+              40.5
+            ]
+          ],
+          "actor_priority_round_end": 97,
+          "target_priority_round_end": 275
+        },
+        {
+          "round": 555,
+          "kind": "attack",
+          "actor": 9,
+          "target": 4,
+          "damage": [
+            [
+              4,
+              125
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 104
+        },
+        {
+          "round": 556,
+          "kind": "attack",
+          "actor": 9,
+          "target": 4,
+          "damage": [
+            [
+              4,
+              125
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 1000
+        },
+        {
+          "round": 556,
+          "kind": "cast",
+          "actor": 9,
+          "target": 4,
+          "damage": [
+            [
+              4,
+              120
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 1000
+        },
+        {
+          "round": 557,
+          "kind": "attack",
+          "actor": 9,
+          "target": 4,
+          "damage": [
+            [
+              4,
+              125
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 1000
+        },
+        {
+          "round": 877,
+          "kind": "cast",
+          "actor": 7,
+          "target": 4,
+          "damage": [
+            [
+              4,
+              135
+            ]
+          ],
+          "actor_priority_round_end": 2097,
+          "target_priority_round_end": 140
+        },
+        {
+          "round": 878,
+          "kind": "attack",
+          "actor": 8,
+          "target": 1,
+          "damage": [
+            [
+              1,
+              85.5
+            ]
+          ],
+          "actor_priority_round_end": 5097,
+          "target_priority_round_end": 695
+        },
+        {
+          "round": 879,
+          "kind": "attack",
+          "actor": 7,
+          "target": 4,
+          "damage": [
+            [
+              4,
+              159.3
+            ]
+          ],
+          "actor_priority_round_end": 2099,
+          "target_priority_round_end": 140
+        },
+        {
+          "round": 881,
+          "kind": "attack",
+          "actor": 5,
+          "target": 4,
+          "damage": [
+            [
+              4,
+              175.5
+            ]
+          ],
+          "actor_priority_round_end": 99,
+          "target_priority_round_end": 140
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Round milestones use extracted round-end arrays; team spent gold is the sum of negative shop transaction deltas through that round, while final spentGold comes from native final champion statistics.",
+    "Priority values are round-end snapshots, not action-time Set priority; they do not establish causal camp aggro or double-turn priority.",
+    "Opening capture actor attribution comes from capture share records. All observed Mite-side champion captures are listed, with event round and group ID."
+  ]
+}

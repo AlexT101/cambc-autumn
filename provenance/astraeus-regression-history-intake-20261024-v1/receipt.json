@@ -1,0 +1,15 @@
+{
+  "fetched_at_utc": "2026-10-24T05:50:47Z",
+  "cli": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/current-autumn/tools/runtime/cambc-3.0.5/cambc",
+  "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+  "authentication": "Existing authenticated cambc CLI session; no login or credential search performed. ~/cambc/web-cookie.txt absent.",
+  "commands": [
+    "cambc matches list --team me --kind ranked --limit 100 --json",
+    "cambc matches list --team me --kind unranked --limit 100 --json",
+    "cambc ladder --page 1 --limit 100 --json",
+    "cambc match-groups show <latest and immediately preceding ranked group IDs> --json",
+    "cambc matches show <latest ranked match ID> --json"
+  ],
+  "downloads": "No replay bundles downloaded.",
+  "submission_identity": "Unknown: supported pinned CLI match and match-group JSON responses expose team IDs, engine version, ordered drafts, map, status and outcome, but no bot submission ID/version. The permitted website cookie file is absent. No cutoff was inferred from commit timestamps."
+}

@@ -1,0 +1,52 @@
+{
+  "astraeus": [
+    {
+      "label": "fish-elkring-old-win",
+      "match_id": "67fc71af-7d66-40e8-8c82-a0d400cbea6f",
+      "map_name": "00elkring",
+      "our_side": "b",
+      "opponent": "Intercontinental Fish",
+      "our_result_from_intake": "win",
+      "bundle": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/bundles/astraeus/fish-elkring-old-win-67fc71af-7d66-40e8-8c82-a0d400cbea6f.zip",
+      "bundle_sha256": "ec77aa6744647b085aa066aaa9520d24d698096d61438013b704c02a5db98880",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/astraeus/67fc71af-7d66-40e8-8c82-a0d400cbea6f/fish-elkring-old-win.repl26a",
+      "replay_payload_sha256": "bbb81e199d59829f1a9c87e472e866a09ddd4078bf2446af97f8c4e4b4999466"
+    },
+    {
+      "label": "fish-elkring-new-loss",
+      "match_id": "deb4ae94-edc6-480f-a0e9-03fd944841bd",
+      "map_name": "00elkring",
+      "our_side": "b",
+      "opponent": "Intercontinental Fish",
+      "our_result_from_intake": "loss",
+      "bundle": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/bundles/astraeus/fish-elkring-new-loss-deb4ae94-edc6-480f-a0e9-03fd944841bd.zip",
+      "bundle_sha256": "9cf1229f1d232f55eb9696d8559399a86c663d415e92df30d83b6b4f1992ed86",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/astraeus/deb4ae94-edc6-480f-a0e9-03fd944841bd/fish-elkring-new-loss.repl26a",
+      "replay_payload_sha256": "56be01a6e30d3a984a147c379491f796ee658147925ef3aafc650f2382c1faee"
+    },
+    {
+      "label": "three-pilgrimage-old-win",
+      "match_id": "9da66955-6268-428c-a955-1549cd080c33",
+      "map_name": "00pilgrimage",
+      "our_side": "a",
+      "opponent": ":3",
+      "our_result_from_intake": "win",
+      "bundle": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/bundles/astraeus/three-pilgrimage-old-win-9da66955-6268-428c-a955-1549cd080c33.zip",
+      "bundle_sha256": "f5c2e071751d1f624630097b8d7f0be12dfd09f93589f5d8dd93324c11e55b7d",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/astraeus/9da66955-6268-428c-a955-1549cd080c33/three-pilgrimage-old-win.repl26a",
+      "replay_payload_sha256": "4ca5aa1e2eeecd1d3f25c1fe4d38d6476c8554111ca570944f93b181549d3512"
+    },
+    {
+      "label": "three-pilgrimage-new-loss",
+      "match_id": "62589f4b-d504-4bf7-b641-f3e9de95ce9c",
+      "map_name": "00pilgrimage",
+      "our_side": "a",
+      "opponent": ":3",
+      "our_result_from_intake": "loss",
+      "bundle": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/bundles/astraeus/three-pilgrimage-new-loss-62589f4b-d504-4bf7-b641-f3e9de95ce9c.zip",
+      "bundle_sha256": "8a50ad523a0833b846a43b21a81f3f2ba46da45cc5eae195670ce0bc731460a6",
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/ladder-history-replays-20261024-v1/inputs/astraeus/62589f4b-d504-4bf7-b641-f3e9de95ce9c/three-pilgrimage-new-loss.repl26a",
+      "replay_payload_sha256": "e546793a8c82d0bbc32eb725a0217e21b6518b72ec0818c944a04560f394a96d"
+    }
+  ]
+}
