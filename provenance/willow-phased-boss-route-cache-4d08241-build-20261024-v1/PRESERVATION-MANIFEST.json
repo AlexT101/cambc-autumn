@@ -1,0 +1,104 @@
+{
+  "schema": "willow-phased-boss-route-cache-preservation/v2",
+  "scope": "Source-reviewed bounded altar-field cache, successful Release compile, and one authorized Big World B diagnostic. Compact reports/status receipts are listed; raw replay, extracted streams, binaries, and command logs remain local and are excluded.",
+  "files": [
+    {
+      "path": "research/willow-phased-boss-route-cache-4d08241-source-v1.patch",
+      "bytes": 1832,
+      "sha256": "6c50c4f778d97b9e559a1e40f522f4401edcd03366f7ca6236366990f9bb7f8e"
+    },
+    {
+      "path": "research/willow-phased-boss-route-cache-4d08241-source-checkpoint-20261024-v1.md",
+      "bytes": 2166,
+      "sha256": "346f2e4372e350a73c6c7695c8ad993ddb3a211ebb13f90e12d709379243affc"
+    },
+    {
+      "path": "research/willow-phased-boss-route-cache-source-review-20261024-v1.md",
+      "bytes": 2034,
+      "sha256": "4d20bc61fe48c4eb2c49f7c1f616508d0a21b5e39295697eada870aa27d38bf4"
+    },
+    {
+      "path": "bots/variants/willow-phased-boss-route-cache-4d08241-work/src/phased_boss.inc",
+      "bytes": 49108,
+      "sha256": "9ee83bd4dce9296d46fae7a26acdbac5f6ae29760e60baf13a5b56b478ba97d2"
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/preflight.json",
+      "bytes": 1897,
+      "sha256": "3e0668d4b93c3ff8326bed57f78ab06bad39960cc3f1352a91e5432fb70ed7e9"
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/build-result.json",
+      "bytes": 1538,
+      "sha256": "a88c6f2340ab4d328219bed3f21a280a383e9211a6dd51a47bfadf63c912aeb8"
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/logs/build.stdout.log",
+      "bytes": 4436,
+      "sha256": "de1186d69667b8e7023273f04f4007cf2253a4be677737e7e9d5a9178d4e207c"
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/logs/build.stderr.log",
+      "bytes": 180,
+      "sha256": "ec996f44c37aa3a11b8893a81d8de92ffd2349d6721210c22873430f0517e322"
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/logs/build.duty.json",
+      "bytes": 5309,
+      "sha256": "b5ddfa1832b1fb8fc18d482facfb3ee4c3b47f5abe944807464b40b12076686d"
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/RUN-RESULT.md",
+      "bytes": 1938,
+      "sha256": "9382bacf6d7afad61980f19f3ec69e2a09b2876e01991547db2b0e3acda1b033"
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/RUN-RESULT.json",
+      "bytes": 2092,
+      "sha256": "c2d5e51cba51af8ae5bdbc587b5e79b2f2d92fb95aabd7bb1abf07c0c11f9b33"
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/run/audit/native-status.json",
+      "bytes": 6119,
+      "sha256": "20470995aad42ba007fca9312059e5ad6d0ad7a2ab5544bf969f6d64fba12db3"
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/run/audit/results.json",
+      "bytes": 857,
+      "sha256": "7675137aaea5ab82275ef443adbdf0b664c48ef71499690451715ea85c20297c"
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/run/single-match.manifest",
+      "bytes": 725,
+      "sha256": "c0c0315a94b3b33539e1b12265c07ea889ee154bcac843acd52cbe7438d71cb7"
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-phased-boss-route-cache-4d08241-work/.cambc/build-release/bot.wasm",
+      "bytes": 1727147,
+      "sha256": "1bf41872548cfd144fafb7bfac3fb09a858100868746c1d4c1d632e315542955",
+      "reason": "Generated binary retained locally, excluded from compact source/receipt staging."
+    },
+    {
+      "path": "provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/bots/willow-phased-boss-route-cache-4d08241-work/.cambc/build-release/bot-injected.wasm",
+      "bytes": 968895,
+      "sha256": "c1c9375b42c6ddb39a96b24717185cabcbae3305c0eb80c6ac65d47b0f1e3b53",
+      "reason": "Generated binary retained locally, excluded from compact source/receipt staging."
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/run/route-cache-B-vs-v33-big-world.repl26a",
+      "bytes": 59843,
+      "sha256": "9a9ba00dd3f4303348d9d8aa1acac6b3bf7b72052ac73791e18ad0ce41396801",
+      "reason": "Raw game replay retained locally; compact result and native status receipts are preserved."
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/run/extracted/9a9ba00dd3f43033/rounds.json.gz",
+      "reason": "Raw extracted round stream retained locally; excluded from compact source/receipt set."
+    },
+    {
+      "path": "provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/run/extracted/9a9ba00dd3f43033/events.jsonl.gz",
+      "reason": "Raw extracted event stream retained locally; excluded from compact source/receipt set."
+    }
+  ]
+}

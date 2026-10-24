@@ -1,0 +1,43 @@
+{
+  "v": 2,
+  "games": [
+    {
+      "dir": "264f0970312a5b49",
+      "source": "provenance/willow-phased-solo-boss-4d08241-v1/outputs/candidate-B-vs-v33-big-world.repl26a",
+      "kind": "file",
+      "map": "candidate-B-vs-v33-big-world",
+      "mapHash": "c890c7d4607bc45c",
+      "teams": [
+        "A",
+        "B"
+      ],
+      "winner": 0,
+      "rounds": 975,
+      "gems": [
+        1005,
+        748
+      ],
+      "ok": true,
+      "copies": 1
+    },
+    {
+      "dir": "15a703f86fd6cbf7",
+      "source": "provenance/willow-phased-solo-boss-4d08241-v1/outputs/latest-parent-B-vs-v33-big-world.repl26a",
+      "kind": "file",
+      "map": "latest-parent-B-vs-v33-big-world",
+      "mapHash": "c890c7d4607bc45c",
+      "teams": [
+        "A",
+        "B"
+      ],
+      "winner": 0,
+      "rounds": 780,
+      "gems": [
+        1110,
+        474
+      ],
+      "ok": true,
+      "copies": 1
+    }
+  ]
+}

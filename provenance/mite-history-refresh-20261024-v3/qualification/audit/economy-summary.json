@@ -33,7 +33,11 @@
     "team_A_native_play_rollovers": 343,
     "team_A_native_play_errors": 0,
     "draft_rollovers_or_errors": 0,
-    "source_mode": "historical saved ladder replay; local Release/debug mode not known"
+    "source_mode": "historical saved ladder replay; local Release/debug mode not known",
+    "end_bag_gems_by_team": {
+      "A": 40,
+      "B": 78
+    }
   },
   "events": {
     "counts": {
@@ -49,7 +53,20 @@
     "team_B_capture_share_gold": 5749,
     "team_B_completed_tributes": 22,
     "team_B_tribute_gems": 614,
-    "team_B_tribute_gold": 328
+    "team_B_tribute_gold": 328,
+    "capture_share_gems_by_team": {
+      "A": 1049,
+      "B": 692
+    },
+    "team_A_completed_tributes": 14,
+    "teleport_completions_by_team": {
+      "A": 20,
+      "B": 0
+    },
+    "monolith_groups16_17_camp_ids57_56_attack_or_cast_events": {
+      "A": 0,
+      "B": 0
+    }
   },
   "team_B_champions": [
     {

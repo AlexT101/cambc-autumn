@@ -1,0 +1,9 @@
+# Route-cache Big World diagnostic
+
+One Release100k normal-draft match; cache child was physical B, frozen v33 physical A, on `maps/01big-world.map26a`. This was a cost diagnostic, not a strength test. The frozen v33 won round 975 with gems 1005–662 (A–B). Both teams drafted Prism, Vesper Vale, Marcella, Willow, Heart of Ruin.
+
+The cache child had 177 native play rollovers and zero bot errors; frozen v33 had 4 rollovers and zero errors. The child produced no attack/cast against the Monolith members in groups 16/17 (camp IDs 57/56), and no boss clear or capture. Marcella B actor 7 remained outside both groups: at the cited round-474 raw position (64,65), her Chebyshev distance to group 16's nearest member was 16 and to group 17's nearest member was 13; this is one observed state, not a minimum over the route.
+
+Against the exact prior approach-v2 control (same normal draft and map), the new replay reached the same round and A win, with B score 662 versus 677 previously. Native B play rollovers were 177 versus 175. Thus this minimal altar-field cache did not reduce observed rollovers or produce boss contact in this match. New bundle SHA-256 `9a9ba00dd3f4303348d9d8aa1acac6b3bf7b72052ac73791e18ad0ce41396801`; inner replay payload SHA-256 `5d959ce6779bc14d957a962623ff333fea721361b9392e5d08163bc63d8622e5`. Exact approach-v2 control bundle SHA-256 `3b6afe7cca7abbce3cd9d8215e52ece76bc2fb13de3cb902595f420dc2e30be3`; inner payload SHA-256 `bf0bc377a2c7d9b383772f53a798e4dbaa58cc121e2da2b484581e1e1c0ad1e6`.
+
+Source aggregate: cache child `5c47f2fce2f6097e5efd16f4b2fa53d6468276aa00cfc168faa877ad8224f149`; v33 `a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e`. CLI SHA-256 `69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171`; engine SHA-256 `029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48`; map SHA-256 `f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5`.

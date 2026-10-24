@@ -1,0 +1,65 @@
+{
+  "schema": "boss-route-cache-single-match-result/v1",
+  "match": {
+    "map": "maps/01big-world.map26a",
+    "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5",
+    "physical_A": "v33",
+    "physical_B": "willow-phased-boss-route-cache-4d08241-work",
+    "drafts": [
+      "Prism",
+      "Vesper Vale",
+      "Marcella",
+      "Willow",
+      "Heart of Ruin"
+    ],
+    "winner": "A",
+    "round": 975,
+    "gems_A_B": [
+      1005,
+      662
+    ],
+    "failed": 0
+  },
+  "native": {
+    "B_play_rollovers": 177,
+    "B_play_errors": 0,
+    "A_play_rollovers": 4,
+    "A_play_errors": 0
+  },
+  "boss_activation": {
+    "attack_or_cast_against_groups_16_17": false,
+    "clear_or_capture": false,
+    "marcella_B_actor7_round474_raw_xy": [
+      64,
+      65
+    ],
+    "chebyshev_to_group16_nearest_member_at_that_point": 16,
+    "chebyshev_to_group17_nearest_member_at_that_point": 13,
+    "limitation": "pointwise distances, not route minima"
+  },
+  "source_aggregates": {
+    "cache_child": "5c47f2fce2f6097e5efd16f4b2fa53d6468276aa00cfc168faa877ad8224f149",
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e"
+  },
+  "new_replay": {
+    "bundle_sha256": "9a9ba00dd3f4303348d9d8aa1acac6b3bf7b72052ac73791e18ad0ce41396801",
+    "inner_payload_sha256": "5d959ce6779bc14d957a962623ff333fea721361b9392e5d08163bc63d8622e5"
+  },
+  "approach_v2_control": {
+    "bundle_sha256": "3b6afe7cca7abbce3cd9d8215e52ece76bc2fb13de3cb902595f420dc2e30be3",
+    "inner_payload_sha256": "bf0bc377a2c7d9b383772f53a798e4dbaa58cc121e2da2b484581e1e1c0ad1e6",
+    "round": 975,
+    "winner": "A",
+    "gems_A_B": [
+      1005,
+      677
+    ],
+    "B_play_rollovers": 175
+  },
+  "tool_pins": {
+    "cli_sha256": "69617aa6a074415bd8ba8e254d1584df3392d95d1f9e2e2d46db66ff6e187171",
+    "engine_sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48",
+    "map_sha256": "f1ecb726472858efb1d75d00b0d7668be18d83a010b2abf9a1f8c38aab456aa5"
+  },
+  "native_status_sha256": "20470995aad42ba007fca9312059e5ad6d0ad7a2ab5544bf969f6d64fba12db3"
+}

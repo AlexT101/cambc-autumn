@@ -1,0 +1,115 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T09:00:03.132517+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development",
+  "argv": [
+    "node",
+    "tools/replay/export_actor_own_view_window_v3_local.mjs",
+    "latest-parent-B-vs-v33-big-world",
+    "5",
+    "735",
+    "744",
+    "provenance/willow-phased-solo-boss-4d08241-v1/actor-window-parent-prism-r735-744-v1/actor-window.json",
+    "--batch",
+    "provenance/willow-phased-solo-boss-4d08241-v1/actor-window-parent-prism-r735-744-v1/input-batch"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-phased-solo-boss-4d08241-v1/actor-window-parent-prism-r735-744-v1/export.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-phased-solo-boss-4d08241-v1/actor-window-parent-prism-r735-744-v1/export.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.048752041,
+      "run_end_monotonic": 0.152667333
+    },
+    {
+      "run_start_monotonic": 1.059932916,
+      "run_end_monotonic": 1.169842958
+    },
+    {
+      "run_start_monotonic": 2.073757166,
+      "run_end_monotonic": 2.183787666
+    },
+    {
+      "run_start_monotonic": 3.09392375,
+      "run_end_monotonic": 3.203160125
+    },
+    {
+      "run_start_monotonic": 4.105971458,
+      "run_end_monotonic": 4.213881666
+    },
+    {
+      "run_start_monotonic": 5.11991,
+      "run_end_monotonic": 5.225292208
+    },
+    {
+      "run_start_monotonic": 6.1281445,
+      "run_end_monotonic": 6.236911041
+    },
+    {
+      "run_start_monotonic": 7.1459885,
+      "run_end_monotonic": 7.25316
+    },
+    {
+      "run_start_monotonic": 8.153959166,
+      "run_end_monotonic": 8.253995375
+    },
+    {
+      "run_start_monotonic": 9.161112125,
+      "run_end_monotonic": 9.265890625
+    },
+    {
+      "run_start_monotonic": 10.168060625,
+      "run_end_monotonic": 10.270336916
+    },
+    {
+      "run_start_monotonic": 11.179323583,
+      "run_end_monotonic": 11.288759708
+    },
+    {
+      "run_start_monotonic": 12.198951125,
+      "run_end_monotonic": 12.307227666
+    },
+    {
+      "run_start_monotonic": 13.208974875,
+      "run_end_monotonic": 13.315134708
+    },
+    {
+      "run_start_monotonic": 14.223191958,
+      "run_end_monotonic": 14.329395791
+    },
+    {
+      "run_start_monotonic": 15.239624958,
+      "run_end_monotonic": 15.345856291
+    },
+    {
+      "run_start_monotonic": 16.253205833,
+      "run_end_monotonic": 16.354661625
+    },
+    {
+      "run_start_monotonic": 17.2635535,
+      "run_end_monotonic": 17.369902125
+    },
+    {
+      "run_start_monotonic": 18.278298583,
+      "run_end_monotonic": 18.384344291
+    },
+    {
+      "run_start_monotonic": 19.292544083,
+      "run_end_monotonic": 19.402578041
+    },
+    {
+      "run_start_monotonic": 20.308852791,
+      "run_end_monotonic": 20.418490125
+    }
+  ],
+  "pid": 8805,
+  "process_group_id": 8805,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T09:00:23.505078+00:00"
+}

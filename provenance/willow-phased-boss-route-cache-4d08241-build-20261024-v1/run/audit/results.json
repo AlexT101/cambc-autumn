@@ -1,0 +1,24 @@
+{
+  "bots": [
+    "v33",
+    "willow-phased-boss-route-cache-4d08241-work"
+  ],
+  "scheduled": 1,
+  "completed": 1,
+  "release": true,
+  "source_pins": {
+    "v33": "a00fff454c1e48520968c9ba2d4c1ecdae0212ce019724dc06a6e959ddc3412e",
+    "willow-phased-boss-route-cache-4d08241-work": "5c47f2fce2f6097e5efd16f4b2fa53d6468276aa00cfc168faa877ad8224f149"
+  },
+  "matches": [
+    {
+      "index": 0,
+      "order": [
+        0,
+        1
+      ],
+      "replay": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-phased-boss-route-cache-4d08241-build-20261024-v1/run/route-cache-B-vs-v33-big-world.repl26a",
+      "map": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-astraeus-clock-recovery-20261024-v1/workspace/maps/01big-world.map26a"
+    }
+  ]
+}

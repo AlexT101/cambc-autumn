@@ -4,13 +4,13 @@
   "files": [
     {
       "path": "provenance/mite-history-refresh-20261024-v3/qualification/audit/MITE-RESULT.md",
-      "bytes": 2167,
-      "sha256": "5e0835e878e15ff082f5edab733b38b4510e48df045706752d29798f4d48146a"
+      "bytes": 1999,
+      "sha256": "6a7c2cf0fa71248f64923c35a46abcd8e925c899ef62a521ee8755ebf09d11f7"
     },
     {
       "path": "provenance/mite-history-refresh-20261024-v3/qualification/audit/economy-summary.json",
-      "bytes": 10989,
-      "sha256": "f3c4c6d2cb6ea4356d84c976575f160bcded755c0ff807df321449003dbb7c38"
+      "bytes": 11340,
+      "sha256": "8936d3150f2476cd2e35ffc4b80dd66a3c72565033c6a94f329bf8d3624fb666"
     },
     {
       "path": "provenance/mite-history-refresh-20261024-v3/qualification/audit/native-status.json",

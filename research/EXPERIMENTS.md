@@ -2861,3 +2861,23 @@ gap plus twice the 282 transferred gems. Prism cancels a Home recall with one
 turn left at 738 before dying at 744. One bounded actor-known view, Prism5
 rounds 735–744, is nominated to establish the information available at that
 cancellation before changing recall or banking policy.
+
+That own-view now confirms both visible pursuers were six tiles away at Prism's
+738 cancellation. Vesper had a five-turn dash cooldown, and both enemies had
+already acted that round; before Prism's next activation they could each act
+only once. Neither visible enemy could interrupt the remaining one-turn recall
+with those facts, even after cancelling its own recall stub. This is a bound on
+the visible pair, not a proof about unseen enemy beliefs or camps. The source
+hypothesis is a `paying_soon` relaxation of pursuit in `want_home`, followed by
+`capture_recall` refusing departure before payout. A fresh isolated exact-4d
+Release reproduction is authorized before a narrow private branch trace;
+the older v47/f7 source is not being substituted.
+
+The reviewed altar-cache child `5c47f2fc...` compiles with unchanged SDK bytes
+and timestamp. Its one ordinary-100k Big World B game against frozen v33 ends
+1,005–662 at 975 with 177 candidate play rollovers (174 Marcella), versus the
+approach control's 1,005–677 and 175 (172 Marcella). Both have zero bot errors;
+v33 has four play rollovers. No boss is attacked or captured. The payloads
+differ, and the cache has no demonstrated rollover benefit. It remains isolated
+while the concrete Prism recall failure takes priority; no additional boss
+run is authorized by these results.

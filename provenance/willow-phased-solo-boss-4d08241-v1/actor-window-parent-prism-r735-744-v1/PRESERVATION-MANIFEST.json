@@ -1,0 +1,76 @@
+{
+  "schema": "willow-boss-parent-prism-own-view-preservation/v1",
+  "scope": "One exact-parent Prism actor5 B-side own-view window for r735\u2013744, with action ordering and explicit raw/own-frame coordinates. No new game or broader trace.",
+  "files": [
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/actor-window-parent-prism-r735-744-v1/ANALYSIS.md",
+      "bytes": 2517,
+      "sha256": "ef0a06689ec09a394d134f86d5b8d704bd4c945e1ed86fd37a2982d52d70ebe5"
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/actor-window-parent-prism-r735-744-v1/actor-window.json",
+      "bytes": 118574,
+      "sha256": "6f3d56e744e9185f84eb60725a5e0c9b0a898520b3018442f00efe44c7e8b12d"
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/actor-window-parent-prism-r735-744-v1/input-batch/results.json",
+      "bytes": 1135,
+      "sha256": "8515d737f5d3ec626e3b0fed08d1cfe18b1759a6d71397d3c7dae2fdb06e3b94"
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/actor-window-parent-prism-r735-744-v1/input-batch/analysis/index.json",
+      "bytes": 914,
+      "sha256": "4f511b4b6be04e4124ec88c83798ccc4046f3401084ecc09a867afbda77a083c"
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/actor-window-parent-prism-r735-744-v1/export.duty.json",
+      "bytes": 3297,
+      "sha256": "80af39bf5bfb6f874849ea835838774d559c41f7ab896e643489af7d01418a39"
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/actor-window-parent-prism-r735-744-v1/export.stdout.log",
+      "bytes": 135,
+      "sha256": "f56b7b8e6fe28d087039518acf110d47b1418bd428274bac4dbaa4b9fde17da6"
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/actor-window-parent-prism-r735-744-v1/export.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tools/replay/export_actor_own_view_window_v3_local.mjs",
+      "bytes": 20721,
+      "sha256": "4d578b4642ec9c16ee25fada9272fd71da28b8fe4e3f00f38b649205ce9b9052"
+    },
+    {
+      "path": "tools/replay/engine_own_view_v3_compat.mjs",
+      "bytes": 26314,
+      "sha256": "f8a338b2aa3338cf421d1ef167a260b6ed90f4932bfd56f83852ee272a537778"
+    },
+    {
+      "path": "tools/replay/engine/v1_0_3.wasm",
+      "bytes": 638472,
+      "sha256": "029ecd290dc400e75418178ec386d72cbd7d9f2fc2a2e451bf594ca23566df48"
+    }
+  ],
+  "excluded_raw_artifacts": [
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/outputs/latest-parent-B-vs-v33-big-world.repl26a",
+      "bytes": 48649,
+      "sha256": "15a703f86fd6cbf7ca9b14fddc9136f2100bc5afce87520905b274c82cbe670c",
+      "reason": "Original replay bundle retained locally; its SHA and inner payload SHA are pinned in actor-window.json."
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/extracted/15a703f86fd6cbf7/events.jsonl.gz",
+      "bytes": 219330,
+      "sha256": "96ede6bd61767e2511c2d13fe24f76596a846b3cbafcd8d8f09fb7b5a46287ea",
+      "reason": "Full semantic stream retained locally; not needed in compact actor window bundle."
+    },
+    {
+      "path": "provenance/willow-phased-solo-boss-4d08241-v1/extracted/15a703f86fd6cbf7/rounds.json.gz",
+      "bytes": 49461,
+      "sha256": "52a171647436637281c9d603efb58467812751b41eca1be03af4789ae953c132",
+      "reason": "Full round stream retained locally; not needed in compact actor window bundle."
+    }
+  ]
+}
