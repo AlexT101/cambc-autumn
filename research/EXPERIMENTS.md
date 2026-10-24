@@ -1583,6 +1583,31 @@ without inventing healing-as-DPS savings. Historical same-shop337f games show so
 activation, but each new arm still requires actual purchase evidence and runtime validation.
 Research: `willow-support-items-and-treasure-review.md`. Canonical remainsa67.
 
+Six Release/100k item smoke games then exercise the two frozen arms against fd99 on
+BigWorld A, Expanse A and Corners B. First-protection starts Jungle Strength at BigWorld
+round 494 (three shards, completion 792) and Corners round 52 (two shards, completion 494).
+Expanse has no qualifying protection purchase before Treasure. The Focus arm buys no Willow
+Bruiser Focus in BigWorld/Expanse; Corners buys four shards at 836 and completes at 1001.
+Absence of a purchase does not prove a policy no-op because quotes can affect prior decisions.
+Other champions' normal Focus purchases are not evidence of Willow-specific policy activation.
+
+Corners' four Focus shards give Willow 140 Focus versus 120 for the same-stage Strength
+item; the completed Bruiser gives 145 versus 125. Fourteen subsequent heals restore 5613 HP;
+ten exceed the corresponding Strength-item cap, using 600 HP of extra capacity on that
+recorded trajectory. This conditional cap utilization does not establish a counterfactual
+healing or win gain, and does not price the sacrificed attack damage. An earlier calculation
+incorrectly granted every non-Focus emblem a Focus shard; only Bruiser gives those cross-stat
+shards. That calculation is preserved and superseded. Effects begin at shard purchase.
+
+Both arms win one of their three selected diagnostic cells. First-protection/fd99 native
+rollovers total 22/17; Focus/fd99 total 9/19. Runner failures, native Bot Errors, caught action
+errors and turn-order markers are zero. All six extracts succeed with 12 tribute-income
+earnedGold soft notes under the old extractor. Native fault counters and capped fuel values
+are not used as substitutes for the native rollover audit. Authoritative corrected report:
+`replays/willow-support-item-smoke-20261023-v1/audit-v2/RESULTS-v3.md`, with preserved earlier
+attempts, source/build pins and physical-side rosters. This panel establishes purchases and
+recorded effects, not a release qualification.
+
 A direct Health sibling of the first-protection arm is now source-reviewed: `3b815902`.
 Only when `2ae444fa` would select fresh Jungle Strength in its first-protection override,
 it returns the actual-valued Jungle Health choice. Begun items, Durability, Treasure timing
