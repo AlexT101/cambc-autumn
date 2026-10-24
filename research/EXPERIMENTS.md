@@ -593,6 +593,26 @@ another harmless group was kept (CHANGES 91).
   games before; the source of the rc 113 and rc 126 errors). 49.5% of 1104 (46.5-52.4; ladder 48.8, gen 49.8, gen-s1
   49.2), out-of-fuel turns 2502 vs 2537; 100M bench 52/52 identical. Kept, level (CHANGES 132).
 
+- Phase 1 correctness bundle (2026-10-24, astraeus c0de6b4 as `bots/variants/p1-ref`; ladder + gen 592 games
+  unless noted). The bundle (`p1a-fix`): stun checks by `stun_pending` instead of `has_stun`; our own hits re-read
+  (enemy kills via `see_kills`, woken camp groups via a members-only `update_camp`, channels a stun cancels cleared in
+  `read_stuns`, our own fighter from live health and shield); endgame tributes (Marcella's attack, reset, attack on a
+  tributing carrier, attacks aimed at the carrier, no walk-spending action before closing in; `place_lock` compares
+  landing times; `enemy_tribute_wins` sums visible tributes landing no later; tribute while holding a capture);
+  Marcella's 2 gold per tributed gem in farm worth; a Heart of Ruin dash counted as a damaging cast (`main_stat`) only
+  when it lands on something; retaliation checks against health plus shield over Durability. 44.6% of 592 (40.6-48.6),
+  out-of-fuel turns 1507 vs 1105. Split:
+  - Own-hit re-reads (`p1a-state`): 47.3% (43.3-51.3), out-of-fuel 1570 vs 1079: a Safety refresh, our fighter rebuilt
+    and camps re-read from two tiles on nearly every farming turn. Lean version (`p1a-state2`: one `is_alive` per
+    visible enemy, `see_again` only after a kill; camps re-read only after a camp hit, from our tile; no self rebuild):
+    49.3% (45.3-53.3), out-of-fuel 1247 vs 1146.
+  - Heart of Ruin cast count (`p1a-hor`): 48.5% (44.5-52.5), out-of-fuel 1019 vs 1055.
+  - The rest with CHANGES 135 (`p1-rest`): 49.5% (45.5-53.5), out-of-fuel 1313 vs 1175; plus the Heart of Ruin count
+    on gen-s1 (`p1-rest-hor`): 49.8% of 512, 1462 vs 1303.
+  - All of it (`p1-final`): 46.5% of 1104 (43.5-49.4; ladder 43.8, gen 45.3, gen-s1 48.0), out-of-fuel 2849 vs 2464.
+    The small deficits add up. Kept: CHANGES 135 alone; then the stun checks and Marcella's gold (user's call). The
+    own-hit re-reads, endgame, retaliation and Heart of Ruin parts are held in `bots/variants/p1-final`.
+
 ## Fuel
 
 Where fuel goes: [FUEL-PROFILE.md](hyperion/FUEL-PROFILE.md) (59% of out-of-fuel turns ran out in the strike search,

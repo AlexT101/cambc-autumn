@@ -759,3 +759,17 @@ picks are unchanged. Search and per-team results in [DRAFT.md](DRAFT.md#astraeus
   fresh suite (seed 4242) 60.1% vs 42.9% (+17.3 ±10.4, 168).
 - Head to head against astraeus c0de6b4 on 3-pick maps: 61.5% of 532 (all maps 59.9% of 364, fresh 64.9% of 168).
 - Other pick counts play identically (the old tables reproduce c0de6b4's games).
+
+## 135: a kill in the strike search opens its tile (astraeus, 2026-10-24)
+
+The strike search fixed its free and dash-passable tiles at the start (`read_geometry`), so a unit it killed still
+blocked every later move in the sequence (hyperion TODO bug #2): no melee kill then a walk onto the tile, no Vesper or
+Heart of Ruin kill then a dash through it. Each node now records the tiles opened by kills before its walk
+(`open_w`) and before its dash (`open_d`); the walk, dash and landing domains add them (`free_n_at`, `landings_at`,
+`land_here_at`). A tile a kill opens counts only for moves after the kill, and not on the enemy spawn.
+
+- Against c0de6b4 (as `bots/variants/p1-ref`): 50.8% of 592 (46.8-54.9; ladder 51.2 of 80, fresh suite seed 8821
+  50.8 of 512), out-of-fuel turns 1416 vs 1280.
+- 100M bench, wide set: identical replays 52/52, fuel +0.06% (p99 +0.2%). The new sequences were never chosen there:
+  it rarely fires.
+

@@ -284,6 +284,8 @@ struct Node {
     std::uint32_t touched = 0;     // local camp groups hit
     Grid req_w = grid_all, req_d = grid_all, req_e = grid_all; // the tiles still allowed for each move's end
     Grid lset = 0; // a landing that hits: its tiles, alike in what they hit
+    // The tiles of units killed before the walk, and before the dash, which it could cross or end on.
+    Grid open_w = 0, open_d = 0;
 };
 
 // A sequence as the search grows it, its walk and dash tiles left open.
@@ -408,6 +410,23 @@ struct Search {
     int n_mates = 0;
 
     Grid free_ = 0, pass_ = 0, free_n = 0, land_here = 0, land_hits = 0, plain_here = 0, dom_dw = 0;
+    // A unit's grid bit, when its death opens its tile to us (not on the enemy spawn); 0 otherwise.
+    std::array<Grid, max_units> unit_cell{};
+    // The tiles the units killed so far in a sequence have opened.
+    Grid opened(const Node& s) const {
+        Grid g = 0;
+        for (std::uint32_t m = s.dead; m; m &= m - 1) g |= unit_cell[std::countr_zero(m)];
+        return g;
+    }
+    // free_n, landings(), land_here and plain_here with the tiles `o` open as well.
+    Grid free_n_at(Grid o) const { return o ? (moves && can_walk ? (free_ | o) & dilate(gbit(cell(here))) & ~gbit(cell(here)) : 0) : free_n; }
+    Grid landings_at(int c, Grid o) {
+        if (!o) return landings(c);
+        const Grid s = gbit(c), one = dilate(s);
+        return ((one | dilate(one & (pass_ | o))) & (free_ | o)) & ~s & ~land_bad;
+    }
+    Grid land_here_at(Grid o) { return o ? landings_at(cell(here), o) : land_here; }
+    Grid plain_here_at(Grid o) { return o ? land_here_at(o) & ~land_hits : plain_here; }
     Grid guarded = 0; // the step guard's tiles: never an end
     Grid land_known = 0;
     // Landings never taken: those striking camps but no foe, and those waking a sleeping striker
@@ -673,7 +692,7 @@ struct Search {
     float leaf_value(const Node& s) const;
 
     Node root() const;
-    bool legal_at(Node& s, Grid legal) const;
+    bool legal_at(Node& s, Grid legal);
     // Whether a strike can still follow: a move with none after it is never offered.
     bool strikes_left(const Node& s) const {
         if (s.attack) return true;
@@ -1139,6 +1158,8 @@ bool Search::read() {
     // Camps matter only to what can touch them.
     if (touches) read_members();
     read_camps();
+    for (int t = 0; t < n; ++t)
+        unit_cell[t] = in_grid(u[t].pos) && !test(world.map().enemy_spawn, u[t].pos) ? gbit(cell(u[t].pos)) : 0;
     if (lands && (dash_ready || vendetta)) {
         try {
             const float raw = my_damage(dash);
@@ -1449,16 +1470,16 @@ void Search::settle(const Node& s) {
     std::int16_t leaf = -1;
     switch (s.seg) {
     case at_start: offer(gbit(cell(here)), v, s, leaf, [](int, std::int8_t&, std::int8_t&) {}); break;
-    case walked: offer(free_n & s.req_w, v, s, leaf, [](int c, std::int8_t& w, std::int8_t&) { w = static_cast<std::int8_t>(c); }); break;
+    case walked: offer(free_n_at(s.open_w) & s.req_w, v, s, leaf, [](int c, std::int8_t& w, std::int8_t&) { w = static_cast<std::int8_t>(c); }); break;
     case dashed: {
-        const Grid ends = (s.lset ? s.lset : plain_here) & s.req_d;
+        const Grid ends = (s.lset ? s.lset : plain_here_at(s.open_d)) & s.req_d;
         offer(ends, v, s, leaf, [](int c, std::int8_t&, std::int8_t& d) { d = static_cast<std::int8_t>(c); });
         break;
     }
     case walked_dashed: {
-        const Grid allowed = (s.lset ? s.lset : ~land_hits) & s.req_d, mids = free_n & s.req_w;
+        const Grid allowed = (s.lset ? s.lset : ~land_hits) & s.req_d, mids = free_n_at(s.open_w) & s.req_w;
         Grid ends = 0;
-        each_bit(mids, [&](int m) { ends |= landings(m); });
+        each_bit(mids, [&](int m) { ends |= landings_at(m, s.open_d); });
         // Each end's walk tile: the first mid it lands from, found for all ends on first need.
         std::array<std::int8_t, 49> first;
         bool firsts = false;
@@ -1467,7 +1488,7 @@ void Search::settle(const Node& s) {
                 firsts = true;
                 Grid left = ends & allowed;
                 each_bit(mids, [&](int m) {
-                    const Grid now = landings(m) & left;
+                    const Grid now = landings_at(m, s.open_d) & left;
                     left &= ~now;
                     each_bit(now, [&](int e) { first[e] = static_cast<std::int8_t>(m); });
                 });
@@ -1478,8 +1499,8 @@ void Search::settle(const Node& s) {
         break;
     }
     case dashed_walked: {
-        const Grid from = (s.lset ? s.lset : plain_here) & s.req_d;
-        offer(dilate(from) & free_ & s.req_e, v, s, leaf, [&](int c, std::int8_t& w, std::int8_t& d) {
+        const Grid from = (s.lset ? s.lset : plain_here_at(s.open_d)) & s.req_d;
+        offer(dilate(from) & (free_ | s.open_w) & s.req_e, v, s, leaf, [&](int c, std::int8_t& w, std::int8_t& d) {
             w = static_cast<std::int8_t>(c);
             d = static_cast<std::int8_t>(std::countr_zero(dilate(gbit(c)) & from));
         });
@@ -1489,14 +1510,14 @@ void Search::settle(const Node& s) {
 }
 
 // Narrows the current move's end tiles to `legal`; false if none is left.
-bool Search::legal_at(Node& s, Grid legal) const {
+bool Search::legal_at(Node& s, Grid legal) {
     switch (s.seg) {
     case at_start: return legal & gbit(cell(here));
-    case walked: return (free_n & (s.req_w &= legal)) != 0;
-    case dashed: return ((s.lset ? s.lset : plain_here) & (s.req_d &= legal)) != 0;
+    case walked: return (free_n_at(s.open_w) & (s.req_w &= legal)) != 0;
+    case dashed: return ((s.lset ? s.lset : plain_here_at(s.open_d)) & (s.req_d &= legal)) != 0;
     case walked_dashed: return ((s.lset ? s.lset : ~land_hits) & (s.req_d &= legal)) != 0;
     case dashed_walked: {
-        const Grid dom = dilate((s.lset ? s.lset : plain_here) & s.req_d) & free_;
+        const Grid dom = dilate((s.lset ? s.lset : plain_here_at(s.open_d)) & s.req_d) & (free_ | s.open_w);
         return (dom & (s.req_e &= legal)) != 0;
     }
     }
@@ -1521,13 +1542,15 @@ void Search::grow(const Node& s) {
     const auto open = [&](Grid legal) __attribute__((always_inline)) {
         switch (s.seg) {
         case at_start: return (legal & here_bit) != 0;
-        case walked: return (free_n & s.req_w & legal) != 0;
-        case dashed: return ((s.lset ? s.lset : plain_here) & s.req_d & legal) != 0;
+        case walked: return (free_n_at(s.open_w) & s.req_w & legal) != 0;
+        case dashed: return ((s.lset ? s.lset : plain_here_at(s.open_d)) & s.req_d & legal) != 0;
         case walked_dashed: return ((s.lset ? s.lset : ~land_hits) & s.req_d & legal) != 0;
         case dashed_walked: return true;
         }
         return false;
     };
+    // A kill so far frees its tile for the moves after it.
+    const Grid opened_now = opened(s);
     if (s.attack)
         for (int t = 0; t < n; ++t) {
             if (h[t] <= 0 || !open(u[t].legal) || hoisted(s, t)) continue;
@@ -1547,30 +1570,32 @@ void Search::grow(const Node& s) {
     }
     if (s.walk && !s.excl && (melee || s.attack) && (s.seg == at_start || s.seg == dashed)) {
         Node c = s;
-        c.walk = false, c.owed = true;
+        c.walk = false, c.owed = true, c.open_w = opened_now;
         if (!melee) c.attack = false;
         c.seg = s.seg == at_start ? walked : dashed_walked;
         // A walk back onto a landing is the dash alone, with the walk to spare.
-        if (c.seg == dashed_walked) c.req_e = ~((s.lset ? s.lset : plain_here) & s.req_d);
-        const Grid dom = (c.seg == walked ? free_n
-                          : s.lset        ? dilate(s.lset & s.req_d) & free_
-                                          : dom_dw & dilate(plain_here & s.req_d)) &
+        if (c.seg == dashed_walked) c.req_e = ~((s.lset ? s.lset : plain_here_at(s.open_d)) & s.req_d);
+        const Grid dom = (c.seg == walked ? free_n_at(opened_now)
+                          : s.lset        ? dilate(s.lset & s.req_d) & (free_ | opened_now)
+                          : opened_now    ? dilate(plain_here_at(s.open_d) & s.req_d) & (free_ | opened_now)
+                                          : dom_dw & dilate(plain_here_at(s.open_d) & s.req_d)) &
                          c.req_e;
         if (dom && strikes_left(c)) push(c, {Op::walk});
     }
     if (s.cast && s.dash && (s.seg == at_start || s.seg == walked)) {
         const bool first = s.seg == at_start;
         // Landings from the walk tiles the actions so far still allow.
-        Grid reach = land_here;
+        Grid reach = land_here_at(opened_now);
         if (!first) {
             reach = 0;
-            each_bit(free_n & s.req_w, [&](int m) { reach |= landings(m); });
+            each_bit(free_n_at(s.open_w) & s.req_w, [&](int m) { reach |= landings_at(m, opened_now); });
             // Straight after the walk, a landing the start tile reaches is the dash alone, with
             // the walk to spare.
-            if (stack[s.depth - 1].op == Op::walk) reach &= ~land_here;
+            if (stack[s.depth - 1].op == Op::walk) reach &= ~land_here_at(opened_now);
         }
         Node c = s;
         c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.req_d = reach, c.owed = true;
+        c.open_d = opened_now;
         c.seg = first ? dashed : walked_dashed;
         if ((reach & ~land_hits) != 0 && strikes_left(c)) push(c, {Op::dash});
         // Landings wake no sleeper, so those hitting the same foes and camp groups are alike.
