@@ -59,11 +59,20 @@ def draw_maps(pool, sets, rng):
     return picks
 
 
+def parse_sets(spec, teams):
+    """`3` is 3 groups per team; `7x5,3x5` is 7 for each of the first 5 teams, then 3 each. The last count repeats."""
+    counts = []
+    for part in spec.split(","):
+        n, _, k = part.partition("x")
+        counts += [int(n)] * int(k or 1)
+    return (counts + counts[-1:] * teams)[:teams]
+
+
 def make_plan(teams, pool, sets, seed):
     groups = []
-    for t in teams:
+    for t, n in zip(teams, sets):
         rng = random.Random(f"{seed}:{t['teamId']}")
-        for s, maps in enumerate(draw_maps(pool, sets, rng), 1):
+        for s, maps in enumerate(draw_maps(pool, n, rng), 1):
             groups.append({
                 "rank": t["rank"], "team": t["name"], "teamId": t["teamId"], "set": s,
                 "maps": [m["name"] for m in maps], "mapIds": [m["id"] for m in maps],
@@ -202,7 +211,7 @@ def collect(out, state, args):
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--teams", type=int, default=5, help="play the top N ladder teams other than us")
-    p.add_argument("--sets", type=int, default=3, help="five-game groups per team")
+    p.add_argument("--sets", default="3", help="five-game groups per team, by rank: `3`, or `7x5,3x5` for 7 each for the top 5 then 3 each")
     p.add_argument("--seed", type=int, default=int(datetime.now().strftime("%Y%m%d")), help="map draw seed (default: today, YYYYMMDD)")
     p.add_argument("--dry-run", action="store_true", help="print the plan and the commands, queue nothing")
     p.add_argument("--yes", action="store_true", help="queue without asking")
@@ -224,7 +233,7 @@ def main():
     pool = sorted(quota.get("maps") or [], key=lambda m: m["name"])
     if not pool:
         sys.exit("cambc match-groups quota lists no maps")
-    groups = make_plan(top_teams(args.teams), pool, args.sets, args.seed)
+    groups = make_plan(top_teams(args.teams), pool, parse_sets(args.sets, args.teams), args.seed)
     print_plan(args.seed, pool, quota, groups)
     found = problems(quota, groups)
     for f in found:
