@@ -163,6 +163,18 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   second, so it only changes Vesper against Prism when `prism_capture_holder` declines (traced: 17 turns in 3 games).
   Against acbcbcb: 48.9% of 1104 (46.0-51.9; ladder 47.5, gen 49.0, gen-s1 49.0), out-of-fuel turns 2325 vs 2408.
   Dropped. The id order is not why our Vesper earns less.
+- Why our Vesper earns less (2026-10-24, the 320 v47 ladder games' events and traces; no build). Not a claim bug:
+  - We take more base capture gold than the top teams (4,993 a game against 4,481) and as much by r200 (714 vs 705).
+    The gap is how it is split. Our Vesper's share of base capture gold is 24% whatever the group: big (150+ gold),
+    mid or small, gold-heavy or gem-heavy. Prism takes 28%, the most. Their Vesper takes 28% overall and 32% of big
+    groups. Their Prism (in 79 of the 320 games) takes 6%.
+  - Claims are first come: each champion takes its own best group, and farm values gold with its own bonuses
+    (CHANGES 104). Nothing gives a contested gold-rich group to Vesper for her +33%. Moving 16 points of base gold
+    to her would be about +260 gold a game (~4%). Vesper first on a shared hold (above) lost.
+  - Banking is the bigger difference in champion time. Our Vesper, Marcella and Heart of Ruin tribute 7-8 times per
+    1,000 rounds at 23-28 gems each; the top teams' do it 3-5 times at 35-48. Our Vesper spends 19.5% of her turns
+    banking (Prism 2.3%) and 55% farming. This is the known small-bag finding ("Banking small bags only for nearby
+    enemies" above, held/dropped), not Vesper-specific.
 - Not a bug: on a leave turn `decide` casts `shield_if_needed` before `retreat`, but skips it when `strike_possible`
   and `reset_may_kill || landing_ready`; Heart of Ruin's dash lands, so with it ready and an enemy within 5 (every
   step-to-kill dash) the shield already waits, and Varg has no dash (its reset kill is `reset_may_kill`).
@@ -485,6 +497,13 @@ another harmless group was kept (CHANGES 91).
   - Willow takes no chase (CHANGES 121): 49.5% of 380 five-pick games. Kept as a consistency fix.
   - Enemies in bushes posted first in the shared sighting slot (CHANGES 124): 49.7% (46.8-52.7), 2573 vs 2564. Kept
     as level; local bots stand in bushes little, so judge it on the ladder by blind damage taken.
+- Recently seen unseen enemies join a fight's verdict late (`b5-late`, 2026-10-24, against 03cf613): CHANGES 122's
+  `Safety::late` and `stand()`'s joiners (the latter only once a visible enemy hits us) also took credible unseen
+  enemies (weight > 0, last seen at most 2 rounds ago, off their spawn), arriving after the walk from their nearest
+  possible tile to reach (1 if a possible tile is already in reach but outside the key). 49.3% of 1104 (46.3-52.2;
+  ladder 51.2, gen 49.0, gen-s1 49.2), out-of-fuel turns 2309 vs 2201. A debug trace (3 games) had it firing as
+  meant: 34 stand verdicts with an unseen joiner, 12 flipped from won to lost. Dropped. A likely cause (not
+  tested): the nearest possible tile puts a 1-2 round stale enemy 1-2 tiles closer than it probably is.
 
 ## Fuel
 
