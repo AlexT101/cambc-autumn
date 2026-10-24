@@ -1,0 +1,128 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T09:38:20.738032+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-finishing-recall-decision-fixture-20261024-v1",
+  "argv": [
+    "python3",
+    "src/mutation_checks.py"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-finishing-recall-decision-fixture-20261024-v1/logs/mutation-checks-v3.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-finishing-recall-decision-fixture-20261024-v1/logs/mutation-checks-v3.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.022853791,
+      "run_end_monotonic": 0.127870041
+    },
+    {
+      "run_start_monotonic": 1.033039708,
+      "run_end_monotonic": 1.138025291
+    },
+    {
+      "run_start_monotonic": 2.043224625,
+      "run_end_monotonic": 2.148095083
+    },
+    {
+      "run_start_monotonic": 3.053265291,
+      "run_end_monotonic": 3.156341916
+    },
+    {
+      "run_start_monotonic": 4.057564791,
+      "run_end_monotonic": 4.16008575
+    },
+    {
+      "run_start_monotonic": 5.065276833,
+      "run_end_monotonic": 5.168281791
+    },
+    {
+      "run_start_monotonic": 6.073398125,
+      "run_end_monotonic": 6.177606583
+    },
+    {
+      "run_start_monotonic": 7.082805708,
+      "run_end_monotonic": 7.186646458
+    },
+    {
+      "run_start_monotonic": 8.0908995,
+      "run_end_monotonic": 8.194219083
+    },
+    {
+      "run_start_monotonic": 9.099417916,
+      "run_end_monotonic": 9.203172083
+    },
+    {
+      "run_start_monotonic": 10.104829125,
+      "run_end_monotonic": 10.207576041
+    },
+    {
+      "run_start_monotonic": 11.11027375,
+      "run_end_monotonic": 11.215293958
+    },
+    {
+      "run_start_monotonic": 12.120497875,
+      "run_end_monotonic": 12.224069458
+    },
+    {
+      "run_start_monotonic": 13.129242041,
+      "run_end_monotonic": 13.23221125
+    },
+    {
+      "run_start_monotonic": 14.137443166,
+      "run_end_monotonic": 14.240717875
+    },
+    {
+      "run_start_monotonic": 15.145931916,
+      "run_end_monotonic": 15.248542791
+    },
+    {
+      "run_start_monotonic": 16.153729875,
+      "run_end_monotonic": 16.258381916
+    },
+    {
+      "run_start_monotonic": 17.163537625,
+      "run_end_monotonic": 17.266742083
+    },
+    {
+      "run_start_monotonic": 18.171898083,
+      "run_end_monotonic": 18.276015875
+    },
+    {
+      "run_start_monotonic": 19.181158708,
+      "run_end_monotonic": 19.284859708
+    },
+    {
+      "run_start_monotonic": 20.190034541,
+      "run_end_monotonic": 20.291878208
+    },
+    {
+      "run_start_monotonic": 21.197256583,
+      "run_end_monotonic": 21.301501833
+    },
+    {
+      "run_start_monotonic": 22.20668175,
+      "run_end_monotonic": 22.309725333
+    },
+    {
+      "run_start_monotonic": 23.21326025,
+      "run_end_monotonic": 23.314016291
+    },
+    {
+      "run_start_monotonic": 24.219225041,
+      "run_end_monotonic": 24.323619208
+    },
+    {
+      "run_start_monotonic": 25.22882425,
+      "run_end_monotonic": 25.332918666
+    }
+  ],
+  "pid": 24729,
+  "process_group_id": 24729,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T09:38:46.050001+00:00"
+}

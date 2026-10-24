@@ -1,0 +1,11 @@
+--- production-extracted-fixture.cpp
++++ game_ender_precedence_removed.cpp
+@@ -110,7 +110,7 @@
+ bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
+     auto& me = cambc::self();
+     decision = 'K';
+-    if (game_ender(world)) {
++    if (game_ender(world) && false) {
+         try {
+             me.cancel_recall();
+         } catch (const std::exception&) {

@@ -1,0 +1,13 @@
+PASS scalar-initialization-and-outmatched-production
+PASS positive-safe-pack-suppression
+PASS own-winning-top-up-declined
+PASS pending-ally-tribute-top-up-declined-classifier-mocked
+PASS game-ender-cancels-before-home-assessment
+PASS no-pack-suppression-no-contextual-keep
+PASS payout-not-early-leaves-canonical-capture-helper
+PASS context-threat-fails-first
+PASS context-immediate-tribute-fails-before-outruns
+PASS context-outruns-failure-preserves-home-false
+PASS normal-home-true-keeps-original-path
+PASS not-holding-capture-bypasses-new-branch
+All source-bound recall decision cases passed.

@@ -1,0 +1,56 @@
+{
+  "schema": "production-branch-guard-mutation-checks/v1",
+  "base_generated_cpp_sha256": "4c28fe41ad9ebb8b3d56442f61ad92425cc749bea4960ecb225ccbd66d39c026",
+  "checks": [
+    {
+      "mutation": "scalar_init_removed",
+      "mutation_patch": "receipts/mutations-v4/scalar_init_removed.patch",
+      "patch_sha256": "3da8e40dc3d922cfc5a039690bd0376f6dc4de53f6d59245c8e436726e4a2a35",
+      "mutated_source_sha256": "1d67f0b4db44f5cc84a07eb6f8aae8134f236022e056488b0cb351ec87516f65",
+      "compile_exit": 0,
+      "test_exit": -6,
+      "detected": true,
+      "first_failure": "Assertion failed: (want_home(w,p,s,false,&flag)==false && flag==false), function scalar_tests, file scalar_init_removed.cpp, line 189."
+    },
+    {
+      "mutation": "contextual_keep_removed",
+      "mutation_patch": "receipts/mutations-v4/contextual_keep_removed.patch",
+      "patch_sha256": "51be7c76a82b51dcdbd390d50f6588a2dc425b322029fbb67958d5fba129a213",
+      "mutated_source_sha256": "52c48384c03a17ab8dbf9450a85d9708d6e62d17dbd9312a042ca1230b4a6134",
+      "compile_exit": 0,
+      "test_exit": -6,
+      "detected": true,
+      "first_failure": "FAIL positive-safe-pack-suppression kept=0 home=0 has_home=1 cancel=1 cap=1 threat=0 tribute=0 outruns=0 stand=1"
+    },
+    {
+      "mutation": "winning_topup_guard_removed",
+      "mutation_patch": "receipts/mutations-v4/winning_topup_guard_removed.patch",
+      "patch_sha256": "13b7af8501ee1ba4a5de2e54c6c9ee47a16cdbe19913be7103548af6b2d8a671",
+      "mutated_source_sha256": "275cef407f2a3157bcaf5ab6f3717d8e66a66943c4911cb59840e750ef1ba9b3",
+      "compile_exit": 0,
+      "test_exit": -6,
+      "detected": true,
+      "first_failure": "FAIL own-winning-top-up-declined kept=1 home=0 has_home=1 cancel=0 cap=0 threat=1 tribute=1 outruns=1 stand=1"
+    },
+    {
+      "mutation": "early_arrival_guard_removed",
+      "mutation_patch": "receipts/mutations-v4/early_arrival_guard_removed.patch",
+      "patch_sha256": "b23e1e7b55508af54a4b1cefaf0110b1bfc4a97eb15bd4a598c643d6ae99c7a6",
+      "mutated_source_sha256": "0eb02f8a573da95013fb5a14045872668ee64af51263ca7ce2f8be1cdbc50dd2",
+      "compile_exit": 0,
+      "test_exit": -6,
+      "detected": true,
+      "first_failure": "FAIL payout-not-early-leaves-canonical-capture-helper kept=1 home=0 has_home=1 cancel=0 cap=0 threat=1 tribute=1 outruns=1 stand=1"
+    },
+    {
+      "mutation": "game_ender_precedence_removed",
+      "mutation_patch": "receipts/mutations-v4/game_ender_precedence_removed.patch",
+      "patch_sha256": "54bf976a7a55b2f427a46ee8490b164892b12287d2389135041e25cff1e0fd05",
+      "mutated_source_sha256": "c655abb7d8fe0829d227ce3e767b8b22e304f8bf2ba69e1e4862eb337f03ee42",
+      "compile_exit": 0,
+      "test_exit": -6,
+      "detected": true,
+      "first_failure": "FAIL game-ender-cancels-before-home-assessment kept=1 home=0 has_home=1 cancel=0 cap=0 threat=1 tribute=1 outruns=1 stand=1"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schema": "source-bound-finishing-recall-decision-fixture/v1",
+  "production_source": {
+    "path": "bots/variants/willow-finishing-recall-4d08241-work/src/bot.cpp",
+    "sha256": "12b287870f0e516829ccd0ce47765391e273729af1529fdc3df2f719da060d46",
+    "bot_src_aggregate_sha256": "781fe3641afc4333d8c8a1b42f1344b4ba19edf9d96ae092e9e62069b9083d68",
+    "parent_source_aggregate_sha256": "f599a31faa0251321beb97a726918286e266218ceb3e183b8271e41c5c84718c"
+  },
+  "extracted_functions": [
+    "outmatched",
+    "want_home",
+    "continue_recall"
+  ],
+  "fixture_method": "Python extracts exact function bodies by signature from pinned bot.cpp, rejecting any source SHA mismatch; C++ compiles those unchanged bodies against declared deterministic mocks for world/native/helper interfaces.",
+  "compiler": "Apple clang version 17.0.0 (clang-1700.0.13.5), C++20 -O0",
+  "coverage_cases": [
+    "scalar initialization before early spawn return",
+    "outmatched scalar records pack=true plus paying_soon=true",
+    "outmatched with pack=false leaves the initialized scalar false",
+    "safe positive pack-suppression finishing recall: keep, cached home stays false, one stand evaluation, single contextual threat/tribute/outruns checks",
+    "own winning top-up declines contextual exception using mocked capture_share/gems_short outputs",
+    "pending allied tribute decisive top-up declines using mocked capture_share/gems_short outputs",
+    "game-ending enemy intervention cancels before want_home/context work",
+    "no pack-suppression case does not enter contextual branch",
+    "payout not early delegates to capture_recall; mocked capture_recall=true remains authoritative",
+    "threat failure short-circuits tribute/outruns checks",
+    "immediate safe tribute short-circuits outruns",
+    "recall-outruns failure declines contextual exception and preserves home=false",
+    "normal home=true path remains unchanged, including priority over winning top-up",
+    "not holding a capture bypasses new branch"
+  ],
+  "mutation_sensitivity": {
+    "receipt": "receipts/mutation-checks-v4.json",
+    "detected_mutations": 5,
+    "mutations": [
+      "scalar initialization removed",
+      "contextual keep branch removed",
+      "decisive capture comparison changed < to <=",
+      "early-arrival timing guard removed",
+      "game-ender branch suppressed while still calling game_ender"
+    ]
+  },
+  "call_count_checks": "Fixture asserts production stand count and order-sensitive threat, tribute, outruns, game_ender, pack/paying, capture share/short, stale-check, and cancel/capture_recall calls for each case. Positive uses one stand in want_home and does not trigger a second stand in the exception.",
+  "scope_limits": [
+    "The test compiles exact production bodies for outmatched, want_home, and continue_recall only.",
+    "World, native reads, Safety, game_ender, capture_recall, tribute safety, recall-outruns, and other adjacent helpers are deterministic mocks; this is not native integration.",
+    "capture_share and gems_short are mocked inputs; the fixture tests the production comparison/control flow, not allied tribute accounting or actual winning-top-up classification. The pending-tribute test is named accordingly.",
+    "It does not show that runtime private state in the recorded game equals fixture values or establish competitive benefit."
+  ],
+  "success": {
+    "compile_exit": 0,
+    "decision_test_exit": 0,
+    "guard_mutation_runner_exit": 0
+  }
+}

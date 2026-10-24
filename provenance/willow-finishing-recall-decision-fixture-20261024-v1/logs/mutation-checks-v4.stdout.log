@@ -1,0 +1,6 @@
+PASS all 5 guard-removal mutations detected
+PASS scalar_init_removed -> Assertion failed: (want_home(w,p,s,false,&flag)==false && flag==false), function scalar_tests, file scalar_init_removed.cpp, line 189.
+PASS contextual_keep_removed -> FAIL positive-safe-pack-suppression kept=0 home=0 has_home=1 cancel=1 cap=1 threat=0 tribute=0 outruns=0 stand=1
+PASS winning_topup_guard_removed -> FAIL own-winning-top-up-declined kept=1 home=0 has_home=1 cancel=0 cap=0 threat=1 tribute=1 outruns=1 stand=1
+PASS early_arrival_guard_removed -> FAIL payout-not-early-leaves-canonical-capture-helper kept=1 home=0 has_home=1 cancel=0 cap=0 threat=1 tribute=1 outruns=1 stand=1
+PASS game_ender_precedence_removed -> FAIL game-ender-cancels-before-home-assessment kept=1 home=0 has_home=1 cancel=0 cap=0 threat=1 tribute=1 outruns=1 stand=1

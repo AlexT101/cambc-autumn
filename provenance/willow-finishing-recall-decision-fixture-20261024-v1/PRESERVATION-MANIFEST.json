@@ -1,0 +1,244 @@
+{
+  "schema": "compact-finishing-recall-fixture-preservation/v1",
+  "files": [
+    {
+      "path": "src/extract_fixture.py",
+      "sha256": "25cdf8a84b9d7908d78b2aa93c146dc06e2fe6d0fd019cccf84f06722005313b",
+      "bytes": 2222
+    },
+    {
+      "path": "src/fixture_harness.cpp.in",
+      "sha256": "9da86d2f167305b6bc747b2bf2033530af1468fd88a97fb83bfe72d04ba2099e",
+      "bytes": 10249
+    },
+    {
+      "path": "src/mutation_checks.py",
+      "sha256": "65b9e8267b8aa138fda1f518318526940b5621c075d2a2e163aa54e3c5a844c4",
+      "bytes": 2724
+    },
+    {
+      "path": "src/extract-receipt.json",
+      "sha256": "2d413f46fe93defb94ebae629bb9a4feb6120a9e2bc39b130cfa92b881efb422",
+      "bytes": 823
+    },
+    {
+      "path": "generated/fixture.cpp",
+      "sha256": "4c28fe41ad9ebb8b3d56442f61ad92425cc749bea4960ecb225ccbd66d39c026",
+      "bytes": 14391
+    },
+    {
+      "path": "receipts/FIXTURE-RESULT.md",
+      "sha256": "4c3ad7a6fe1ae174c0258485fdef83ff96cfd43750e8fd80e6e2b5e45d67c7fa",
+      "bytes": 2459
+    },
+    {
+      "path": "receipts/FIXTURE-RESULT.json",
+      "sha256": "b5bb70fa52b1fd9fb8e638ef5027c3de47a308b4c25387333f6b9f8ccb2b027b",
+      "bytes": 3482
+    },
+    {
+      "path": "receipts/mutation-checks-v4.json",
+      "sha256": "60e9cea02b065b76e93cb0e5494a51be94630a237fb2c10b767124baea6da7a2",
+      "bytes": 2926
+    },
+    {
+      "path": "receipts/compile-v4.duty.json",
+      "sha256": "0e636b6b14035d9ee8ace01a6a5f21058e0aafe6ed33d5cecbf15295b38c1d5e",
+      "bytes": 1564
+    },
+    {
+      "path": "receipts/test-v4.duty.json",
+      "sha256": "7611c1b8fc49eae0f032888497d1819befc329eddeca8fd3ecb49ed06b6cbebf",
+      "bytes": 1200
+    },
+    {
+      "path": "receipts/mutation-checks-v4.duty.json",
+      "sha256": "30dc1125cc2ead4547cb5155bc204f2209cd2d7ea7f36c6b2806eef1bef96544",
+      "bytes": 3029
+    },
+    {
+      "path": "logs/compile-v4.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "logs/test-v4.stdout.log",
+      "sha256": "a13038cae0be881d2f2df1c41f065ce6805457c60d201c1aadb050d0e52cc01c",
+      "bytes": 595
+    },
+    {
+      "path": "logs/test-v4.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "logs/mutation-checks-v4.stdout.log",
+      "sha256": "13756abfa310e0ef3e46b354433b95ed37a4f1c8748c2df360e932fd387bd916",
+      "bytes": 827
+    },
+    {
+      "path": "logs/mutation-checks-v4.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "receipts/initial-compile.duty.json",
+      "sha256": "719d40187fcc4fe0458484d93956aef36e69cff0390817483a5587d6858ccb33",
+      "bytes": 1713
+    },
+    {
+      "path": "receipts/initial-test.duty.json",
+      "sha256": "86a1e8c7c889fe19911a23929b748621592bcf26ab27e54b007ffef886a22c63",
+      "bytes": 1060
+    },
+    {
+      "path": "logs/initial-compile.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "logs/initial-compile.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "logs/initial-test.stdout.log",
+      "sha256": "a13038cae0be881d2f2df1c41f065ce6805457c60d201c1aadb050d0e52cc01c",
+      "bytes": 595
+    },
+    {
+      "path": "logs/initial-test.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "receipts/compile-v2.duty.json",
+      "sha256": "82ed6fd773b4f5a10a54890c8f1090875d566fadcd6461a464cc4a4ff322e0a0",
+      "bytes": 1756
+    },
+    {
+      "path": "receipts/test-v2.duty.json",
+      "sha256": "f326eef98dbbdcdcd84fd6a9ed060efeac691a93c28a51973085597461b76449",
+      "bytes": 1200
+    },
+    {
+      "path": "logs/compile-v2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "logs/test-v2.stdout.log",
+      "sha256": "7318ca4b8d13e08418f84c8f3b80ba3b98be2ca9c2fb991dbc571bf163cf52b7",
+      "bytes": 53
+    },
+    {
+      "path": "logs/test-v2.stderr.log",
+      "sha256": "6d959f56c86da53126c2db8a8b122b934f5fb3f6199764c543d3f43107c83cb7",
+      "bytes": 113
+    },
+    {
+      "path": "receipts/compile-v3.duty.json",
+      "sha256": "183475b26a0badcb9f9aacb6a60b1ef0763684f3a72ad1ff140a1d5cfbcf4c39",
+      "bytes": 1566
+    },
+    {
+      "path": "receipts/test-v3.duty.json",
+      "sha256": "f52fb7e83df3462efd8084fe5f7036bc9cd9dbe80491463a640f26f145bf2ffb",
+      "bytes": 1199
+    },
+    {
+      "path": "logs/compile-v3.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "logs/test-v3.stdout.log",
+      "sha256": "a13038cae0be881d2f2df1c41f065ce6805457c60d201c1aadb050d0e52cc01c",
+      "bytes": 595
+    },
+    {
+      "path": "logs/test-v3.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "receipts/mutation-checks.duty.json",
+      "sha256": "961f8d238d1f6970a623f5821debca97c9cfd3150d46d1526b1296364393ffe0",
+      "bytes": 2744
+    },
+    {
+      "path": "receipts/mutation-checks-v2.duty.json",
+      "sha256": "583546e321214446c45ef4aa909e3aab995517a4fcdf5c99c7dee3d0df645dfb",
+      "bytes": 3224
+    },
+    {
+      "path": "receipts/mutation-checks-v3.duty.json",
+      "sha256": "7b8ba33a9bf6fb00939a6d342d32fb0bb896f196dbbaf31b437d2fb5fb0b6923",
+      "bytes": 3517
+    },
+    {
+      "path": "logs/mutation-checks-v2.stdout.log",
+      "sha256": "0e8d9425b4d2a9eb3c605a046cf808bc7c43eaa08c1cb5878694e75225661d14",
+      "bytes": 819
+    },
+    {
+      "path": "logs/mutation-checks-v2.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "logs/mutation-checks-v3.stdout.log",
+      "sha256": "acf4fc73e23f30cbee2c5cf7564cf2b1e75473ba7725e7132a54b4503046e14e",
+      "bytes": 830
+    },
+    {
+      "path": "logs/mutation-checks-v3.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "receipts/mutations-v4/scalar_init_removed.patch",
+      "sha256": "3da8e40dc3d922cfc5a039690bd0376f6dc4de53f6d59245c8e436726e4a2a35",
+      "bytes": 444
+    },
+    {
+      "path": "receipts/mutations-v4/contextual_keep_removed.patch",
+      "sha256": "51be7c76a82b51dcdbd390d50f6588a2dc425b322029fbb67958d5fba129a213",
+      "bytes": 526
+    },
+    {
+      "path": "receipts/mutations-v4/winning_topup_guard_removed.patch",
+      "sha256": "13b7af8501ee1ba4a5de2e54c6c9ee47a16cdbe19913be7103548af6b2d8a671",
+      "bytes": 608
+    },
+    {
+      "path": "receipts/mutations-v4/early_arrival_guard_removed.patch",
+      "sha256": "b23e1e7b55508af54a4b1cefaf0110b1bfc4a97eb15bd4a598c643d6ae99c7a6",
+      "bytes": 627
+    },
+    {
+      "path": "receipts/mutations-v4/game_ender_precedence_removed.patch",
+      "sha256": "54bf976a7a55b2f427a46ee8490b164892b12287d2389135041e25cff1e0fd05",
+      "bytes": 428
+    },
+    {
+      "path": "../../research/willow-finishing-recall-4d08241-source-review-20261024-v1.md",
+      "sha256": "8b27de5cc932758d03cddab379e127369ee11d70e0596b695513b80ec0cdb9c0",
+      "bytes": 4126
+    }
+  ],
+  "excluded_artifacts": [
+    {
+      "path": "generated/fixture-v2, fixture-v3, fixture-v4",
+      "reason": "compiled host test executables; reproducible from recorded source and compiler"
+    },
+    {
+      "path": "generated/mutations-v2, mutations-v3, mutations-v4",
+      "reason": "generated mutant source and binaries; compact mutation diffs and result receipt are included"
+    },
+    {
+      "path": "bots/variants/willow-finishing-recall-4d08241-work",
+      "reason": "full candidate source tree is preserved in repository, not duplicated into compact fixture package"
+    }
+  ]
+}

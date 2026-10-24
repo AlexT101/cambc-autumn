@@ -1,0 +1,12 @@
+{
+  "schema": "production-source-extraction/v1",
+  "source_path": "bots/variants/willow-finishing-recall-4d08241-work/src/bot.cpp",
+  "source_sha256": "12b287870f0e516829ccd0ce47765391e273729af1529fdc3df2f719da060d46",
+  "functions": [
+    "bool outmatched(const World& world, Pathing& pathing, bool* payout_relaxed_pack)",
+    "bool want_home(const World& world, Pathing& pathing, Safety& safety, bool sieging, bool* payout_relaxed_pack = nullptr)",
+    "bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home)"
+  ],
+  "generated_cpp_sha256": "4c28fe41ad9ebb8b3d56442f61ad92425cc749bea4960ecb225ccbd66d39c026",
+  "limits": "Exact bodies of outmatched, want_home, and continue_recall are compiled; surrounding world/native/helper methods are declared mocks."
+}

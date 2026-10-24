@@ -1,0 +1,48 @@
+{
+  "schema": "bounded-duty-run/v1",
+  "started_utc": "2026-10-24T09:39:04.190503+00:00",
+  "cwd": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-finishing-recall-decision-fixture-20261024-v1",
+  "argv": [
+    "clang++",
+    "-std=c++20",
+    "-O0",
+    "generated/fixture.cpp",
+    "-o",
+    "generated/fixture-v4"
+  ],
+  "run_window_seconds": 0.1,
+  "stop_window_seconds": 0.9,
+  "approximate_active_fraction": 0.1,
+  "nice": 19,
+  "process_group_isolated": true,
+  "stdout": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-finishing-recall-decision-fixture-20261024-v1/logs/compile-v4.stdout.log",
+  "stderr": "/Users/yufan/Desktop/Development/CambridgeBattlecode2026/willow-upstream-development/provenance/willow-finishing-recall-decision-fixture-20261024-v1/logs/compile-v4.stderr.log",
+  "duty_intervals": [
+    {
+      "run_start_monotonic": 0.016727083,
+      "run_end_monotonic": 0.121746958
+    },
+    {
+      "run_start_monotonic": 1.0269985,
+      "run_end_monotonic": 1.130163541
+    },
+    {
+      "run_start_monotonic": 2.035346166,
+      "run_end_monotonic": 2.140368083
+    },
+    {
+      "run_start_monotonic": 3.04560775,
+      "run_end_monotonic": 3.148330125
+    },
+    {
+      "run_start_monotonic": 4.053527083,
+      "run_end_monotonic": 4.1585825
+    }
+  ],
+  "pid": 24798,
+  "process_group_id": 24798,
+  "exit_code": 0,
+  "interrupted_by_signal": null,
+  "aborted": false,
+  "ended_utc": "2026-10-24T09:39:08.333783+00:00"
+}

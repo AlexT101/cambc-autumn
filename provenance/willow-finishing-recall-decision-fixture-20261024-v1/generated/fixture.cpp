@@ -1,0 +1,212 @@
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <optional>
+#include <vector>
+
+struct vec2 { int x=0, y=0; };
+struct StandResult { bool lost=false, self_falls=false; };
+struct ChampionBelief {};
+namespace cambc {
+enum class champion_type { other, willow };
+struct Self { int cancels=0; void cancel_recall(){ ++cancels; } };
+Self& self();
+}
+namespace params { constexpr float recall_health_fraction=.35f, hurt_health_fraction=.7f; constexpr int pursuit_steps=3; }
+struct Me { vec2 pos{10,10}; cambc::champion_type type=cambc::champion_type::other; };
+struct Camp { int held_since=700, payout=740; int payout_round() const { return payout; } };
+struct Map { bool ally_spawn=false; int group_at(vec2) const { return 0; } };
+struct World {
+  int round=738; Me actor; Map map_data; std::vector<Camp> camps{Camp{}};
+  const Me& me() const { return actor; } const Map& map() const { return map_data; }
+  void throw_if_stale() const { ++stale_checks; }
+  mutable int stale_checks=0;
+};
+struct Pathing { struct Field { int at(vec2) const { return 3; } }; Field to_ally_spawn() const { return {}; } int foot() const { return 0; } };
+struct ThreatBound { bool threat=false; };
+struct Safety {
+  int stand_calls=0, threat_calls=0, lethal_calls=0, credible_calls=0;
+  bool threat=false, lethal_value=false, credible=false, lost=false;
+  ThreatBound bound(vec2) const { return {threat}; }
+  bool threatened(vec2) { ++threat_calls; return threat; }
+  bool lethal(vec2) { ++lethal_calls; return lethal_value; }
+  bool credible_enemy_may_hit_within(vec2,int) { ++credible_calls; return credible; }
+  StandResult stand(vec2,int,bool,bool) { ++stand_calls; return {lost,false}; }
+};
+struct Memory { bool siege=false, banking=false; int damage=0; };
+struct Config {
+  bool spawn=false, pack=true, paying=true, holding=true, finishing=false, contest=false;
+  bool camp_trapped=false, enemies_seen=true, own_ground=false, linked=false;
+  bool ender=false, safe_tribute=false, outruns=true, capture_recall_result=false;
+  bool want_shop=false, bank=false, retaining=false, foot_member=true;
+  int channel=1, capture_share_value=15, gems_short_value=100;
+  int pack_calls=0, paying_calls=0, holding_calls=0, game_ender_calls=0;
+  int capture_recall_calls=0, tribute_calls=0, outruns_calls=0;
+  int capture_share_calls=0, gems_short_calls=0;
+  bool last_siege_arg=false;
+} cfg;
+World* active_world=nullptr;
+cambc::Self self_instance;
+namespace cambc { Self& self(){ return self_instance; } }
+int unreachable=9999;
+bool test(bool,vec2){ return cfg.spawn; }
+bool test(int,vec2){ return cfg.foot_member; }
+vec2 my_position(){ return active_world->actor.pos; }
+float my_health(){ return 1000; } float my_max_health(){ return 1000; }
+int my_channel_time(){ return cfg.channel; } int my_gems(){ return 0; }
+bool finishing_camp(const World&){ return cfg.finishing; }
+bool holding_capture(const World&,Pathing&){ ++cfg.holding_calls; return cfg.holding; }
+bool in_pack_zone(const World&,vec2){ ++cfg.pack_calls; return cfg.pack; }
+bool paying_soon(const World&,Pathing&){ ++cfg.paying_calls; return cfg.paying; }
+bool camp_trapped(const World&,Safety&,vec2,float,bool sieging){ cfg.last_siege_arg=sieging; return cfg.camp_trapped; }
+bool contesting(const World&){ return cfg.contest; }
+bool enemy_seen(const World&){ return cfg.enemies_seen; }
+bool own_ground(const World&,vec2){ return cfg.own_ground; }
+const int* partner(const World&){ return cfg.linked ? reinterpret_cast<const int*>(1) : nullptr; }
+int dist(vec2,vec2){ return 0; }
+int capture_share(const World&,int){ ++cfg.capture_share_calls; return cfg.capture_share_value; }
+int gems_short(const World&){ ++cfg.gems_short_calls; return cfg.gems_short_value; }
+bool can_tribute_safely(const World&,Pathing&,Safety&,Memory&){ ++cfg.tribute_calls; return cfg.safe_tribute; }
+bool recall_outruns(const World&,Safety&){ ++cfg.outruns_calls; return cfg.outruns; }
+const ChampionBelief* game_ender(const World&){ ++cfg.game_ender_calls; static ChampionBelief b; return cfg.ender ? &b : nullptr; }
+bool capture_recall(const World&,Pathing&,Safety&,Memory&){ ++cfg.capture_recall_calls; return cfg.capture_recall_result; }
+bool wants_shop(const World&,Pathing&,Safety&,Memory&){ return cfg.want_shop; }
+bool recall_to_bank(const World&,Pathing&,Safety&,Memory&){ return cfg.bank; }
+bool siege_heal_trip(const Memory&,Safety&){ return false; }
+bool retaining_gems(const World&,Pathing&){ return cfg.retaining; }
+char decision='-'; bool sieged=false;
+
+bool outmatched(const World& world, Pathing& pathing, bool* payout_relaxed_pack) {
+    if (!in_pack_zone(world, world.me().pos)) return false;
+    const bool soon = paying_soon(world, pathing);
+    if (payout_relaxed_pack) *payout_relaxed_pack = soon;
+    return !soon;
+}
+
+bool want_home(const World& world, Pathing& pathing, Safety& safety, bool sieging, bool* payout_relaxed_pack = nullptr) {
+    if (payout_relaxed_pack) *payout_relaxed_pack = false;
+    world.throw_if_stale();
+    const vec2 here = my_position();
+    if (test(world.map().ally_spawn, here)) return false;
+    const float health = my_health();
+    const bool low = health < params::recall_health_fraction * my_max_health() && !finishing_camp(world) && !holding_capture(world, pathing);
+    if (low || outmatched(world, pathing, payout_relaxed_pack) || camp_trapped(world, safety, here, health, sieging)) return true;
+    // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
+    // bar on a capture, which pays without one.
+    if (world.me().type == cambc::champion_type::willow && !holding_capture(world, pathing) && !contesting(world)
+        && safety.credible_enemy_may_hit_within(here, 0) && safety.bound(here).threat)
+        return true;
+    // Out of sight and not lethal, nobody can win a fight here or pursue us.
+    const bool lethal = safety.lethal(here);
+    if (!lethal && !enemy_seen(world)) return false;
+    // Healthy on our own ground, they have no reason to come for us.
+    const bool pursued = !paying_soon(world, pathing) && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health());
+    const bool linked = partner(world) != nullptr;
+    const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal);
+    return t.lost || ((lethal || linked) && t.self_falls);
+}
+
+bool continue_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
+    auto& me = cambc::self();
+    decision = 'K';
+    if (game_ender(world)) {
+        try {
+            me.cancel_recall();
+        } catch (const std::exception&) {
+            return true;
+        }
+        return false;
+    }
+    bool payout_relaxed_pack = false;
+    home = want_home(world, pathing, safety, memory.siege, &payout_relaxed_pack);
+    if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(world, safety))
+        return true;
+    decision = 'k';
+    if (holding_capture(world, pathing)) {
+        // Near payout must not erase an existing safe exit that lands too early to carry it.
+        if (!*home && payout_relaxed_pack) {
+            const int g = world.map().group_at(my_position());
+            if (world.round + my_channel_time() < world.camps[g].payout_round()
+                && capture_share(world, g) < gems_short(world)
+                && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, memory)
+                && recall_outruns(world, safety)) {
+                decision = 'K';
+                return true;
+            }
+        }
+        if (capture_recall(world, pathing, safety, memory)) {
+            decision = 'Q';
+            return true;
+        }
+    } else {
+        const auto shop = [&] {
+            return wants_shop(world, pathing, safety, memory) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
+        };
+        // Wanting home, the home keep's reach test binds these too: else we alternate a retreat
+        // step with a standing turn on a recall the pursuer cancels.
+        if ((!*home || recall_outruns(world, safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
+        if (siege_heal_trip(memory, safety)) return sieged = true; // the trip keeps the siege until home
+        // No walk leaves a pocket a crystal took us into.
+        if (!test(pathing.foot(), my_position()) && (my_gems() == 0 || retaining_gems(world, pathing))) return true;
+    }
+    try {
+        me.cancel_recall();
+    } catch (const std::exception&) {
+        return true;
+    }
+    return false;
+}
+
+struct Expected {
+  bool kept, has_home=true, home=false;
+  int cancels=0, capture_recall_calls=0, threat_calls=0, tribute_calls=0, outruns_calls=0;
+  int stand_calls=1;
+  int pack_calls=-1, paying_calls=-1, capture_share_calls=-1, gems_short_calls=-1, game_ender_calls=-1, stale_checks=-1;
+};
+template<class Setup>
+void run_case(const char* name, Setup setup, Expected want) {
+  cfg=Config{}; self_instance=cambc::Self{}; World w; Pathing p; Safety s; Memory mem;
+  active_world=&w; std::optional<bool> home; decision='-'; setup(w,s);
+  const bool kept=continue_recall(w,p,s,mem,home);
+  const bool ok=kept==want.kept && home.has_value()==want.has_home &&
+    (!want.has_home || *home==want.home) && self_instance.cancels==want.cancels &&
+    cfg.capture_recall_calls==want.capture_recall_calls && s.threat_calls==want.threat_calls &&
+    cfg.tribute_calls==want.tribute_calls && cfg.outruns_calls==want.outruns_calls &&
+    s.stand_calls==want.stand_calls &&
+    (want.pack_calls<0 || cfg.pack_calls==want.pack_calls) && (want.paying_calls<0 || cfg.paying_calls==want.paying_calls) &&
+    (want.capture_share_calls<0 || cfg.capture_share_calls==want.capture_share_calls) && (want.gems_short_calls<0 || cfg.gems_short_calls==want.gems_short_calls) &&
+    (want.game_ender_calls<0 || cfg.game_ender_calls==want.game_ender_calls) && (want.stale_checks<0 || w.stale_checks==want.stale_checks);
+  if(!ok) {
+    std::fprintf(stderr,"FAIL %s kept=%d home=%d has_home=%d cancel=%d cap=%d threat=%d tribute=%d outruns=%d stand=%d\n",name,kept,home.value_or(false),home.has_value(),self_instance.cancels,cfg.capture_recall_calls,s.threat_calls,cfg.tribute_calls,cfg.outruns_calls,s.stand_calls);
+    std::abort();
+  }
+  std::printf("PASS %s\n",name);
+}
+void scalar_tests(){
+  cfg=Config{}; World w; Pathing p; Safety s; active_world=&w;
+  bool flag=true; cfg.spawn=true;
+  assert(want_home(w,p,s,false,&flag)==false && flag==false); // entry initialization survives early return
+  cfg=Config{}; flag=false; cfg.pack=true; cfg.paying=true;
+  assert(outmatched(w,p,&flag)==false && flag==true); // exact outmatched production body exposes already-true pack under paying-soon
+  cfg=Config{}; flag=false; cfg.pack=false;
+  assert(outmatched(w,p,&flag)==false && flag==false); // no pack never sets the witness scalar
+  std::puts("PASS scalar-initialization-and-outmatched-production");
+}
+int main(){
+  scalar_tests();
+  // All cases use the exact extracted want_home and continue_recall bodies. External policy
+  // helpers, including the capture-share classifiers, have explicit deterministic mock returns.
+  run_case("positive-safe-pack-suppression",[](World&,Safety&){}, {.kept=true,.home=false,.threat_calls=1,.tribute_calls=1,.outruns_calls=1,.stand_calls=1,.pack_calls=1,.paying_calls=2,.capture_share_calls=1,.gems_short_calls=1,.game_ender_calls=1,.stale_checks=1});
+  run_case("own-winning-top-up-declined",[](World&,Safety&){cfg.capture_share_value=10;cfg.gems_short_value=10;}, {.kept=false,.home=false,.cancels=1,.capture_recall_calls=1,.stand_calls=1,.capture_share_calls=1,.gems_short_calls=1,.game_ender_calls=1,.stale_checks=1});
+  run_case("pending-ally-tribute-top-up-declined-classifier-mocked",[](World&,Safety&){cfg.capture_share_value=15;cfg.gems_short_value=15;}, {.kept=false,.home=false,.cancels=1,.capture_recall_calls=1,.stand_calls=1,.capture_share_calls=1,.gems_short_calls=1,.game_ender_calls=1,.stale_checks=1});
+  run_case("game-ender-cancels-before-home-assessment",[](World&,Safety&){cfg.ender=true;}, {.kept=false,.has_home=false,.cancels=1,.stand_calls=0,.pack_calls=0,.paying_calls=0,.game_ender_calls=1,.stale_checks=0});
+  run_case("no-pack-suppression-no-contextual-keep",[](World&,Safety&){cfg.pack=false;}, {.kept=false,.home=false,.cancels=1,.capture_recall_calls=1,.stand_calls=1,.pack_calls=1,.paying_calls=1,.capture_share_calls=0,.gems_short_calls=0,.game_ender_calls=1,.stale_checks=1});
+  run_case("payout-not-early-leaves-canonical-capture-helper",[](World& w,Safety&){w.camps[0].payout=739;cfg.capture_recall_result=true;}, {.kept=true,.home=false,.cancels=0,.capture_recall_calls=1,.stand_calls=1,.capture_share_calls=0,.gems_short_calls=0,.game_ender_calls=1,.stale_checks=1});
+  run_case("context-threat-fails-first",[](World&,Safety& s){s.threat=true;}, {.kept=false,.home=false,.cancels=1,.capture_recall_calls=1,.threat_calls=1,.stand_calls=1,.capture_share_calls=1,.gems_short_calls=1,.game_ender_calls=1,.stale_checks=1});
+  run_case("context-immediate-tribute-fails-before-outruns",[](World&,Safety&){cfg.safe_tribute=true;}, {.kept=false,.home=false,.cancels=1,.capture_recall_calls=1,.threat_calls=1,.tribute_calls=1,.stand_calls=1,.capture_share_calls=1,.gems_short_calls=1,.game_ender_calls=1,.stale_checks=1});
+  run_case("context-outruns-failure-preserves-home-false",[](World&,Safety&){cfg.outruns=false;}, {.kept=false,.home=false,.cancels=1,.capture_recall_calls=1,.threat_calls=1,.tribute_calls=1,.outruns_calls=1,.stand_calls=1,.capture_share_calls=1,.gems_short_calls=1,.game_ender_calls=1,.stale_checks=1});
+  run_case("normal-home-true-keeps-original-path",[](World&,Safety&){cfg.paying=false;}, {.kept=true,.home=true,.stand_calls=0,.threat_calls=1,.tribute_calls=1,.outruns_calls=1,.pack_calls=1,.paying_calls=1,.capture_share_calls=0,.gems_short_calls=0,.game_ender_calls=1,.stale_checks=1});
+  run_case("not-holding-capture-bypasses-new-branch",[](World&,Safety&){cfg.holding=false;cfg.pack=false;}, {.kept=false,.home=false,.cancels=1,.capture_recall_calls=0,.stand_calls=1,.pack_calls=1,.paying_calls=1,.capture_share_calls=0,.gems_short_calls=0,.game_ender_calls=1,.stale_checks=1});
+  std::puts("All source-bound recall decision cases passed.");
+}

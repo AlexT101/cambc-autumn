@@ -2909,3 +2909,16 @@ gameplay correction is now being implemented: carry the already-evaluated
 suppressed-pack fact into a contextual recall keep, preserving interception
 checks, cached normal home, game-ending intervention and the existing winning
 capture-share classification. No additional combat simulation is proposed.
+
+The reviewed correction is frozen as aggregate `781fe364...`; only bot.cpp
+changes. Its source-bound host fixture extracts the actual outmatched,
+want_home and continue_recall functions and passes 11 decision cases plus
+scalar initialization checks. Five test-only mutations are caught by their
+intended cases after two sensitivity checks were corrected. The canonical
+capture helper's keep is preserved when arrival is not early; failed new keeps
+leave cached home=false. Safety, native reads and capture-share/tribute
+accounting are explicit mocks, so this establishes branch behavior rather than
+native integration or ally-accounting correctness. Independent source and
+fixture reviews find no remaining blocker. One ordinary-100k reactive Big
+World candidate-B versus frozen-v33-A game is authorized against the existing
+parent control, using the one-job duty-capped batch runner.

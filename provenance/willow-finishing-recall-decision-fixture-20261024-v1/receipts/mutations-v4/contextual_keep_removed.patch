@@ -1,0 +1,11 @@
+--- production-extracted-fixture.cpp
++++ contextual_keep_removed.cpp
+@@ -125,7 +125,7 @@
+     decision = 'k';
+     if (holding_capture(world, pathing)) {
+         // Near payout must not erase an existing safe exit that lands too early to carry it.
+-        if (!*home && payout_relaxed_pack) {
++        if (false) {
+             const int g = world.map().group_at(my_position());
+             if (world.round + my_channel_time() < world.camps[g].payout_round()
+                 && capture_share(world, g) < gems_short(world)

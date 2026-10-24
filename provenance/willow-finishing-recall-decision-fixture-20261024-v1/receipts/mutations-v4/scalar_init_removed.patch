@@ -1,0 +1,11 @@
+--- production-extracted-fixture.cpp
++++ scalar_init_removed.cpp
+@@ -85,7 +85,7 @@
+ }
+ 
+ bool want_home(const World& world, Pathing& pathing, Safety& safety, bool sieging, bool* payout_relaxed_pack = nullptr) {
+-    if (payout_relaxed_pack) *payout_relaxed_pack = false;
++    /* guard removed for sensitivity check */
+     world.throw_if_stale();
+     const vec2 here = my_position();
+     if (test(world.map().ally_spawn, here)) return false;
