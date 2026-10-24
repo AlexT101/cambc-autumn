@@ -1246,7 +1246,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
         saved.focus = b.focus;
         saved.cooldowns = cds;
         saved.alive = true;
-        saved.stunned = has_stun(b.handle);
+        saved.stunned = b.stun_pending;
         priority_start_handles[static_cast<std::size_t>(priority_start_enemies.count)] = b.handle;
         ++priority_start_enemies.count;
     }

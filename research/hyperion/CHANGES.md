@@ -773,3 +773,15 @@ Heart of Ruin kill then a dash through it. Each node now records the tiles opene
 - 100M bench, wide set: identical replays 52/52, fuel +0.06% (p99 +0.2%). The new sequences were never chosen there:
   it rarely fires.
 
+## 136: a spent stun is not a pending one; Marcella's tribute gold in farm worth (astraeus, 2026-10-24)
+
+A stun buff at 0 turn ends left has already taken its turn, and a new stun takes the following one. `has_stun` read
+any stun buff as active, so for about a round after every stun the strike search, `enemy_cast`, `attack_target`'s
+stunnable test, `ally_stops` and the turn-order danger read that enemy as stunned: no stun value, no danger removed by
+stunning it, and `enemy_cast` left it out of the enemies that could reach us next turn (a "free" stun could spend the
+walk while it could still hit us). They now read `stun_pending` (duration > 0), as Safety already did. Marcella's
+passive pays 2 gold per gem she tributes, with no gold bonus; farm worth now counts it for her.
+
+- Against 00fd51c: 50.7% of 592 (46.7-54.7; ladder 43.8 of 80, fresh suite seed 8821 51.8 of 512), out-of-fuel turns
+  1471 vs 1619.
+

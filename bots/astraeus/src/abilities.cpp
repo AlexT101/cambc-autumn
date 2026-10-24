@@ -264,7 +264,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
         for (const auto& e : world.enemies) {
             if (n_reaching == 16) break;
             if (!e.alive || !e.visible || !strike(e, next_turn_round(world, e)).hits(dist(here, e.pos))) continue;
-            if (!visible_record(e.handle) || has_stun(e.handle)) continue;
+            if (!visible_record(e.handle) || stun_pending(e.handle)) continue;
             unstoppable |= e.facts().passive == Passive::stun_immune;
             reaching[n_reaching++] = &e;
         }
@@ -308,7 +308,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                         draw_square(off, e.pos, static_cast<float>(a.radius));
                         continue;
                     }
-                    const float stun = a.stuns && !has_stun(e.handle) ? stun_worth(world, e, raw > 0) : 0;
+                    const float stun = a.stuns && !stun_pending(e.handle) ? stun_worth(world, e, raw > 0) : 0;
                     targets.push_back({e.pos, 1, hit_worth(world, e, damage, health, test(enemy_spawn, e.pos)) + stun});
                 } else if (e.tracked && !board_empty(e.possible)) {
                     const int n = static_cast<int>(board_count(e.possible));
@@ -336,7 +336,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                 if (!live) continue;
                 const float health = live->health;
                 float v = hit_worth(world, e, damage_to(s, e.handle, raw), health, test(enemy_spawn, e.pos));
-                if (a.stuns && !has_stun(e.handle)) v += stun_worth(world, e, raw > 0);
+                if (a.stuns && !stun_pending(e.handle)) v += stun_worth(world, e, raw > 0);
                 const bool free = a.stuns && !walk_matters && n_reaching == 1 && reaching[0] == &e;
                 if (v >= (free ? min_value : threshold) && v > best.value) best = Cast{s, v, e.handle, std::nullopt, {}};
             }
@@ -357,7 +357,7 @@ Cast enemy_cast(const World& world, float walk, bool landings) {
                     const auto* live = visible_record(e.handle);
                     if (!live) continue;
                     const float health = live->health;
-                    const float stun = a.stuns && !has_stun(e.handle) ? stun_worth(world, e, raw > 0) : 0;
+                    const float stun = a.stuns && !stun_pending(e.handle) ? stun_worth(world, e, raw > 0) : 0;
                     const float hit = hit_worth(world, e, damage_to(s, e.handle, raw), health, test(enemy_spawn, e.pos));
                     targets.push_back({e.pos, 1, hit + stun});
                 } else if (e.tracked && !board_empty(e.possible)) {

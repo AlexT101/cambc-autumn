@@ -190,7 +190,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
             const auto& live = record_of(c);
             const float health = live.health;
             const float retaliation = passive == Passive::retaliation ? retaliation_share * live.focus : 0.0f;
-            const bool stunnable = stunnable_only && passive != Passive::stun_immune && !has_stun(c);
+            const bool stunnable = stunnable_only && passive != Passive::stun_immune && !stun_pending(c);
             float partner = 1e9f;
             if (passive == Passive::linked_pair)
                 for (const auto& e : world.enemies)

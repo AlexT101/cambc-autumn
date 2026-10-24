@@ -1121,7 +1121,7 @@ bool Search::read() {
             if (!record) continue;
             hp = record->health;
             shield = e.shield > 0 ? shield_value(e.handle) : 0.0f;
-            stunned = stuns && has_stun(e.handle);
+            stunned = stuns && stun_pending(e.handle);
             recall = casts && e.channel == Channel::recall
                      && aph::kept_recall(e.handle, e.fast_recall ? home_recall_time : static_cast<int>(cambc::constants::recall_time));
         } catch (const cambc::error&) {

@@ -2134,9 +2134,14 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
     static std::uint32_t context = 0;
     if (const Context now{bag, short_by, pathing.centres_ready(), banks_bag}; context == 0 || !(now == last_context))
         last_context = now, ++context;
-    static float last_per_gold = 0;
+    // Marcella is paid gold for each gem she tributes, with no gold bonus.
+    const float tribute_gold = world.me().type == cambc::champion_type::marcella
+                                   ? prices(world).per_gold * static_cast<float>(cambc::constants::passive_abilities::marcella_tribute_gold_per_gem)
+                                   : 0.0f;
+    static float last_per_gold = 0, last_tribute_gold = 0;
     static std::uint32_t gold_context = 0;
-    if (gold_context == 0 || per_gold != last_per_gold) last_per_gold = per_gold, ++gold_context;
+    if (gold_context == 0 || per_gold != last_per_gold || tribute_gold != last_tribute_gold)
+        last_per_gold = per_gold, last_tribute_gold = tribute_gold, ++gold_context;
     const auto centre_field = [&](int g) __attribute__((always_inline)) {
         auto& known = group_facts[g];
         if (!known.centre) known.centre = pathing.from_centre(g);
@@ -2248,7 +2253,8 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             known.gold_context = 0;
         }
         if (known.gold_context != gold_context) {
-            known.gold = known.weight * per_gold * static_cast<float>(group.gold);
+            known.gold = known.weight * (per_gold * static_cast<float>(group.gold)
+                                         + tribute_gold * static_cast<float>(std::min(group.gems, short_by)));
             known.gold_context = gold_context;
         }
         if (known.version != belief.version || known.fastest_strength != strength)
@@ -3524,7 +3530,7 @@ bool ally_stops(const World& world, const ChampionBelief& e) {
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || !a.visible || a.channel != Channel::none) continue;
         const int r = a.acted ? world.round + 1 : world.round;
-        if (!a.can_act(r) || !(turn_start(world, a, r) < lands) || has_stun(a.handle)) continue;
+        if (!a.can_act(r) || !(turn_start(world, a, r) < lands) || stun_pending(a.handle)) continue;
         if (stunnable && dist(a.pos, e.pos) <= a.ready_stun_reach(r)) return true;
         if (lockable && dist(a.pos, world.map().altars[altar].pos) <= 2) {
             std::array<std::uint32_t, 4> counts{};
